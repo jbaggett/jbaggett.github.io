@@ -1,0 +1,27 @@
+{
+  "title": "Comparing Charts for Categorical Data",
+  "tool": "explore/one-cat",
+  "params": { "dataset": "brexit", "labels": "names" },
+  "steps": [
+    {
+      "instruction": "A survey asked 847 people how they think the UK government's Brexit negotiations are going. The responses are loaded as a **bar chart** with numeric labels hidden. Use only the bar heights to answer.",
+      "observe": "Which response is most common? Which is least common? Are any categories close in size? Try to rank all five from most to least common.",
+      "reveal": "**Very badly** is the tallest bar, followed by **Fairly well**, **Fairly badly**, **Very well**, and **Don't know**. Bar charts make ranking easy because our eyes compare bar lengths quickly — even when two bars are close. Check the **Show values** box to see the exact counts."
+    },
+    {
+      "instruction": "Uncheck **Show values** if you turned it on, then switch to **Pie Chart**. Try to rank the five slices from largest to smallest using only the visual size of each slice.",
+      "observe": "Can you tell which slice is biggest just by looking? Can you confidently rank all five? Compare your visual ranking to what you found with the bar chart — did the pie chart make it harder to judge?",
+      "reveal": "With five slices, ranking is harder. \"Very badly\" and \"Fairly well\" look similar as slices — our eyes struggle to compare angles precisely. The bar chart made the ranking immediately obvious; the pie chart makes it a guessing game. Check **Show values** to see how close you were. This is why statisticians generally prefer bar charts over pie charts for comparing categories."
+    },
+    {
+      "instruction": "Uncheck **Show values**, then switch to **Waffle Chart**. Each square represents about 1% of respondents. Try to estimate the percentage for the two largest groups by counting colored squares.",
+      "observe": "How close were your counts? Which chart — bar, pie, or waffle — made it easiest to estimate exact percentages? Check **Show values** to compare.",
+      "reveal": "The waffle chart lets you count: \"Very badly\" has about 33 squares (33%) and \"Fairly well\" about 28 squares (28%). The 5-point gap is visible as a few extra squares. Bar charts are best for ranking, waffle charts are best for estimating percentages, and pie charts are best when there are only 2–3 simple proportions."
+    },
+    {
+      "instruction": "Switch back to **Bar Chart**. Notice that the categories appear in the order they were recorded in the data, not sorted by frequency. Think about whether a different ordering would be better.",
+      "observe": "Would it be easier to read if the bars were sorted from tallest to shortest? When might you want to keep a natural order (like \"Very well\" → \"Very badly\") instead of sorting by frequency?",
+      "reveal": "For these responses, there's a **natural order** (Very well → Fairly well → Fairly badly → Very badly) that tells a story about public opinion. Sorting by frequency would scramble that narrative. But for categories with no natural order (like favorite colors or brand names), sorting by frequency makes comparisons easier. **The best ordering depends on what story the data should tell.**"
+    }
+  ]
+}
