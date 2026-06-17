@@ -27,7 +27,7 @@ const STRING_PARAMS = new Set([
     'csv', 'json', 'dist',
     'var', 'x', 'y', 'group', 'response', 'label', 'units', 'context',
     'success', 'failure', 'group1', 'group2', 'var1', 'var2',
-    'x_label', 'y_label', 'summary', 'alt'
+    'x_label', 'y_label', 'summary', 'alt', 'mechanism'
 ]);
 
 /**

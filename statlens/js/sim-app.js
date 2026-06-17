@@ -17,6 +17,10 @@ import { renderSimPills, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, draw
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
+import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
+import { animateCardShuffle } from './card-shuffle-anim.js';
+import { initLayoutVariants } from './layout-variants.js';
+import { initCoaching } from './coaching.js';
 /**
  * @typedef {object} SimConfig
  * @property {'bootstrap'|'randomization'} mode
@@ -34,6 +38,39 @@ import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isE
 export function initSimPage(config) {
   initHelp();
   const urlParams = parseParams(window.location.search);
+
+  // Card mechanism: render the two-group proportion shuffle as dealt cards
+  // instead of proportion bars. Available on any two-group proportion page; a
+  // live "Bars / Cards" toggle in the strip flips between views (great for
+  // demos — show the bars, then reveal the cards behind them). ?mechanism=cards
+  // just sets the initial view.
+  // Cards are a permutation metaphor (re-deal the *same* cards into new groups),
+  // so they only fit two-group proportion *randomization* — not bootstrap, which
+  // resamples with replacement.
+  const cardModeAvailable = !!config.proportion && !!config.twoGroup && config.mode === 'randomization';
+  // Cards only read well for small samples; past this many in either group the
+  // grid is an unreadable wall, so the toggle/card view is suppressed (size is
+  // only known once data loads, so this is checked at data-load via cardsAllowed).
+  const CARD_MAX_GROUP = 50;
+  /** @returns {boolean} Whether card view is allowed given the loaded sample sizes. */
+  function cardsAllowed() {
+    return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
+  }
+  let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
+  /** @returns {import('./sim-card-mechanism.js').CardOpts} */
+  const cardOpts = () => {
+    // Prefer the real outcome levels from the data (e.g. "promoted" /
+    // "not promoted"); fall back to explicit URL params, then generic words.
+    const otherLevel = outcomeLevels.length === 2
+      ? outcomeLevels.find(l => l !== successOutcome)
+      : (successOutcome ? `not ${successOutcome}` : '');
+    return {
+      group1Name,
+      group2Name,
+      successLabel: /** @type {any} */ (urlParams).success || successOutcome || 'success',
+      failureLabel: /** @type {any} */ (urlParams).failure || otherLevel || 'failure',
+    };
+  };
 
   // DOM elements
   const chartContainer = document.getElementById('chart-container');
@@ -107,6 +144,12 @@ export function initSimPage(config) {
   let resampleViewExplicit = false;
   /** @type {number[]} */
   let lastResample = [];
+  /** Last shuffled/resampled two-group grouping — lets the Bars/Cards toggle
+   *  re-render the resample panel without re-running the simulation. */
+  /** @type {number[]} */
+  let lastTwoG1 = [];
+  /** @type {number[]} */
+  let lastTwoG2 = [];
   /** Cached original-sample histogram result for morph animation (large-n). */
   /** @type {{ bins: ReturnType<typeof computeBins>['bins'], thresholds: number[], numBins: number } | null} */
   let origHistCache = null;
@@ -459,6 +502,9 @@ export function initSimPage(config) {
   /** @type {string[]} */
   let rawOutcomes2 = [];
   let successOutcome = '';
+  /** All outcome levels in the loaded data (used to label the card legend). */
+  /** @type {string[]} */
+  let outcomeLevels = [];
 
   // Accumulated stats and RNG
   /** @type {number[]} */
@@ -796,7 +842,29 @@ export function initSimPage(config) {
     updateToggleButtons(!!config.proportion);
     // Clear stale results
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
-    // Mechanism strip is deferred until first generate click (see generateSamples)
+    // Samples too large for a readable card grid → fall back to bars (and skip
+    // the early strip + toggle), even if ?mechanism=cards was requested. Also
+    // remove any stale toggle left over from a previously-loaded small dataset.
+    if (!cardsAllowed()) {
+      cardMechanism = false;
+      mechanismStrip?.querySelector('.mech-view-toggle')?.remove();
+    }
+
+    // Mechanism strip is normally deferred until the first generate click (see
+    // generateSamples) — except on small two-group proportion randomization
+    // pages, where we show the original groups immediately so the observed data
+    // is visible before any shuffle, the Bars/Cards toggle is available for
+    // demos, and (in card mode) the first +1 has cards to deal from.
+    if (cardsAllowed() && mechanismStrip && mechResampleContent) {
+      mechanismStrip.hidden = false;
+      initMechanismCollapse(mechanismStrip);
+      renderTwoGroupOriginal();
+      mechResampleContent.innerHTML = buildTwoGroupHTML(data1, data2, false);
+      mechanismInitialized = true;
+      ensureViewToggle();
+      // Card legend (decodes filled vs outline) shows only in card view.
+      updateMechCardLegend();
+    }
 
     // Note: data panel collapse and sticky controls are handled by initDataPanel's postLoadUI
 
@@ -907,6 +975,7 @@ export function initSimPage(config) {
    */
   function populateSuccessSelector(outcomes) {
     if (!successOutcomeSelect || !successSelector) return;
+    outcomeLevels = outcomes.slice();
     successOutcomeSelect.innerHTML = '';
     for (const o of outcomes) {
       const opt = document.createElement('option');
@@ -1168,6 +1237,11 @@ export function initSimPage(config) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         renderTwoGroupOriginal();
+        // In card mode, seed the resample panel with the original grouping so
+        // the first +1 has cards to deal from (FLIP needs a starting layout).
+        if (cardMechanism && mechResampleContent) {
+          mechResampleContent.innerHTML = buildTwoGroupHTML(data1, data2, false);
+        }
       }
     }
 
@@ -1607,7 +1681,10 @@ export function initSimPage(config) {
 
     let html = '';
 
-    if (config.proportion) {
+    if (config.proportion && cardMechanism) {
+      // Card mode: each observation is a card, grouped into two grids
+      html += `<div class="mech-card-display">${cardGroupsHTML(g1, g2, cardOpts())}</div>`;
+    } else if (config.proportion) {
       // Proportion groups: show S/F chip bars + stats
       const succ1 = g1.filter(v => v === 1).length;
       const fail1 = g1.length - succ1;
@@ -1699,6 +1776,62 @@ export function initSimPage(config) {
     renderTwoGroupCharts(data1, data2, 'orig');
   }
 
+  /** Set the card legend (cards view) or clear it (bars view). */
+  function updateMechCardLegend() {
+    if (!mechanismDescEl) return;
+    if (cardMechanism) {
+      const o = cardOpts();
+      mechanismDescEl.innerHTML = cardLegendHTML(o.successLabel || 'success', o.failureLabel || 'failure');
+      mechanismDescEl.hidden = false;
+    } else {
+      mechanismDescEl.hidden = true;
+    }
+  }
+
+  /** Re-render both mechanism panels in the current view (Bars/Cards). No
+   *  animation — this is a view switch, not a simulation step. */
+  function rerenderMechanismView() {
+    renderTwoGroupOriginal();
+    if (mechResampleContent) {
+      const haveResample = lastTwoG1.length > 0 && lastTwoG2.length > 0;
+      const g1 = haveResample ? lastTwoG1 : data1;
+      const g2 = haveResample ? lastTwoG2 : data2;
+      mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, false);
+      renderTwoGroupCharts(g1, g2, 'resamp');
+    }
+    updateMechCardLegend();
+  }
+
+  /** Add the Bars/Cards segmented toggle to the strip's collapse bar (top-right).
+   *  Idempotent; only for two-group proportion pages. */
+  function ensureViewToggle() {
+    if (!cardsAllowed() || !mechanismStrip) return;
+    const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
+    if (!bar || bar.querySelector('.mech-view-toggle')) return;
+
+    const seg = document.createElement('div');
+    seg.className = 'seg-control mech-view-toggle';
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Mechanism view');
+    seg.innerHTML =
+      `<button type="button" data-view="bars" aria-pressed="${String(!cardMechanism)}">Bars</button>` +
+      `<button type="button" data-view="cards" aria-pressed="${String(cardMechanism)}">Cards</button>`;
+
+    seg.addEventListener('click', (e) => {
+      const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-view]');
+      if (!btn) return;
+      const wantCards = btn.getAttribute('data-view') === 'cards';
+      if (wantCards === cardMechanism) return;
+      cardMechanism = wantCards;
+      for (const b of seg.querySelectorAll('button')) {
+        b.setAttribute('aria-pressed', String((b.getAttribute('data-view') === 'cards') === cardMechanism));
+      }
+      rerenderMechanismView();
+    });
+
+    bar.insertBefore(seg, bar.firstChild);
+  }
+
   /**
    * Show the two-group mechanism after a simulation step.
    * @param {number[]} g1 - Group 1 values (resample or shuffled)
@@ -1709,6 +1842,10 @@ export function initSimPage(config) {
   function showTwoGroupMechanism(g1, g2, _flash = false, highlight = false) {
     if (!mechResampleContent || !mechanismDescEl) return 0;
 
+    // Remember the latest grouping so the Bars/Cards toggle can re-render it.
+    lastTwoG1 = g1;
+    lastTwoG2 = g2;
+
     const statFn = config.mode === 'bootstrap' ? getBootstrapStat().fn : mean;
     const fmtType = config.proportion ? 'proportion' : undefined;
 
@@ -1718,12 +1855,33 @@ export function initSimPage(config) {
       && document.getElementById('mech-hist-resamp-2')?.querySelector('svg.mech-minichart');
 
     // Can we animate proportion bars? (proportion, single-step, bars already rendered)
-    const canAnimateProps = config.proportion && highlight
+    const canAnimateProps = config.proportion && highlight && !cardMechanism
       && mechResampleContent.querySelector('.mech-prop-bar');
+
+    // Card mode: re-deal the cards (FLIP) on a single shuffle
+    const cardContainer = cardMechanism && highlight
+      ? mechResampleContent.querySelector('.mech-card-display')
+      : null;
 
     let morphMs = 0;
 
-    if (canAnimateProps && mechOriginalContent) {
+    if (cardMechanism && cardContainer) {
+      // Gather → shuffle → deal the cards into their new groups; update the
+      // diff readout mid-deal. animateCardShuffle handles reduced-motion.
+      const diffSpan = mechResampleContent.querySelector('.mech-stat-value');
+      if (diffSpan) /** @type {HTMLElement} */ (diffSpan).style.opacity = '0.3';
+      animateCardShuffle(/** @type {HTMLElement} */ (cardContainer), () => {
+        cardContainer.innerHTML = cardGroupsHTML(g1, g2, cardOpts());
+        const diffVal = formatStat(statFn(g1) - statFn(g2), dataPrecision, fmtType);
+        if (diffSpan) {
+          diffSpan.textContent = diffVal;
+          diffSpan.classList.add('highlight-last');
+          /** @type {HTMLElement} */ (diffSpan).style.opacity = '1';
+        }
+      });
+      morphMs = prefersReducedMotion() ? 0 : (300 + 350 + 400 + 120);
+
+    } else if (canAnimateProps && mechOriginalContent) {
       // Ghost: fade resample panel to low opacity
       const propBars = mechResampleContent.querySelectorAll('.mech-prop-fill');
       const statSpans = mechResampleContent.querySelectorAll('.mech-group-stat');
@@ -1842,12 +2000,30 @@ export function initSimPage(config) {
       renderTwoGroupCharts(g1, g2, 'resamp', highlight);
     }
 
-    if (config.mode === 'bootstrap') {
-      mechanismDescEl.textContent = 'Resample each group independently with replacement';
-    } else {
-      mechanismDescEl.textContent = 'Shuffle group labels · same values, new grouping';
+    // Describe the mechanism as a subtitle on the resample column title, rather
+    // than a separate full-width caption row — saves vertical space.
+    const descText = config.mode === 'bootstrap'
+      ? 'with replacement'
+      : 'same values, new grouping';
+    const resampleTitle = document.querySelector('#mech-resample .mechanism-title');
+    if (resampleTitle) {
+      let sub = resampleTitle.querySelector('.mechanism-subtitle');
+      if (!sub) {
+        sub = document.createElement('span');
+        sub.className = 'mechanism-subtitle';
+        resampleTitle.appendChild(sub);
+      }
+      sub.textContent = ` · ${descText}`;
     }
-    mechanismDescEl.hidden = false;
+    // The bottom caption row is now only used for the card legend (filled vs
+    // outline), which has no other home.
+    if (cardMechanism) {
+      const o = cardOpts();
+      mechanismDescEl.innerHTML = cardLegendHTML(o.successLabel || 'success', o.failureLabel || 'failure');
+      mechanismDescEl.hidden = false;
+    } else {
+      mechanismDescEl.hidden = true;
+    }
     return morphMs;
   }
 
@@ -2976,4 +3152,10 @@ export function initSimPage(config) {
   }
 
   initPlayPause(genBtns, resetBtn);
+
+  // TEMPORARY: apply experimental layout variant (rail/focus behavior)
+  initLayoutVariants();
+
+  // Opt-in coaching hints (state-driven; no-op unless enabled)
+  initCoaching();
 }

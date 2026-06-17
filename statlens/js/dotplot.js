@@ -163,6 +163,7 @@ export function computeDotRadius(innerWidth, innerHeight, maxStack, numBins) {
  * @param {string} [options.fillColor] - Override default dot fill color (hex, sets both base and extreme)
  * @param {string} [options.baseFill] - Override non-extreme dot fill (when isExtreme returns false)
  * @param {string} [options.extremeFill] - Override extreme dot fill (when isExtreme returns true)
+ * @param {string} [options.highlightStroke] - Persistent border colour for the newest (+1) dot, so it stays distinguishable from a same-hue pile by shape, not just colour
  * @param {number} [options.viewHeight] - Override default viewBox height (for compact stacked charts)
  * @param {boolean} [options.showExport] - Show export buttons (default: true)
  * @param {string} [options.filename] - PNG download filename
@@ -192,6 +193,7 @@ export function drawDotplot(container, values, options = {}) {
     fillColor,
     baseFill: optBaseFill,
     extremeFill: optExtremeFill,
+    highlightStroke,
     viewHeight,
     showExport,
     filename,
@@ -274,7 +276,7 @@ export function drawDotplot(container, values, options = {}) {
   if (wouldOverflow) {
     renderColumns(dataGroup, dots, xScale, /** @type {d3Scale.ScaleLinear<number,number>} */ (yScale), frame.height, isExtreme, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill);
   } else {
-    renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill);
+    renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, highlightStroke);
   }
 
   // Observed statistic line
@@ -293,6 +295,13 @@ export function drawDotplot(container, values, options = {}) {
     xScale,
     maxStack: result.maxStack,
     binWidth: result.binWidth,
+    dotRadius,
+    wouldOverflow,
+    // Map a stack count to its pixel y — the actual mapping this render used, so
+    // overlays (e.g. a normal curve) line up in both dot and filled-column modes.
+    countToY: (wouldOverflow && yScale)
+      ? (/** @type {number} */ count) => yScale(count)
+      : (/** @type {number} */ count) => frame.height - count * 2 * dotRadius,
     update: (newValues, opts = {}) => {
       const newNumBins = opts.numBins ?? numBins;
       const newIsExtreme = opts.isExtreme ?? isExtreme;
@@ -348,7 +357,7 @@ export function drawDotplot(container, values, options = {}) {
 
         const newRadius = computeDotRadius(
           frame.width, frame.height, newResult.maxStack, newEffectiveBins);
-        renderDots(dataGroup, newResult.dots, xScale, frame.height, newRadius, newIsExtreme, animate, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill);
+        renderDots(dataGroup, newResult.dots, xScale, frame.height, newRadius, newIsExtreme, animate, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill, highlightStroke);
       }
 
       const overlays = d3Selection.select(frame.inner).select('.overlays');
@@ -383,7 +392,7 @@ let pendingHighlightTimers = [];
  * @param {Set<number>} [highlightIndices] - Batch new dots (+10): accent pulse
  * @param {SVGGElement} [innerNode] - chart-inner node for custom tooltips
  */
-function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill) {
+function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, highlightStroke) {
   // Cancel any pending highlight timers from previous render
   for (const t of pendingHighlightTimers) clearTimeout(t);
   pendingHighlightTimers = [];
@@ -442,11 +451,13 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
     pendingHighlightTimers.push(setTimeout(() => {
       selected.each(function() {
         if (reducedMotion) {
-          this.setAttribute('stroke', HIGHLIGHT_FILL);
-          this.setAttribute('stroke-width', '1');
+          // Keep a persistent dark border when requested, so the newest dot is
+          // distinguishable from a same-hue pile by more than colour.
+          this.setAttribute('stroke', highlightStroke || HIGHLIGHT_FILL);
+          this.setAttribute('stroke-width', highlightStroke ? '2' : '1');
           this.setAttribute('r', String(radius));
         } else {
-          animateDotRevert(this, HIGHLIGHT_FILL, radius, 400);
+          animateDotRevert(this, HIGHLIGHT_FILL, radius, 400, highlightStroke || undefined, highlightStroke ? 2 : 1);
         }
       });
     }, 800));
@@ -669,11 +680,11 @@ function lerpColor(a, b, t) {
  * @param {number} targetRadius - Normal radius
  * @param {number} duration - Animation duration in ms
  */
-function animateDotRevert(el, targetFill, targetRadius, duration) {
+function animateDotRevert(el, targetFill, targetRadius, duration, targetStroke, targetStrokeWidth = 1) {
   const startFill = hexToRGB(el.getAttribute('fill') ?? HIGHLIGHT_FILL);
   const startStroke = hexToRGB(el.getAttribute('stroke') ?? '#000000');
   const endFill = hexToRGB(targetFill);
-  const endStroke = hexToRGB(targetFill);
+  const endStroke = hexToRGB(targetStroke ?? targetFill);
   const startR = parseFloat(el.getAttribute('r') ?? String(targetRadius));
   const startSW = parseFloat(el.getAttribute('stroke-width') ?? '1');
   const start = performance.now();
@@ -685,7 +696,7 @@ function animateDotRevert(el, targetFill, targetRadius, duration) {
     el.setAttribute('fill', lerpColor(startFill, endFill, e));
     el.setAttribute('stroke', lerpColor(startStroke, endStroke, e));
     el.setAttribute('r', String(startR + (targetRadius - startR) * e));
-    el.setAttribute('stroke-width', String(startSW + (1 - startSW) * e));
+    el.setAttribute('stroke-width', String(startSW + (targetStrokeWidth - startSW) * e));
     if (t < 1) requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);

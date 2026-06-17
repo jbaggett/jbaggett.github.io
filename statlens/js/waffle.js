@@ -32,15 +32,21 @@ export function drawWaffleChart(container, values, options = {}) {
     xLabel,
     categoryOrder,
     labels = 'full',
+    viewHeight = 420,
+    margin: marginOpt,
+    showExport,
   } = options;
 
-  // Use a square-ish viewBox for the waffle grid
+  // Use a square-ish viewBox for the waffle grid. The default reserves room on
+  // the right for the legend; callers that hide it (labels:'none') can pass a
+  // tighter margin + viewHeight for a compact grid.
   const frame = createChart(container, {
     titleText,
     descText,
     id,
-    viewHeight: 420,
-    margin: { top: 28, right: 200, bottom: 20, left: 20 },
+    viewHeight,
+    margin: marginOpt ?? { top: 28, right: 200, bottom: 20, left: 20 },
+    showExport,
   });
 
   const { categories, counts, total } = computeFrequencies(values, categoryOrder);

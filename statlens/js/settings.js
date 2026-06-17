@@ -45,6 +45,16 @@ const DEFAULTS = {
   // Show interpretations — when off, hides auto-generated conclusions and
   // interpretation text so students produce their own (calculator vs tutor mode)
   showInterpretations: false,
+
+  // TEMPORARY: simulation-page layout variant for A/B/C comparison.
+  // 'current' (today), 'tight' (condensed), 'rail' (mechanism in side rail),
+  // 'focus' (tight + mechanism auto-collapses on mass sim). Remove once chosen.
+  layout: 'current',
+
+  // Coaching — opt-in, state-driven hints for novice students (default off).
+  // Emphasizes the next action, shows an empty-state coach + next-step line.
+  // See project_onboarding_coaching_design memory. Persisted (returning-user opt-in).
+  coaching: false,
 };
 
 const STORAGE_KEY = 'statlens-settings';
@@ -166,12 +176,46 @@ export function getShowInterpretations() {
 }
 
 /**
+ * Get the active layout variant, respecting URL param override.
+ * URL param ?layout=tight|rail|focus|current overrides the saved setting.
+ * TEMPORARY — remove with the rest of the layout-variant prototype.
+ * @returns {'current'|'tight'|'rail'|'focus'}
+ */
+export function getLayout() {
+  const allowed = ['current', 'tight', 'rail', 'focus'];
+  const urlLayout = new URLSearchParams(window.location.search).get('layout');
+  if (urlLayout && allowed.includes(urlLayout)) return /** @type {any} */ (urlLayout);
+  const saved = getSetting('layout');
+  return allowed.includes(saved) ? saved : 'current';
+}
+
+/**
+ * Get whether coaching hints are active, respecting URL param override.
+ * URL param ?coach=true|false overrides the saved setting. Reliable everywhere
+ * (incl. LMS embeds where localStorage may be partitioned).
+ * @returns {boolean}
+ */
+export function getCoaching() {
+  const p = new URLSearchParams(window.location.search).get('coach');
+  if (p === 'true' || p === '1') return true;
+  if (p === 'false' || p === '0') return false;
+  return !!getSetting('coaching');
+}
+
+/**
  * Apply settings to the current page (CSS custom properties, etc.).
  * Call once on page load from each page's init code.
  */
 export function applySettings() {
   const s = loadSettings();
   const root = document.documentElement;
+
+  // TEMPORARY: layout variant → data attribute on body (CSS drives the rest)
+  document.body?.setAttribute('data-layout', getLayout());
+
+  // Coaching → data attribute on body (CSS + coaching.js drive the hints)
+  if (getCoaching()) document.body?.setAttribute('data-coach', 'true');
+  else document.body?.removeAttribute('data-coach');
 
   // Activity mode → data attribute on body (CSS can target [data-mode="present"])
   document.body?.setAttribute('data-mode', getActivityMode());

@@ -266,6 +266,25 @@ export function initSettings() {
       </div>
       <input type="checkbox" id="set-interpret" ${s.showInterpretations !== false ? 'checked' : ''}>
     </div>
+    <div class="setting-row">
+      <div>
+        <label for="set-coaching" class="setting-label">Coaching hints</label>
+        <p class="setting-hint">Step-by-step prompts for students new to a tool: highlights the next action and explains what to look at.</p>
+      </div>
+      <input type="checkbox" id="set-coaching" ${s.coaching ? 'checked' : ''}>
+    </div>
+    <div class="setting-row">
+      <div>
+        <label for="set-layout" class="setting-label">Layout (experimental)</label>
+        <p class="setting-hint">Prototype layouts for simulation pages — saving space vertically. Changing reloads the page.</p>
+      </div>
+      <select id="set-layout">
+        <option value="current"${s.layout === 'current' ? ' selected' : ''}>Current</option>
+        <option value="tight"${s.layout === 'tight' ? ' selected' : ''}>A · Tight</option>
+        <option value="rail"${s.layout === 'rail' ? ' selected' : ''}>B · Side rail</option>
+        <option value="focus"${s.layout === 'focus' ? ' selected' : ''}>C · Progressive focus</option>
+      </select>
+    </div>
     <div class="reset-row">
       <button type="button" class="reset-link" id="set-reset">Reset to defaults</button>
     </div>
@@ -322,6 +341,30 @@ export function initSettings() {
     interpretCheck.addEventListener('change', () => {
       setSettings({ showInterpretations: interpretCheck.checked });
       applySettings();
+    });
+  }
+
+  // Coaching toggle — reload so hints wire up (or tear down) cleanly
+  const coachingCheck = /** @type {HTMLInputElement|null} */ (document.getElementById('set-coaching'));
+  if (coachingCheck) {
+    coachingCheck.addEventListener('change', () => {
+      setSettings({ coaching: coachingCheck.checked });
+      applySettings();
+      if (window.parent === window) {
+        location.reload();
+      }
+    });
+  }
+
+  // Layout variant (experimental) — reload since rail/focus need JS re-init
+  const layoutSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('set-layout'));
+  if (layoutSelect) {
+    layoutSelect.addEventListener('change', () => {
+      setSettings({ layout: layoutSelect.value });
+      applySettings();
+      if (window.parent === window) {
+        location.reload();
+      }
     });
   }
 
@@ -405,14 +448,36 @@ export function initKeyboardShortcuts(genBtns, resetBtn) {
 }
 
 /**
- * Flash the mechanism strip with a CSS animation class.
- * @param {HTMLElement|null} mechanismStrip
+ * Show a dismissible notice on small screens suggesting the desktop version.
+ * For tool pages (e.g. the Dataset Builder's spreadsheet table) that are
+ * impractical on a phone — preferred over forcing a cramped mobile layout.
+ * Dismissal is remembered for the session (per page).
+ * @param {string} [message] - Override the default notice text
  */
-export function flashMechanism(mechanismStrip) {
-  if (!mechanismStrip) return;
-  mechanismStrip.classList.remove('mechanism-flash');
-  void mechanismStrip.offsetWidth; // force reflow to restart animation
-  mechanismStrip.classList.add('mechanism-flash');
+export function suggestDesktop(message) {
+  if (window.innerWidth > 700) return;
+  const key = `statlens-desktop-suggest:${location.pathname}`;
+  try { if (sessionStorage.getItem(key)) return; } catch { /* private mode */ }
+
+  const note = document.createElement('div');
+  note.className = 'desktop-suggest';
+  note.setAttribute('role', 'note');
+  const text = document.createElement('p');
+  text.textContent = message
+    || 'This tool works best on a larger screen. For the full experience, open it on a laptop or desktop.';
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'desktop-suggest-dismiss';
+  dismiss.textContent = 'Got it';
+  dismiss.addEventListener('click', () => {
+    note.remove();
+    try { sessionStorage.setItem(key, '1'); } catch { /* private mode */ }
+  });
+  note.append(text, dismiss);
+
+  const h1 = document.querySelector('h1');
+  if (h1) h1.insertAdjacentElement('afterend', note);
+  else document.body.prepend(note);
 }
 
 /**

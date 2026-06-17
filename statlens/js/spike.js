@@ -52,12 +52,16 @@ function countValues(values, precision = 8) {
  * @param {string} [options.id] - Unique ID prefix
  * @param {(value: number) => boolean} [options.isTail] - Predicate for tail shading
  * @param {number} [options.observedStat] - Value for observed statistic vertical line
+ * @param {string} [options.observedLabel] - Label prefix for the observed line (e.g. "p")
+ * @param {number} [options.viewHeight] - Override SVG viewBox height (compact mode)
+ * @param {boolean} [options.showExport] - Whether to render copy/download buttons
  * @param {[number,number]} [options.ciLines] - CI bound values to draw as vertical lines
  * @param {boolean} [options.animate] - Whether to animate (default: true)
  * @param {[number,number]} [options.domain] - Override x-axis domain
  * @param {{top:number,right:number,bottom:number,left:number}} [options.margin]
  * @param {number[]} [options.prevCounts] - Previous counts per value for delta highlight
- * @returns {{ frame: ChartFrame, xScale: d3Scale.ScaleLinear<number,number>, counts: Map<number, number> }}
+ * @param {string} [options.color] - Base spike/cap colour (default IMS blue); ignored where isTail applies
+ * @returns {{ frame: ChartFrame, xScale: d3Scale.ScaleLinear<number,number>, yScale: d3Scale.ScaleLinear<number,number>, counts: Map<number, number> }}
  */
 export function drawSpike(container, values, options = {}) {
   const {
@@ -73,9 +77,18 @@ export function drawSpike(container, values, options = {}) {
     margin,
     domain: domainOpt,
     prevCounts,
+    viewHeight,
+    showExport,
+    observedLabel,
+    color,
   } = options;
+  // Base spike/cap colour when no isTail predicate is active (default IMS blue).
+  const baseColor = color || SPIKE_COLOR;
 
-  const frame = createChart(container, { titleText, descText, id, margin });
+  const frame = createChart(container, {
+    titleText, descText, id, margin, showExport,
+    ...(viewHeight != null && { viewHeight }),
+  });
   const counts = countValues(values);
   const keys = [...counts.keys()].sort((a, b) => a - b);
 
@@ -123,7 +136,7 @@ export function drawSpike(container, values, options = {}) {
     .attr('y1', frame.height)
     .attr('y2', d => yScale(d.count))
     .attr('stroke', d => {
-      if (!isTail) return SPIKE_COLOR;
+      if (!isTail) return baseColor;
       return isTail(d.value) ? REGION_SPIKE : BODY_SPIKE;
     })
     .attr('stroke-width', 2)
@@ -139,7 +152,7 @@ export function drawSpike(container, values, options = {}) {
     .attr('cy', d => yScale(d.count))
     .attr('r', CAP_RADIUS)
     .attr('fill', d => {
-      if (!isTail) return SPIKE_COLOR;
+      if (!isTail) return baseColor;
       return isTail(d.value) ? REGION_SPIKE : BODY_SPIKE;
     });
 
@@ -171,7 +184,7 @@ export function drawSpike(container, values, options = {}) {
   const overlays = d3Selection.select(frame.inner).select('.overlays');
   if (observedStat != null) {
     renderOverlayLine(overlays, observedStat, xScale, frame.height,
-      '#7B2D8E', 'Observed statistic');
+      '#7B2D8E', 'Observed statistic', false, observedLabel ? `${observedLabel} = ` : '');
   }
   if (ciLines) {
     renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
@@ -180,7 +193,7 @@ export function drawSpike(container, values, options = {}) {
       '#B5747A', 'CI upper bound', true);
   }
 
-  return { frame, xScale, counts };
+  return { frame, xScale, yScale, counts };
 }
 
 /**
@@ -192,7 +205,7 @@ export function drawSpike(container, values, options = {}) {
  * @param {string} color
  * @param {string} label
  */
-function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, dashed = false) {
+function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, dashed = false, prefix = '') {
   const x = xScale(value);
   const line = overlays.append('line')
     .attr('x1', x).attr('x2', x)
@@ -206,5 +219,5 @@ function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, d
     .attr('x', x).attr('y', -4)
     .attr('text-anchor', 'middle')
     .attr('fill', color)
-    .text(value.toFixed(2));
+    .text(prefix + value.toFixed(2));
 }
