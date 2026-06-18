@@ -6,7 +6,7 @@
  */
 
 import { createRng, randNormal } from '../../js/prng.js';
-import { mean, sd } from '../../js/stats.js';
+import { mean, sd, resample, quantile } from '../../js/stats.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
@@ -19,6 +19,7 @@ import { renderStatLabel } from '../../js/chart-utils.js';
 const popShapeSelect = /** @type {HTMLSelectElement} */ (document.getElementById('pop-shape'));
 const sampleSizeInput = /** @type {HTMLInputElement} */ (document.getElementById('sample-size'));
 const ciLevelSelect = /** @type {HTMLSelectElement} */ (document.getElementById('ci-level'));
+const ciMethodSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('ci-method'));
 const ciContainer = document.getElementById('ci-container');
 const resultDiv = document.getElementById('result-summary');
 const resetBtn = /** @type {HTMLButtonElement} */ (document.getElementById('reset-btn'));
@@ -190,6 +191,8 @@ function drawCIs(count) {
   const df = n - 1;
   const tStar = tCritical(df, alpha);
 
+  const method = ciMethodSelect?.value || 't';
+  const B = 600; // bootstrap resamples per sample (percentile method)
   for (let i = 0; i < count; i++) {
     // Draw sample from population
     const sample = [];
@@ -197,11 +200,24 @@ function drawCIs(count) {
       sample.push(population[Math.floor(rng() * population.length)]);
     }
     const xbar = mean(sample);
-    const se = sd(sample) / Math.sqrt(n);
-    const lo = xbar - tStar * se;
-    const hi = xbar + tStar * se;
+    let lo, hi, se;
+    if (method === 'bootstrap') {
+      // Percentile bootstrap CI of the mean — under-covers for small-n skewed
+      // populations, the failure mode this view makes visible (REQ-032).
+      const boot = [];
+      for (let b = 0; b < B; b++) boot.push(mean(resample(sample, rng)));
+      lo = quantile(boot, alpha / 2);
+      hi = quantile(boot, 1 - alpha / 2);
+      se = null; // bootstrap bounds can't be re-widened from se
+    } else {
+      se = sd(sample) / Math.sqrt(n);
+      lo = xbar - tStar * se;
+      hi = xbar + tStar * se;
+    }
     const captures = lo <= popMu && popMu <= hi;
-    intervals.push({ lo, hi, xbar, captures });
+    // Store se + df so t-intervals can be re-widened at a new confidence level
+    // without redrawing samples (REQ-032).
+    intervals.push({ lo, hi, xbar, se, df, captures });
   }
 
   renderChart();
@@ -209,6 +225,68 @@ function drawCIs(count) {
 
   if (resetBtn) resetBtn.hidden = false;
   announce(`Drew ${count} CI${count > 1 ? 's' : ''}. Total: ${intervals.length}`);
+}
+
+/**
+ * Re-compute every stored interval at the current confidence level — same
+ * samples, different width — and re-render. Lets students change confidence and
+ * watch the identical intervals widen/narrow and the coverage rate move with it.
+ */
+function rewidthIntervals() {
+  const ciLevel = parseInt(ciLevelSelect.value, 10);
+  const alpha = (100 - ciLevel) / 100;
+  for (const it of intervals) {
+    const tStar = tCritical(it.df, alpha);
+    it.lo = it.xbar - tStar * it.se;
+    it.hi = it.xbar + tStar * it.se;
+    it.captures = it.lo <= popMu && popMu <= it.hi;
+  }
+  renderChart();
+  displayInterpretation();
+  announce(`Re-widened ${intervals.length} intervals to ${ciLevel}%. Coverage updates without redrawing.`);
+}
+
+// ─── Predict-first gate (commit a prediction, then confront the result) ───
+const PREDICT_N = 25;
+
+/** Show the predict-first panel above the chart (before any intervals exist). */
+function initPredictPanel() {
+  const chartSection = document.getElementById('chart');
+  if (!chartSection) return;
+  document.getElementById('predict-panel')?.remove();
+  const ciLevel = parseInt(ciLevelSelect.value, 10);
+  const panel = document.createElement('div');
+  panel.id = 'predict-panel';
+  panel.className = 'predict-panel';
+  panel.innerHTML = `
+    <p class="predict-q"><strong>Predict first.</strong> Of the next <strong>${PREDICT_N}</strong> intervals at ${ciLevel}% confidence, how many do you think will <span class="predict-miss">miss</span> μ?</p>
+    <div class="predict-row">
+      <label>My guess: <input type="number" id="predict-input" min="0" max="${PREDICT_N}" inputmode="numeric" style="width:4rem"></label>
+      <button type="button" id="predict-lock" class="btn-secondary">Lock &amp; draw ${PREDICT_N}</button>
+      <button type="button" id="predict-skip" class="predict-skip">Skip</button>
+    </div>
+    <div id="predict-result" class="predict-result" hidden></div>
+  `;
+  chartSection.insertBefore(panel, chartSection.firstChild);
+
+  document.getElementById('predict-skip')?.addEventListener('click', () => panel.remove());
+  document.getElementById('predict-lock')?.addEventListener('click', () => {
+    const input = /** @type {HTMLInputElement|null} */ (document.getElementById('predict-input'));
+    const guess = parseInt(input?.value ?? '', 10);
+    const level = parseInt(ciLevelSelect.value, 10);
+    const before = intervals.length;
+    drawCIs(PREDICT_N);
+    const actual = intervals.slice(before).filter(c => !c.captures).length;
+    const expected = PREDICT_N * (100 - level) / 100;
+    const res = document.getElementById('predict-result');
+    if (res) {
+      const guessText = Number.isFinite(guess) ? `You predicted <strong>${guess}</strong>. ` : '';
+      res.innerHTML = `${guessText}At ${level}% confidence, about <strong>${expected.toFixed(1)}</strong> of ${PREDICT_N} are <em>expected</em> to miss — you got <strong class="predict-miss">${actual}</strong>. The miss rate is set by the confidence level (~${100 - level}%), not luck. Keep drawing to watch it settle near ${level}%.`;
+      res.hidden = false;
+    }
+    panel.querySelector('.predict-q')?.remove();
+    panel.querySelector('.predict-row')?.remove();
+  });
 }
 
 // ─── Chart: horizontal CI segments ───
@@ -335,12 +413,46 @@ function renderChart() {
     if (ty < 4) ty = margin.top + cy + 6;
 
     tooltipG.attr('transform', `translate(${tx}, ${ty})`);
+    drawCatsEye(ci, cy);
   }
 
   let pinnedIndex = -1;  // track which CI is tapped/pinned on mobile
 
+  // Cat's-eye overlay: on hover, redraw the interval as a PEAKED likelihood
+  // (tall at x̄, tapering toward the ends) instead of a flat bar — countering
+  // the misconception that every value in the CI is equally plausible (M3).
+  const catsEyeG = g.append('g').attr('class', 'cats-eye').attr('pointer-events', 'none');
+
+  /** @param {typeof shown[0]} ci @param {number} y */
+  function drawCatsEye(ci, y) {
+    catsEyeG.selectAll('*').remove();
+    const se = ci.se || (ci.hi - ci.lo) / 4 || 1;
+    const halfMax = Math.max(9, Math.min(14, yStep * 1.4));
+    const dens = (/** @type {number} */ x) => Math.exp(-0.5 * ((x - ci.xbar) / se) ** 2);
+    const d0 = dens(ci.xbar) || 1;
+    const steps = 36;
+    const top = [], bot = [];
+    for (let k = 0; k <= steps; k++) {
+      const x = ci.lo + (ci.hi - ci.lo) * (k / steps);
+      const h = halfMax * (dens(x) / d0);
+      top.push([xScale(x), y - h]);
+      bot.push([xScale(x), y + h]);
+    }
+    const path = 'M' + top.map(p => p.join(',')).join('L')
+      + 'L' + bot.reverse().map(p => p.join(',')).join('L') + 'Z';
+    const color = ci.captures ? '#569BBD' : '#F05133';
+    catsEyeG.append('path').attr('d', path)
+      .attr('fill', color).attr('fill-opacity', 0.22)
+      .attr('stroke', color).attr('stroke-width', 1);
+    catsEyeG.append('line')
+      .attr('x1', xScale(ci.xbar)).attr('x2', xScale(ci.xbar))
+      .attr('y1', y - halfMax).attr('y2', y + halfMax)
+      .attr('stroke', color).attr('stroke-width', 0.8).attr('stroke-dasharray', '2,2');
+  }
+
   function hideTooltip() {
     tooltipG.attr('visibility', 'hidden');
+    catsEyeG.selectAll('*').remove();
     pinnedIndex = -1;
   }
 
@@ -459,11 +571,18 @@ function displayInterpretation() {
   const captured = intervals.filter(ci => ci.captures).length;
   const rate = (captured / total * 100).toFixed(1);
 
-  let html = `<p><strong>${total} Confidence Intervals</strong> (${ciLevel}% level)</p>`;
-  html += `<p><span style="color:#569BBD;font-weight:700">${captured}</span> captured μ, <span style="color:#F05133;font-weight:700">${total - captured}</span> missed. Coverage rate: ${rate}%</p>`;
+  const method = ciMethodSelect?.value || 't';
+  const methodLabel = method === 'bootstrap' ? 'percentile bootstrap' : 't-interval';
+  let html = `<p><strong>${total} Confidence Intervals</strong> (${ciLevel}% ${methodLabel})</p>`;
+  html += `<p><span style="color:#569BBD;font-weight:700">${captured}</span> captured μ, <span style="color:#A52714;font-weight:700">${total - captured}</span> missed. Coverage rate: ${rate}%</p>`;
 
   if (total >= 50) {
     html += `<p class="interpretation">"${ciLevel}% confidence" means that if we repeated this process many times, about ${ciLevel}% of the intervals would capture the true parameter. It does NOT mean there's a ${ciLevel}% chance the parameter is in any single interval — the parameter is fixed; the intervals are random.</p>`;
+    // Flag a visible coverage shortfall — the percentile bootstrap's failure mode
+    // for small-n skewed populations (REQ-032).
+    if (method === 'bootstrap' && Number(rate) < ciLevel - 3) {
+      html += `<p class="interpretation">Notice the coverage (${rate}%) is running <strong>below</strong> the nominal ${ciLevel}%. The percentile bootstrap <em>under-covers</em> for small samples from a skewed population — its intervals are a bit too short. Switch the population to <em>Normal</em> or raise <em>n</em> and the gap closes; compare against the <em>t-interval</em> method.</p>`;
+    }
   } else {
     html += `<p class="hint">Draw more CIs (at least 50) to see the coverage rate stabilize near ${ciLevel}%.</p>`;
   }
@@ -475,6 +594,8 @@ function displayInterpretation() {
 
 for (const btn of genBtns) {
   btn.addEventListener('click', () => {
+    // Drawing directly (without using the predict gate) dismisses the unanswered prompt.
+    if (document.querySelector('#predict-panel .predict-q')) document.getElementById('predict-panel')?.remove();
     const count = parseInt(btn.dataset.count, 10);
     drawCIs(count);
   });
@@ -492,7 +613,18 @@ sampleSizeInput.addEventListener('change', () => {
   resetSimulation();
 });
 
-ciLevelSelect.addEventListener('change', () => resetSimulation());
+// Changing the confidence level re-widens the SAME accumulated intervals (and
+// re-counts coverage) instead of throwing them away — so students sweep the
+// width ↔ confidence ↔ coverage trade-off on one picture (REQ-032).
+ciLevelSelect.addEventListener('change', () => {
+  if (intervals.length === 0) return;
+  // Percentile-bootstrap bounds can't be re-widened from se → redraw the run.
+  if ((ciMethodSelect?.value || 't') === 'bootstrap') resetSimulation();
+  else rewidthIntervals();
+});
+
+// Switching the CI method changes how every interval is built — start fresh.
+if (ciMethodSelect) ciMethodSelect.addEventListener('change', () => resetSimulation());
 
 if (resetBtn) {
   resetBtn.addEventListener('click', () => {
@@ -508,6 +640,7 @@ function resetSimulation() {
   if (ciContainer) ciContainer.innerHTML = '';
   if (resultDiv) resultDiv.innerHTML = '<p class="placeholder">Click a button to draw samples and build confidence intervals.</p>';
   if (resetBtn) resetBtn.hidden = true;
+  initPredictPanel();
 }
 
 initKeyboardShortcuts(genBtns, resetBtn);

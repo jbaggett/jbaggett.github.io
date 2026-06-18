@@ -3123,10 +3123,21 @@ export function initSimPage(config) {
     const fmt = (v) => config.proportion ? formatStat(v, dataPrecision, 'proportion') : formatStat(v, dataPrecision);
     const ciLo = `<span class="ci-value">${fmt(ci[0])}</span>`;
     const ciHi = `<span class="ci-value">${fmt(ci[1])}</span>`;
+    // Data spread (SD) vs bootstrap spread (SE): the classic confusion (REQ-032).
+    // The bootstrap distribution's spread is the SE — how much the *statistic*
+    // varies — and is much narrower than the spread of the *data*. Shown for the
+    // one-sample quantitative case where "SD of the data" is unambiguous.
+    let dataSpreadContrast = '';
+    if (config.mode === 'bootstrap' && !config.proportion && !config.twoGroup
+        && !config.paired && data1.length > 1) {
+      const dataSD = sd(data1);
+      dataSpreadContrast = `<p class="hint">Spread of the <em>data</em> (SD ≈ ${fmt(dataSD)}) is much wider than the spread of the bootstrap ${bootLong}s — the <strong>SE ≈ ${fmt(se)}</strong>. The SE measures how much the <strong>${bootLong}</strong> varies from sample to sample, <em>not</em> how spread out the values are.</p>`;
+    }
     resultDiv.innerHTML = `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
       <p>${paramLabel}: ${fmt(m)}</p>
       <p>SE: ${fmt(se)}</p>
+      ${dataSpreadContrast}
       <p><strong>${ciLevel}% Confidence Interval:</strong> (${ciLo}, ${ciHi})</p>
       <p class="interpretation">The middle ${ciLevel}% of bootstrap ${bootLong}s fall between ${ciLo}${unitSuffix} and ${ciHi}${unitSuffix}.</p>
       <p class="interpretation">We are ${ciLevel}% confident that the ${ctxParam}${popPhrase} is between ${ciLo}${unitSuffix} and ${ciHi}${unitSuffix}.</p>

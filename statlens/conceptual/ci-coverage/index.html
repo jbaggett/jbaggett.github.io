@@ -45,6 +45,25 @@
         .size-input {
             width: 5rem !important;
         }
+        /* Predict-first gate */
+        .predict-panel {
+            background: #FCF3E7;
+            border: 1px solid #E0B080;
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            margin: 0 0 0.75rem;
+            font-size: 0.9rem;
+        }
+        .predict-row {
+            display: flex; gap: 0.6rem; align-items: center;
+            flex-wrap: wrap; margin-top: 0.4rem;
+        }
+        .predict-miss { color: #A52714; font-weight: 700; }
+        .predict-result { margin-top: 0.5rem; line-height: 1.4; }
+        .predict-skip {
+            background: none; border: none; color: #666;
+            text-decoration: underline; cursor: pointer; font-size: 0.85rem;
+        }
         .ci-chart-area {
             border: 1px solid var(--border);
             border-radius: 6px;
@@ -116,6 +135,12 @@
                         <option value="99">99%</option>
                     </select>
                 </label>
+                <label for="ci-method">CI method:
+                    <select id="ci-method">
+                        <option value="t" selected>t-interval</option>
+                        <option value="bootstrap">Percentile bootstrap</option>
+                    </select>
+                </label>
             </div>
             <p class="pop-info" id="pop-info">Population: Normal(μ = 50, σ = 10)</p>
         </section>
@@ -135,7 +160,7 @@
             <div class="ci-chart-area">
                 <div id="ci-container"></div>
             </div>
-            <!-- Coverage stats are rendered inside the SVG chart -->
+            <p class="hint" style="text-align:center;margin:0.3rem 0 0;">Hover (or tap) an interval to see it as a <em>peaked</em> likelihood — values near x̄ are more plausible than values near the ends, not all equally likely.</p>
         </section>
 
         <section id="results" aria-label="Interpretation">

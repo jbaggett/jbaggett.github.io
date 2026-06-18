@@ -168,7 +168,7 @@ const PAGE_MAP = {
   '/inference/slope/':                   38,
   '/inference/anova/':                   39,
   '/conceptual/':                        40,
-  '/conceptual/sampling-dist/':          41,
+  '/conceptual/sampling-lab/':          41,
   '/conceptual/ci-coverage/':            42,
   '/conceptual/randomization-test/':     43,
   '/practice/conclusions/':              44,
