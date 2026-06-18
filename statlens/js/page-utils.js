@@ -1227,8 +1227,19 @@ export function computeHighlights(allStats, prevLength, count, computeBins, opti
  * @param {Function} populateEditor - Called to fill the paste area
  * @param {Function} resolve - Called when done (resolves the ready promise)
  */
+/**
+ * External-data URLs must be HTTPS in production, but localhost over plain HTTP
+ * is allowed so the textbook Tech Tutorials (and tests) can be previewed against
+ * a local server.
+ * @param {string} url
+ */
+function isAllowedExternalUrl(url) {
+  if (url.startsWith('https://')) return true;
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(url);
+}
+
 function fetchExternalJSON(url, onDataset, populateEditor, resolve) {
-  if (!url.startsWith('https://')) {
+  if (!isAllowedExternalUrl(url)) {
     announce('External datasets require HTTPS URLs.');
     resolve();
     return;
@@ -1273,7 +1284,7 @@ function fetchExternalJSON(url, onDataset, populateEditor, resolve) {
  * @param {Function} resolve - Called when done
  */
 function fetchExternalCSV(url, handleText, populateEditor, resolve) {
-  if (!url.startsWith('https://')) {
+  if (!isAllowedExternalUrl(url)) {
     announce('External data requires HTTPS URLs.');
     resolve();
     return;

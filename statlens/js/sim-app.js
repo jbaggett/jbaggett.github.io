@@ -164,7 +164,7 @@ export function initSimPage(config) {
   let mechanismInitialized = false;
 
   /** Dataset context for natural-language interpretations. */
-  /** @type {{population?:string, parameter?:string, unit?:string, nullClaim?:string, successLabel?:string}} */
+  /** @type {{population?:string, parameter?:string, unit?:string, nullClaim?:string, successLabel?:string, mechanismVerb?:string}} */
   let datasetContext = {};
   /** Full dataset JSON for info panel. @type {object|undefined} */
   let currentDatasetJSON;
@@ -1243,6 +1243,8 @@ export function initSimPage(config) {
           mechResampleContent.innerHTML = buildTwoGroupHTML(data1, data2, false);
         }
       }
+      // Randomization: explain *why* we shuffle, right by the mechanism.
+      if (config.mode === 'randomization') renderMechanismNull();
     }
 
     // Capture previous state for histogram delta highlight
@@ -1250,7 +1252,12 @@ export function initSimPage(config) {
 
     // Update resample panel title
     if (resampleTitleEl) {
-      const verb = config.mode === 'randomization' ? 'Shuffle' : 'Resample';
+      // Verb is author-overridable per dataset (context.mechanismVerb) so activity
+      // text can say "re-allocate" (experiment) / "re-sample" (sample) without
+      // contradicting the panel title (REQ-031).
+      const verb = config.mode === 'randomization'
+        ? (datasetContext.mechanismVerb || 'Shuffle')
+        : 'Resample';
       resampleTitleEl.textContent = count === 1 ? `This ${verb}` : `Last ${verb}`;
     }
 
@@ -1367,7 +1374,7 @@ export function initSimPage(config) {
         const chartDelay = Math.max(150, mechAnimMs);
         pendingChartTimer = setTimeout(() => {
           pendingChartTimer = null;
-          renderChart(allStats, ciForChart);
+          renderChart(allStats, ciForChart, computeObservedStat());
           const dropSource = bootDiffValueEl || bootDiffEl || resampleMeanEl;
           if (dropSource && chartContainer) {
             animateDropToChart(/** @type {HTMLElement} */ (dropSource), chartContainer);
@@ -1375,7 +1382,7 @@ export function initSimPage(config) {
         }, chartDelay);
       } else {
         lastWasSingle = false;
-        renderChart(allStats, ciForChart);
+        renderChart(allStats, ciForChart, computeObservedStat());
         if (showOneSampleMech) {
           lastResample = lastResampleValues;
           showResample(lastResampleValues, false, false);
@@ -1774,6 +1781,31 @@ export function initSimPage(config) {
     if (!mechOriginalContent) return;
     mechOriginalContent.innerHTML = buildTwoGroupHTML(data1, data2, false, true);
     renderTwoGroupCharts(data1, data2, 'orig');
+  }
+
+  /**
+   * Encoded null next to the shuffle mechanism (randomization only): connect H₀
+   * to *why* we shuffle — "the labels carry no information, so we re-allocate
+   * them." Injected from JS so every randomization page gets it without per-page
+   * HTML (REQ-031). Text adapts to the mechanism (re-allocate vs sign-flip).
+   */
+  function renderMechanismNull() {
+    if (!mechanismStrip) return;
+    let el = mechanismStrip.querySelector('.mechanism-null');
+    if (!el) {
+      el = document.createElement('p');
+      el.className = 'mechanism-null';
+      const panels = mechanismStrip.querySelector('.mechanism-panels');
+      if (panels && panels.parentNode) panels.parentNode.insertBefore(el, panels.nextSibling);
+      else mechanismStrip.appendChild(el);
+    }
+    const claim = datasetContext.nullClaim
+      ? `<strong>H₀:</strong> ${datasetContext.nullClaim}. `
+      : '';
+    const mech = config.paired
+      ? 'Under the null, each pair’s difference is just as likely to be + or −, so each shuffle randomly <strong>flips the signs</strong> — the values don’t change, only the ± labels.'
+      : 'Under the null, the group labels carry no information, so each shuffle <strong>re-allocates</strong> the same outcomes to new groups — the outcomes don’t change, only who’s in which group.';
+    el.innerHTML = claim + mech;
   }
 
   /** Set the card legend (cards view) or clear it (bars view). */
@@ -2775,7 +2807,7 @@ export function initSimPage(config) {
         const result = bootstrapCI([...allStats], ciLevel);
         displayBootstrapResults(allStats, result.ci, result.se, ciLevel);
         const CI_MIN = 20;
-        renderChart(allStats, allStats.length >= CI_MIN ? result.ci : null);
+        renderChart(allStats, allStats.length >= CI_MIN ? result.ci : null, computeObservedStat());
       }
     });
   }
@@ -2846,6 +2878,23 @@ export function initSimPage(config) {
    * @param {number} [observedStat]
    * @param {'left'|'right'|'both'} [direction]
    */
+  /**
+   * The observed statistic of the ORIGINAL sample — where the bootstrap
+   * distribution centers. Pinning it on the chart counters the misconception
+   * that the distribution centers on the population parameter (REQ-032, M6).
+   * @returns {number|undefined}
+   */
+  function computeObservedStat() {
+    if (config.mode !== 'bootstrap' || data1.length === 0) return undefined;
+    if (config.paired && data2.length === data1.length && data2.length > 0) {
+      return mean(data1.map((v, i) => data2[i] - v));
+    }
+    if (config.twoGroup && typeof config.testStat === 'function') {
+      return config.testStat(data1, data2);
+    }
+    return getBootstrapStat().fn(data1);
+  }
+
   function renderChart(stats, ci, observedStat, direction) {
     chartContainer.innerHTML = '';
     const n = stats.length;
@@ -3118,14 +3167,21 @@ export function initSimPage(config) {
         ? 'no difference in population means'
         : `a difference of ${formatStat(nullDiff, dataPrecision)} in population means`;
     const nullDesc = datasetContext.nullClaim || defaultNull;
-    const pFmt = formatStat(pValue, 0, 'pvalue');
-    const pDisplay = pFmt.startsWith('p') ? pFmt : `p-value: ${pFmt}`;
+    const N = stats.length;
+    // The p-value is itself an estimate from N shuffles, with Monte-Carlo
+    // SE = sqrt(p(1−p)/N). Show a 95% margin that visibly shrinks as N grows, so
+    // re-runs don't look arbitrary (REQ-031). And present the p-value *by
+    // construction* — it IS the fraction of shuffles at least as extreme.
+    const mcMargin = 1.96 * Math.sqrt(Math.max(pValue * (1 - pValue), 0) / N);
+    const pLine = extremeCount === 0
+      ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
+      : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
     resultDiv.innerHTML = `
-      <p><strong>Randomization Distribution</strong> (${stats.length} shuffles)</p>
+      <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
-      <p>Extreme count: ${extremeCount} of ${stats.length} (${dirLabel})</p>
-      <p><strong>${pDisplay}</strong></p>
-      <p class="interpretation">${extremeCount} of ${stats.length} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
+      <p>${pLine}</p>
+      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). The “±” is the 95% Monte-Carlo margin — <strong>more shuffles → a tighter estimate</strong>.</p>
+      <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     `;
   }
 

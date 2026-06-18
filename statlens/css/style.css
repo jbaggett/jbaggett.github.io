@@ -1207,6 +1207,19 @@ input[aria-invalid="true"] {
   text-align: center;
 }
 
+/* Encoded-null note under the shuffle mechanism (randomization tools) */
+.mechanism-null {
+  font-size: 0.8rem;
+  color: var(--ims-gray-text);
+  margin: 0.5rem auto 0;
+  max-width: 46rem;
+  text-align: center;
+  line-height: 1.4;
+}
+.mechanism-strip.collapsed .mechanism-null {
+  display: none;
+}
+
 /* Card mechanism (?mechanism=cards) — dealt cards in the two-group strip */
 .mech-card-display {
   display: flex;

@@ -24,6 +24,8 @@ const dataPreview = document.getElementById('data-preview');
 const resultsSection = document.getElementById('results-section');
 const tableContainer = document.getElementById('table-container');
 const chartContainer = document.getElementById('chart-container');
+const variableSelector = document.getElementById('variable-selector');
+const varSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('var-select'));
 const chartRadios = /** @type {NodeListOf<HTMLInputElement>} */ (
   document.querySelectorAll('input[name="chart-type"]')
 );
@@ -142,21 +144,80 @@ let currentLevels = null;
 // ── Data loading ─────────────────────────────────────────────────────
 
 /**
- * Load parsed CSV data (shared by paste + file).
- * Uses the first categorical column only.
+ * Categorical columns from the most recent multi-column source (CSV/JSON),
+ * so the variable picker can switch between them without re-loading.
+ * @type {Array<{name:string, label:string, values:string[], levels:string[]|null}>}
+ */
+let currentCatColumns = [];
+let currentSourceName = '';
+
+/**
+ * Show/populate the variable picker for a set of categorical columns and load
+ * the active one. When there's only one categorical column the picker stays
+ * hidden (nothing to choose).
+ * @param {Array<{name:string, label:string, values:string[], levels:string[]|null}>} columns
+ * @param {string} sourceName
+ */
+function setCatColumns(columns, sourceName) {
+  currentCatColumns = columns;
+  currentSourceName = sourceName;
+  if (variableSelector && varSelect) {
+    if (columns.length > 1) {
+      varSelect.innerHTML = '';
+      for (const c of columns) {
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = c.label || c.name;
+        varSelect.appendChild(opt);
+      }
+      varSelect.value = columns[0].name;
+      variableSelector.hidden = false;
+    } else {
+      variableSelector.hidden = true;
+    }
+  }
+  loadActiveCatColumn();
+}
+
+/** Load the categorical column currently chosen in the picker (or the first). */
+function loadActiveCatColumn() {
+  if (currentCatColumns.length === 0) return;
+  const sel = (varSelect && varSelect.value) || currentCatColumns[0].name;
+  const col = currentCatColumns.find(c => c.name === sel) || currentCatColumns[0];
+  currentLevels = col.levels;
+  if (catSheetBody) populateSheet(catSheetBody, 'text', col.values);
+  loadValues(col.values, col.name, currentSourceName);
+}
+
+/** Hide the variable picker (single-variable inputs: summary table, spreadsheet). */
+function hideCatPicker() {
+  currentCatColumns = [];
+  if (variableSelector) variableSelector.hidden = true;
+}
+
+if (varSelect) varSelect.addEventListener('change', () => loadActiveCatColumn());
+
+/**
+ * Load parsed CSV data (shared by paste + file). Exposes a picker when the file
+ * has more than one categorical column so the student can choose which to view.
  * @param {{headers:string[], types:string[], data:Array<Record<string,any>>}} parsed
  * @param {string} sourceName
  */
 function loadParsedData(parsed, sourceName) {
-  const catIdx = parsed.types.findIndex(t => t === 'categorical');
-  if (catIdx < 0) {
+  const columns = parsed.headers
+    .map((name, i) => ({ name, i }))
+    .filter(({ i }) => parsed.types[i] === 'categorical')
+    .map(({ name }) => ({
+      name,
+      label: name,
+      values: parsed.data.map(row => String(row[name])),
+      levels: /** @type {string[]|null} */ (null),
+    }));
+  if (columns.length === 0) {
     announce('Need at least one categorical column.');
     return;
   }
-  const varName = parsed.headers[catIdx];
-  const values = parsed.data.map(row => String(row[varName]));
-  currentLevels = null;
-  loadValues(values, varName, sourceName);
+  setCatColumns(columns, sourceName);
 }
 
 /**
@@ -192,24 +253,26 @@ initDataPanel({
   showPreview: true,
   datasetFilter: oneCatFilter,
   onDataset: (ds) => {
-    const catVars = ds.variables.filter(/** @param {any} v */ v =>
-      typeof v === 'object' ? v.type === 'categorical' : true
-    );
-    const catVar = catVars[0];
-    const varName = typeof catVar === 'object' ? catVar.name : catVar;
-    const values = ds.rows.map(/** @param {any} r */ r => String(r[varName]));
-    // Store levels from dataset metadata if available
-    currentLevels = (typeof catVar === 'object' && Array.isArray(catVar.levels))
-      ? catVar.levels : null;
-    // Populate spreadsheet
-    if (catSheetBody) populateSheet(catSheetBody, 'text', values);
-    loadValues(values, varName, ds.name);
+    const columns = ds.variables
+      .filter(/** @param {any} v */ v => typeof v === 'object' ? v.type === 'categorical' : true)
+      .map(/** @param {any} v */ v => {
+        const name = typeof v === 'object' ? v.name : v;
+        return {
+          name,
+          label: (typeof v === 'object' && v.label) ? v.label : name,
+          values: ds.rows.map(/** @param {any} r */ r => String(r[name])),
+          levels: (typeof v === 'object' && Array.isArray(v.levels)) ? v.levels : null,
+        };
+      });
+    if (columns.length === 0) { announce('No categorical variable in this dataset.'); return; }
+    setCatColumns(columns, ds.name);
   },
   onText: loadParsedData,
   onClear: () => {
     currentValues = [];
     currentVarName = '';
     currentLevels = null;
+    hideCatPicker();
     if (dataPreview) dataPreview.hidden = true;
     if (resultsSection) resultsSection.hidden = true;
     if (tableContainer) tableContainer.innerHTML = '';
@@ -229,6 +292,7 @@ function handleApply() {
   // 1. Summary table
   const summary = readSummaryData();
   if (summary) {
+    hideCatPicker();
     loadValues(summary.values, summary.varName, 'Summary data');
     return;
   }
@@ -236,6 +300,7 @@ function handleApply() {
   if (catSheetBody) {
     const sheetValues = readSheetValues(catSheetBody).filter(v => v.length > 0);
     if (sheetValues.length > 0) {
+      hideCatPicker();
       loadValues(sheetValues, 'Value', 'Edited data');
       return;
     }
