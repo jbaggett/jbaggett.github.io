@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sampling Bias Lab | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+        }
+    }
+    </script>
+    <style>
+        .controls-bar {
+            display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center;
+            margin: 0.5rem 0 0.75rem;
+        }
+        .controls-bar label { font-size: 0.9rem; }
+        #passage {
+            line-height: 2.1; font-size: 0.95rem; max-height: 320px; overflow-y: auto;
+            border: 1px solid var(--border); border-radius: 6px; padding: 0.6rem 0.8rem;
+            background: #fff;
+        }
+        .gw {
+            cursor: pointer; padding: 0 2px; border-radius: 3px;
+            border: 1px solid transparent; white-space: nowrap;
+        }
+        .gw:hover { background: #EBF5FB; }
+        .gw.picked { background: #C08700; color: #fff; border-color: #7D5800; }
+        .gw.rand   { background: #0072B2; color: #fff; border-color: #004E7A; }
+        .pick-count { font-weight: 700; }
+        .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        @media (max-width: 720px) { .panels { grid-template-columns: 1fr; } }
+        /* Dark teal so the small headings meet WCAG AA (IMS blue fails at this size) */
+        #population h2, .dist-panel h3 { color: #114B5F; }
+        .dist-panel h3 { margin: 0 0 0.2rem; font-size: 0.95rem; }
+        .dist-panel .panel-stat { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0.1rem 0 0; }
+        .byeye-accent { color: #8a5e00; font-weight: 700; }
+        .rand-accent  { color: #005a8d; font-weight: 700; }
+        .seg-note { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0.3rem 0 0; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#population">Skip to passage</a>
+        <a href="#results">Skip to results</a>
+    </nav>
+
+    <main>
+        <h1>Sampling Bias Lab<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+
+        <p>Pick a "representative" sample of words from the Gettysburg Address <em>by eye</em>, then compare it to a <em>random</em> sample. The passage is our population of <strong>N&nbsp;=&nbsp;268</strong> words; the variable is each word's <strong>length</strong> (letters). The true mean is marked on both charts.</p>
+
+        <section id="settings" aria-label="Controls">
+            <div class="controls-bar">
+                <label for="sample-size">Sample size (<i>n</i>):
+                    <input type="number" id="sample-size" value="10" min="2" max="25" step="1" style="width:4rem">
+                </label>
+                <button type="button" id="add-byeye" class="btn-secondary" disabled>Add my by-eye sample (<span class="pick-count" id="pick-count">0</span>/<span id="pick-target">10</span>)</button>
+                <button type="button" id="add-random" class="btn-secondary">Take a random sample of <span id="rand-target">10</span></button>
+                <span style="border-left:1px solid var(--border);padding-left:0.8rem">Simulate many:</span>
+                <button type="button" id="sim-byeye">+50 by-eye</button>
+                <button type="button" id="sim-random">+50 random</button>
+                <button type="button" id="reset-btn" class="btn-secondary" title="Reset">↺ Reset</button>
+            </div>
+            <p class="seg-note">Click words in the passage to build a by-eye sample of <i>n</i>, then “Add my by-eye sample.” “Simulate many” models the tendency to pick longer, important-looking words.</p>
+        </section>
+
+        <section id="population" aria-label="Gettysburg Address passage">
+            <h2 style="font-size:1rem;margin:0.5rem 0 0.3rem">The population: Lincoln's Gettysburg Address</h2>
+            <div id="passage" role="group" aria-label="Click words to select a sample"></div>
+        </section>
+
+        <section id="charts" aria-label="Sampling distributions" style="margin-top:1rem">
+            <div class="panels">
+                <div class="dist-panel">
+                    <h3>“By eye” samples <span class="byeye-accent">(biased)</span></h3>
+                    <div id="byeye-chart"></div>
+                    <p class="panel-stat" id="byeye-stat"></p>
+                </div>
+                <div class="dist-panel">
+                    <h3>Random samples <span class="rand-accent">(unbiased)</span></h3>
+                    <div id="random-chart"></div>
+                    <p class="panel-stat" id="random-stat"></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="results" aria-label="Interpretation" style="margin-top:0.75rem">
+            <div id="result-summary">
+                <p class="placeholder">Add a by-eye sample and a random sample to compare them.</p>
+            </div>
+        </section>
+
+        <div id="sr-announce" class="sr-only" aria-live="polite"></div>
+    </main>
+
+    <dialog id="page-help" class="help-dialog">
+        <button class="help-close" aria-label="Close help">✕</button>
+        <h2>Sampling Bias Lab</h2>
+        <p>This is the classic "Sampling Words from the Gettysburg Address" activity. People asked to pick a <em>representative</em> sample tend to choose longer, memorable words, so their sample mean word-length runs <strong>too high</strong> — a <em>sampling bias</em>. A random sample has no such tendency: its mean centers on the true population mean.</p>
+        <p><strong>Try this:</strong> add several by-eye samples and several random samples. The by-eye dots pile up to the <em>right</em> of the true mean; the random dots straddle it. Then increase <i>n</i>: the random distribution narrows on the truth, but the by-eye distribution narrows on the <em>wrong</em> value — <strong>bias doesn't go away with a bigger sample.</strong></p>
+        <p>True mean word length ≈ 4.3 letters (marked μ on both charts).</p>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -169,6 +169,7 @@ const PAGE_MAP = {
   '/inference/anova/':                   39,
   '/conceptual/':                        40,
   '/conceptual/sampling-lab/':          41,
+  '/conceptual/sampling-bias/':          46,
   '/conceptual/ci-coverage/':            42,
   '/conceptual/randomization-test/':     43,
   '/practice/conclusions/':              44,
