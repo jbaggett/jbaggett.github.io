@@ -4,7 +4,20 @@
   "params": { "truth": "none", "alpha": "0.05", "n": 30, "ptrue": 50, "seed": "jellybean1" },
   "steps": [
     {
-      "instruction": "[A famous xkcd comic](https://xkcd.com/882/): scientists test whether jelly beans cause acne. No link. So they test **each color separately** — 20 colors, 20 tests — and a newspaper runs the headline *\"Green Jelly Beans Linked to Acne!\"* In this simulator, the truth is set to **H₀ is true — the treatment does nothing**, so *every* color genuinely has **no** effect on acne. Each dot is one color's study; an **✗** means that color came out \"statistically significant\" (p < 0.05). Click **+1** about twenty times — one click per color.",
+      "instruction": "Start by reading the comic — the whole statistics lesson is in one strip.\n\n![xkcd #882, 'Significant': after jelly beans show no link to acne, scientists test 20 colors separately; the one color that reaches p < 0.05 by chance gets a breathless newspaper headline.](https://imgs.xkcd.com/comics/significant.png)\n\n*[xkcd #882, “Significant”](https://xkcd.com/882/) by Randall Munroe (CC BY-NC 2.5). Opens full-size in a new tab.*",
+      "gate": {
+        "question": "In the comic, why do the scientists keep testing one color after another?",
+        "choices": [
+          { "text": "The overall \"jelly beans\" test found nothing, so they test each color hoping *some* test will come out significant", "correct": true },
+          { "text": "They already had strong evidence that green jelly beans were the culprit" },
+          { "text": "Each color needs a larger sample than the one before it" }
+        ],
+        "feedback": "Exactly — that's the whole setup. Run enough separate tests on things that don't matter and one is bound to cross p < 0.05 by chance. The rest of this activity recreates that scenario so you can watch it happen.",
+        "retryFeedback": "Re-read the middle panels: the first test failed, so what did they decide to do next, and what were they hoping for?"
+      }
+    },
+    {
+      "instruction": "Now let's recreate the comic in this simulator. The truth is set to **H₀ is true — the treatment does nothing**, so *every* jelly bean color genuinely has **no** effect on acne. Each dot is one color's study; an **✗** means that color came out \"statistically significant\" (p < 0.05). Click **+1** about twenty times — one click per color.",
       "gate": {
         "question": "Out of 20 colors that truly do nothing, how many do you expect to come up \"significant\" at α = 0.05?",
         "choices": [

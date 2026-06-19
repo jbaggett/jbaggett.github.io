@@ -3896,6 +3896,17 @@ body[data-activity="true"] #data-panel {
   color: #212529;
 }
 
+/* Inline images embedded in activity steps (e.g. a comic) — responsive block */
+.activity-img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.6rem auto;
+  border: 1px solid var(--ims-border, #c9d6dc);
+  border-radius: 6px;
+  background: #fff;
+}
+
 .activity-observe {
   background: #EBF5FB;
   border-left: 3px solid #569BBD;

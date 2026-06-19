@@ -96,7 +96,7 @@
   }
 
   /**
-   * Simple inline markdown: **bold**, *italic*, `code`, [text](url)
+   * Simple inline markdown: **bold**, *italic*, `code`, ![alt](src), [text](url)
    */
   function md(text) {
     if (!text) return '';
@@ -104,6 +104,8 @@
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
+      // Images first — ![alt](src) — so the link rule below doesn't swallow the [alt](src) tail.
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img class="activity-img" src="$2" alt="$1" loading="lazy">')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
 
