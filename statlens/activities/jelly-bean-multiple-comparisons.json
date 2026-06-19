@@ -4,7 +4,7 @@
   "params": { "truth": "none", "alpha": "0.05", "n": 30, "ptrue": 50, "seed": "jellybean1" },
   "steps": [
     {
-      "instruction": "A famous comic: scientists test whether jelly beans cause acne. No link. So they test **each color separately** — 20 colors, 20 tests — and a newspaper runs the headline *\"Green Jelly Beans Linked to Acne!\"* In this simulator, the truth is set to **H₀ is true — the treatment does nothing**, so *every* color genuinely has **no** effect on acne. Each dot is one color's study; an **✗** means that color came out \"statistically significant\" (p < 0.05). Click **+1** about twenty times — one click per color.",
+      "instruction": "[A famous xkcd comic](https://xkcd.com/882/): scientists test whether jelly beans cause acne. No link. So they test **each color separately** — 20 colors, 20 tests — and a newspaper runs the headline *\"Green Jelly Beans Linked to Acne!\"* In this simulator, the truth is set to **H₀ is true — the treatment does nothing**, so *every* color genuinely has **no** effect on acne. Each dot is one color's study; an **✗** means that color came out \"statistically significant\" (p < 0.05). Click **+1** about twenty times — one click per color.",
       "gate": {
         "question": "Out of 20 colors that truly do nothing, how many do you expect to come up \"significant\" at α = 0.05?",
         "choices": [
