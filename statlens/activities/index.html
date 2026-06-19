@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Activities Catalog | StatLens</title>
+    <meta name="description" content="Guided, step-by-step StatLens activities — predict-then-reveal walkthroughs that run alongside the interactive tools.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+
+    <style>
+        .catalog { max-width: 56rem; }
+        .cat-intro { font-size: 0.95rem; max-width: 46rem; }
+        .cat-intro code { background: var(--ims-blue-tint, #eef5f9); padding: 0.05rem 0.3rem; border-radius: 3px; }
+        .cat-group { margin: 1.6rem 0 0.4rem; font-size: 1.15rem; color: var(--ims-dark, #114B5F);
+                     border-bottom: 2px solid var(--ims-blue, #569BBD); padding-bottom: 0.25rem; }
+        .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr)); gap: 0.9rem; margin: 0.8rem 0 0; }
+        .act-card { display: block; border: 1px solid var(--ims-border, #c9d6dc); border-radius: 8px;
+                    padding: 0.75rem 0.85rem; text-decoration: none; color: inherit; background: #fff;
+                    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s; }
+        .act-card:hover, .act-card:focus-visible { border-color: var(--ims-blue, #569BBD);
+                    box-shadow: 0 2px 10px rgba(17,75,95,0.10); transform: translateY(-1px); outline: none; }
+        .act-card:focus-visible { outline: 2px solid var(--ims-blue, #569BBD); outline-offset: 2px; }
+        .act-card h3 { font-size: 1rem; margin: 0 0 0.3rem; color: var(--ims-blue-text, #3A7CA5); line-height: 1.25; }
+        .act-card p { font-size: 0.85rem; margin: 0 0 0.5rem; color: #333; line-height: 1.4; }
+        .act-meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ims-gray-text, #5a6b72); }
+        .act-meta .dot { margin: 0 0.35rem; }
+    </style>
+</head>
+<body>
+    <main class="catalog">
+        <h1>Activities Catalog<span class="header-actions"><a class="home-btn" href="../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a></span></h1>
+
+        <p class="cat-intro">Each activity adds a guided, step-by-step instruction panel to a StatLens tool —
+        predict-then-reveal questions, live feedback, and a conclusion in context. Open one below, or add
+        <code>?activity=&lt;file&gt;.json</code> to any tool URL. Every activity supports a student
+        <strong>Discovery</strong> mode (gated questions) and an instructor <strong>Presentation</strong> mode
+        (add <code>&amp;mode=present</code>). Authors: see the
+        <a href="../docs/activity-authoring-guide.md">Activity Authoring Guide</a>.</p>
+
+        <h2 class="cat-group">Exploring &amp; describing data</h2>
+        <div class="cat-grid">
+            <a class="act-card" href="../explore/one-cat/?activity=categorical-charts.json">
+                <h3>Comparing Charts for Categorical Data</h3>
+                <p>Bar chart vs. pie chart vs. table — which display reveals categorical patterns most clearly?</p>
+                <span class="act-meta">explore/one-cat<span class="dot">·</span>4 steps</span>
+            </a>
+            <a class="act-card" href="../explore/descriptive/?activity=numerical-charts.json">
+                <h3>Comparing Charts for Quantitative Data</h3>
+                <p>Dotplots, histograms, and boxplots side by side — what each one shows and what it hides.</p>
+                <span class="act-meta">explore/descriptive<span class="dot">·</span>6 steps</span>
+            </a>
+            <a class="act-card" href="../explore/grouped/?activity=comparing-groups.json">
+                <h3>Comparing Distributions Across Groups</h3>
+                <p>Read side-by-side distributions to compare a quantitative variable across groups.</p>
+                <span class="act-meta">explore/grouped<span class="dot">·</span>4 steps</span>
+            </a>
+            <a class="act-card" href="../explore/descriptive/?activity=robust-statistics.json">
+                <h3>Outliers and Robust Statistics</h3>
+                <p>Watch a single outlier yank the mean while the median barely moves.</p>
+                <span class="act-meta">explore/descriptive<span class="dot">·</span>4 steps</span>
+            </a>
+            <a class="act-card" href="../explore/categorical/?activity=two-way-tables.json">
+                <h3>Two-Way Tables &amp; Conditional Proportions</h3>
+                <p>Build a two-way table and read conditional proportions to judge whether two variables are associated.</p>
+                <span class="act-meta">explore/categorical<span class="dot">·</span>4 steps</span>
+            </a>
+            <a class="act-card" href="../explore/regression/?activity=scatterplot-associations.json">
+                <h3>Describing Associations in Scatterplots</h3>
+                <p>Direction, form, and strength — describe the association between two quantitative variables.</p>
+                <span class="act-meta">explore/regression<span class="dot">·</span>5 steps</span>
+            </a>
+        </div>
+
+        <h2 class="cat-group">Sampling distributions &amp; bootstrap</h2>
+        <div class="cat-grid">
+            <a class="act-card" href="../conceptual/sampling-lab/?activity=sampling-distribution-mean.json">
+                <h3>Building a Sampling Distribution of x̄</h3>
+                <p>Draw repeated samples and watch the sampling distribution of the mean take shape.</p>
+                <span class="act-meta">conceptual/sampling-lab<span class="dot">·</span>6 steps</span>
+            </a>
+            <a class="act-card" href="../conceptual/sampling-lab/?activity=sampling-distribution-proportion.json">
+                <h3>Building a Sampling Distribution of p̂</h3>
+                <p>The same idea for proportions — see how sample size sharpens the sampling distribution.</p>
+                <span class="act-meta">conceptual/sampling-lab<span class="dot">·</span>6 steps</span>
+            </a>
+            <a class="act-card" href="../simulate/bootstrap-mean/?activity=bootstrap-explore.json">
+                <h3>Exploring Bootstrap Resampling</h3>
+                <p>Resample your data with replacement to see where a sample statistic varies.</p>
+                <span class="act-meta">simulate/bootstrap-mean<span class="dot">·</span>4 steps</span>
+            </a>
+            <a class="act-card" href="../simulate/bootstrap-mean/?activity=ci-level.json">
+                <h3>How Confidence Level Affects CI Width</h3>
+                <p>90% vs. 95% vs. 99% — the confidence-versus-precision trade-off, made visible.</p>
+                <span class="act-meta">simulate/bootstrap-mean<span class="dot">·</span>3 steps</span>
+            </a>
+            <a class="act-card" href="../simulate/bootstrap-prop/?activity=medical-consultant.json">
+                <h3>Medical Consultant: Bootstrap CI for a Proportion</h3>
+                <p>Build a bootstrap confidence interval for a single proportion in a real context.</p>
+                <span class="act-meta">simulate/bootstrap-prop<span class="dot">·</span>2 steps</span>
+            </a>
+        </div>
+
+        <h2 class="cat-group">Confidence intervals &amp; hypothesis testing</h2>
+        <div class="cat-grid">
+            <a class="act-card" href="../conceptual/ci-coverage/?activity=ci-interpretation.json">
+                <h3>What Does “95% Confident” Really Mean?</h3>
+                <p>Tackles the top CI misconception head-on: 95% is a property of the procedure, not a chance for one interval.</p>
+                <span class="act-meta">conceptual/ci-coverage<span class="dot">·</span>6 steps</span>
+            </a>
+            <a class="act-card" href="../simulate/randomization-diff-props/?activity=randomization-test-gated.json">
+                <h3>Randomization Test, Step by Step</h3>
+                <p>Shuffle the group labels, build a null distribution, and read a p-value by construction.</p>
+                <span class="act-meta">simulate/randomization-diff-props<span class="dot">·</span>5 steps</span>
+            </a>
+            <a class="act-card" href="../conceptual/decision-errors/?activity=decision-errors.json">
+                <h3>Type I &amp; Type II Errors</h3>
+                <p>Run many studies to see false alarms, missed effects, power, and the α trade-off.</p>
+                <span class="act-meta">conceptual/decision-errors<span class="dot">·</span>6 steps</span>
+            </a>
+            <a class="act-card" href="../conceptual/decision-errors/?activity=jelly-bean-multiple-comparisons.json">
+                <h3>Do Green Jelly Beans Cause Acne?</h3>
+                <p>Run 20 tests on pure noise and watch a false “discovery” appear — the multiple-comparisons trap.</p>
+                <span class="act-meta">conceptual/decision-errors<span class="dot">·</span>6 steps</span>
+            </a>
+        </div>
+    </main>
+</body>
+</html>
