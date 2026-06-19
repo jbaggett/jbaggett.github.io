@@ -3896,16 +3896,87 @@ body[data-activity="true"] #data-panel {
   color: #212529;
 }
 
-/* Inline images embedded in activity steps (e.g. a comic) — responsive block */
+/* Inline images embedded in activity steps (e.g. a comic) — responsive block,
+   click/tap to open full-screen in a lightbox. */
+.activity-img-wrap {
+  position: relative;
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.6rem auto;
+}
 .activity-img {
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 0.6rem auto;
   border: 1px solid var(--ims-border, #c9d6dc);
   border-radius: 6px;
   background: #fff;
+  cursor: zoom-in;
 }
+.activity-img:focus-visible {
+  outline: 2px solid var(--ims-blue, #569BBD);
+  outline-offset: 2px;
+}
+/* "Enlarge" affordance pinned to the image corner — always visible (no hover on
+   touch), pointer-events off so taps fall through to the image. */
+.activity-img-zoom {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.22rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(17, 75, 95, 0.88);
+  border-radius: 5px;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+/* Full-screen lightbox (native <dialog>) — Escape/backdrop/✕ to close. */
+.activity-lightbox {
+  border: none;
+  padding: 0;
+  margin: auto;
+  background: transparent;
+  max-width: 96vw;
+  max-height: 96vh;
+  overflow: visible;
+}
+.activity-lightbox::backdrop { background: rgba(0, 0, 0, 0.82); }
+.activity-lightbox-img {
+  display: block;
+  max-width: 96vw;
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.55);
+  background: #fff;
+}
+.activity-lightbox-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.activity-lightbox-close:hover { background: rgba(0, 0, 0, 0.92); }
+.activity-lightbox-close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 .activity-observe {
   background: #EBF5FB;

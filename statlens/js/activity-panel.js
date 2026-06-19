@@ -105,7 +105,11 @@
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
       // Images first — ![alt](src) — so the link rule below doesn't swallow the [alt](src) tail.
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img class="activity-img" src="$2" alt="$1" loading="lazy">')
+      // Wrapped with a visible "Enlarge" badge; click/Enter opens a full-screen
+      // lightbox (wired in render()).
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
+        '<span class="activity-img-wrap"><img class="activity-img" src="$2" alt="$1" loading="lazy" tabindex="0" role="button" title="Click to enlarge">'
+        + '<span class="activity-img-zoom" aria-hidden="true">⤢ Enlarge</span></span>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
 
@@ -441,6 +445,16 @@
             commitGate(parseInt(/** @type {HTMLElement} */ (btn).dataset.choice || '0', 10));
           });
         }
+        // Embedded images open full-screen in a lightbox (the panel is too narrow
+        // to read a figure like a comic comfortably).
+        for (const img of root.querySelectorAll('.activity-img')) {
+          const open = () => openLightbox(img.getAttribute('src') || '', img.getAttribute('alt') || '');
+          img.addEventListener('click', open);
+          img.addEventListener('keydown', (e) => {
+            const ke = /** @type {KeyboardEvent} */ (e);
+            if (ke.key === 'Enter' || ke.key === ' ') { ke.preventDefault(); open(); }
+          });
+        }
       }
       const sClose = sheet.querySelector('.activity-sheet-close');
       if (sClose) sClose.addEventListener('click', () => { closeSheet(); });
@@ -448,6 +462,32 @@
       if (sHandle) sHandle.addEventListener('click', () => {
         if (sheet.classList.contains('peek')) openSheet(); else peekSheet();
       });
+    }
+
+    /** @type {HTMLDialogElement|null} */
+    let lightbox = null;
+    /**
+     * Open an embedded image full-screen. Uses a native <dialog> for free
+     * Escape-to-close, focus trapping, and a dimmed ::backdrop.
+     * @param {string} src
+     * @param {string} alt
+     */
+    function openLightbox(src, alt) {
+      if (!lightbox) {
+        lightbox = /** @type {HTMLDialogElement} */ (document.createElement('dialog'));
+        lightbox.className = 'activity-lightbox';
+        lightbox.innerHTML = '<button type="button" class="activity-lightbox-close" aria-label="Close image">✕</button>'
+          + '<img class="activity-lightbox-img" alt="">';
+        document.body.appendChild(lightbox);
+        // Click outside the image (on the dialog/backdrop padding) closes it.
+        lightbox.addEventListener('click', (e) => { if (e.target === lightbox) lightbox?.close(); });
+        lightbox.querySelector('.activity-lightbox-close')
+          ?.addEventListener('click', () => lightbox?.close());
+      }
+      const img = /** @type {HTMLImageElement} */ (lightbox.querySelector('.activity-lightbox-img'));
+      img.src = src;
+      img.alt = alt;
+      if (typeof lightbox.showModal === 'function') lightbox.showModal();
     }
 
     function toggleReveal() {
