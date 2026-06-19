@@ -13,7 +13,7 @@ import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot, computeDotRadius } from './dotplot.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
 import { parseParams } from './url-params.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
@@ -56,6 +56,43 @@ export function initOneSamplePage(config) {
   // Add expert toggle link next to generate bar
   const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
   if (generateBar) createExpertToggle(generateBar);
+
+  /**
+   * Snapshot the current configuration as a shareable URL state: data source
+   * (bundled dataset id, or the ?csv/?data the page loaded with), the null
+   * value, alternative direction, success outcome, and the seed.
+   * @returns {{dataset?: string, params: Record<string, any>}}
+   */
+  function getShareState() {
+    /** @type {Record<string, any>} */
+    const params = {};
+    if (seed != null && seed !== '') params.seed = seed;
+    if (altDirectionBtn) {
+      const dirMap = { right: 'greater', left: 'less', both: 'two-sided' };
+      params.direction = dirMap[getDirection()];
+    }
+    // Null value: ?p= for proportions, ?null_value= for means (omit defaults).
+    const nv = getNullValue();
+    if (isProp) { if (nv !== 0.5) params.p = nv; }
+    else if (nv !== 0) params.null_value = nv;
+    // Success outcome for one-proportion.
+    const succ = /** @type {HTMLSelectElement|null} */ (successOutcome)?.value;
+    if (isProp && succ) params.success = succ;
+
+    /** @type {{dataset?: string, params: Record<string, any>}} */
+    const state = { params };
+    if (currentDatasetId) {
+      state.dataset = currentDatasetId;
+    } else {
+      const up = /** @type {any} */ (parseParams());
+      if (up.csv) params.csv = up.csv;
+      else if (up.json) params.json = up.json;
+      else if (up.data) params.data = up.data;
+    }
+    return state;
+  }
+
+  if (generateBar) initShareLink(generateBar, getShareState);
 
   // Mechanism strip
   const mechanismStrip = document.getElementById('mechanism-strip');
@@ -140,7 +177,10 @@ export function initOneSamplePage(config) {
   let allStats = [];
   /** @type {(() => number)|null} */
   let rng = null;
-  let seed = Math.random().toString(36).slice(2, 10);
+  // Seed: honor a URL seed for reproducibility (shared links / graded work),
+  // otherwise random each session.
+  const urlSeed = parseParams().seed;
+  let seed = urlSeed ?? Math.random().toString(36).slice(2, 10);
 
   let sampleN = 0;
   let observedStat = 0;
@@ -158,6 +198,8 @@ export function initOneSamplePage(config) {
   const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
   /** Track current data source name for display. */
   let currentSourceName = '';
+  /** Bundled dataset id (for the Copy-link button); '' when data came from CSV/URL. */
+  let currentDatasetId = '';
 
   /** @type {{ xScale: any, yScale: any, bins: any[], domain: [number,number] } | null} */
   let lastHistResult = null;
@@ -359,6 +401,7 @@ export function initOneSamplePage(config) {
         const levels = [...new Set(rawOutcomes)];
         datasetContext = ds.context || {};
         currentSourceName = ds.name || '';
+        currentDatasetId = ds.id || '';
         populateSuccessSelector(levels, datasetContext.successLabel);
         announce(`${ds.name}.`);
       },
@@ -371,12 +414,14 @@ export function initOneSamplePage(config) {
         const colName = parsed.headers[catIdx];
         rawOutcomes = parsed.data.map(/** @param {any} r */ r => String(r[colName]));
         currentSourceName = '';
+        currentDatasetId = '';
         populateSuccessSelector([...new Set(rawOutcomes)]);
       },
       onClear: () => {
         rawOutcomes = [];
         datasetContext = {};
         currentSourceName = '';
+        currentDatasetId = '';
         resetSimulation();
         if (dataPreview) dataPreview.hidden = true;
         if (dataSummary) dataSummary.textContent = '\u2014';
@@ -476,6 +521,7 @@ export function initOneSamplePage(config) {
         if (values.length === 0) { announce('No valid numeric values found.'); return; }
         datasetContext = ds.context || {};
         currentSourceName = ds.name || '';
+        currentDatasetId = ds.id || '';
         loadNumericData(values);
         announce(`${ds.name}.`);
       },
@@ -491,6 +537,7 @@ export function initOneSamplePage(config) {
           .filter(/** @param {number} v */ v => isFinite(v));
         if (values.length === 0) { announce('No valid numeric values found.'); return; }
         currentSourceName = '';
+        currentDatasetId = '';
         loadNumericData(values);
       },
       onClear: () => {
@@ -498,6 +545,7 @@ export function initOneSamplePage(config) {
         shiftedData = [];
         datasetContext = {};
         currentSourceName = '';
+        currentDatasetId = '';
         resetSimulation();
         if (dataPreview) dataPreview.hidden = true;
         if (dataSummary) dataSummary.textContent = '\u2014';
@@ -993,7 +1041,8 @@ export function initOneSamplePage(config) {
     allStats = [];
     rng = null;
     mechanismInitialized = false;
-    seed = Math.random().toString(36).slice(2, 10);
+    // Keep a URL-pinned seed stable so shared links stay reproducible.
+    seed = urlSeed ?? Math.random().toString(36).slice(2, 10);
     chartContainer.innerHTML = '';
     resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'run a simulation to see results')}</p>`;
     if (resetBtn) resetBtn.hidden = true;

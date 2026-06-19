@@ -1904,6 +1904,37 @@ body[data-hide-interpretations="true"] .interpretation { display: none !importan
   color: var(--accent);
 }
 
+/* "Copy link" button — share the exact tool configuration + seed */
+.share-link-btn {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--ims-dark, #114B5F);
+  background: none;
+  border: 1px solid var(--ims-border, #c9d6dc);
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 0.25rem 0.55rem;
+  white-space: nowrap;
+}
+.share-link-btn:hover {
+  background: var(--ims-blue-tint, #eef5f9);
+  border-color: var(--ims-blue, #569BBD);
+}
+.share-link-btn:focus-visible {
+  outline: 2px solid var(--ims-blue, #569BBD);
+  outline-offset: 2px;
+}
+@media (max-width: 640px) {
+  .generate-bar .share-link-btn {
+    flex-basis: 100%;
+    margin-left: 0;
+    text-align: center;
+    order: 12;
+    min-height: 44px;
+  }
+}
+
 /* ===== Collapsed Data Panel ===== */
 /* After dataset selection, panel collapses to a compact summary bar */
 #data-panel.collapsed [role="tablist"],

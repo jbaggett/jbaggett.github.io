@@ -14,7 +14,7 @@ import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.j
 import { drawDotplot, computeDotRadius } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { renderSimPills, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
@@ -113,6 +113,55 @@ export function initSimPage(config) {
   // Add expert toggle link next to generate bar
   const generateBar = controlsSection?.querySelector('.generate-bar');
   if (generateBar) createExpertToggle(generateBar);
+
+  /**
+   * Snapshot the current tool configuration as a shareable URL state.
+   * Captures the data source (bundled dataset id, or the original ?csv/?data
+   * the page was loaded with) plus every control toggle and the seed, so the
+   * copied link reproduces this exact configuration for another viewer.
+   * @returns {{dataset?: string, data?: number[], params: Record<string, any>}}
+   */
+  function getShareState() {
+    /** @type {Record<string, any>} */
+    const params = {};
+    // Seed — always pin so the link reproduces the same simulation.
+    if (seed != null && seed !== '') params.seed = seed;
+    // Alternative-hypothesis direction (randomization pages).
+    if (altDirectionBtn) {
+      const dirMap = { right: 'greater', left: 'less', both: 'two-sided' };
+      params.direction = dirMap[getDirection()];
+    }
+    // CI level + bootstrap statistic (bootstrap pages; omit defaults).
+    if (config.mode === 'bootstrap') {
+      const ci = ciSelect?.value;
+      if (ci && ci !== '95') params.ci = ci;
+      const stat = bootStatSelect?.value;
+      if (stat && stat !== 'mean') params.stat = stat;
+    }
+    // Card mechanism toggle (two-proportion randomization).
+    if (cardMechanism) params.mechanism = 'cards';
+    // Editable null value (expert mode; omit the default 0).
+    const nv = getNullValue();
+    if (nv !== 0) params.null_value = nv;
+    // Success outcome for proportion tests.
+    if (successOutcome && successOutcome !== 'success') params.success = successOutcome;
+
+    /** @type {{dataset?: string, data?: number[], params: Record<string, any>}} */
+    const state = { params };
+    if (currentDatasetJSON?.id) {
+      state.dataset = currentDatasetJSON.id;
+    } else {
+      // Data came from a URL (?csv=/?data=/?json=) — preserve it verbatim.
+      const up = /** @type {any} */ (urlParams);
+      if (up.csv) params.csv = up.csv;
+      else if (up.json) params.json = up.json;
+      else if (up.data) params.data = up.data;
+    }
+    return state;
+  }
+
+  // Mount the "Copy link" button in the generate bar.
+  if (generateBar) initShareLink(generateBar, getShareState);
 
   // Mechanism strip elements
   const mechanismStrip = document.getElementById('mechanism-strip');
