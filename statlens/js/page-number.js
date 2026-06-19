@@ -171,7 +171,6 @@ const PAGE_MAP = {
   '/conceptual/sampling-lab/':          41,
   '/conceptual/sampling-bias/':          46,
   '/conceptual/ci-coverage/':            42,
-  '/conceptual/randomization-test/':     43,
   '/practice/conclusions/':              44,
   '/practice/correlation/':              45,
 };
