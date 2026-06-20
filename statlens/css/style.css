@@ -3918,14 +3918,16 @@ body[data-activity="true"] #data-panel {
   outline: 2px solid var(--ims-blue, #569BBD);
   outline-offset: 2px;
 }
-/* "Enlarge" affordance sits BELOW the image (a caption, not an overlay) so it
-   never covers part of the figure. Clicking it opens the lightbox (the whole
-   wrapper is wired). */
+/* "Enlarge" button (magnifying-glass-with-+ icon) sits ABOVE the image, aligned
+   to its right edge — out of the way so it never covers part of the figure. */
 .activity-img-zoom {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   width: fit-content;
-  margin: 0.35rem auto 0;
-  padding: 0.22rem 0.6rem;
+  margin: 0 0 0.35rem auto;
+  padding: 0.25rem 0.55rem;
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--ims-dark, #114B5F);
@@ -3934,6 +3936,9 @@ body[data-activity="true"] #data-panel {
   border-radius: 5px;
   cursor: zoom-in;
 }
+.activity-img-zoom svg { display: block; flex: none; }
+.activity-img-zoom:hover { background: #e2eef5; border-color: var(--ims-blue, #569BBD); }
+.activity-img-zoom:focus-visible { outline: 2px solid var(--ims-blue, #569BBD); outline-offset: 2px; }
 
 /* Full-screen lightbox (native <dialog>) — Escape/backdrop/✕ to close.
    Fits the image to WIDTH and scrolls vertically, so a tall narrow figure

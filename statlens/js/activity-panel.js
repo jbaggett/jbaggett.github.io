@@ -105,11 +105,16 @@
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
       // Images first — ![alt](src) — so the link rule below doesn't swallow the [alt](src) tail.
-      // Wrapped with a visible "Enlarge" badge; click/Enter opens a full-screen
-      // lightbox (wired in render()).
+      // An "Enlarge" button (magnifying-glass-with-+ icon) sits ABOVE the image;
+      // clicking it or the image opens a full-screen lightbox (wired in render()).
       .replace(/!\[([^\]]*)\]\(([^)]+)\)/g,
-        '<span class="activity-img-wrap"><img class="activity-img" src="$2" alt="$1" loading="lazy" tabindex="0" role="button" title="Click to enlarge">'
-        + '<span class="activity-img-zoom" aria-hidden="true">⤢ Enlarge</span></span>')
+        '<span class="activity-img-wrap">'
+        + '<button type="button" class="activity-img-zoom">'
+        + '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+        + '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>'
+        + '<span>Enlarge</span></button>'
+        + '<img class="activity-img" src="$2" alt="$1" loading="lazy" title="Enlarge">'
+        + '</span>')
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
   }
 
@@ -446,17 +451,14 @@
           });
         }
         // Embedded images open full-screen in a lightbox (the panel is too narrow
-        // to read a figure like a comic comfortably). Clicking the image OR its
-        // "Enlarge" caption opens it; the image is keyboard-focusable.
+        // to read a figure like a comic comfortably). A click anywhere in the
+        // wrapper — the image or its "Enlarge" button — opens it; the <button>
+        // gives keyboard users a native focus stop and Enter/Space activation.
         for (const wrap of root.querySelectorAll('.activity-img-wrap')) {
           const img = wrap.querySelector('.activity-img');
           if (!img) continue;
-          const open = () => openLightbox(img.getAttribute('src') || '', img.getAttribute('alt') || '');
-          wrap.addEventListener('click', open);
-          img.addEventListener('keydown', (e) => {
-            const ke = /** @type {KeyboardEvent} */ (e);
-            if (ke.key === 'Enter' || ke.key === ' ') { ke.preventDefault(); open(); }
-          });
+          wrap.addEventListener('click', () =>
+            openLightbox(img.getAttribute('src') || '', img.getAttribute('alt') || ''));
         }
       }
       const sClose = sheet.querySelector('.activity-sheet-close');
