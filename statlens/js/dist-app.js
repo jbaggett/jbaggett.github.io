@@ -645,11 +645,9 @@ export function initDistCalculator(config) {
       .attr('cursor', 'pointer');
 
     // Tooltip describing what editing this pill does (varies by mode/region).
-    const tipText = region === 'pair-mid' && getTail() === 'between'
-      ? 'Click to edit — sets the middle probability by moving the upper bound'
-      : region && region.startsWith('pair')
-        ? 'Click to edit this probability'
-        : 'Click to edit this probability';
+    const tipText = region && region.startsWith('pair') && getTail() === 'between'
+      ? 'Click to edit — the other two regions adjust proportionally'
+      : 'Click to edit this probability';
     bgRect.append('title').text(tipText);
 
     const textEl = group.append('text')
@@ -710,19 +708,37 @@ export function initDistCalculator(config) {
         return;
       }
 
-      // Between: hold the opposite bound fixed and move the adjacent one.
-      const { lo } = pairBounds(mode);
+      // Between: set the edited region to newProb and split the remaining
+      // (1 − newProb) across the other TWO regions in proportion to their current
+      // sizes (so the band keeps its character), then recompute both bounds.
+      // Falls back to an equal split when the other two are ~0.
+      const { lo, hi } = pairBounds(mode);
+      const pL = currentCdf(lo);
+      const pR = 1 - currentCdf(hi);
+      const pM = Math.max(0, 1 - pL - pR);
+      const remaining = 1 - newProb;
+      const EPS = 1e-9;
+      let nL, nM; // new left-tail and middle probabilities (right = 1 − nL − nM)
       if (region === 'pair-left') {
-        const nLo = currentInv(newProb);            // left tail = newProb
-        if (isFinite(nLo)) setBound(mode, 'lo', nLo);
+        const others = pM + pR;
+        nL = newProb;
+        nM = others > EPS ? pM * (remaining / others) : remaining / 2;
       } else if (region === 'pair-right') {
-        const nHi = currentInv(1 - newProb);        // right tail = newProb
-        if (isFinite(nHi)) setBound(mode, 'hi', nHi);
-      } else { // pair-mid: keep lo fixed, move hi so the middle band = newProb
-        const target = currentCdf(lo) + newProb;
-        if (target >= 1) return;                    // can't fit that much to the right
-        const nHi = currentInv(target);
-        if (isFinite(nHi)) setBound(mode, 'hi', nHi);
+        const others = pL + pM;
+        const f = others > EPS ? remaining / others : null;
+        nL = f != null ? pL * f : remaining / 2;
+        nM = f != null ? pM * f : remaining / 2;
+      } else { // pair-mid
+        const others = pL + pR;
+        const f = others > EPS ? remaining / others : null;
+        nM = newProb;
+        nL = f != null ? pL * f : remaining / 2;
+      }
+      const nLo = currentInv(nL);
+      const nHi = currentInv(nL + nM);
+      if (isFinite(nLo) && isFinite(nHi)) {
+        setBound(mode, 'lo', nLo);
+        setBound(mode, 'hi', nHi);
       }
       onValueChange(undefined, mode);
     };
