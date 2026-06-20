@@ -164,7 +164,7 @@ function render(empty) {
       `Raise the true success rate or n and power climbs; shrink them and more real effects slip through.</p>`;
   } else {
     resultDiv.innerHTML =
-      `<p>The treatment truly <strong>does nothing</strong> (p = 0.50), yet <span class="big">${pct(counts.alarm)}%</span> of these <span class="big">${total}</span> studies still rejected H₀ — ` +
+      `<p>The treatment truly <strong>does nothing</strong>, yet <span class="big">${pct(counts.alarm)}%</span> of these <span class="big">${total}</span> studies still rejected H₀ — ` +
       `<strong>Type I errors</strong> (false alarms). This rate stays near <strong>α = ${a}%</strong> no matter how large n is. Lower α to make false alarms rarer (but watch Type II errors rise once there's a real effect).</p>`;
   }
 }

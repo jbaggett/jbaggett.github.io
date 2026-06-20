@@ -65,11 +65,11 @@
 
     <main>
         <h1>Decision Errors<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
-        <p>Each study tests whether a treatment really works — H₀: it does nothing (success rate p = 0.50) vs Hₐ: it works more than half the time. Choose what's <em>actually</em> true, run many studies, and watch how often the test reaches the right verdict — and how often it makes a Type I or Type II error.</p>
+        <p>Each study tests whether a treatment really works — the null hypothesis says it does nothing; the alternative says it really works. Choose what's <em>actually</em> true, run many studies, and watch how often the test reaches the right verdict — and how often it makes a Type I or Type II error.</p>
 
         <section id="settings" aria-label="Simulation settings">
             <div class="truth-list" role="radiogroup" aria-label="What is actually true?">
-                <label><input type="radio" name="truth" value="none"> <span><strong>H₀ is true</strong> — the treatment does nothing (p = 0.50)</span></label>
+                <label><input type="radio" name="truth" value="none"> <span><strong>H₀ is true</strong> — the treatment does nothing</span></label>
                 <label><input type="radio" name="truth" value="effect" checked> <span><strong>Hₐ is true</strong> — it really works</span></label>
             </div>
             <div id="true-rate-wrap">
