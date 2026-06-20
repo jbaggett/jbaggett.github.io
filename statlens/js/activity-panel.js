@@ -446,10 +446,13 @@
           });
         }
         // Embedded images open full-screen in a lightbox (the panel is too narrow
-        // to read a figure like a comic comfortably).
-        for (const img of root.querySelectorAll('.activity-img')) {
+        // to read a figure like a comic comfortably). Clicking the image OR its
+        // "Enlarge" caption opens it; the image is keyboard-focusable.
+        for (const wrap of root.querySelectorAll('.activity-img-wrap')) {
+          const img = wrap.querySelector('.activity-img');
+          if (!img) continue;
           const open = () => openLightbox(img.getAttribute('src') || '', img.getAttribute('alt') || '');
-          img.addEventListener('click', open);
+          wrap.addEventListener('click', open);
           img.addEventListener('keydown', (e) => {
             const ke = /** @type {KeyboardEvent} */ (e);
             if (ke.key === 'Enter' || ke.key === ' ') { ke.preventDefault(); open(); }
