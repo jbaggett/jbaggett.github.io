@@ -61,10 +61,23 @@ export function initDistCalculator(config) {
   const chartContainer = document.getElementById('chart-container');
 
   if (urlParams.tail) {
+    // Legacy alias: ?tail=both → symmetric (the two-outer-tails mode). Falls back
+    // to the requested value if a `both` radio still exists on the page.
+    const wanted = urlParams.tail === 'both'
+      && !document.querySelector('input[name="tail"][value="both"]')
+      ? 'symmetric' : urlParams.tail;
     for (const r of tailRadios) {
-      r.checked = r.value === urlParams.tail;
+      r.checked = r.value === wanted;
     }
   }
+
+  // Boundary values from the URL: `lo` sets the primary bound (left/right cut,
+  // symmetric magnitude, or the lower bound of a between band); `hi` sets the
+  // upper bound for `between`.
+  const urlLo = /** @type {any} */ (urlParams).lo;
+  const urlHi = /** @type {any} */ (urlParams).hi;
+  if (urlLo != null && isFinite(urlLo)) inputX.value = String(urlLo);
+  if (urlHi != null && isFinite(urlHi) && inputX2) inputX2.value = String(urlHi);
 
   // --- Preset probability buttons ---
   const PRESET_PROBS = [0.005, 0.01, 0.025, 0.05, 0.10];
@@ -619,7 +632,7 @@ export function initDistCalculator(config) {
     const { charW: _pCharW, pad: _pPad, pillH } = pillDimensions('prob');
     const textWidth = labelText.length * _pCharW + _pPad;
 
-    group.append('rect')
+    const bgRect = group.append('rect')
       .attr('class', isComplement ? 'prob-label-bg prob-complement-bg' : 'prob-label-bg')
       .attr('x', clampedX - textWidth / 2)
       .attr('y', labelY - pillH / 2)
@@ -630,6 +643,14 @@ export function initDistCalculator(config) {
       .attr('stroke', isComplement ? '#888' : '#569BBD')
       .attr('stroke-width', 1)
       .attr('cursor', 'pointer');
+
+    // Tooltip describing what editing this pill does (varies by mode/region).
+    const tipText = region === 'pair-mid' && getTail() === 'between'
+      ? 'Click to edit — sets the middle probability by moving the upper bound'
+      : region && region.startsWith('pair')
+        ? 'Click to edit this probability'
+        : 'Click to edit this probability';
+    bgRect.append('title').text(tipText);
 
     const textEl = group.append('text')
       .attr('class', isComplement ? 'prob-label prob-complement' : 'prob-label')
@@ -654,9 +675,11 @@ export function initDistCalculator(config) {
       .attr('stroke-dasharray', '3,2')
       .style('pointer-events', 'none');
 
-    // Click handler for both pill and text
+    // Click handler — scoped to THIS pill (text + its own background rect) so the
+    // three pair-mode pills each edit their own region.
     const clickHandler = async () => {
-      if (!currentInv) return;
+      if (!currentInv || !currentCdf) return;
+      const mode = getTail();
       const newProb = await showInlineEdit(
         chartContainer,
         textEl.node(),
@@ -665,26 +688,47 @@ export function initDistCalculator(config) {
       );
       if (newProb == null || newProb <= 0 || newProb >= 1) return;
 
-      let newX;
-      if (region === 'left' || region === 'left-of-both') {
-        newX = currentInv(newProb);
-      } else if (region === 'right' || region === 'right-of-both') {
-        newX = currentInv(1 - newProb);
-      } else if (region === 'center') {
-        const tailProb = (1 - newProb) / 2;
-        newX = currentInv(1 - tailProb);
-      } else {
+      if (!isPair(mode)) {
+        // Single tail: left → area to the left; right → area to the right.
+        const newX = region === 'left' ? currentInv(newProb)
+          : region === 'right' ? currentInv(1 - newProb) : NaN;
+        if (!isFinite(newX)) return;
+        inputX.value = formatForInput(newX);
+        onValueChange(newX, mode);
         return;
       }
 
-      if (!isFinite(newX)) return;
-      const tail = getTail();
-      inputX.value = formatForInput(tail === 'both' ? Math.abs(newX) : newX);
-      onValueChange(tail === 'both' ? Math.abs(newX) : newX, tail);
+      if (isSym(mode)) {
+        // Symmetric: bounds mirror the center. Tail pills set each tail area;
+        // the middle pill sets the central probability.
+        const lo = (region === 'pair-mid')
+          ? currentInv((1 - newProb) / 2)
+          : currentInv(newProb);
+        if (!isFinite(lo)) return;
+        inputX.value = formatForInput(lo);
+        onValueChange(undefined, mode);
+        return;
+      }
+
+      // Between: hold the opposite bound fixed and move the adjacent one.
+      const { lo } = pairBounds(mode);
+      if (region === 'pair-left') {
+        const nLo = currentInv(newProb);            // left tail = newProb
+        if (isFinite(nLo)) setBound(mode, 'lo', nLo);
+      } else if (region === 'pair-right') {
+        const nHi = currentInv(1 - newProb);        // right tail = newProb
+        if (isFinite(nHi)) setBound(mode, 'hi', nHi);
+      } else { // pair-mid: keep lo fixed, move hi so the middle band = newProb
+        const target = currentCdf(lo) + newProb;
+        if (target >= 1) return;                    // can't fit that much to the right
+        const nHi = currentInv(target);
+        if (isFinite(nHi)) setBound(mode, 'hi', nHi);
+      }
+      onValueChange(undefined, mode);
     };
 
     textEl.on('click', clickHandler);
-    group.selectAll('.prob-label-bg').on('click', clickHandler);
+    bgRect.on('click', clickHandler);
   }
 
   /**
@@ -1152,9 +1196,8 @@ export function initDistCalculator(config) {
   }
 
   // --- Initial render ---
-  syncBoundInputsUI();
   buildPresetButtons();
-  fullRender();
+  fullRender(); // also calls syncBoundInputsUI() once currentInv is ready
   syncProbFromX(getTail());
 }
 

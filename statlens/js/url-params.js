@@ -18,7 +18,8 @@ const FLOAT_PARAMS = new Set([
     'sigma1', 'sigma2', 'p1', 'p2', 'rho',
     'intercept', 'slope', 'sigma_error', 'x_min', 'x_max',
     'decimals', 'clip_min', 'clip_max', 'null_value', 'alpha',
-    'shape', 'scale', 'lambda', 'prob', 'a', 'b'
+    'shape', 'scale', 'lambda', 'prob', 'a', 'b',
+    'lo', 'hi'
 ]);
 
 /** Parameters that should remain as sanitized strings */

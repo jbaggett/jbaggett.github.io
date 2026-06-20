@@ -40,7 +40,7 @@
 
         <section id="chart" aria-label="Distribution chart">
             <div class="chart-header-bar">
-                <div class="tail-toggle" role="radiogroup" aria-label="Tail direction">
+                <div class="tail-toggle" role="radiogroup" aria-label="Region to shade">
                     <label class="tail-btn">
                         <input type="radio" name="tail" value="left">
                         <span>Left</span>
@@ -48,6 +48,10 @@
                     <label class="tail-btn">
                         <input type="radio" name="tail" value="right" checked>
                         <span>Right</span>
+                    </label>
+                    <label class="tail-btn">
+                        <input type="radio" name="tail" value="between">
+                        <span>Between</span>
                     </label>
                 </div>
                 <div id="result-summary" class="result-banner" tabindex="-1"></div>
@@ -60,10 +64,13 @@
         <section id="controls" aria-label="Distribution parameters">
             <div class="compact-controls">
                 <div class="control-row-inline">
-                    <label for="input-x">&chi;&sup2; value
+                    <label for="input-x" id="label-x">&chi;&sup2; value
                         <input type="number" id="input-x" value="11.07" step="any" min="0">
                     </label>
-                    <label for="input-p">Probability
+                    <label for="input-x2" id="label-x2" hidden>Upper &chi;&sup2;
+                        <input type="number" id="input-x2" value="11.07" step="any" min="0">
+                    </label>
+                    <label for="input-p" id="label-p">Probability
                         <input type="number" id="input-p" value="0.95"
                                step="any" min="0" max="1">
                     </label>
