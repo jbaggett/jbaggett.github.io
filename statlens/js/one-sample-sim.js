@@ -511,7 +511,12 @@ export function initOneSamplePage(config) {
       autoCollapse: true,
       stickyControls: true,
       showPreview: true,
-      datasetFilter: (/** @type {any} */ ds) => ds.hasNumeric === true && ds.hasCategorical === false,
+      // Single-quantitative-variable datasets only — match the CI-for-a-mean tool
+      // (simulate/bootstrap-mean). Excludes regression and paired datasets, which
+      // have multiple numeric columns and aren't appropriate for a one-mean test.
+      datasetFilter: (/** @type {any} */ ds) =>
+        ds.hasNumeric === true && ds.hasCategorical !== true
+        && ds.type !== 'regression' && ds.type !== 'paired',
       onDataset: (/** @type {any} */ ds) => {
         const numVar = ds.variables.find(/** @param {any} v */ v => v.type === 'numeric') || ds.variables[0];
         if (!numVar) { announce('No numeric variable found.'); return; }
