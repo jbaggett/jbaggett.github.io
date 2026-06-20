@@ -1076,12 +1076,18 @@ export function initDistCalculator(config) {
       if (primaryLabel.childNodes[0]) primaryLabel.childNodes[0].textContent = txt + ' ';
     }
     if (labelX2 && labelX2.childNodes[0]) labelX2.childNodes[0].textContent = `Upper ${sym} `;
-    // Seed a second bound if missing/equal so `between` opens with a visible band.
-    if (tail === 'between' && inputX2) {
+    // First entry into `between`: seed a .1 | .7 | .2 band — left tail 0.10,
+    // middle 0.70, right tail 0.20 — so it opens with a clear, deliberately
+    // asymmetric three-region split (not a symmetric one that looks like the
+    // Symmetric mode). Only seeds when the two bounds aren't already a real band.
+    if (tail === 'between' && inputX2 && currentInv) {
       const a = parseFloat(inputX.value);
       const b = parseFloat(inputX2.value);
-      if (!isFinite(b) || Math.abs(b - a) < 1e-9) {
-        inputX2.value = formatForInput(isFinite(a) ? a + (currentInv ? (currentInv(0.84) - currentInv(0.5)) : 1) : 1);
+      if (!isFinite(a) || !isFinite(b) || Math.abs(b - a) < 1e-9) {
+        const lo = currentInv(0.10);
+        const hi = currentInv(0.80);
+        if (isFinite(lo)) inputX.value = formatForInput(lo);
+        if (isFinite(hi)) inputX2.value = formatForInput(hi);
       }
     }
   }
