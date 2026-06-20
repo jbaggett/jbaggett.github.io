@@ -40,7 +40,7 @@
 
         <section id="chart" aria-label="Distribution chart">
             <div class="chart-header-bar">
-                <div class="tail-toggle" role="radiogroup" aria-label="Tail direction">
+                <div class="tail-toggle" role="radiogroup" aria-label="Region to shade">
                     <label class="tail-btn">
                         <input type="radio" name="tail" value="left" checked>
                         <span>Left</span>
@@ -50,8 +50,12 @@
                         <span>Right</span>
                     </label>
                     <label class="tail-btn">
-                        <input type="radio" name="tail" value="both">
-                        <span>Two-tailed</span>
+                        <input type="radio" name="tail" value="between">
+                        <span>Between</span>
+                    </label>
+                    <label class="tail-btn">
+                        <input type="radio" name="tail" value="symmetric">
+                        <span>Symmetric</span>
                     </label>
                 </div>
                 <div id="result-summary" class="result-banner" tabindex="-1"></div>
@@ -64,10 +68,13 @@
         <section id="controls" aria-label="Distribution parameters">
             <div class="compact-controls">
                 <div class="control-row-inline">
-                    <label for="input-x">z score
+                    <label for="input-x" id="label-x">z score
                         <input type="number" id="input-x" value="1.96" step="any">
                     </label>
-                    <label for="input-p">Probability
+                    <label for="input-x2" id="label-x2" hidden>Upper z
+                        <input type="number" id="input-x2" value="1.96" step="any">
+                    </label>
+                    <label for="input-p" id="label-p">Probability
                         <input type="number" id="input-p" value="0.975"
                                step="any" min="0" max="1">
                     </label>

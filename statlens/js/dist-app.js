@@ -54,6 +54,7 @@ export function initDistCalculator(config) {
   const tailRadios = /** @type {NodeListOf<HTMLInputElement>} */ (
     document.querySelectorAll('input[name="tail"]'));
   const inputX = /** @type {HTMLInputElement} */ (document.getElementById('input-x'));
+  const inputX2 = /** @type {HTMLInputElement|null} */ (document.getElementById('input-x2'));
   const inputP = /** @type {HTMLInputElement} */ (document.getElementById('input-p'));
   const resultDiv = document.getElementById('result-summary');
   const announceDiv = document.getElementById('sr-announce');
@@ -71,13 +72,15 @@ export function initDistCalculator(config) {
   presetBar.className = 'preset-bar';
   presetBar.setAttribute('role', 'group');
   presetBar.setAttribute('aria-label', 'Common tail probabilities');
-  // Render left-tail and right-tail presets
+  // Render common-tail-area presets. The buttons set the BLUE area to the chosen
+  // value: left/right set that tail; symmetric splits it across both outer tails;
+  // between makes the middle band capture the complement (a centered band).
   function buildPresetButtons() {
     const tail = getTail();
     presetBar.innerHTML = '';
     const label = document.createElement('span');
     label.className = 'preset-label';
-    label.textContent = 'Tail area:';
+    label.textContent = tail === 'between' ? 'Outside area:' : 'Tail area:';
     presetBar.appendChild(label);
     for (const p of PRESET_PROBS) {
       const btn = document.createElement('button');
@@ -86,18 +89,26 @@ export function initDistCalculator(config) {
       btn.textContent = p < 0.01 ? p.toFixed(3) : p < 0.1 ? p.toFixed(3) : p.toFixed(2);
       btn.addEventListener('click', () => {
         if (!currentInv) return;
-        let newX;
         if (tail === 'left') {
-          newX = currentInv(p);
+          inputX.value = formatForInput(currentInv(p));
+          onValueChange(currentInv(p), tail);
         } else if (tail === 'right') {
-          newX = currentInv(1 - p);
+          inputX.value = formatForInput(currentInv(1 - p));
+          onValueChange(currentInv(1 - p), tail);
+        } else if (isSym(tail)) {
+          // Total outer-tail area = p, each tail = p/2 (bounds mirror the center).
+          const lo = currentInv(p / 2);
+          inputX.value = formatForInput(lo);
+          if (inputX2) inputX2.value = formatForInput(2 * getCenter() - lo);
+          onValueChange(undefined, tail);
         } else {
-          // Two-tailed: total tail area = p, each tail = p/2
-          newX = Math.abs(currentInv(p / 2));
+          // between: outer area = p → centered middle band of area 1 − p.
+          const lo = currentInv(p / 2);
+          const hi = currentInv(1 - p / 2);
+          inputX.value = formatForInput(lo);
+          if (inputX2) inputX2.value = formatForInput(hi);
+          onValueChange(undefined, tail);
         }
-        if (!isFinite(newX)) return;
-        inputX.value = formatForInput(tail === 'both' ? Math.abs(newX) : newX);
-        onValueChange(tail === 'both' ? Math.abs(newX) : newX, tail);
       });
       presetBar.appendChild(btn);
     }
@@ -129,9 +140,63 @@ export function initDistCalculator(config) {
 
   function getTail() {
     for (const r of tailRadios) {
-      if (r.checked) return /** @type {'left'|'right'|'both'} */ (r.value);
+      if (r.checked) return /** @type {'left'|'right'|'both'|'between'|'symmetric'} */ (r.value);
     }
     return 'left';
+  }
+
+  /** True for the two-boundary modes. Legacy `both` (still used by the t page) is
+   *  treated as `symmetric` until those pages migrate to the new toggle. */
+  function isPair(mode) { return mode === 'between' || mode === 'symmetric' || mode === 'both'; }
+  /** True for the outer-tails, center-mirrored modes (symmetric, legacy both). */
+  function isSym(mode) { return mode === 'symmetric' || mode === 'both'; }
+
+  /** Distribution center (median) — used to mirror bounds in symmetric mode. */
+  function getCenter() { return currentInv ? currentInv(0.5) : 0; }
+
+  /**
+   * Rendering config for a paired mode.
+   * - between → shade the MIDDLE (blue), free bounds, middle pill is primary
+   * - symmetric → shade the OUTER TAILS (blue), bounds mirror the center, tail pills primary
+   */
+  function pairCfg(mode) {
+    if (isSym(mode)) return { shade: 'both', mirror: true, primaryMiddle: false };
+    return { shade: 'middle', mirror: false, primaryMiddle: true };
+  }
+
+  /** Resolve sorted lower/upper bounds for a paired mode from the inputs. */
+  function pairBounds(mode) {
+    const a = parseFloat(inputX.value);
+    const b = isSym(mode)
+      ? 2 * getCenter() - a
+      : parseFloat(inputX2?.value ?? '');
+    if (!isFinite(a) || !isFinite(b)) return { lo: a, hi: a };
+    return { lo: Math.min(a, b), hi: Math.max(a, b) };
+  }
+
+  /**
+   * Write a value to the input backing one bound of a paired mode.
+   * symmetric has a single degree of freedom (the partner mirrors about center),
+   * so it always writes inputX. between writes inputX (lo input) or inputX2 (hi input).
+   * @param {'between'|'symmetric'} mode
+   * @param {'lo'|'hi'} key
+   * @param {number} value
+   */
+  function setBound(mode, key, value) {
+    if (isSym(mode) || key === 'lo' || !inputX2) {
+      inputX.value = formatForInput(value);
+    } else {
+      inputX2.value = formatForInput(value);
+    }
+  }
+
+  /** Move whichever bound input is nearer to `value`. */
+  function setNearestBound(mode, value) {
+    if (isSym(mode)) { inputX.value = formatForInput(value); return; }
+    const a = parseFloat(inputX.value);
+    const b = parseFloat(inputX2?.value ?? '');
+    const key = !isFinite(b) || Math.abs(value - a) <= Math.abs(value - b) ? 'lo' : 'hi';
+    setBound(mode, key, value);
   }
 
   /** Get the current x-axis symbol, respecting dynamic xSymbolFactory if present. */
@@ -247,10 +312,8 @@ export function initDistCalculator(config) {
       ...shadeOpts,
     });
 
-    // Update x-value input label to match current symbol
-    if (inputXLabel) {
-      inputXLabel.childNodes[0].textContent = xSym === 'z' ? 'z score ' : `${xSym} value `;
-    }
+    // Update bound-input labels/visibility to match the current symbol + mode.
+    syncBoundInputsUI();
 
     addInteractiveLayer(tail);
     computeAndDisplay(tail);
@@ -275,15 +338,21 @@ export function initDistCalculator(config) {
   }
 
   /**
-   * Compute shade options from current x input and tail direction.
-   * @param {'left'|'right'|'both'} tail
+   * Compute shade options from the current bound input(s) and mode.
+   * - left/right shade one tail (single bound).
+   * - between shades the MIDDLE band (blue) between two bounds.
+   * - symmetric shades the two OUTER tails (blue), bounds mirrored about center.
+   * @param {'left'|'right'|'both'|'between'|'symmetric'} tail
    */
   function computeShadeOpts(tail) {
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      if (!isFinite(lo) || !isFinite(hi)) return {};
+      return { tail: pairCfg(tail).shade, critLow: lo, critHigh: hi };
+    }
     const x = parseFloat(inputX.value);
     if (!isFinite(x)) return {};
-    if (tail === 'left') return { tail: 'left', critValue: x };
-    if (tail === 'right') return { tail: 'right', critValue: x };
-    return { tail: 'both', critLow: -Math.abs(x), critHigh: Math.abs(x) };
+    return { tail, critValue: x };
   }
 
   // --- Interactive Layer ---
@@ -328,24 +397,36 @@ export function initDistCalculator(config) {
         const clampedX = Math.max(lo, Math.min(hi, rawX));
         const newX = snapValue(clampedX, xScale);
 
-        inputX.value = formatForInput(tail === 'both' ? Math.abs(newX) : newX);
-        onValueChange(tail === 'both' ? Math.abs(newX) : newX, tail);
+        if (isPair(tail)) {
+          // Move whichever bound is nearer the click (symmetric mirrors).
+          setNearestBound(tail, newX);
+          onValueChange(undefined, tail);
+        } else {
+          inputX.value = formatForInput(newX);
+          onValueChange(newX, tail);
+        }
       });
 
-    if (tail === 'both') {
-      addBoundaryLine(annotations, frame, xScale, -Math.abs(x), tail);
-      addBoundaryLine(annotations, frame, xScale, Math.abs(x), tail);
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      if (!isFinite(lo) || !isFinite(hi)) return;
+      const middleIsPrimary = pairCfg(tail).primaryMiddle;
 
-      // Probability labels in each tail
-      const absX = Math.abs(x);
-      const tailProb = currentCdf(-absX);
+      // Two boundary lines (drag either; symmetric mirrors about center).
+      addBoundaryLine(annotations, frame, xScale, lo, tail, 'lo');
+      addBoundaryLine(annotations, frame, xScale, hi, tail, 'hi');
+
+      // Three region pills: left tail, middle band, right tail.
+      // Primary (blue) = the shaded region(s): middle for between, tails for symmetric.
+      const leftProb = currentCdf(lo);
+      const rightProb = 1 - currentCdf(hi);
+      const midProb = Math.max(0, currentCdf(hi) - currentCdf(lo));
       addProbLabel(annotations, frame, xScale,
-        xScale.domain()[0], -absX, tailProb, false, 'left-of-both');
+        xScale.domain()[0], lo, leftProb, middleIsPrimary, 'pair-left');
       addProbLabel(annotations, frame, xScale,
-        absX, xScale.domain()[1], tailProb, false, 'right-of-both');
-      // Center label for complement
+        lo, hi, midProb, !middleIsPrimary, 'pair-mid');
       addProbLabel(annotations, frame, xScale,
-        -absX, absX, 1 - 2 * tailProb, true, 'center');
+        hi, xScale.domain()[1], rightProb, middleIsPrimary, 'pair-right');
     } else {
       const critX = x;
 
@@ -370,8 +451,14 @@ export function initDistCalculator(config) {
     // Snap point indicators — small triangles on the x-axis at common critical values
     addSnapIndicators(annotations, frame, xScale, tail);
 
-    // Editable value label on x-axis
-    addEditableValueLabel(annotations, frame, xScale, x, tail);
+    // Editable value label(s) on the x-axis — two for paired modes, one otherwise.
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      addEditableValueLabel(annotations, frame, xScale, lo, tail);
+      addEditableValueLabel(annotations, frame, xScale, hi, tail);
+    } else {
+      addEditableValueLabel(annotations, frame, xScale, x, tail);
+    }
   }
 
   /**
@@ -423,15 +510,17 @@ export function initDistCalculator(config) {
    * @param {import('./types.js').ChartFrame} frame
    * @param {*} xScale
    * @param {number} value - Data-space x position
-   * @param {'left'|'right'|'both'} tail - Current tail direction
+   * @param {'left'|'right'|'both'|'between'|'symmetric'} tail - Current mode
+   * @param {'single'|'lo'|'hi'} [boundKey] - Which bound this line controls (pair modes)
    */
-  function addBoundaryLine(group, frame, xScale, value, tail) {
+  function addBoundaryLine(group, frame, xScale, value, tail, boundKey = 'single') {
     const px = xScale(value);
     const handleWidth = 44;
 
     // Visible dashed line
     const line = group.append('line')
       .attr('class', 'crit-line')
+      .attr('data-bound', boundKey)
       .attr('x1', px).attr('y1', 0)
       .attr('x2', px).attr('y2', frame.height)
       .attr('stroke', '#333')
@@ -441,6 +530,7 @@ export function initDistCalculator(config) {
     // Invisible wider handle for dragging
     const handle = group.append('rect')
       .attr('class', 'drag-handle')
+      .attr('data-bound', boundKey)
       .attr('x', px - handleWidth / 2)
       .attr('y', 0)
       .attr('width', handleWidth)
@@ -456,59 +546,51 @@ export function initDistCalculator(config) {
       (rawX) => {
         // Snap to common critical values
         const newX = snapValue(rawX, xScale);
-        // Move line + handle (lightweight, no DOM rebuild)
+        // Move this line + handle (lightweight, no DOM rebuild)
         const newPx = xScale(newX);
         line.attr('x1', newPx).attr('x2', newPx);
         handle.attr('x', newPx - handleWidth / 2);
 
-        // For "both" tails, also move the mirror line
-        if (tail === 'both') {
-          const mirrorPx = xScale(-newX);
-          const lines = group.selectAll('.crit-line');
-          const handles = group.selectAll('.drag-handle');
-          lines.each(function(_, i) {
-            const l = d3Selection.select(this);
-            if (i === 0) { l.attr('x1', mirrorPx).attr('x2', mirrorPx); }
-            else { l.attr('x1', newPx).attr('x2', newPx); }
-          });
-          handles.each(function(_, i) {
-            const h = d3Selection.select(this);
-            if (i === 0) { h.attr('x', mirrorPx - handleWidth / 2); }
-            else { h.attr('x', newPx - handleWidth / 2); }
-          });
-        }
-
-        // Update value label position + text
-        const critLabels = group.selectAll('.crit-label');
-        const critBgs = group.selectAll('.crit-label-bg');
-        if (tail === 'both') {
-          const absX = Math.abs(newX);
-          critLabels.each(function(_, i) {
-            const el = d3Selection.select(this);
-            if (i === 0) {
-              el.attr('x', xScale(-absX)).text(formatEditValue(-absX));
-            } else {
-              el.attr('x', xScale(absX)).text(formatEditValue(absX));
-            }
-          });
-          critBgs.each(function(_, i) {
-            const el = d3Selection.select(this);
-            const labelText = formatEditValue(i === 0 ? -absX : absX);
-            const tw = labelText.length * 8 + (i === 0 ? 16 : 12);
-            const cx = i === 0 ? xScale(-absX) : xScale(absX);
-            el.attr('x', cx - tw / 2).attr('width', tw);
-          });
+        if (isPair(tail)) {
+          setBound(/** @type {'between'|'symmetric'} */ (tail), boundKey === 'hi' ? 'hi' : 'lo', newX);
+          // symmetric: the partner line mirrors about the center.
+          if (tail === 'symmetric') {
+            const partnerPx = xScale(2 * getCenter() - newX);
+            group.selectAll('.crit-line').filter(function () {
+              return d3Selection.select(this).attr('data-bound') !== boundKey;
+            }).attr('x1', partnerPx).attr('x2', partnerPx);
+            group.selectAll('.drag-handle').filter(function () {
+              return d3Selection.select(this).attr('data-bound') !== boundKey;
+            }).attr('x', partnerPx - handleWidth / 2);
+          }
+          refreshPairValueLabels(tail, frame, xScale);
+          onDragMove(undefined, tail);
         } else {
+          // Single tail: update the lone value label inline.
+          const critLabels = group.selectAll('.crit-label');
+          const critBgs = group.selectAll('.crit-label-bg');
           critLabels.attr('x', newPx).text(formatEditValue(newX));
-          const labelText = formatEditValue(newX);
-          const tw = labelText.length * 8 + 12;
+          const tw = formatEditValue(newX).length * 8 + 12;
           critBgs.attr('x', newPx - tw / 2).attr('width', tw);
+          inputX.value = formatForInput(newX);
+          onDragMove(newX, tail);
         }
-
-        // Lightweight update: shading + probability labels + result
-        onDragMove(newX, tail);
       }
     );
+  }
+
+  /**
+   * Clear and redraw the two editable value labels for a paired mode (used during
+   * drag, where the labels' click handlers can be safely rebuilt — the drag is
+   * bound to the .drag-handle, which is left untouched).
+   */
+  function refreshPairValueLabels(mode, frame, xScale) {
+    const group = d3Selection.select(frame.inner).select('.annotations');
+    group.selectAll('.crit-label, .crit-label-bg').remove();
+    const { lo, hi } = pairBounds(mode);
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    addEditableValueLabel(group, frame, xScale, lo, mode);
+    addEditableValueLabel(group, frame, xScale, hi, mode);
   }
 
   /**
@@ -615,7 +697,7 @@ export function initDistCalculator(config) {
    * @param {'left'|'right'|'both'} tail
    */
   function addEditableValueLabel(group, frame, xScale, value, tail) {
-    const displayValue = tail === 'both' ? Math.abs(value) : value;
+    const displayValue = value;
     const px = xScale(displayValue);
 
     // Background pill for the label
@@ -645,43 +727,8 @@ export function initDistCalculator(config) {
       .attr('cursor', 'pointer')
       .text(labelText);
 
-    // For "both" tails, also show the negative value
-    if (tail === 'both') {
-      const negPx = xScale(-Math.abs(value));
-      const negLabel = formatEditValue(-Math.abs(value));
-      const negTextWidth = negLabel.length * _cCharW + _cPad;
-
-      group.append('rect')
-        .attr('class', 'crit-label-bg')
-        .attr('x', negPx - negTextWidth / 2)
-        .attr('y', frame.height + 6)
-        .attr('width', negTextWidth)
-        .attr('height', _cPillH)
-        .attr('rx', 3)
-        .attr('fill', '#fff')
-        .attr('stroke', '#569BBD')
-        .attr('stroke-width', 1)
-        .attr('cursor', 'pointer');
-
-      group.append('text')
-        .attr('class', 'crit-label')
-        .attr('x', negPx)
-        .attr('y', frame.height + 6 + _cPillH / 2)
-        .attr('text-anchor', 'middle')
-        .attr('dominant-baseline', 'central')
-        .attr('fill', '#333')
-        .attr('cursor', 'pointer')
-        .text(formatEditValue(-Math.abs(value)));
-    }
-
     // Hide axis tick labels that overlap with value label pills
     const pillRanges = [[px - textWidth / 2, px + textWidth / 2]];
-    if (tail === 'both') {
-      const negPx = xScale(-Math.abs(value));
-      const negLabel = formatEditValue(-Math.abs(value));
-      const negW = negLabel.length * _cCharW + _cPad;
-      pillRanges.push([negPx - negW / 2, negPx + negW / 2]);
-    }
     const inner = d3Selection.select(frame.inner);
     inner.select('.x-axis').selectAll('.tick').each(function () {
       const tick = d3Selection.select(this);
@@ -694,36 +741,47 @@ export function initDistCalculator(config) {
       }
     });
 
-    // Click-to-edit on the label (and its background)
+    // Click-to-edit on the label (and its background). Each pill edits its own
+    // bound; in pair modes the bound nearest the edited value is updated.
     const clickHandler = async () => {
       const newVal = await showInlineEdit(
         chartContainer,
         textEl.node(),
         displayValue
       );
-      if (newVal != null) {
-        inputX.value = formatForInput(tail === 'both' ? Math.abs(newVal) : newVal);
-        onValueChange(tail === 'both' ? Math.abs(newVal) : newVal, tail);
+      if (newVal == null) return;
+      if (isPair(tail)) {
+        // The label nearest `displayValue` is the one being edited.
+        const { lo } = pairBounds(tail);
+        setBound(/** @type {'between'|'symmetric'} */ (tail),
+          Math.abs(displayValue - lo) < 1e-9 ? 'lo' : 'hi', newVal);
+        onValueChange(undefined, tail);
+      } else {
+        inputX.value = formatForInput(newVal);
+        onValueChange(newVal, tail);
       }
     };
 
     textEl.on('click', clickHandler);
-    // Also make the background pill clickable
-    group.selectAll('.crit-label-bg').on('click', clickHandler);
+    // Also make the background pill clickable — scope to THIS label's pill so the
+    // two pair-mode labels don't both fire.
+    textEl.node()?.previousSibling &&
+      d3Selection.select(textEl.node().previousSibling).on('click', clickHandler);
   }
 
   // --- Value change handler (from drag or edit) ---
 
   /**
-   * Full rebuild of annotations — used for edits or when drag ends.
-   * @param {number} newX
-   * @param {'left'|'right'|'both'} tail
+   * Full rebuild of annotations — used for edits, taps, or when a value changes.
+   * @param {number|undefined} newX - The new single-bound value (ignored for pair modes,
+   *   which read their bounds from the inputs)
+   * @param {'left'|'right'|'both'|'between'|'symmetric'} tail
    */
   function onValueChange(newX, tail) {
     if (!curveState || !currentCdf) return;
 
-    const shadeOpts = tail === 'both'
-      ? { tail: 'both', critLow: -Math.abs(newX), critHigh: Math.abs(newX) }
+    const shadeOpts = isPair(tail)
+      ? (() => { const { lo, hi } = pairBounds(tail); return { tail: pairCfg(tail).shade, critLow: lo, critHigh: hi }; })()
       : { tail, critValue: newX };
 
     curveState.update(shadeOpts);
@@ -743,8 +801,8 @@ export function initDistCalculator(config) {
     if (!curveState || !currentCdf) return;
 
     // Update shading
-    const shadeOpts = tail === 'both'
-      ? { tail: 'both', critLow: -Math.abs(newX), critHigh: Math.abs(newX) }
+    const shadeOpts = isPair(tail)
+      ? (() => { const { lo, hi } = pairBounds(tail); return { tail: pairCfg(tail).shade, critLow: lo, critHigh: hi }; })()
       : { tail, critValue: newX };
     curveState.update(shadeOpts);
 
@@ -759,21 +817,20 @@ export function initDistCalculator(config) {
     /** Clamp pill center to chart area. */
     const clampX = (px) => Math.max(45, Math.min(frame.width - 45, px));
 
-    if (tail === 'both') {
-      const absX = Math.abs(newX);
-      const tailProb = currentCdf(-absX);
-      const centerProb = 1 - 2 * tailProb;
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      const middleIsPrimary = pairCfg(tail).primaryMiddle;
+      const leftProb = currentCdf(lo);
+      const rightProb = 1 - currentCdf(hi);
+      const midProb = Math.max(0, currentCdf(hi) - currentCdf(lo));
       const { charW: _bCharW, pad: _bPad, pillH: _bPillH } = pillDimensions('prob');
 
-      // Region midpoints: left tail, right tail, center
-      const rawCenters = [
-        xScale((domLo + -absX) / 2),   // left-of-both
-        xScale((absX + domHi) / 2),     // right-of-both
-        xScale(0),                       // center (complement)
-      ];
+      // Region midpoints in append order: left tail, middle, right tail
+      const dataMids = [(domLo + lo) / 2, (lo + hi) / 2, (hi + domHi) / 2];
+      const rawCenters = dataMids.map(xScale);
       const centers = rawCenters.map(clampX);
-      const probs = [tailProb, tailProb, centerProb];
-      const isComp = [false, false, true];
+      const probs = [leftProb, midProb, rightProb];
+      const isComp = [middleIsPrimary, !middleIsPrimary, middleIsPrimary];
       const pillY = frame.height * 0.6;
 
       probLabels.each(function(_, i) {
@@ -788,7 +845,6 @@ export function initDistCalculator(config) {
 
       // Update leader lines
       annotations.selectAll('.prob-leader').remove();
-      const dataMids = [(domLo + -absX) / 2, (absX + domHi) / 2, 0];
       const pillBottom = pillY + _bPillH / 2 + 2;
       for (let i = 0; i < 3; i++) {
         const targetX = Math.max(4, Math.min(frame.width - 4, rawCenters[i]));
@@ -844,29 +900,34 @@ export function initDistCalculator(config) {
       }
     }
 
-    // Sync both form inputs
-    inputX.value = formatForInput(tail === 'both' ? Math.abs(newX) : newX);
+    // Sync the probability input (x inputs were already set by the drag/bound setter)
     syncProbFromX(tail);
     computeAndDisplay(tail);
   }
 
   // --- Sync helpers ---
 
-  /** Compute probability from current x and tail, write to inputP. */
+  /** Compute the headline probability from current bound(s) and mode, write to inputP. */
   function syncProbFromX(tail) {
     if (!currentCdf) return;
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      if (!isFinite(lo) || !isFinite(hi)) return;
+      const middle = currentCdf(hi) - currentCdf(lo);
+      // inputP shows the BLUE (shaded) probability: middle for between, tails for symmetric.
+      inputP.value = (isSym(tail) ? 1 - middle : middle).toFixed(4);
+      return;
+    }
     const x = parseFloat(inputX.value);
     if (!isFinite(x)) return;
     if (tail === 'left') {
       inputP.value = currentCdf(x).toFixed(4);
-    } else if (tail === 'right') {
-      inputP.value = (1 - currentCdf(x)).toFixed(4);
     } else {
-      inputP.value = (2 * currentCdf(-Math.abs(x))).toFixed(4);
+      inputP.value = (1 - currentCdf(x)).toFixed(4);
     }
   }
 
-  /** Compute x from current probability and tail, write to inputX. */
+  /** Compute bound(s) from the probability input and mode, write to the x input(s). */
   function syncXFromProb(tail) {
     if (!currentInv) return;
     const p = parseFloat(inputP.value);
@@ -875,32 +936,43 @@ export function initDistCalculator(config) {
       inputX.value = formatForInput(currentInv(p));
     } else if (tail === 'right') {
       inputX.value = formatForInput(currentInv(1 - p));
+    } else if (isSym(tail)) {
+      // p is the BLUE outer-tail area total; each tail = p/2, bounds mirror center.
+      const lo = currentInv(p / 2);
+      inputX.value = formatForInput(lo);
+      if (inputX2) inputX2.value = formatForInput(2 * getCenter() - lo);
     } else {
-      // Two-tailed: p is the total tail area, each tail = p/2
-      inputX.value = formatForInput(Math.abs(currentInv(p / 2)));
+      // between: p is the BLUE middle area, centered on the median → symmetric band.
+      const lo = currentInv((1 - p) / 2);
+      const hi = currentInv(1 - (1 - p) / 2);
+      inputX.value = formatForInput(lo);
+      if (inputX2) inputX2.value = formatForInput(hi);
     }
   }
 
   // --- Result computation and display ---
-  /** @param {'left'|'right'|'both'} tail */
+  /** @param {'left'|'right'|'both'|'between'|'symmetric'} tail */
   function computeAndDisplay(tail) {
     if (!currentCdf) return;
 
-    const x = parseFloat(inputX.value);
-    if (!isFinite(x)) return;
-
     const sym = getXSymbol();
     let resultText = '';
-    if (tail === 'left') {
-      const prob = currentCdf(x);
-      resultText = `P(${sym} ≤ ${formatEditValue(x)}) = ${prob.toFixed(4)}`;
-    } else if (tail === 'right') {
-      const prob = 1 - currentCdf(x);
-      resultText = `P(${sym} ≥ ${formatEditValue(x)}) = ${prob.toFixed(4)}`;
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      if (!isFinite(lo) || !isFinite(hi)) return;
+      const middle = currentCdf(hi) - currentCdf(lo);
+      const loT = formatEditValue(lo), hiT = formatEditValue(hi);
+      resultText = isSym(tail)
+        ? `P(${sym} ≤ ${loT} or ${sym} ≥ ${hiT}) = ${(1 - middle).toFixed(4)}`
+        : `P(${loT} ≤ ${sym} ≤ ${hiT}) = ${middle.toFixed(4)}`;
     } else {
-      const absX = Math.abs(x);
-      const prob = 2 * currentCdf(-absX);
-      resultText = `P(|${sym}| ≥ ${formatEditValue(absX)}) = ${prob.toFixed(4)}`;
+      const x = parseFloat(inputX.value);
+      if (!isFinite(x)) return;
+      if (tail === 'left') {
+        resultText = `P(${sym} ≤ ${formatEditValue(x)}) = ${currentCdf(x).toFixed(4)}`;
+      } else {
+        resultText = `P(${sym} ≥ ${formatEditValue(x)}) = ${(1 - currentCdf(x)).toFixed(4)}`;
+      }
     }
 
     resultDiv.textContent = resultText;
@@ -914,9 +986,50 @@ export function initDistCalculator(config) {
 
   // --- Event wiring ---
 
-  // Tail direction change → recompute from x
+  const labelX = document.getElementById('label-x');
+  const labelX2 = document.getElementById('label-x2');
+
+  /**
+   * Reflect the current mode in the bound inputs: show the second bound only for
+   * `between`; relabel the first bound (Lower z) for paired modes; seed a sensible
+   * second bound the first time a paired mode is entered.
+   */
+  function syncBoundInputsUI() {
+    const tail = getTail();
+    const xSym = getXSymbol();
+    const sym = xSym === 'z' ? 'z' : xSym;
+    // Second bound input: only meaningful (and editable) for `between`.
+    // Toggle the hidden attribute AND inline display (a CSS `display` rule on the
+    // label would otherwise override the hidden attribute and keep it visible).
+    if (labelX2) {
+      const show = tail === 'between';
+      labelX2.hidden = !show;
+      labelX2.style.display = show ? '' : 'none';
+    }
+    // Relabel the primary bound. Falls back to the page's input label when there's
+    // no dedicated #label-x (t/chisq/F), so dynamic symbols still relabel.
+    const primaryLabel = labelX || inputXLabel;
+    if (primaryLabel) {
+      // "Lower/Upper" only for `between` (two free bounds). symmetric keeps a single
+      // magnitude input, so it reads as the plain value.
+      const txt = tail === 'between' ? `Lower ${sym}` : (xSym === 'z' ? 'z score' : `${sym} value`);
+      if (primaryLabel.childNodes[0]) primaryLabel.childNodes[0].textContent = txt + ' ';
+    }
+    if (labelX2 && labelX2.childNodes[0]) labelX2.childNodes[0].textContent = `Upper ${sym} `;
+    // Seed a second bound if missing/equal so `between` opens with a visible band.
+    if (tail === 'between' && inputX2) {
+      const a = parseFloat(inputX.value);
+      const b = parseFloat(inputX2.value);
+      if (!isFinite(b) || Math.abs(b - a) < 1e-9) {
+        inputX2.value = formatForInput(isFinite(a) ? a + (currentInv ? (currentInv(0.84) - currentInv(0.5)) : 1) : 1);
+      }
+    }
+  }
+
+  // Mode change → relabel/show inputs, rebuild presets, recompute.
   for (const r of tailRadios) {
     r.addEventListener('change', () => {
+      syncBoundInputsUI();
       buildPresetButtons();
       syncProbFromX(getTail());
       updateShading();
@@ -926,12 +1039,13 @@ export function initDistCalculator(config) {
   // Debounced handlers for form inputs
   const debouncedFullRender = debounce(fullRender, 200);
 
-  // X value input → update probability + chart
+  // Bound inputs → update probability + chart
   const debouncedXUpdate = debounce(() => {
     syncProbFromX(getTail());
     updateShading();
   }, 150);
   inputX.addEventListener('input', debouncedXUpdate);
+  if (inputX2) inputX2.addEventListener('input', debouncedXUpdate);
 
   // P value input → update x + chart (inverse direction)
   const debouncedPUpdate = debounce(() => {
@@ -1038,6 +1152,7 @@ export function initDistCalculator(config) {
   }
 
   // --- Initial render ---
+  syncBoundInputsUI();
   buildPresetButtons();
   fullRender();
   syncProbFromX(getTail());
