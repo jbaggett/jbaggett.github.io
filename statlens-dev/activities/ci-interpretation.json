@@ -1,0 +1,79 @@
+{
+  "title": "What Does \"95% Confident\" Really Mean?",
+  "tool": "conceptual/ci-coverage",
+  "params": { "n": 25, "ci": 95 },
+  "steps": [
+    {
+      "instruction": "Here we have a superpower we never get in real research: we **know the true population mean is exactly μ = 50** (see the population line above the controls). That lets us check whether each confidence interval actually captures the truth. A blue box labeled **\"Predict first\"** is sitting above the chart — type a guess for how many of the next **25** intervals will *miss* μ, then click **Lock & draw 25**.",
+      "gate": {
+        "question": "Before you draw — at 95% confidence, how many of 25 intervals do you expect to MISS μ = 50?",
+        "choices": [
+          { "text": "About 1 (roughly 5% of 25)", "feedback": "Good instinct — lock it in and see. 5% of 25 is about 1.25, so 0–2 misses is typical." },
+          { "text": "About 12 — half of them", "feedback": "Lock in your guess and watch. (95% confidence is a high bar — misses should be rare, not half.)" },
+          { "text": "Exactly 0 every time", "feedback": "Lock it in and see — at 95% confidence some intervals SHOULD miss, just not many." }
+        ]
+      },
+      "observe": "After you click **Lock & draw 25**, the tool tells you how many of your 25 actually missed and compares it to your guess."
+    },
+    {
+      "instruction": "Look at the chart. Most intervals are drawn one color (they **capture** μ — the vertical line at 50 passes through them); a few are highlighted because they **miss** (the line at 50 falls outside them).",
+      "observe": "Count the misses — usually about **1 of 25**. Each interval is one study's attempt to pin down μ from a sample of 25.",
+      "gate": {
+        "question": "What does it mean for one interval to \"miss\" μ?",
+        "choices": [
+          { "text": "The sample mean x̄ was wrong / miscalculated" },
+          { "text": "The interval's range does not include the true value 50", "correct": true },
+          { "text": "The sample was too small to count" }
+        ],
+        "feedback": "Exactly — a miss means the interval's low-to-high range simply doesn't contain 50. The method still 'worked'; this is the expected ~5% of intervals that fall short. Nothing went wrong with that sample.",
+        "retryFeedback": "Look at a highlighted interval and the vertical line at 50. A 'miss' is purely about whether that line lands inside or outside the box."
+      }
+    },
+    {
+      "instruction": "Now click **+100** to draw many more intervals. Watch the running **coverage rate** in the results panel climb toward a stable value.",
+      "observe": "After a few hundred intervals, the share that capture μ settles near **95%** — about **5 in 100 miss**, no matter how many you draw.",
+      "gate": {
+        "question": "Pick out any single interval that MISSED. Is it correct to say \"there is a 95% probability that THIS interval contains μ\"?",
+        "choices": [
+          { "text": "Yes — every 95% interval has a 95% chance of containing μ" },
+          { "text": "No — that interval is already drawn; it either contains 50 or it doesn't. The 95% describes the method across many intervals, not this one.", "correct": true },
+          { "text": "No — it's actually a 5% probability for that interval" }
+        ],
+        "feedback": "Right. Once an interval is drawn, the truth is fixed: 50 is either inside it or not (the missed one definitely is NOT). \"95%\" is a property of the *procedure* — repeated on fresh samples, it captures μ about 95% of the time. It is not a probability about any single, already-computed interval.",
+        "retryFeedback": "The interval you're pointing at already missed — so its chance of containing 50 is 0, not 95%. What, then, does the 95% actually refer to?"
+      }
+    },
+    {
+      "instruction": "**Hover** (or tap) any interval. Instead of a flat bar, it shows a **peaked** shape — a cat's-eye.",
+      "observe": "The bar bulges in the middle (near x̄) and tapers at the ends.",
+      "gate": {
+        "question": "What is the cat's-eye telling you about the values inside a confidence interval?",
+        "choices": [
+          { "text": "Every value in the interval is equally plausible" },
+          { "text": "Values near the center (x̄) are more plausible than values out near the endpoints", "correct": true },
+          { "text": "Only the two endpoints matter" }
+        ],
+        "feedback": "Yes. A confidence interval is not a list of equally-likely values. Estimates near x̄ are best supported by the data; the endpoints are the least plausible values still inside the net. \"In the interval\" doesn't mean \"all equally likely.\"",
+        "retryFeedback": "Look at where the shape is fattest versus thinnest, and what that says about which values the data support most."
+      }
+    },
+    {
+      "instruction": "Change the **Confidence level** dropdown from 95% to **99%**. The intervals you've already drawn re-draw at the new level.",
+      "observe": "The intervals get **wider**, and the coverage rate climbs toward **99%** — now only about **1 in 100 misses**.",
+      "gate": {
+        "question": "Why does demanding 99% confidence make every interval wider?",
+        "choices": [
+          { "text": "To miss less often, each interval must cast a wider net to be more sure of catching μ", "correct": true },
+          { "text": "Higher confidence shrinks the intervals to be more precise" },
+          { "text": "The sample size automatically increased" }
+        ],
+        "feedback": "Right — there's an unavoidable trade-off. Higher confidence buys a higher capture rate, but only by widening the interval (less precision). The only way to get BOTH more confidence and more precision is a larger sample.",
+        "retryFeedback": "If you want to miss only 1% of the time instead of 5%, does your net need to be bigger or smaller?"
+      }
+    },
+    {
+      "instruction": "Time to put it together. In real research you get **one** sample, compute **one** interval — and you never get to draw the vertical truth line, because you don't know μ.",
+      "reveal": "So when a study reports a 95% confidence interval, \"95% confident\" does **not** mean there's a 95% chance the true value sits in that one interval — it already does or it doesn't. It means the interval came from a **procedure that captures the truth about 95% of the time**. You trust this particular interval the way you'd trust a method that's right 19 times out of 20. That's the whole idea: we can't certify any single interval, but we can rely on a method with a known, high success rate."
+    }
+  ]
+}

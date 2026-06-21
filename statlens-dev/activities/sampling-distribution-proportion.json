@@ -1,0 +1,58 @@
+{
+  "title": "Building a Sampling Distribution of p̂",
+  "tool": "conceptual/sampling-lab",
+  "params": { "type": "prop", "p": "0.6", "n": "40", "seed": "beads60" },
+  "steps": [
+    {
+      "instruction": "A large bowl of beads is **60% red** (a \"success\"). We can't see the whole bowl in real life, but here we can — that's the **Population** panel, with the true proportion marked at **p = 0.60**. We'll scoop out samples of **n = 40** beads at a time and track the proportion red in each scoop.",
+      "observe": "Find **p = 0.60** marked on the Population panel. Each scoop of 40 beads will rarely be exactly 60% red — that sample-to-sample wobble is what we're about to study."
+    },
+    {
+      "instruction": "**Before you draw anything, commit to a prediction.** Imagine taking *hundreds* of scoops of 40 beads and plotting each scoop's proportion red.",
+      "gate": {
+        "question": "Where will those sample proportions (p̂) pile up?",
+        "choices": [
+          { "text": "Centered around 0.60", "feedback": "You've committed — now draw samples and see whether the pile-up lands where you expected." },
+          { "text": "Centered around 0.50", "feedback": "You've committed — draw samples and check. Watch where the center of the pile actually falls." },
+          { "text": "Spread evenly between 0 and 1", "feedback": "You've committed — draw samples and see whether the proportions really spread out evenly, or cluster somewhere." }
+        ]
+      }
+    },
+    {
+      "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 40 beads, collapse to a single proportion **p̂**, and drop that one dot into the **Sampling distribution** panel at the bottom.",
+      "observe": "That bottom panel is a **distribution of statistics** — one dot per sample, not per bead. Click **+1** a few more times to add more dots."
+    },
+    {
+      "instruction": "Now click **+1000** to take a thousand scoops quickly and let the sampling distribution fill in.",
+      "requires": { "metric": "samples", "atLeast": 500, "hint": "Click **+1000** to draw at least 500 samples, then answer below." },
+      "observe": "Look at the bottom panel and the **SD of p̂'s** readout, then compare it to the theory value **√(p(1−p)/n)**.",
+      "gate": {
+        "question": "Where is the sampling distribution of p̂ centered, and is it bell-shaped?",
+        "choices": [
+          { "text": "Centered near 0.60 and roughly bell-shaped", "correct": true },
+          { "text": "Centered near 0.50" },
+          { "text": "Flat — every proportion equally likely" }
+        ],
+        "feedback": "It centers at p = 0.60 (the true proportion) and is roughly normal because np = 24 and n(1−p) = 16 are both ≥ 10. Your **{{samples}}** samples gave an SD of p̂'s of **{{statSD}}** — very close to the theory value √(p(1−p)/n) = **{{theorySE}}**.",
+        "retryFeedback": "Look at where the dots pile up relative to the 0.60 line, and whether the shape is mound-shaped or flat."
+      }
+    },
+    {
+      "instruction": "Two different things change this picture in two different ways. First click **+1000 again** (more samples, same n). Then change **sample size n to 100** and draw **+1000** — or click **Freeze this distribution to compare** first, then change n, so you can see both at once.",
+      "gate": {
+        "question": "Which change made the distribution narrower?",
+        "choices": [
+          { "text": "Drawing more samples (more dots)" },
+          { "text": "Increasing the sample size n", "correct": true },
+          { "text": "Both narrowed it equally" }
+        ],
+        "feedback": "Only larger n narrows it. More samples just fill in the *same* distribution more smoothly — its spread doesn't change. Larger n produces a *different*, narrower distribution, because √(p(1−p)/n) shrinks as n grows.",
+        "retryFeedback": "Compare the frozen n = 40 distribution to the n = 100 one — same center, different width. Then recall what adding more dots at a fixed n did to the width."
+      }
+    },
+    {
+      "instruction": "You've built the sampling distribution of a proportion from scratch.",
+      "reveal": "The sample proportion p̂ varies from sample to sample, but predictably: its distribution is centered at the true p, has standard deviation √(p(1−p)/n), and is approximately normal when np and n(1−p) are both at least about 10. Crucially, **more samples** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This is the engine behind every confidence interval and test for a proportion."
+    }
+  ]
+}

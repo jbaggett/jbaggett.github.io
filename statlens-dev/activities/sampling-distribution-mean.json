@@ -1,0 +1,61 @@
+{
+  "title": "Building a Sampling Distribution of x̄",
+  "tool": "conceptual/sampling-lab",
+  "params": { "type": "quant", "shape": "right-skewed", "n": "10", "seed": "ch6mean" },
+  "steps": [
+    {
+      "instruction": "The **Population** panel shows a strongly **right-skewed** population — most values sit low, with a few large values stretching a long tail to the right. Its true mean **μ** is marked. We can't see a whole population in real life, but here we can. We'll draw samples of **n = 10** and track the **mean x̄** of each sample.",
+      "observe": "Find **μ** marked on the Population panel. A single sample of 10 values will rarely have a mean exactly equal to μ — that sample-to-sample wobble is what we're about to study."
+    },
+    {
+      "instruction": "**Before you draw anything, commit to a prediction.** Imagine taking *hundreds* of samples of n = 10 and plotting each sample's mean x̄.",
+      "gate": {
+        "question": "The population is right-skewed. Where will those sample means (x̄) pile up?",
+        "choices": [
+          { "text": "Centered around μ, the population mean", "feedback": "You've committed — now draw samples and watch where the center of the pile actually lands." },
+          { "text": "Pulled to the right of μ, toward the long tail", "feedback": "You've committed — the skew is tempting. Draw samples and check where the center really falls." },
+          { "text": "Spread evenly across all values", "feedback": "You've committed — draw and see whether the means spread out evenly or cluster somewhere." }
+        ]
+      }
+    },
+    {
+      "instruction": "Click **+1** once. The **One sample** panel shows your 10 drawn values; they collapse to a single mean **x̄**, which drops as one dot into the **Sampling distribution** panel at the bottom. Click **+1** a few more times.",
+      "requires": { "metric": "samples", "atLeast": 5, "hint": "Click **+1** a few times (at least 5 draws), then continue." },
+      "observe": "Each dot is **one sample's mean** — not one observation. The x̄'s bounce around from sample to sample, but where do they seem to gather?"
+    },
+    {
+      "instruction": "Now click **+1000** to draw a thousand samples quickly and let the sampling distribution fill in.",
+      "requires": { "metric": "samples", "atLeast": 500, "hint": "Click **+1000** to draw at least 500 sample means, then answer below." },
+      "observe": "Look at the **Sampling distribution** panel and the **SD of x̄'s** readout, then compare it to the theory value **σ/√n**.",
+      "gate": {
+        "question": "Even though the population is strongly right-skewed, where is the distribution of x̄ centered, and how does its shape compare to the population?",
+        "choices": [
+          { "text": "Centered at μ, and less skewed (more symmetric) than the population", "correct": true },
+          { "text": "Centered to the right of μ, and just as skewed as the population" },
+          { "text": "Flat — every value equally likely" }
+        ],
+        "feedback": "It centers at **μ**, and just averaging 10 values already pulls the shape toward symmetric — the skew is fading. Your **{{samples}}** sample means have an SD of x̄'s of **{{statSD}}**, close to the theory value σ/√n = **{{theorySE}}**. Watch the shape become fully bell-shaped when you increase n next.",
+        "retryFeedback": "Look at where the dots pile up relative to the μ line, and compare the shape of the bottom panel to the skewed Population panel above."
+      }
+    },
+    {
+      "instruction": "Two different changes affect this picture in two different ways. First click **+1000 again** (more samples, same n = 10). Then click **Freeze this distribution to compare**, change **Sample size (n) to 100**, and draw **+1000** — so you see both at once.",
+      "requires": { "metric": "n", "equals": 100, "hint": "Freeze the n = 10 distribution, set **Sample size (n)** to **100**, and draw **+1000**." },
+      "observe": "Compare the frozen n = 10 distribution to the new n = 100 one, and watch the **SD of x̄'s** readout drop.",
+      "gate": {
+        "question": "Which change made the sampling distribution **narrower** — and which just filled it in more smoothly?",
+        "choices": [
+          { "text": "Drawing more samples narrowed it" },
+          { "text": "Increasing the sample size to n = 100 narrowed it", "correct": true },
+          { "text": "Both narrowed it equally" }
+        ],
+        "feedback": "Only a larger **n** narrows it. More samples (more dots) just fill in the *same* n = 10 distribution more smoothly — its spread doesn't change. A larger n produces a *different*, narrower distribution, because σ/√n shrinks as n grows. And notice the n = 100 distribution is now clearly bell-shaped — while the center stayed at μ the whole time.",
+        "retryFeedback": "Compare the frozen n = 10 distribution to the n = 100 one — same center at μ, different width. Then recall what adding more dots at n = 10 did to the width."
+      }
+    },
+    {
+      "instruction": "You've built the sampling distribution of a sample mean from scratch — starting from a skewed population.",
+      "reveal": "The sample mean x̄ varies from sample to sample, but predictably: its distribution is **centered at the population mean μ**, has standard deviation **σ/√n**, and becomes approximately **normal** as n grows — even when the population itself is skewed. That last part is the **Central Limit Theorem**. Crucially, **more samples** sharpen the picture of that distribution, while a **larger n** changes it — shrinking the spread. This is the engine behind every confidence interval and t-test for a mean."
+    }
+  ]
+}

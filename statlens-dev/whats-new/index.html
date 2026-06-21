@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>What's New | StatLens</title>
+    <meta name="robots" content="noindex">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+
+    <style>
+        .changelog { max-width: 50rem; }
+        .cl-entry { border-left: 4px solid var(--ims-blue, #569BBD); padding: 0.1rem 0 0.1rem 0.9rem; margin: 0 0 1.4rem; }
+        .cl-entry.activity { border-left-color: #C08700; }
+        .cl-date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ims-gray-text); }
+        .cl-entry h2 { font-size: 1.05rem; margin: 0.1rem 0 0.3rem; }
+        .cl-entry p { margin: 0.2rem 0; font-size: 0.95rem; }
+        .cl-tag { display:inline-block; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;
+                  padding:0.05rem 0.4rem; border-radius:3px; color:#fff; background:var(--ims-blue,#569BBD); vertical-align:middle; margin-left:0.4rem; }
+        .cl-tag.activity { background:#C08700; }
+        .cl-tag.tool { background:#114B5F; }
+    </style>
+</head>
+<body>
+    <main class="changelog">
+        <h1>What's New<span class="header-actions"><a class="home-btn" href="../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a></span></h1>
+        <p>The latest StatLens tools, labs, and activities — newest first.</p>
+
+        <!-- ════════════════════════════════════════════════════════════════
+             ADD NEW ENTRIES IMMEDIATELY BELOW THIS LINE (newest at the top).
+             Copy an <article class="cl-entry"> block, set the date (YYYY-MM-DD),
+             a <span class="cl-tag …">, a title, a one-line description, and a link
+             to the tool/activity. Use class "activity"/"tool" on the entry + tag.
+             ════════════════════════════════════════════════════════════════ -->
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-20<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../distribution/normal/?tail=between&amp;lo=-1&amp;hi=2">Distribution calculators: Between &amp; Symmetric regions</a></h2>
+            <p>The normal, t, χ², and F calculators now go beyond left/right tails. <strong>Between</strong> shades the middle band between two independent bounds — so you can finally compute things like P(500 ≤ X ≤ 650) — and <strong>Symmetric</strong> shades the two outer tails for the classic two-sided view. Every region shows an editable probability, and you can deep-link an exact setup, e.g. <code>?tail=between&amp;lo=-1&amp;hi=2</code>.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-19<span class="cl-tag">New page</span></div>
+            <h2><a href="../activities/">Activities Catalog</a></h2>
+            <p>One front door to every guided activity — all 16, grouped by topic, each linking straight into its tool. Reachable from the footer ("Activities", next to "What's new").</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-06-19<span class="cl-tag activity">Activity</span></div>
+            <h2><a href="../conceptual/decision-errors/?activity=jelly-bean-multiple-comparisons.json">Do green jelly beans cause acne? (Multiple comparisons)</a></h2>
+            <p>The xkcd jelly-bean comic, made interactive: run 20 tests on things that truly do nothing and watch a false "discovery" appear by chance. Drives home why a lone p &lt; 0.05 is weak when you don't know how many tests were run — and how a stricter threshold (Bonferroni) fights back.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-06-19<span class="cl-tag activity">Activity</span></div>
+            <h2><a href="../conceptual/ci-coverage/?activity=ci-interpretation.json">What does "95% confident" really mean?</a></h2>
+            <p>A guided, gated activity that takes the most common confidence-interval misconception head-on: with the true mean known (μ = 50), students draw many intervals, watch ~95% capture the truth, and confront why "95% confident" is a property of the <em>procedure</em> — not a 95% chance for any single interval.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-06-19<span class="cl-tag activity">Activity</span></div>
+            <h2><a href="../simulate/randomization-diff-props/?activity=randomization-test-gated.json">Randomization Test walkthrough, rebuilt on the real tool</a></h2>
+            <p>The step-by-step "What is a Randomization Test?" walkthrough now runs as a gated activity <em>on the actual two-proportion randomization tool</em>, with the dealt-cards mechanism strip showing the same 35 promotions re-shuffled between groups. (The old standalone page redirects here; the printable instructor guide is preserved.)</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-19<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/randomization-diff-means/">Copy a link to any configured simulation</a></h2>
+            <p>Every simulation tool now has a <strong>Copy link</strong> button that captures the dataset, every toggle (direction, confidence level, statistic, card mechanism, null value, success outcome) <em>and the seed</em> — so an instructor can hand out a link to an exact setup, and a student can share a link that reproduces their result.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-06-18<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../conceptual/sampling-bias/">Sampling Bias Lab</a></h2>
+            <p>The Gettysburg Address "Sampling Words" activity, made interactive: pick a "representative" sample by eye (it runs biased high) vs. random samples that center on the truth. Shows that a bigger sample doesn't fix bias — only random selection does.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-18<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../conceptual/ci-coverage/">Confidence-interval coverage — upgraded</a></h2>
+            <p>Predict-first gate ("how many of the next 25 miss μ?"), a cat's-eye peaked-likelihood overlay, changing the confidence level now re-widths the <em>same</em> intervals, and a new percentile-bootstrap method that visibly under-covers for small skewed samples.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-18<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/randomization-diff-means/">Randomization tests — p-value made honest</a></h2>
+            <p>The p-value now shows its Monte-Carlo margin (<code>p = X/N ± …</code>, narrowing as you add shuffles), states the encoded null next to the shuffle mechanism, and presents the p-value "by construction." Across all five randomization tools.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-18<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/bootstrap-mean/">Bootstrap distributions — clearer center &amp; spread</a></h2>
+            <p>Every bootstrap chart now pins the observed sample statistic where the distribution centers, and the results panel contrasts the spread of the <em>data</em> (SD) with the much-narrower standard error — countering the common "it centers on the population" and "SD = SE" mix-ups.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-18<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../explore/one-cat/">Load your own CSV into more tools</a></h2>
+            <p>The Explore tools (one-categorical, grouped, multi-variable) now accept an external <code>?csv=</code> file and expose variable pickers, and the inference pages (chi-square, ANOVA, regression) handle multi-column CSVs cleanly too — so a lesson can point any of them at a shared dataset.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-06-17<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../conceptual/sampling-lab/">Sampling Distribution Lab</a></h2>
+            <p>A from-scratch redesign covering both means and proportions: a three-tier population → one sample → sampling distribution view, freeze/compare two sample sizes on one axis, and predict-reveal guided activities.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-06-17<span class="cl-tag activity">Activities</span></div>
+            <h2><a href="../simulate/bootstrap-mean/?activity=bootstrap-explore.json">Interactive guided activities</a></h2>
+            <p>Step-by-step gated activities now run alongside any tool, with predict-then-commit questions and live feedback that quotes the tool's actual on-screen result back to the student.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-13<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/randomization-diff-props/?mechanism=cards">Shuffle as dealt cards</a></h2>
+            <p>Two-group proportion randomization can show the shuffle as dealt cards (each observation a card; filled = success), with a live Bars ↔ Cards toggle — making "the outcomes are fixed, only the labels move" concrete.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-06-08<span class="cl-tag tool">New tools</span></div>
+            <h2><a href="../conceptual/power-sim/">Power Lab &amp; Decision Errors</a></h2>
+            <p>Simulation-based <a href="../conceptual/power-sim/">power</a> (run many studies; watch empirical power and the p-value dance) and a <a href="../conceptual/decision-errors/">Decision Errors</a> lab (Type I / Type II as the outcomes of repeated one-proportion tests).</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-06-06<span class="cl-tag tool">New tools</span></div>
+            <h2><a href="../explore/psychic/">Are You Psychic? &amp; Stump the Chump</a></h2>
+            <p>Two intuition-builders: a <a href="../explore/psychic/">coin-guessing game</a> that introduces hypothesis-testing logic before the formal framework, and <a href="../explore/random-sequence/">Stump the Chump</a>, which shows real randomness is clumpier than people expect.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-04-04<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../explore/regression-by-eye/">Regression by Eye</a></h2>
+            <p>Drag a line to fit a scatterplot, see the residual squares, and compare your fit to the least-squares and least-absolute-deviation best fits.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-04-04<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../simulate/randomization-anova/">ANOVA — randomization &amp; analytic</a></h2>
+            <p>Compare three or more groups: a <a href="../simulate/randomization-anova/">permutation F-test</a> and the <a href="../inference/anova/">classical one-way ANOVA</a> with a conditions checkpoint and the decomposition table.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-04-04<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../explore/dotplot-editor/">Dotplot Editor</a></h2>
+            <p>Click to add or remove points and watch the summary statistics update live — a hands-on way to build intuition for center and variability.</p>
+        </article>
+    </main>
+</body>
+</html>

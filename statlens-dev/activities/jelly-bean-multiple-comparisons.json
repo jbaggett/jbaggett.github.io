@@ -1,0 +1,92 @@
+{
+  "title": "Do Green Jelly Beans Cause Acne? (Multiple Comparisons)",
+  "tool": "conceptual/decision-errors",
+  "params": { "truth": "none", "alpha": "0.05", "n": 30, "ptrue": 50, "seed": "jellybean1" },
+  "steps": [
+    {
+      "instruction": "Start by reading the comic — the whole statistics lesson is in one strip.\n\n![xkcd #882, 'Significant': after jelly beans show no link to acne, scientists test 20 colors separately; the one color that reaches p < 0.05 by chance gets a breathless newspaper headline.](https://imgs.xkcd.com/comics/significant.png)\n\n*[xkcd #882, “Significant”](https://xkcd.com/882/) by Randall Munroe (CC BY-NC 2.5). Tap **Enlarge** to read it full-size.*",
+      "gate": {
+        "question": "In the comic, why do the scientists keep testing one color after another?",
+        "choices": [
+          { "text": "The overall \"jelly beans\" test found nothing, so they test each color hoping *some* test will come out significant", "correct": true },
+          { "text": "They already had strong evidence that green jelly beans were the culprit" },
+          { "text": "Each color needs a larger sample than the one before it" }
+        ],
+        "feedback": "Exactly — that's the whole setup. Run enough separate tests on things that don't matter and one is bound to cross p < 0.05 by chance. Let's pin down how often that happens.",
+        "retryFeedback": "Re-read the middle panels: the first test failed, so what did they decide to do next, and what were they hoping for?"
+      }
+    },
+    {
+      "instruction": "The comic hinges on one number. Scientists call a result **\"significant\"** when **p < 0.05** — a bar set low enough that, even when *nothing* is going on, a true null crosses it only about **5% of the time** by chance. That 5% is the engine of the whole joke.",
+      "gate": {
+        "question": "If 20 colors *all* truly do nothing, about how many would you expect to come out \"significant\" (p < 0.05) just by chance?",
+        "choices": [
+          { "text": "About 1 — roughly 5% of 20", "correct": true },
+          { "text": "Zero — nothing is real, so nothing should be significant" },
+          { "text": "About 10 — half of them" }
+        ],
+        "feedback": "Right — about 1. The 5% false-alarm rate applies to *every* test, so across 20 useless colors you should expect roughly one to light up on luck alone. Now let's watch it actually happen.",
+        "retryFeedback": "\"Significant\" means crossing the p < 0.05 bar, which a true null does ~5% of the time. Apply 5% to 20 tests."
+      }
+    },
+    {
+      "instruction": "Let's make the comic concrete so we can run it. Picture testing **one color at a time**: **n = 30 people eat that color, and we count how many break out.** If the color is harmless, breaking out is a coin flip — **p = 0.50**. We're testing whether the color *causes* acne — that *more* than half break out, **p > 0.50**.\n\nThe tool is already set to **\"H₀ is true — does nothing,\"** so on this screen *every* color is genuinely harmless. Each dot is one color's study; an **✗** marks a color that came out \"significant\" (p < 0.05). Click **+1** about twenty times — one study per color.",
+      "observe": "Most colors land in the \"correct call\" pile; every so often one gets an **✗**.",
+      "gate": {
+        "question": "A color gets an **✗** — flagged \"significant, p < 0.05.\" Does that color actually cause acne?",
+        "choices": [
+          { "text": "Yes — p < 0.05 means this color is linked to acne" },
+          { "text": "No — it's a false alarm; we set every color to be harmless, and ~5% of true-null tests reject by chance", "correct": true },
+          { "text": "We can't tell without a bigger sample" }
+        ],
+        "feedback": "Exactly — it's a Type I error (false alarm). We *built* this world so no color matters, yet some tests still reject H₀. That's the unavoidable 5% price of testing at p < 0.05.",
+        "retryFeedback": "Remember the setup: every color here is harmless by construction. So any ✗ must be a false positive, not a real link."
+      }
+    },
+    {
+      "instruction": "Twenty studies is a small batch. Click **+100**, then **+1000**, to see the long-run false-alarm rate settle (watch the red **Type I error** line in the results).",
+      "observe": "The false-alarm rate parks near **5%** — about 1 in 20 harmless colors gets flagged.",
+      "gate": {
+        "question": "If you test 20 colors and each has a 5% false-alarm rate, what's the chance that AT LEAST ONE gets flagged purely by chance?",
+        "choices": [
+          { "text": "Still about 5% — testing more colors doesn't change it" },
+          { "text": "About 64% — better than a coin flip", "correct": true },
+          { "text": "Essentially 100% — it's guaranteed" }
+        ],
+        "feedback": "About 64%. Each test has a 95% chance of NOT false-alarming, but 0.95²⁰ ≈ 0.36, so the chance at least one of the 20 fires is 1 − 0.36 ≈ 0.64. With 20 shots at significance, a \"hit\" is more likely than not — even when nothing is real.",
+        "retryFeedback": "The chance NONE of the 20 false-alarms is 0.95²⁰ ≈ 0.36. So the chance at least one does is 1 minus that."
+      }
+    },
+    {
+      "instruction": "Back to the comic. The newspaper ran *\"Green Jelly Beans Linked to Acne (p < 0.05)!\"* — but the scientists had quietly run all 20 color tests and reported only the one that hit.",
+      "gate": {
+        "question": "What is the core problem with that headline?",
+        "choices": [
+          { "text": "Nothing — the result was significant at p < 0.05, so it's valid" },
+          { "text": "It spotlights the one significant test while hiding the 19 that weren't — and with 20 tries, one false positive was expected", "correct": true },
+          { "text": "The sample of 30 people per color was too small to publish" }
+        ],
+        "feedback": "Yes — this is the multiple-comparisons (\"look-elsewhere\") problem, the heart of *p-hacking*: cherry-pick the single significant result out of 20 and bury the rest, and an expected false positive becomes a fake discovery. The \"winner's\" p-value is meaningless once you ignore how many tests it took to find it.",
+        "retryFeedback": "Count the tests that were run versus the number reported. What got left out, and was a hit expected anyway?"
+      }
+    },
+    {
+      "instruction": "One defense is a **stricter threshold**. Change **Significance level (α)** to **0.01**, click **↺** to reset, and run **+1000** again.",
+      "observe": "The false-alarm rate drops to about **1%** — far fewer harmless colors get flagged.",
+      "gate": {
+        "question": "Why does lowering α help when you're running many tests?",
+        "choices": [
+          { "text": "A stricter threshold makes each individual false alarm rarer, so a batch of tests produces fewer of them", "correct": true },
+          { "text": "It increases the power to detect real effects" },
+          { "text": "It has no effect on the false-alarm rate" }
+        ],
+        "feedback": "Right. This is the idea behind a Bonferroni correction: if you plan to run 20 tests and want an overall 5% false-alarm rate, test each one at 0.05 ÷ 20 = 0.0025 instead of 0.05. Stricter per-test thresholds keep the *whole batch's* error rate in check (at the cost of some power).",
+        "retryFeedback": "Lowering α moves the bar for calling any single test \"significant.\" What does that do to the number of false alarms across many tests?"
+      }
+    },
+    {
+      "instruction": "Put it together.",
+      "reveal": "Run enough tests on things that don't matter and chance alone hands you a \"significant\" result — the headline writes itself. This is the **look-elsewhere effect** behind p-hacking, and it's why a lone p < 0.05 is weak evidence when you don't know how many tests were run to find it. The real defenses: **decide your hypothesis in advance** (pre-registration), **correct α for the number of tests** (Bonferroni or false-discovery-rate methods), and **replicate** before believing. A finding that survives a fresh, pre-planned test is worth far more than the best of 20 fishing expeditions."
+    }
+  ]
+}
