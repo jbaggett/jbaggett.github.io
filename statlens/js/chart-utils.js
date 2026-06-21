@@ -1206,7 +1206,7 @@ export function morphMiniBoxplot(container, values, options = {}) {
     meanX: meanEl ? num((meanEl.getAttribute('points') ?? '').split(',')[0]) : null,
   };
 
-  const MORPH_MS = 400;
+  const MORPH_MS = options.durationMs ?? 400;
   const easeOut = (/** @type {number} */ t) => 1 - (1 - t) ** 3;
   let startTime = 0;
 
@@ -1560,7 +1560,7 @@ export function morphMiniChart(container, newValues, options = {}) {
     return 0;
   }
 
-  const MORPH_MS = 400;
+  const MORPH_MS = options.durationMs ?? 400;
   const easeOut = (/** @type {number} */ t) => 1 - (1 - t) ** 3;
   let startTime = 0;
 

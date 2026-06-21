@@ -1128,6 +1128,9 @@ input[aria-invalid="true"] {
   gap: 0.5rem;
 }
 
+/* Observed ↔ Null view toggle in the one-sample mechanism panel */
+.mech-null-toggle { margin: 0.25rem 0 0.5rem; }
+
 /* Segmented control for resample view toggle */
 .seg-control {
   display: inline-flex;

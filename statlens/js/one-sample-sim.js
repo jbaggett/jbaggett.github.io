@@ -190,6 +190,9 @@ export function initOneSamplePage(config) {
   let mechanismInitialized = false;
   /** Whether the left panel has been morphed from "Observed" to "Null Distribution". */
   let nullShown = false;
+  /** The Observed/Null view toggle buttons (built lazily). */
+  /** @type {NodeListOf<HTMLButtonElement>|null} */
+  let nullToggleBtns = null;
   /** The title element of the observed/null panel. */
   const mechObservedTitle = document.querySelector('#mech-observed .mechanism-title');
   /** @type {{ population?: string, parameter?: string, nullClaim?: string, successLabel?: string }} */
@@ -627,6 +630,41 @@ export function initOneSamplePage(config) {
   // ─── Null distribution morph ───
 
   /**
+   * Build the Observed ↔ Null view toggle inside the left mechanism panel (once),
+   * so an instructor can step between "the original sample" and "what it looks
+   * like if H₀ is true" at their own pace instead of relying on the auto-morph.
+   */
+  function ensureNullToggle() {
+    if (nullToggleBtns) return;
+    const panel = document.getElementById('mech-observed');
+    const titleEl = panel?.querySelector('.mechanism-title');
+    if (!panel || !titleEl) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'seg-control mech-null-toggle';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', 'Show the observed sample or the null distribution');
+    wrap.innerHTML =
+      '<button type="button" data-view="observed" aria-pressed="true">Observed</button>'
+      + '<button type="button" data-view="null" aria-pressed="false">Null</button>';
+    titleEl.after(wrap);
+    nullToggleBtns = wrap.querySelectorAll('button');
+    for (const b of nullToggleBtns) {
+      b.addEventListener('click', () => {
+        if (b.dataset.view === 'null') morphToNull();
+        else revertToObserved();
+      });
+    }
+  }
+
+  /** Reflect the current nullShown state on the toggle buttons. */
+  function syncNullToggle() {
+    if (!nullToggleBtns) return;
+    for (const b of nullToggleBtns) {
+      b.setAttribute('aria-pressed', String((b.dataset.view === 'null') === nullShown));
+    }
+  }
+
+  /**
    * Morph the left "Observed Data" panel into "Null Distribution".
    * For one-mean: boxplot slides to center on μ₀.
    * For one-prop: proportion bar morphs to p₀ width.
@@ -651,7 +689,7 @@ export function initOneSamplePage(config) {
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
       const label = mechObservedStat.querySelector('.mech-prop-label');
       if (fill && !prefersReducedMotion()) {
-        /** @type {HTMLElement} */ (fill).style.transition = 'width 500ms ease-out';
+        /** @type {HTMLElement} */ (fill).style.transition = 'width 700ms ease-out';
         /** @type {HTMLElement} */ (fill).style.width = `${nullPct}%`;
         if (label) label.textContent = `p₀ = ${p0}`;
         // Update stat text
@@ -661,7 +699,8 @@ export function initOneSamplePage(config) {
             innerHTML: `p\u2080 = ${p0}`,
           })
         );
-        return 500;
+        syncNullToggle();
+        return 700;
       }
       // Fallback: instant update
       const obsFailures = sampleN - nullSuccesses;
@@ -670,6 +709,7 @@ export function initOneSamplePage(config) {
           <div class="mech-prop-fill" style="width:${nullPct}%"></div>
           <span class="mech-prop-label">p₀ = ${p0}</span>
         </div>`;
+      syncNullToggle();
       return 0;
     } else {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
@@ -690,9 +730,12 @@ export function initOneSamplePage(config) {
           highlightMean: true,
           domain: dom,
           label: 'Null distribution (shifted to μ₀)',
+          durationMs: 850, // slower slide — the shift was easy to miss (feedback A4)
         });
-        return Math.max(ms, 400);
+        syncNullToggle();
+        return Math.max(ms, 850);
       }
+      syncNullToggle();
       return 0;
     }
   }
@@ -731,6 +774,7 @@ export function initOneSamplePage(config) {
         }
       }
     }
+    syncNullToggle();
   }
 
   // ─── Generate ───
@@ -755,6 +799,7 @@ export function initOneSamplePage(config) {
       mechanismInitialized = true;
       mechanismStrip.hidden = false;
       initMechanismCollapse(mechanismStrip);
+      ensureNullToggle();
     }
 
     // On first generate, morph left panel from "Observed" to "Null Distribution"
