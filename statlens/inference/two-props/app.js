@@ -16,7 +16,9 @@ import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle
 const tex = (/** @type {string} */ latex, display = false) =>
   katex.renderToString(latex, { throwOnError: false, displayMode: display });
 
-setJStat(jstat);
+// jStat's ESM build exposes the object as the default export; the bare namespace
+// has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.
+setJStat(jstat.default || jstat);
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -240,30 +242,58 @@ function countFromData(sourceName) {
 
 // ── Summary input ───────────────────────────────────────────────────
 
+/** Is the "Enter Summary" tab the active data source? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/**
+ * Read + validate the summary-stat fields into the current-sample state.
+ * No separate "Load" step needed \u2014 Compute and live edits call this directly.
+ * @param {boolean} [quiet] - When true (live typing), don't announce validation errors.
+ * @returns {boolean} true if the inputs form a valid two-proportion summary
+ */
+function applySummaryInputs(quiet) {
+  const x1 = Math.round(Number(inputX1.value));
+  const n1 = Math.round(Number(inputN1.value));
+  const x2 = Math.round(Number(inputX2.value));
+  const n2 = Math.round(Number(inputN2.value));
+
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!Number.isFinite(n1) || n1 < 1) return fail('n\u2081 must be at least 1.');
+  if (!Number.isFinite(n2) || n2 < 1) return fail('n\u2082 must be at least 1.');
+  if (!Number.isFinite(x1) || x1 < 0 || x1 > n1) return fail('Successes for Group 1 must be between 0 and n\u2081.');
+  if (!Number.isFinite(x2) || x2 < 0 || x2 > n2) return fail('Successes for Group 2 must be between 0 and n\u2082.');
+
+  currentX1 = x1; currentN1 = n1;
+  currentX2 = x2; currentN2 = n2;
+  label1 = inputLabel1.value.trim() || 'Group 1';
+  label2 = inputLabel2.value.trim() || 'Group 2';
+  fromRawData = false;
+
+  if (dataSummary) {
+    dataSummary.textContent =
+      `Summary: ${label1} ${currentX1}/${currentN1}, ${label2} ${currentX2}/${currentN2}`;
+  }
+  return true;
+}
+
+// Optional explicit "Load" button (kept for discoverability) \u2014 same path as typing.
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const x1 = Math.round(Number(inputX1.value));
-    const n1 = Math.round(Number(inputN1.value));
-    const x2 = Math.round(Number(inputX2.value));
-    const n2 = Math.round(Number(inputN2.value));
-
-    if (!Number.isFinite(n1) || n1 < 1) { announce('n\u2081 must be at least 1.'); return; }
-    if (!Number.isFinite(n2) || n2 < 1) { announce('n\u2082 must be at least 1.'); return; }
-    if (!Number.isFinite(x1) || x1 < 0 || x1 > n1) { announce('Successes for Group 1 must be between 0 and n\u2081.'); return; }
-    if (!Number.isFinite(x2) || x2 < 0 || x2 > n2) { announce('Successes for Group 2 must be between 0 and n\u2082.'); return; }
-
-    currentX1 = x1; currentN1 = n1;
-    currentX2 = x2; currentN2 = n2;
-    label1 = inputLabel1.value.trim() || 'Group 1';
-    label2 = inputLabel2.value.trim() || 'Group 2';
-    fromRawData = false;
-
-    if (dataSummary) {
-      dataSummary.textContent =
-        `Summary: ${label1} ${currentX1}/${currentN1}, ${label2} ${currentX2}/${currentN2}`;
+    if (applySummaryInputs()) {
+      dataPanel.triggerPostLoad();
+      compute();
+      announce(`Loaded summary: ${label1} ${currentX1}/${currentN1}, ${label2} ${currentX2}/${currentN2}.`);
     }
-    dataPanel.triggerPostLoad();
-    announce(`Loaded summary: ${label1} ${x1}/${n1}, ${label2} ${x2}/${n2}.`);
+  });
+}
+
+// Live update: typing valid summary stats recomputes immediately \u2014 no Load click.
+for (const el of [inputX1, inputN1, inputX2, inputN2, inputLabel1, inputLabel2]) {
+  el.addEventListener('input', () => {
+    if (!summaryActive()) return;
+    if (applySummaryInputs(true)) compute();
   });
 }
 
@@ -281,6 +311,9 @@ for (const el of [inputConfLevel]) {
 // ── Main computation ────────────────────────────────────────────────
 
 function compute() {
+  // In summary mode, read the fields directly so Compute works without a
+  // separate "Load" click (and bail quietly if they aren't valid yet).
+  if (summaryActive() && !applySummaryInputs()) return;
   if (currentN1 < 1 || currentN2 < 1) {
     announce('Load data or enter summary statistics first.');
     return;

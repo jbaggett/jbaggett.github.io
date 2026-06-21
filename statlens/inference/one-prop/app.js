@@ -17,7 +17,9 @@ import { parseCSV } from '../../js/csv-parser.js';
 const tex = (/** @type {string} */ latex, display = false) =>
   katex.renderToString(latex, { throwOnError: false, displayMode: display });
 
-setJStat(jstat);
+// jStat's ESM build exposes the object as the default export; the bare namespace
+// has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.
+setJStat(jstat.default || jstat);
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
