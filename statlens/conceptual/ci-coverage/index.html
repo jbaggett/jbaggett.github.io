@@ -160,7 +160,12 @@
             <div class="ci-chart-area">
                 <div id="ci-container"></div>
             </div>
-            <p class="hint" style="text-align:center;margin:0.3rem 0 0;">Hover (or tap) an interval to see it as a <em>peaked</em> likelihood — values near x̄ are more plausible than values near the ends, not all equally likely.</p>
+            <p class="hint" id="catseye-hint" style="text-align:center;margin:0.3rem 0 0;">
+                <label style="cursor:pointer;">
+                    <input type="checkbox" id="catseye-toggle"> Show plausibility shape (cat’s-eye)
+                </label>
+                <span id="catseye-note" hidden> — hover an interval: values near x̄ are more plausible than values near the ends, <em>not</em> all equally likely.</span>
+            </p>
         </section>
 
         <section id="results" aria-label="Interpretation">

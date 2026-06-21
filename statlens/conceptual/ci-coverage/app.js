@@ -37,6 +37,9 @@ const urlMu = params.has('mu') ? parseFloat(params.get('mu')) : null;
 const urlSigma = params.has('sigma') ? parseFloat(params.get('sigma')) : null;
 const urlN = params.has('n') ? parseInt(params.get('n'), 10) : null;
 const urlCi = params.has('ci') ? params.get('ci') : null;
+// Cat's-eye (peaked-plausibility) overlay is OFF by default so the coverage
+// headline stays clean; ?catseye=1 (or the checkbox) turns it on.
+let catsEyeOn = params.get('catseye') === '1' || params.get('catseye') === 'true';
 
 // ─── Population ───
 
@@ -378,6 +381,12 @@ function renderChart() {
     .attr('font-size', tooltipFontSize);
   const tooltipLine2 = tooltipG.append('text')
     .attr('font-size', tooltipFontSize).attr('font-weight', 600);
+  // Third line explains the cat's-eye shape (answers "what does it convey?").
+  const tooltipLine3 = tooltipG.append('text')
+    .attr('font-size', isMobile ? '13px' : '11px')
+    .attr('font-style', 'italic')
+    .attr('fill', '#555')
+    .text('Cat’s-eye: taller = more plausible value');
 
   /**
    * @param {typeof shown[0]} ci
@@ -394,26 +403,35 @@ function renderChart() {
 
     const pad = isMobile ? 8 : 6;
     const lineSpacing = isMobile ? 20 : 16;
+    const line3Gap = isMobile ? 18 : 15;
 
     tooltipLine1.attr('x', pad).attr('y', lineSpacing);
     tooltipLine2.attr('x', pad).attr('y', lineSpacing * 2 + 1);
+    // The cat's-eye caption line only applies when the cat's-eye is shown.
+    tooltipLine3.attr('visibility', catsEyeOn ? 'visible' : 'hidden')
+      .attr('x', pad).attr('y', lineSpacing * 2 + 1 + line3Gap);
 
     // Must be visible to measure text; park offscreen to avoid flicker
     tooltipRect.attr('width', 0).attr('height', 0);
     tooltipG.attr('visibility', 'visible').attr('transform', 'translate(-9999,-9999)');
 
-    const textW = /** @type {SVGTextElement} */ (tooltipLine1.node()).getComputedTextLength();
-    const boxW = textW + pad * 2;
-    const boxH = lineSpacing * 2 + pad + 2;
+    const w1 = /** @type {SVGTextElement} */ (tooltipLine1.node()).getComputedTextLength();
+    const w3 = catsEyeOn ? /** @type {SVGTextElement} */ (tooltipLine3.node()).getComputedTextLength() : 0;
+    const boxW = Math.max(w1, w3) + pad * 2;
+    const boxH = (catsEyeOn ? lineSpacing * 2 + 1 + line3Gap : lineSpacing * 2 + 1) + pad;
     tooltipRect.attr('width', boxW).attr('height', boxH);
 
     let tx = margin.left + xScale((ci.lo + ci.hi) / 2) - boxW / 2;
     tx = Math.max(4, Math.min(width - boxW - 4, tx));
-    let ty = margin.top + cy - boxH - 4;
-    if (ty < 4) ty = margin.top + cy + 6;
+    // Position the tooltip clear of the cat's-eye (which spans cy ± ceHalf) so the
+    // opaque box never covers it. With the cat's-eye off, ceHalf collapses to 0 and
+    // the tooltip sits snug above the interval. Prefer above; fall back to below.
+    const ceHalf = catsEyeOn ? Math.max(9, Math.min(14, yStep * 1.4)) : 0;
+    let ty = margin.top + cy - ceHalf - boxH - 6;
+    if (ty < 4) ty = margin.top + cy + ceHalf + 6;
 
     tooltipG.attr('transform', `translate(${tx}, ${ty})`);
-    drawCatsEye(ci, cy);
+    if (catsEyeOn) drawCatsEye(ci, cy);
   }
 
   let pinnedIndex = -1;  // track which CI is tapped/pinned on mobile
@@ -625,6 +643,20 @@ ciLevelSelect.addEventListener('change', () => {
 
 // Switching the CI method changes how every interval is built — start fresh.
 if (ciMethodSelect) ciMethodSelect.addEventListener('change', () => resetSimulation());
+
+// Cat's-eye toggle (off by default): reveal the peaked-plausibility overlay.
+const catsEyeToggle = /** @type {HTMLInputElement|null} */ (document.getElementById('catseye-toggle'));
+const catsEyeNote = document.getElementById('catseye-note');
+if (catsEyeToggle) {
+  catsEyeToggle.checked = catsEyeOn;
+  if (catsEyeNote) catsEyeNote.hidden = !catsEyeOn;
+  catsEyeToggle.addEventListener('change', () => {
+    catsEyeOn = catsEyeToggle.checked;
+    if (catsEyeNote) catsEyeNote.hidden = !catsEyeOn;
+    // Redraw the chart so the (now hidden/shown) overlay state is consistent.
+    renderChart();
+  });
+}
 
 if (resetBtn) {
   resetBtn.addEventListener('click', () => {
