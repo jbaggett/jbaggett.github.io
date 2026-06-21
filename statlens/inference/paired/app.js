@@ -191,31 +191,51 @@ var1Select.addEventListener('change', () => { if (currentRows) loadFromSelection
 var2Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
 
 // ── Summary input handler ────────────────────────────────────────
+/** Is the "Enter Summary" tab the active data source? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/**
+ * Read + validate the summary-stat fields into the summary state. No "Load" step.
+ * @param {boolean} [quiet] - When true (live typing), don't announce errors.
+ * @returns {boolean} true if the inputs form a valid paired summary
+ */
+function applySummaryInputs(quiet) {
+  const dbar = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-dbar'))?.value);
+  const sd = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-sd'))?.value);
+  const n = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n'))?.value, 10);
+
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!isFinite(dbar)) return fail('Enter a valid mean difference.');
+  if (!isFinite(sd) || sd <= 0) return fail('Enter a valid positive standard deviation.');
+  if (!isFinite(n) || n < 2) return fail('Sample size must be at least 2.');
+
+  fromSummary = true;
+  summaryDbar = dbar;
+  summarySd = sd;
+  summaryN = n;
+  currentDiffs = null;
+  currentRows = null;
+  currentContext = null;
+  varSelectors.hidden = true;
+  return true;
+}
+
+// Live update: typing valid summary stats recomputes immediately — no Load click.
+for (const id of ['input-dbar', 'input-sd', 'input-n']) {
+  document.getElementById(id)?.addEventListener('input', () => {
+    if (summaryActive() && applySummaryInputs(true)) showResults();
+  });
+}
+
 const loadSummaryBtn = document.getElementById('load-summary');
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const dbarInput = /** @type {HTMLInputElement} */ (document.getElementById('input-dbar'));
-    const sdInput = /** @type {HTMLInputElement} */ (document.getElementById('input-sd'));
-    const nInput = /** @type {HTMLInputElement} */ (document.getElementById('input-n'));
-
-    const dbar = parseFloat(dbarInput?.value);
-    const sd = parseFloat(sdInput?.value);
-    const n = parseInt(nInput?.value, 10);
-
-    if (!isFinite(dbar)) { announce('Enter a valid mean difference.'); return; }
-    if (!isFinite(sd) || sd <= 0) { announce('Enter a valid positive standard deviation.'); return; }
-    if (!isFinite(n) || n < 2) { announce('Sample size must be at least 2.'); return; }
-
-    fromSummary = true;
-    summaryDbar = dbar;
-    summarySd = sd;
-    summaryN = n;
-    currentDiffs = null;
-    currentRows = null;
-    currentContext = null;
-    varSelectors.hidden = true;
-    showResults();
-    announce(`Loaded summary: d̄ = ${dbar}, s_d = ${sd}, n = ${n}.`);
+    if (applySummaryInputs()) {
+      showResults();
+      announce(`Loaded summary: d̄ = ${summaryDbar}, s_d = ${summarySd}, n = ${summaryN}.`);
+    }
   });
 }
 

@@ -187,30 +187,50 @@ const dataPanel = initDataPanel({
 });
 
 // ── Summary input handler ────────────────────────────────────────
+/** Is the "Enter Summary" tab the active data source? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/**
+ * Read + validate the summary-stat fields into the summary state. No "Load" step.
+ * @param {boolean} [quiet] - When true (live typing), don't announce errors.
+ * @returns {boolean} true if the inputs form a valid slope summary
+ */
+function applySummaryInputs(quiet) {
+  const slope = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-slope'))?.value);
+  const se = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-se'))?.value);
+  const n = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n'))?.value, 10);
+
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!isFinite(slope)) return fail('Enter a valid slope.');
+  if (!isFinite(se) || se <= 0) return fail('Enter a valid positive SE.');
+  if (!isFinite(n) || n < 3) return fail('Sample size must be at least 3.');
+
+  fromSummary = true;
+  summarySlope = slope;
+  summarySE = se;
+  summaryN = n;
+  currentRows = [];
+  currentContext = null;
+  varSelector.hidden = true;
+  return true;
+}
+
+// Live update: typing valid summary stats recomputes immediately — no Load click.
+for (const id of ['input-slope', 'input-se', 'input-n']) {
+  document.getElementById(id)?.addEventListener('input', () => {
+    if (summaryActive() && applySummaryInputs(true)) showResults();
+  });
+}
+
 const loadSummaryBtn = document.getElementById('load-summary');
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const slopeInput = /** @type {HTMLInputElement} */ (document.getElementById('input-slope'));
-    const seInput = /** @type {HTMLInputElement} */ (document.getElementById('input-se'));
-    const nInput = /** @type {HTMLInputElement} */ (document.getElementById('input-n'));
-
-    const slope = parseFloat(slopeInput?.value);
-    const se = parseFloat(seInput?.value);
-    const n = parseInt(nInput?.value, 10);
-
-    if (!isFinite(slope)) { announce('Enter a valid slope.'); return; }
-    if (!isFinite(se) || se <= 0) { announce('Enter a valid positive SE.'); return; }
-    if (!isFinite(n) || n < 3) { announce('Sample size must be at least 3.'); return; }
-
-    fromSummary = true;
-    summarySlope = slope;
-    summarySE = se;
-    summaryN = n;
-    currentRows = [];
-    currentContext = null;
-    varSelector.hidden = true;
-    showResults();
-    announce(`Loaded summary: slope = ${slope}, SE = ${se}, n = ${n}.`);
+    if (applySummaryInputs()) {
+      showResults();
+      announce(`Loaded summary: slope = ${summarySlope}, SE = ${summarySE}, n = ${summaryN}.`);
+    }
   });
 }
 

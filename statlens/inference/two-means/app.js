@@ -92,48 +92,72 @@ groupVarSelect?.addEventListener('change', reExtractGroups);
 responseVarSelect?.addEventListener('change', reExtractGroups);
 
 // ── Summary input handler ────────────────────────────────────────
+/** Is the "Enter Summary" tab the active data source? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/**
+ * Read + validate the two-group summary-stat fields into the summary state.
+ * No separate "Load" step — live edits call this directly.
+ * @param {boolean} [quiet] - When true (live typing), don't announce errors.
+ * @returns {boolean} true if the inputs form a valid two-means summary
+ */
+function applySummaryInputs(quiet) {
+  const xbar1 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-xbar1'))?.value);
+  const s1 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-s1'))?.value);
+  const n1 = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n1'))?.value, 10);
+  const xbar2 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-xbar2'))?.value);
+  const s2 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-s2'))?.value);
+  const n2 = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n2'))?.value, 10);
+
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!isFinite(xbar1)) return fail('Enter a valid mean for Group 1.');
+  if (!isFinite(s1) || s1 <= 0) return fail('Enter a valid positive SD for Group 1.');
+  if (!isFinite(n1) || n1 < 2) return fail('Group 1 sample size must be at least 2.');
+  if (!isFinite(xbar2)) return fail('Enter a valid mean for Group 2.');
+  if (!isFinite(s2) || s2 <= 0) return fail('Enter a valid positive SD for Group 2.');
+  if (!isFinite(n2) || n2 < 2) return fail('Group 2 sample size must be at least 2.');
+
+  const label1El = /** @type {HTMLInputElement} */ (document.getElementById('input-label1'));
+  const label2El = /** @type {HTMLInputElement} */ (document.getElementById('input-label2'));
+  group1Name = label1El?.value?.trim() || 'Group 1';
+  group2Name = label2El?.value?.trim() || 'Group 2';
+
+  fromSummary = true;
+  group1 = [];
+  group2 = [];
+  parsedCache = null;
+  currentContext = null;
+  if (varSelectorsDiv) varSelectorsDiv.hidden = true;
+  if (dataPreview) dataPreview.hidden = true;
+
+  dataPrecision = Math.max(
+    ...([xbar1, s1, xbar2, s2].map(v => {
+      const str = String(v);
+      const dot = str.indexOf('.');
+      return dot === -1 ? 0 : str.length - dot - 1;
+    }))
+  );
+
+  summaryResult = { xbar1, s1, n1, xbar2, s2, n2 };
+  return true;
+}
+
+// Live update: typing valid summary stats recomputes immediately — no Load click.
+for (const id of ['input-xbar1', 'input-s1', 'input-n1', 'input-xbar2', 'input-s2', 'input-n2', 'input-label1', 'input-label2']) {
+  document.getElementById(id)?.addEventListener('input', () => {
+    if (summaryActive() && applySummaryInputs(true)) runAnalysis();
+  });
+}
+
 const loadSummaryBtn = document.getElementById('load-summary');
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const xbar1 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-xbar1'))?.value);
-    const s1 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-s1'))?.value);
-    const n1 = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n1'))?.value, 10);
-    const xbar2 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-xbar2'))?.value);
-    const s2 = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-s2'))?.value);
-    const n2 = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n2'))?.value, 10);
-
-    if (!isFinite(xbar1)) { announce('Enter a valid mean for Group 1.'); return; }
-    if (!isFinite(s1) || s1 <= 0) { announce('Enter a valid positive SD for Group 1.'); return; }
-    if (!isFinite(n1) || n1 < 2) { announce('Group 1 sample size must be at least 2.'); return; }
-    if (!isFinite(xbar2)) { announce('Enter a valid mean for Group 2.'); return; }
-    if (!isFinite(s2) || s2 <= 0) { announce('Enter a valid positive SD for Group 2.'); return; }
-    if (!isFinite(n2) || n2 < 2) { announce('Group 2 sample size must be at least 2.'); return; }
-
-    const label1El = /** @type {HTMLInputElement} */ (document.getElementById('input-label1'));
-    const label2El = /** @type {HTMLInputElement} */ (document.getElementById('input-label2'));
-    group1Name = label1El?.value?.trim() || 'Group 1';
-    group2Name = label2El?.value?.trim() || 'Group 2';
-
-    fromSummary = true;
-    group1 = [];
-    group2 = [];
-    parsedCache = null;
-    currentContext = null;
-    if (varSelectorsDiv) varSelectorsDiv.hidden = true;
-    if (dataPreview) dataPreview.hidden = true;
-
-    dataPrecision = Math.max(
-      ...([xbar1, s1, xbar2, s2].map(v => {
-        const str = String(v);
-        const dot = str.indexOf('.');
-        return dot === -1 ? 0 : str.length - dot - 1;
-      }))
-    );
-
-    // Store summary values for re-analysis on parameter change
-    summaryResult = { xbar1, s1, n1, xbar2, s2, n2 };
-    runAnalysis();
-    announce(`Loaded summary: ${group1Name} (n=${n1}, x̄=${xbar1}) vs ${group2Name} (n=${n2}, x̄=${xbar2}).`);
+    if (applySummaryInputs()) {
+      runAnalysis();
+      announce(`Loaded summary: ${group1Name} (n=${summaryResult.n1}, x̄=${summaryResult.xbar1}) vs ${group2Name} (n=${summaryResult.n2}, x̄=${summaryResult.xbar2}).`);
+    }
   });
 }
 

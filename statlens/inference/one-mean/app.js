@@ -218,30 +218,51 @@ const dataPanel = initDataPanel({
 });
 
 // ── Summary input handler ────────────────────────────────────────
+/** Is the "Enter Summary" tab the active data source? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/**
+ * Read + validate the summary-stat fields into the summary state. No separate
+ * "Load" step — live edits call this directly.
+ * @param {boolean} [quiet] - When true (live typing), don't announce errors.
+ * @returns {boolean} true if the inputs form a valid one-mean summary
+ */
+function applySummaryInputs(quiet) {
+  const xbar = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-xbar'))?.value);
+  const s = parseFloat(/** @type {HTMLInputElement} */ (document.getElementById('input-s'))?.value);
+  const n = parseInt(/** @type {HTMLInputElement} */ (document.getElementById('input-n'))?.value, 10);
+
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!isFinite(xbar)) return fail('Enter a valid sample mean.');
+  if (!isFinite(s) || s <= 0) return fail('Enter a valid positive standard deviation.');
+  if (!isFinite(n) || n < 2) return fail('Sample size must be at least 2.');
+
+  fromSummary = true;
+  summaryXbar = xbar;
+  summaryS = s;
+  summaryN = n;
+  currentData = null;
+  currentContext = null;
+  varSelector.hidden = true;
+  return true;
+}
+
+// Live update: typing valid summary stats recomputes immediately — no Load click.
+for (const id of ['input-xbar', 'input-s', 'input-n']) {
+  document.getElementById(id)?.addEventListener('input', () => {
+    if (summaryActive() && applySummaryInputs(true)) showResults();
+  });
+}
+
 const loadSummaryBtn = document.getElementById('load-summary');
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const xbarInput = /** @type {HTMLInputElement} */ (document.getElementById('input-xbar'));
-    const sInput = /** @type {HTMLInputElement} */ (document.getElementById('input-s'));
-    const nInput = /** @type {HTMLInputElement} */ (document.getElementById('input-n'));
-
-    const xbar = parseFloat(xbarInput?.value);
-    const s = parseFloat(sInput?.value);
-    const n = parseInt(nInput?.value, 10);
-
-    if (!isFinite(xbar)) { announce('Enter a valid sample mean.'); return; }
-    if (!isFinite(s) || s <= 0) { announce('Enter a valid positive standard deviation.'); return; }
-    if (!isFinite(n) || n < 2) { announce('Sample size must be at least 2.'); return; }
-
-    fromSummary = true;
-    summaryXbar = xbar;
-    summaryS = s;
-    summaryN = n;
-    currentData = null;
-    currentContext = null;
-    varSelector.hidden = true;
-    showResults();
-    announce(`Loaded summary statistics: x̄ = ${xbar}, s = ${s}, n = ${n}.`);
+    if (applySummaryInputs()) {
+      showResults();
+      announce(`Loaded summary statistics: x̄ = ${summaryXbar}, s = ${summaryS}, n = ${summaryN}.`);
+    }
   });
 }
 
