@@ -9,7 +9,7 @@
  * some not at all.
  *
  * Two matching styles (source and target share the same representation):
- *   - 'waffle' : both are marble waffles (matches the Sampling Distribution Lab)
+ *   - 'grid' : both are marble grids (matches the Sampling Distribution Lab)
  *   - 'bars'   : both are proportion bars built from n cells
  *
  * CVD-safe Okabe-Ito colours: success = amber #C08700 (hatched), failure = blue #0072B2.
@@ -17,7 +17,7 @@
 
 import { prefersReducedMotion } from './chart-utils.js';
 
-const MAX_MARBLES = 120;   // above this, the waffle style falls back to bars
+const MAX_MARBLES = 120;   // above this, the grid style falls back to bars
 const MAX_FLY = 60;        // cap flying clones per draw (large n fills the rest instantly)
 
 /** Count successes (1s) in a binary array. */
@@ -26,7 +26,7 @@ function counts(data) {
   return { s, f: data.length - s, n: data.length };
 }
 
-/** Pick a marble size that keeps the whole waffle visible for sample size n. */
+/** Pick a marble size that keeps the whole grid visible for sample size n. */
 function marbleSize(n) {
   if (n <= 40) return 16;
   if (n <= 70) return 13;
@@ -34,27 +34,27 @@ function marbleSize(n) {
   return 9;
 }
 
-/** Resolve the effective style (waffle falls back to bars when n is too large). */
+/** Resolve the effective style (grid falls back to bars when n is too large). */
 function effStyle(style, n) {
-  const s = style === 'bars' ? 'bars' : 'waffle';
-  return s === 'waffle' && n > MAX_MARBLES ? 'bars' : s;
+  const s = style === 'bars' ? 'bars' : 'grid';
+  return s === 'grid' && n > MAX_MARBLES ? 'bars' : s;
 }
 
 // ── Slot builders (empty unless `data` given) ───────────────────────
 
 /**
- * Build a marble waffle of n slots. Successes (amber) grouped first when filled.
+ * Build a marble grid of n slots. Successes (amber) grouped first when filled.
  * @param {number} n
  * @param {{label?: string, data?: number[]}} [opts]
  * @returns {{el: HTMLElement, slots: HTMLElement[]}}
  */
-function makeWaffle(n, opts = {}) {
+function makeGrid(n, opts = {}) {
   const el = document.createElement('div');
   el.className = 'pbm-grid';
   el.setAttribute('role', 'img');
   if (opts.label) el.setAttribute('aria-label', opts.label);
   el.style.setProperty('--pbm-marble', `${marbleSize(n)}px`);
-  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3)); // roughly square waffle
+  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3)); // roughly square grid
   el.style.gridTemplateColumns = `repeat(${cols}, var(--pbm-marble))`;
   return { el, slots: fillSlots(el, n, 'pbm-marble', opts.data) };
 }
@@ -93,7 +93,7 @@ function makeFilled(data, style, label) {
   const n = data.length;
   return (effStyle(style, n) === 'bars'
     ? makeBar(n, { data, label })
-    : makeWaffle(n, { data, label })).el;
+    : makeGrid(n, { data, label })).el;
 }
 
 // ── Public API ──────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ function makeFilled(data, style, label) {
  * Render the original "bag".
  * @param {HTMLElement} container
  * @param {number[]} data binary (1 = success, 0 = failure)
- * @param {{style?: 'waffle'|'bars', label?: string}} [opts]
+ * @param {{style?: 'grid'|'bars', label?: string}} [opts]
  */
 export function renderPropBag(container, data, opts = {}) {
   if (!container) return;
@@ -128,19 +128,19 @@ export function renderPropResample(container, resample, opts = {}) {
  * @param {HTMLElement} bagEl
  * @param {number[]} resample
  * @param {number[]} data - original sample
- * @param {{style?: 'waffle'|'bars', animate?: boolean}} [opts]
+ * @param {{style?: 'grid'|'bars', animate?: boolean}} [opts]
  * @returns {number} animation duration in ms
  */
 export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   if (!resampleEl) return 0;
-  const style = opts.style === 'bars' ? 'bars' : 'waffle';
+  const style = opts.style === 'bars' ? 'bars' : 'grid';
   const animate = !!opts.animate && !prefersReducedMotion() && !!bagEl;
   if (!animate) { renderPropResample(resampleEl, resample, { style }); return 0; }
   return animateEndsFill(resampleEl, bagEl, resample, data, style);
 }
 
 /**
- * Build an empty resample (waffle or bar), then fill inward from the two ends as
+ * Build an empty resample (grid or bar), then fill inward from the two ends as
  * squares fly in from matching slots in the bag (drawn with replacement).
  * @returns {number} duration ms
  */
@@ -148,7 +148,7 @@ function animateEndsFill(resampleEl, bagEl, resample, data, style) {
   const n = resample.length;
   const built = effStyle(style, n) === 'bars'
     ? makeBar(n, { label: 'Resample' })
-    : makeWaffle(n, { label: 'Resample' });
+    : makeGrid(n, { label: 'Resample' });
   built.el.classList.add('pbm-resample');
   resampleEl.innerHTML = '';
   resampleEl.appendChild(built.el);

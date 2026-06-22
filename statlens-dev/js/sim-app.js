@@ -59,9 +59,9 @@ export function initSimPage(config) {
   }
   let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
   // B2 prototype: one-proportion bootstrap mechanism. Source and target share a
-  // representation — 'waffle' (marble waffles) or 'bars' (proportion bars).
+  // representation — 'grid' (marble grids) or 'bars' (proportion bars).
   // Selectable via ?mechstyle= for A/B comparison on the dev site.
-  let propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'waffle';
+  let propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'grid';
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
@@ -1647,7 +1647,7 @@ export function initSimPage(config) {
 
     if (config.proportion && !config.twoGroup) {
       // One-sample proportion: the original sample is a fixed "bag" of n
-      // observations (B2). Render as marbles or dots-on-bar (?mechstyle=).
+      // observations (B2). Render as a marble grid or a proportion bar (?mechstyle=).
       const successes = data1.filter(v => v === 1).length;
       const failures = data1.length - successes;
       const pHat = mean(data1);
@@ -1912,7 +1912,7 @@ export function initSimPage(config) {
     bar.insertBefore(seg, bar.firstChild);
   }
 
-  /** Add the Waffle/Bar segmented toggle for the one-proportion bootstrap
+  /** Add the Grid/Bar segmented toggle for the one-proportion bootstrap
    *  mechanism (B2). Idempotent; flips bag + resample between representations. */
   function ensurePropStyleToggle() {
     if (!useNewPropMech || !mechanismStrip) return;
@@ -1924,13 +1924,13 @@ export function initSimPage(config) {
     seg.setAttribute('role', 'group');
     seg.setAttribute('aria-label', 'Mechanism view');
     seg.innerHTML =
-      `<button type="button" data-pstyle="waffle" aria-pressed="${String(propMechStyle === 'waffle')}">Waffle</button>` +
+      `<button type="button" data-pstyle="grid" aria-pressed="${String(propMechStyle === 'grid')}">Grid</button>` +
       `<button type="button" data-pstyle="bars" aria-pressed="${String(propMechStyle === 'bars')}">Bar</button>`;
 
     seg.addEventListener('click', (e) => {
       const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-pstyle]');
       if (!btn) return;
-      const want = btn.getAttribute('data-pstyle') === 'bars' ? 'bars' : 'waffle';
+      const want = btn.getAttribute('data-pstyle') === 'bars' ? 'bars' : 'grid';
       if (want === propMechStyle) return;
       propMechStyle = want;
       for (const b of seg.querySelectorAll('button')) {
