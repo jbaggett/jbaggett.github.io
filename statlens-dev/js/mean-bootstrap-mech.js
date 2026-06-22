@@ -32,13 +32,16 @@ function layout(values, domain, width) {
   const [lo, hi] = domain;
   const range = (hi - lo) || 1;
   const xOf = (/** @type {number} */ v) => PAD + ((v - lo) / range) * (width - 2 * PAD);
+  const clamp = (/** @type {number} */ x) => Math.max(PAD, Math.min(width - PAD, x));
   /** @type {Map<number, number>} */
   const colCount = new Map();
   const items = [...values].sort((a, b) => a - b).map((v) => {
+    // Bin to a DOT-wide column and stack at the COLUMN CENTRE so dots form clean
+    // vertical stacks (not jittered by each value's exact position within the bin).
     const col = Math.round(xOf(v) / DOT);
     const level = colCount.get(col) ?? 0;
     colCount.set(col, level + 1);
-    return { v, x: xOf(v), level };
+    return { v, x: clamp(col * DOT), level };
   });
   const maxLevel = Math.max(0, ...items.map(i => i.level));
   return { items, maxLevel, xOf };
@@ -52,14 +55,17 @@ function layout(values, domain, width) {
  * @param {{domain: [number,number], width?: number, label?: string, showMean?: boolean, empty?: boolean}} opts
  */
 function renderDotplot(container, values, opts) {
-  const width = opts.width ?? container.clientWidth ?? 240;
+  const width = opts.width || container.clientWidth || 240;
   const { items, maxLevel, xOf } = layout(values, opts.domain, width);
-  const plotH = (maxLevel + 1) * DOT + 4;
-  const meanLineH = plotH + 14;
+  // Fixed shared height (capacity) keeps the baseline put as stacks vary, so the
+  // original and resample plots stay aligned. Taller resample stacks overflow
+  // upward (the baseline doesn't move).
+  const cap = Math.max(opts.capacity ?? maxLevel, maxLevel);
+  const plotH = (cap + 1) * DOT + 4;
 
   const plot = document.createElement('div');
   plot.className = 'mbm-plot';
-  plot.style.height = `${meanLineH}px`;
+  plot.style.height = `${plotH + 14}px`;
   plot.setAttribute('role', 'img');
   if (opts.label) plot.setAttribute('aria-label', opts.label);
 
@@ -78,7 +84,7 @@ function renderDotplot(container, values, opts) {
   }
   container.innerHTML = '';
   container.appendChild(plot);
-  return { plot, dots, xOf, plotH, width };
+  return { plot, dots, xOf, plotH, width, maxLevel };
 }
 
 /** Dashed vertical mean marker + small triangle on the axis. */
@@ -98,8 +104,15 @@ function addMeanMarker(plot, x, plotH) {
  * @returns {ReturnType<typeof renderDotplot>}
  */
 export function renderMeanBag(container, data, opts) {
-  const res = renderDotplot(container, data, { domain: opts.domain, label: opts.label || 'Original sample' });
-  return { ...res, bagValues: [...data] };
+  const width = opts.width || container.clientWidth || 240;
+  // Size the plot once from the original, with headroom so resamples (which can
+  // stack a value higher than the original) keep a stable baseline.
+  const baseMax = layout(data, opts.domain, width).maxLevel;
+  const capacity = Math.ceil(baseMax * 1.8) + 2;
+  const res = renderDotplot(container, data, {
+    domain: opts.domain, label: opts.label || 'Original sample', width, capacity,
+  });
+  return { ...res, bagValues: [...data], capacity, width };
 }
 
 /**
@@ -112,16 +125,20 @@ export function renderMeanBag(container, data, opts) {
  * @returns {number} duration ms
  */
 export function showMeanResample(resampleEl, bag, resample, opts) {
+  // Share the bag's width + capacity so the two plots stay aligned (same scale,
+  // same baseline) regardless of how the resample's stacks vary.
+  const width = (bag && bag.width) || resampleEl.clientWidth || 240;
+  const capacity = (bag && bag.capacity) ?? 0;
   const animate = !!opts.animate && !prefersReducedMotion() && bag && bag.dots && bag.dots.length;
   if (!animate) {
-    renderDotplot(resampleEl, resample, { domain: opts.domain, label: 'Resample' });
+    renderDotplot(resampleEl, resample, { domain: opts.domain, label: 'Resample', width, capacity });
     return 0;
   }
 
   // Build the target layout, then place each dot empty and fly into it.
-  const width = resampleEl.clientWidth || bag.width || 240;
   const { items, maxLevel, xOf } = layout(resample, opts.domain, width);
-  const plotH = (maxLevel + 1) * DOT + 4;
+  const cap = Math.max(capacity, maxLevel);
+  const plotH = (cap + 1) * DOT + 4;
   const plot = document.createElement('div');
   plot.className = 'mbm-plot';
   plot.style.height = `${plotH + 14}px`;
