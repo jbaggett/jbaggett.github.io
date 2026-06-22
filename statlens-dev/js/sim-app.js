@@ -58,9 +58,10 @@ export function initSimPage(config) {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
   }
   let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
-  // B2 prototype: one-proportion bootstrap mechanism style ('marbles' | 'dots').
+  // B2 prototype: one-proportion bootstrap mechanism. Source and target share a
+  // representation — 'waffle' (marble waffles) or 'bars' (proportion bars).
   // Selectable via ?mechstyle= for A/B comparison on the dev site.
-  const propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'dots' ? 'dots' : 'marbles';
+  const propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'waffle';
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
