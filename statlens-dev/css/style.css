@@ -1113,6 +1113,7 @@ input[aria-invalid="true"] {
 .mechanism-panel {
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .mechanism-title {
@@ -1128,8 +1129,9 @@ input[aria-invalid="true"] {
   gap: 0.5rem;
 }
 
-/* Observed ↔ Null view toggle in the one-sample mechanism panel */
-.mech-null-toggle { margin: 0.25rem 0 0.5rem; }
+/* Observed ↔ Null view toggle: floated to the panel's top-right so it doesn't
+   push the dotplot down (keeps the observed + resample plots vertically aligned). */
+.mech-null-toggle { position: absolute; top: 0; right: 0; margin: 0; z-index: 2; }
 
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
 /* CVD-safe Okabe-Ito: success = amber (hatched), failure = blue. */

@@ -760,17 +760,33 @@ export function initOneSamplePage(config) {
           </div>`;
       }
     } else {
-      // Re-render with original sample dotplot/histogram
+      // One-mean: slide the dots back from the null-shifted positions to the
+      // observed ones — symmetric with morphToNull (don't rebuild = no blink).
       if (mechObservedStat && sampleData.length >= 2) {
-        mechObservedStat.innerHTML = `<div id="mech-obs-chart" class="mech-chart-container"></div>
-          <span class="mech-stat-text">n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span></span>`;
-        const obsChartEl = document.getElementById('mech-obs-chart');
-        if (obsChartEl) {
-          drawMiniChart(obsChartEl, sampleData, {
+        const statText = mechObservedStat.querySelector('.mech-stat-text');
+        if (statText) {
+          statText.innerHTML = `n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span>`;
+        }
+        const chartEl = document.getElementById('mech-obs-chart');
+        if (chartEl && chartEl.querySelector('svg')) {
+          morphMiniChart(chartEl, sampleData, {
             meanValue: observedStat,
+            highlightMean: true,
             domain: sharedBoxplotDomain(),
             label: 'Observed data distribution',
+            durationMs: 850,
           });
+        } else {
+          // No existing chart (first render) — draw it.
+          mechObservedStat.innerHTML = `<div id="mech-obs-chart" class="mech-chart-container"></div>
+            <span class="mech-stat-text">n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span></span>`;
+          const obsChartEl = document.getElementById('mech-obs-chart');
+          if (obsChartEl) {
+            drawMiniChart(obsChartEl, sampleData, {
+              meanValue: observedStat, domain: sharedBoxplotDomain(),
+              label: 'Observed data distribution',
+            });
+          }
         }
       }
     }
