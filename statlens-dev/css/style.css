@@ -1144,14 +1144,13 @@ input[aria-invalid="true"] {
 .pbm-empty { background: none; border: 1.5px dashed #b9c6cc; }
 
 /* Proportion-bar style: a row of n full-height cells (successes left, failures
-   right), built one draw at a time. */
-.pbm-fillbar { display: flex; gap: 1px; height: 40px; max-width: 340px;
+   right), built one draw at a time. Cells are contiguous (no gap) so filled
+   same-colour runs read as one solid bar; empty cells show the gray track. */
+.pbm-fillbar { display: flex; gap: 0; height: 40px; max-width: 340px;
   margin: 0.4rem auto; border: 1px solid #b9c6cc; border-radius: 5px; overflow: hidden;
   background: #eef2f4; }
-.pbm-fillbar-dense { gap: 0; }
 .pbm-cell { flex: 1 1 0; min-width: 0; height: 100%; }
-.pbm-cell.pbm-empty { background: none; border: none;
-  box-shadow: inset 0 0 0 1px rgba(150,165,172,0.35); }
+.pbm-cell.pbm-empty { background: none; }
 
 /* Pulse a source cell when it's drawn */
 .pbm-pulse { animation: pbm-pulse 300ms ease; box-shadow: 0 0 0 2px #1A1A1A; }

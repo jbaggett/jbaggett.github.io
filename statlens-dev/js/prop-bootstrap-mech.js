@@ -67,7 +67,7 @@ function makeWaffle(n, opts = {}) {
  */
 function makeBar(n, opts = {}) {
   const el = document.createElement('div');
-  el.className = 'pbm-fillbar' + (n > 60 ? ' pbm-fillbar-dense' : '');
+  el.className = 'pbm-fillbar';
   el.setAttribute('role', 'img');
   if (opts.label) el.setAttribute('aria-label', opts.label);
   return { el, slots: fillSlots(el, n, 'pbm-cell', opts.data) };
@@ -193,10 +193,14 @@ function animateEndsFill(resampleEl, bagEl, resample, data, style) {
       host.appendChild(clone);
       const dx = (dr.left + dr.width / 2) - (sr.left + sr.width / 2);
       const dy = (dr.top + dr.height / 2) - (sr.top + sr.height / 2);
-      requestAnimationFrame(() => {
-        clone.style.transition = `transform ${FLY}ms cubic-bezier(.4,.7,.3,1)`;
-        clone.style.transform = `translate(${dx}px, ${dy}px)`;
-      });
+      // Arc the flyer up over the gap between bag and resample so it's easy to
+      // track (a parabolic hop rather than a straight slide).
+      const arc = Math.min(60, 24 + Math.abs(dx) * 0.06);
+      clone.animate([
+        { transform: 'translate(0, 0)' },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - arc}px)`, offset: 0.5 },
+        { transform: `translate(${dx}px, ${dy}px)` },
+      ], { duration: FLY, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'forwards' });
       setTimeout(() => {
         clone.remove();
         slot.classList.remove('pbm-empty');
