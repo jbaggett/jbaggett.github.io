@@ -32,6 +32,7 @@ const FLY_COLOR = '#E07020';   // orange flyer (matches the Sampling Lab)
  *   xLabel?: string, viewHeight?: number, fillColor?: string }} [opts]
  */
 export function drawMechDotplot(container, values, opts = {}) {
+  if (container) container.innerHTML = ''; // drawDotplot/createChart appends — clear first
   return drawDotplot(container, values, {
     ...COMPACT,
     forceDotMode: true,
