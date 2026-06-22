@@ -168,7 +168,9 @@ export function computeDotRadius(innerWidth, innerHeight, maxStack, numBins) {
  * @param {boolean} [options.showExport] - Show export buttons (default: true)
  * @param {string} [options.filename] - PNG download filename
  * @param {'full'|'names'|'none'} [options.labels] - Label visibility: 'full' (default), 'names'/'none' (no value tooltips)
- * @returns {{ frame: ChartFrame, dots: Array<{value: number, binCenter: number, stackIndex: number}>, xScale: d3Scale.ScaleLinear<number,number>, maxStack: number, binWidth: number, update: (values: number[], opts?: object) => void }}
+ * @param {number} [options.dotRadius] - Force an exact dot radius (overrides auto-fit); for matched bag/resample dotplots
+ * @param {number} [options.sizingMaxStack] - Compute the auto-fit radius from this stack count instead of the data's own max (stable dot size across re-renders)
+ * @returns {{ frame: ChartFrame, dots: Array<{value: number, binCenter: number, stackIndex: number}>, xScale: d3Scale.ScaleLinear<number,number>, maxStack: number, binWidth: number, dotRadius: number, update: (values: number[], opts?: object) => void }}
  */
 export function drawDotplot(container, values, options = {}) {
   const {
@@ -198,6 +200,9 @@ export function drawDotplot(container, values, options = {}) {
     showExport,
     filename,
     labels = 'full',
+    dotRadius: fixedDotRadius,
+    sizingMaxStack,
+    forceDotMode = false,
   } = options;
 
   const result = computeDots(values, { numBins, domain, binWidth: lockedBinWidth, binOrigin: lockedBinOrigin });
@@ -215,10 +220,18 @@ export function drawDotplot(container, values, options = {}) {
     .domain(finalDomain)
     .range([0, frame.width]);
 
-  const dotRadius = computeDotRadius(frame.width, frame.height, maxStack, effectiveBins);
+  // `dotRadius` (or `sizingMaxStack`) lets a caller force a fixed dot size so two
+  // related dotplots (e.g. a bag and its resample) render dots the same size and
+  // keep a stable baseline as stacks vary.
+  const dotRadius = fixedDotRadius != null
+    ? fixedDotRadius
+    : computeDotRadius(frame.width, frame.height, sizingMaxStack ?? maxStack, effectiveBins);
 
-  // Detect if stacks overflow even at minimum radius — switch to filled columns
-  const wouldOverflow = forceColumns || (maxStack > 0 && maxStack * MIN_RADIUS * 2 > frame.height);
+  // Detect if stacks overflow even at minimum radius — switch to filled columns.
+  // `forceDotMode` keeps dots (mechanism strips want consistent dots across a
+  // bag/resample pair; tall stacks just extend upward).
+  const wouldOverflow = !forceDotMode
+    && (forceColumns || (maxStack > 0 && maxStack * MIN_RADIUS * 2 > frame.height));
 
   // Y axis is implicit (stacking height) for dots; column mode gets a y-axis
   const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);

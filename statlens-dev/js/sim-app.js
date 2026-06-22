@@ -19,7 +19,8 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
-import { renderMeanBag, showMeanResample } from './mean-bootstrap-mech.js';
+import { computeDots } from './dotplot.js';
+import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -77,6 +78,8 @@ export function initSimPage(config) {
   let meanDomain = null;
   /** @type {any} */
   let meanBag = null;
+  /** Shared stack capacity for matched bag/resample dot sizing. */
+  let meanSizingMax = 0;
   /** Shared dotplot domain from the original sample (with padding). */
   function computeMeanDomain() {
     if (!data1.length) return null;
@@ -1679,9 +1682,15 @@ export function initSimPage(config) {
         label: `Original sample: ${successes} successes, ${failures} failures, p-hat = ${formatStat(pHat, dataPrecision, 'proportion')}`,
       });
     } else if (meanDotActive()) {
-      // B1: original sample as a dotplot bag (shared axis with the resample).
+      // B1: original sample as a dotplot bag (shared renderer + axis/dot size with
+      // the resample). Size dots from the bag's stack + headroom so resamples keep
+      // the same dot size and a stable baseline.
       meanDomain = computeMeanDomain();
-      meanBag = renderMeanBag(originalContentEl, data1, { domain: meanDomain });
+      const natural = computeDots(data1, { domain: meanDomain ?? undefined }).maxStack;
+      meanSizingMax = Math.ceil(natural * 1.8) + 2;
+      meanBag = drawMechDotplot(originalContentEl, data1, {
+        domain: meanDomain ?? undefined, mean: mean(data1), meanLabel: 'x̄', sizingMaxStack: meanSizingMax,
+      });
     } else if (data1.length <= CHIP_THRESHOLD) {
       // Small dataset: show individual value chips
       const container = document.createElement('div');
@@ -2614,10 +2623,13 @@ export function initSimPage(config) {
       return showResamplePropBar(resampleValues, morph);
     }
 
-    // B1: small mean samples — animated dotplot resample (draw with replacement).
+    // B1: small mean samples — animated dotplot resample (draw with replacement),
+    // via the shared dotplot-resample helper.
     if (meanDotActive() && meanBag) {
-      return showMeanResample(resampleContentEl, meanBag, resampleValues,
-        { domain: meanDomain ?? computeMeanDomain(), animate: morph });
+      return showResampleDotplot(resampleContentEl, meanBag, resampleValues, {
+        domain: meanDomain ?? computeMeanDomain(), mean: mean(resampleValues),
+        meanLabel: 'x̄', sizingMaxStack: meanSizingMax, animate: morph,
+      });
     }
 
     const container = document.createElement('div');
