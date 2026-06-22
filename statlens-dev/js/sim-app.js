@@ -19,6 +19,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
+import { renderMeanBag, showMeanResample } from './mean-bootstrap-mech.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -65,6 +66,24 @@ export function initSimPage(config) {
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
   const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
+  // B1: one-sample mean bootstrap — animated dotplot resampling for small samples
+  // (the non-summary view). Large samples keep the histogram.
+  const MEAN_DOT_MAX = 40;
+  const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
+  /** True when the animated mean-dotplot mechanism should be used right now. */
+  const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
+    && resampleViewMode !== 'summary';
+  /** @type {[number,number]|null} */
+  let meanDomain = null;
+  /** @type {any} */
+  let meanBag = null;
+  /** Shared dotplot domain from the original sample (with padding). */
+  function computeMeanDomain() {
+    if (!data1.length) return null;
+    const lo = Math.min(...data1), hi = Math.max(...data1);
+    const pad = (hi - lo) * 0.08 || 0.5;
+    return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
+  }
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
     // Prefer the real outcome levels from the data (e.g. "promoted" /
@@ -1659,6 +1678,10 @@ export function initSimPage(config) {
         style: propMechStyle,
         label: `Original sample: ${successes} successes, ${failures} failures, p-hat = ${formatStat(pHat, dataPrecision, 'proportion')}`,
       });
+    } else if (meanDotActive()) {
+      // B1: original sample as a dotplot bag (shared axis with the resample).
+      meanDomain = computeMeanDomain();
+      meanBag = renderMeanBag(originalContentEl, data1, { domain: meanDomain });
     } else if (data1.length <= CHIP_THRESHOLD) {
       // Small dataset: show individual value chips
       const container = document.createElement('div');
@@ -2226,8 +2249,10 @@ export function initSimPage(config) {
     bootstrapSampleEl.hidden = false;
 
     // Fire flying dots from original → resample on +1. The new one-proportion
-    // mechanism (B2) does its own draw-with-replacement animation instead.
-    if (highlightStat && flyingAnim && originalContentEl && resampleContentEl && !useNewPropMech) {
+    // mechanism (B2) and the mean-dotplot mechanism (B1) do their own
+    // draw-with-replacement animation instead.
+    if (highlightStat && flyingAnim && originalContentEl && resampleContentEl
+        && !useNewPropMech && !meanDotActive()) {
       flyDataStream(originalContentEl, resampleContentEl);
     }
 
@@ -2589,6 +2614,12 @@ export function initSimPage(config) {
       return showResamplePropBar(resampleValues, morph);
     }
 
+    // B1: small mean samples — animated dotplot resample (draw with replacement).
+    if (meanDotActive() && meanBag) {
+      return showMeanResample(resampleContentEl, meanBag, resampleValues,
+        { domain: meanDomain ?? computeMeanDomain(), animate: morph });
+    }
+
     const container = document.createElement('div');
     container.className = 'mini-chart';
 
@@ -2930,6 +2961,9 @@ export function initSimPage(config) {
     resampleViewMode = mode;
     if (btnSummary) btnSummary.setAttribute('aria-pressed', String(mode === 'summary'));
     if (btnHistogram) btnHistogram.setAttribute('aria-pressed', String(mode === 'histogram'));
+    // B1: the mean dotplot view shows the original as a dotplot too — re-render it
+    // so the bag/chips switch with the view.
+    if (isMeanOneSample) renderOriginalSample();
     if (lastResample.length > 0) showResample(lastResample, false, lastWasSingle);
   }
 
@@ -2946,7 +2980,9 @@ export function initSimPage(config) {
 
     btnHistogram = /** @type {HTMLButtonElement} */ (document.createElement('button'));
     btnHistogram.type = 'button';
-    btnHistogram.textContent = 'Histogram';
+    // One-sample mean bootstrap labels the non-summary view "Dotplot" (small n
+    // shows the animated dotplot; large n falls back to a histogram).
+    btnHistogram.textContent = isMeanOneSample ? 'Dotplot' : 'Histogram';
     btnHistogram.setAttribute('aria-pressed', 'false');
 
     seg.appendChild(btnSummary);
