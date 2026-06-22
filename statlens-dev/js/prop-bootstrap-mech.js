@@ -38,23 +38,43 @@ function marbleSize(n) {
  * @param {number[]} data
  * @param {{label?: string}} [opts]
  */
-function marbleGrid(data, opts = {}) {
-  const { s, n } = counts(data);
+/**
+ * Build an n-slot waffle grid (shared sizing/columns). Slots start empty unless
+ * `data` is given, in which case successes (amber) are grouped first.
+ * @param {number} n
+ * @param {{label?: string, data?: number[]}} [opts]
+ * @returns {{grid: HTMLElement, slots: HTMLElement[]}}
+ */
+function makeGrid(n, opts = {}) {
   const grid = document.createElement('div');
   grid.className = 'pbm-grid';
   grid.setAttribute('role', 'img');
-  grid.setAttribute('aria-label', opts.label || `${s} of ${n} successes`);
+  if (opts.label) grid.setAttribute('aria-label', opts.label);
   const px = marbleSize(n);
   grid.style.setProperty('--pbm-marble', `${px}px`);
-  // Aim for a roughly square waffle.
-  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3));
+  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3)); // roughly square waffle
   grid.style.gridTemplateColumns = `repeat(${cols}, var(--pbm-marble))`;
+  const s = opts.data ? counts(opts.data).s : -1;
+  /** @type {HTMLElement[]} */
+  const slots = [];
   for (let i = 0; i < n; i++) {
     const m = document.createElement('span');
-    m.className = 'pbm-marble ' + (i < s ? 'pbm-success' : 'pbm-failure');
+    if (s < 0) m.className = 'pbm-marble pbm-empty';
+    else m.className = 'pbm-marble ' + (i < s ? 'pbm-success' : 'pbm-failure');
     grid.appendChild(m);
+    slots.push(m);
   }
-  return grid;
+  return { grid, slots };
+}
+
+/**
+ * Render the bag / a resample as a waffle of marbles (successes grouped first).
+ * @param {number[]} data
+ * @param {{label?: string}} [opts]
+ */
+function marbleGrid(data, opts = {}) {
+  const { s, n } = counts(data);
+  return makeGrid(n, { label: opts.label || `${s} of ${n} successes`, data }).grid;
 }
 
 /**
@@ -121,6 +141,96 @@ export function renderPropResample(container, resample, opts = {}) {
     : dotsBar(resample, { label: 'Resample' });
   el.classList.add('pbm-resample');
   container.appendChild(el);
+}
+
+/**
+ * Show a resample, animating the draw when asked. The marbles style fills empty
+ * outline slots from the two ends (successes from the left, failures from the
+ * right, converging) as marbles fly in from the bag.
+ * @param {HTMLElement} resampleEl
+ * @param {HTMLElement} bagEl
+ * @param {number[]} resample
+ * @param {number[]} data - original sample
+ * @param {{style?: 'marbles'|'dots', animate?: boolean}} [opts]
+ * @returns {number} animation duration in ms
+ */
+export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
+  if (!resampleEl) return 0;
+  const style = opts.style === 'dots' ? 'dots' : 'marbles';
+  const animate = !!opts.animate && !prefersReducedMotion() && !!bagEl;
+  if (!animate) { renderPropResample(resampleEl, resample, { style }); return 0; }
+  if (style === 'marbles' && resample.length <= MAX_MARBLES) {
+    return animateMarblesEndsFill(resampleEl, bagEl, resample, data);
+  }
+  // dots / large-n: fly a sample of clones, then reveal the final resample.
+  resampleEl.innerHTML = '';
+  const ms = animatePropDraw(bagEl, resampleEl, resample, data, { style });
+  const reveal = () => renderPropResample(resampleEl, resample, { style });
+  if (ms > 0) setTimeout(reveal, Math.max(0, ms - 120)); else reveal();
+  return ms;
+}
+
+/**
+ * Marbles resample: render n EMPTY outline slots, then fill them from the two
+ * ends — successes from the left, failures from the right — as marbles fly in
+ * from matching source cells in the bag (drawn with replacement).
+ * @returns {number} duration ms
+ */
+function animateMarblesEndsFill(resampleEl, bagEl, resample, data) {
+  const n = resample.length;
+  const { grid, slots } = makeGrid(n, { label: 'Resample' });
+  grid.classList.add('pbm-resample');
+  resampleEl.innerHTML = '';
+  resampleEl.appendChild(grid);
+
+  const bagCells = /** @type {HTMLElement[]} */ (Array.from(bagEl.querySelectorAll('.pbm-marble')));
+  const sBag = counts(data).s;
+  const successSrc = bagCells.slice(0, sBag);
+  const failureSrc = bagCells.slice(sBag);
+
+  // Assign each draw to a slot, filling inward from the two ends.
+  let left = 0, right = n - 1;
+  const steps = resample.map((v) => {
+    const slotIdx = v === 1 ? left++ : right--;
+    const pool = v === 1 ? successSrc : failureSrc;
+    const src = pool.length ? pool[(slotIdx * 7 + 3) % pool.length] : null;
+    return { v, slotIdx, src };
+  });
+
+  const host = bagEl.closest('.mechanism-strip') || document.body;
+  const hostRect = host.getBoundingClientRect();
+  const STAGGER = n <= 24 ? 34 : n <= 60 ? 18 : 10;
+  const FLY = 340;
+
+  steps.forEach((step, i) => {
+    const slot = slots[step.slotIdx];
+    const cls = step.v === 1 ? 'pbm-success' : 'pbm-failure';
+    setTimeout(() => {
+      if (!step.src) { slot.classList.remove('pbm-empty'); slot.classList.add(cls); return; }
+      step.src.classList.add('pbm-pulse');
+      setTimeout(() => step.src.classList.remove('pbm-pulse'), 280);
+      const sr = step.src.getBoundingClientRect();
+      const dr = slot.getBoundingClientRect();
+      const clone = document.createElement('span');
+      clone.className = 'pbm-flyer ' + cls;
+      clone.style.left = `${sr.left - hostRect.left + sr.width / 2}px`;
+      clone.style.top = `${sr.top - hostRect.top + sr.height / 2}px`;
+      host.appendChild(clone);
+      const dx = (dr.left + dr.width / 2) - (sr.left + sr.width / 2);
+      const dy = (dr.top + dr.height / 2) - (sr.top + sr.height / 2);
+      requestAnimationFrame(() => {
+        clone.style.transition = `transform ${FLY}ms cubic-bezier(.4,.7,.3,1)`;
+        clone.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
+      setTimeout(() => {
+        clone.remove();
+        slot.classList.remove('pbm-empty');
+        slot.classList.add(cls);
+      }, FLY);
+    }, i * STAGGER);
+  });
+
+  return (n - 1) * STAGGER + FLY + 80;
 }
 
 /**

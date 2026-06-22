@@ -1140,6 +1140,8 @@ input[aria-invalid="true"] {
 .pbm-grid { display: grid; gap: 2px; justify-content: center; margin: 0.3rem auto; }
 .pbm-marble { width: var(--pbm-marble, 14px); height: var(--pbm-marble, 14px);
   border-radius: 3px; box-sizing: border-box; }
+/* Empty resample slot: outline only, filled as marbles fly in */
+.pbm-empty { background: none; border: 1.5px dashed #b9c6cc; }
 
 /* Dots-on-bar style */
 .pbm-bar-wrap { margin: 0.4rem auto; max-width: 320px; }

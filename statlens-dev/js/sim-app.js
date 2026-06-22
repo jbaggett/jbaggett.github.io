@@ -18,7 +18,7 @@ import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, fly
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, renderPropResample, animatePropDraw } from './prop-bootstrap-mech.js';
+import { renderPropBag, showPropResample } from './prop-bootstrap-mech.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -2393,17 +2393,11 @@ export function initSimPage(config) {
    * @returns {number} Animation duration in ms
    */
   function showResamplePropBar(resampleValues, animate = false) {
-    // B2 prototype: render the resample as marbles/dots and animate the
-    // draw-with-replacement from the bag.
+    // B2 prototype: render the resample as marbles/dots; on +1, animate the
+    // draw-with-replacement from the bag (marbles fill from the two ends).
     if (useNewPropMech && resampleContentEl) {
-      resampleContentEl.innerHTML = '';
-      let ms = 0;
-      if (animate && originalContentEl) {
-        ms = animatePropDraw(originalContentEl, resampleContentEl, resampleValues, data1, { style: propMechStyle });
-      }
-      const reveal = () => renderPropResample(resampleContentEl, resampleValues, { style: propMechStyle });
-      if (ms > 0) setTimeout(reveal, Math.max(0, ms - 120)); else reveal();
-      return ms;
+      return showPropResample(resampleContentEl, originalContentEl, resampleValues, data1,
+        { style: propMechStyle, animate });
     }
     const successes = resampleValues.filter(v => v === 1).length;
     const failures = resampleValues.length - successes;
