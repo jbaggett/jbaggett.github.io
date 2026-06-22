@@ -18,7 +18,7 @@ import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, fly
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, showPropResample } from './prop-bootstrap-mech.js';
+import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -61,7 +61,7 @@ export function initSimPage(config) {
   // B2 prototype: one-proportion bootstrap mechanism. Source and target share a
   // representation — 'waffle' (marble waffles) or 'bars' (proportion bars).
   // Selectable via ?mechstyle= for A/B comparison on the dev site.
-  const propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'waffle';
+  let propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'waffle';
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
@@ -1282,6 +1282,7 @@ export function initSimPage(config) {
       } else if (config.mode === 'bootstrap' && !config.twoGroup && originalContentEl) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
+        if (useNewPropMech) ensurePropStyleToggle();
         renderOriginalSample();
         // Auto-default to histogram view for large numeric samples (unless user explicitly chose)
         // Proportions use proportion bars in both views, so no need to switch
@@ -1906,6 +1907,40 @@ export function initSimPage(config) {
         b.setAttribute('aria-pressed', String((b.getAttribute('data-view') === 'cards') === cardMechanism));
       }
       rerenderMechanismView();
+    });
+
+    bar.insertBefore(seg, bar.firstChild);
+  }
+
+  /** Add the Waffle/Bar segmented toggle for the one-proportion bootstrap
+   *  mechanism (B2). Idempotent; flips bag + resample between representations. */
+  function ensurePropStyleToggle() {
+    if (!useNewPropMech || !mechanismStrip) return;
+    const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
+    if (!bar || bar.querySelector('.pbm-style-toggle')) return;
+
+    const seg = document.createElement('div');
+    seg.className = 'seg-control pbm-style-toggle';
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Mechanism view');
+    seg.innerHTML =
+      `<button type="button" data-pstyle="waffle" aria-pressed="${String(propMechStyle === 'waffle')}">Waffle</button>` +
+      `<button type="button" data-pstyle="bars" aria-pressed="${String(propMechStyle === 'bars')}">Bar</button>`;
+
+    seg.addEventListener('click', (e) => {
+      const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-pstyle]');
+      if (!btn) return;
+      const want = btn.getAttribute('data-pstyle') === 'bars' ? 'bars' : 'waffle';
+      if (want === propMechStyle) return;
+      propMechStyle = want;
+      for (const b of seg.querySelectorAll('button')) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-pstyle') === propMechStyle));
+      }
+      // Re-render bag + current resample (static) in the new representation.
+      renderOriginalSample();
+      if (lastResample.length && resampleContentEl) {
+        renderPropResample(resampleContentEl, lastResample, { style: propMechStyle });
+      }
     });
 
     bar.insertBefore(seg, bar.firstChild);
