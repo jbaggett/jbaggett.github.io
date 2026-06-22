@@ -172,14 +172,18 @@ function animateEndsFill(resampleEl, bagEl, resample, data, style) {
 
   const host = bagEl.closest('.mechanism-strip') || document.body;
   const hostRect = host.getBoundingClientRect();
-  const STAGGER = n <= 24 ? 32 : n <= 60 ? 16 : 8;
   const FLY = 320;
-  let flyBudget = MAX_FLY;
+  // Bound the total fill time regardless of n: small samples stagger ~34ms/cell;
+  // large samples compress so the whole fill still finishes within FILL_WINDOW.
+  const FILL_WINDOW = Math.min(1000, Math.max(1, n - 1) * 34);
+  const per = n > 1 ? FILL_WINDOW / (n - 1) : 0;
+  // Spread ~MAX_FLY flying clones across the sequence (don't fly all n for large n).
+  const cloneEvery = Math.max(1, Math.ceil(n / MAX_FLY));
 
   steps.forEach((step, i) => {
     const slot = slots[step.slotIdx];
     const cls = step.v === 1 ? 'pbm-success' : 'pbm-failure';
-    const fly = step.src && flyBudget-- > 0;
+    const fly = step.src && (i % cloneEvery === 0);
     setTimeout(() => {
       if (!fly) { slot.classList.remove('pbm-empty'); slot.classList.add(cls); return; }
       step.src.classList.add('pbm-pulse');
@@ -206,8 +210,8 @@ function animateEndsFill(resampleEl, bagEl, resample, data, style) {
         slot.classList.remove('pbm-empty');
         slot.classList.add(cls);
       }, FLY);
-    }, i * STAGGER);
+    }, i * per);
   });
 
-  return (n - 1) * STAGGER + FLY + 80;
+  return FILL_WINDOW + FLY + 80;
 }

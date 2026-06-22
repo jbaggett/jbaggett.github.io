@@ -1152,6 +1152,10 @@ input[aria-invalid="true"] {
 .pbm-cell { flex: 1 1 0; min-width: 0; height: 100%; }
 .pbm-cell.pbm-empty { background: none; }
 
+/* Two-proportion bootstrap (B4): two stacked groups, each its own bag/resample */
+.pbm-twogroup { display: flex; flex-direction: column; gap: 0.5rem; }
+.pbm-group { display: flex; flex-direction: column; }
+
 /* Pulse a source cell when it's drawn */
 .pbm-pulse { animation: pbm-pulse 300ms ease; box-shadow: 0 0 0 2px #1A1A1A; }
 @keyframes pbm-pulse { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }

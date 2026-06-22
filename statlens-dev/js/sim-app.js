@@ -63,6 +63,8 @@ export function initSimPage(config) {
   // Selectable via ?mechstyle= for A/B comparison on the dev site.
   let propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'grid';
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
+  // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
+  const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
     // Prefer the real outcome levels from the data (e.g. "promoted" /
@@ -1292,6 +1294,7 @@ export function initSimPage(config) {
       } else if (config.twoGroup) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
+        if (useNewPropMech2) ensurePropStyleToggle();
         renderTwoGroupOriginal();
         // In card mode, seed the resample panel with the original grouping so
         // the first +1 has cards to deal from (FLIP needs a starting layout).
@@ -1827,8 +1830,63 @@ export function initSimPage(config) {
   /** Render original group summaries in the mechanism strip. */
   function renderTwoGroupOriginal() {
     if (!mechOriginalContent) return;
+    if (useNewPropMech2) { renderTwoPropBags(); return; }
     mechOriginalContent.innerHTML = buildTwoGroupHTML(data1, data2, false, true);
     renderTwoGroupCharts(data1, data2, 'orig');
+  }
+
+  // ── B4: two-proportion bootstrap mechanism (grid/bar per group) ──────
+
+  /** Build the two-stacked-group scaffold (empty host divs + per-group stats). */
+  function twoPropPanelHTML(kind, g1, g2, withDiff) {
+    const f = (/** @type {number} */ v) => formatStat(v, dataPrecision, 'proportion');
+    let html = `<div class="pbm-twogroup">
+      <div class="pbm-group">
+        <div class="mech-group-row"><span class="mech-group-name">${group1Name}:</span>
+          <span class="mech-group-stat">n = ${g1.length}, p̂ = ${f(mean(g1))}</span></div>
+        <div id="pbm-${kind}-1"></div>
+      </div>
+      <div class="pbm-group">
+        <div class="mech-group-row"><span class="mech-group-name">${group2Name}:</span>
+          <span class="mech-group-stat">n = ${g2.length}, p̂ = ${f(mean(g2))}</span></div>
+        <div id="pbm-${kind}-2"></div>
+      </div>
+    </div>`;
+    if (withDiff) {
+      html += `<div class="mech-diff">diff = <span class="mech-stat-value">${f(mean(g1) - mean(g2))}</span></div>`;
+    }
+    return html;
+  }
+
+  /** Render the two original group "bags". */
+  function renderTwoPropBags() {
+    if (!mechOriginalContent) return;
+    mechOriginalContent.innerHTML = twoPropPanelHTML('bag', data1, data2, false);
+    renderPropBag(document.getElementById('pbm-bag-1'), data1, { style: propMechStyle, label: `${group1Name} sample` });
+    renderPropBag(document.getElementById('pbm-bag-2'), data2, { style: propMechStyle, label: `${group2Name} sample` });
+  }
+
+  /**
+   * Render the two resamples (each drawn with replacement from its own bag) and
+   * the difference p̂₁* − p̂₂*. Animates the draw on +1.
+   * @returns {number} animation duration ms
+   */
+  function showTwoPropResample(g1, g2, animateDraw) {
+    if (!mechResampleContent) return 0;
+    mechResampleContent.innerHTML = twoPropPanelHTML('rs', g1, g2, true);
+    const ms1 = showPropResample(document.getElementById('pbm-rs-1'), document.getElementById('pbm-bag-1'),
+      g1, data1, { style: propMechStyle, animate: animateDraw });
+    const ms2 = showPropResample(document.getElementById('pbm-rs-2'), document.getElementById('pbm-bag-2'),
+      g2, data2, { style: propMechStyle, animate: animateDraw });
+    const ms = Math.max(ms1, ms2);
+    const diffEl = mechResampleContent.querySelector('.mech-stat-value');
+    const setDiff = () => {
+      if (!diffEl) return;
+      diffEl.textContent = formatStat(mean(g1) - mean(g2), dataPrecision, 'proportion');
+      diffEl.classList.add('highlight-last');
+    };
+    if (ms > 0) setTimeout(setDiff, Math.max(0, ms - 100)); else setDiff();
+    return ms;
   }
 
   /**
@@ -1876,8 +1934,12 @@ export function initSimPage(config) {
       const haveResample = lastTwoG1.length > 0 && lastTwoG2.length > 0;
       const g1 = haveResample ? lastTwoG1 : data1;
       const g2 = haveResample ? lastTwoG2 : data2;
-      mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, false);
-      renderTwoGroupCharts(g1, g2, 'resamp');
+      if (useNewPropMech2) {
+        showTwoPropResample(g1, g2, false); // view switch → no draw animation
+      } else {
+        mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, false);
+        renderTwoGroupCharts(g1, g2, 'resamp');
+      }
     }
     updateMechCardLegend();
   }
@@ -1915,7 +1977,7 @@ export function initSimPage(config) {
   /** Add the Grid/Bar segmented toggle for the one-proportion bootstrap
    *  mechanism (B2). Idempotent; flips bag + resample between representations. */
   function ensurePropStyleToggle() {
-    if (!useNewPropMech || !mechanismStrip) return;
+    if ((!useNewPropMech && !useNewPropMech2) || !mechanismStrip) return;
     const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
     if (!bar || bar.querySelector('.pbm-style-toggle')) return;
 
@@ -1937,9 +1999,13 @@ export function initSimPage(config) {
         b.setAttribute('aria-pressed', String(b.getAttribute('data-pstyle') === propMechStyle));
       }
       // Re-render bag + current resample (static) in the new representation.
-      renderOriginalSample();
-      if (lastResample.length && resampleContentEl) {
-        renderPropResample(resampleContentEl, lastResample, { style: propMechStyle });
+      if (useNewPropMech2) {
+        rerenderMechanismView();
+      } else {
+        renderOriginalSample();
+        if (lastResample.length && resampleContentEl) {
+          renderPropResample(resampleContentEl, lastResample, { style: propMechStyle });
+        }
       }
     });
 
@@ -1956,9 +2022,12 @@ export function initSimPage(config) {
   function showTwoGroupMechanism(g1, g2, _flash = false, highlight = false) {
     if (!mechResampleContent || !mechanismDescEl) return 0;
 
-    // Remember the latest grouping so the Bars/Cards toggle can re-render it.
+    // Remember the latest grouping so the toggle can re-render it.
     lastTwoG1 = g1;
     lastTwoG2 = g2;
+
+    // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
+    if (useNewPropMech2) return showTwoPropResample(g1, g2, highlight);
 
     const statFn = config.mode === 'bootstrap' ? getBootstrapStat().fn : mean;
     const fmtType = config.proportion ? 'proportion' : undefined;
