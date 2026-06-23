@@ -866,10 +866,22 @@ export function initOneSamplePage(config) {
     wrap.innerHTML =
       `<button type="button" data-mview="summary" aria-pressed="${String(meanView === 'summary')}">Summary</button>`
       + `<button type="button" data-mview="dotplot" aria-pressed="${String(meanView === 'dotplot')}">Dotplot</button>`;
-    // Bottom of the right panel (not under the title) so the card tops align with
-    // the left panel and we don't waste a vertical row.
-    const simPanel = document.getElementById('mech-simulation');
-    (simPanel || /** @type {HTMLElement} */ (simTitleEl.parentElement)).appendChild(wrap);
+    // Place it in a full-width bottom bar next to the "Resample N values…" caption
+    // so it reads as applying to the whole mechanism (not just the right plot).
+    const strip = document.getElementById('mechanism-strip');
+    const desc = document.getElementById('mechanism-description');
+    if (strip && desc) {
+      let bar = strip.querySelector('.mech-bottom-bar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'mech-bottom-bar';
+        desc.parentElement?.insertBefore(bar, desc);
+        bar.appendChild(desc); // move the caption into the bar
+      }
+      bar.appendChild(wrap);
+    } else {
+      (document.getElementById('mech-simulation') || /** @type {HTMLElement} */ (simTitleEl.parentElement)).appendChild(wrap);
+    }
     meanViewBtns = wrap.querySelectorAll('button');
     for (const b of meanViewBtns) {
       b.addEventListener('click', () => {
