@@ -985,6 +985,7 @@ export function initOneSamplePage(config) {
 
     lastSimStat = 0;
     let lastSimDetail = '';
+    let mechAnimMs = 0; // resample-build animation duration (delays the drop)
 
     const isSingle = count === 1;
     lastResampleArr = null;
@@ -1050,8 +1051,10 @@ export function initOneSamplePage(config) {
       mechSimStat.innerHTML = lastSimDetail;
 
       // Render the resample for one-mean in the current view after the DOM update.
+      // Capture the animation duration so the "drop into the sampling distribution"
+      // waits until the resample has actually finished building (was firing early).
       if (!isProp && lastResampleArr && lastResampleArr.length >= 2) {
-        renderMeanResampleView(isSingle);
+        mechAnimMs = renderMeanResampleView(isSingle);
       }
     }
 
@@ -1086,12 +1089,14 @@ export function initOneSamplePage(config) {
     if (resetBtn) resetBtn.hidden = false;
 
     if (count === 1) {
+      // Wait for the resample to finish building before the stat drops into the
+      // sampling distribution — otherwise the drop fires out of order.
       setTimeout(() => {
         renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
         if (mechSimStat && chartContainer) {
           animateDropToChart(mechSimStat, chartContainer);
         }
-      }, 150);
+      }, Math.max(150, mechAnimMs));
     } else {
       renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
     }
