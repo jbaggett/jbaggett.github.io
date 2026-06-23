@@ -1434,19 +1434,14 @@ input[aria-invalid="true"] {
   display: flex;
   justify-content: center;
 }
-/* Transient caption explaining the null shift (subtract a constant from each value) */
-.mech-shift-note {
-  margin: 6px auto 0;
-  max-width: 92%;
-  text-align: center;
-  font-size: 0.82rem;
-  font-style: italic;
-  line-height: 1.35;
+/* The mechanism caption briefly highlights while it explains the null shift */
+.mechanism-desc.shift-active {
   color: #114B5F;
   background: #EAF3F7;
-  border: 1px solid #BcdAe6;
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 3px 8px;
+  font-style: normal;
+  transition: background .3s ease;
 }
 /* Cards mid-shift: warm highlight while the value tweens to the null-shifted value */
 .sample-dot.chip-shifting {

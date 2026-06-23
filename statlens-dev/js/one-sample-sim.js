@@ -323,31 +323,23 @@ export function initOneSamplePage(config) {
 
   /** @type {ReturnType<typeof setTimeout>|undefined} */
   let shiftNoteTimer;
-  /** Show a transient caption explaining the null shift (the subtraction). */
+  /** Explain the null shift in the full-width mechanism caption (it's overwritten
+   *  by the "Resample N values…" description once the resample runs). Full width
+   *  keeps it to one line on desktop — no wasted vertical space in the panel. */
   function showShiftNote(toNull) {
     if (isProp) return;
-    const panel = document.getElementById('mech-observed');
-    if (!panel) return;
-    let note = /** @type {HTMLElement|null} */ (panel.querySelector('.mech-shift-note'));
-    if (!note) {
-      note = document.createElement('div');
-      note.className = 'mech-shift-note';
-      note.setAttribute('aria-live', 'polite');
-      panel.appendChild(note);
-    }
+    const desc = document.getElementById('mechanism-description');
+    if (!desc) return;
     const shift = observedStat - getNullValue();   // amount subtracted from each value
     const mag = formatStat(Math.abs(shift), dataPrecision);
     const verb = shift >= 0 ? 'Subtract' : 'Add';
-    note.innerHTML = toNull
+    desc.innerHTML = toNull
       ? `${verb} ${mag} from every value → the sample mean becomes μ₀ = ${formatStat(getNullValue(), dataPrecision)}, so H₀ is true`
       : `Back to the observed data (<span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)})`;
-    note.style.transition = 'none';
-    note.style.opacity = '1';
+    desc.hidden = false;
+    desc.classList.add('shift-active');
     clearTimeout(shiftNoteTimer);
-    shiftNoteTimer = setTimeout(() => {
-      note.style.transition = 'opacity .6s ease';
-      note.style.opacity = '0';
-    }, 2800);
+    shiftNoteTimer = setTimeout(() => desc.classList.remove('shift-active'), 2600);
   }
 
   /** Animate the bag cards' values from observed→shifted (or back) so students see
