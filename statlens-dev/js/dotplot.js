@@ -203,6 +203,7 @@ export function drawDotplot(container, values, options = {}) {
     dotRadius: fixedDotRadius,
     sizingMaxStack,
     forceDotMode = false,
+    viewWidth,
   } = options;
 
   const result = computeDots(values, { numBins, domain, binWidth: lockedBinWidth, binOrigin: lockedBinOrigin });
@@ -214,7 +215,7 @@ export function drawDotplot(container, values, options = {}) {
     ? Math.ceil((finalDomain[1] - finalDomain[0]) / actualBinWidth)
     : numBins ?? dotplotBins(values);
 
-  const frame = createChart(container, { titleText, descText, id, margin, showExport, filename, ...(viewHeight != null && { viewHeight }) });
+  const frame = createChart(container, { titleText, descText, id, margin, showExport, filename, ...(viewHeight != null && { viewHeight }), ...(viewWidth != null && { viewWidth }) });
 
   const xScale = d3Scale.scaleLinear()
     .domain(finalDomain)

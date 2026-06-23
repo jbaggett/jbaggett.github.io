@@ -265,7 +265,7 @@ export function initOneSamplePage(config) {
     if (!el || values.length < 2) return null;
     if (!meanSizingMax) {
       const natural = computeDots(values, { domain: sharedBoxplotDomain() }).maxStack;
-      meanSizingMax = Math.ceil(natural * 1.8) + 2;
+      meanSizingMax = natural + 3; // modest headroom so resample stacks fit without shrinking dots
     }
     meanBag = drawMechDotplot(el, values, {
       domain: sharedBoxplotDomain(), mean: meanVal, meanLabel: 'x̄', sizingMaxStack: meanSizingMax,

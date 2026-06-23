@@ -46,7 +46,10 @@ export function drawMechDotplot(container, values, opts = {}) {
     observedStat: opts.mean,
     observedLabel: opts.meanLabel ?? 'x̄',
     xLabel: opts.xLabel ?? '',
-    viewHeight: opts.viewHeight ?? 120,
+    // A narrow, taller viewBox so the dotplot fills the ~300px mechanism panel at
+    // close to 1:1 (a 600-wide viewBox displayed in a 300px panel halves the dots).
+    viewWidth: opts.viewWidth ?? 320,
+    viewHeight: opts.viewHeight ?? 150,
   });
 }
 

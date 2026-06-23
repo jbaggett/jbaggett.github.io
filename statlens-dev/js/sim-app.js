@@ -1687,7 +1687,7 @@ export function initSimPage(config) {
       // the same dot size and a stable baseline.
       meanDomain = computeMeanDomain();
       const natural = computeDots(data1, { domain: meanDomain ?? undefined }).maxStack;
-      meanSizingMax = Math.ceil(natural * 1.8) + 2;
+      meanSizingMax = natural + 3; // modest headroom so resample stacks fit without shrinking dots
       meanBag = drawMechDotplot(originalContentEl, data1, {
         domain: meanDomain ?? undefined, mean: mean(data1), meanLabel: 'x̄', sizingMaxStack: meanSizingMax,
       });
