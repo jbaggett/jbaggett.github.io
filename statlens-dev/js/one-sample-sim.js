@@ -331,17 +331,55 @@ export function initOneSamplePage(config) {
     return meanBag;
   }
 
-  /** Glide the bag's dots + mean line horizontally by `deltaPx` → 0 (the
-   *  observed↔null shift, as a uniform slide). Returns ms. */
+  // Observed→null shift animation style: 'slide' (uniform block, default),
+  // 'lift' (block lifts + arcs), 'fly' (each dot arcs individually, staggered).
+  const shiftStyle = (new URLSearchParams(location.search).get('shift') || 'slide').toLowerCase();
+
+  /** Animate the bag's dots + mean line by `deltaPx` → 0 (the observed↔null
+   *  shift). The dots are already drawn at their shifted positions; we start them
+   *  at the observed offset and animate to 0. Returns ms. */
   function glideBag(deltaPx) {
     if (!meanBag || prefersReducedMotion()) return 0;
     const inner = meanBag.frame.inner;
-    const groups = /** @type {SVGGElement[]} */ (Array.from(inner.querySelectorAll('.data, .overlays')));
+    const dataG = /** @type {SVGGElement|null} */ (inner.querySelector('.data'));
+    const overlayG = /** @type {SVGGElement|null} */ (inner.querySelector('.overlays'));
+    const DUR = 850;
+
+    if (shiftStyle === 'fly' && dataG) {
+      // Each dot arcs individually to its shifted spot (staggered); the mean line
+      // slides as a block. Same horizontal distance for every dot (uniform shift).
+      const circles = Array.from(dataG.querySelectorAll('circle'));
+      const stagger = Math.min(45, 520 / Math.max(1, circles.length));
+      circles.forEach((c, i) => {
+        c.animate([
+          { transform: `translateX(${deltaPx}px) translateY(0)` },
+          { transform: `translateX(${deltaPx * 0.5}px) translateY(-11px)`, offset: 0.5 },
+          { transform: 'translateX(0) translateY(0)' },
+        ], { duration: 520, delay: i * stagger, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'backwards' });
+      });
+      if (overlayG) overlayG.animate(
+        [{ transform: `translateX(${deltaPx}px)` }, { transform: 'translateX(0)' }],
+        { duration: DUR, easing: 'ease-in-out', fill: 'backwards' });
+      return circles.length * stagger + 520;
+    }
+
+    const groups = /** @type {SVGGElement[]} */ ([dataG, overlayG].filter(Boolean));
+    if (shiftStyle === 'lift') {
+      // Uniform block, but lift + arc so it reads as a single deliberate shift.
+      groups.forEach(g => g.animate([
+        { transform: `translateX(${deltaPx}px) translateY(0)` },
+        { transform: `translateX(${deltaPx * 0.5}px) translateY(-9px)`, offset: 0.5 },
+        { transform: 'translateX(0) translateY(0)' },
+      ], { duration: DUR, easing: 'ease-in-out', fill: 'backwards' }));
+      return DUR;
+    }
+
+    // Default: uniform block slide (CSS transition).
     groups.forEach(g => { g.style.transition = 'none'; g.style.transform = `translateX(${deltaPx}px)`; });
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      groups.forEach(g => { g.style.transition = 'transform 850ms ease'; g.style.transform = 'translateX(0)'; });
+      groups.forEach(g => { g.style.transition = `transform ${DUR}ms ease`; g.style.transform = 'translateX(0)'; });
     }));
-    return 850;
+    return DUR;
   }
 
   function getNullValue() {
