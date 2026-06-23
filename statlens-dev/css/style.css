@@ -1132,6 +1132,13 @@ input[aria-invalid="true"] {
 /* Observed ↔ Null view toggle: floated to the panel's top-right so it doesn't
    push the dotplot down (keeps the observed + resample plots vertically aligned). */
 .mech-null-toggle { position: absolute; top: 0; right: 0; margin: 0; z-index: 2; }
+/* Summary|Dotplot toggle sits at the bottom of the resample panel (out of the top
+   flow) so the two panels' cards top-align and no vertical row is wasted. */
+.mech-view-toggle {
+  position: absolute; bottom: 0; right: 0; margin: 0; z-index: 2;
+  font-size: 0.78rem;
+}
+.mech-view-toggle button { padding: 3px 9px; }
 
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
 /* CVD-safe Okabe-Ito: success = amber (hatched), failure = blue. */

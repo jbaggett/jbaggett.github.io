@@ -254,8 +254,12 @@ export function initOneSamplePage(config) {
   // (Null); the resample is drawn WITH REPLACEMENT from it and animated with the
   // same pluck-and-fly as the one-mean bootstrap CI (js/dotplot-resample.js).
   const MEAN_DOT_MAX = 40;
-  /** Mechanism representation for one-mean: 'summary' (cards) | 'dotplot'. */
-  let meanView = 'summary';
+  /** Mechanism representation for one-mean: 'summary' (cards) | 'dotplot'.
+   *  Selectable via ?mechview=summary|dotplot (default summary). */
+  let meanView = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase() === 'dotplot'
+    ? 'dotplot' : 'summary';
+  /** Hold the observed sample on the very first shift so it's clear what we start from. */
+  let firstShiftDone = false;
   /** Use the dotplot mechanism (small means samples only). */
   const meanMechActive = () => !isProp && sampleData.length >= 2 && sampleData.length <= MEAN_DOT_MAX;
   /** Summary cards apply to small samples in summary view. */
@@ -855,14 +859,17 @@ export function initOneSamplePage(config) {
   function ensureMeanViewToggle() {
     if (meanViewBtns || isProp || !simTitleEl) return;
     if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) return;
-    const wrap = document.createElement('span');
+    const wrap = document.createElement('div');
     wrap.className = 'seg-control mech-view-toggle';
     wrap.setAttribute('role', 'group');
     wrap.setAttribute('aria-label', 'Resample view');
     wrap.innerHTML =
       `<button type="button" data-mview="summary" aria-pressed="${String(meanView === 'summary')}">Summary</button>`
       + `<button type="button" data-mview="dotplot" aria-pressed="${String(meanView === 'dotplot')}">Dotplot</button>`;
-    simTitleEl.after(wrap);
+    // Bottom of the right panel (not under the title) so the card tops align with
+    // the left panel and we don't waste a vertical row.
+    const simPanel = document.getElementById('mech-simulation');
+    (simPanel || /** @type {HTMLElement} */ (simTitleEl.parentElement)).appendChild(wrap);
     meanViewBtns = wrap.querySelectorAll('button');
     for (const b of meanViewBtns) {
       b.addEventListener('click', () => {
@@ -940,8 +947,13 @@ export function initOneSamplePage(config) {
         const dom = sharedBoxplotDomain();
         if (useCards()) {
           // Cards: tween every value by the same constant so the subtraction is
-          // visible, with a caption explaining the shift to μ₀.
-          const ms = animateCardsShift(true);
+          // visible, with a caption. On the FIRST shift, hold the observed sample
+          // for a beat first so it's clear what we're subtracting from.
+          const hold = firstShiftDone ? 0 : 900;
+          firstShiftDone = true;
+          let ms;
+          if (hold) { setTimeout(() => animateCardsShift(true), hold); ms = hold + 1000; }
+          else { ms = animateCardsShift(true); }
           syncNullToggle();
           return Math.max(ms, 350);
         }
