@@ -13,6 +13,7 @@ import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot, computeDotRadius, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
+import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
 import { parseParams } from './url-params.js';
@@ -253,11 +254,68 @@ export function initOneSamplePage(config) {
   // (Null); the resample is drawn WITH REPLACEMENT from it and animated with the
   // same pluck-and-fly as the one-mean bootstrap CI (js/dotplot-resample.js).
   const MEAN_DOT_MAX = 40;
-  /** Use the animated dotplot mechanism (small means samples only). */
+  /** Mechanism representation for one-mean: 'summary' (cards) | 'dotplot'. */
+  let meanView = 'summary';
+  /** Use the dotplot mechanism (small means samples only). */
   const meanMechActive = () => !isProp && sampleData.length >= 2 && sampleData.length <= MEAN_DOT_MAX;
+  /** Summary cards apply to small samples in summary view. */
+  const useCards = () => !isProp && sampleData.length >= 2 && sampleData.length <= CHIP_MAX && meanView === 'summary';
+  /** Dotplot applies in dotplot view (or summary view for medium 30–40 samples). */
+  const useDots = () => meanMechActive() && !useCards();
+  /** Chip text honouring the data precision. */
+  const fmtChip = (/** @type {number} */ v) => (Number.isInteger(v) ? String(v) : formatStat(v, dataPrecision));
   /** @type {any} */
   let meanBag = null;
+  /** @type {HTMLElement[]} */
+  let meanBagChips = [];
   let meanSizingMax = 0;
+  // Latest resample (page scope so the view-render helpers + toggle can re-render).
+  let lastSimStat = 0;
+  /** @type {number[]|null} */
+  let lastResampleArr = null;
+
+  /** Render the left "bag" panel in the current view (cards / dotplot / hist),
+   *  using the observed or null-shifted sample per the Observed/Null toggle. */
+  function renderMeanBagView() {
+    const el = document.getElementById('mech-obs-chart');
+    if (!el || sampleData.length < 2) return;
+    const vals = nullShown ? shiftedData : sampleData;
+    const meanVal = nullShown ? getNullValue() : observedStat;
+    if (useCards()) {
+      meanBag = null;
+      meanBagChips = renderBagChips(el, vals, {
+        formatValue: fmtChip, label: nullShown ? 'Null-shifted sample' : 'Observed sample',
+      });
+    } else if (useDots()) {
+      meanBagChips = [];
+      drawMeanBag(vals, meanVal);
+    } else {
+      meanBag = null; meanBagChips = [];
+      drawMiniChart(el, vals, { meanValue: meanVal, domain: sharedBoxplotDomain(), label: 'Sample distribution' });
+    }
+  }
+
+  /** Render the right resample panel in the current view. Returns animation ms. */
+  function renderMeanResampleView(animate) {
+    const el = document.getElementById('mech-sim-chart');
+    if (!el || !lastResampleArr || lastResampleArr.length < 2) return 0;
+    if (useCards()) {
+      return renderResampleChips(el, shiftedData, lastResampleArr, {
+        formatValue: fmtChip, sourceChips: meanBagChips, animate,
+      });
+    }
+    if (useDots() && meanBag) {
+      return showResampleDotplot(el, meanBag, lastResampleArr, {
+        domain: sharedBoxplotDomain(), mean: lastSimStat, meanLabel: 'x̄*',
+        sizingMaxStack: meanSizingMax, animate,
+      });
+    }
+    drawMiniChart(el, lastResampleArr, {
+      domain: sharedBoxplotDomain(), meanValue: lastSimStat, highlightMean: animate,
+      label: 'Simulated resample from null distribution',
+    });
+    return 0;
+  }
 
   /** (Re)draw the left bag dotplot with `values`, centred-stat `meanVal`. */
   function drawMeanBag(values, meanVal) {
@@ -538,15 +596,7 @@ export function initOneSamplePage(config) {
         const obsChartEl = document.getElementById('mech-obs-chart');
         if (obsChartEl && sampleData.length >= 2) {
           meanSizingMax = 0; // recompute sizing for the new dataset
-          if (meanMechActive()) {
-            drawMeanBag(sampleData, observedStat);
-          } else {
-            drawMiniChart(obsChartEl, sampleData, {
-              meanValue: observedStat,
-              domain: sharedBoxplotDomain(),
-              label: 'Observed data distribution',
-            });
-          }
+          renderMeanBagView();
         }
       }
       computePreSimDomain();
@@ -708,6 +758,35 @@ export function initOneSamplePage(config) {
     }
   }
 
+  /** @type {NodeListOf<HTMLButtonElement>|null} */
+  let meanViewBtns = null;
+  /** Add a Summary | Dotplot toggle next to "This Simulation" (one-mean, small n). */
+  function ensureMeanViewToggle() {
+    if (meanViewBtns || isProp || !simTitleEl) return;
+    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) return;
+    const wrap = document.createElement('span');
+    wrap.className = 'seg-control mech-view-toggle';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', 'Resample view');
+    wrap.innerHTML =
+      `<button type="button" data-mview="summary" aria-pressed="${String(meanView === 'summary')}">Summary</button>`
+      + `<button type="button" data-mview="dotplot" aria-pressed="${String(meanView === 'dotplot')}">Dotplot</button>`;
+    simTitleEl.after(wrap);
+    meanViewBtns = wrap.querySelectorAll('button');
+    for (const b of meanViewBtns) {
+      b.addEventListener('click', () => {
+        const want = b.dataset.mview === 'dotplot' ? 'dotplot' : 'summary';
+        if (want === meanView) return;
+        meanView = want;
+        for (const x of meanViewBtns) x.setAttribute('aria-pressed', String(x.dataset.mview === meanView));
+        // Re-render both panels statically in the new view.
+        meanSizingMax = 0;
+        renderMeanBagView();
+        if (lastResampleArr && lastResampleArr.length >= 2) renderMeanResampleView(false);
+      });
+    }
+  }
+
   /**
    * Morph the left "Observed Data" panel into "Null Distribution".
    * For one-mean: boxplot slides to center on μ₀.
@@ -768,7 +847,13 @@ export function initOneSamplePage(config) {
       const chartEl = document.getElementById('mech-obs-chart');
       if (chartEl && shiftedData.length >= 2) {
         const dom = sharedBoxplotDomain();
-        if (meanMechActive()) {
+        if (useCards()) {
+          // Cards: re-render the bag with the null-shifted values (no slide).
+          renderMeanBagView();
+          syncNullToggle();
+          return 350;
+        }
+        if (useDots()) {
           // Re-draw the bag as the null-shifted sample, then glide the dots from
           // the observed positions to the shifted ones (the shift is uniform).
           drawMeanBag(shiftedData, getNullValue());
@@ -820,7 +905,9 @@ export function initOneSamplePage(config) {
           statText.innerHTML = `n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span>`;
         }
         const chartEl = document.getElementById('mech-obs-chart');
-        if (meanMechActive() && chartEl) {
+        if (useCards()) {
+          renderMeanBagView(); // observed-value cards (nullShown is now false)
+        } else if (useDots() && chartEl) {
           // Re-draw the bag as the observed sample, then glide back from the
           // null-shifted positions.
           drawMeanBag(sampleData, observedStat);
@@ -874,6 +961,7 @@ export function initOneSamplePage(config) {
       mechanismStrip.hidden = false;
       initMechanismCollapse(mechanismStrip);
       ensureNullToggle();
+      ensureMeanViewToggle();
     }
 
     // On first generate, morph left panel from "Observed" to "Null Distribution"
@@ -895,12 +983,11 @@ export function initOneSamplePage(config) {
       simTitleEl.textContent = count === 1 ? 'This Simulation' : 'Last Simulation';
     }
 
-    let lastSimStat = 0;
+    lastSimStat = 0;
     let lastSimDetail = '';
 
     const isSingle = count === 1;
-    /** @type {number[]|null} */
-    let lastResampleArr = null;
+    lastResampleArr = null;
 
     if (isProp) {
       // Bernoulli(p₀) simulation
@@ -953,36 +1040,18 @@ export function initOneSamplePage(config) {
     }
 
     if (mechSimStat) {
-      // The shared mean mechanism does its own pluck-and-fly; only fire the
-      // generic stream for the other cases (proportions, large-n histogram).
-      const useMeanMech = !isProp && meanMechActive() && meanBag
-        && lastResampleArr && lastResampleArr.length >= 2;
-      if (isSingle && mechObservedStat && !useMeanMech) {
+      // The cards / dotplot views do their own animation; only fire the generic
+      // stream for the other cases (proportions, large-n histogram).
+      const ownAnim = !isProp && (useCards() || useDots()) && lastResampleArr && lastResampleArr.length >= 2;
+      if (isSingle && mechObservedStat && !ownAnim) {
         flyDataStream(mechObservedStat, mechSimStat);
       }
 
       mechSimStat.innerHTML = lastSimDetail;
 
-      // Render the resample for one-mean after the DOM update.
+      // Render the resample for one-mean in the current view after the DOM update.
       if (!isProp && lastResampleArr && lastResampleArr.length >= 2) {
-        const simChartEl = document.getElementById('mech-sim-chart');
-        if (simChartEl) {
-          if (useMeanMech) {
-            // Pluck-and-fly from the null-shifted bag into the resample dotplot
-            // (the resample builds up before your eyes — same as the bootstrap CI).
-            showResampleDotplot(simChartEl, meanBag, lastResampleArr, {
-              domain: sharedBoxplotDomain(), mean: lastSimStat, meanLabel: 'x̄*',
-              sizingMaxStack: meanSizingMax, animate: isSingle,
-            });
-          } else {
-            drawMiniChart(simChartEl, lastResampleArr, {
-              domain: sharedBoxplotDomain(),
-              meanValue: lastSimStat,
-              highlightMean: isSingle,
-              label: 'Simulated resample from null distribution',
-            });
-          }
-        }
+        renderMeanResampleView(isSingle);
       }
     }
 
