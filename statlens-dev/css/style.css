@@ -1434,15 +1434,6 @@ input[aria-invalid="true"] {
   display: flex;
   justify-content: center;
 }
-/* The mechanism caption briefly highlights while it explains the null shift */
-.mechanism-desc.shift-active {
-  color: #114B5F;
-  background: #EAF3F7;
-  border-radius: 6px;
-  padding: 3px 8px;
-  font-style: normal;
-  transition: background .3s ease;
-}
 /* Cards mid-shift: warm highlight while the value tweens to the null-shifted value */
 .sample-dot.chip-shifting {
   background: #FBE5D6;

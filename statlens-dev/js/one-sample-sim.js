@@ -321,31 +321,10 @@ export function initOneSamplePage(config) {
     return 0;
   }
 
-  /** @type {ReturnType<typeof setTimeout>|undefined} */
-  let shiftNoteTimer;
-  /** Explain the null shift in the full-width mechanism caption (it's overwritten
-   *  by the "Resample N values…" description once the resample runs). Full width
-   *  keeps it to one line on desktop — no wasted vertical space in the panel. */
-  function showShiftNote(toNull) {
-    if (isProp) return;
-    const desc = document.getElementById('mechanism-description');
-    if (!desc) return;
-    const shift = observedStat - getNullValue();   // amount subtracted from each value
-    const mag = formatStat(Math.abs(shift), dataPrecision);
-    const verb = shift >= 0 ? 'Subtract' : 'Add';
-    desc.innerHTML = toNull
-      ? `${verb} ${mag} from every value → the sample mean becomes μ₀ = ${formatStat(getNullValue(), dataPrecision)}, so H₀ is true`
-      : `Back to the observed data (<span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)})`;
-    desc.hidden = false;
-    desc.classList.add('shift-active');
-    clearTimeout(shiftNoteTimer);
-    shiftNoteTimer = setTimeout(() => desc.classList.remove('shift-active'), 2600);
-  }
-
   /** Animate the bag cards' values from observed→shifted (or back) so students see
-   *  the SAME constant subtracted from every observation. Returns ms. */
+   *  the SAME constant subtracted from every observation. The persistent shift
+   *  explanation lives in the left panel's stat line (set in morphToNull). */
   function animateCardsShift(toNull) {
-    showShiftNote(toNull);
     const chips = meanBagChips;
     const fromVals = (toNull ? [...sampleData] : [...shiftedData]).sort((a, b) => a - b);
     const toVals = (toNull ? [...shiftedData] : [...sampleData]).sort((a, b) => a - b);
@@ -940,9 +919,15 @@ export function initOneSamplePage(config) {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
       if (mechObservedTitle) mechObservedTitle.textContent = 'Null Distribution';
 
-      // Update stat text below the chart
+      // Stat line doubles as the PERSISTENT explanation of how this null
+      // distribution was made (every value shifted by the same constant).
       const statText = mechObservedStat.querySelector('.mech-stat-text');
-      if (statText) {
+      if (statText && !isProp) {
+        const d = observedStat - getNullValue();
+        const op = d >= 0 ? '\u2212' : '+'; // \u2212 or +
+        statText.innerHTML = `n = ${sampleN} \u00B7 each value ${op} ${formatStat(Math.abs(d), dataPrecision)} \u2192 `
+          + `<span class="observed-highlight">\u03BC\u2080 = ${getNullValue()}</span>`;
+      } else if (statText) {
         statText.innerHTML = `n = ${sampleN}, <span class="observed-highlight">\u03BC\u2080 = ${getNullValue()}</span>`;
       }
 
@@ -967,7 +952,6 @@ export function initOneSamplePage(config) {
           drawMeanBag(shiftedData, getNullValue());
           const deltaPx = meanBag ? (meanBag.xScale(observedStat) - meanBag.xScale(getNullValue())) : 0;
           const ms = glideBag(deltaPx);
-          showShiftNote(true);
           syncNullToggle();
           return Math.max(ms, 850);
         }
@@ -1022,7 +1006,6 @@ export function initOneSamplePage(config) {
           drawMeanBag(sampleData, observedStat);
           const deltaPx = meanBag ? (meanBag.xScale(getNullValue()) - meanBag.xScale(observedStat)) : 0;
           glideBag(deltaPx);
-          showShiftNote(false);
         } else if (chartEl && chartEl.querySelector('svg')) {
           morphMiniChart(chartEl, sampleData, {
             meanValue: observedStat,
