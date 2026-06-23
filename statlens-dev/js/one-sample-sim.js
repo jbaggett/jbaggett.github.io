@@ -317,6 +317,59 @@ export function initOneSamplePage(config) {
     return 0;
   }
 
+  /** @type {ReturnType<typeof setTimeout>|undefined} */
+  let shiftNoteTimer;
+  /** Show a transient caption explaining the null shift (the subtraction). */
+  function showShiftNote(toNull) {
+    if (isProp) return;
+    const panel = document.getElementById('mech-observed');
+    if (!panel) return;
+    let note = /** @type {HTMLElement|null} */ (panel.querySelector('.mech-shift-note'));
+    if (!note) {
+      note = document.createElement('div');
+      note.className = 'mech-shift-note';
+      note.setAttribute('aria-live', 'polite');
+      panel.appendChild(note);
+    }
+    const shift = observedStat - getNullValue();   // amount subtracted from each value
+    const mag = formatStat(Math.abs(shift), dataPrecision);
+    const verb = shift >= 0 ? 'Subtract' : 'Add';
+    note.innerHTML = toNull
+      ? `${verb} ${mag} from every value → the sample mean becomes μ₀ = ${formatStat(getNullValue(), dataPrecision)}, so H₀ is true`
+      : `Back to the observed data (<span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)})`;
+    note.style.transition = 'none';
+    note.style.opacity = '1';
+    clearTimeout(shiftNoteTimer);
+    shiftNoteTimer = setTimeout(() => {
+      note.style.transition = 'opacity .6s ease';
+      note.style.opacity = '0';
+    }, 2800);
+  }
+
+  /** Animate the bag cards' values from observed→shifted (or back) so students see
+   *  the SAME constant subtracted from every observation. Returns ms. */
+  function animateCardsShift(toNull) {
+    showShiftNote(toNull);
+    const chips = meanBagChips;
+    const fromVals = (toNull ? [...sampleData] : [...shiftedData]).sort((a, b) => a - b);
+    const toVals = (toNull ? [...shiftedData] : [...sampleData]).sort((a, b) => a - b);
+    if (!chips.length || chips.length !== toVals.length) { renderMeanBagView(); return 0; }
+    const setVal = (/** @type {HTMLElement} */ c, /** @type {number} */ v) => { c.textContent = fmtChip(v); };
+    if (prefersReducedMotion()) { chips.forEach((c, i) => setVal(c, toVals[i])); return 0; }
+    const DUR = 950;
+    const t0 = performance.now();
+    chips.forEach(c => c.classList.add('chip-shifting'));
+    function step(now) {
+      const t = Math.min((now - t0) / DUR, 1);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      for (let i = 0; i < chips.length; i++) setVal(chips[i], fromVals[i] + (toVals[i] - fromVals[i]) * e);
+      if (t < 1) { requestAnimationFrame(step); return; }
+      chips.forEach((c, i) => { setVal(c, toVals[i]); c.classList.remove('chip-shifting'); });
+    }
+    requestAnimationFrame(step);
+    return DUR;
+  }
+
   /** (Re)draw the left bag dotplot with `values`, centred-stat `meanVal`. */
   function drawMeanBag(values, meanVal) {
     const el = document.getElementById('mech-obs-chart');
@@ -886,10 +939,11 @@ export function initOneSamplePage(config) {
       if (chartEl && shiftedData.length >= 2) {
         const dom = sharedBoxplotDomain();
         if (useCards()) {
-          // Cards: re-render the bag with the null-shifted values (no slide).
-          renderMeanBagView();
+          // Cards: tween every value by the same constant so the subtraction is
+          // visible, with a caption explaining the shift to μ₀.
+          const ms = animateCardsShift(true);
           syncNullToggle();
-          return 350;
+          return Math.max(ms, 350);
         }
         if (useDots()) {
           // Re-draw the bag as the null-shifted sample, then glide the dots from
@@ -897,6 +951,7 @@ export function initOneSamplePage(config) {
           drawMeanBag(shiftedData, getNullValue());
           const deltaPx = meanBag ? (meanBag.xScale(observedStat) - meanBag.xScale(getNullValue())) : 0;
           const ms = glideBag(deltaPx);
+          showShiftNote(true);
           syncNullToggle();
           return Math.max(ms, 850);
         }
@@ -944,13 +999,14 @@ export function initOneSamplePage(config) {
         }
         const chartEl = document.getElementById('mech-obs-chart');
         if (useCards()) {
-          renderMeanBagView(); // observed-value cards (nullShown is now false)
+          animateCardsShift(false); // tween shifted → observed values
         } else if (useDots() && chartEl) {
           // Re-draw the bag as the observed sample, then glide back from the
           // null-shifted positions.
           drawMeanBag(sampleData, observedStat);
           const deltaPx = meanBag ? (meanBag.xScale(getNullValue()) - meanBag.xScale(observedStat)) : 0;
           glideBag(deltaPx);
+          showShiftNote(false);
         } else if (chartEl && chartEl.querySelector('svg')) {
           morphMiniChart(chartEl, sampleData, {
             meanValue: observedStat,

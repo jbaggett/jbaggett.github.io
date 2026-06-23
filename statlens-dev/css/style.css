@@ -1420,6 +1420,27 @@ input[aria-invalid="true"] {
   display: flex;
   justify-content: center;
 }
+/* Transient caption explaining the null shift (subtract a constant from each value) */
+.mech-shift-note {
+  margin: 6px auto 0;
+  max-width: 92%;
+  text-align: center;
+  font-size: 0.82rem;
+  font-style: italic;
+  line-height: 1.35;
+  color: #114B5F;
+  background: #EAF3F7;
+  border: 1px solid #BcdAe6;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+/* Cards mid-shift: warm highlight while the value tweens to the null-shifted value */
+.sample-dot.chip-shifting {
+  background: #FBE5D6;
+  border-color: #E07020;
+  color: #8A3E00;
+  transition: background .2s ease, border-color .2s ease;
+}
 .mech-minichart {
   display: block;
   max-width: 100%;
