@@ -9,6 +9,7 @@
 
 import { normalCDF, normalInv, tCDF, tInv, chisqCDF, fCDF, pdfT, pdfNormal, pdfChisq } from './distributions.js';
 import { mean, sd } from './stats.js';
+import { ptukey, qtukey } from './tukey.js';
 
 // ── One-sample t ─────────────────────────────────────────────────────
 
@@ -565,6 +566,64 @@ export function regressionIntervals(x, y, options = {}) {
     slope, intercept, s, df, n, xbar, sxx, tCrit, confLevel, xMin, xMax,
     predictAt, meanBand: band('mean'), predictionBand: band('prediction'),
   };
+}
+
+/**
+ * Post-hoc all-pairwise comparisons after a one-way ANOVA (REQ-026).
+ * `tukey` = Tukey HSD (studentized range; controls family-wise error exactly for
+ * equal n, Tukey–Kramer for unequal). `bonferroni` = pairwise t with p×(#pairs).
+ *
+ * @param {number[][]} groups
+ * @param {string[]} groupNames
+ * @param {{ method?: 'tukey'|'bonferroni', confLevel?: number }} [options]
+ * @returns {{
+ *   method: string, confLevel: number, k: number, dfWithin: number, mse: number, nPairs: number,
+ *   pairs: Array<{a:string, b:string, diff:number, lower:number, upper:number, stat:number, pAdj:number, significant:boolean}>,
+ * }}
+ */
+export function pairwiseComparisons(groups, groupNames, options = {}) {
+  const method = options.method === 'bonferroni' ? 'bonferroni' : 'tukey';
+  const confLevel = options.confLevel ?? 0.95;
+  const alpha = 1 - confLevel;
+  const k = groups.length;
+  const ns = groups.map(g => g.length);
+  const means = groups.map(g => mean(g));
+  const N = ns.reduce((a, b) => a + b, 0);
+  let ssW = 0;
+  for (let i = 0; i < k; i++) for (const v of groups[i]) ssW += (v - means[i]) ** 2;
+  const dfWithin = N - k;
+  const mse = ssW / dfWithin;
+  const nPairs = (k * (k - 1)) / 2;
+  const clamp01 = (/** @type {number} */ p) => Math.min(1, Math.max(0, p));
+
+  const qCrit = method === 'tukey' ? qtukey(confLevel, k, dfWithin) : 0;
+  const tCritB = method === 'bonferroni' ? tInv(1 - alpha / (2 * nPairs), dfWithin) : 0;
+
+  const pairs = [];
+  for (let i = 0; i < k; i++) {
+    for (let j = i + 1; j < k; j++) {
+      const diff = means[i] - means[j];
+      if (method === 'tukey') {
+        const se = Math.sqrt((mse / 2) * (1 / ns[i] + 1 / ns[j]));
+        const stat = Math.abs(diff) / se;            // studentized range statistic
+        const margin = qCrit * se;
+        pairs.push({
+          a: groupNames[i], b: groupNames[j], diff, lower: diff - margin, upper: diff + margin,
+          stat, pAdj: clamp01(1 - ptukey(stat, k, dfWithin)), significant: Math.abs(diff) > margin,
+        });
+      } else {
+        const se = Math.sqrt(mse * (1 / ns[i] + 1 / ns[j]));
+        const stat = diff / se;
+        const margin = tCritB * se;
+        const pAdj = clamp01(2 * (1 - tCDF(Math.abs(stat), dfWithin)) * nPairs);
+        pairs.push({
+          a: groupNames[i], b: groupNames[j], diff, lower: diff - margin, upper: diff + margin,
+          stat, pAdj, significant: pAdj < alpha,
+        });
+      }
+    }
+  }
+  return { method, confLevel, k, dfWithin, mse, nPairs, pairs };
 }
 
 /**

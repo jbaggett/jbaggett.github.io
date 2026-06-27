@@ -4289,3 +4289,20 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 @media (max-width: 600px) {
   .mech-view-toggle { margin-right: 0; }
 }
+
+/* ===== Post-hoc pairwise comparisons (ANOVA, REQ-026) ===== */
+#posthoc-section { margin: 1rem 0; padding: 1rem 1.1rem; border: 1px solid #D9E4EA;
+  border-radius: 10px; background: #fff; }
+.posthoc-head { display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.posthoc-head h2 { margin: 0; font-size: 1.1rem; color: #114B5F; }
+.posthoc-sub { font-weight: 400; font-size: 0.82rem; color: #5C7480; }
+.posthoc-note { font-size: 0.9rem; margin: 0 0 10px; line-height: 1.4; }
+.posthoc-note .muted { color: #5C7480; }
+.posthoc-forest { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto 12px; }
+.forest-label { font-size: 12px; fill: #1A2B33; }
+.forest-tick { font-size: 10px; fill: #5C7480; text-anchor: middle; }
+.posthoc-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.posthoc-table th, .posthoc-table td { padding: 5px 8px; text-align: left; border-bottom: 1px solid #eee; }
+.posthoc-table th { color: #114B5F; white-space: nowrap; }
+.posthoc-table tr.sig { background: #FDECEA; font-weight: 600; }

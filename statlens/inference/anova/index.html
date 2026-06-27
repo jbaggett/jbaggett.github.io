@@ -235,6 +235,19 @@
             </div>
         </section>
 
+        <section id="posthoc-section" aria-label="Post-hoc pairwise comparisons" hidden>
+            <div class="posthoc-head">
+                <h2>Which groups differ? <span class="posthoc-sub">Post-hoc pairwise comparisons</span></h2>
+                <span class="seg-control" id="posthoc-method" role="group" aria-label="Adjustment method">
+                    <button type="button" data-method="tukey" aria-pressed="true">Tukey HSD</button>
+                    <button type="button" data-method="bonferroni" aria-pressed="false">Bonferroni</button>
+                </span>
+            </div>
+            <p id="posthoc-note" class="posthoc-note"></p>
+            <div id="posthoc-plot"></div>
+            <div id="posthoc-table"></div>
+        </section>
+
         <div id="sr-announce" role="status" aria-live="polite"
              aria-atomic="true" class="sr-only"></div>
     </main>

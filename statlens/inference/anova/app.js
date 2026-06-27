@@ -7,7 +7,7 @@
 
 import * as jstatModule from 'jstat';
 import { setJStat, pdfF, fInv } from '../../js/distributions.js';
-import { anovaF, anovaFSummary } from '../../js/inference.js';
+import { anovaF, anovaFSummary, pairwiseComparisons } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { drawBoxplot } from '../../js/boxplot.js';
 import { renderConditionsDiagnostic } from '../../js/conditions.js';
@@ -54,6 +54,12 @@ let parsedCache = null;
 
 let fromSummary = false;
 
+// ── Post-hoc pairwise comparisons (REQ-026) ──────────────────────────
+let posthocMethod = (new URLSearchParams(location.search).get('posthoc') || '').toLowerCase() === 'bonferroni'
+  ? 'bonferroni' : 'tukey';
+/** @type {number[][]|null} */ let lastGroupArrays = null;
+/** @type {string[]} */ let lastGroupNames = [];
+
 /** @type {import('../../js/conclusions.js').ConclusionContext|null} */
 let currentContext = null;
 let currentSourceName = '';
@@ -74,6 +80,13 @@ const dataPanel = initDataPanel({
 
 alphaSelect?.addEventListener('change', () => {
   if (groupNames.length >= 2) runAnalysis();
+});
+
+document.getElementById('posthoc-method')?.addEventListener('click', (e) => {
+  const btn = /** @type {HTMLElement} */ (e.target).closest('button');
+  if (!btn) return;
+  posthocMethod = /** @type {HTMLElement} */ (btn).dataset.method === 'bonferroni' ? 'bonferroni' : 'tukey';
+  renderPostHoc();
 });
 
 groupVarSelect?.addEventListener('change', reExtractGroups);
@@ -345,6 +358,89 @@ function runAnalysis() {
   renderResults(result);
   showConditionsCheckpoint();
   announceResult(result);
+
+  lastGroupArrays = groupArrays;
+  lastGroupNames = groupNames;
+  renderPostHoc();
+}
+
+// ── Post-hoc rendering ───────────────────────────────────────────────
+
+function renderPostHoc() {
+  const section = document.getElementById('posthoc-section');
+  if (!section) return;
+  // Pairwise comparisons only apply to 3+ groups and need raw data (per-group n).
+  if (!lastGroupArrays || lastGroupNames.length < 3 || lastGroupArrays.some(g => g.length < 2)) {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  const conf = 1 - getAlpha();
+  const r = pairwiseComparisons(lastGroupArrays, lastGroupNames, { method: posthocMethod, confLevel: conf });
+
+  document.querySelectorAll('#posthoc-method button').forEach(b =>
+    b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */(b).dataset.method === posthocMethod)));
+
+  const sig = r.pairs.filter(p => p.significant);
+  const methodName = posthocMethod === 'tukey' ? 'Tukey HSD' : 'Bonferroni';
+  const note = /** @type {HTMLElement} */ (document.getElementById('posthoc-note'));
+  note.innerHTML = `<strong>${methodName}</strong> — ${(conf * 100).toFixed(0)}% family-wise confidence across all `
+    + `${r.nPairs} pairwise comparisons. `
+    + (sig.length
+      ? `<strong>${sig.length} of ${r.nPairs}</strong> differ: ${sig.map(p => `${p.a}–${p.b}`).join(', ')}.`
+      : `No pair differs at this level.`)
+    + ` <span class="muted">Examine pairwise differences once the overall F-test is significant.</span>`;
+
+  /** @type {HTMLElement} */ (document.getElementById('posthoc-plot')).innerHTML = forestPlot(r, dataPrecision);
+  /** @type {HTMLElement} */ (document.getElementById('posthoc-table')).innerHTML = posthocTable(r, dataPrecision);
+}
+
+/** @param {ReturnType<typeof pairwiseComparisons>} r @param {number} d */
+function forestPlot(r, d) {
+  const pairs = r.pairs;
+  const W = 520, rowH = 30, padL = 130, padR = 18, padT = 8, axisH = 26;
+  const H = padT + pairs.length * rowH + axisH;
+  const lo = Math.min(0, ...pairs.map(p => p.lower));
+  const hi = Math.max(0, ...pairs.map(p => p.upper));
+  const padX = ((hi - lo) || 1) * 0.08;
+  const dLo = lo - padX, dHi = hi + padX;
+  const x = (/** @type {number} */ v) => padL + ((v - dLo) / (dHi - dLo)) * (W - padL - padR);
+  const SIG = '#C0392B', NS = '#7f8c8d';
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="posthoc-forest" role="img" aria-label="Confidence interval for each pairwise difference; intervals not crossing zero indicate a difference">`;
+  s += `<line x1="${x(0).toFixed(1)}" y1="${padT}" x2="${x(0).toFixed(1)}" y2="${(padT + pairs.length * rowH).toFixed(1)}" stroke="#114B5F" stroke-dasharray="3 3"/>`;
+  pairs.forEach((p, i) => {
+    const cy = padT + i * rowH + rowH / 2;
+    const c = p.significant ? SIG : NS;
+    const xl = x(p.lower).toFixed(1), xu = x(p.upper).toFixed(1), xd = x(p.diff).toFixed(1);
+    s += `<text x="6" y="${(cy + 4).toFixed(1)}" class="forest-label">${p.a} − ${p.b}</text>`
+      + `<line x1="${xl}" y1="${cy}" x2="${xu}" y2="${cy}" stroke="${c}" stroke-width="2"/>`
+      + `<line x1="${xl}" y1="${cy - 4}" x2="${xl}" y2="${cy + 4}" stroke="${c}" stroke-width="2"/>`
+      + `<line x1="${xu}" y1="${cy - 4}" x2="${xu}" y2="${cy + 4}" stroke="${c}" stroke-width="2"/>`
+      + `<circle cx="${xd}" cy="${cy}" r="3.5" fill="${c}"/>`;
+  });
+  const ay = padT + pairs.length * rowH + 4;
+  s += `<line x1="${padL}" y1="${ay}" x2="${W - padR}" y2="${ay}" stroke="#ccc"/>`;
+  for (let i = 0; i <= 5; i++) {
+    const v = dLo + (dHi - dLo) * i / 5, xx = x(v).toFixed(1);
+    s += `<line x1="${xx}" y1="${ay}" x2="${xx}" y2="${ay + 4}" stroke="#ccc"/>`
+      + `<text x="${xx}" y="${ay + 16}" class="forest-tick">${formatStat(v, d)}</text>`;
+  }
+  return s + '</svg>';
+}
+
+/** @param {ReturnType<typeof pairwiseComparisons>} r @param {number} d */
+function posthocTable(r, d) {
+  const fp = (/** @type {number} */ p) => (p < 0.0001 ? '&lt; 0.0001' : p.toFixed(4));
+  let h = `<table class="posthoc-table"><thead><tr><th>Pair</th><th>Difference</th>`
+    + `<th>${(r.confLevel * 100).toFixed(0)}% CI</th><th>Adj. p</th><th>Conclusion</th></tr></thead><tbody>`;
+  for (const p of r.pairs) {
+    h += `<tr class="${p.significant ? 'sig' : ''}"><td>${p.a} − ${p.b}</td>`
+      + `<td>${formatStat(p.diff, d)}</td>`
+      + `<td>(${formatStat(p.lower, d)}, ${formatStat(p.upper, d)})</td>`
+      + `<td>${fp(p.pAdj)}</td>`
+      + `<td>${p.significant ? 'Differ' : 'No evidence'}</td></tr>`;
+  }
+  return h + '</tbody></table>';
 }
 
 // ── Conditions checkpoint ────────────────────────────────────────────
