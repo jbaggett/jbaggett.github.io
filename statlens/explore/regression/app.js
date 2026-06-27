@@ -6,6 +6,11 @@
 
 import { drawScatterplot, drawResidualPlot } from '../../js/scatterplot.js';
 import { linreg, loess, detectPrecision, formatStat } from '../../js/stats.js';
+import jstatMod from 'jstat';
+import { setJStat } from '../../js/distributions.js';
+import { regressionIntervals } from '../../js/inference.js';
+
+setJStat(jstatMod.default || jstatMod);
 import { announce, initTabs, initDataPanel, initHelp, setPageTitle } from '../../js/page-utils.js';
 
 
@@ -41,6 +46,7 @@ const residualContainer = /** @type {HTMLDivElement} */ (document.getElementById
 const residualChartContainer = /** @type {HTMLDivElement} */ (document.getElementById('residual-chart-container'));
 const showLineCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-line'));
 const showLoessCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-loess'));
+const showBandsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-bands'));
 const showResidualsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-residuals'));
 const equationDisplay = /** @type {HTMLDivElement} */ (document.getElementById('equation-display'));
 const statsDisplay = /** @type {HTMLDivElement} */ (document.getElementById('stats-display'));
@@ -162,6 +168,15 @@ function updateChart() {
     const showLoess = showLoessCheckbox.checked;
     const loessCurveData = showLoess ? loess(xClean, yClean) : undefined;
 
+    // Mean-response CI + prediction bands (REQ-027). Needs n ≥ 3 for df = n−2.
+    const showBands = showBandsCheckbox.checked && xClean.length >= 3;
+    let confidenceBand, predictionBand;
+    if (showBands) {
+        const ri = regressionIntervals(xClean, yClean, { confLevel: 0.95 });
+        confidenceBand = ri.meanBand;
+        predictionBand = ri.predictionBand;
+    }
+
     // Draw scatterplot
     chartContainer.innerHTML = '';
     drawScatterplot(chartContainer, xClean, yClean, {
@@ -172,6 +187,8 @@ function updateChart() {
         id: 'scatter-main',
         regression: showLine ? { slope: reg.slope, intercept: reg.intercept } : undefined,
         loessCurve: loessCurveData,
+        confidenceBand,
+        predictionBand,
     });
 
     // Equation display
@@ -278,4 +295,11 @@ xVarSelect.addEventListener('change', updateChart);
 yVarSelect.addEventListener('change', updateChart);
 showLineCheckbox.addEventListener('change', updateChart);
 showLoessCheckbox.addEventListener('change', updateChart);
+showBandsCheckbox.addEventListener('change', updateChart);
 showResidualsCheckbox.addEventListener('change', updateChart);
+
+// ?bands=true (or ?interval=mean|prediction) opens with the CI/PI bands shown.
+const _p = new URLSearchParams(location.search);
+if (['true', '1', 'mean', 'prediction', 'both'].includes((_p.get('bands') || _p.get('interval') || '').toLowerCase())) {
+  showBandsCheckbox.checked = true;
+}

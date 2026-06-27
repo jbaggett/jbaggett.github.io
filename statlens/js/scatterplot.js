@@ -71,6 +71,8 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
     regression,
     bootstrapLines,
     loessCurve,
+    confidenceBand,
+    predictionBand,
     margin,
     minimal = false,
     yTicks,
@@ -108,6 +110,30 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
   addAxes(frame, xAxis, yAxis, xLabel, yLabel);
 
   const overlays = d3Selection.select(frame.inner).select('.overlays');
+
+  // Confidence (mean-response) / prediction bands (REQ-027). Drawn into the data
+  // group BEFORE the points are joined, so the points render on top of the bands.
+  if ((predictionBand && predictionBand.length > 1) || (confidenceBand && confidenceBand.length > 1)) {
+    const bandG = d3Selection.select(frame.inner).select('.data');
+    /** @param {Array<{x:number,lower:number,upper:number}>} pts */
+    const bandPath = (pts) => {
+      const top = pts.map(p => `${xScale(p.x).toFixed(1)},${yScale(p.upper).toFixed(1)}`);
+      const bot = [...pts].reverse().map(p => `${xScale(p.x).toFixed(1)},${yScale(p.lower).toFixed(1)}`);
+      return `M${top.join('L')}L${bot.join('L')}Z`;
+    };
+    if (predictionBand && predictionBand.length > 1) {
+      bandG.append('path').attr('class', 'prediction-band')
+        .attr('d', bandPath(predictionBand))
+        .attr('fill', '#5b6770').attr('fill-opacity', 0.12).attr('stroke', 'none')
+        .attr('aria-hidden', 'true');
+    }
+    if (confidenceBand && confidenceBand.length > 1) {
+      bandG.append('path').attr('class', 'confidence-band')
+        .attr('d', bandPath(confidenceBand))
+        .attr('fill', IMS_BLUE).attr('fill-opacity', 0.20).attr('stroke', 'none')
+        .attr('aria-hidden', 'true');
+    }
+  }
 
   // Bootstrap regression lines (draw first, behind everything)
   if (bootstrapLines && bootstrapLines.length > 0) {

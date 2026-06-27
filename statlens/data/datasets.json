@@ -1160,6 +1160,38 @@
     "minGroupN": 22
   },
   {
+    "id": "loan50",
+    "name": "Loan50 (Lending Club)",
+    "description": "A 50-loan sample from the Lending Club peer-to-peer platform — borrower, loan, and credit variables (IMS Ch. 1, 8).",
+    "type": "explore",
+    "chapter": "IMS Ch. 1, 8",
+    "n": 50,
+    "variables": [
+      "state",
+      "emp_length",
+      "term",
+      "homeownership",
+      "annual_income",
+      "verified_income",
+      "debt_to_income",
+      "total_credit_limit",
+      "total_credit_utilized",
+      "num_cc_carrying_balance",
+      "loan_purpose",
+      "loan_amount",
+      "grade",
+      "interest_rate",
+      "public_record_bankrupt",
+      "loan_status",
+      "has_second_income",
+      "total_income"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 3
+  },
+  {
     "id": "loan50_amount",
     "name": "Loan Amounts",
     "description": "Loan amounts ($) for 50 Lending Club loans.",
@@ -1537,6 +1569,28 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "possum",
+    "name": "Brushtail Possums",
+    "description": "Body measurements for 104 brushtail possums trapped in Australia (IMS Ch. 7, 8 regression/correlation).",
+    "type": "regression",
+    "chapter": "IMS Ch. 7, 8",
+    "n": 104,
+    "variables": [
+      "site",
+      "pop",
+      "sex",
+      "age",
+      "head_l",
+      "skull_w",
+      "total_l",
+      "tail_l"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 46
   },
   {
     "id": "possum_regression",

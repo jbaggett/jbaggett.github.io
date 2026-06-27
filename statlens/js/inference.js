@@ -510,6 +510,64 @@ export function slopeT(x, y, options = {}) {
 }
 
 /**
+ * Confidence interval for the MEAN response and prediction interval for a NEW
+ * observation in simple linear regression (REQ-027). Matches R's `predict.lm`
+ * with `interval = "confidence"` / `"prediction"`.
+ *
+ * For a point x₀:  ŷ = b₀ + b₁·x₀,  SE_mean = s·√(1/n + (x₀−x̄)²/Sxx),
+ * SE_pred = s·√(1 + 1/n + (x₀−x̄)²/Sxx),  interval = ŷ ± t* · SE,
+ * where s = residual standard error and t* uses df = n−2.
+ *
+ * @param {number[]} x
+ * @param {number[]} y
+ * @param {{ confLevel?: number, bandPoints?: number }} [options]
+ * @returns {{
+ *   slope: number, intercept: number, s: number, df: number, n: number,
+ *   xbar: number, sxx: number, tCrit: number, confLevel: number,
+ *   xMin: number, xMax: number,
+ *   predictAt: (x0: number, kind?: 'mean'|'prediction') => {x:number, fit:number, lower:number, upper:number, se:number},
+ *   meanBand: Array<{x:number, fit:number, lower:number, upper:number}>,
+ *   predictionBand: Array<{x:number, fit:number, lower:number, upper:number}>,
+ * }}
+ */
+export function regressionIntervals(x, y, options = {}) {
+  const confLevel = options.confLevel ?? 0.95;
+  const m = Math.max(2, options.bandPoints ?? 60);
+  const n = x.length;
+  const xbar = mean(x), ybar = mean(y);
+  const sxx = x.reduce((s, xi) => s + (xi - xbar) ** 2, 0);
+  const sxy = x.reduce((s, xi, i) => s + (xi - xbar) * (y[i] - ybar), 0);
+  const syy = y.reduce((s, yi) => s + (yi - ybar) ** 2, 0);
+  const slope = sxy / sxx;
+  const intercept = ybar - slope * xbar;
+  const df = n - 2;
+  const sse = syy - slope * sxy;
+  const s = Math.sqrt(sse / df); // residual standard error
+  const tCrit = tInv(1 - (1 - confLevel) / 2, df);
+  const xMin = Math.min(...x), xMax = Math.max(...x);
+
+  /** @param {number} x0 @param {'mean'|'prediction'} [kind] */
+  const predictAt = (x0, kind = 'mean') => {
+    const fit = intercept + slope * x0;
+    const core = 1 / n + (x0 - xbar) ** 2 / sxx;
+    const seFit = s * Math.sqrt(kind === 'prediction' ? 1 + core : core);
+    const margin = tCrit * seFit;
+    return { x: x0, fit, lower: fit - margin, upper: fit + margin, se: seFit };
+  };
+
+  const band = (/** @type {'mean'|'prediction'} */ kind) => {
+    const pts = [];
+    for (let i = 0; i <= m; i++) pts.push(predictAt(xMin + (xMax - xMin) * (i / m), kind));
+    return pts;
+  };
+
+  return {
+    slope, intercept, s, df, n, xbar, sxx, tCrit, confLevel, xMin, xMax,
+    predictAt, meanBand: band('mean'), predictionBand: band('prediction'),
+  };
+}
+
+/**
  * Regression slope t-test from summary statistics.
  * @param {number} slope - Estimated slope (b₁)
  * @param {number} se - Standard error of slope
