@@ -1,0 +1,68 @@
+{
+  "id": "pulserates",
+  "name": "Pulse: Quiz vs Lecture",
+  "description": "Each student’s pulse during a quiz vs a lecture, n = 10 paired (Ch. 20 paired data).",
+  "source": "coursepack",
+  "chapter": "IMS Ch. 20",
+  "type": "paired",
+  "studyDescription": "Ten students measured their own pulse rate during a quiz and during a lecture. The two readings are paired within student.",
+  "variableDescriptions": {
+    "quiz": "Heart rate measured during a quiz.",
+    "lecture": "Heart rate measured during a lecture."
+  },
+  "sourceDetail": "Coursepack (Stat 145) in-class pulse measurements.",
+  "variables": [
+    {
+      "name": "quiz",
+      "label": "Pulse During Quiz (bpm)",
+      "type": "numeric"
+    },
+    {
+      "name": "lecture",
+      "label": "Pulse During Lecture (bpm)",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "quiz": 75,
+      "lecture": 73
+    },
+    {
+      "quiz": 52,
+      "lecture": 53
+    },
+    {
+      "quiz": 52,
+      "lecture": 47
+    },
+    {
+      "quiz": 80,
+      "lecture": 75
+    },
+    {
+      "quiz": 56,
+      "lecture": 55
+    },
+    {
+      "quiz": 90,
+      "lecture": 83
+    },
+    {
+      "quiz": 76,
+      "lecture": 71
+    },
+    {
+      "quiz": 71,
+      "lecture": 74
+    },
+    {
+      "quiz": 70,
+      "lecture": 68
+    },
+    {
+      "quiz": 51,
+      "lecture": 55
+    }
+  ]
+}

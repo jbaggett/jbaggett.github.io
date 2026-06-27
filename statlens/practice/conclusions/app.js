@@ -454,6 +454,52 @@ function extractGroups(ctx) {
   };
 }
 
+// ── Procedure-pool filter (REQ-035) ─────────────────────────────────
+// Lets the textbook scope the scenario pool to procedures students have
+// learned. The six testTypes this tool actually produces are:
+//   one-mean · paired · two-means · one-prop · two-props · chisq
+// (No anova/slope/gof-vs-indep scenarios exist, so those tags are accepted
+// but simply contribute nothing.) Default (no param) = full pool, unchanged.
+
+/** Map textbook procedure tags (and spelling variants) → this tool's testTypes. */
+const PROC_ALIASES = {
+  'one-prop': 'one-prop', 'oneprop': 'one-prop',
+  'two-prop': 'two-props', 'two-props': 'two-props', 'twoprop': 'two-props',
+  'one-mean': 'one-mean', 'onemean': 'one-mean',
+  'two-mean': 'two-means', 'two-means': 'two-means', 'twomean': 'two-means',
+  'paired': 'paired',
+  'chisq': 'chisq', 'chi-square': 'chisq', 'chisq-gof': 'chisq',
+  'chisq-indep': 'chisq', 'chisq-independence': 'chisq',
+  // 'anova', 'slope' — no scenarios in this tool; accepted, contribute nothing.
+};
+
+/** Named scopes for the two textbook capstones. `null` = full pool. */
+const SCOPE_PRESETS = {
+  calculate: ['one-prop', 'two-props', 'one-mean', 'two-means', 'paired'], // Part III: no χ² yet
+  apply: null,  // full pool
+  all: null,
+};
+
+/** @returns {Set<string>|null} allowed testTypes, or null for no filter. */
+function getProcedureFilter() {
+  const params = new URLSearchParams(location.search);
+  const scope = (params.get('scope') || '').trim().toLowerCase();
+  if (scope && Object.prototype.hasOwnProperty.call(SCOPE_PRESETS, scope)) {
+    const preset = SCOPE_PRESETS[scope];
+    return preset ? new Set(preset) : null;
+  }
+  const proc = params.get('procedures');
+  if (proc) {
+    const set = new Set();
+    for (const raw of proc.split(',')) {
+      const mapped = PROC_ALIASES[raw.trim().toLowerCase()];
+      if (mapped) set.add(mapped);
+    }
+    return set.size ? set : null; // all-unrecognized → treat as no filter
+  }
+  return null;
+}
+
 // ── Load all datasets with contexts ─────────────────────────────────
 
 async function loadScenarios() {
@@ -461,6 +507,7 @@ async function loadScenarios() {
     const resp = await fetch('../../data/datasets.json');
     const index = await resp.json();
 
+    const filter = getProcedureFilter();
     const built = [];
     for (const meta of index) {
       try {
@@ -469,14 +516,18 @@ async function loadScenarios() {
         if (!ds.inferenceContexts) continue;
         for (const ctx of ds.inferenceContexts) {
           const scenario = buildScenario(ds, ctx);
-          if (scenario && scenario.claim) built.push(scenario);
+          if (scenario && scenario.claim && (!filter || filter.has(scenario.testType))) {
+            built.push(scenario);
+          }
         }
       } catch { /* skip failed loads */ }
     }
 
     scenarios = shuffle(built);
     if (scenarios.length === 0) {
-      scenarioCard.innerHTML = '<p>No scenarios available. Check that datasets have inferenceContexts with claims.</p>';
+      scenarioCard.innerHTML = filter
+        ? '<p>No scenarios match the requested procedures. Check the <code>scope</code>/<code>procedures</code> parameter.</p>'
+        : '<p>No scenarios available. Check that datasets have inferenceContexts with claims.</p>';
       return;
     }
     showScenario(0);

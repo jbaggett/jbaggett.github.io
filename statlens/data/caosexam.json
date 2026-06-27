@@ -1,0 +1,68 @@
+{
+  "id": "caosexam",
+  "name": "CAOS Pretest/Posttest",
+  "description": "Paired pre/post CAOS statistics-assessment scores for 10 students (Ch. 20 paired data).",
+  "source": "coursepack",
+  "chapter": "IMS Ch. 20",
+  "type": "paired",
+  "studyDescription": "Ten students each took the CAOS statistics-reasoning assessment before and after a course. The pretest and posttest scores are paired within student.",
+  "variableDescriptions": {
+    "pretest": "CAOS assessment score (%) before the course.",
+    "posttest": "CAOS assessment score (%) after the course."
+  },
+  "sourceDetail": "Coursepack (Stat 145). CAOS = Comprehensive Assessment of Outcomes in a first Statistics course.",
+  "variables": [
+    {
+      "name": "pretest",
+      "label": "Pretest Score",
+      "type": "numeric"
+    },
+    {
+      "name": "posttest",
+      "label": "Posttest Score",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "pretest": 42.5,
+      "posttest": 60
+    },
+    {
+      "pretest": 40,
+      "posttest": 45
+    },
+    {
+      "pretest": 47.5,
+      "posttest": 55
+    },
+    {
+      "pretest": 65,
+      "posttest": 80
+    },
+    {
+      "pretest": 60,
+      "posttest": 65
+    },
+    {
+      "pretest": 47.5,
+      "posttest": 72.5
+    },
+    {
+      "pretest": 42.5,
+      "posttest": 57.5
+    },
+    {
+      "pretest": 37.5,
+      "posttest": 55
+    },
+    {
+      "pretest": 42.5,
+      "posttest": 57.5
+    },
+    {
+      "pretest": 37.5,
+      "posttest": 55
+    }
+  ]
+}

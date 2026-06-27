@@ -1,0 +1,32 @@
+{
+  "title": "One-Way ANOVA: the Omnibus F-Test",
+  "tool": "inference/anova",
+  "params": {},
+  "steps": [
+    {
+      "instruction": "Pick any multi-group numeric dataset from the dataset selector (3+ groups of a quantitative response). State H₀ and Hₐ for the omnibus F-test in your head.",
+      "observe": "What does Hₐ actually claim — that *all* group means differ, or that *at least one* differs?",
+      "reveal": "H₀: μ₁ = μ₂ = … = μ_k vs. Hₐ: **at least one** μᵢ differs from the others. The F-test never tells you *all* are different — and never tells you *which* one is different."
+    },
+    {
+      "instruction": "Look at the side-by-side boxplots that StatLens displays. Eyeball whether the within-group spreads look roughly equal (homoscedasticity) and whether each group's distribution is roughly symmetric.",
+      "observe": "Does the largest group SD look more than ~2× the smallest? Any group with extreme skew or outliers?",
+      "reveal": "If the spreads are wildly different or one group has a strong outlier, the F-test's assumptions are stretched. Switch to the **randomization ANOVA** in that situation — it makes no normality or equal-variance assumption."
+    },
+    {
+      "instruction": "Run the F-test. Note the F statistic, the two df values (between = k − 1, within = N − k), and the p-value.",
+      "observe": "What is your decision at α = 0.05?",
+      "reveal": "At α = 0.05 reject H₀ iff p < 0.05. F = (between-group variance) / (within-group variance); under H₀ both estimate the same noise and F ≈ 1. Large F means between-group differences are bigger than within-group noise can explain by chance."
+    },
+    {
+      "instruction": "Suppose H₀ is rejected. The conclusion **at least one group differs** is correct — but a student writes *'all three groups have different means.'* Why is that wrong?",
+      "observe": "What follow-up analysis would tell you *which* pairs of groups actually differ?",
+      "reveal": "Hₐ says **at least one** differs, not all. To identify which pairs, run a **post-hoc procedure** (Tukey HSD, Bonferroni-adjusted pairwise comparisons) — those control the family-wise Type I error rate across multiple pairwise tests. A bare F-rejection is the green light to ask *which*, not the answer."
+    },
+    {
+      "instruction": "Open the [randomization ANOVA](/simulate/randomization-anova/) on the same data in a new tab and run 5000 shuffles. Compare its simulated p-value to the F-distribution's.",
+      "observe": "How close are the two p-values?",
+      "reveal": "On well-behaved data the two p-values agree closely — the F distribution is a good approximation. On data with small groups, outliers, or unequal variances they can diverge, and the simulation is the safer report. The F-test is a convenient shortcut; the randomization is the gold standard."
+    }
+  ]
+}

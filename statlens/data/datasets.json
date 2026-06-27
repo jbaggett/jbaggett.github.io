@@ -139,6 +139,26 @@
     "minGroupN": null
   },
   {
+    "id": "baumann",
+    "name": "Baumann Reading Methods",
+    "description": "Reading-comprehension scores for 66 students randomized to three instruction methods (Ch. 22 ANOVA).",
+    "type": "anova",
+    "chapter": "IMS Ch. 22",
+    "n": 66,
+    "variables": [
+      "group",
+      "pretest_1",
+      "pretest_2",
+      "posttest_1",
+      "posttest_2",
+      "posttest_3"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 22
+  },
+  {
     "id": "bdims_hgt",
     "name": "Body Dimensions (Height)",
     "description": "Heights (cm) of 507 physically active adults. Use to build a bootstrap CI for mean height.",
@@ -276,6 +296,22 @@
     "hasCategorical": true,
     "groupLevels": 5,
     "minGroupN": 60
+  },
+  {
+    "id": "caosexam",
+    "name": "CAOS Pretest/Posttest",
+    "description": "Paired pre/post CAOS statistics-assessment scores for 10 students (Ch. 20 paired data).",
+    "type": "paired",
+    "chapter": "IMS Ch. 20",
+    "n": 10,
+    "variables": [
+      "pretest",
+      "posttest"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "cards",
@@ -861,6 +897,28 @@
     "minGroupN": 12933
   },
   {
+    "id": "floridalakes",
+    "name": "Florida Lakes (Mercury)",
+    "description": "Water chemistry and fish mercury for 53 Florida lakes — pH/alkalinity vs mercury (Ch. 7, 24 regression/correlation).",
+    "type": "regression",
+    "chapter": "IMS Ch. 7, 24",
+    "n": 53,
+    "variables": [
+      "lake",
+      "alkalinity",
+      "ph",
+      "calcium",
+      "chlorophyll",
+      "avg_mercury",
+      "std_mercury",
+      "age_data"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "friday_traffic",
     "name": "Friday the 13th Traffic",
     "description": "Traffic volume on Friday the 6th vs. Friday the 13th at the same locations. Is there less traffic on the 13th? IMS Ch. 21.",
@@ -957,6 +1015,26 @@
     "minGroupN": null
   },
   {
+    "id": "hollywoodmovies2023",
+    "name": "Hollywood Movies 2023",
+    "description": "Budget, rating, and opening weekend for a small set of 2023 films (Ch. 4 describing/relationships).",
+    "type": "explore",
+    "chapter": "IMS Ch. 4",
+    "n": 6,
+    "variables": [
+      "title",
+      "lead_studio",
+      "rating",
+      "genre",
+      "budget",
+      "opening"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "homeownership",
     "name": "Homeownership Status",
     "description": "Homeownership status of 10,000 Lending Club loan applicants (IMS Ch. 3)",
@@ -1018,6 +1096,22 @@
     "hasCategorical": true,
     "groupLevels": 3,
     "minGroupN": 175
+  },
+  {
+    "id": "insectsprays",
+    "name": "Insect Sprays",
+    "description": "Insect counts on plots treated with six sprays, n = 72 (Ch. 22 ANOVA).",
+    "type": "anova",
+    "chapter": "IMS Ch. 22",
+    "n": 72,
+    "variables": [
+      "count",
+      "spray"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 6,
+    "minGroupN": 12
   },
   {
     "id": "jury",
@@ -1101,6 +1195,21 @@
     "description": "Interest rates (%) on 50 loans from Lending Club. Use to build a bootstrap CI for the mean rate.",
     "type": "bootstrap",
     "chapter": "IMS Ch. 12",
+    "n": 50,
+    "variables": [
+      "interest_rate"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "loan50_interest_rate",
+    "name": "Loan50 Interest Rates",
+    "description": "Interest rates for a 50-loan sample from Lending Club (Ch. 12, 19 bootstrap CI for a mean).",
+    "type": "bootstrap",
+    "chapter": "IMS Ch. 12, 19",
     "n": 50,
     "variables": [
       "interest_rate"
@@ -1208,6 +1317,22 @@
     "minGroupN": null
   },
   {
+    "id": "masterswinners",
+    "name": "Masters Winners (Ages)",
+    "description": "Winning golfer age by year at the Masters Tournament, n = 87 (Ch. 7 relationships / trend).",
+    "type": "regression",
+    "chapter": "IMS Ch. 7",
+    "n": 87,
+    "variables": [
+      "year",
+      "age"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "medical_consultant",
     "name": "Medical Consultant",
     "description": "Complication outcomes for 62 patients of a medical consultant. 3 of 62 had complications (p̂ = 0.048). National complication rate is 10%. IMS Ch. 12, 16.",
@@ -1279,6 +1404,21 @@
     "n": 435,
     "variables": [
       "height"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "nbasalaries2022",
+    "name": "NBA Salaries 2022",
+    "description": "Salaries (millions) for 467 NBA players, 2022 — a strongly right-skewed distribution (Ch. 5, 12).",
+    "type": "bootstrap",
+    "chapter": "IMS Ch. 5, 12",
+    "n": 467,
+    "variables": [
+      "salary_millions"
     ],
     "hasNumeric": true,
     "hasCategorical": false,
@@ -1447,6 +1587,22 @@
     "minGroupN": null
   },
   {
+    "id": "pulserates",
+    "name": "Pulse: Quiz vs Lecture",
+    "description": "Each student’s pulse during a quiz vs a lecture, n = 10 paired (Ch. 20 paired data).",
+    "type": "paired",
+    "chapter": "IMS Ch. 20",
+    "n": 10,
+    "variables": [
+      "quiz",
+      "lecture"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "resume",
     "name": "Resume Callback Study",
     "description": "Job callback rates by perceived race of applicant name. n=4,870. IMS Ch. 9.",
@@ -1476,6 +1632,22 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "salaries",
+    "name": "Sales by Pay Type",
+    "description": "Sales totals for 15 employees across three pay structures — small 3-group comparison (Ch. 22 ANOVA).",
+    "type": "anova",
+    "chapter": "IMS Ch. 22",
+    "n": 15,
+    "variables": [
+      "sales",
+      "pay_type"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 4
   },
   {
     "id": "satgpa",
@@ -1540,6 +1712,32 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "sleepstudy",
+    "name": "College Sleep Study",
+    "description": "Sleep, mood, and academics survey for 253 college students (Ch. 4, 7 EDA). Curated subset of variables.",
+    "type": "explore",
+    "chapter": "IMS Ch. 4, 7",
+    "n": 253,
+    "variables": [
+      "gender",
+      "class_year",
+      "lark_owl",
+      "gpa",
+      "avg_sleep",
+      "poor_sleep",
+      "happiness",
+      "stress",
+      "depression",
+      "anxiety",
+      "drinks",
+      "cognition_z"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 41
   },
   {
     "id": "smallpox",
@@ -1746,6 +1944,30 @@
     "hasCategorical": true,
     "groupLevels": 52,
     "minGroupN": 1
+  },
+  {
+    "id": "usstates",
+    "name": "US States (2010s)",
+    "description": "Demographic, health, and political measures for the 50 US states (Ch. 7 relationships). Curated subset.",
+    "type": "regression",
+    "chapter": "IMS Ch. 7",
+    "n": 50,
+    "variables": [
+      "state",
+      "region",
+      "household_income",
+      "college",
+      "high_school",
+      "smokers",
+      "obese",
+      "physical_activity",
+      "iq",
+      "obama_mccain"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 11
   },
   {
     "id": "yawn",

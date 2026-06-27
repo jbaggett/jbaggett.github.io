@@ -1,0 +1,100 @@
+{
+  "id": "hollywoodmovies2023",
+  "name": "Hollywood Movies 2023",
+  "description": "Budget, rating, and opening weekend for a small set of 2023 films (Ch. 4 describing/relationships).",
+  "source": "coursepack",
+  "chapter": "IMS Ch. 4",
+  "type": "explore",
+  "studyDescription": "A small convenience sample of major 2023 film releases with their lead studio, genre, critic rating, production budget, and opening-weekend gross.",
+  "variableDescriptions": {
+    "title": "Film title.",
+    "lead_studio": "Studio that led production/distribution.",
+    "rating": "Aggregate critic rating (0–100).",
+    "genre": "Primary genre.",
+    "budget": "Production budget in millions of dollars.",
+    "opening": "Domestic opening-weekend gross in millions."
+  },
+  "sourceDetail": "Coursepack (Stat 145), Lock5-style movies data, 2023 subset.",
+  "variables": [
+    {
+      "name": "title",
+      "label": "Title",
+      "type": "categorical"
+    },
+    {
+      "name": "lead_studio",
+      "label": "Lead Studio",
+      "type": "categorical"
+    },
+    {
+      "name": "rating",
+      "label": "Critic Rating",
+      "type": "numeric"
+    },
+    {
+      "name": "genre",
+      "label": "Genre",
+      "type": "categorical"
+    },
+    {
+      "name": "budget",
+      "label": "Budget ($M)",
+      "type": "numeric"
+    },
+    {
+      "name": "opening",
+      "label": "Opening Weekend ($M)",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "title": "Oppenheimer",
+      "lead_studio": "Atlas",
+      "rating": 93,
+      "genre": "Biography",
+      "budget": 100,
+      "opening": 82
+    },
+    {
+      "title": "Barbie",
+      "lead_studio": "Warner Bros",
+      "rating": 88,
+      "genre": "Comedy",
+      "budget": 145,
+      "opening": 162
+    },
+    {
+      "title": "Spider-Man: Across the Spider-Verse",
+      "lead_studio": "Sony",
+      "rating": 95,
+      "genre": "Action",
+      "budget": 100,
+      "opening": 120.5
+    },
+    {
+      "title": "Guardians of the Galaxy Vol. 3",
+      "lead_studio": "Disney",
+      "rating": 82,
+      "genre": "Sci-fi",
+      "budget": 250,
+      "opening": 118
+    },
+    {
+      "title": "The Holdovers",
+      "lead_studio": "Focus",
+      "rating": 97,
+      "genre": "Drama",
+      "budget": 13,
+      "opening": 2.7
+    },
+    {
+      "title": "Killers of the Flower Moon",
+      "lead_studio": "Paramount",
+      "rating": 93,
+      "genre": "Drama",
+      "budget": 200,
+      "opening": 23
+    }
+  ]
+}

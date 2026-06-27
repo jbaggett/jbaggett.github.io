@@ -1,0 +1,32 @@
+{
+  "title": "Inference for the Difference in Two Proportions",
+  "tool": "inference/two-props",
+  "params": { "dataset": "malaria" },
+  "steps": [
+    {
+      "instruction": "The Malaria Vaccine dataset randomly assigned children to a vaccine or a control group and recorded who got infected. The question: does the vaccine **change** the infection rate? State H₀ and Hₐ for the two-proportion z-test in your head before continuing.",
+      "observe": "Is this naturally one-sided or two-sided? Why?",
+      "reveal": "H₀: p₁ − p₂ = 0 vs. Hₐ: p₁ − p₂ ≠ 0. The question is whether the vaccine **changes** the rate (no direction stated in advance), so it is two-sided."
+    },
+    {
+      "instruction": "Look at the per-group counts the tool reports. Compute (or read off) the pooled proportion $\\hat{p}$ and check the success–failure condition for **both** groups under H₀: $n_i \\hat{p}$ and $n_i (1 - \\hat{p})$.",
+      "observe": "Are all four counts at least 10?",
+      "reveal": "For the malaria data, both groups have enough successes and failures (the trial enrolled hundreds), so the success–failure condition is met. **Normal approximation is OK here.**"
+    },
+    {
+      "instruction": "Run the two-sided z-test. Read off the z statistic, the p-value, and the 95% CI for $p_1 - p_2$.",
+      "observe": "Does the CI contain 0? Does the p-value reject H₀ at α = 0.05?",
+      "reveal": "The CI and the test always agree at matching levels: the test rejects H₀ at α = 0.05 exactly when the 95% CI excludes 0. For the malaria data the CI typically lies entirely below 0, indicating a lower infection rate in the vaccine group."
+    },
+    {
+      "instruction": "Write a one-sentence conclusion **in context**, then evaluate the following candidate interpretation: *'There is a 95% probability that $p_1 - p_2$ lies in this interval.'*",
+      "observe": "Why is that interpretation wrong?",
+      "reveal": "$p_1 - p_2$ is a **fixed but unknown** number — it doesn't have a probability of being anywhere; it just *is* somewhere. The 95% refers to the long-run success rate of the **interval-building procedure**: across many studies, 95% of intervals built this way would capture the true difference."
+    },
+    {
+      "instruction": "Open the [randomization test for difference in proportions](/simulate/randomization-diff-props/?dataset=malaria) in a new tab and run 5000 shuffles. Compare its p-value to the analytic z-test's.",
+      "observe": "How close are the two p-values?",
+      "reveal": "On well-behaved data like this, the randomization and the z-test give nearly identical p-values — the z is doing what it's supposed to as an approximation. When conditions fail, the simulation stays honest and the z drifts; this is the calibration check that keeps the analytic answer trustworthy."
+    }
+  ]
+}

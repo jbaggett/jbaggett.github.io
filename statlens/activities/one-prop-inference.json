@@ -1,0 +1,32 @@
+{
+  "title": "Inference for One Proportion",
+  "tool": "inference/one-prop",
+  "params": { "dataset": "medical_consultant" },
+  "steps": [
+    {
+      "instruction": "The Medical Consultant dataset records complications among a surgeon's 62 patients (n = 62). She claims her complication rate is lower than the national 10% rate. State **H₀** and **Hₐ** in your head before continuing.",
+      "observe": "What direction does the alternative point — lower, higher, or just different?",
+      "reveal": "H₀: p = 0.10 vs. Hₐ: p < 0.10. The claim is *lower*, so this is a one-sided test in the left direction."
+    },
+    {
+      "instruction": "Look at the panel's reported observed count, sample size, and sample proportion $\\hat{p}$. Also note the expected counts under H₀: $np_0$ and $n(1-p_0)$.",
+      "observe": "Are $np_0$ and $n(1-p_0)$ both at least 10? What does that mean about using the normal-approximation z-test here?",
+      "reveal": "$np_0 = 62 \\times 0.10 = 6.2$, which is below 10 — the **success–failure condition fails**. The normal approximation is unreliable for this dataset; the z-test's p-value should not be trusted. (This is exactly why earlier chapters used a bootstrap CI for this same data.)"
+    },
+    {
+      "instruction": "Despite the warning, set the alternative direction to **less than** and run the test anyway, so you can compare its result to a simulation later. Read off the test statistic z, the p-value, and the 95% confidence interval.",
+      "observe": "Does the 95% CI contain 0.10? Does the p-value lead you to reject H₀ at α = 0.05?",
+      "reveal": "Typically the CI just barely contains 0.10 and the p-value sits in a borderline zone. **But trust this lightly** — conditions failed, so both numbers are approximate."
+    },
+    {
+      "instruction": "Now write a one-sentence conclusion in context, framed honestly. Try to avoid using the word *probability* about H₀ itself.",
+      "observe": "Compare your sentence to a colleague's — does either of you accidentally say *the probability that her rate is 10%*?",
+      "reveal": "A correct conclusion: *We do not have strong evidence that her true complication rate is below the national 10% — but the success–failure condition failed, so this analysis should be re-done with a simulation method.* The p-value is the probability of data this extreme **given H₀**, not the probability of H₀ given the data."
+    },
+    {
+      "instruction": "Open the [bootstrap CI tool for one proportion](/simulate/bootstrap-prop/?dataset=medical_consultant) in a new tab and run 10,000 resamples. Compare its 95% percentile interval to the z-interval you just read.",
+      "observe": "How do the two intervals differ — in center, in width, in *shape* (symmetric vs. asymmetric)?",
+      "reveal": "The bootstrap interval is **right-skewed**, mirroring the actual sampling distribution of $\\hat{p}$ when $p$ is small. The z-interval is symmetric by construction and gets the shape wrong. When conditions fail, trust the simulation — it makes no normality assumption."
+    }
+  ]
+}

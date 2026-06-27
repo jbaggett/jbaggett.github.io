@@ -1,0 +1,32 @@
+{
+  "title": "One-Sample t-Inference",
+  "tool": "inference/one-mean",
+  "params": { "dataset": "epa2021_mpg" },
+  "steps": [
+    {
+      "instruction": "The EPA 2021 MPG dataset reports highway mileage for a sample of cars. Suppose the EPA target is 32 mpg — we want to know whether the *true* mean for this population of cars differs from 32. State H₀ and Hₐ in your head.",
+      "observe": "Is your alternative one-sided or two-sided? Why?",
+      "reveal": "H₀: μ = 32 vs. Hₐ: μ ≠ 32 — two-sided, because we're asking whether the true mean *differs* (in either direction) from the target."
+    },
+    {
+      "instruction": "Look at the displayed dotplot or histogram alongside the test statistics. Note the sample size n, the sample mean $\\bar{x}$, and the sample SD $s$.",
+      "observe": "Does the distribution look roughly symmetric? Any outliers? With this n, do you trust the t-procedure here?",
+      "reveal": "If n is moderate (≥30) and the distribution looks roughly symmetric without extreme outliers, the t-procedure is trustworthy. If n is small and the data are skewed or have outliers, switch to a bootstrap CI instead — the t-procedure's normality assumption gets shaky."
+    },
+    {
+      "instruction": "Run a two-sided t-test against the null value 32. Read off the t statistic, the degrees of freedom (df = n − 1), and the p-value.",
+      "observe": "What is your decision at α = 0.05? Does the 95% CI exclude 32?",
+      "reveal": "At α = 0.05, reject H₀ iff p < 0.05. The two-sided t-test and the 95% CI are equivalent: reject H₀ exactly when the CI excludes the null value 32."
+    },
+    {
+      "instruction": "Write a one-sentence conclusion in context, then evaluate this interpretation of the p-value: *'The probability that the null hypothesis is true is 0.04.'*",
+      "observe": "Why is that interpretation wrong?",
+      "reveal": "The p-value is the probability of **data this extreme given H₀**, not the probability of H₀. A correct phrasing: *if the true mean really were 32, we'd see a sample this far away (or farther) only about 4% of the time by chance — so this much divergence is rare under the null.*"
+    },
+    {
+      "instruction": "Reset to a one-sided alternative (Hₐ: μ < 32) and re-run. Notice the new p-value is roughly half the two-sided one.",
+      "observe": "Why does this halving happen — and what's the **danger** of switching from two-sided to one-sided after looking at the data?",
+      "reveal": "Two-sided p = 2 × one-sided p when the test statistic is in the predicted direction. Switching to one-sided **after** peeking at the data doubles your effective Type I error rate — you've already used both tails to pick a direction. One-sided is honest only when the direction is chosen *before* seeing the data."
+    }
+  ]
+}
