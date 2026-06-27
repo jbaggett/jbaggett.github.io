@@ -456,6 +456,33 @@
     "minGroupN": null
   },
   {
+    "id": "county",
+    "name": "US Counties",
+    "description": "Demographic and economic measures for all 3,142 US counties (IMS Ch. 1, 8 relationships).",
+    "type": "explore",
+    "chapter": "IMS Ch. 1, 8",
+    "n": 3142,
+    "variables": [
+      "name",
+      "state",
+      "pop2017",
+      "pop_change",
+      "poverty",
+      "homeownership",
+      "multi_unit",
+      "unemployment_rate",
+      "metro",
+      "median_edu",
+      "per_capita_income",
+      "median_hh_income",
+      "smoking_ban"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 1165
+  },
+  {
     "id": "county_2019",
     "name": "US County Demographics (2019)",
     "description": "Median household income, poverty rate, and unemployment rate for US counties (2019). IMS Ch. 19.",
