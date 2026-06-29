@@ -39,6 +39,24 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry">
+            <div class="cl-date">2026-06-27<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../inference/anova/?dataset=insectsprays&amp;posthoc=tukey">ANOVA: which groups differ? (Tukey HSD &amp; Bonferroni)</a></h2>
+            <p>After a significant F-test, the one-way ANOVA tool now shows <strong>post-hoc pairwise comparisons</strong> — every pair of group means with a family-wise confidence interval and adjusted p-value, plus a forest plot where intervals that miss zero (in red) mark the pairs that truly differ. Toggle between <strong>Tukey HSD</strong> and <strong>Bonferroni</strong>.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-27<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../explore/regression/?dataset=possum_regression&amp;bands=true">Regression: confidence &amp; prediction bands</a></h2>
+            <p>The regression scatterplot can now shade the <strong>95% confidence band</strong> for the mean response (the classic hourglass, narrowest at the mean of x) and the wider <strong>prediction band</strong> for a single new observation. Flip on "Show CI &amp; prediction bands," or deep-link with <code>?bands=true</code>.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-27<span class="cl-tag">New data</span></div>
+            <h2><a href="../explore/multi/?dataset=county">15 new datasets</a></h2>
+            <p>Fifteen datasets joined the library — including <strong>loan50</strong>, <strong>possum</strong>, <strong>county</strong> (all 3,142 US counties), Florida Lakes (mercury), Insect Sprays, NBA salaries, and several paired and ANOVA examples from the coursepack. Browse any of them in the <a href="../explore/multi/">Data Explorer</a>.</p>
+        </article>
+
+        <article class="cl-entry">
             <div class="cl-date">2026-06-20<span class="cl-tag">Upgraded</span></div>
             <h2><a href="../distribution/normal/?tail=between&amp;lo=-1&amp;hi=2">Distribution calculators: Between &amp; Symmetric regions</a></h2>
             <p>The normal, t, χ², and F calculators now go beyond left/right tails. <strong>Between</strong> shades the middle band between two independent bounds — so you can finally compute things like P(500 ≤ X ≤ 650) — and <strong>Symmetric</strong> shades the two outer tails for the classic two-sided view. Every region shows an editable probability, and you can deep-link an exact setup, e.g. <code>?tail=between&amp;lo=-1&amp;hi=2</code>.</p>
