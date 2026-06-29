@@ -2987,19 +2987,37 @@ export function initSimPage(config) {
 
     btnSummary = /** @type {HTMLButtonElement} */ (document.createElement('button'));
     btnSummary.type = 'button';
-    btnSummary.textContent = 'Summary';
+    btnSummary.textContent = 'Tiles';
     btnSummary.setAttribute('aria-pressed', 'true');
 
     btnHistogram = /** @type {HTMLButtonElement} */ (document.createElement('button'));
     btnHistogram.type = 'button';
-    // One-sample mean bootstrap labels the non-summary view "Dotplot" (small n
+    // One-sample mean bootstrap labels the non-tiles view "Dotplots" (small n
     // shows the animated dotplot; large n falls back to a histogram).
-    btnHistogram.textContent = isMeanOneSample ? 'Dotplot' : 'Histogram';
+    btnHistogram.textContent = isMeanOneSample ? 'Dotplots' : 'Histogram';
     btnHistogram.setAttribute('aria-pressed', 'false');
 
     seg.appendChild(btnSummary);
     seg.appendChild(btnHistogram);
-    resampleToggle.replaceWith(seg);
+    // NB: do NOT add the `mech-view-toggle` class — the data-load handler removes
+    // that class for non-card datasets (it manages the prop Bars/Cards toggle).
+
+    // Place the view toggle in a full-width bottom bar next to the mechanism
+    // caption (bottom-right) — the same UI as the one-mean randomization test.
+    const strip = document.getElementById('mechanism-strip');
+    if (strip && mechanismDescEl) {
+      let bar = strip.querySelector('.mech-bottom-bar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'mech-bottom-bar';
+        strip.appendChild(bar);
+      }
+      bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
+      bar.appendChild(seg);
+      resampleToggle.remove();
+    } else {
+      resampleToggle.replaceWith(seg);
+    }
 
     btnSummary.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('summary'); });
     btnHistogram.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('histogram'); });

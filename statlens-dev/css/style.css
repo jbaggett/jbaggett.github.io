@@ -1141,8 +1141,10 @@ input[aria-invalid="true"] {
 }
 .mech-bottom-bar .mechanism-desc { flex: 1; margin: 0; text-align: center; }
 .mech-bottom-bar .mechanism-desc[hidden] { display: none; }
-.mech-view-toggle { margin: 0; flex: none; font-size: 0.78rem; }
-.mech-view-toggle button { padding: 3px 9px; }
+.mech-view-toggle,
+.mech-bottom-bar .seg-control { margin: 0; flex: none; font-size: 0.78rem; }
+.mech-view-toggle button,
+.mech-bottom-bar .seg-control button { padding: 3px 9px; }
 @media (max-width: 560px) {
   .mech-bottom-bar { flex-direction: column; gap: 6px; }
 }
