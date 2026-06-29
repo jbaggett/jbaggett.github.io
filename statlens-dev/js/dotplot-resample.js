@@ -21,6 +21,10 @@ import * as d3Selection from 'd3-selection';
 
 const COMPACT = { showExport: false, animate: false, labels: 'none' };
 const FLY_COLOR = '#E07020';   // orange flyer (matches the Sampling Lab)
+// Common display width for every mechanism dotplot, so dots are the SAME size on
+// every page regardless of how wide the host panel is (the CI and randomization
+// strips have different panel widths). Centered within the panel.
+const MECH_DISPLAY_W = 300;
 
 /**
  * Draw a compact mechanism dotplot (bag, sample, or resample) via drawDotplot.
@@ -33,7 +37,8 @@ const FLY_COLOR = '#E07020';   // orange flyer (matches the Sampling Lab)
  */
 export function drawMechDotplot(container, values, opts = {}) {
   if (container) container.innerHTML = ''; // drawDotplot/createChart appends — clear first
-  return drawDotplot(container, values, {
+  const viewWidth = opts.viewWidth ?? 320;
+  const frame = drawDotplot(container, values, {
     ...COMPACT,
     forceDotMode: true,
     id: opts.id,
@@ -48,9 +53,19 @@ export function drawMechDotplot(container, values, opts = {}) {
     xLabel: opts.xLabel ?? '',
     // A narrow, taller viewBox so the dotplot fills the ~300px mechanism panel at
     // close to 1:1 (a 600-wide viewBox displayed in a 300px panel halves the dots).
-    viewWidth: opts.viewWidth ?? 320,
+    viewWidth,
     viewHeight: opts.viewHeight ?? 150,
   });
+  // Cap the display width to the viewBox width so the dotplot renders ~1:1 and dots
+  // are the SAME size regardless of how wide the host panel is (the CI and the
+  // randomization-test strips have different panel widths). Centered.
+  const svg = frame?.frame?.inner?.ownerSVGElement;
+  if (svg) {
+    svg.style.maxWidth = `${MECH_DISPLAY_W}px`;
+    svg.style.margin = '0 auto';
+    svg.style.display = 'block';
+  }
+  return frame;
 }
 
 /** Convert an SVG-inner-group local coordinate to a viewport (fixed) point. */
