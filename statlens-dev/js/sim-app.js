@@ -19,8 +19,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
-import { computeDots } from './dotplot.js';
-import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
+import { createMeanMechanism } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -76,10 +75,11 @@ export function initSimPage(config) {
     && resampleViewMode !== 'summary';
   /** @type {[number,number]|null} */
   let meanDomain = null;
-  /** @type {any} */
-  let meanBag = null;
-  /** Shared stack capacity for matched bag/resample dot sizing. */
-  let meanSizingMax = 0;
+  // The CI-for-a-mean dotplot uses the SAME shared controller as the one-mean
+  // randomization test (js/mean-mechanism.js) — owns the bag, the resample, dot
+  // sizing and the pluck-and-fly, so the two strips can't drift. (The CI's Tiles
+  // view still uses sim-app's own showResampleSummary; converging that is separate.)
+  const meanMech = createMeanMechanism({ formatValue: formatChipValue });
   /** Shared dotplot domain from the original sample (with padding). */
   function computeMeanDomain() {
     if (!data1.length) return null;
@@ -1682,15 +1682,11 @@ export function initSimPage(config) {
         label: `Original sample: ${successes} successes, ${failures} failures, p-hat = ${formatStat(pHat, dataPrecision, 'proportion')}`,
       });
     } else if (meanDotActive()) {
-      // B1: original sample as a dotplot bag (shared renderer + axis/dot size with
-      // the resample). Size dots from the bag's stack + headroom so resamples keep
-      // the same dot size and a stable baseline.
+      // Original sample as a dotplot bag, via the shared mean mechanism.
       meanDomain = computeMeanDomain();
-      const natural = computeDots(data1, { domain: meanDomain ?? undefined }).maxStack;
-      meanSizingMax = natural + 3; // modest headroom so resample stacks fit without shrinking dots
-      meanBag = drawMechDotplot(originalContentEl, data1, {
-        domain: meanDomain ?? undefined, mean: mean(data1), meanLabel: 'x̄', sizingMaxStack: meanSizingMax,
-      });
+      meanMech.setView('dotplot');
+      meanMech.resetSizing();
+      meanMech.renderBag(originalContentEl, data1, mean(data1), { domain: meanDomain ?? undefined, meanLabel: 'x̄' });
     } else if (data1.length <= CHIP_THRESHOLD) {
       // Small dataset: show individual value chips
       const container = document.createElement('div');
@@ -2623,12 +2619,11 @@ export function initSimPage(config) {
       return showResamplePropBar(resampleValues, morph);
     }
 
-    // B1: small mean samples — animated dotplot resample (draw with replacement),
-    // via the shared dotplot-resample helper.
-    if (meanDotActive() && meanBag) {
-      return showResampleDotplot(resampleContentEl, meanBag, resampleValues, {
-        domain: meanDomain ?? computeMeanDomain(), mean: mean(resampleValues),
-        meanLabel: 'x̄', sizingMaxStack: meanSizingMax, animate: morph,
+    // Small mean samples — animated dotplot resample, via the shared mechanism.
+    if (meanDotActive()) {
+      meanMech.setView('dotplot');
+      return meanMech.renderResample(resampleContentEl, data1, resampleValues, mean(resampleValues), morph, {
+        domain: meanDomain ?? computeMeanDomain() ?? undefined, meanLabel: 'x̄',
       });
     }
 

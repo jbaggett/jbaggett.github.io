@@ -14,6 +14,7 @@ import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.j
 import { drawDotplot, computeDotRadius, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
+import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
 import { parseParams } from './url-params.js';
@@ -249,83 +250,54 @@ export function initOneSamplePage(config) {
     return [lo - pad, hi + pad];
   }
 
-  // ── B5: shared dotplot mechanism for the one-mean randomization test ──────
-  // The "bag" is the original sample (Observed) or the null-shifted sample
-  // (Null); the resample is drawn WITH REPLACEMENT from it and animated with the
-  // same pluck-and-fly as the one-mean bootstrap CI (js/dotplot-resample.js).
-  const MEAN_DOT_MAX = 40;
-  /** Mechanism representation for one-mean: 'summary' (cards) | 'dotplot'.
-   *  Selectable via ?mechview=summary|dotplot (default summary). */
-  let meanView = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase() === 'dotplot'
-    ? 'dotplot' : 'summary';
-  /** Hold the observed sample on the very first shift so it's clear what we start from. */
-  let firstShiftDone = false;
-  /** Use the dotplot mechanism (small means samples only). */
-  const meanMechActive = () => !isProp && sampleData.length >= 2 && sampleData.length <= MEAN_DOT_MAX;
-  /** Summary cards apply to small samples in summary view. */
-  const useCards = () => !isProp && sampleData.length >= 2 && sampleData.length <= CHIP_MAX && meanView === 'summary';
-  /** Dotplot applies in dotplot view (or summary view for medium 30–40 samples). */
-  const useDots = () => meanMechActive() && !useCards();
+  // ── Shared mean mechanism (Tiles | Dotplot | Histogram) ───────────────────
+  // The bootstrap CI for a mean and this randomization test use the SAME
+  // controller (js/mean-mechanism.js) so the two strips can't drift. The only
+  // difference — the null shift — is handled here: we just hand renderBag the
+  // observed or null-shifted values, and animate the shift ourselves.
   /** Chip text honouring the data precision. */
   const fmtChip = (/** @type {number} */ v) => (Number.isInteger(v) ? String(v) : formatStat(v, dataPrecision));
-  /** @type {any} */
-  let meanBag = null;
-  /** @type {HTMLElement[]} */
-  let meanBagChips = [];
-  let meanSizingMax = 0;
+  const initialView = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase() === 'dotplot'
+    ? 'dotplot' : 'summary';
+  const mech = createMeanMechanism({ formatValue: fmtChip, initialView });
+  /** Hold the observed sample on the very first shift so it's clear what we start from. */
+  let firstShiftDone = false;
+  const meanMechActive = () => !isProp && sampleData.length >= 2 && sampleData.length <= MEAN_DOT_MAX;
+  const useCards = () => !isProp && mech.useCards(sampleData.length);
+  const useDots = () => !isProp && mech.useDots(sampleData.length);
   // Latest resample (page scope so the view-render helpers + toggle can re-render).
   let lastSimStat = 0;
   /** @type {number[]|null} */
   let lastResampleArr = null;
 
-  /** Render the left "bag" panel in the current view (cards / dotplot / hist),
-   *  using the observed or null-shifted sample per the Observed/Null toggle. */
+  const obsChartEl = () => /** @type {HTMLElement|null} */ (document.getElementById('mech-obs-chart'));
+
+  /** Render the left "bag" panel using the observed or null-shifted sample. */
   function renderMeanBagView() {
-    const el = document.getElementById('mech-obs-chart');
+    const el = obsChartEl();
     if (!el || sampleData.length < 2) return;
     const vals = nullShown ? shiftedData : sampleData;
     const meanVal = nullShown ? getNullValue() : observedStat;
-    if (useCards()) {
-      meanBag = null;
-      meanBagChips = renderBagChips(el, vals, {
-        formatValue: fmtChip, label: nullShown ? 'Null-shifted sample' : 'Observed sample',
-      });
-    } else if (useDots()) {
-      meanBagChips = [];
-      drawMeanBag(vals, meanVal);
-    } else {
-      meanBag = null; meanBagChips = [];
-      drawMiniChart(el, vals, { meanValue: meanVal, domain: sharedBoxplotDomain(), label: 'Sample distribution' });
-    }
+    mech.renderBag(el, vals, meanVal, {
+      domain: sharedBoxplotDomain(), meanLabel: 'x̄',
+      label: nullShown ? 'Null-shifted sample' : 'Observed sample',
+    });
   }
 
-  /** Render the right resample panel in the current view. Returns animation ms. */
+  /** Render the right resample panel (drawn from the null-shifted bag). Returns ms. */
   function renderMeanResampleView(animate) {
-    const el = document.getElementById('mech-sim-chart');
+    const el = /** @type {HTMLElement|null} */ (document.getElementById('mech-sim-chart'));
     if (!el || !lastResampleArr || lastResampleArr.length < 2) return 0;
-    if (useCards()) {
-      return renderResampleChips(el, shiftedData, lastResampleArr, {
-        formatValue: fmtChip, sourceChips: meanBagChips, animate,
-      });
-    }
-    if (useDots() && meanBag) {
-      return showResampleDotplot(el, meanBag, lastResampleArr, {
-        domain: sharedBoxplotDomain(), mean: lastSimStat, meanLabel: 'x̄*',
-        sizingMaxStack: meanSizingMax, animate,
-      });
-    }
-    drawMiniChart(el, lastResampleArr, {
-      domain: sharedBoxplotDomain(), meanValue: lastSimStat, highlightMean: animate,
+    return mech.renderResample(el, shiftedData, lastResampleArr, lastSimStat, animate, {
+      domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
       label: 'Simulated resample from null distribution',
     });
-    return 0;
   }
 
-  /** Animate the bag cards' values from observed→shifted (or back) so students see
-   *  the SAME constant subtracted from every observation. The persistent shift
-   *  explanation lives in the left panel's stat line (set in morphToNull). */
+  /** Animate the bag cards' values observed→shifted (or back) so students see the
+   *  SAME constant subtracted from every observation. */
   function animateCardsShift(toNull) {
-    const chips = meanBagChips;
+    const chips = mech.bagChips;
     const fromVals = (toNull ? [...sampleData] : [...shiftedData]).sort((a, b) => a - b);
     const toVals = (toNull ? [...shiftedData] : [...sampleData]).sort((a, b) => a - b);
     if (!chips.length || chips.length !== toVals.length) { renderMeanBagView(); return 0; }
@@ -345,26 +317,18 @@ export function initOneSamplePage(config) {
     return DUR;
   }
 
-  /** (Re)draw the left bag dotplot with `values`, centred-stat `meanVal`. */
+  /** (Re)draw the bag dotplot with `values` (used by the null-shift glide). */
   function drawMeanBag(values, meanVal) {
-    const el = document.getElementById('mech-obs-chart');
-    if (!el || values.length < 2) return null;
-    if (!meanSizingMax) {
-      const natural = computeDots(values, { domain: sharedBoxplotDomain() }).maxStack;
-      meanSizingMax = natural + 3; // modest headroom so resample stacks fit without shrinking dots
-    }
-    meanBag = drawMechDotplot(el, values, {
-      domain: sharedBoxplotDomain(), mean: meanVal, meanLabel: 'x̄', sizingMaxStack: meanSizingMax,
-    });
-    return meanBag;
+    const el = obsChartEl();
+    if (el && values.length >= 2) mech.renderBag(el, values, meanVal, { domain: sharedBoxplotDomain(), meanLabel: 'x̄' });
   }
 
   /** Slide the bag's dots + mean line by `deltaPx` → 0 (the observed↔null shift).
    *  The dots are already drawn at their shifted positions; we start them at the
    *  observed offset and slide to 0 (uniform block — the shift IS uniform). Returns ms. */
   function glideBag(deltaPx) {
-    if (!meanBag || prefersReducedMotion()) return 0;
-    const inner = meanBag.frame.inner;
+    if (!mech.bag || prefersReducedMotion()) return 0;
+    const inner = mech.bag.frame.inner;
     const groups = /** @type {SVGGElement[]} */ (Array.from(inner.querySelectorAll('.data, .overlays')));
     const DUR = 850;
     groups.forEach(g => { g.style.transition = 'none'; g.style.transform = `translateX(${deltaPx}px)`; });
@@ -625,7 +589,7 @@ export function initOneSamplePage(config) {
           <span class="mech-stat-text">n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span></span>`;
         const obsChartEl = document.getElementById('mech-obs-chart');
         if (obsChartEl && sampleData.length >= 2) {
-          meanSizingMax = 0; // recompute sizing for the new dataset
+          mech.resetSizing(); // recompute sizing for the new dataset
           renderMeanBagView();
         }
       }
@@ -799,8 +763,8 @@ export function initOneSamplePage(config) {
     wrap.setAttribute('role', 'group');
     wrap.setAttribute('aria-label', 'Resample view');
     wrap.innerHTML =
-      `<button type="button" data-mview="summary" aria-pressed="${String(meanView === 'summary')}">Tiles</button>`
-      + `<button type="button" data-mview="dotplot" aria-pressed="${String(meanView === 'dotplot')}">Dotplots</button>`;
+      `<button type="button" data-mview="summary" aria-pressed="${String(mech.view === 'summary')}">Tiles</button>`
+      + `<button type="button" data-mview="dotplot" aria-pressed="${String(mech.view === 'dotplot')}">Dotplots</button>`;
     // Place it in a full-width bottom bar next to the "Resample N values…" caption
     // so it reads as applying to the whole mechanism (not just the right plot).
     const strip = document.getElementById('mechanism-strip');
@@ -821,11 +785,11 @@ export function initOneSamplePage(config) {
     for (const b of meanViewBtns) {
       b.addEventListener('click', () => {
         const want = b.dataset.mview === 'dotplot' ? 'dotplot' : 'summary';
-        if (want === meanView) return;
-        meanView = want;
-        for (const x of meanViewBtns) x.setAttribute('aria-pressed', String(x.dataset.mview === meanView));
+        if (want === mech.view) return;
+        mech.setView(want);
+        for (const x of meanViewBtns) x.setAttribute('aria-pressed', String(x.dataset.mview === mech.view));
         // Re-render both panels statically in the new view.
-        meanSizingMax = 0;
+        mech.resetSizing();
         renderMeanBagView();
         if (lastResampleArr && lastResampleArr.length >= 2) renderMeanResampleView(false);
       });
@@ -914,7 +878,7 @@ export function initOneSamplePage(config) {
           // Re-draw the bag as the null-shifted sample, then glide the dots from
           // the observed positions to the shifted ones (the shift is uniform).
           drawMeanBag(shiftedData, getNullValue());
-          const deltaPx = meanBag ? (meanBag.xScale(observedStat) - meanBag.xScale(getNullValue())) : 0;
+          const deltaPx = mech.bag ? (mech.bag.xScale(observedStat) - mech.bag.xScale(getNullValue())) : 0;
           const ms = glideBag(deltaPx);
           syncNullToggle();
           return Math.max(ms, 850);
@@ -968,7 +932,7 @@ export function initOneSamplePage(config) {
           // Re-draw the bag as the observed sample, then glide back from the
           // null-shifted positions.
           drawMeanBag(sampleData, observedStat);
-          const deltaPx = meanBag ? (meanBag.xScale(getNullValue()) - meanBag.xScale(observedStat)) : 0;
+          const deltaPx = mech.bag ? (mech.bag.xScale(getNullValue()) - mech.bag.xScale(observedStat)) : 0;
           glideBag(deltaPx);
         } else if (chartEl && chartEl.querySelector('svg')) {
           morphMiniChart(chartEl, sampleData, {
