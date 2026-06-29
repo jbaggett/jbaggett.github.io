@@ -90,22 +90,29 @@ export function bagSource(bag) {
   const svg = bag?.frame?.inner?.ownerSVGElement;
   const circles = svg ? Array.from(svg.querySelectorAll('.data circle')) : [];
   // bag.dots[i] ↔ circles[i] (same computeDots order). Group circles by value.
+  // Key on a ROUNDED value: a "bag" of NULL-SHIFTED data carries floating-point
+  // noise (e.g. -3.2000000000000006), and exact-float matching against the
+  // resampled values would silently miss — so the flyers wouldn't originate from
+  // the bag (no footprints). Rounding makes the match robust.
+  const key = (/** @type {number} */ v) => Math.round(v * 1e6) / 1e6;
   /** @type {Map<number, Element[]>} */
   const byVal = new Map();
   bag?.dots?.forEach((d, i) => {
     if (!circles[i]) return;
-    const arr = byVal.get(d.value) || [];
+    const k = key(d.value);
+    const arr = byVal.get(k) || [];
     arr.push(circles[i]);
-    byVal.set(d.value, arr);
+    byVal.set(k, arr);
   });
   /** @type {Map<number, number>} */
   const cursor = new Map();
   return (value) => {
-    const arr = byVal.get(value);
+    const k = key(value);
+    const arr = byVal.get(k);
     if (!arr || !arr.length) return null;
-    const k = (cursor.get(value) ?? 0) % arr.length;
-    cursor.set(value, k + 1);
-    const r = arr[k].getBoundingClientRect();
+    const idx = (cursor.get(k) ?? 0) % arr.length;
+    cursor.set(k, idx + 1);
+    const r = arr[idx].getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   };
 }
