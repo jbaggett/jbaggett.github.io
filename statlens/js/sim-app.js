@@ -145,9 +145,17 @@ export function initSimPage(config) {
   // Controls section (for sticky + expert toggle)
   const controlsSection = document.getElementById('controls');
 
-  // Mark statistic/CI selectors as expert-only
+  // Confidence level is the CORE control of a CI tool → keep it always visible on
+  // bootstrap pages; only the advanced statistic selector (bootstrap-mean:
+  // median/SD/quartiles) stays behind "More options". Randomization pages keep the
+  // whole control row expert-only as before.
   const controlRow = controlsSection?.querySelector('.control-row');
-  if (controlRow) controlRow.classList.add('expert-only');
+  if (config.mode === 'bootstrap') {
+    const statLabel = controlsSection?.querySelector('label[for="boot-stat"]');
+    if (statLabel) statLabel.classList.add('expert-only');
+  } else if (controlRow) {
+    controlRow.classList.add('expert-only');
+  }
 
   // Add expert toggle link next to generate bar
   const generateBar = controlsSection?.querySelector('.generate-bar');
