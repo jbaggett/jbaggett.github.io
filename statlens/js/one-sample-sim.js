@@ -11,7 +11,10 @@
 import { createRng, sampleWithReplacement } from './prng.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
-import { drawDotplot, computeDotRadius } from './dotplot.js';
+import { drawDotplot, computeDotRadius, computeDots } from './dotplot.js';
+import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
+import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
+import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
 import { parseParams } from './url-params.js';
@@ -245,6 +248,94 @@ export function initOneSamplePage(config) {
     const hi = Math.max(...all);
     const pad = (hi - lo) * 0.08 || 0.5;
     return [lo - pad, hi + pad];
+  }
+
+  // ── Shared mean mechanism (Tiles | Dotplot | Histogram) ───────────────────
+  // The bootstrap CI for a mean and this randomization test use the SAME
+  // controller (js/mean-mechanism.js) so the two strips can't drift. The only
+  // difference — the null shift — is handled here: we just hand renderBag the
+  // observed or null-shifted values, and animate the shift ourselves.
+  /** Chip text honouring the data precision. */
+  const fmtChip = (/** @type {number} */ v) => (Number.isInteger(v) ? String(v) : formatStat(v, dataPrecision));
+  const initialView = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase() === 'dotplot'
+    ? 'dotplot' : 'summary';
+  const mech = createMeanMechanism({ formatValue: fmtChip, initialView });
+  /** Hold the observed sample on the very first shift so it's clear what we start from. */
+  let firstShiftDone = false;
+  const meanMechActive = () => !isProp && sampleData.length >= 2 && sampleData.length <= MEAN_DOT_MAX;
+  const useCards = () => !isProp && mech.useCards(sampleData.length);
+  const useDots = () => !isProp && mech.useDots(sampleData.length);
+  // Latest resample (page scope so the view-render helpers + toggle can re-render).
+  let lastSimStat = 0;
+  /** @type {number[]|null} */
+  let lastResampleArr = null;
+
+  const obsChartEl = () => /** @type {HTMLElement|null} */ (document.getElementById('mech-obs-chart'));
+
+  /** Render the left "bag" panel using the observed or null-shifted sample. */
+  function renderMeanBagView() {
+    const el = obsChartEl();
+    if (!el || sampleData.length < 2) return;
+    const vals = nullShown ? shiftedData : sampleData;
+    const meanVal = nullShown ? getNullValue() : observedStat;
+    mech.renderBag(el, vals, meanVal, {
+      domain: sharedBoxplotDomain(), meanLabel: 'x̄',
+      label: nullShown ? 'Null-shifted sample' : 'Observed sample',
+    });
+  }
+
+  /** Render the right resample panel (drawn from the null-shifted bag). Returns ms. */
+  function renderMeanResampleView(animate) {
+    const el = /** @type {HTMLElement|null} */ (document.getElementById('mech-sim-chart'));
+    if (!el || !lastResampleArr || lastResampleArr.length < 2) return 0;
+    return mech.renderResample(el, shiftedData, lastResampleArr, lastSimStat, animate, {
+      domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
+      label: 'Simulated resample from null distribution',
+    });
+  }
+
+  /** Animate the bag cards' values observed→shifted (or back) so students see the
+   *  SAME constant subtracted from every observation. */
+  function animateCardsShift(toNull) {
+    const chips = mech.bagChips;
+    const fromVals = (toNull ? [...sampleData] : [...shiftedData]).sort((a, b) => a - b);
+    const toVals = (toNull ? [...shiftedData] : [...sampleData]).sort((a, b) => a - b);
+    if (!chips.length || chips.length !== toVals.length) { renderMeanBagView(); return 0; }
+    const setVal = (/** @type {HTMLElement} */ c, /** @type {number} */ v) => { c.textContent = fmtChip(v); };
+    if (prefersReducedMotion()) { chips.forEach((c, i) => setVal(c, toVals[i])); return 0; }
+    const DUR = 950;
+    const t0 = performance.now();
+    chips.forEach(c => c.classList.add('chip-shifting'));
+    function step(now) {
+      const t = Math.min((now - t0) / DUR, 1);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      for (let i = 0; i < chips.length; i++) setVal(chips[i], fromVals[i] + (toVals[i] - fromVals[i]) * e);
+      if (t < 1) { requestAnimationFrame(step); return; }
+      chips.forEach((c, i) => { setVal(c, toVals[i]); c.classList.remove('chip-shifting'); });
+    }
+    requestAnimationFrame(step);
+    return DUR;
+  }
+
+  /** (Re)draw the bag dotplot with `values` (used by the null-shift glide). */
+  function drawMeanBag(values, meanVal) {
+    const el = obsChartEl();
+    if (el && values.length >= 2) mech.renderBag(el, values, meanVal, { domain: sharedBoxplotDomain(), meanLabel: 'x̄' });
+  }
+
+  /** Slide the bag's dots + mean line by `deltaPx` → 0 (the observed↔null shift).
+   *  The dots are already drawn at their shifted positions; we start them at the
+   *  observed offset and slide to 0 (uniform block — the shift IS uniform). Returns ms. */
+  function glideBag(deltaPx) {
+    if (!mech.bag || prefersReducedMotion()) return 0;
+    const inner = mech.bag.frame.inner;
+    const groups = /** @type {SVGGElement[]} */ (Array.from(inner.querySelectorAll('.data, .overlays')));
+    const DUR = 850;
+    groups.forEach(g => { g.style.transition = 'none'; g.style.transform = `translateX(${deltaPx}px)`; });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      groups.forEach(g => { g.style.transition = `transform ${DUR}ms ease`; g.style.transform = 'translateX(0)'; });
+    }));
+    return DUR;
   }
 
   function getNullValue() {
@@ -498,11 +589,8 @@ export function initOneSamplePage(config) {
           <span class="mech-stat-text">n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span></span>`;
         const obsChartEl = document.getElementById('mech-obs-chart');
         if (obsChartEl && sampleData.length >= 2) {
-          drawMiniChart(obsChartEl, sampleData, {
-            meanValue: observedStat,
-            domain: sharedBoxplotDomain(),
-            label: 'Observed data distribution',
-          });
+          mech.resetSizing(); // recompute sizing for the new dataset
+          renderMeanBagView();
         }
       }
       computePreSimDomain();
@@ -664,6 +752,50 @@ export function initOneSamplePage(config) {
     }
   }
 
+  /** @type {NodeListOf<HTMLButtonElement>|null} */
+  let meanViewBtns = null;
+  /** Add a Summary | Dotplot toggle next to "This Simulation" (one-mean, small n). */
+  function ensureMeanViewToggle() {
+    if (meanViewBtns || isProp || !simTitleEl) return;
+    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'seg-control mech-view-toggle';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', 'Resample view');
+    wrap.innerHTML =
+      `<button type="button" data-mview="summary" aria-pressed="${String(mech.view === 'summary')}">Tiles</button>`
+      + `<button type="button" data-mview="dotplot" aria-pressed="${String(mech.view === 'dotplot')}">Dotplots</button>`;
+    // Place it in a full-width bottom bar next to the "Resample N values…" caption
+    // so it reads as applying to the whole mechanism (not just the right plot).
+    const strip = document.getElementById('mechanism-strip');
+    const desc = document.getElementById('mechanism-description');
+    if (strip && desc) {
+      let bar = strip.querySelector('.mech-bottom-bar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'mech-bottom-bar';
+        desc.parentElement?.insertBefore(bar, desc);
+        bar.appendChild(desc); // move the caption into the bar
+      }
+      bar.appendChild(wrap);
+    } else {
+      (document.getElementById('mech-simulation') || /** @type {HTMLElement} */ (simTitleEl.parentElement)).appendChild(wrap);
+    }
+    meanViewBtns = wrap.querySelectorAll('button');
+    for (const b of meanViewBtns) {
+      b.addEventListener('click', () => {
+        const want = b.dataset.mview === 'dotplot' ? 'dotplot' : 'summary';
+        if (want === mech.view) return;
+        mech.setView(want);
+        for (const x of meanViewBtns) x.setAttribute('aria-pressed', String(x.dataset.mview === mech.view));
+        // Re-render both panels statically in the new view.
+        mech.resetSizing();
+        renderMeanBagView();
+        if (lastResampleArr && lastResampleArr.length >= 2) renderMeanResampleView(false);
+      });
+    }
+  }
+
   /**
    * Morph the left "Observed Data" panel into "Null Distribution".
    * For one-mean: boxplot slides to center on μ₀.
@@ -715,16 +847,42 @@ export function initOneSamplePage(config) {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
       if (mechObservedTitle) mechObservedTitle.textContent = 'Null Distribution';
 
-      // Update stat text below the chart
+      // Stat line doubles as the PERSISTENT explanation of how this null
+      // distribution was made (every value shifted by the same constant).
       const statText = mechObservedStat.querySelector('.mech-stat-text');
-      if (statText) {
+      if (statText && !isProp) {
+        const d = observedStat - getNullValue();
+        const op = d >= 0 ? '\u2212' : '+'; // \u2212 or +
+        statText.innerHTML = `n = ${sampleN} \u00B7 each value ${op} ${formatStat(Math.abs(d), dataPrecision)} \u2192 `
+          + `<span class="observed-highlight">\u03BC\u2080 = ${getNullValue()}</span>`;
+      } else if (statText) {
         statText.innerHTML = `n = ${sampleN}, <span class="observed-highlight">\u03BC\u2080 = ${getNullValue()}</span>`;
       }
 
       const chartEl = document.getElementById('mech-obs-chart');
       if (chartEl && shiftedData.length >= 2) {
-        // Morph from original data to shifted data (dots/bars slide to μ₀)
         const dom = sharedBoxplotDomain();
+        if (useCards()) {
+          // Cards: tween every value by the same constant so the subtraction is
+          // visible, with a caption. On the FIRST shift, hold the observed sample
+          // for a beat first so it's clear what we're subtracting from.
+          const hold = firstShiftDone ? 0 : 900;
+          firstShiftDone = true;
+          let ms;
+          if (hold) { setTimeout(() => animateCardsShift(true), hold); ms = hold + 1000; }
+          else { ms = animateCardsShift(true); }
+          syncNullToggle();
+          return Math.max(ms, 350);
+        }
+        if (useDots()) {
+          // Re-draw the bag as the null-shifted sample, then glide the dots from
+          // the observed positions to the shifted ones (the shift is uniform).
+          drawMeanBag(shiftedData, getNullValue());
+          const deltaPx = mech.bag ? (mech.bag.xScale(observedStat) - mech.bag.xScale(getNullValue())) : 0;
+          const ms = glideBag(deltaPx);
+          syncNullToggle();
+          return Math.max(ms, 850);
+        }
         const ms = morphMiniChart(chartEl, shiftedData, {
           meanValue: mean(shiftedData),
           highlightMean: true,
@@ -760,17 +918,41 @@ export function initOneSamplePage(config) {
           </div>`;
       }
     } else {
-      // Re-render with original sample dotplot/histogram
+      // One-mean: slide the dots back from the null-shifted positions to the
+      // observed ones — symmetric with morphToNull (don't rebuild = no blink).
       if (mechObservedStat && sampleData.length >= 2) {
-        mechObservedStat.innerHTML = `<div id="mech-obs-chart" class="mech-chart-container"></div>
-          <span class="mech-stat-text">n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span></span>`;
-        const obsChartEl = document.getElementById('mech-obs-chart');
-        if (obsChartEl) {
-          drawMiniChart(obsChartEl, sampleData, {
+        const statText = mechObservedStat.querySelector('.mech-stat-text');
+        if (statText) {
+          statText.innerHTML = `n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span>`;
+        }
+        const chartEl = document.getElementById('mech-obs-chart');
+        if (useCards()) {
+          animateCardsShift(false); // tween shifted → observed values
+        } else if (useDots() && chartEl) {
+          // Re-draw the bag as the observed sample, then glide back from the
+          // null-shifted positions.
+          drawMeanBag(sampleData, observedStat);
+          const deltaPx = mech.bag ? (mech.bag.xScale(getNullValue()) - mech.bag.xScale(observedStat)) : 0;
+          glideBag(deltaPx);
+        } else if (chartEl && chartEl.querySelector('svg')) {
+          morphMiniChart(chartEl, sampleData, {
             meanValue: observedStat,
+            highlightMean: true,
             domain: sharedBoxplotDomain(),
             label: 'Observed data distribution',
+            durationMs: 850,
           });
+        } else {
+          // No existing chart (first render) — draw it.
+          mechObservedStat.innerHTML = `<div id="mech-obs-chart" class="mech-chart-container"></div>
+            <span class="mech-stat-text">n = ${sampleN}, <span class="observed-highlight"><span class="x-bar">x</span> = ${formatStat(observedStat, dataPrecision)}</span></span>`;
+          const obsChartEl = document.getElementById('mech-obs-chart');
+          if (obsChartEl) {
+            drawMiniChart(obsChartEl, sampleData, {
+              meanValue: observedStat, domain: sharedBoxplotDomain(),
+              label: 'Observed data distribution',
+            });
+          }
         }
       }
     }
@@ -800,6 +982,7 @@ export function initOneSamplePage(config) {
       mechanismStrip.hidden = false;
       initMechanismCollapse(mechanismStrip);
       ensureNullToggle();
+      ensureMeanViewToggle();
     }
 
     // On first generate, morph left panel from "Observed" to "Null Distribution"
@@ -821,12 +1004,12 @@ export function initOneSamplePage(config) {
       simTitleEl.textContent = count === 1 ? 'This Simulation' : 'Last Simulation';
     }
 
-    let lastSimStat = 0;
+    lastSimStat = 0;
     let lastSimDetail = '';
+    let mechAnimMs = 0; // resample-build animation duration (delays the drop)
 
     const isSingle = count === 1;
-    /** @type {number[]|null} */
-    let lastResampleArr = null;
+    lastResampleArr = null;
 
     if (isProp) {
       // Bernoulli(p₀) simulation
@@ -879,24 +1062,20 @@ export function initOneSamplePage(config) {
     }
 
     if (mechSimStat) {
-      // Fire flying dots from null panel → sim panel on +1
-      if (isSingle && mechObservedStat) {
+      // The cards / dotplot views do their own animation; only fire the generic
+      // stream for the other cases (proportions, large-n histogram).
+      const ownAnim = !isProp && (useCards() || useDots()) && lastResampleArr && lastResampleArr.length >= 2;
+      if (isSingle && mechObservedStat && !ownAnim) {
         flyDataStream(mechObservedStat, mechSimStat);
       }
 
       mechSimStat.innerHTML = lastSimDetail;
 
-      // Render mini dotplot/histogram for one-mean after DOM update
+      // Render the resample for one-mean in the current view after the DOM update.
+      // Capture the animation duration so the "drop into the sampling distribution"
+      // waits until the resample has actually finished building (was firing early).
       if (!isProp && lastResampleArr && lastResampleArr.length >= 2) {
-        const simChartEl = document.getElementById('mech-sim-chart');
-        if (simChartEl) {
-          drawMiniChart(simChartEl, lastResampleArr, {
-            domain: sharedBoxplotDomain(),
-            meanValue: lastSimStat,
-            highlightMean: isSingle,
-            label: 'Simulated resample from null distribution',
-          });
-        }
+        mechAnimMs = renderMeanResampleView(isSingle);
       }
     }
 
@@ -931,12 +1110,14 @@ export function initOneSamplePage(config) {
     if (resetBtn) resetBtn.hidden = false;
 
     if (count === 1) {
+      // Wait for the resample to finish building before the stat drops into the
+      // sampling distribution — otherwise the drop fires out of order.
       setTimeout(() => {
         renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
         if (mechSimStat && chartContainer) {
           animateDropToChart(mechSimStat, chartContainer);
         }
-      }, 150);
+      }, Math.max(150, mechAnimMs));
     } else {
       renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
     }

@@ -1,0 +1,32 @@
+{
+  "title": "Two-Sample t-Inference (Welch)",
+  "tool": "inference/two-means",
+  "params": {},
+  "steps": [
+    {
+      "instruction": "Pick any two-group numeric dataset. State the question in words: are the population means the same in the two groups?",
+      "observe": "What are H0 and Ha in symbols?",
+      "reveal": "H0: mu_1 - mu_2 = 0 vs. Ha: mu_1 - mu_2 != 0 (two-sided, unless you have a directional claim stated in advance)."
+    },
+    {
+      "instruction": "Look at the side-by-side displays for the two groups. Note each group's n, mean, and SD.",
+      "observe": "Are the two SDs roughly similar? Any group with a strong skew or outlier?",
+      "reveal": "Welch's t-test does NOT require equal variances (that's what 'Welch' fixes), so you can proceed even if the SDs differ. What you DO need: (i) independence within each group, (ii) each group's sampling distribution of the mean approximately normal - handled by CLT if n is moderate, or by the data looking symmetric if n is small."
+    },
+    {
+      "instruction": "Run the two-sided Welch t-test. Read off t, df (usually not a whole number - that's the Welch correction), and the p-value.",
+      "observe": "What is your decision at alpha = 0.05? Does the 95% CI for mu_1 - mu_2 exclude 0?",
+      "reveal": "At alpha = 0.05 reject H0 iff p < 0.05. The 95% CI and the two-sided test always agree: the test rejects H0 exactly when the CI excludes 0."
+    },
+    {
+      "instruction": "Write a one-sentence conclusion in context, naming both groups and stating the direction and strength of evidence.",
+      "observe": "Does your conclusion talk about the POPULATIONS (mu_1 vs. mu_2), or does it slip into talking about the SAMPLES (x-bar_1 vs. x-bar_2)?",
+      "reveal": "Inference is about the populations, not the samples. A good conclusion: 'The data provide [strong/no] evidence that the mean [response] in group 1 differs from group 2 (p = ...).' The samples ARE different (we can see); the question is whether the underlying populations differ."
+    },
+    {
+      "instruction": "Open /simulate/randomization-diff-means/ in a new tab on the same data and run 5000 label-shuffles. Compare the simulation p-value to the Welch t p-value.",
+      "observe": "How close are they? What is the shape of the simulated null distribution?",
+      "reveal": "On well-behaved data the simulation and the Welch t agree closely, and the simulated null distribution is approximately normal with mean 0 (by construction). On small skewed data they diverge and the simulation is the safer report - it makes no distributional assumption."
+    }
+  ]
+}

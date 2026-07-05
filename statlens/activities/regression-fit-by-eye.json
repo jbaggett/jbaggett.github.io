@@ -1,0 +1,32 @@
+{
+  "title": "Fit a Line by Eye (Lab)",
+  "tool": "explore/regression-by-eye",
+  "params": { "seed": "ch20fit", "n": 30, "slope": 0.5, "sigma_error": 1.5, "metric": "squared" },
+  "steps": [
+    {
+      "instruction": "A cloud of points has been generated for you. BEFORE dragging anything, predict by eye: roughly where should the best-fit line go? Mentally draw one.",
+      "observe": "Where do you expect the line's slope and intercept to land?",
+      "reveal": "Most people are surprisingly bad at this - eyes tend to FLATTEN the slope (a regression-toward-the-mean illusion). The math says the best line balances residuals; the eye often weighs the extremes too heavily."
+    },
+    {
+      "instruction": "Drag the line to your best guess. Watch the squared-error meter as you adjust. Try to minimize it.",
+      "observe": "Does the meter go down monotonically as you approach what looks like the best line?",
+      "reveal": "Sum of squared errors (SSE) is the standard objective for OLS - minimize SSE and you get the least-squares line. SSE penalizes big residuals quadratically, so outliers can pull your line away from the bulk."
+    },
+    {
+      "instruction": "Now switch the metric to absolute errors (SAE). Re-fit to minimize that instead. Compare the two best-fit lines.",
+      "observe": "Are the two lines noticeably different? Where do they disagree most?",
+      "reveal": "Least-absolute-deviations (LAD) lines weigh each residual equally - they are more robust to outliers. OLS follows squared error and gets dragged toward big residuals; LAD does not. The two agree closely on clean data and diverge when outliers are present."
+    },
+    {
+      "instruction": "Click 'Show OLS best fit' to overlay the mathematical optimum. How close is your by-eye fit to the OLS line?",
+      "observe": "Was your by-eye intercept too high or too low? Slope too steep or too flat?",
+      "reveal": "Most beginners get within roughly plus-or-minus 10-20% of OLS on slope and intercept. The fact that the math gets it 'exactly right' isn't because it is smarter - it is because it minimizes a specific loss (SSE) that you cannot optimize by inspection. The line you find depends on the loss you minimize."
+    },
+    {
+      "instruction": "Reset to a new random seed (or change sigma) to see a noisier dataset. Re-fit by eye. Notice how confidently you can place the line when noise is large vs. small.",
+      "observe": "How does the UNCERTAINTY of your fit grow with noise?",
+      "reveal": "Larger sigma (residual SD) makes the by-eye fit more ambiguous - multiple lines look roughly equally good. The standard error of the slope formalizes this: SE(b_1) grows with the residual SD and shrinks with the spread of x. Inference for slope quantifies the uncertainty you just FELT."
+    }
+  ]
+}

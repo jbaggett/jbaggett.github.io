@@ -18,6 +18,8 @@ import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, fly
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
+import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
+import { createMeanMechanism } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -57,6 +59,34 @@ export function initSimPage(config) {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
   }
   let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
+  // B2 prototype: one-proportion bootstrap mechanism. Source and target share a
+  // representation — 'grid' (marble grids) or 'bars' (proportion bars).
+  // Selectable via ?mechstyle= for A/B comparison on the dev site.
+  let propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'grid';
+  const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
+  // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
+  const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
+  // B1: one-sample mean bootstrap — animated dotplot resampling for small samples
+  // (the non-summary view). Large samples keep the histogram.
+  const MEAN_DOT_MAX = 40;
+  const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
+  /** True when the animated mean-dotplot mechanism should be used right now. */
+  const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
+    && resampleViewMode !== 'summary';
+  /** @type {[number,number]|null} */
+  let meanDomain = null;
+  // The CI-for-a-mean dotplot uses the SAME shared controller as the one-mean
+  // randomization test (js/mean-mechanism.js) — owns the bag, the resample, dot
+  // sizing and the pluck-and-fly, so the two strips can't drift. (The CI's Tiles
+  // view still uses sim-app's own showResampleSummary; converging that is separate.)
+  const meanMech = createMeanMechanism({ formatValue: formatChipValue });
+  /** Shared dotplot domain from the original sample (with padding). */
+  function computeMeanDomain() {
+    if (!data1.length) return null;
+    const lo = Math.min(...data1), hi = Math.max(...data1);
+    const pad = (hi - lo) * 0.08 || 0.5;
+    return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
+  }
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
     // Prefer the real outcome levels from the data (e.g. "promoted" /
@@ -78,6 +108,15 @@ export function initSimPage(config) {
   const announceDiv = document.getElementById('sr-announce');
   const resetBtn = /** @type {HTMLButtonElement} */ (document.getElementById('reset-btn'));
   const ciSelect = /** @type {HTMLSelectElement} */ (document.getElementById('ci-level'));
+  // CI method shown in the results: 'percentile' (default, IMS), 'se' (statistic
+  // ± z·SE — the "±2 SE" 95% rule of thumb), or 'both'. ?ci_method= sets it.
+  let ciMethod = (() => {
+    const m = (new URLSearchParams(location.search).get('ci_method') || '').toLowerCase();
+    return (m === 'se' || m === 'both') ? m : 'percentile';
+  })();
+  /** Last bootstrap result, so the CI-method toggle can re-render without a new run.
+   *  @type {{stats:number[], ci:number[], se:number, ciLevel:number}|null} */
+  let lastBoot = null;
   const seedNotice = document.getElementById('seed-notice');
   const dataSummary = document.getElementById('data-summary');
   const dataPreview = document.getElementById('data-preview');
@@ -1276,6 +1315,7 @@ export function initSimPage(config) {
       } else if (config.mode === 'bootstrap' && !config.twoGroup && originalContentEl) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
+        if (useNewPropMech) ensurePropStyleToggle();
         renderOriginalSample();
         // Auto-default to histogram view for large numeric samples (unless user explicitly chose)
         // Proportions use proportion bars in both views, so no need to switch
@@ -1285,6 +1325,7 @@ export function initSimPage(config) {
       } else if (config.twoGroup) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
+        if (useNewPropMech2) ensurePropStyleToggle();
         renderTwoGroupOriginal();
         // In card mode, seed the resample panel with the original grouping so
         // the first +1 has cards to deal from (FLIP needs a starting layout).
@@ -1639,24 +1680,22 @@ export function initSimPage(config) {
     }
 
     if (config.proportion && !config.twoGroup) {
-      // One-sample proportion: visual proportion bar
+      // One-sample proportion: the original sample is a fixed "bag" of n
+      // observations (B2). Render as a marble grid or a proportion bar (?mechstyle=).
       const successes = data1.filter(v => v === 1).length;
       const failures = data1.length - successes;
       const pHat = mean(data1);
-      const pct = (pHat * 100).toFixed(1);
       origPropCache = { successes, failures, pHat };
-      const container = document.createElement('div');
-      container.className = 'prop-bar-wrap';
-      container.setAttribute('role', 'img');
-      container.setAttribute('aria-label', `Original sample: ${successes} successes, ${failures} failures, p-hat = ${formatStat(pHat, dataPrecision, 'proportion')}`);
-      container.innerHTML = `
-        <div class="mech-prop-bar mech-prop-bar-lg">
-          <div class="mech-prop-fill" style="width:${pct}%"></div>
-          <span class="mech-prop-label-left">${successes} S</span>
-          <span class="mech-prop-label-right">${failures} F</span>
-        </div>
-      `;
-      originalContentEl.appendChild(container);
+      renderPropBag(originalContentEl, data1, {
+        style: propMechStyle,
+        label: `Original sample: ${successes} successes, ${failures} failures, p-hat = ${formatStat(pHat, dataPrecision, 'proportion')}`,
+      });
+    } else if (meanDotActive()) {
+      // Original sample as a dotplot bag, via the shared mean mechanism.
+      meanDomain = computeMeanDomain();
+      meanMech.setView('dotplot');
+      meanMech.resetSizing();
+      meanMech.renderBag(originalContentEl, data1, mean(data1), { domain: meanDomain ?? undefined, meanLabel: 'x̄' });
     } else if (data1.length <= CHIP_THRESHOLD) {
       // Small dataset: show individual value chips
       const container = document.createElement('div');
@@ -1828,8 +1867,63 @@ export function initSimPage(config) {
   /** Render original group summaries in the mechanism strip. */
   function renderTwoGroupOriginal() {
     if (!mechOriginalContent) return;
+    if (useNewPropMech2) { renderTwoPropBags(); return; }
     mechOriginalContent.innerHTML = buildTwoGroupHTML(data1, data2, false, true);
     renderTwoGroupCharts(data1, data2, 'orig');
+  }
+
+  // ── B4: two-proportion bootstrap mechanism (grid/bar per group) ──────
+
+  /** Build the two-stacked-group scaffold (empty host divs + per-group stats). */
+  function twoPropPanelHTML(kind, g1, g2, withDiff) {
+    const f = (/** @type {number} */ v) => formatStat(v, dataPrecision, 'proportion');
+    let html = `<div class="pbm-twogroup">
+      <div class="pbm-group">
+        <div class="mech-group-row"><span class="mech-group-name">${group1Name}:</span>
+          <span class="mech-group-stat">n = ${g1.length}, p̂ = ${f(mean(g1))}</span></div>
+        <div id="pbm-${kind}-1"></div>
+      </div>
+      <div class="pbm-group">
+        <div class="mech-group-row"><span class="mech-group-name">${group2Name}:</span>
+          <span class="mech-group-stat">n = ${g2.length}, p̂ = ${f(mean(g2))}</span></div>
+        <div id="pbm-${kind}-2"></div>
+      </div>
+    </div>`;
+    if (withDiff) {
+      html += `<div class="mech-diff">diff = <span class="mech-stat-value">${f(mean(g1) - mean(g2))}</span></div>`;
+    }
+    return html;
+  }
+
+  /** Render the two original group "bags". */
+  function renderTwoPropBags() {
+    if (!mechOriginalContent) return;
+    mechOriginalContent.innerHTML = twoPropPanelHTML('bag', data1, data2, false);
+    renderPropBag(document.getElementById('pbm-bag-1'), data1, { style: propMechStyle, label: `${group1Name} sample` });
+    renderPropBag(document.getElementById('pbm-bag-2'), data2, { style: propMechStyle, label: `${group2Name} sample` });
+  }
+
+  /**
+   * Render the two resamples (each drawn with replacement from its own bag) and
+   * the difference p̂₁* − p̂₂*. Animates the draw on +1.
+   * @returns {number} animation duration ms
+   */
+  function showTwoPropResample(g1, g2, animateDraw) {
+    if (!mechResampleContent) return 0;
+    mechResampleContent.innerHTML = twoPropPanelHTML('rs', g1, g2, true);
+    const ms1 = showPropResample(document.getElementById('pbm-rs-1'), document.getElementById('pbm-bag-1'),
+      g1, data1, { style: propMechStyle, animate: animateDraw });
+    const ms2 = showPropResample(document.getElementById('pbm-rs-2'), document.getElementById('pbm-bag-2'),
+      g2, data2, { style: propMechStyle, animate: animateDraw });
+    const ms = Math.max(ms1, ms2);
+    const diffEl = mechResampleContent.querySelector('.mech-stat-value');
+    const setDiff = () => {
+      if (!diffEl) return;
+      diffEl.textContent = formatStat(mean(g1) - mean(g2), dataPrecision, 'proportion');
+      diffEl.classList.add('highlight-last');
+    };
+    if (ms > 0) setTimeout(setDiff, Math.max(0, ms - 100)); else setDiff();
+    return ms;
   }
 
   /**
@@ -1877,8 +1971,12 @@ export function initSimPage(config) {
       const haveResample = lastTwoG1.length > 0 && lastTwoG2.length > 0;
       const g1 = haveResample ? lastTwoG1 : data1;
       const g2 = haveResample ? lastTwoG2 : data2;
-      mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, false);
-      renderTwoGroupCharts(g1, g2, 'resamp');
+      if (useNewPropMech2) {
+        showTwoPropResample(g1, g2, false); // view switch → no draw animation
+      } else {
+        mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, false);
+        renderTwoGroupCharts(g1, g2, 'resamp');
+      }
     }
     updateMechCardLegend();
   }
@@ -1913,6 +2011,44 @@ export function initSimPage(config) {
     bar.insertBefore(seg, bar.firstChild);
   }
 
+  /** Add the Grid/Bar segmented toggle for the one-proportion bootstrap
+   *  mechanism (B2). Idempotent; flips bag + resample between representations. */
+  function ensurePropStyleToggle() {
+    if ((!useNewPropMech && !useNewPropMech2) || !mechanismStrip) return;
+    const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
+    if (!bar || bar.querySelector('.pbm-style-toggle')) return;
+
+    const seg = document.createElement('div');
+    seg.className = 'seg-control pbm-style-toggle';
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Mechanism view');
+    seg.innerHTML =
+      `<button type="button" data-pstyle="grid" aria-pressed="${String(propMechStyle === 'grid')}">Grid</button>` +
+      `<button type="button" data-pstyle="bars" aria-pressed="${String(propMechStyle === 'bars')}">Bar</button>`;
+
+    seg.addEventListener('click', (e) => {
+      const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-pstyle]');
+      if (!btn) return;
+      const want = btn.getAttribute('data-pstyle') === 'bars' ? 'bars' : 'grid';
+      if (want === propMechStyle) return;
+      propMechStyle = want;
+      for (const b of seg.querySelectorAll('button')) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-pstyle') === propMechStyle));
+      }
+      // Re-render bag + current resample (static) in the new representation.
+      if (useNewPropMech2) {
+        rerenderMechanismView();
+      } else {
+        renderOriginalSample();
+        if (lastResample.length && resampleContentEl) {
+          renderPropResample(resampleContentEl, lastResample, { style: propMechStyle });
+        }
+      }
+    });
+
+    bar.insertBefore(seg, bar.firstChild);
+  }
+
   /**
    * Show the two-group mechanism after a simulation step.
    * @param {number[]} g1 - Group 1 values (resample or shuffled)
@@ -1923,9 +2059,12 @@ export function initSimPage(config) {
   function showTwoGroupMechanism(g1, g2, _flash = false, highlight = false) {
     if (!mechResampleContent || !mechanismDescEl) return 0;
 
-    // Remember the latest grouping so the Bars/Cards toggle can re-render it.
+    // Remember the latest grouping so the toggle can re-render it.
     lastTwoG1 = g1;
     lastTwoG2 = g2;
+
+    // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
+    if (useNewPropMech2) return showTwoPropResample(g1, g2, highlight);
 
     const statFn = config.mode === 'bootstrap' ? getBootstrapStat().fn : mean;
     const fmtType = config.proportion ? 'proportion' : undefined;
@@ -2123,8 +2262,11 @@ export function initSimPage(config) {
     if (!resampleContentEl || !bootstrapSampleEl) return 0;
     bootstrapSampleEl.hidden = false;
 
-    // Fire flying dots from original → resample on +1
-    if (highlightStat && flyingAnim && originalContentEl && resampleContentEl) {
+    // Fire flying dots from original → resample on +1. The new one-proportion
+    // mechanism (B2) and the mean-dotplot mechanism (B1) do their own
+    // draw-with-replacement animation instead.
+    if (highlightStat && flyingAnim && originalContentEl && resampleContentEl
+        && !useNewPropMech && !meanDotActive()) {
       flyDataStream(originalContentEl, resampleContentEl);
     }
 
@@ -2395,6 +2537,12 @@ export function initSimPage(config) {
    * @returns {number} Animation duration in ms
    */
   function showResamplePropBar(resampleValues, animate = false) {
+    // B2 prototype: render the resample as marbles/dots; on +1, animate the
+    // draw-with-replacement from the bag (marbles fill from the two ends).
+    if (useNewPropMech && resampleContentEl) {
+      return showPropResample(resampleContentEl, originalContentEl, resampleValues, data1,
+        { style: propMechStyle, animate });
+    }
     const successes = resampleValues.filter(v => v === 1).length;
     const failures = resampleValues.length - successes;
     const pHat = mean(resampleValues);
@@ -2478,6 +2626,14 @@ export function initSimPage(config) {
     // Proportion mode: use proportion bar instead of histogram
     if (config.proportion && !config.twoGroup) {
       return showResamplePropBar(resampleValues, morph);
+    }
+
+    // Small mean samples — animated dotplot resample, via the shared mechanism.
+    if (meanDotActive()) {
+      meanMech.setView('dotplot');
+      return meanMech.renderResample(resampleContentEl, data1, resampleValues, mean(resampleValues), morph, {
+        domain: meanDomain ?? computeMeanDomain() ?? undefined, meanLabel: 'x̄',
+      });
     }
 
     const container = document.createElement('div');
@@ -2821,6 +2977,9 @@ export function initSimPage(config) {
     resampleViewMode = mode;
     if (btnSummary) btnSummary.setAttribute('aria-pressed', String(mode === 'summary'));
     if (btnHistogram) btnHistogram.setAttribute('aria-pressed', String(mode === 'histogram'));
+    // B1: the mean dotplot view shows the original as a dotplot too — re-render it
+    // so the bag/chips switch with the view.
+    if (isMeanOneSample) renderOriginalSample();
     if (lastResample.length > 0) showResample(lastResample, false, lastWasSingle);
   }
 
@@ -2832,17 +2991,37 @@ export function initSimPage(config) {
 
     btnSummary = /** @type {HTMLButtonElement} */ (document.createElement('button'));
     btnSummary.type = 'button';
-    btnSummary.textContent = 'Summary';
+    btnSummary.textContent = 'Tiles';
     btnSummary.setAttribute('aria-pressed', 'true');
 
     btnHistogram = /** @type {HTMLButtonElement} */ (document.createElement('button'));
     btnHistogram.type = 'button';
-    btnHistogram.textContent = 'Histogram';
+    // One-sample mean bootstrap labels the non-tiles view "Dotplots" (small n
+    // shows the animated dotplot; large n falls back to a histogram).
+    btnHistogram.textContent = isMeanOneSample ? 'Dotplots' : 'Histogram';
     btnHistogram.setAttribute('aria-pressed', 'false');
 
     seg.appendChild(btnSummary);
     seg.appendChild(btnHistogram);
-    resampleToggle.replaceWith(seg);
+    // NB: do NOT add the `mech-view-toggle` class — the data-load handler removes
+    // that class for non-card datasets (it manages the prop Bars/Cards toggle).
+
+    // Place the view toggle in a full-width bottom bar next to the mechanism
+    // caption (bottom-right) — the same UI as the one-mean randomization test.
+    const strip = document.getElementById('mechanism-strip');
+    if (strip && mechanismDescEl) {
+      let bar = strip.querySelector('.mech-bottom-bar');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'mech-bottom-bar';
+        strip.appendChild(bar);
+      }
+      bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
+      bar.appendChild(seg);
+      resampleToggle.remove();
+    } else {
+      resampleToggle.replaceWith(seg);
+    }
 
     btnSummary.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('summary'); });
     btnHistogram.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('histogram'); });
@@ -2860,6 +3039,14 @@ export function initSimPage(config) {
       }
     });
   }
+
+  // Percentile / ±SE / Both toggle (delegated, since the results HTML re-renders).
+  resultDiv?.addEventListener('click', (e) => {
+    const btn = /** @type {HTMLElement} */ (e.target).closest('.ci-method-toggle button[data-cim]');
+    if (!btn || !lastBoot) return;
+    ciMethod = /** @type {HTMLElement} */ (btn).dataset.cim || 'percentile';
+    displayBootstrapResults(lastBoot.stats, lastBoot.ci, lastBoot.se, lastBoot.ciLevel);
+  });
 
   // Reset when bootstrap stat changes (mixing stats would be meaningless)
   if (bootStatSelect) {
@@ -3182,13 +3369,38 @@ export function initSimPage(config) {
       const dataSD = sd(data1);
       dataSpreadContrast = `<p class="hint">Spread of the <em>data</em> (SD ≈ ${fmt(dataSD)}) is much wider than the spread of the bootstrap ${bootLong}s — the <strong>SE ≈ ${fmt(se)}</strong>. The SE measures how much the <strong>${bootLong}</strong> varies from sample to sample, <em>not</em> how spread out the values are.</p>`;
     }
+    lastBoot = { stats, ci, se, ciLevel };
+
+    // ±z·SE (normal-approximation) interval, centred on the estimate. z=2 at 95%
+    // (the "±2 SE" rule of thumb); exact-ish z at 90/99.
+    const zByLevel = { 90: 1.645, 95: 2, 99: 2.576 };
+    const z = zByLevel[ciLevel] ?? 2;
+    const zLabel = ciLevel === 95 ? '2' : String(z);
+    const seLo = `<span class="ci-value">${fmt(m - z * se)}</span>`;
+    const seHi = `<span class="ci-value">${fmt(m + z * se)}</span>`;
+
+    const pctLine = `<p><strong>${ciLevel}% CI (percentile):</strong> (${ciLo}, ${ciHi})</p>`;
+    const seLineHtml = `<p><strong>${ciLevel}% CI (±${zLabel}·SE):</strong> (${seLo}, ${seHi})</p>`;
+    const ciBlock = ciMethod === 'se' ? seLineHtml
+      : ciMethod === 'both' ? pctLine + seLineHtml
+      : pctLine;
+    const bothNote = ciMethod === 'both'
+      ? '<p class="hint">The two methods agree closely when the bootstrap distribution is symmetric; they diverge when it’s skewed (where the percentile CI is the more honest one).</p>'
+      : '';
+    const methodToggle = `<div class="seg-control ci-method-toggle" role="group" aria-label="Confidence interval method">
+        <button type="button" data-cim="percentile" aria-pressed="${ciMethod === 'percentile'}">Percentile</button>
+        <button type="button" data-cim="se" aria-pressed="${ciMethod === 'se'}">±${zLabel} SE</button>
+        <button type="button" data-cim="both" aria-pressed="${ciMethod === 'both'}">Both</button>
+      </div>`;
+
     resultDiv.innerHTML = `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
       <p>${paramLabel}: ${fmt(m)}</p>
       <p>SE: ${fmt(se)}</p>
       ${dataSpreadContrast}
-      <p><strong>${ciLevel}% Confidence Interval:</strong> (${ciLo}, ${ciHi})</p>
-      <p class="interpretation">The middle ${ciLevel}% of bootstrap ${bootLong}s fall between ${ciLo}${unitSuffix} and ${ciHi}${unitSuffix}.</p>
+      ${ciBlock}
+      ${methodToggle}
+      ${bothNote}
       <p class="interpretation">We are ${ciLevel}% confident that the ${ctxParam}${popPhrase} is between ${ciLo}${unitSuffix} and ${ciHi}${unitSuffix}.</p>
       ${stats.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}
     `;

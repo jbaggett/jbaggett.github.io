@@ -1113,6 +1113,7 @@ input[aria-invalid="true"] {
 .mechanism-panel {
   flex: 1;
   min-width: 0;
+  position: relative;
 }
 
 .mechanism-title {
@@ -1128,8 +1129,58 @@ input[aria-invalid="true"] {
   gap: 0.5rem;
 }
 
-/* Observed ↔ Null view toggle in the one-sample mechanism panel */
-.mech-null-toggle { margin: 0.25rem 0 0.5rem; }
+/* Observed ↔ Null view toggle: floated to the panel's top-right so it doesn't
+   push the dotplot down (keeps the observed + resample plots vertically aligned). */
+.mech-null-toggle { position: absolute; top: 0; right: 0; margin: 0; z-index: 2; }
+/* Summary|Dotplot toggle lives in a full-width bottom bar next to the mechanism
+   caption, so it reads as applying to the whole mechanism (not just the right
+   plot). Keeping it out of the panels also top-aligns the two panels' cards. */
+.mech-bottom-bar {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 6px;
+}
+.mech-bottom-bar .mechanism-desc { flex: 1; margin: 0; text-align: center; }
+.mech-bottom-bar .mechanism-desc[hidden] { display: none; }
+.mech-view-toggle,
+.mech-bottom-bar .seg-control { margin: 0; flex: none; font-size: 0.78rem; }
+.mech-view-toggle button,
+.mech-bottom-bar .seg-control button { padding: 3px 9px; }
+@media (max-width: 560px) {
+  .mech-bottom-bar { flex-direction: column; gap: 6px; }
+}
+
+/* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
+/* CVD-safe Okabe-Ito: success = amber (hatched), failure = blue. */
+.pbm-success { background-color: #C08700;
+  background-image: repeating-linear-gradient(45deg, #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px); }
+.pbm-failure { background-color: #0072B2; }
+
+.pbm-grid { display: grid; gap: 2px; justify-content: center; margin: 0.3rem auto; }
+.pbm-marble { width: var(--pbm-marble, 14px); height: var(--pbm-marble, 14px);
+  border-radius: 3px; box-sizing: border-box; }
+/* Empty resample slot: outline only, filled as marbles fly in */
+.pbm-empty { background: none; border: 1.5px dashed #b9c6cc; }
+
+/* Proportion-bar style: a row of n full-height cells (successes left, failures
+   right), built one draw at a time. Cells are contiguous (no gap) so filled
+   same-colour runs read as one solid bar; empty cells show the gray track. */
+.pbm-fillbar { display: flex; gap: 0; height: 40px; max-width: 340px;
+  margin: 0.4rem auto; border: 1px solid #b9c6cc; border-radius: 5px; overflow: hidden;
+  background: #eef2f4; }
+.pbm-cell { flex: 1 1 0; min-width: 0; height: 100%; }
+.pbm-cell.pbm-empty { background: none; }
+
+/* Two-proportion bootstrap (B4): two stacked groups, each its own bag/resample */
+.pbm-twogroup { display: flex; flex-direction: column; gap: 0.5rem; }
+.pbm-group { display: flex; flex-direction: column; }
+
+/* Pulse a source cell when it's drawn */
+.pbm-pulse { animation: pbm-pulse 300ms ease; box-shadow: 0 0 0 2px #1A1A1A; }
+@keyframes pbm-pulse { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
+
+/* Flying clone during a draw */
+.pbm-flyer { position: absolute; width: 11px; height: 11px; border-radius: 3px;
+  transform: translate(-50%, -50%); pointer-events: none; z-index: 30; }
 
 /* Segmented control for resample view toggle */
 .seg-control {
@@ -1384,6 +1435,13 @@ input[aria-invalid="true"] {
   margin: 4px auto;
   display: flex;
   justify-content: center;
+}
+/* Cards mid-shift: warm highlight while the value tweens to the null-shifted value */
+.sample-dot.chip-shifting {
+  background: #FBE5D6;
+  border-color: #E07020;
+  color: #8A3E00;
+  transition: background .2s ease, border-color .2s ease;
 }
 .mech-minichart {
   display: block;
