@@ -38,13 +38,17 @@ const MECH_DISPLAY_W = 300;
 export function drawMechDotplot(container, values, opts = {}) {
   if (container) container.innerHTML = ''; // drawDotplot/createChart appends — clear first
   const viewWidth = opts.viewWidth ?? 320;
+  // Anchor the bin grid to the DATA's own min (not the fixed domain), so a uniform
+  // shift of the values (observed → null) preserves the exact stacking — it just
+  // translates. A fixed-domain grid would re-bin and change the apparent shape.
+  const binOrigin = opts.binOrigin ?? (values.length ? Math.min(...values) : undefined);
   const frame = drawDotplot(container, values, {
     ...COMPACT,
     forceDotMode: true,
     id: opts.id,
     domain: opts.domain,
     binWidth: opts.binWidth,
-    binOrigin: opts.binOrigin,
+    binOrigin,
     dotRadius: opts.dotRadius,
     sizingMaxStack: opts.sizingMaxStack,
     fillColor: opts.fillColor,
@@ -213,6 +217,7 @@ export function showResampleDotplot(container, bag, resample, opts) {
   const target = drawMechDotplot(container, resample, {
     domain: opts.domain,
     binWidth: bag.binWidth,
+    binOrigin: bag.binOrigin, // share the bag's grid so bag + resample align
     dotRadius: bag.dotRadius,
     sizingMaxStack: opts.sizingMaxStack,
     mean: opts.mean,

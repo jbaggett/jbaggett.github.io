@@ -309,6 +309,7 @@ export function drawDotplot(container, values, options = {}) {
     xScale,
     maxStack: result.maxStack,
     binWidth: result.binWidth,
+    binOrigin: lockedBinOrigin ?? finalDomain[0],
     dotRadius,
     wouldOverflow,
     // Map a stack count to its pixel y — the actual mapping this render used, so
