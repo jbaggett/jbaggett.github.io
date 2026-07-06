@@ -6,7 +6,7 @@
  */
 
 import { setJStat, pdfT } from '../../js/distributions.js';
-import { slopeT, slopeTSummary } from '../../js/inference.js';
+import { slopeT, slopeTSummary, regressionIntervals } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
 import { renderConditionsDiagnostic } from '../../js/conditions.js';
@@ -16,10 +16,12 @@ initHelp();
 import { parseCSV } from '../../js/csv-parser.js';
 import { formatStat, detectPrecision, linreg } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
+/** Render LaTeX to HTML string via KaTeX. `trust` enables \htmlClass for C3
+ *  formula-value linking (our LaTeX is hardcoded, so this is safe). */
 const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -51,6 +53,13 @@ let numericColumns = [];
 
 /** @type {import('../../js/inference.js').SlopeResult|null} */
 let lastSlopeResult = null;
+
+// REQ-027: point interval at x₀ (mean-response CI + prediction interval).
+// x0Value persists across re-renders; ?x0= sets it, ?interval=mean|prediction|both.
+const _p = new URLSearchParams(location.search);
+let x0Value = _p.has('x0') && isFinite(Number(_p.get('x0'))) ? Number(_p.get('x0')) : null;
+const intervalMode = (['mean', 'prediction', 'both'].includes(String(_p.get('interval'))))
+  ? /** @type {'mean'|'prediction'|'both'} */ (_p.get('interval')) : 'both';
 
 // Summary-input state
 let fromSummary = false;
@@ -393,6 +402,9 @@ function renderResults(r, d, alternative, confLevel) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
 
   let regressionRows = '';
   if (hasFullRegression) {
@@ -412,22 +424,38 @@ function renderResults(r, d, alternative, confLevel) {
 
   const testFormula = tex(`\\begin{aligned}
     t &= \\frac{b_1 - 0}{SE_{b_1}} \\\\[8pt]
-    &= \\frac{${V}{${formatStat(r.slope, d)}}}{${V}{${formatStat(r.se, d)}}} \\\\[8pt]
+    &= \\frac{${fx('b1', formatStat(r.slope, d))} - ${fx('beta0', 0)}}{${fx('se', formatStat(r.se, d))}} \\\\[8pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
     &b_1 \\pm t^{\\!*} \\cdot SE_{b_1} \\\\[8pt]
-    &${V}{${formatStat(r.slope, d)}} \\pm ${V}{${tStar}} \\cdot ${V}{${formatStat(r.se, d)}} \\\\[8pt]
+    &${fx('b1', formatStat(r.slope, d))} \\pm ${fx('tstar', tStar)} \\cdot ${fx('se', formatStat(r.se, d))} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
+
+  // REQ-027: mean-response CI + prediction interval at x₀ (needs raw x/y).
+  const xy = fromSummary ? null : extractXY();
+  const ri = xy ? regressionIntervals(xy.x, xy.y, { confLevel }) : null;
+  let predictSection = '';
+  if (ri) {
+    if (x0Value == null) x0Value = Math.round(ri.xbar * 100) / 100;
+    const step = Math.max(0.01, Math.round((ri.xMax - ri.xMin)) / 100) || 0.1;
+    predictSection = `
+      <div class="formula-display predict-at">
+        <h3>Predict a response</h3>
+        <label class="x0-label">${tex('x_0')} = <input type="number" id="x0-input" value="${x0Value}" step="${step}" aria-label="x value to predict at"></label>
+        <div id="x0-readout" aria-live="polite"></div>
+      </div>`;
+  }
 
   resultsPanel.innerHTML = `
     <h3>Regression Summary</h3>
     <table class="results-table" aria-label="Regression summary">
       <tbody>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n}</td></tr>
-        <tr><th scope="row">Slope (${tex('b_1')})</th><td>${formatStat(r.slope, d)}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n">${r.n}</td></tr>
+        <tr><th scope="row">Slope (${tex('b_1')})</th><td data-fx="b1">${formatStat(r.slope, d)}</td></tr>
+        <tr><th scope="row">${tex('SE_{b_1}')}</th><td data-fx="se">${formatStat(r.se, d)}</td></tr>
         ${regressionRows}
       </tbody>
     </table>
@@ -444,14 +472,57 @@ function renderResults(r, d, alternative, confLevel) {
       ${ciFormula}
     </div>
 
+    ${predictSection}
+
     <div class="interpretation" aria-live="polite">
       ${regressionInterp}
-      <p>Slope ${tex('b_1')} = ${formatStat(r.slope, d)} is ${Math.abs(r.tStat).toFixed(2)} SEs from zero.</p>
+      <p>Slope ${tex('b_1')} = ${formatStat(r.slope, d)} is ${Math.abs(r.tStat).toFixed(2)} SEs from the null slope <span class="fx-src" data-fx="beta0">0</span>.</p>
       <p><strong>Formal conclusion:</strong> ${conclusions.formal}</p>
       ${conclusions.practical ? `<p><strong>Practical conclusion:</strong> ${conclusions.practical}</p>` : ''}
       <p>${confPct}% CI for ${tex('\\beta_1')}: (${formatStat(r.ciLower, d)}, ${formatStat(r.ciUpper, d)}).</p>
     </div>
   `;
+
+  // C3: link formula values (b₁, SE, n, β₀) to their sources in the summary / hypothesis.
+  linkFormula(resultsPanel);
+
+  // REQ-027: wire the x₀ input to the mean-response CI + prediction interval readout.
+  if (ri) {
+    renderX0Readout(ri, x0Value, d);
+    const inp = /** @type {HTMLInputElement|null} */ (document.getElementById('x0-input'));
+    inp?.addEventListener('input', () => {
+      const v = Number(inp.value);
+      if (isFinite(v)) { x0Value = v; renderX0Readout(ri, v, d); }
+    });
+  }
+}
+
+/**
+ * REQ-027 readout: fitted ŷ, the CI for the mean response, and the prediction
+ * interval for a new observation at x₀.
+ * @param {ReturnType<typeof regressionIntervals>} ri
+ * @param {number} x0
+ * @param {number} d - display precision
+ */
+function renderX0Readout(ri, x0, d) {
+  const el = document.getElementById('x0-readout');
+  if (!el || !ri) return;
+  const meanCI = ri.predictAt(x0, 'mean');
+  const predPI = ri.predictAt(x0, 'prediction');
+  const pct = (ri.confLevel * 100).toFixed(0);
+  const rows = [
+    `<p>Fitted ${tex('\\hat{y}')} = <strong>${formatStat(meanCI.fit, d)}</strong> at ${tex('x')} = ${formatStat(x0, d)}.</p>`,
+  ];
+  if (intervalMode === 'mean' || intervalMode === 'both') {
+    rows.push(`<p><strong>${pct}% CI for the mean response</strong> ${tex('E[y \\mid x_0]')}: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>`);
+  }
+  if (intervalMode === 'prediction' || intervalMode === 'both') {
+    rows.push(`<p><strong>${pct}% prediction interval</strong> (a new ${tex('y')} at ${tex('x_0')}): (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`);
+  }
+  if (x0 < ri.xMin || x0 > ri.xMax) {
+    rows.push(`<p class="hint">${tex('x_0')} = ${formatStat(x0, d)} is outside the observed range (${formatStat(ri.xMin, d)} to ${formatStat(ri.xMax, d)}) — this is extrapolation.</p>`);
+  }
+  el.innerHTML = rows.join('');
 }
 
 /**

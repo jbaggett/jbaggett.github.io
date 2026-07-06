@@ -4385,3 +4385,8 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .fx-val { cursor: help; border-radius: 2px; }
 .fx-src { cursor: help; border-radius: 2px; padding: 0 2px; }
 .fx-lit { background: #FFE9C7 !important; outline: 2px solid #E07020; outline-offset: 1px; border-radius: 3px; }
+
+/* REQ-027: predict-at-x₀ section on the slope inference page. */
+.predict-at .x0-label { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0.3rem 0 0.6rem; font-weight: 600; }
+.predict-at #x0-input { width: 8em; min-height: 40px; padding: 0.3rem 0.5rem; }
+#x0-readout p { margin: 0.35rem 0; }

@@ -12,10 +12,11 @@ import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
 import { parseCSV } from '../../js/csv-parser.js';
+import { linkFormula } from '../../js/formula-link.js';
 
 /** Render LaTeX to HTML string via KaTeX. */
 const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
 
 // jStat's ESM build exposes the object as the default export; the bare namespace
 // has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.
@@ -317,15 +318,18 @@ function displayResults(r, successLabel) {
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
 
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+
   const testFormula = tex(`\\begin{aligned}
     z &= \\frac{\\hat{p} - p_0}{\\sqrt{\\dfrac{p_0(1-p_0)}{n}}} \\\\[10pt]
-    &= \\frac{${V}{${formatStat(r.pHat, 0, 'proportion')}} - ${V}{${formatStat(r.p0, 0, 'proportion')}}}{\\sqrt{\\dfrac{${V}{${formatStat(r.p0, 0, 'proportion')}} \\cdot ${V}{${formatStat(1 - r.p0, 0, 'proportion')}}}{${V}{${r.n}}}}} \\\\[10pt]
+    &= \\frac{${fx('phat', formatStat(r.pHat, 0, 'proportion'))} - ${fx('p0', formatStat(r.p0, 0, 'proportion'))}}{\\sqrt{\\dfrac{${fx('p0', formatStat(r.p0, 0, 'proportion'))} \\cdot ${V}{${formatStat(1 - r.p0, 0, 'proportion')}}}{${fx('n', r.n)}}}} \\\\[10pt]
     &= ${S}{${formatStat(r.zStat, 0, 'correlation')}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
     &\\hat{p} \\pm z^* \\cdot \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}} \\\\[8pt]
-    &${V}{${formatStat(r.pHat, 0, 'proportion')}} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
+    &${fx('phat', formatStat(r.pHat, 0, 'proportion'))} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
 
@@ -333,9 +337,9 @@ function displayResults(r, successLabel) {
     <h3>Sample Summary</h3>
     <table class="results-table" aria-label="Sample summary">
       <tbody>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n}</td></tr>
-        <tr><th scope="row">${escapeHTML(successLabel)}</th><td>${r.successes}</td></tr>
-        <tr><th scope="row">${tex('\\hat{p}')}</th><td>${formatStat(r.pHat, 0, 'proportion')}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n">${r.n}</td></tr>
+        <tr><th scope="row">${escapeHTML(successLabel)}</th><td data-fx="x">${r.successes}</td></tr>
+        <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat">${formatStat(r.pHat, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
 
@@ -351,7 +355,7 @@ function displayResults(r, successLabel) {
     </div>
 
     <div class="interpretation">
-      <p>${tex('\\hat{p}')} = ${formatStat(r.pHat, 0, 'proportion')} is ${formatStat(seCount, 0, 'correlation')} SEs ${seDirection} ${tex('p_0')} = ${formatStat(r.p0, 0, 'proportion')}.</p>
+      <p>${tex('\\hat{p}')} = ${formatStat(r.pHat, 0, 'proportion')} is ${formatStat(seCount, 0, 'correlation')} SEs ${seDirection} ${tex('p_0')} = <span class="fx-src" data-fx="p0">${formatStat(r.p0, 0, 'proportion')}</span>.</p>
       <p><strong>Formal conclusion:</strong> ${(() => {
         const alpha = 1 - r.confLevel;
         const c = generateConclusions({
@@ -368,6 +372,8 @@ function displayResults(r, successLabel) {
 
   resultBanner.innerHTML =
     `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
+
+  linkFormula(resultsPanel);
 }
 
 // ── Chart ───────────────────────────────────────────────────────────

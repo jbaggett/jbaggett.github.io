@@ -11,10 +11,12 @@ import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curv
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
+/** Render LaTeX to HTML string via KaTeX. `trust` enables \htmlClass for C3
+ *  formula-value linking (our LaTeX is hardcoded, so this is safe). */
 const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
 
 // jStat's ESM build exposes the object as the default export; the bare namespace
 // has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.
@@ -401,16 +403,19 @@ function displayResults(r, lbl1, lbl2) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
 
   const testFormula = tex(`\\begin{aligned}
     z &= \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\hat{p}(1-\\hat{p})\\left(\\frac{1}{n_1} + \\frac{1}{n_2}\\right)}} \\\\[10pt]
-    &= \\frac{${V}{${formatStat(r.pHat1, 0, 'proportion')}} - ${V}{${formatStat(r.pHat2, 0, 'proportion')}}}{${V}{${formatStat(r.sePooled, 0, 'proportion')}}} \\\\[10pt]
+    &= \\frac{${fx('phat1', formatStat(r.pHat1, 0, 'proportion'))} - ${fx('phat2', formatStat(r.pHat2, 0, 'proportion'))}}{\\sqrt{${fx('phatpool', formatStat(r.pooledP, 0, 'proportion'))}(1-${fx('phatpool', formatStat(r.pooledP, 0, 'proportion'))})\\left(\\frac{1}{${fx('n1', r.n1)}} + \\frac{1}{${fx('n2', r.n2)}}\\right)}} \\\\[10pt]
     &= ${S}{${formatStat(r.zStat, 0, 'correlation')}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
     &(\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\cdot SE \\\\[8pt]
-    &${V}{${formatStat(r.diff, 0, 'proportion')}} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
+    &(${fx('phat1', formatStat(r.pHat1, 0, 'proportion'))} - ${fx('phat2', formatStat(r.pHat2, 0, 'proportion'))}) \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
 
@@ -422,15 +427,15 @@ function displayResults(r, lbl1, lbl2) {
       </thead>
       <tbody>
         <tr><th scope="row">Successes</th><td>${Math.round(r.pHat1 * r.n1)}</td><td>${Math.round(r.pHat2 * r.n2)}</td></tr>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n1}</td><td>${r.n2}</td></tr>
-        <tr><th scope="row">${tex('\\hat{p}')}</th><td>${formatStat(r.pHat1, 0, 'proportion')}</td><td>${formatStat(r.pHat2, 0, 'proportion')}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n1">${r.n1}</td><td data-fx="n2">${r.n2}</td></tr>
+        <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat1">${formatStat(r.pHat1, 0, 'proportion')}</td><td data-fx="phat2">${formatStat(r.pHat2, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
 
     <div class="formula-display">
       <h3>Test Statistic</h3>
       ${testFormula}
-      <p class="formula-detail">${tex(`\\text{Pooled } \\hat{p} = ${V}{${formatStat(r.pooledP, 0, 'proportion')}}`)}</p>
+      <p class="formula-detail"><span class="fx-src" data-fx="phatpool">${tex(`\\text{Pooled } \\hat{p} = ${V}{${formatStat(r.pooledP, 0, 'proportion')}}`)}</span></p>
       <p class="formula-detail">${tex(`\\text{p-value} = ${P}{${formatStat(r.pValue, 0, 'pvalue')}}`)}</p>
     </div>
 
@@ -456,6 +461,9 @@ function displayResults(r, lbl1, lbl2) {
       <p>${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')}).</p>
     </div>
   `;
+
+  // C3: link formula values (p̂₁, p̂₂, n₁, n₂, pooled p̂) to their sources in the summary.
+  linkFormula(resultsPanel);
 
   resultBanner.innerHTML =
     `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;

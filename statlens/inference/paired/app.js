@@ -16,11 +16,13 @@ initHelp();
 import { parseCSV } from '../../js/csv-parser.js';
 import { formatStat, detectPrecision, mean, sd } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
+import { linkFormula } from '../../js/formula-link.js';
 import * as d3Selection from 'd3-selection';
 
-/** Render LaTeX to HTML string via KaTeX. */
+/** Render LaTeX to HTML string via KaTeX. `trust` enables \htmlClass for C3
+ *  formula-value linking (our LaTeX is hardcoded, so this is safe). */
 const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -365,16 +367,19 @@ function renderResults(r, d, mu0, alternative, confLevel) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
 
   const testFormula = tex(`\\begin{aligned}
     t &= \\frac{\\bar{d} - \\mu_0}{s_d \\,/\\, \\sqrt{n}} \\\\[8pt]
-    &= \\frac{${V}{${formatStat(r.dbar, d)}} - ${V}{${mu0}}}{${V}{${formatStat(r.sd, d)}} \\,/\\, \\sqrt{${V}{${r.n}}}} \\\\[8pt]
+    &= \\frac{${fx('dbar', formatStat(r.dbar, d))} - ${fx('mu0', mu0)}}{${fx('sd', formatStat(r.sd, d))} \\,/\\, \\sqrt{${fx('n', r.n)}}} \\\\[8pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
     &\\bar{d} \\pm t^{\\!*} \\cdot \\frac{s_d}{\\sqrt{n}} \\\\[8pt]
-    &${V}{${formatStat(r.dbar, d)}} \\pm ${V}{${tStar}} \\cdot \\frac{${V}{${formatStat(r.sd, d)}}}{\\sqrt{${V}{${r.n}}}} \\\\[8pt]
+    &${fx('dbar', formatStat(r.dbar, d))} \\pm ${V}{${tStar}} \\cdot \\frac{${fx('sd', formatStat(r.sd, d))}}{\\sqrt{${fx('n', r.n)}}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
 
@@ -382,9 +387,9 @@ function renderResults(r, d, mu0, alternative, confLevel) {
     <h3>Paired Differences</h3>
     <table class="results-table" aria-label="Paired differences summary">
       <tbody>
-        <tr><th scope="row">${tex('n')} (pairs)</th><td>${r.n}</td></tr>
-        <tr><th scope="row">${tex('\\bar{d}')}</th><td>${formatStat(r.dbar, d)}</td></tr>
-        <tr><th scope="row">${tex('s_d')}</th><td>${formatStat(r.sd, d)}</td></tr>
+        <tr><th scope="row">${tex('n')} (pairs)</th><td data-fx="n">${r.n}</td></tr>
+        <tr><th scope="row">${tex('\\bar{d}')}</th><td data-fx="dbar">${formatStat(r.dbar, d)}</td></tr>
+        <tr><th scope="row">${tex('s_d')}</th><td data-fx="sd">${formatStat(r.sd, d)}</td></tr>
         <tr><th scope="row">${tex('SE')}</th><td>${formatStat(r.se, d)}</td></tr>
       </tbody>
     </table>
@@ -404,12 +409,15 @@ function renderResults(r, d, mu0, alternative, confLevel) {
     <div class="interpretation" aria-live="polite">
       <p><strong>Differences:</strong> d = ${diffLabel}</p>
       <p>The mean difference ${tex('\\bar{d}')} = ${formatStat(r.dbar, d)} is ${Math.abs(r.tStat).toFixed(2)} SEs
-        ${r.tStat >= 0 ? 'above' : 'below'} ${tex('\\mu_0')} = ${mu0}.</p>
+        ${r.tStat >= 0 ? 'above' : 'below'} ${tex('\\mu_0')} = <span class="fx-src" data-fx="mu0">${mu0}</span>.</p>
       <p><strong>Formal conclusion:</strong> ${conclusions.formal}</p>
       ${conclusions.practical ? `<p><strong>Practical conclusion:</strong> ${conclusions.practical}</p>` : ''}
       <p>${confPct}% CI for ${tex('\\mu_d')}: (${formatStat(r.ciLower, d)}, ${formatStat(r.ciUpper, d)}).</p>
     </div>
   `;
+
+  // C3: link formula values (d̄, s_d, n, μ₀) to their sources in the summary / hypothesis.
+  linkFormula(resultsPanel);
 }
 
 /**
