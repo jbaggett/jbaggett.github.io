@@ -4364,3 +4364,24 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .posthoc-table th, .posthoc-table td { padding: 5px 8px; text-align: left; border-bottom: 1px solid #eee; }
 .posthoc-table th { color: #114B5F; white-space: nowrap; }
 .posthoc-table tr.sig { background: #FDECEA; font-weight: 600; }
+
+/* Cross-tool handoff link (E1) — "carry this data to another tool". */
+.tool-handoff { margin-top: 0.85rem; }
+.tool-handoff[hidden] { display: none; }
+.handoff-link {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-weight: 600; color: #114B5F; text-decoration: none;
+  padding: 0.45rem 0.7rem; border-radius: 6px;
+  border: 1px solid #569BBD; background: #fff;
+  min-height: 44px; box-sizing: border-box;
+}
+.handoff-link:hover, .handoff-link:focus-visible { background: #eef6fa; text-decoration: underline; }
+
+/* B3: two-means bootstrap dotplot cells (mirror .mech-hist-cell sizing). */
+.mech-dot-cell { min-height: 90px; display: flex; align-items: center; justify-content: center; }
+.mech-dot-cell svg { max-width: 100%; }
+
+/* C3: linked formula values ↔ their source (sample summary / hypothesis). */
+.fx-val { cursor: help; border-radius: 2px; }
+.fx-src { cursor: help; border-radius: 2px; padding: 0 2px; }
+.fx-lit { background: #FFE9C7 !important; outline: 2px solid #E07020; outline-offset: 1px; border-radius: 3px; }

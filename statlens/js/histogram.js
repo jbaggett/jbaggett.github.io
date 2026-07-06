@@ -156,6 +156,7 @@ export function computeBins(values, options = {}) {
  * @param {boolean} [options.relativeFrequency] - Show relative frequency (proportion) on y-axis instead of count
  * @param {string} [options.fillColor] - Override default bar fill color (hex, will be used at 50% opacity)
  * @param {number} [options.viewHeight] - Override default viewBox height (for compact stacked charts)
+ * @param {number} [options.yMax] - Lock the y-axis maximum (bin-count units) for a shared scale across panels
  * @param {boolean} [options.showExport] - Show export buttons (default: true)
  * @param {string} [options.filename] - PNG download filename
  * @param {'full'|'names'|'none'} [options.labels] - Label visibility: 'full' (default), 'names' (no numeric tooltips/click labels), 'none' (no tooltips at all)
@@ -201,12 +202,14 @@ export function drawHistogram(container, values, options = {}) {
     .domain(xDomain)
     .range([0, frame.width]);
 
-  const maxCount = d3Array.max(bins, b => b.length) || 1;
+  // yMax lets callers lock a shared y-axis across several histograms (e.g. grouped
+  // panels) so bar heights are directly comparable. When locked, skip .nice() so the
+  // scale is identical across panels.
+  const maxCount = options.yMax ?? (d3Array.max(bins, b => b.length) || 1);
   const totalN = values.length || 1;
-  const yScale = d3Scale.scaleLinear()
-    .domain([0, maxCount])
-    .nice()
-    .range([frame.height, 0]);
+  const yScale = d3Scale.scaleLinear().domain([0, maxCount]);
+  if (options.yMax == null) yScale.nice();
+  yScale.range([frame.height, 0]);
 
   const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
   const yAxis = relativeFrequency

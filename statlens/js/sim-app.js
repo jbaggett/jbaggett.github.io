@@ -87,6 +87,24 @@ export function initSimPage(config) {
     const pad = (hi - lo) * 0.08 || 0.5;
     return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
   }
+
+  // B3: two-means bootstrap — show the actual resampling as a pair of dotplots with
+  // pluck-and-fly, one shared mean mechanism per group (reusing the one-mean
+  // controller). Falls back to the mini-histogram pair for large groups.
+  const isMeanTwoGroup = config.mode === 'bootstrap' && config.twoGroup && !config.proportion;
+  const twoMeanDotActive = () => isMeanTwoGroup && data2.length > 0
+    && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
+    && data2.length >= 2 && data2.length <= MEAN_DOT_MAX;
+  const mechG1 = createMeanMechanism({ formatValue: formatChipValue, initialView: 'dotplot' });
+  const mechG2 = createMeanMechanism({ formatValue: formatChipValue, initialView: 'dotplot' });
+  /** Shared dotplot domain across BOTH groups so the two panels are comparable. */
+  function computeTwoMeanDomain() {
+    const all = [...data1, ...data2];
+    if (!all.length) return undefined;
+    const lo = Math.min(...all), hi = Math.max(...all);
+    const pad = (hi - lo) * 0.08 || 0.5;
+    return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
+  }
   /** @returns {import('./sim-card-mechanism.js').CardOpts} */
   const cardOpts = () => {
     // Prefer the real outcome levels from the data (e.g. "promoted" /
@@ -1809,6 +1827,22 @@ export function initSimPage(config) {
           <div class="mech-prop-fill" style="width:${pct2}%"></div>
           <span class="mech-prop-label">${succ2} S / ${fail2} F</span>
         </div>`;
+    } else if (twoMeanDotActive()) {
+      // B3: side-by-side dotplot bags — the resample plucks-and-flies per group.
+      const tag = isOriginal ? 'orig' : 'resamp';
+      html += `
+        <div class="mech-hist-pair">
+          <div class="mech-hist-col">
+            <div class="mech-group-label">${group1Name}</div>
+            <div id="mech-dot-${tag}-1" class="mech-dot-cell"></div>
+            <div class="mech-group-stat-sm">n=${g1.length}, ${statSymbol}=${formatStat(s1, dataPrecision, fmtType)}</div>
+          </div>
+          <div class="mech-hist-col">
+            <div class="mech-group-label">${group2Name}</div>
+            <div id="mech-dot-${tag}-2" class="mech-dot-cell"></div>
+            <div class="mech-group-stat-sm">n=${g2.length}, ${statSymbol}=${formatStat(s2, dataPrecision, fmtType)}</div>
+          </div>
+        </div>`;
     } else {
       // Means: side-by-side mini histograms
       const tag = isOriginal ? 'orig' : 'resamp';
@@ -1877,6 +1911,15 @@ export function initSimPage(config) {
     if (!mechOriginalContent) return;
     if (useNewPropMech2) { renderTwoPropBags(); return; }
     mechOriginalContent.innerHTML = buildTwoGroupHTML(data1, data2, false, true);
+    if (twoMeanDotActive()) {
+      const domain = computeTwoMeanDomain();
+      mechG1.resetSizing(); mechG2.resetSizing();
+      const c1 = document.getElementById('mech-dot-orig-1');
+      const c2 = document.getElementById('mech-dot-orig-2');
+      if (c1) mechG1.renderBag(c1, data1, mean(data1), { domain, meanLabel: 'x̄', label: `Observed ${group1Name}` });
+      if (c2) mechG2.renderBag(c2, data2, mean(data2), { domain, meanLabel: 'x̄', label: `Observed ${group2Name}` });
+      return;
+    }
     renderTwoGroupCharts(data1, data2, 'orig');
   }
 
@@ -2073,6 +2116,18 @@ export function initSimPage(config) {
 
     // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
     if (useNewPropMech2) return showTwoPropResample(g1, g2, highlight);
+
+    // B3: two-means bootstrap — pluck-and-fly resample dotplot per group.
+    if (twoMeanDotActive()) {
+      mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, true, false);
+      const domain = computeTwoMeanDomain();
+      const c1 = document.getElementById('mech-dot-resamp-1');
+      const c2 = document.getElementById('mech-dot-resamp-2');
+      let ms = 0;
+      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group1Name}` }));
+      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group2Name}` }));
+      return ms;
+    }
 
     const statFn = config.mode === 'bootstrap' ? getBootstrapStat().fn : mean;
     const fmtType = config.proportion ? 'proportion' : undefined;

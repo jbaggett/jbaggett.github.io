@@ -11,7 +11,7 @@ import { setJStat } from '../../js/distributions.js';
 import { regressionIntervals } from '../../js/inference.js';
 
 setJStat(jstatMod.default || jstatMod);
-import { announce, initTabs, initDataPanel, initHelp, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initHelp, setPageTitle, initToolHandoff } from '../../js/page-utils.js';
 
 
 initHelp();
@@ -30,6 +30,10 @@ let xVar = '';
 
 /** @type {string} */
 let yVar = '';
+
+/** Bundled dataset id currently loaded (null for pasted/file data). Used for the
+ *  cross-tool "Test this relationship →" handoff. */
+let currentDatasetId = null;
 
 /** Decimal places in source data (for formatStat). */
 let dataPrecision = 0;
@@ -50,6 +54,15 @@ const showBandsCheckbox = /** @type {HTMLInputElement} */ (document.getElementBy
 const showResidualsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-residuals'));
 const equationDisplay = /** @type {HTMLDivElement} */ (document.getElementById('equation-display'));
 const statsDisplay = /** @type {HTMLDivElement} */ (document.getElementById('stats-display'));
+
+// Cross-tool handoff: carry the loaded dataset + chosen x/y to the slope test (E1).
+const handoff = initToolHandoff(statsDisplay.parentElement, () => {
+    if (!currentDatasetId || !xVar || !yVar || xVar === yVar) return null;
+    return {
+        label: 'Test this relationship', target: 'inference/slope/',
+        dataset: currentDatasetId, params: { x: xVar, y: yVar },
+    };
+});
 
 /**
  * Load parsed CSV data (shared by paste + file handlers).
@@ -132,6 +145,7 @@ function updateChart() {
         if (xVar === yVar && xVar) {
             announce('X and Y variables must be different.');
         }
+        handoff.refresh();
         return;
     }
 
@@ -155,6 +169,7 @@ function updateChart() {
         equationDisplay.hidden = true;
         statsDisplay.hidden = true;
         residualContainer.hidden = true;
+        handoff.refresh();
         return;
     }
 
@@ -245,6 +260,8 @@ function updateChart() {
         residualContainer.hidden = true;
     }
 
+    handoff.refresh();
+
     announce(`Regression: r = ${formatStat(reg.r, d, 'correlation')}, R² = ${formatStat(reg.r2, d, 'correlation')}, slope = ${formatStat(reg.slope, d)}`);
 }
 
@@ -257,6 +274,7 @@ initDataPanel({
     showPreview: true,
     datasetFilter: ds => ds.type === 'regression',
     onDataset: (ds) => {
+        currentDatasetId = ds.id;
         currentRows = ds.rows;
         const varInfo = ds.variables || [];
         numericColumns = varInfo
@@ -278,8 +296,9 @@ initDataPanel({
         announce(`${ds.name}: ${currentRows.length} observations.`);
         updateChart();
     },
-    onText: loadParsedData,
+    onText: (parsed, name) => { currentDatasetId = null; loadParsedData(parsed, name); },
     onClear: () => {
+        currentDatasetId = null;
         currentRows = [];
         numericColumns = [];
         chartContainer.innerHTML = '';

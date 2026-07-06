@@ -12,7 +12,7 @@ import { computeDots } from '../../js/dotplot.js';
 import { drawBoxplot } from '../../js/boxplot.js';
 import { drawGroupedDensity } from '../../js/kde.js';
 import { wrapTable } from '../../js/export.js';
-import { announce, initTabs, initDataPanel, initHelp, wrapWithStepper, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initHelp, wrapWithStepper, setPageTitle, initToolHandoff } from '../../js/page-utils.js';
 import { getColors } from '../../js/chart-utils.js';
 import { DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
 import { renderStackedHistograms, renderStackedDotplots } from '../../js/grouped-charts.js';
@@ -44,6 +44,9 @@ let activeChart = 'boxplot';
 
 /** Current quantitative variable label. */
 let currentVarLabel = 'Value';
+
+/** Bundled dataset id currently loaded (null for pasted/file data) — for the E1 handoff. */
+let currentDatasetId = null;
 
 /** Current grouping variable label. */
 let currentGroupLabel = 'Group';
@@ -567,10 +570,24 @@ const dataPanel = initDataPanel({
   datasetFilter: (/** @type {any} */ ds) => ds.hasNumeric && ds.hasCategorical && ds.groupLevels >= 2 && ds.minGroupN >= 3,
   onDataset: (ds) => {
     loadedDataset = ds;
+    currentDatasetId = ds.id;
     setupVariableSelectors(ds, ds.name ?? 'Dataset');
   },
-  onRawText: loadRawText,
-  onClear: clearDisplay,
+  onRawText: (text, name) => { currentDatasetId = null; loadRawText(text, name); },
+  onClear: () => { currentDatasetId = null; clearDisplay(); },
+});
+
+// Cross-tool handoff: carry the dataset + group/response to the matching test (E1).
+const groupedHandoff = initToolHandoff(resultsSection, () => {
+  const nGroups = Object.keys(groupedData).length;
+  if (!currentDatasetId || nGroups < 2) return null;
+  const two = nGroups === 2;
+  return {
+    label: two ? 'Test the difference in means' : 'Test these groups (ANOVA)',
+    target: two ? 'inference/two-means/' : 'inference/anova/',
+    dataset: currentDatasetId,
+    params: { group: groupVarSelect.value, response: quantVarSelect.value },
+  };
 });
 
 // Override the Apply button to handle two-column spreadsheet
@@ -678,6 +695,7 @@ function renderStats() {
     catLabel: currentGroupLabel,
   });
   table.id = 'grouped-stats-table';
+  groupedHandoff?.refresh();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────

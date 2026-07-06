@@ -1876,6 +1876,41 @@ export function consumeTransferData() {
   } catch { return null; }
 }
 
+/**
+ * Mount a contextual "carry this data to another tool" link (E1). The page supplies
+ * a getHandoff() callback returning the current handoff target (or null to hide the
+ * link — e.g. before data/variables are chosen). Bundled datasets travel via
+ * `?dataset=` + params; custom (pasted/file) data travels via the sessionStorage
+ * transfer that initDataPanel already consumes. Call the returned refresh() whenever
+ * the dataset or variable selection changes.
+ *
+ * @param {Element|null} mountEl
+ * @param {() => ({ label: string, target: string, dataset?: string|null,
+ *   csvText?: string|null, sourceName?: string, params?: Record<string, any> }|null)} getHandoff
+ * @returns {{ refresh: () => void }}
+ */
+export function initToolHandoff(mountEl, getHandoff) {
+  if (!mountEl) return { refresh: () => {} };
+  const wrap = document.createElement('div');
+  wrap.className = 'tool-handoff';
+  mountEl.appendChild(wrap);
+
+  function refresh() {
+    const h = getHandoff();
+    if (!h || !h.target) { wrap.innerHTML = ''; wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const href = buildSimLink(h.target, { dataset: h.dataset || undefined, params: h.params });
+    wrap.innerHTML = `<a class="handoff-link" href="${href}">${h.label} <span aria-hidden="true">→</span></a>`;
+    const a = /** @type {HTMLAnchorElement|null} */ (wrap.querySelector('a'));
+    a?.addEventListener('click', () => {
+      // Custom (non-bundled) data can't ride in the URL — hand it off via sessionStorage.
+      if (!h.dataset && h.csvText) storeTransferData({ csvText: h.csvText, sourceName: h.sourceName });
+    });
+  }
+  refresh();
+  return { refresh };
+}
+
 // ─── Summary URL parsing ────────────────────────────────────────────
 
 /**

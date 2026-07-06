@@ -39,6 +39,18 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry">
+            <div class="cl-date">2026-07-05<span class="cl-tag">New</span></div>
+            <h2><a href="../explore/regression/?dataset=cats">Four teaching upgrades: hand-off links, comparable panels, visible two-group resampling, linked formulas</a></h2>
+            <p>A batch of pedagogy improvements:</p>
+            <ul>
+                <li><strong>Explore → test hand-off.</strong> After exploring a dataset, a contextual link carries it straight into the right test — <em>“Test this relationship”</em> from regression (to the slope test), and <em>“Test the difference / these groups”</em> from grouped comparison (to the two-means test or ANOVA), with your variables already selected.</li>
+                <li><strong>Comparable group panels.</strong> The stacked group histograms now share one y-axis, so a bar of 10 towers over a bar of 4 across groups instead of both filling their panel.</li>
+                <li><strong>Two-group bootstrap you can see.</strong> The two-means bootstrap now shows each group’s resample as a pluck-and-fly dotplot on a shared axis, with the difference updating live.</li>
+                <li><strong>Linked formulas.</strong> On the one-mean test, hover (or tab to) a value in the t / CI formula and it lights up everywhere it appears — the sample summary, the null value, its other uses — connecting the math to the data.</li>
+            </ul>
+        </article>
+
+        <article class="cl-entry">
             <div class="cl-date">2026-07-05<span class="cl-tag">Upgraded</span></div>
             <h2><a href="../simulate/randomization-one-mean/?dataset=dolphins_mercury">Resampling made visible — rebuilt mechanism strips</a></h2>
             <p>The one-sample mean tools — the bootstrap CI and the randomization test — now share one rebuilt mechanism strip with a <strong>Tiles</strong> view (each value a card, tagged ×N when it's drawn more than once, greyed when it isn't) and a <strong>Dotplots</strong> view where the resample is <em>plucked from the sample and flies into place, dot by dot</em>. For the randomization test, the shift to the null is shown explicitly: every value visibly slides by the same constant, with a caption explaining the subtraction. The one- and two-proportion bootstraps got a matching marble grid / bar mechanism.</p>
