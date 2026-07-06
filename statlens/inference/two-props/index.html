@@ -69,11 +69,6 @@
                         <select id="outcome-var-select"></select>
                     </label>
                 </div>
-                <div id="success-selector" hidden>
-                    <label for="success-outcome">Count as success:
-                        <select id="success-outcome"></select>
-                    </label>
-                </div>
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
@@ -127,6 +122,11 @@
 
         <section id="controls" aria-label="Test parameters">
             <h2 class="sr-only">Parameters</h2>
+            <div id="success-selector" class="success-selector-row" hidden>
+                <label for="success-outcome">Count as success:
+                    <select id="success-outcome"></select>
+                </label>
+            </div>
             <div class="hypothesis-display">
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H<sub>0</sub>:</span>

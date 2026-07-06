@@ -4412,3 +4412,7 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 
 /* Extrapolation warning in the regression prediction readout. */
 .extrap-warn { color: #C43D1A; font-weight: 600; }
+
+/* "Count as success" selector — surfaced in Test parameters (not the collapsing data panel). */
+.success-selector-row { margin: 0 0 0.6rem; font-weight: 600; }
+.success-selector-row select { min-height: 40px; margin-left: 0.4rem; padding: 0.25rem 0.4rem; }
