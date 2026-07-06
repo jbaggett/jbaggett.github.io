@@ -3306,15 +3306,22 @@ body[data-mode="discover"] .present-only { display: none !important; }
   gap: 0.5rem;
 }
 .conditions-histograms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  /* Grid (not flex) so every group panel is the SAME size — a wrapped last row no
+     longer stretches its few items larger than the rows above. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.6rem;
   width: 100%;
 }
 .conditions-group-hist {
-  flex: 1;
-  min-width: 180px;
-  max-width: 350px;
+  min-width: 0;
+}
+.conditions-group-title {
+  margin: 0 0 0.1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #114B5F;
+  text-align: center;
 }
 .conditions-single-hist {
   flex: 1;

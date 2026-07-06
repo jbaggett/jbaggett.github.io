@@ -270,7 +270,15 @@ function renderHistBox(container, data, varName, context, isGrouped) {
     for (const [name, vals] of Object.entries(groups)) {
       const groupDiv = document.createElement('div');
       groupDiv.className = 'conditions-group-hist';
-      drawHistogram(groupDiv, vals, {
+      // Visible group-name title (drawHistogram's titleText is only an a11y label) —
+      // so each panel is identifiable, with n for context.
+      const title = document.createElement('p');
+      title.className = 'conditions-group-title';
+      title.textContent = `${name} (n = ${vals.length})`;
+      groupDiv.appendChild(title);
+      const chartHost = document.createElement('div');
+      groupDiv.appendChild(chartHost);
+      drawHistogram(chartHost, vals, {
         xLabel: varName,
         titleText: name,
         id: `cond-hist-${name.replace(/\W/g, '')}`,
