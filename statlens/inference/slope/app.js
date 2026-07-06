@@ -441,11 +441,18 @@ function renderResults(r, d, alternative, confLevel) {
   if (ri) {
     if (x0Value == null) x0Value = Math.round(ri.xbar * 100) / 100;
     const step = Math.max(0.01, Math.round((ri.xMax - ri.xMin)) / 100) || 0.1;
+    // Link to the interactive explorer (scatterplot + line + bands + draggable x₀),
+    // carrying the dataset and both variables. Needs a bundled dataset to reload.
+    const dsId = dataPanel.currentDatasetId;
+    const explorerLink = dsId
+      ? `<p class="hint" style="margin-top:0.5rem">See it on a plot: <a href="${buildSimLink('explore/regression/', { dataset: dsId, params: { x: xVarSelect.value, y: yVarSelect.value, bands: 'true', x0: x0Value } })}" target="_blank" rel="noopener">open the interactive prediction plot ↗</a> — scatter + line + CI/prediction bands, drag to predict at any x.</p>`
+      : '';
     predictSection = `
       <div class="formula-display predict-at">
         <h3>Predict a response</h3>
         <label class="x0-label">x<sub>0</sub>&nbsp;=&nbsp;<input type="number" id="x0-input" value="${x0Value}" step="${step}" aria-label="x value to predict at"></label>
         <div id="x0-readout" aria-live="polite"></div>
+        ${explorerLink}
       </div>`;
   }
 

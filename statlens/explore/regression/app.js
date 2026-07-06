@@ -58,6 +58,8 @@ const regX0Input = /** @type {HTMLInputElement} */ (document.getElementById('reg
 const regX0Readout = document.getElementById('reg-x0-readout');
 /** Current x₀ for the prediction marker (data units); null → default to x̄. */
 let regX0 = (() => { const v = Number(new URLSearchParams(location.search).get('x0')); return isFinite(v) ? v : null; })();
+/** Apply ?x=/?y= only on the first dataset load. */
+let urlVarsApplied = false;
 /** Last regression-intervals object + chart handle, so the marker redraws on drag/input. */
 let lastRi = null, lastChart = null;
 const equationDisplay = /** @type {HTMLDivElement} */ (document.getElementById('equation-display'));
@@ -131,6 +133,15 @@ function populateVarSelectors() {
     if (numericColumns.length >= 2) {
         xVarSelect.value = numericColumns[0];
         yVarSelect.value = numericColumns[1];
+    }
+
+    // Honor ?x=/?y= once (e.g. arriving from a test's "open in the explorer" link).
+    if (!urlVarsApplied) {
+        urlVarsApplied = true;
+        const q = new URLSearchParams(location.search);
+        const px = q.get('x'), py = q.get('y');
+        if (px && numericColumns.includes(px)) xVarSelect.value = px;
+        if (py && numericColumns.includes(py)) yVarSelect.value = py;
     }
 
     xVar = xVarSelect.value;
@@ -317,7 +328,10 @@ function drawX0Marker() {
   const meanCI = lastRi.predictAt(x0, 'mean');
   const predPI = lastRi.predictAt(x0, 'prediction');
   const cx = xScale(x0);
-  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: 0, y2: frame.height, stroke: '#7B2D8E', 'stroke-width': 1, 'stroke-dasharray': '3,3', 'stroke-opacity': 0.55 }));
+  // Visible dashed guide + a wide transparent grab handle so ANY point along the
+  // full height of the line can be grabbed and dragged (cursor signals it).
+  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: 0, y2: frame.height, stroke: '#7B2D8E', 'stroke-width': 1.5, 'stroke-dasharray': '4,3', 'stroke-opacity': 0.6, style: 'cursor:ew-resize' }));
+  marker.appendChild(svgEl('line', { class: 'x0-grab', x1: cx, x2: cx, y1: 0, y2: frame.height, stroke: 'transparent', 'stroke-width': 20, style: 'cursor:ew-resize' }));
   // Prediction interval (orange, wider) with caps
   marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(predPI.lower), y2: yScale(predPI.upper), stroke: '#E07020', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-opacity': 0.95 }));
   for (const yv of [predPI.lower, predPI.upper]) marker.appendChild(svgEl('line', { x1: cx - 6, x2: cx + 6, y1: yScale(yv), y2: yScale(yv), stroke: '#E07020', 'stroke-width': 2 }));
