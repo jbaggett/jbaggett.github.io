@@ -206,10 +206,16 @@ function showSuccessSelector(sourceName) {
     successOutcome.appendChild(opt);
   }
   successSelector.hidden = false;
-  successValue = outcomes[0];
+  // Prefer the dataset's defined success label; fall back to the first outcome.
+  successValue = (currentContext?.successLabel && outcomes.includes(currentContext.successLabel))
+    ? currentContext.successLabel : outcomes[0];
+  successOutcome.value = successValue;
 
-  countFromData(sourceName);
-  successOutcome.onchange = () => { successValue = successOutcome.value; countFromData(sourceName); };
+  if (countFromData(sourceName)) compute(); // auto-compute — dataset defines success
+  successOutcome.onchange = () => {
+    successValue = successOutcome.value;
+    if (countFromData(sourceName)) compute();
+  };
 }
 
 /**
@@ -220,7 +226,7 @@ function countFromData(sourceName) {
   const groups = [...new Set(rawRows.map(r => r[groupVar]))];
   if (groups.length < 2) {
     announce('The grouping variable needs at least 2 groups.');
-    return;
+    return false;
   }
 
   label1 = groups[0];
@@ -240,6 +246,7 @@ function countFromData(sourceName) {
       `${sourceName}: ${label1} ${currentX1}/${currentN1} (p\u0302=${p1}), ${label2} ${currentX2}/${currentN2} (p\u0302=${p2}). Success = "${successValue}"`;
   }
   announce(`${label1}: ${currentX1}/${currentN1}, ${label2}: ${currentX2}/${currentN2}.`);
+  return true;
 }
 
 // ── Summary input ───────────────────────────────────────────────────

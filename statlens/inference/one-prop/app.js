@@ -153,13 +153,18 @@ function showSuccessSelector(values, sourceName) {
     }
     successSelector.hidden = false;
 
-    // Auto-select and count
-    const selectedSuccess = categories[0];
+    // Prefer the dataset's defined success label; fall back to the first category.
+    const selectedSuccess = (currentContext?.successLabel && categories.includes(currentContext.successLabel))
+      ? currentContext.successLabel : categories[0];
+    successOutcome.value = selectedSuccess;
     countAndLoad(values, selectedSuccess, sourceName);
+    compute(); // auto-compute on load — each dataset ships with "success" defined
 
-    successOutcome.addEventListener('change', () => {
+    // .onchange (not addEventListener) so re-loading a dataset doesn't stack listeners.
+    successOutcome.onchange = () => {
       countAndLoad(values, successOutcome.value, sourceName);
-    });
+      compute();
+    };
   }
 }
 
