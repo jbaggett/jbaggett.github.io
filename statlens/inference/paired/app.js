@@ -371,14 +371,17 @@ function renderResults(r, d, mu0, alternative, confLevel) {
   const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
     `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
 
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
+
   const testFormula = tex(`\\begin{aligned}
-    t &= \\frac{\\bar{d} - \\mu_0}{s_d \\,/\\, \\sqrt{n}} \\\\[8pt]
+    t &= \\frac{${fxs('dbar', '\\bar{d}')} - ${fxs('mu0', '\\mu_0')}}{${fxs('sd', 's_d')} \\,/\\, \\sqrt{${fxs('n', 'n')}}} \\\\[8pt]
     &= \\frac{${fx('dbar', formatStat(r.dbar, d))} - ${fx('mu0', mu0)}}{${fx('sd', formatStat(r.sd, d))} \\,/\\, \\sqrt{${fx('n', r.n)}}} \\\\[8pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &\\bar{d} \\pm t^{\\!*} \\cdot \\frac{s_d}{\\sqrt{n}} \\\\[8pt]
+    &${fxs('dbar', '\\bar{d}')} \\pm t^{\\!*} \\cdot \\frac{${fxs('sd', 's_d')}}{\\sqrt{${fxs('n', 'n')}}} \\\\[8pt]
     &${fx('dbar', formatStat(r.dbar, d))} \\pm ${V}{${tStar}} \\cdot \\frac{${fx('sd', formatStat(r.sd, d))}}{\\sqrt{${fx('n', r.n)}}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
@@ -417,7 +420,7 @@ function renderResults(r, d, mu0, alternative, confLevel) {
   `;
 
   // C3: link formula values (d̄, s_d, n, μ₀) to their sources in the summary / hypothesis.
-  linkFormula(resultsPanel);
+  linkFormula(document.querySelector('main') || resultsPanel);
 }
 
 /**

@@ -510,17 +510,20 @@ function renderResults(r) {
   // C3: wrap a plugged-in value so it links to its source on hover/focus.
   const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
     `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // C3: wrap a symbolic symbol so it links to the same source as its value.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
   const nullTerm = nullDiff !== 0 ? ` - ${fx('delta0', nullDiff < 0 ? `(${nullDiff})` : nullDiff)}` : '';
-  const nullTermGeneric = nullDiff !== 0 ? ' - \\delta_0' : '';
+  const nullTermGeneric = nullDiff !== 0 ? ` - ${fxs('delta0', '\\delta_0')}` : '';
   const testFormula = tex(`\\begin{aligned}
-    t &= \\frac{(\\bar{x}_1 - \\bar{x}_2)${nullTermGeneric}}{\\sqrt{\\dfrac{s_1^2}{n_1} + \\dfrac{s_2^2}{n_2}}} \\\\[10pt]
+    t &= \\frac{(${fxs('xbar1', '\\bar{x}_1')} - ${fxs('xbar2', '\\bar{x}_2')})${nullTermGeneric}}{\\sqrt{\\dfrac{${fxs('s1', 's_1')}^2}{${fxs('n1', 'n_1')}} + \\dfrac{${fxs('s2', 's_2')}^2}{${fxs('n2', 'n_2')}}}} \\\\[10pt]
     &= \\frac{(${fx('xbar1', formatStat(r.xbar1, d))} - ${fx('xbar2', formatStat(r.xbar2, d))})${nullTerm}}{\\sqrt{\\dfrac{${fx('s1', formatStat(r.s1, d))}^2}{${fx('n1', r.n1)}} + \\dfrac{${fx('s2', formatStat(r.s2, d))}^2}{${fx('n2', r.n2)}}}} \\\\[10pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &(\\bar{x}_1 - \\bar{x}_2) \\pm t^{\\!*} \\cdot SE \\\\[8pt]
+    &(${fxs('xbar1', '\\bar{x}_1')} - ${fxs('xbar2', '\\bar{x}_2')}) \\pm t^{\\!*} \\cdot SE \\\\[8pt]
     &(${fx('xbar1', formatStat(r.xbar1, d))} - ${fx('xbar2', formatStat(r.xbar2, d))}) \\pm ${V}{${tStar}} \\cdot ${V}{${formatStat(r.se, d)}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
@@ -568,7 +571,7 @@ function renderResults(r) {
   `;
 
   // C3: link formula values (x̄₁, x̄₂, s₁, s₂, n₁, n₂, δ₀) to their sources in the summary / interpretation.
-  linkFormula(resultDiv);
+  linkFormula(document.querySelector('main') || resultDiv);
 }
 
 /**

@@ -405,6 +405,9 @@ function renderResults(r, d, alternative, confLevel) {
   // C3: wrap a plugged-in value so it links to its source on hover/focus.
   const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
     `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // Symbolic wrapper: makes the SYMBOL (e.g. SE_{b_1}) hoverable too, without recoloring it.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
   let regressionRows = '';
   if (hasFullRegression) {
@@ -423,13 +426,13 @@ function renderResults(r, d, alternative, confLevel) {
   }
 
   const testFormula = tex(`\\begin{aligned}
-    t &= \\frac{b_1 - 0}{SE_{b_1}} \\\\[8pt]
+    t &= \\frac{${fxs('b1', 'b_1')} - ${fxs('beta0', '0')}}{${fxs('se', 'SE_{b_1}')}} \\\\[8pt]
     &= \\frac{${fx('b1', formatStat(r.slope, d))} - ${fx('beta0', 0)}}{${fx('se', formatStat(r.se, d))}} \\\\[8pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &b_1 \\pm t^{\\!*} \\cdot SE_{b_1} \\\\[8pt]
+    &${fxs('b1', 'b_1')} \\pm ${fxs('tstar', 't^{\\!*}')} \\cdot ${fxs('se', 'SE_{b_1}')} \\\\[8pt]
     &${fx('b1', formatStat(r.slope, d))} \\pm ${fx('tstar', tStar)} \\cdot ${fx('se', formatStat(r.se, d))} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
@@ -491,7 +494,7 @@ function renderResults(r, d, alternative, confLevel) {
   `;
 
   // C3: link formula values (b₁, SE, n, β₀) to their sources in the summary / hypothesis.
-  linkFormula(resultsPanel);
+  linkFormula(document.querySelector('main') || resultsPanel);
 
   // REQ-027: wire the x₀ input to the mean-response CI + prediction interval readout.
   if (ri) {

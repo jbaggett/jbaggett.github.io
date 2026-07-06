@@ -321,14 +321,17 @@ function displayResults(r, successLabel) {
   const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
     `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
 
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
+
   const testFormula = tex(`\\begin{aligned}
-    z &= \\frac{\\hat{p} - p_0}{\\sqrt{\\dfrac{p_0(1-p_0)}{n}}} \\\\[10pt]
+    z &= \\frac{${fxs('phat', '\\hat{p}')} - ${fxs('p0', 'p_0')}}{\\sqrt{\\dfrac{${fxs('p0', 'p_0')}(1-${fxs('p0', 'p_0')})}{${fxs('n', 'n')}}}} \\\\[10pt]
     &= \\frac{${fx('phat', formatStat(r.pHat, 0, 'proportion'))} - ${fx('p0', formatStat(r.p0, 0, 'proportion'))}}{\\sqrt{\\dfrac{${fx('p0', formatStat(r.p0, 0, 'proportion'))} \\cdot ${V}{${formatStat(1 - r.p0, 0, 'proportion')}}}{${fx('n', r.n)}}}} \\\\[10pt]
     &= ${S}{${formatStat(r.zStat, 0, 'correlation')}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &\\hat{p} \\pm z^* \\cdot \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}} \\\\[8pt]
+    &${fxs('phat', '\\hat{p}')} \\pm z^* \\cdot \\sqrt{\\frac{${fxs('phat', '\\hat{p}')}(1-${fxs('phat', '\\hat{p}')})}{${fxs('n', 'n')}}} \\\\[8pt]
     &${fx('phat', formatStat(r.pHat, 0, 'proportion'))} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
@@ -379,7 +382,7 @@ function displayResults(r, successLabel) {
   resultBanner.innerHTML =
     `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
 
-  linkFormula(resultsPanel);
+  linkFormula(document.querySelector('main') || resultsPanel);
 }
 
 // ── Chart ───────────────────────────────────────────────────────────

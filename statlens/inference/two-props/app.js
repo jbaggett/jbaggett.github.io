@@ -406,15 +406,18 @@ function displayResults(r, lbl1, lbl2) {
   // C3: wrap a plugged-in value so it links to its source on hover/focus.
   const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
     `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // C3: wrap a symbol (symbolic line) so it links to the same source as its plugged-in value.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
   const testFormula = tex(`\\begin{aligned}
-    z &= \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\hat{p}(1-\\hat{p})\\left(\\frac{1}{n_1} + \\frac{1}{n_2}\\right)}} \\\\[10pt]
+    z &= \\frac{${fxs('phat1', '\\hat{p}_1')} - ${fxs('phat2', '\\hat{p}_2')}}{\\sqrt{${fxs('phatpool', '\\hat{p}')}(1-${fxs('phatpool', '\\hat{p}')})\\left(\\frac{1}{${fxs('n1', 'n_1')}} + \\frac{1}{${fxs('n2', 'n_2')}}\\right)}} \\\\[10pt]
     &= \\frac{${fx('phat1', formatStat(r.pHat1, 0, 'proportion'))} - ${fx('phat2', formatStat(r.pHat2, 0, 'proportion'))}}{\\sqrt{${fx('phatpool', formatStat(r.pooledP, 0, 'proportion'))}(1-${fx('phatpool', formatStat(r.pooledP, 0, 'proportion'))})\\left(\\frac{1}{${fx('n1', r.n1)}} + \\frac{1}{${fx('n2', r.n2)}}\\right)}} \\\\[10pt]
     &= ${S}{${formatStat(r.zStat, 0, 'correlation')}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &(\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\cdot SE \\\\[8pt]
+    &(${fxs('phat1', '\\hat{p}_1')} - ${fxs('phat2', '\\hat{p}_2')}) \\pm z^* \\cdot SE \\\\[8pt]
     &(${fx('phat1', formatStat(r.pHat1, 0, 'proportion'))} - ${fx('phat2', formatStat(r.pHat2, 0, 'proportion'))}) \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
@@ -469,7 +472,7 @@ function displayResults(r, lbl1, lbl2) {
   `;
 
   // C3: link formula values (p̂₁, p̂₂, n₁, n₂, pooled p̂) to their sources in the summary.
-  linkFormula(resultsPanel);
+  linkFormula(document.querySelector('main') || resultsPanel);
 
   resultBanner.innerHTML =
     `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
