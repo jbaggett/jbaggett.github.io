@@ -191,6 +191,12 @@
                         </label>
                     </div>
                     <div id="chart-container"></div>
+                    <div id="bands-legend" class="bands-legend" hidden></div>
+                    <div id="predict-panel" class="predict-panel" hidden>
+                        <label class="x0-label">Predict at x<sub>0</sub> = <input type="number" id="reg-x0-input" step="0.1" aria-label="x value to predict at"></label>
+                        <span class="hint predict-drag-hint">— or drag the marker on the plot</span>
+                        <div id="reg-x0-readout" aria-live="polite"></div>
+                    </div>
                     <div id="residual-container" hidden>
                         <h3 style="font-size:0.9rem;color:var(--ims-gray-text);">Residual Plot</h3>
                         <div id="residual-chart-container"></div>

@@ -121,16 +121,22 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
       const bot = [...pts].reverse().map(p => `${xScale(p.x).toFixed(1)},${yScale(p.lower).toFixed(1)}`);
       return `M${top.join('L')}L${bot.join('L')}Z`;
     };
+    // Distinguish the two bands by BOTH hue and edge style (CVD-safe, not color-alone):
+    // the wider PREDICTION band is warm-orange with a DASHED border; the narrower
+    // mean-response CI band is IMS-blue with a solid border, drawn on top.
     if (predictionBand && predictionBand.length > 1) {
       bandG.append('path').attr('class', 'prediction-band')
         .attr('d', bandPath(predictionBand))
-        .attr('fill', '#5b6770').attr('fill-opacity', 0.12).attr('stroke', 'none')
+        .attr('fill', '#E07020').attr('fill-opacity', 0.08)
+        .attr('stroke', '#E07020').attr('stroke-opacity', 0.75).attr('stroke-width', 1.2)
+        .attr('stroke-dasharray', '5,3')
         .attr('aria-hidden', 'true');
     }
     if (confidenceBand && confidenceBand.length > 1) {
       bandG.append('path').attr('class', 'confidence-band')
         .attr('d', bandPath(confidenceBand))
-        .attr('fill', IMS_BLUE).attr('fill-opacity', 0.20).attr('stroke', 'none')
+        .attr('fill', IMS_BLUE).attr('fill-opacity', 0.28)
+        .attr('stroke', IMS_BLUE).attr('stroke-opacity', 0.7).attr('stroke-width', 1)
         .attr('aria-hidden', 'true');
     }
   }

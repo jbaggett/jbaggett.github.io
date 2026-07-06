@@ -444,7 +444,7 @@ function renderResults(r, d, alternative, confLevel) {
     predictSection = `
       <div class="formula-display predict-at">
         <h3>Predict a response</h3>
-        <label class="x0-label">${tex('x_0')} = <input type="number" id="x0-input" value="${x0Value}" step="${step}" aria-label="x value to predict at"></label>
+        <label class="x0-label">x<sub>0</sub>&nbsp;=&nbsp;<input type="number" id="x0-input" value="${x0Value}" step="${step}" aria-label="x value to predict at"></label>
         <div id="x0-readout" aria-live="polite"></div>
       </div>`;
   }

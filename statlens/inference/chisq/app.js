@@ -418,6 +418,12 @@ function showResults(observed, rowLabels, colLabels) {
   drawChart(result);
   writeInterpretation(result);
 
+  const dsId = dataPanel.currentDatasetId;
+  if (dsId) {
+    interpretationDiv.insertAdjacentHTML('beforeend',
+      `<p class="hint">Explore this data: <a href="${buildSimLink('explore/categorical/', { dataset: dsId })}" target="_blank" rel="noopener">open in the explorer ↗</a></p>`);
+  }
+
   announce(
     `Chi-square = ${result.chiSq.toFixed(3)}, df = ${result.df}, ` +
     `p-value = ${formatStat(result.pValue, 0, 'pvalue')}.`

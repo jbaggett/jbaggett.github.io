@@ -460,6 +460,12 @@ function displayResults(r, lbl1, lbl2) {
       })()}
       <p>${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')}).</p>
     </div>
+    ${(() => {
+      const dsId = dataPanel.currentDatasetId;
+      return dsId
+        ? `<p class="hint">Explore this data: <a href="${buildSimLink('explore/categorical/', { dataset: dsId })}" target="_blank" rel="noopener">open in the explorer ↗</a></p>`
+        : '';
+    })()}
   `;
 
   // C3: link formula values (p̂₁, p̂₂, n₁, n₂, pooled p̂) to their sources in the summary.

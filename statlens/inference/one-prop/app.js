@@ -368,6 +368,12 @@ function displayResults(r, successLabel) {
       })()}</p>
       <p>${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')}).</p>
     </div>
+    ${(() => {
+      const dsId = dataPanel.currentDatasetId;
+      return dsId
+        ? `<p class="hint">Explore this data: <a href="${buildSimLink('explore/one-cat/', { dataset: dsId })}" target="_blank" rel="noopener">open in the explorer ↗</a></p>`
+        : '';
+    })()}
   `;
 
   resultBanner.innerHTML =

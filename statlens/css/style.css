@@ -4394,6 +4394,18 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .fx-lit { background: #FFE9C7 !important; outline: 2px solid #E07020; outline-offset: 1px; border-radius: 3px; }
 
 /* REQ-027: predict-at-x₀ section on the slope inference page. */
-.predict-at .x0-label { display: inline-flex; align-items: center; gap: 0.4rem; margin: 0.3rem 0 0.6rem; font-weight: 600; }
-.predict-at #x0-input { width: 8em; min-height: 40px; padding: 0.3rem 0.5rem; }
+.predict-at .x0-label { display: block; white-space: nowrap; margin: 0.3rem 0 0.6rem; font-weight: 600; }
+.predict-at #x0-input { display: inline-block; width: 7em; min-height: 40px; padding: 0.3rem 0.5rem; vertical-align: middle; margin-left: 0.3rem; box-sizing: border-box; }
 #x0-readout p { margin: 0.35rem 0; }
+
+/* Regression explorer: bands legend + interactive x₀ prediction panel. */
+.bands-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.4rem 0 0.2rem; font-size: 0.85rem; }
+.bands-legend .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.legend-swatch { display: inline-block; width: 22px; height: 12px; border-radius: 2px; vertical-align: middle; }
+.legend-ci { background: rgba(86,155,189,0.28); border: 1px solid #569BBD; }
+.legend-pi { background: rgba(224,112,32,0.10); border: 1px dashed #E07020; }
+.predict-panel { margin: 0.5rem 0 0.2rem; padding: 0.6rem 0.75rem; background: #f7fafc; border: 1px solid var(--ims-border, #d9e2e8); border-radius: 8px; }
+.predict-panel .x0-label { display: inline-block; white-space: nowrap; font-weight: 600; }
+.predict-panel #reg-x0-input { display: inline-block; width: 7em; min-height: 40px; padding: 0.3rem 0.5rem; vertical-align: middle; margin-left: 0.3rem; box-sizing: border-box; }
+.predict-drag-hint { margin-left: 0.5rem; }
+#reg-x0-readout p { margin: 0.3rem 0; }

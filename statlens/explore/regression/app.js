@@ -52,6 +52,14 @@ const showLineCheckbox = /** @type {HTMLInputElement} */ (document.getElementByI
 const showLoessCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-loess'));
 const showBandsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-bands'));
 const showResidualsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-residuals'));
+const bandsLegend = document.getElementById('bands-legend');
+const predictPanel = document.getElementById('predict-panel');
+const regX0Input = /** @type {HTMLInputElement} */ (document.getElementById('reg-x0-input'));
+const regX0Readout = document.getElementById('reg-x0-readout');
+/** Current x₀ for the prediction marker (data units); null → default to x̄. */
+let regX0 = (() => { const v = Number(new URLSearchParams(location.search).get('x0')); return isFinite(v) ? v : null; })();
+/** Last regression-intervals object + chart handle, so the marker redraws on drag/input. */
+let lastRi = null, lastChart = null;
 const equationDisplay = /** @type {HTMLDivElement} */ (document.getElementById('equation-display'));
 const statsDisplay = /** @type {HTMLDivElement} */ (document.getElementById('stats-display'));
 
@@ -185,16 +193,16 @@ function updateChart() {
 
     // Mean-response CI + prediction bands (REQ-027). Needs n ≥ 3 for df = n−2.
     const showBands = showBandsCheckbox.checked && xClean.length >= 3;
-    let confidenceBand, predictionBand;
+    let confidenceBand, predictionBand, ri = null;
     if (showBands) {
-        const ri = regressionIntervals(xClean, yClean, { confLevel: 0.95 });
+        ri = regressionIntervals(xClean, yClean, { confLevel: 0.95 });
         confidenceBand = ri.meanBand;
         predictionBand = ri.predictionBand;
     }
 
     // Draw scatterplot
     chartContainer.innerHTML = '';
-    drawScatterplot(chartContainer, xClean, yClean, {
+    const chart = drawScatterplot(chartContainer, xClean, yClean, {
         xLabel: xVar,
         yLabel: yVar,
         titleText: `Scatterplot of ${yVar} vs ${xVar}`,
@@ -205,6 +213,20 @@ function updateChart() {
         confidenceBand,
         predictionBand,
     });
+
+    // Bands legend + interactive x₀ prediction marker (only meaningful with bands).
+    lastRi = ri; lastChart = chart;
+    if (showBands && ri) {
+        renderBandsLegend();
+        if (regX0 == null || regX0 < ri.xMin || regX0 > ri.xMax) regX0 = Math.round(ri.xbar * 100) / 100;
+        if (regX0Input) { regX0Input.value = String(regX0); regX0Input.min = String(round2(ri.xMin)); regX0Input.max = String(round2(ri.xMax)); }
+        if (predictPanel) predictPanel.hidden = false;
+        drawX0Marker();
+        attachX0Drag();
+    } else {
+        if (bandsLegend) bandsLegend.hidden = true;
+        if (predictPanel) predictPanel.hidden = true;
+    }
 
     // Equation display
     const b0 = formatStat(reg.intercept, d);
@@ -265,6 +287,86 @@ function updateChart() {
     announce(`Regression: r = ${formatStat(reg.r, d, 'correlation')}, R² = ${formatStat(reg.r2, d, 'correlation')}, slope = ${formatStat(reg.slope, d)}`);
 }
 
+// ── Interactive x₀ prediction marker ───────────────────────────────────────
+const SVGNS = 'http://www.w3.org/2000/svg';
+function round2(v) { return Math.round(v * 100) / 100; }
+
+function renderBandsLegend() {
+  if (!bandsLegend) return;
+  bandsLegend.innerHTML =
+    '<span class="legend-item"><span class="legend-swatch legend-ci"></span> 95% CI — mean response (narrower)</span>' +
+    '<span class="legend-item"><span class="legend-swatch legend-pi"></span> 95% prediction interval — one new observation (wider)</span>';
+  bandsLegend.hidden = false;
+}
+
+/** @param {string} tag @param {Record<string,string|number>} attrs */
+function svgEl(tag, attrs) {
+  const el = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) el.setAttribute(k, String(attrs[k]));
+  return el;
+}
+
+/** Draw (or redraw) the x₀ marker: fitted point + mean-CI + prediction-interval whiskers. */
+function drawX0Marker() {
+  if (!lastRi || !lastChart || regX0 == null) return;
+  const { frame, xScale, yScale } = lastChart;
+  const g = frame.inner;
+  g.querySelector('.x0-marker')?.remove();
+  const marker = svgEl('g', { class: 'x0-marker', 'aria-hidden': 'true' });
+  const x0 = Math.max(lastRi.xMin, Math.min(lastRi.xMax, regX0));
+  const meanCI = lastRi.predictAt(x0, 'mean');
+  const predPI = lastRi.predictAt(x0, 'prediction');
+  const cx = xScale(x0);
+  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: 0, y2: frame.height, stroke: '#7B2D8E', 'stroke-width': 1, 'stroke-dasharray': '3,3', 'stroke-opacity': 0.55 }));
+  // Prediction interval (orange, wider) with caps
+  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(predPI.lower), y2: yScale(predPI.upper), stroke: '#E07020', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-opacity': 0.95 }));
+  for (const yv of [predPI.lower, predPI.upper]) marker.appendChild(svgEl('line', { x1: cx - 6, x2: cx + 6, y1: yScale(yv), y2: yScale(yv), stroke: '#E07020', 'stroke-width': 2 }));
+  // Mean-response CI (deep teal, narrower) on top, with its own caps
+  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(meanCI.lower), y2: yScale(meanCI.upper), stroke: '#114B5F', 'stroke-width': 4, 'stroke-linecap': 'round' }));
+  for (const yv of [meanCI.lower, meanCI.upper]) marker.appendChild(svgEl('line', { x1: cx - 4, x2: cx + 4, y1: yScale(yv), y2: yScale(yv), stroke: '#114B5F', 'stroke-width': 2 }));
+  // Fitted point + draggable handle
+  marker.appendChild(svgEl('circle', { cx, cy: yScale(meanCI.fit), r: 4, fill: '#7B2D8E', stroke: '#fff', 'stroke-width': 1.5, style: 'cursor:ew-resize' }));
+  g.appendChild(marker);
+  updateX0Readout(x0, meanCI, predPI);
+}
+
+function updateX0Readout(x0, meanCI, predPI) {
+  if (!regX0Readout) return;
+  const d = dataPrecision;
+  regX0Readout.innerHTML =
+    `<p>At <strong>${xVar} = ${formatStat(x0, d)}</strong> → fitted ${yVar} = <strong>${formatStat(meanCI.fit, d)}</strong>` +
+    (x0 <= lastRi.xMin || x0 >= lastRi.xMax ? ' <span class="hint">(edge of the data — extrapolation beyond is unreliable)</span>' : '') + '</p>' +
+    `<p><span class="legend-swatch legend-ci"></span> 95% CI for the mean: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>` +
+    `<p><span class="legend-swatch legend-pi"></span> 95% prediction interval: (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`;
+}
+
+/** Drag anywhere on the plot to set x₀ (maps pointer → data-x via the inner group CTM). */
+function attachX0Drag() {
+  if (!lastChart) return;
+  const { frame, xScale } = lastChart;
+  const g = frame.inner;
+  const svg = g.ownerSVGElement;
+  if (!svg || svg.dataset.x0Drag) return;
+  svg.dataset.x0Drag = '1'; // the SVG is recreated each updateChart, so this binds once per draw
+  svg.style.touchAction = 'none';
+  const toDataX = (evt) => {
+    const pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+    const local = pt.matrixTransform(g.getScreenCTM().inverse());
+    return xScale.invert(local.x);
+  };
+  let dragging = false;
+  const move = (evt) => {
+    if (!dragging || !lastRi) return;
+    regX0 = Math.max(lastRi.xMin, Math.min(lastRi.xMax, round2(toDataX(evt))));
+    if (regX0Input) regX0Input.value = String(regX0);
+    drawX0Marker();
+  };
+  svg.addEventListener('pointerdown', (e) => { dragging = true; try { svg.setPointerCapture(e.pointerId); } catch { /* ignore */ } move(e); });
+  svg.addEventListener('pointermove', move);
+  svg.addEventListener('pointerup', () => { dragging = false; });
+  svg.addEventListener('pointercancel', () => { dragging = false; });
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────
 
 initTabs();
@@ -315,6 +417,10 @@ yVarSelect.addEventListener('change', updateChart);
 showLineCheckbox.addEventListener('change', updateChart);
 showLoessCheckbox.addEventListener('change', updateChart);
 showBandsCheckbox.addEventListener('change', updateChart);
+regX0Input?.addEventListener('input', () => {
+  const v = Number(regX0Input.value);
+  if (isFinite(v) && lastRi) { regX0 = Math.max(lastRi.xMin, Math.min(lastRi.xMax, v)); drawX0Marker(); }
+});
 showResidualsCheckbox.addEventListener('change', updateChart);
 
 // ?bands=true (or ?interval=mean|prediction) opens with the CI/PI bands shown.
