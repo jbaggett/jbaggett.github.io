@@ -36,6 +36,7 @@ import { ptukey, qtukey } from './tukey.js';
  * @param {number} [options.mu0=0] - Null hypothesis mean
  * @param {'less'|'greater'|'two-sided'} [options.alternative='two-sided']
  * @param {number} [options.confLevel=0.95] - Confidence level
+ * @param {number} [options.bandExtendFrac=0] - Extend the returned bands past [xMin,xMax] by this fraction of the x-range (for a slight-extrapolation view)
  * @returns {OneMeanResult}
  */
 export function oneMeanT(data, options = {}) {
@@ -556,9 +557,13 @@ export function regressionIntervals(x, y, options = {}) {
     return { x: x0, fit, lower: fit - margin, upper: fit + margin, se: seFit };
   };
 
+  // Bands normally span the data [xMin, xMax]; options.bandExtendFrac widens them a
+  // little past each end so a slight-extrapolation prediction shows the bands fanning.
+  const ext = (xMax - xMin) * (options.bandExtendFrac ?? 0);
+  const bandLo = xMin - ext, bandHi = xMax + ext;
   const band = (/** @type {'mean'|'prediction'} */ kind) => {
     const pts = [];
-    for (let i = 0; i <= m; i++) pts.push(predictAt(xMin + (xMax - xMin) * (i / m), kind));
+    for (let i = 0; i <= m; i++) pts.push(predictAt(bandLo + (bandHi - bandLo) * (i / m), kind));
     return pts;
   };
 

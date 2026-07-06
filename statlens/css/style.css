@@ -4409,3 +4409,6 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .predict-panel #reg-x0-input { display: inline-block; width: 7em; min-height: 40px; padding: 0.3rem 0.5rem; vertical-align: middle; margin-left: 0.3rem; box-sizing: border-box; }
 .predict-drag-hint { margin-left: 0.5rem; }
 #reg-x0-readout p { margin: 0.3rem 0; }
+
+/* Extrapolation warning in the regression prediction readout. */
+.extrap-warn { color: #C43D1A; font-weight: 600; }

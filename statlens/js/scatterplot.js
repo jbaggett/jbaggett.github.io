@@ -57,6 +57,7 @@ export function pointRadius(n) {
  * @param {boolean} [options.minimal] - If true, hide axis labels and tick labels (show only dots + regression line)
  * @param {number} [options.yTicks] - Number of y-axis ticks (default: auto)
  * @param {number} [options.xTicks] - Number of x-axis ticks (default: auto)
+ * @param {[number,number]} [options.xDomain] - Override the x-axis domain (e.g. to show an extrapolation zone)
  * @param {boolean} [options.showExport] - Show export buttons (default: true)
  * @param {string} [options.filename] - PNG download filename
  * @returns {{ frame: ChartFrame, xScale: d3Scale.ScaleLinear<number,number>, yScale: d3Scale.ScaleLinear<number,number> }}
@@ -90,8 +91,10 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
   const xPad = isFinite(xExtent[1] - xExtent[0]) ? (xExtent[1] - xExtent[0]) * 0.05 || 0.5 : 0.5;
   const yPad = isFinite(yExtent[1] - yExtent[0]) ? (yExtent[1] - yExtent[0]) * 0.05 || 0.5 : 0.5;
 
+  // Callers can widen the x-axis (e.g. to show a slight-extrapolation zone for
+  // prediction) via options.xDomain; otherwise use the data extent + 5% padding.
   const xScale = d3Scale.scaleLinear()
-    .domain([xExtent[0] - xPad, xExtent[1] + xPad])
+    .domain(options.xDomain ?? [xExtent[0] - xPad, xExtent[1] + xPad])
     .range([0, frame.width]);
 
   const yScale = d3Scale.scaleLinear()

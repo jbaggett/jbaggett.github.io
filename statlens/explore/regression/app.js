@@ -62,6 +62,11 @@ let regX0 = (() => { const v = Number(new URLSearchParams(location.search).get('
 let urlVarsApplied = false;
 /** Last regression-intervals object + chart handle, so the marker redraws on drag/input. */
 let lastRi = null, lastChart = null;
+/** Allow a slight extrapolation margin (fraction of the x-range) beyond the data for
+ *  predictions — enough to see the bands fan out, with an extrapolation warning. */
+const EXTRAP = 0.1;
+/** Draggable x₀ bounds (data range + extrapolation margin). */
+let regBound = null;
 const equationDisplay = /** @type {HTMLDivElement} */ (document.getElementById('equation-display'));
 const statsDisplay = /** @type {HTMLDivElement} */ (document.getElementById('stats-display'));
 
@@ -204,11 +209,18 @@ function updateChart() {
 
     // Mean-response CI + prediction bands (REQ-027). Needs n ≥ 3 for df = n−2.
     const showBands = showBandsCheckbox.checked && xClean.length >= 3;
-    let confidenceBand, predictionBand, ri = null;
+    let confidenceBand, predictionBand, ri = null, xDomain;
     if (showBands) {
-        ri = regressionIntervals(xClean, yClean, { confLevel: 0.95 });
+        ri = regressionIntervals(xClean, yClean, { confLevel: 0.95, bandExtendFrac: EXTRAP });
         confidenceBand = ri.meanBand;
         predictionBand = ri.predictionBand;
+        const margin = (ri.xMax - ri.xMin) * EXTRAP;
+        regBound = { min: ri.xMin - margin, max: ri.xMax + margin };
+        // Widen the chart a touch beyond the extrapolation margin so the marker fits.
+        const pad = (ri.xMax - ri.xMin) * 0.03;
+        xDomain = [regBound.min - pad, regBound.max + pad];
+    } else {
+        regBound = null;
     }
 
     // Draw scatterplot
@@ -223,14 +235,15 @@ function updateChart() {
         loessCurve: loessCurveData,
         confidenceBand,
         predictionBand,
+        xDomain,
     });
 
     // Bands legend + interactive x₀ prediction marker (only meaningful with bands).
     lastRi = ri; lastChart = chart;
     if (showBands && ri) {
         renderBandsLegend();
-        if (regX0 == null || regX0 < ri.xMin || regX0 > ri.xMax) regX0 = Math.round(ri.xbar * 100) / 100;
-        if (regX0Input) { regX0Input.value = String(regX0); regX0Input.min = String(round2(ri.xMin)); regX0Input.max = String(round2(ri.xMax)); }
+        if (regX0 == null || regX0 < regBound.min || regX0 > regBound.max) regX0 = Math.round(ri.xbar * 100) / 100;
+        if (regX0Input) { regX0Input.value = String(regX0); regX0Input.min = String(round2(regBound.min)); regX0Input.max = String(round2(regBound.max)); }
         if (predictPanel) predictPanel.hidden = false;
         drawX0Marker();
         attachX0Drag();
@@ -324,7 +337,7 @@ function drawX0Marker() {
   const g = frame.inner;
   g.querySelector('.x0-marker')?.remove();
   const marker = svgEl('g', { class: 'x0-marker', 'aria-hidden': 'true' });
-  const x0 = Math.max(lastRi.xMin, Math.min(lastRi.xMax, regX0));
+  const x0 = Math.max(regBound?.min ?? lastRi.xMin, Math.min(regBound?.max ?? lastRi.xMax, regX0));
   const meanCI = lastRi.predictAt(x0, 'mean');
   const predPI = lastRi.predictAt(x0, 'prediction');
   const cx = xScale(x0);
@@ -349,7 +362,7 @@ function updateX0Readout(x0, meanCI, predPI) {
   const d = dataPrecision;
   regX0Readout.innerHTML =
     `<p>At <strong>${xVar} = ${formatStat(x0, d)}</strong> → fitted ${yVar} = <strong>${formatStat(meanCI.fit, d)}</strong>` +
-    (x0 <= lastRi.xMin || x0 >= lastRi.xMax ? ' <span class="hint">(edge of the data — extrapolation beyond is unreliable)</span>' : '') + '</p>' +
+    (x0 < lastRi.xMin - 1e-9 || x0 > lastRi.xMax + 1e-9 ? ' <span class="extrap-warn">⚠ extrapolating beyond the observed data — this prediction is unreliable</span>' : '') + '</p>' +
     `<p><span class="legend-swatch legend-ci"></span> 95% CI for the mean: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>` +
     `<p><span class="legend-swatch legend-pi"></span> 95% prediction interval: (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`;
 }
@@ -371,7 +384,7 @@ function attachX0Drag() {
   let dragging = false;
   const move = (evt) => {
     if (!dragging || !lastRi) return;
-    regX0 = Math.max(lastRi.xMin, Math.min(lastRi.xMax, round2(toDataX(evt))));
+    regX0 = Math.max(regBound?.min ?? lastRi.xMin, Math.min(regBound?.max ?? lastRi.xMax, round2(toDataX(evt))));
     if (regX0Input) regX0Input.value = String(regX0);
     drawX0Marker();
   };
@@ -433,7 +446,7 @@ showLoessCheckbox.addEventListener('change', updateChart);
 showBandsCheckbox.addEventListener('change', updateChart);
 regX0Input?.addEventListener('input', () => {
   const v = Number(regX0Input.value);
-  if (isFinite(v) && lastRi) { regX0 = Math.max(lastRi.xMin, Math.min(lastRi.xMax, v)); drawX0Marker(); }
+  if (isFinite(v) && lastRi) { regX0 = Math.max(regBound?.min ?? lastRi.xMin, Math.min(regBound?.max ?? lastRi.xMax, v)); drawX0Marker(); }
 });
 showResidualsCheckbox.addEventListener('change', updateChart);
 
