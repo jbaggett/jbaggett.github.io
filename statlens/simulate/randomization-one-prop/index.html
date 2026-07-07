@@ -57,11 +57,6 @@
                     </select>
                 </label>
                 <p id="dataset-desc" class="hint"></p>
-                <div id="success-selector" hidden>
-                    <label for="success-outcome">Count as success:
-                        <select id="success-outcome"></select>
-                    </label>
-                </div>
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
@@ -100,6 +95,11 @@
         </section>
 
         <section id="controls" aria-label="Simulation controls">
+            <div id="success-selector" class="success-selector-row" hidden>
+                <label for="success-outcome">Count as success:
+                    <select id="success-outcome"></select>
+                </label>
+            </div>
             <div id="hypothesis-display" class="hypothesis-display" hidden>
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H₀:</span>
