@@ -385,8 +385,13 @@ function updateX0Readout(x0, fit, meanCI, predPI) {
   if (!regX0Readout) return;
   const d = dataPrecision;
   const extrap = x0 < lastReg.xMin - 1e-9 || x0 > lastReg.xMax + 1e-9;
-  let html = `<p>At <strong>${xVar} = ${formatStat(x0, d)}</strong> → predicted ${yVar} = <strong>${formatStat(fit, d)}</strong>`
-    + (extrap ? ' <span class="extrap-warn">⚠ extrapolating beyond the observed data — this prediction is unreliable</span>' : '') + '</p>';
+  // Show the prediction worked through the fitted equation ŷ = b₀ + b₁x.
+  const b0 = formatStat(lastReg.intercept, d);
+  const sign = lastReg.slope >= 0 ? '+' : '−';
+  const b1 = formatStat(Math.abs(lastReg.slope), d);
+  let html = `<p>At <strong>${xVar} = ${formatStat(x0, d)}</strong>, plug into the fitted line:</p>`
+    + `<p class="predict-eqn">&#375; = b<sub>0</sub> + b<sub>1</sub>x = ${b0} ${sign} ${b1} &times; ${formatStat(x0, d)} = <strong>${formatStat(fit, d)}</strong></p>`
+    + (extrap ? '<p><span class="extrap-warn">⚠ extrapolating beyond the observed data — this prediction is unreliable</span></p>' : '');
   if (meanCI) html += `<p><span class="legend-swatch legend-ci"></span> 95% CI for the mean: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>`;
   if (predPI) html += `<p><span class="legend-swatch legend-pi"></span> 95% prediction interval: (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`;
   regX0Readout.innerHTML = html;

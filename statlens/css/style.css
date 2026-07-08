@@ -4399,7 +4399,7 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 #x0-readout p { margin: 0.35rem 0; }
 
 /* Regression explorer: bands legend + interactive x₀ prediction panel. */
-.bands-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.4rem 0 0.2rem; font-size: 0.85rem; }
+.bands-legend:not([hidden]) { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.4rem 0 0.2rem; font-size: 0.85rem; }
 .bands-legend .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
 .legend-swatch { display: inline-block; width: 22px; height: 12px; border-radius: 2px; vertical-align: middle; }
 .legend-ci { background: rgba(86,155,189,0.28); border: 1px solid #569BBD; }
@@ -4420,3 +4420,6 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 /* Help dialog feature list. */
 .help-list { margin: 0.5rem 0 0.75rem; padding-left: 1.2rem; }
 .help-list li { margin: 0.35rem 0; }
+
+/* Worked prediction equation ŷ = b₀ + b₁x in the readout. */
+.predict-eqn { font-size: 1.02rem; margin: 0.2rem 0 0.4rem; }
