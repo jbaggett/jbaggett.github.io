@@ -4416,3 +4416,7 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 /* "Count as success" selector — surfaced in Test parameters (not the collapsing data panel). */
 .success-selector-row { margin: 0 0 0.6rem; font-weight: 600; }
 .success-selector-row select { min-height: 40px; margin-left: 0.4rem; padding: 0.25rem 0.4rem; }
+
+/* Help dialog feature list. */
+.help-list { margin: 0.5rem 0 0.75rem; padding-left: 1.2rem; }
+.help-list li { margin: 0.35rem 0; }

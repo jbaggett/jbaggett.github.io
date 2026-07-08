@@ -222,7 +222,12 @@
     
     <dialog id="page-help" aria-label="Help">
         <h2>Help</h2>
-        <p class="help-intro">Load a dataset to explore the relationship between two quantitative variables with scatterplots and regression lines.</p>
+        <p class="help-intro">Explore the relationship between two quantitative variables. Pick the X (predictor) and Y (response) variables to see the scatterplot and its best-fit regression line.</p>
+        <ul class="help-list">
+            <li><strong>Regression line</strong> — the best-fit line through the points. Its equation (ŷ = a + b·x), the correlation r, and R² appear below the plot.</li>
+            <li><strong>Predict a response</strong> — drag the point along the line, or type a value of x in the "Predict at x₀" box, to read off the predicted y at that x. A purple guide traces it to each axis. Predicting a little beyond the data is allowed, with a note that it's an extrapolation (and less reliable).</li>
+            <li><strong>Other options</strong> — you can also add a LOESS smoother, a residual plot, or (optional) confidence &amp; prediction bands.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
