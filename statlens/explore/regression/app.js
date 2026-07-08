@@ -51,6 +51,7 @@ const residualChartContainer = /** @type {HTMLDivElement} */ (document.getElemen
 const showLineCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-line'));
 const showLoessCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-loess'));
 const showBandsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-bands'));
+const showPredictCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-predict'));
 const showResidualsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-residuals'));
 const bandsLegend = document.getElementById('bands-legend');
 const predictPanel = document.getElementById('predict-panel');
@@ -60,8 +61,9 @@ const regX0Readout = document.getElementById('reg-x0-readout');
 let regX0 = (() => { const v = Number(new URLSearchParams(location.search).get('x0')); return isFinite(v) ? v : null; })();
 /** Apply ?x=/?y= only on the first dataset load. */
 let urlVarsApplied = false;
-/** Last regression-intervals object + chart handle, so the marker redraws on drag/input. */
-let lastRi = null, lastChart = null;
+/** Last chart handle + fit (slope/intercept/data-range) for the marker; ri only when
+ *  bands are on. Prediction uses lastReg (works without bands); intervals use lastRi. */
+let lastRi = null, lastChart = null, lastReg = null;
 /** Allow a slight extrapolation margin (fraction of the x-range) beyond the data for
  *  predictions — enough to see the bands fan out, with an extrapolation warning. */
 const EXTRAP = 0.1;
@@ -207,20 +209,31 @@ function updateChart() {
     const showLoess = showLoessCheckbox.checked;
     const loessCurveData = showLoess ? loess(xClean, yClean) : undefined;
 
-    // Mean-response CI + prediction bands (REQ-027). Needs n ≥ 3 for df = n−2.
+    // Prediction (drag/enter x → predicted ŷ) and the CI/prediction bands are now
+    // INDEPENDENT toggles. Prediction needs only the fitted line (n ≥ 2); the bands
+    // and interval whiskers need ri (n ≥ 3). A course can show predictions without
+    // ever showing intervals.
+    const showPredict = showPredictCheckbox.checked && xClean.length >= 2;
     const showBands = showBandsCheckbox.checked && xClean.length >= 3;
-    let confidenceBand, predictionBand, ri = null, xDomain;
-    if (showBands) {
-        ri = regressionIntervals(xClean, yClean, { confLevel: 0.95, bandExtendFrac: EXTRAP });
-        confidenceBand = ri.meanBand;
-        predictionBand = ri.predictionBand;
-        const margin = (ri.xMax - ri.xMin) * EXTRAP;
-        regBound = { min: ri.xMin - margin, max: ri.xMax + margin };
-        // Widen the chart a touch beyond the extrapolation margin so the marker fits.
-        const pad = (ri.xMax - ri.xMin) * 0.03;
+
+    const xMin = Math.min(...xClean), xMax = Math.max(...xClean);
+    const xbar = xClean.reduce((a, b) => a + b, 0) / xClean.length;
+    let xDomain;
+    if (showPredict) {
+        const margin = (xMax - xMin) * EXTRAP; // allow a slight extrapolation
+        regBound = { min: xMin - margin, max: xMax + margin };
+        const pad = (xMax - xMin) * 0.03;
         xDomain = [regBound.min - pad, regBound.max + pad];
     } else {
         regBound = null;
+    }
+
+    let confidenceBand, predictionBand, ri = null;
+    if (showBands) {
+        // Extend the bands into the extrapolation margin only when the marker is shown.
+        ri = regressionIntervals(xClean, yClean, { confLevel: 0.95, bandExtendFrac: showPredict ? EXTRAP : 0 });
+        confidenceBand = ri.meanBand;
+        predictionBand = ri.predictionBand;
     }
 
     // Draw scatterplot
@@ -238,18 +251,22 @@ function updateChart() {
         xDomain,
     });
 
-    // Bands legend + interactive x₀ prediction marker (only meaningful with bands).
-    lastRi = ri; lastChart = chart;
-    if (showBands && ri) {
-        renderBandsLegend();
-        if (regX0 == null || regX0 < regBound.min || regX0 > regBound.max) regX0 = Math.round(ri.xbar * 100) / 100;
+    lastChart = chart;
+    lastRi = ri; // null unless bands are on
+    lastReg = { slope: reg.slope, intercept: reg.intercept, xMin, xMax };
+
+    // Bands legend only with bands; prediction marker/panel only with predict.
+    if (showBands && ri) renderBandsLegend();
+    else if (bandsLegend) bandsLegend.hidden = true;
+
+    if (showPredict) {
+        if (regX0 == null || regX0 < regBound.min || regX0 > regBound.max) regX0 = round2(xbar);
         if (regX0Input) { regX0Input.value = String(regX0); regX0Input.min = String(round2(regBound.min)); regX0Input.max = String(round2(regBound.max)); }
         if (predictPanel) predictPanel.hidden = false;
         drawX0Marker();
         attachX0Drag();
-    } else {
-        if (bandsLegend) bandsLegend.hidden = true;
-        if (predictPanel) predictPanel.hidden = true;
+    } else if (predictPanel) {
+        predictPanel.hidden = true;
     }
 
     // Equation display
@@ -330,41 +347,49 @@ function svgEl(tag, attrs) {
   return el;
 }
 
-/** Draw (or redraw) the x₀ marker: fitted point + mean-CI + prediction-interval whiskers. */
+/** Draw (or redraw) the x₀ marker: predicted point + (only with bands) CI/PI whiskers. */
 function drawX0Marker() {
-  if (!lastRi || !lastChart || regX0 == null) return;
+  if (!lastReg || !lastChart || regX0 == null) return;
   const { frame, xScale, yScale } = lastChart;
   const g = frame.inner;
   g.querySelector('.x0-marker')?.remove();
   const marker = svgEl('g', { class: 'x0-marker', 'aria-hidden': 'true' });
-  const x0 = Math.max(regBound?.min ?? lastRi.xMin, Math.min(regBound?.max ?? lastRi.xMax, regX0));
-  const meanCI = lastRi.predictAt(x0, 'mean');
-  const predPI = lastRi.predictAt(x0, 'prediction');
+  const x0 = Math.max(regBound?.min ?? lastReg.xMin, Math.min(regBound?.max ?? lastReg.xMax, regX0));
+  const fit = lastReg.intercept + lastReg.slope * x0;
   const cx = xScale(x0);
-  // Visible dashed guide + a wide transparent grab handle so ANY point along the
-  // full height of the line can be grabbed and dragged (cursor signals it).
+  // Visible dashed vertical guide + a wide transparent grab handle so ANY point along
+  // its full height can be grabbed and dragged (cursor signals it).
   marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: 0, y2: frame.height, stroke: '#7B2D8E', 'stroke-width': 1.5, 'stroke-dasharray': '4,3', 'stroke-opacity': 0.6, style: 'cursor:ew-resize' }));
   marker.appendChild(svgEl('line', { class: 'x0-grab', x1: cx, x2: cx, y1: 0, y2: frame.height, stroke: 'transparent', 'stroke-width': 20, style: 'cursor:ew-resize' }));
-  // Prediction interval (orange, wider) with caps
-  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(predPI.lower), y2: yScale(predPI.upper), stroke: '#E07020', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-opacity': 0.95 }));
-  for (const yv of [predPI.lower, predPI.upper]) marker.appendChild(svgEl('line', { x1: cx - 6, x2: cx + 6, y1: yScale(yv), y2: yScale(yv), stroke: '#E07020', 'stroke-width': 2 }));
-  // Mean-response CI (deep teal, narrower) on top, with its own caps
-  marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(meanCI.lower), y2: yScale(meanCI.upper), stroke: '#114B5F', 'stroke-width': 4, 'stroke-linecap': 'round' }));
-  for (const yv of [meanCI.lower, meanCI.upper]) marker.appendChild(svgEl('line', { x1: cx - 4, x2: cx + 4, y1: yScale(yv), y2: yScale(yv), stroke: '#114B5F', 'stroke-width': 2 }));
-  // Fitted point + draggable handle
-  marker.appendChild(svgEl('circle', { cx, cy: yScale(meanCI.fit), r: 4, fill: '#7B2D8E', stroke: '#fff', 'stroke-width': 1.5, style: 'cursor:ew-resize' }));
+  // Horizontal guide from the y-axis to the point — read the predicted ŷ off the axis.
+  marker.appendChild(svgEl('line', { x1: 0, x2: cx, y1: yScale(fit), y2: yScale(fit), stroke: '#7B2D8E', 'stroke-width': 1, 'stroke-dasharray': '4,3', 'stroke-opacity': 0.4 }));
+
+  // CI / prediction-interval whiskers — ONLY when the bands are shown.
+  let meanCI = null, predPI = null;
+  if (lastRi) {
+    meanCI = lastRi.predictAt(x0, 'mean');
+    predPI = lastRi.predictAt(x0, 'prediction');
+    marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(predPI.lower), y2: yScale(predPI.upper), stroke: '#E07020', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-opacity': 0.95 }));
+    for (const yv of [predPI.lower, predPI.upper]) marker.appendChild(svgEl('line', { x1: cx - 6, x2: cx + 6, y1: yScale(yv), y2: yScale(yv), stroke: '#E07020', 'stroke-width': 2 }));
+    marker.appendChild(svgEl('line', { x1: cx, x2: cx, y1: yScale(meanCI.lower), y2: yScale(meanCI.upper), stroke: '#114B5F', 'stroke-width': 4, 'stroke-linecap': 'round' }));
+    for (const yv of [meanCI.lower, meanCI.upper]) marker.appendChild(svgEl('line', { x1: cx - 4, x2: cx + 4, y1: yScale(yv), y2: yScale(yv), stroke: '#114B5F', 'stroke-width': 2 }));
+  }
+  // Predicted point + draggable handle
+  marker.appendChild(svgEl('circle', { cx, cy: yScale(fit), r: 4.5, fill: '#7B2D8E', stroke: '#fff', 'stroke-width': 1.5, style: 'cursor:ew-resize' }));
   g.appendChild(marker);
-  updateX0Readout(x0, meanCI, predPI);
+  updateX0Readout(x0, fit, meanCI, predPI);
 }
 
-function updateX0Readout(x0, meanCI, predPI) {
+/** @param {number} x0 @param {number} fit @param {any} meanCI @param {any} predPI */
+function updateX0Readout(x0, fit, meanCI, predPI) {
   if (!regX0Readout) return;
   const d = dataPrecision;
-  regX0Readout.innerHTML =
-    `<p>At <strong>${xVar} = ${formatStat(x0, d)}</strong> → fitted ${yVar} = <strong>${formatStat(meanCI.fit, d)}</strong>` +
-    (x0 < lastRi.xMin - 1e-9 || x0 > lastRi.xMax + 1e-9 ? ' <span class="extrap-warn">⚠ extrapolating beyond the observed data — this prediction is unreliable</span>' : '') + '</p>' +
-    `<p><span class="legend-swatch legend-ci"></span> 95% CI for the mean: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>` +
-    `<p><span class="legend-swatch legend-pi"></span> 95% prediction interval: (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`;
+  const extrap = x0 < lastReg.xMin - 1e-9 || x0 > lastReg.xMax + 1e-9;
+  let html = `<p>At <strong>${xVar} = ${formatStat(x0, d)}</strong> → predicted ${yVar} = <strong>${formatStat(fit, d)}</strong>`
+    + (extrap ? ' <span class="extrap-warn">⚠ extrapolating beyond the observed data — this prediction is unreliable</span>' : '') + '</p>';
+  if (meanCI) html += `<p><span class="legend-swatch legend-ci"></span> 95% CI for the mean: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>`;
+  if (predPI) html += `<p><span class="legend-swatch legend-pi"></span> 95% prediction interval: (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`;
+  regX0Readout.innerHTML = html;
 }
 
 /** Drag anywhere on the plot to set x₀ (maps pointer → data-x via the inner group CTM). */
@@ -384,7 +409,7 @@ function attachX0Drag() {
   let dragging = false;
   const move = (evt) => {
     if (!dragging || !lastRi) return;
-    regX0 = Math.max(regBound?.min ?? lastRi.xMin, Math.min(regBound?.max ?? lastRi.xMax, round2(toDataX(evt))));
+    regX0 = Math.max(regBound?.min ?? lastReg.xMin, Math.min(regBound?.max ?? lastReg.xMax, round2(toDataX(evt))));
     if (regX0Input) regX0Input.value = String(regX0);
     drawX0Marker();
   };
@@ -444,14 +469,20 @@ yVarSelect.addEventListener('change', updateChart);
 showLineCheckbox.addEventListener('change', updateChart);
 showLoessCheckbox.addEventListener('change', updateChart);
 showBandsCheckbox.addEventListener('change', updateChart);
+showPredictCheckbox.addEventListener('change', updateChart);
 regX0Input?.addEventListener('input', () => {
   const v = Number(regX0Input.value);
-  if (isFinite(v) && lastRi) { regX0 = Math.max(regBound?.min ?? lastRi.xMin, Math.min(regBound?.max ?? lastRi.xMax, v)); drawX0Marker(); }
+  if (isFinite(v) && lastReg) { regX0 = Math.max(regBound?.min ?? lastReg.xMin, Math.min(regBound?.max ?? lastReg.xMax, v)); drawX0Marker(); }
 });
 showResidualsCheckbox.addEventListener('change', updateChart);
 
-// ?bands=true (or ?interval=mean|prediction) opens with the CI/PI bands shown.
+// URL params (independent): ?predict=true opens the draggable prediction marker;
+// ?bands=true (alias ?interval=) opens the CI/PI bands. For backward compatibility,
+// ?bands=true also turns prediction on (bands used to imply the marker).
 const _p = new URLSearchParams(location.search);
-if (['true', '1', 'mean', 'prediction', 'both'].includes((_p.get('bands') || _p.get('interval') || '').toLowerCase())) {
-  showBandsCheckbox.checked = true;
-}
+const bandsOn = ['true', '1', 'mean', 'prediction', 'both'].includes((_p.get('bands') || _p.get('interval') || '').toLowerCase());
+const predictParam = (_p.get('predict') || '').toLowerCase();
+if (bandsOn) showBandsCheckbox.checked = true;
+// Prediction is on by default; ?predict=false turns it off, ?predict=true/bands=true keep it on.
+if (predictParam === 'false' || predictParam === '0') showPredictCheckbox.checked = false;
+else if (predictParam === 'true' || predictParam === '1' || bandsOn) showPredictCheckbox.checked = true;
