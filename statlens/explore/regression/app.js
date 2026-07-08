@@ -408,7 +408,7 @@ function attachX0Drag() {
   };
   let dragging = false;
   const move = (evt) => {
-    if (!dragging || !lastRi) return;
+    if (!dragging || !lastReg) return;
     regX0 = Math.max(regBound?.min ?? lastReg.xMin, Math.min(regBound?.max ?? lastReg.xMax, round2(toDataX(evt))));
     if (regX0Input) regX0Input.value = String(regX0);
     drawX0Marker();
