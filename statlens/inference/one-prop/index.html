@@ -93,7 +93,7 @@
                     <label for="input-success-label">Success label (optional):
                         <input type="text" id="input-success-label" placeholder="e.g., Heads">
                     </label>
-                    <button type="button" id="load-summary" class="btn-primary">Load</button>
+                    <p class="hint" style="flex-basis:100%;margin:0.2rem 0 0;">Results update as you type — no need to press anything.</p>
                 </div>
             </div>
 
@@ -132,7 +132,6 @@
                     <input type="number" id="input-conf-level" min="0.01" max="0.99"
                            step="0.01" value="0.95" class="input-narrow">
                 </label>
-                <button type="button" id="compute-btn" class="btn-primary">Compute</button>
             </div>
         </section>
 
@@ -148,7 +147,7 @@
                 </div>
                 <aside class="app-sidebar" id="results">
                     <div id="results-panel" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </aside>
             </div>

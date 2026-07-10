@@ -60,7 +60,7 @@ inputP0.addEventListener('input', () => {
   if (resultsPanel.querySelector('.results-table')) compute();
 });
 
-initTabs({ hintTarget: resultsPanel, hintAction: 'click Compute' });
+initTabs({ hintTarget: resultsPanel, hintAction: 'see results' });
 initKeyboardShortcuts();
 
 // ── State ───────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ const dataPanel = initDataPanel({
     if (variableSelectors) variableSelectors.hidden = true;
     if (successSelector) successSelector.hidden = true;
     chartContainer.innerHTML = '';
-    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;
+    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
     resultBanner.innerHTML = '';
     announce('Data cleared.');
   },
@@ -307,13 +307,13 @@ for (const el of [inputX1, inputN1, inputX2, inputN2, inputLabel1, inputLabel2])
 }
 
 // ── Event listeners ─────────────────────────────────────────────────
-computeBtn.addEventListener('click', compute);
-
-for (const el of [inputConfLevel]) {
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); compute(); }
-  });
-}
+// No Compute button — every input recomputes live. Confidence level recomputes on
+// change (blur / Enter / spinner); the null value, alternative, success outcome, and
+// summary fields already recompute on change/typing.
+computeBtn?.addEventListener('click', compute);
+inputConfLevel.addEventListener('change', () => {
+  if (resultsPanel.querySelector('.results-table')) compute();
+});
 
 // Note: alternative change handler is wired via initHypToggle callback above
 

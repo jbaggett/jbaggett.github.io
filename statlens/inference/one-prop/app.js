@@ -46,7 +46,7 @@ const successSelector = document.getElementById('success-selector');
 const successOutcome = /** @type {HTMLSelectElement|null} */ (document.getElementById('success-outcome'));
 const loadSummaryBtn = document.getElementById('load-summary');
 
-initTabs({ hintTarget: resultsPanel, hintAction: 'click Compute' });
+initTabs({ hintTarget: resultsPanel, hintAction: 'see results' });
 initKeyboardShortcuts();
 
 // ── State ───────────────────────────────────────────────────────────
@@ -128,7 +128,7 @@ const dataPanel = initDataPanel({
     if (successSelector) successSelector.hidden = true;
     if (variableSelector) variableSelector.hidden = true;
     chartContainer.innerHTML = '';
-    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;
+    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
     resultBanner.innerHTML = '';
     announce('Data cleared.');
   },
@@ -188,29 +188,40 @@ function countAndLoad(values, successValue, sourceName) {
 
 // ── Summary input ───────────────────────────────────────────────────
 
+/** Is the "Enter Summary" tab active? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/** Read + validate the summary fields into the current-sample state.
+ *  @param {boolean} [quiet] - suppress error announcements during live typing
+ *  @returns {boolean} true if the fields form a valid one-proportion summary */
+function applySummaryInputs(quiet) {
+  const successes = Math.round(Number(inputSuccesses.value));
+  const n = Math.round(Number(inputN.value));
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!Number.isFinite(n) || n < 1) return fail('Sample size must be at least 1.');
+  if (!Number.isFinite(successes) || successes < 0 || successes > n) return fail('Successes must be between 0 and n.');
+  currentSuccesses = successes;
+  currentN = n;
+  currentSuccessLabel = inputSuccessLabel.value.trim() || 'successes';
+  fromRawData = false;
+  if (dataSummary) {
+    dataSummary.textContent = `Summary: n = ${currentN}, ${currentSuccessLabel} = ${currentSuccesses} (p\u0302 = ${formatStat(currentSuccesses / currentN, 0, 'proportion')})`;
+  }
+  return true;
+}
+
+// Optional explicit "Load" button (if present) \u2014 same path as typing.
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const successes = Math.round(Number(inputSuccesses.value));
-    const n = Math.round(Number(inputN.value));
-    if (!Number.isFinite(n) || n < 1) {
-      announce('Sample size must be at least 1.');
-      return;
-    }
-    if (!Number.isFinite(successes) || successes < 0 || successes > n) {
-      announce('Successes must be between 0 and n.');
-      return;
-    }
-    currentSuccesses = successes;
-    currentN = n;
-    currentSuccessLabel = inputSuccessLabel.value.trim() || 'successes';
-    fromRawData = false;
-
-    if (dataSummary) {
-      dataSummary.textContent = `Summary: n = ${currentN}, ${currentSuccessLabel} = ${currentSuccesses} (p\u0302 = ${formatStat(currentSuccesses / currentN, 0, 'proportion')})`;
-    }
-    dataPanel.triggerPostLoad();
-    announce(`Loaded summary: n = ${n}, successes = ${successes}.`);
+    if (applySummaryInputs()) { dataPanel.triggerPostLoad(); compute(); }
   });
+}
+
+// Live update: typing valid summary stats recomputes immediately \u2014 no button needed.
+for (const el of [inputSuccesses, inputN, inputSuccessLabel]) {
+  el.addEventListener('input', () => { if (summaryActive() && applySummaryInputs(true)) compute(); });
 }
 
 // ── Null value mirror (auto-fill Hₐ display) ─────────────────────
@@ -222,13 +233,12 @@ inputP0.addEventListener('input', syncNullDisplay);
 syncNullDisplay();
 
 // ── Event listeners ─────────────────────────────────────────────────
-computeBtn.addEventListener('click', compute);
-
-for (const el of [inputP0, inputConfLevel]) {
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); compute(); }
-  });
-}
+// No Compute button — every input recomputes live. Null value, success outcome, and
+// summary fields recompute on change/typing; confidence level recomputes on change.
+computeBtn?.addEventListener('click', compute);
+inputConfLevel.addEventListener('change', () => {
+  if (resultsPanel.querySelector('.results-table')) compute();
+});
 
 // Note: alternative change handler is wired via initHypToggle callback above
 
