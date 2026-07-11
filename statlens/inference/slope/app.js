@@ -564,7 +564,7 @@ function drawChart(result) {
   });
 
   addInferenceAnnotations(chart, {
-    statValue: Math.abs(tStat),
+    statValue: tail === 'both' ? Math.abs(tStat) : tStat, // signed for one-sided so the line aligns with the shaded tail
     statLabel: 't',
     pValue: result.pValue,
     pdfFn,
