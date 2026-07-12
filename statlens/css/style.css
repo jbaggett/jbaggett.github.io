@@ -4424,6 +4424,10 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 /* Worked prediction equation ŷ = b₀ + b₁x in the readout. */
 .predict-eqn { font-size: 1.02rem; margin: 0.2rem 0 0.4rem; }
 
-/* Confidence level folded into the hypothesis line (flex-wrap) to save vertical space. */
-.hypothesis-display .conf-inline { display: inline-flex; flex-direction: row; align-items: baseline; gap: 0.4rem; font-size: 0.9rem; font-weight: 600; white-space: nowrap; flex: none; }
-.hypothesis-display .conf-inline input[type="number"] { width: 4.5rem; display: inline-block; flex: none; }
+
+/* Confidence-level control lives with the CI in the results sidebar (kept clearly
+   apart from the hypothesis test + figure to avoid conflating it with a sig. level). */
+.ci-level-control { margin: 0 0 0.7rem; padding-bottom: 0.55rem; border-bottom: 1px solid var(--ims-border, #e2e8ee); }
+.ci-level-control label { display: inline-flex; flex-direction: row; align-items: baseline; gap: 0.4rem; font-size: 0.9rem; font-weight: 600; }
+.ci-level-control input[type="number"] { width: 4.5rem; display: inline-block; }
+.ci-level-control select { width: auto; }

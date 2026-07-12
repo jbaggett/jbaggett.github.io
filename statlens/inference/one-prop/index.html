@@ -126,10 +126,6 @@
                             data-value="two-sided">&ne;</button>
                     <span id="null-display" class="null-value-mirror">0.5</span>
                 </div>
-                <label class="conf-inline" for="input-conf-level">Confidence level
-                    <input type="number" id="input-conf-level" min="0.01" max="0.99"
-                           step="0.01" value="0.95" class="input-narrow">
-                </label>
             </div>
         </section>
 
@@ -144,6 +140,12 @@
                     </figure>
                 </div>
                 <aside class="app-sidebar" id="results">
+                    <div class="ci-level-control">
+                        <label for="input-conf-level">Confidence level
+                            <input type="number" id="input-conf-level" min="0.01" max="0.99"
+                                   step="0.01" value="0.95" class="input-narrow">
+                        </label>
+                    </div>
                     <div id="results-panel" tabindex="-1">
                         <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
