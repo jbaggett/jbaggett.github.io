@@ -256,6 +256,7 @@ export function createBinAdjuster(parent, opts) {
  * @property {[number,number]} [domain]
  * @property {number} [maxStack]
  * @property {number} [binWidth]
+ * @property {(count: number) => number} [countToY] - Dotplot only: count → pixel y.
  */
 
 /**
@@ -317,6 +318,8 @@ export function renderSimChart(container, stats, opts) {
   let dotMaxStack;
   /** @type {number|undefined} */
   let dotBinWidth;
+  /** @type {((count: number) => number)|undefined} */
+  let dotCountToY;
 
   if (opts.chartType === 'dotplot') {
     const r = drawDotplot(container, stats, {
@@ -339,9 +342,12 @@ export function renderSimChart(container, stats, opts) {
     });
     frame = r.frame;
     xScale = r.xScale;
-    // Build a yScale from dotplot stack heights (for theory overlay)
     dotMaxStack = r.maxStack;
     dotBinWidth = r.binWidth;
+    // The dotplot's own count → pixel-y mapping, which an overlay (e.g. a theory
+    // curve) must use to line up: stacked dots at small n, a y-axis scale once the
+    // stacks overflow into filled columns.
+    dotCountToY = r.countToY;
     if (r.maxStack > 0 && frame) {
       yScale = d3Scale.scaleLinear()
         .domain([0, r.maxStack * 1.05])
@@ -390,5 +396,5 @@ export function renderSimChart(container, stats, opts) {
     }
   }
 
-  return { frame, xScale, yScale, bins, domain: chartDomain, maxStack: dotMaxStack, binWidth: dotBinWidth };
+  return { frame, xScale, yScale, bins, domain: chartDomain, maxStack: dotMaxStack, binWidth: dotBinWidth, countToY: dotCountToY };
 }

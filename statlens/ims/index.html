@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StatLens for IMS — Introduction to Modern Statistics | StatLens</title>
+    <meta name="description" content="StatLens, a free and accessible simulation-first statistics toolkit, organized by chapter of OpenIntro's Introduction to Modern Statistics (IMS).">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../manifest.json">
+    <link rel="apple-touch-icon" href="../icon-192.png">
+
+    <style>
+        .ims-intro { max-width: 60ch; }
+        .ims-part { margin: 1.75rem 0 0; }
+        .ims-part > h2 {
+            font-size: 1.15rem;
+            margin: 0 0 0.25rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 2px solid var(--accent);
+        }
+        .ims-ch { margin: 1rem 0 0; }
+        .ims-ch h3 { font-size: 1rem; margin: 0 0 0.15rem; }
+        .ims-ch .ch-num {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--ims-gray-text);
+            font-weight: 400;
+        }
+        .ims-tools { list-style: none; padding: 0; margin: 0.35rem 0 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+        .ims-tools li { margin: 0; }
+        .ims-tools a {
+            display: inline-block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.2rem 0.7rem;
+        }
+        .ims-tools a:hover, .ims-tools a:focus-visible { text-decoration: underline; border-color: var(--accent); }
+        .ims-tools .ci { border-left: 3px solid var(--accent); }
+        .credit-box {
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--accent, #569BBD);
+            border-radius: 6px;
+            background: var(--bg-alt, #f2f8fb);
+            padding: 0.85rem 1rem;
+            margin: 1rem 0 1.5rem;
+            max-width: 62ch;
+        }
+        .method-key { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0.5rem 0 0; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>StatLens for <em>IMS</em><span class="header-actions"><a class="home-btn" href="../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a></span></h1>
+
+        <p class="ims-intro"><strong>StatLens</strong> is a free, WCAG-accessible, mobile-friendly statistics toolkit. Like <a href="https://www.openintro.org/book/ims/" target="_blank" rel="noopener"><em>Introduction to Modern Statistics</em></a> (IMS) by Çetinkaya-Rundel &amp; Hardin, it is <strong>simulation-first</strong> — it teaches inference through bootstrapping and randomization before mathematical models — and it uses OpenIntro datasets throughout. This page maps every StatLens tool to the IMS chapter it supports, so if you teach from IMS you can find the right tool for each chapter.</p>
+
+        <div class="credit-box">
+            StatLens uses <a href="https://www.openintro.org" target="_blank" rel="noopener">OpenIntro</a>'s datasets (CC BY-SA) and shares IMS's simulation-first approach. It is an <strong>independent community project</strong> — not affiliated with or endorsed by OpenIntro — and it is <em>not</em> built to follow the IMS chapter order (StatLens groups its own tools by statistical procedure). This page is a cross-reference for IMS instructors; the chapter numbers below follow IMS. StatLens is offered back to the community as free, open-source software (AGPL-3.0).
+        </div>
+
+        <p class="method-key">Where inference is involved, StatLens offers up to four views of the same question: <strong>Explore</strong> the data, a <strong>Bootstrap CI</strong> and a <strong>Randomization test</strong> (simulation), and a traditional <strong>Confidence Interval</strong> and <strong>Hypothesis Test</strong>. CI pages are marked with a left bar.</p>
+
+        <!-- ── Exploratory data analysis ─────────────────────────────── -->
+        <section class="ims-part">
+            <h2>Exploratory data analysis</h2>
+
+            <div class="ims-ch">
+                <h3>Hello data <span class="ch-num">· IMS Ch 1</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../explore/descriptive/">Descriptive Statistics</a></li>
+                    <li><a href="../explore/one-cat/">One Categorical Variable</a></li>
+                    <li><a href="../explore/multi/">Data Explorer</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Study design <span class="ch-num">· IMS Ch 2</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../conceptual/sampling-bias/">Sampling Bias Lab</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Exploring categorical data <span class="ch-num">· IMS Ch 4</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../explore/one-cat/">One Categorical Variable</a></li>
+                    <li><a href="../explore/categorical/">Two Categorical Variables</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Exploring numerical data <span class="ch-num">· IMS Ch 5</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../explore/descriptive/">Descriptive Statistics</a></li>
+                    <li><a href="../explore/dotplot-editor/">Dotplot Editor</a></li>
+                    <li><a href="../explore/grouped/">Grouped Comparisons</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ── Regression modeling ───────────────────────────────────── -->
+        <section class="ims-part">
+            <h2>Regression modeling</h2>
+
+            <div class="ims-ch">
+                <h3>Linear regression with a single predictor <span class="ch-num">· IMS Ch 7</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../explore/regression/">Scatterplot &amp; Regression</a></li>
+                    <li><a href="../explore/regression-by-eye/">Regression by Eye</a></li>
+                    <li><a href="../practice/correlation/">Guess the Correlation</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ── Foundations of inference ──────────────────────────────── -->
+        <section class="ims-part">
+            <h2>Foundations of inference</h2>
+
+            <div class="ims-ch">
+                <h3>Hypothesis testing with randomization <span class="ch-num">· IMS Ch 11</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/randomization-diff-props/?activity=randomization-test-gated.json">What Is a Randomization Test? (walkthrough)</a></li>
+                    <li><a href="../simulate/randomization-one-mean/">Test for a Mean</a></li>
+                    <li><a href="../simulate/randomization-one-prop/">Test for a Proportion</a></li>
+                    <li><a href="../simulate/randomization-diff-means/">Test: Diff in Means</a></li>
+                    <li><a href="../simulate/randomization-diff-props/">Test: Diff in Props</a></li>
+                    <li><a href="../explore/psychic/">Are You Psychic?</a></li>
+                    <li><a href="../explore/random-sequence/">Stump the Chump</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Confidence intervals with bootstrapping <span class="ch-num">· IMS Ch 12</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-mean/">CI for a Mean</a></li>
+                    <li><a href="../simulate/bootstrap-prop/">CI for a Proportion</a></li>
+                    <li><a href="../simulate/bootstrap-two-means/">CI: Diff in Means</a></li>
+                    <li><a href="../simulate/bootstrap-two-props/">CI: Diff in Props</a></li>
+                    <li><a href="../conceptual/ci-coverage/">CI Coverage</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Inference with mathematical models <span class="ch-num">· IMS Ch 13</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../conceptual/sampling-lab/">Sampling Distributions</a></li>
+                    <li><a href="../distribution/normal/">Normal Calculator</a></li>
+                    <li><a href="../distribution/t/">t Calculator</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Decision errors <span class="ch-num">· IMS Ch 14</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../conceptual/decision-errors/">Decision Errors</a></li>
+                    <li><a href="../distribution/power/">Power &amp; Error Visualizer</a></li>
+                    <li><a href="../conceptual/power-sim/">Power Lab</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ── Inference for categorical data ────────────────────────── -->
+        <section class="ims-part">
+            <h2>Inference for categorical data</h2>
+
+            <div class="ims-ch">
+                <h3>Inference for a single proportion <span class="ch-num">· IMS Ch 16</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-prop/">Bootstrap CI</a></li>
+                    <li><a href="../simulate/randomization-one-prop/">Randomization test</a></li>
+                    <li><a class="ci" href="../inference/estimate/one-prop/">CI for a Proportion</a></li>
+                    <li><a href="../inference/one-prop/">One-Proportion z-Test</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Inference for comparing two proportions <span class="ch-num">· IMS Ch 17</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-two-props/">Bootstrap CI</a></li>
+                    <li><a href="../simulate/randomization-diff-props/">Randomization test</a></li>
+                    <li><a class="ci" href="../inference/estimate/two-props/">CI: Diff in Proportions</a></li>
+                    <li><a href="../inference/two-props/">Two-Proportion z-Test</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Inference for two-way tables (chi-square) <span class="ch-num">· IMS Ch 18</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../explore/categorical/">Two-Way Table</a></li>
+                    <li><a href="../simulate/randomization-chisq/">Chi-Square Randomization</a></li>
+                    <li><a href="../inference/chisq/">Chi-Square Test</a></li>
+                    <li><a href="../distribution/chisq/">Chi-Square Calculator</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ── Inference for numerical data ──────────────────────────── -->
+        <section class="ims-part">
+            <h2>Inference for numerical data</h2>
+
+            <div class="ims-ch">
+                <h3>Inference for a single mean <span class="ch-num">· IMS Ch 19</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-mean/">Bootstrap CI</a></li>
+                    <li><a href="../simulate/randomization-one-mean/">Randomization test</a></li>
+                    <li><a class="ci" href="../inference/estimate/one-mean/">CI for a Mean</a></li>
+                    <li><a href="../inference/one-mean/">One-Sample t-Test</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Inference for comparing two independent means <span class="ch-num">· IMS Ch 20</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-two-means/">Bootstrap CI</a></li>
+                    <li><a href="../simulate/randomization-diff-means/">Randomization test</a></li>
+                    <li><a class="ci" href="../inference/estimate/two-means/">CI: Diff in Means</a></li>
+                    <li><a href="../inference/two-means/">Two-Sample t-Test</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Inference for paired means <span class="ch-num">· IMS Ch 21</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-paired/">Bootstrap CI</a></li>
+                    <li><a href="../simulate/randomization-paired/">Randomization test</a></li>
+                    <li><a class="ci" href="../inference/estimate/paired/">CI: Paired Difference</a></li>
+                    <li><a href="../inference/paired/">Paired t-Test</a></li>
+                </ul>
+            </div>
+
+            <div class="ims-ch">
+                <h3>Inference for comparing many means (ANOVA) <span class="ch-num">· IMS Ch 22</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/randomization-anova/">ANOVA Randomization</a></li>
+                    <li><a href="../inference/anova/">One-Way ANOVA F-Test</a></li>
+                    <li><a class="ci" href="../inference/multiple-comparisons/">Pairwise CIs (Tukey / Bonferroni)</a></li>
+                    <li><a href="../distribution/f/">F Calculator</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ── Inference for regression ──────────────────────────────── -->
+        <section class="ims-part">
+            <h2>Inference for regression</h2>
+
+            <div class="ims-ch">
+                <h3>Inference for linear regression with a single predictor <span class="ch-num">· IMS Ch 24</span></h3>
+                <ul class="ims-tools">
+                    <li><a href="../simulate/bootstrap-slope/">Bootstrap CI for slope</a></li>
+                    <li><a href="../simulate/randomization-correlation/">Randomization for correlation</a></li>
+                    <li><a class="ci" href="../inference/estimate/slope/">CI for a Slope</a></li>
+                    <li><a href="../inference/slope/">Regression Slope t-Test</a></li>
+                </ul>
+            </div>
+        </section>
+
+        <p style="margin-top:2rem"><a href="../">← All StatLens tools</a></p>
+    </main>
+
+    <script src="../js/page-number.js"></script>
+    <script src="../js/feedback.js"></script>
+</body>
+</html>

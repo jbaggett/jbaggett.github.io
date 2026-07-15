@@ -11,9 +11,14 @@ import { mean, median, sd, quantile, resample, permute, detectPrecision, formatS
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
-import { drawDotplot, computeDotRadius } from './dotplot.js';
+import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { renderSimPills, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
+import {
+  ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
+  drawCiPills, drawCompareBounds, appendCiLegend,
+  PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
+} from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
@@ -125,13 +130,23 @@ export function initSimPage(config) {
   const resultDiv = document.getElementById('result-summary');
   const announceDiv = document.getElementById('sr-announce');
   const resetBtn = /** @type {HTMLButtonElement} */ (document.getElementById('reset-btn'));
-  const ciSelect = /** @type {HTMLSelectElement} */ (document.getElementById('ci-level'));
-  // CI method shown in the results: 'percentile' (default, IMS), 'se' (statistic
-  // ± z·SE — the "±2 SE" 95% rule of thumb), or 'both'. ?ci_method= sets it.
-  let ciMethod = (() => {
-    const m = (new URLSearchParams(location.search).get('ci_method') || '').toLowerCase();
-    return (m === 'se' || m === 'both') ? m : 'percentile';
-  })();
+  // Confidence-level control: a percent number input (id="ci-level") plus preset
+  // pills (.conf-pills), matching the parametric CI pages. Continuous levels.
+  const ciSelect = /** @type {HTMLInputElement} */ (document.getElementById('ci-level'));
+  const ciPills = /** @type {HTMLElement|null} */ (ciSelect?.closest('.ci-primary, .ci-level-control, .control-row')?.querySelector('.conf-pills') ?? null);
+  /** Current confidence level as a percent in [50, 99.9]. */
+  const getCiLevel = () => Math.min(99.9, Math.max(50, parseFloat(ciSelect?.value ?? '95') || 95));
+  /** Highlight the preset pill matching the current level (if any). */
+  function syncCiPills() {
+    if (!ciPills) return;
+    const lvl = +getCiLevel().toFixed(1);
+    for (const b of ciPills.querySelectorAll('button[data-level]')) {
+      b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-level')) === lvl));
+    }
+  }
+  // The CI method (percentile vs ±z·SE), its z, its colours, and its marks on the
+  // chart all live in js/ci-method.js — shared with the standalone bootstrap-slope page.
+  let ciMethod = ciMethodFromUrl();
   /** Last bootstrap result, so the CI-method toggle can re-render without a new run.
    *  @type {{stats:number[], ci:number[], se:number, ciLevel:number}|null} */
   let lastBoot = null;
@@ -165,12 +180,15 @@ export function initSimPage(config) {
 
   // Confidence level is the CORE control of a CI tool → keep it always visible on
   // bootstrap pages; only the advanced statistic selector (bootstrap-mean:
-  // median/SD/quartiles) stays behind "More options". Randomization pages keep the
-  // whole control row expert-only as before.
+  // median/SD/quartiles) stays behind "More options". It sits in its own row above
+  // the confidence control (mirroring the proportion pages' success selector) so the
+  // confidence box + pills land in the same place on every bootstrap page.
+  // Randomization pages keep the whole control row expert-only as before.
   const controlRow = controlsSection?.querySelector('.control-row');
   if (config.mode === 'bootstrap') {
-    const statLabel = controlsSection?.querySelector('label[for="boot-stat"]');
-    if (statLabel) statLabel.classList.add('expert-only');
+    const statRow = document.getElementById('stat-selector')
+      ?? controlsSection?.querySelector('label[for="boot-stat"]');
+    if (statRow) statRow.classList.add('expert-only');
   } else if (controlRow) {
     controlRow.classList.add('expert-only');
   }
@@ -481,27 +499,23 @@ export function initSimPage(config) {
         label,
       });
     } else if (lastDotResult) {
-      // Dotplot mode: scale PDF peak to match the tallest dot stack height
-      const { xScale: dxScale, frame, domain: dom, maxStack, numBins } = lastDotResult;
-      const peakPdf = normalPdf(center, center, se);
-      if (peakPdf <= 0 || maxStack <= 0) return;
-
-      // Compute dot radius to determine actual stack height in pixels
-      const dotRadius = computeDotRadius(frame.width, frame.height, maxStack, numBins);
-      const stackHeightPx = maxStack * dotRadius * 2;
-      // Scale the curve so its peak matches the tallest stack height
-      const scaleFactor = stackHeightPx / peakPdf;
-      // y-scale: map from scaled PDF pixel height → SVG y coordinate (top-down)
-      const yScale = (/** @type {number} */ freqY) => frame.height - freqY;
+      // Dotplot mode: same frequency scaling as the histogram — the expected count
+      // in a bin is n · binWidth · pdf(x) — mapped through the dotplot's OWN
+      // count → pixel-y function. That mapping is stacked dots at small n and a
+      // y-axis scale once the stacks would overflow into filled columns; deriving
+      // it from the dot radius instead (as this used to) left the curve wildly
+      // out of scale in column mode.
+      const { xScale: dxScale, maxStack, countToY, binWidth: dotBinWidth, domain: dom } = lastDotResult;
+      if (!countToY || !dotBinWidth || maxStack <= 0) return;
 
       overlayTheoryCurve({
         container: chartContainer,
         pdf: (x) => normalPdf(x, center, se),
         xDomain: dom,
-        totalN: 1,
-        binWidth: scaleFactor,
+        totalN: stats.length,
+        binWidth: dotBinWidth,
         xScale: dxScale,
-        yScale,
+        yScale: countToY,
         label,
       });
     }
@@ -1412,7 +1426,7 @@ export function initSimPage(config) {
         }
       }
 
-      const ciLevel = parseInt(ciSelect?.value ?? '95', 10);
+      const ciLevel = getCiLevel();
       let ci = null;
       const CI_MIN = 20; // Don't show CI until this many resamples
       if (allStats.length >= CI_MIN) {
@@ -3090,26 +3104,89 @@ export function initSimPage(config) {
     btnHistogram.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('histogram'); });
   }
 
-  // Re-render when CI level changes
+  // Re-render when the confidence level changes (box typing, or a preset pill).
+  function applyCiLevel() {
+    syncCiPills();
+    syncMethodToggleLabel();
+    if (allStats.length >= 10) {
+      const ciLevel = getCiLevel();
+      const result = bootstrapCI([...allStats], ciLevel);
+      displayBootstrapResults(allStats, result.ci, result.se, ciLevel);
+      const CI_MIN = 20;
+      renderChart(allStats, allStats.length >= CI_MIN ? result.ci : null, computeObservedStat());
+    }
+  }
   if (ciSelect) {
-    ciSelect.addEventListener('change', () => {
-      if (allStats.length >= 10) {
-        const ciLevel = parseInt(ciSelect.value, 10);
-        const result = bootstrapCI([...allStats], ciLevel);
-        displayBootstrapResults(allStats, result.ci, result.se, ciLevel);
-        const CI_MIN = 20;
-        renderChart(allStats, allStats.length >= CI_MIN ? result.ci : null, computeObservedStat());
-      }
+    ciSelect.addEventListener('input', applyCiLevel);
+    ciSelect.addEventListener('change', applyCiLevel);
+  }
+  if (ciPills) {
+    ciPills.addEventListener('click', (e) => {
+      const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-level]');
+      if (!btn || !ciSelect) return;
+      ciSelect.value = btn.getAttribute('data-level') || '95';
+      applyCiLevel();
     });
+    syncCiPills();
   }
 
-  // Percentile / ±SE / Both toggle (delegated, since the results HTML re-renders).
-  resultDiv?.addEventListener('click', (e) => {
-    const btn = /** @type {HTMLElement} */ (e.target).closest('.ci-method-toggle button[data-cim]');
-    if (!btn || !lastBoot) return;
-    ciMethod = /** @type {HTMLElement} */ (btn).dataset.cim || 'percentile';
-    displayBootstrapResults(lastBoot.stats, lastBoot.ci, lastBoot.se, lastBoot.ciLevel);
-  });
+  // ─── CI method toggle (bootstrap only) ───
+  // Percentile / ±z·SE / Both. This drives the WHOLE page — the interval drawn on
+  // the bootstrap distribution, not just the number in the results box — so the
+  // interval a student reads is the one they see.
+  /** True while the normal-curve overlay is on only because the method asked for it. */
+  let theoryAutoOn = false;
+
+  /** @type {{syncPressed: (m: string) => void, syncLabel: (l: number) => void}|null} */
+  let methodControl = null;
+
+  if (config.mode === 'bootstrap' && ciSelect) {
+    const ciPrimary = /** @type {HTMLElement|null} */ (ciSelect.closest('.ci-primary'));
+    if (ciPrimary) {
+      methodControl = createCiMethodControl(ciPrimary, { method: ciMethod, onChange: setCiMethod });
+      methodControl.syncLabel(getCiLevel());
+      syncTheoryToMethod();
+    }
+  }
+
+  /** @param {string} method */
+  function setCiMethod(method) {
+    if (method === ciMethod) return;
+    ciMethod = method;
+    methodControl?.syncPressed(ciMethod);
+    syncTheoryToMethod();
+    if (lastBoot) {
+      displayBootstrapResults(lastBoot.stats, lastBoot.ci, lastBoot.se, lastBoot.ciLevel);
+      renderChart(allStats, lastCI, lastObserved, lastDirection);
+    }
+    announce(method === 'percentile' ? 'Percentile method.'
+      : method === 'se' ? 'Normal-approximation method: estimate ± z · SE.'
+      : 'Showing both the percentile and the normal-approximation interval.');
+  }
+
+  /** The ±SE button reads "±2 SE" at 95% and "±z SE" elsewhere. */
+  function syncMethodToggleLabel() {
+    methodControl?.syncLabel(getCiLevel());
+  }
+
+  /**
+   * The normal approximation only makes sense next to a fitted normal curve, so
+   * turn the theory overlay on with it — and take it back off when we return to
+   * the percentile method, unless the student had switched it on themselves.
+   */
+  function syncTheoryToMethod() {
+    const want = ciMethod !== 'percentile';
+    if (want && !theoryOverlayOn) {
+      theoryOverlayOn = true;
+      theoryAutoOn = true;
+      if (theoryCheckbox) theoryCheckbox.checked = true;
+    } else if (!want && theoryAutoOn) {
+      theoryOverlayOn = false;
+      theoryAutoOn = false;
+      if (theoryCheckbox) theoryCheckbox.checked = false;
+      if (chartContainer) removeTheoryOverlay(chartContainer);
+    }
+  }
 
   // Reset when bootstrap stat changes (mixing stats would be meaningless)
   if (bootStatSelect) {
@@ -3191,16 +3268,44 @@ export function initSimPage(config) {
     if (config.twoGroup && typeof config.testStat === 'function') {
       return config.testStat(data1, data2);
     }
+    // Two-group bootstrap: the statistic is the DIFFERENCE, matching what each
+    // resample computes (statFn(rs1) − statFn(rs2)). Falling through to
+    // statFn(data1) drew the observed line at group 1's own mean/proportion —
+    // far outside the bootstrap distribution it was supposed to sit in the middle of.
+    if (config.twoGroup && data2.length > 0) {
+      const statFn = getBootstrapStat().fn;
+      return statFn(data1) - statFn(data2);
+    }
     return getBootstrapStat().fn(data1);
   }
 
   function renderChart(stats, ci, observedStat, direction) {
     chartContainer.innerHTML = '';
     const n = stats.length;
-    // Cache params for chart type toggle re-render
+    // Cache params for chart type toggle re-render. lastCI stays the PERCENTILE
+    // interval; the method-selected bounds are derived from it below on each render.
     lastCI = ci;
     lastObserved = observedStat;
     lastDirection = direction;
+
+    // The CI-method toggle drives the picture, not just the results box:
+    //   percentile → bounds at the resample percentiles (default)
+    //   se         → bounds at estimate ± z·SE, over a fitted normal curve
+    //   both       → percentile bounds shade the histogram; the ±z·SE bounds are
+    //                drawn alongside so the two methods can be compared directly.
+    /** @type {[number,number]|null} */
+    let normalCI = null;
+    if (config.mode === 'bootstrap' && ci && stats.length > 1) {
+      normalCI = normalApproxCI(stats, getCiLevel());
+    }
+    /** Bounds that shade the distribution and drive the pills. */
+    const shownCI = (normalCI && ciMethod === 'se') ? normalCI : ci;
+    /** A second pair of bounds drawn for comparison (Both mode only). */
+    const compareCI = (normalCI && ciMethod === 'both') ? normalCI : null;
+    // Percentile bounds are dusty red; normal-approximation bounds are dark teal.
+    // Both are dashed — the colour is what says which method drew them.
+    const ciLineColor = (ciMethod === 'se') ? NORMAL_CI_COLOR : PERCENTILE_CI_COLOR;
+    ci = shownCI;
     const titleText = `${config.mode === 'bootstrap' ? 'Bootstrap' : 'Randomization'} Distribution`;
     let xLabel;
     if (config.mode === 'bootstrap') {
@@ -3220,7 +3325,10 @@ export function initSimPage(config) {
     /** @type {[number,number]|undefined} */
     let domain;
     if (stats.length > 0) {
-      const vals = observedStat != null ? [...stats, observedStat] : stats;
+      const vals = observedStat != null ? [...stats, observedStat] : [...stats];
+      // A ±z·SE bound can sit outside the range of the resamples — keep it on screen.
+      if (shownCI) vals.push(...shownCI);
+      if (compareCI) vals.push(...compareCI);
       let lo = Math.min(...vals);
       let hi = Math.max(...vals);
       const pad = (hi - lo) * 0.05 || 0.5;
@@ -3288,6 +3396,7 @@ export function initSimPage(config) {
         isExtreme: regionPredicate,
         observedStat,
         ciLines: ci ?? undefined,
+        ciColor: ciLineColor,
         animate: false,
         domain,
         numBins: config.proportion ? sampleSize : userBinCount,
@@ -3305,7 +3414,13 @@ export function initSimPage(config) {
       const effectiveBins = (config.proportion ? sampleSize : userBinCount)
         ?? (lockedDotGrid && domain ? Math.ceil((domain[1] - domain[0]) / lockedDotGrid.binWidth) : null)
         ?? DEFAULT_BINS;
-      lastDotResult = { xScale: r.xScale, frame: r.frame, domain: domain || [0, 1], maxStack, numBins: effectiveBins };
+      lastDotResult = {
+        xScale: r.xScale, frame: r.frame, domain: domain || [0, 1], maxStack,
+        numBins: effectiveBins,
+        // The dotplot's own count → pixel-y mapping, which differs between stacked
+        // dots and filled columns. A theory curve must use it or it won't line up.
+        countToY: r.countToY, binWidth: r.binWidth,
+      };
       lastHistResult = null;
     } else if (activeChart === 'spike') {
       const r = drawSpike(chartContainer, stats, {
@@ -3315,6 +3430,7 @@ export function initSimPage(config) {
         isTail: regionPredicate,
         observedStat: observedStat ?? undefined,
         ciLines: ci ?? undefined,
+        ciColor: ciLineColor,
         animate: false,
         domain,
       });
@@ -3328,6 +3444,7 @@ export function initSimPage(config) {
         isTail: regionPredicate,
         observedStat: observedStat ?? undefined,
         ciLines: ci ?? undefined,
+        ciColor: ciLineColor,
         animate: false,
         domain,
         thresholds: propThresholds,
@@ -3350,17 +3467,22 @@ export function initSimPage(config) {
           mode: 'randomization', pValue, observedStat, direction,
         });
       } else if (config.mode === 'bootstrap' && ci) {
-        const inside = stats.filter(v => v >= ci[0] && v <= ci[1]).length;
-        const proportion = inside / stats.length;
-        renderSimPills(chartResult, chartXScale, {
-          mode: 'bootstrap',
-          proportionLabel: formatStat(proportion, dataPrecision, 'proportion'),
-          ci,
-        });
+        drawCiPills(chartResult, chartXScale, stats, ci);
       }
     }
 
-    // Theory overlay (histogram or dotplot, bootstrap mode only)
+    // Both mode: draw the ±z·SE bounds next to the percentile ones (dashed like
+    // them, dark teal instead of dusty red) plus a legend, so the student can see
+    // where the two methods agree — and, on a skewed bootstrap distribution, where
+    // they don't.
+    if (compareCI && chartResult && chartXScale) {
+      const prec = config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1;
+      drawCompareBounds(chartResult, chartXScale, compareCI, prec);
+      appendCiLegend(chartContainer, getCiLevel());
+    }
+
+    // Theory overlay (histogram or dotplot, bootstrap mode only). The ±SE and Both
+    // methods switch it on: the normal curve is where that interval comes from.
     if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot') && config.mode === 'bootstrap') {
       applyTheoryOverlay(stats);
     }
@@ -3434,27 +3556,38 @@ export function initSimPage(config) {
     }
     lastBoot = { stats, ci, se, ciLevel };
 
-    // ±z·SE (normal-approximation) interval, centred on the estimate. z=2 at 95%
-    // (the "±2 SE" rule of thumb); exact-ish z at 90/99.
-    const zByLevel = { 90: 1.645, 95: 2, 99: 2.576 };
-    const z = zByLevel[ciLevel] ?? 2;
-    const zLabel = ciLevel === 95 ? '2' : String(z);
-    const seLo = `<span class="ci-value">${fmt(m - z * se)}</span>`;
-    const seHi = `<span class="ci-value">${fmt(m + z * se)}</span>`;
+    // Symbol for the estimate, used in the worked ±z·SE formula.
+    let statSymbol;
+    if (config.paired) statSymbol = 'd̄';
+    else if (config.proportion) statSymbol = config.twoGroup ? 'p̂₁ − p̂₂' : 'p̂';
+    else if (config.twoGroup) statSymbol = 'x̄₁ − x̄₂';
+    else statSymbol = (bootStatSelect?.value ?? 'mean') === 'mean' ? 'x̄' : 'estimate';
 
-    const pctLine = `<p><strong>${ciLevel}% CI (percentile):</strong> (${ciLo}, ${ciHi})</p>`;
-    const seLineHtml = `<p><strong>${ciLevel}% CI (±${zLabel}·SE):</strong> (${seLo}, ${seHi})</p>`;
+    // Float-safe percent label (levels can be continuous now).
+    const ciPct = Number.isInteger(ciLevel) ? String(ciLevel) : ciLevel.toFixed(1);
+
+    // ±z·SE (normal-approximation) interval, centred on the estimate. z = 2 at 95%
+    // (the "±2 SE" rule of thumb); otherwise the exact normal critical value.
+    const z = zFor(ciLevel);
+    const zLabel = zLabelFor(ciLevel);
+    const seBounds = normalApproxCI(stats, ciLevel);
+    const seLo = `<span class="ci-value">${fmt(seBounds[0])}</span>`;
+    const seHi = `<span class="ci-value">${fmt(seBounds[1])}</span>`;
+
+    const pctLine = `<p><strong>${ciPct}% CI (percentile):</strong> (${ciLo}, ${ciHi})</p>`;
+    // Worked normal-approximation formula, e.g. "x̄ ± 2·SE = 20.0 ± 2 × 0.99 = (18.0, 22.0)".
+    const seLineHtml = `<p><strong>${ciPct}% CI (±${zLabel}·SE):</strong> <span class="ci-formula">${statSymbol} &plusmn; ${zLabel}&middot;SE = ${fmt(m)} &plusmn; ${zLabel} &times; ${fmt(se)} = (${seLo}, ${seHi})</span></p>`;
     const ciBlock = ciMethod === 'se' ? seLineHtml
       : ciMethod === 'both' ? pctLine + seLineHtml
       : pctLine;
     const bothNote = ciMethod === 'both'
       ? '<p class="hint">The two methods agree closely when the bootstrap distribution is symmetric; they diverge when it’s skewed (where the percentile CI is the more honest one).</p>'
       : '';
-    const methodToggle = `<div class="seg-control ci-method-toggle" role="group" aria-label="Confidence interval method">
-        <button type="button" data-cim="percentile" aria-pressed="${ciMethod === 'percentile'}">Percentile</button>
-        <button type="button" data-cim="se" aria-pressed="${ciMethod === 'se'}">±${zLabel} SE</button>
-        <button type="button" data-cim="both" aria-pressed="${ciMethod === 'both'}">Both</button>
-      </div>`;
+
+    // The interval the student reads is the one the chart draws. In Both mode the
+    // percentile interval is the one being shaded, so it carries the interpretation.
+    const interpLo = ciMethod === 'se' ? seLo : ciLo;
+    const interpHi = ciMethod === 'se' ? seHi : ciHi;
 
     resultDiv.innerHTML = `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
@@ -3462,9 +3595,8 @@ export function initSimPage(config) {
       <p>SE: ${fmt(se)}</p>
       ${dataSpreadContrast}
       ${ciBlock}
-      ${methodToggle}
       ${bothNote}
-      <p class="interpretation">We are ${ciLevel}% confident that the ${ctxParam}${popPhrase} is between ${ciLo}${unitSuffix} and ${ciHi}${unitSuffix}.</p>
+      <p class="interpretation">We are ${ciPct}% confident that the ${ctxParam}${popPhrase} is between ${interpLo}${unitSuffix} and ${interpHi}${unitSuffix}.</p>
       ${stats.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}
     `;
   }

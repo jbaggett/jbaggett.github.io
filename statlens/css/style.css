@@ -704,7 +704,122 @@ input[aria-invalid="true"] {
   outline: 2px solid var(--ims-blue, #569BBD);
   outline-offset: 2px;
 }
+/* ── Confidence-level primary control (CI estimation pages) ───────── */
+.ci-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 0;
+}
+.ci-primary > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--ims-dark, #114B5F);
+  margin: 0;
+}
+.ci-primary .conf-input-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-weight: 700;
+}
+.ci-primary .conf-input-wrap input[type="number"] {
+  width: 4.5rem;
+  text-align: center;
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  padding: 0.2rem 0.35rem;
+}
+/* Compact inline variant used on the bootstrap control rows (sits beside other
+   controls rather than as a full-width block). */
+.ci-primary-inline {
+  padding: 0;
+  gap: 0.4rem 0.75rem;
+}
+.ci-primary-inline > label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+/* Percentile / ±SE / Both — the CI method drives the whole bootstrap page, so the
+   toggle lives with the confidence level rather than down in the results box. */
+.ci-method-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ci-method-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.ci-method-row .seg-control { margin: 0; }
+
+/* Legend under the chart in Both mode. */
+.chart-legend {
+  text-align: center;
+  margin: 0.25rem 0 0;
+}
+.chart-legend .key {
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+.chart-legend .key-pct { color: #B5747A; }
+.chart-legend .key-se { color: var(--ims-dark, #114B5F); }
+
+.conf-pills {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+.conf-pills button {
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  font-size: 0.95rem;
+  padding: 0.2rem 0.7rem;
+  background: var(--surface, #f8f9fa);
+  border: 1.5px solid var(--ims-blue, #569BBD);
+  border-radius: 999px;
+  color: var(--ims-dark, #114B5F);
+  cursor: pointer;
+}
+.conf-pills button:hover {
+  background: #e8f4f8;
+}
+.conf-pills button[aria-pressed="true"] {
+  /* Dark IMS teal (not #569BBD) so white text clears WCAG AA 4.5:1 contrast. */
+  background: var(--ims-dark, #114B5F);
+  border-color: var(--ims-dark, #114B5F);
+  color: #fff;
+}
+.conf-pills button:focus-visible {
+  outline: 2px solid var(--ims-blue, #569BBD);
+  outline-offset: 2px;
+}
+.ci-primary .hint {
+  color: var(--muted, #555);
+  font-style: italic;
+}
+
+.ci-result-headline {
+  text-align: center;
+  margin: 0.5rem 0;
+}
+.ci-result-headline .ci-bounds {
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #2e7d32;
+}
 @media (max-width: 480px) {
+  .conf-pills button {
+    min-height: 44px;
+    padding: 0.3rem 0.9rem;
+  }
+  .ci-primary .conf-input-wrap input[type="number"] {
+    min-height: 44px;
+  }
   .hypothesis-row {
     white-space: normal;
     flex-wrap: wrap;

@@ -146,6 +146,7 @@ export function computeBins(values, options = {}) {
  * @param {number} [options.observedStat] - Value for observed statistic vertical line
  * @param {string} [options.observedLabel] - Label for observed line (default: 'observed')
  * @param {[number,number]} [options.ciLines] - CI bound values to draw as vertical lines
+ * @param {string} [options.ciColor] - Colour of the CI bound lines (default: dusty red)
  * @param {boolean} [options.animate] - Whether to animate bars (default: true)
  * @param {{top:number,right:number,bottom:number,left:number}} [options.margin]
  * @param {[number,number]} [options.domain] - Override x-axis domain
@@ -173,6 +174,7 @@ export function drawHistogram(container, values, options = {}) {
     observedStat,
     observedLabel = 'observed',
     ciLines,
+    ciColor = '#B5747A',
     animate = true,
     margin,
     numBins,
@@ -244,9 +246,9 @@ export function drawHistogram(container, values, options = {}) {
   }
   if (ciLines) {
     renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
-      '#B5747A', 'CI lower bound', precision, undefined, true);
+      ciColor, 'CI lower bound', precision, undefined, true);
     renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
-      '#B5747A', 'CI upper bound', precision, undefined, true);
+      ciColor, 'CI upper bound', precision, undefined, true);
   }
 
   return {
@@ -286,9 +288,9 @@ export function drawHistogram(container, values, options = {}) {
       }
       if (newCiLines) {
         renderOverlayLine(overlays, newCiLines[0], xScale, frame.height,
-          '#B5747A', 'CI lower bound', precision, undefined, true);
+          ciColor, 'CI lower bound', precision, undefined, true);
         renderOverlayLine(overlays, newCiLines[1], xScale, frame.height,
-          '#B5747A', 'CI upper bound', precision, undefined, true);
+          ciColor, 'CI upper bound', precision, undefined, true);
       }
     },
   };

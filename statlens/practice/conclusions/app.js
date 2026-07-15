@@ -473,9 +473,16 @@ const PROC_ALIASES = {
   // 'anova', 'slope' — no scenarios in this tool; accepted, contribute nothing.
 };
 
-/** Named scopes for the two textbook capstones. `null` = full pool. */
+/**
+ * Named scopes for the two textbook capstones. `null` = full pool.
+ * `compute` is the canonical name for the Part III scope (the textbook unit was
+ * renamed Calculate → Compute); `calculate` stays as a deprecated alias so links
+ * already published against the old name keep resolving (REQ-039).
+ */
+const COMPUTE_SCOPE = ['one-prop', 'two-props', 'one-mean', 'two-means', 'paired']; // Part III: no χ² yet
 const SCOPE_PRESETS = {
-  calculate: ['one-prop', 'two-props', 'one-mean', 'two-means', 'paired'], // Part III: no χ² yet
+  compute: COMPUTE_SCOPE,
+  calculate: COMPUTE_SCOPE,  // deprecated alias — do not remove
   apply: null,  // full pool
   all: null,
 };

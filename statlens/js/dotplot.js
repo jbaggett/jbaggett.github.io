@@ -151,6 +151,7 @@ export function computeDotRadius(innerWidth, innerHeight, maxStack, numBins) {
  * @param {number} [options.observedStat] - Value for observed statistic vertical line
  * @param {string} [options.observedLabel] - Label for observed line (default: 'observed')
  * @param {[number,number]} [options.ciLines] - CI bound values to draw as vertical lines
+ * @param {string} [options.ciColor] - Colour of the CI bound lines (default: dusty red)
  * @param {boolean} [options.animate] - Whether to animate (default: true)
  * @param {{top:number,right:number,bottom:number,left:number}} [options.margin]
  * @param {[number,number]} [options.domain] - Override x-axis domain
@@ -182,6 +183,7 @@ export function drawDotplot(container, values, options = {}) {
     observedStat,
     observedLabel = 'observed',
     ciLines,
+    ciColor = CI_COLOR,
     animate = true,
     margin,
     numBins,
@@ -299,8 +301,8 @@ export function drawDotplot(container, values, options = {}) {
     renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel);
   }
   if (ciLines) {
-    renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision);
-    renderCILine(overlaysGroup, ciLines[1], xScale, frame.height, precision);
+    renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor);
+    renderCILine(overlaysGroup, ciLines[1], xScale, frame.height, precision, ciColor);
   }
 
   return {
@@ -759,12 +761,12 @@ const CI_COLOR = '#B5747A';
  * @param {number} innerHeight
  * @param {number} [precision=2] - Decimal places for value label
  */
-function renderCILine(overlays, value, xScale, innerHeight, precision = 2) {
+function renderCILine(overlays, value, xScale, innerHeight, precision = 2, color = CI_COLOR) {
   const x = xScale(value);
   overlays.append('line')
     .attr('x1', x).attr('x2', x)
     .attr('y1', 0).attr('y2', innerHeight)
-    .attr('stroke', CI_COLOR)
+    .attr('stroke', color)
     .attr('stroke-width', 2)
     .attr('stroke-dasharray', '6,3')
     .attr('aria-label', `CI bound: ${value}`);
@@ -772,6 +774,6 @@ function renderCILine(overlays, value, xScale, innerHeight, precision = 2) {
     .attr('class', 'overlay-value')
     .attr('x', x).attr('y', -4)
     .attr('text-anchor', 'middle')
-    .attr('fill', CI_COLOR)
+    .attr('fill', color)
     .text(value.toFixed(precision));
 }

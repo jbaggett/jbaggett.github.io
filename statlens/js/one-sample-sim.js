@@ -11,7 +11,7 @@
 import { createRng, sampleWithReplacement } from './prng.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
-import { drawDotplot, computeDotRadius, computeDots } from './dotplot.js';
+import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
@@ -1187,7 +1187,13 @@ export function initOneSamplePage(config) {
       lastHistResult = { xScale: result.xScale, yScale: result.yScale, bins: result.bins, domain };
     } else if (activeChart === 'dotplot' && result.maxStack > 0) {
       const effectiveBins = isProp ? sampleN : (userBinCount ?? DEFAULT_BINS);
-      lastDotResult = { xScale: result.xScale, frame: result.frame, domain, maxStack: result.maxStack, numBins: effectiveBins };
+      lastDotResult = {
+        xScale: result.xScale, frame: result.frame, domain, maxStack: result.maxStack,
+        numBins: effectiveBins,
+        // The dotplot's own count → pixel-y mapping, so a theory curve lines up in
+        // both stacked-dot and filled-column modes.
+        countToY: result.countToY, binWidth: result.binWidth,
+      };
     }
 
     // Theory overlay (histogram or dotplot)
@@ -1317,23 +1323,20 @@ export function initOneSamplePage(config) {
         label,
       });
     } else if (lastDotResult) {
-      const { xScale: dxScale, frame, domain: dom, maxStack, numBins } = lastDotResult;
-      const peakPdf = normalPdf(nullVal, nullVal, se);
-      if (peakPdf <= 0 || maxStack <= 0) return;
-
-      const dotRadius = computeDotRadius(frame.width, frame.height, maxStack, numBins);
-      const stackHeightPx = maxStack * dotRadius * 2;
-      const scaleFactor = stackHeightPx / peakPdf;
-      const yScale = (/** @type {number} */ freqY) => frame.height - freqY;
+      // Same frequency scaling as the histogram (expected count = n · binWidth · pdf),
+      // mapped through the dotplot's OWN count → pixel-y function: stacked dots at
+      // small n, a y-axis scale once the stacks overflow into filled columns.
+      const { xScale: dxScale, maxStack, countToY, binWidth: dotBinWidth, domain: dom } = lastDotResult;
+      if (!countToY || !dotBinWidth || maxStack <= 0) return;
 
       overlayTheoryCurve({
         container: chartContainer,
         pdf: (x) => normalPdf(x, nullVal, se),
         xDomain: dom,
-        totalN: 1,
-        binWidth: scaleFactor,
+        totalN: allStats.length,
+        binWidth: dotBinWidth,
         xScale: dxScale,
-        yScale,
+        yScale: countToY,
         label,
       });
     }

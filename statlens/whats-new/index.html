@@ -39,6 +39,18 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry">
+            <div class="cl-date">2026-07-14<span class="cl-tag">New</span></div>
+            <h2><a href="../inference/estimate/one-mean/?dataset=ames_area">Confidence-interval pages for every parametric procedure</a></h2>
+            <p>Traditional inference now splits estimation from testing, the way the simulation side already does (bootstrap = CI, randomization = test). Six new <strong>Confidence Interval</strong> pages — for a mean, a proportion, a difference in means, paired differences, a difference in proportions, and a regression slope — each let you set the confidence level with a number box or preset pills, <strong>or drag the critical values</strong> right on a t- or z-curve. The plot uses the same interactive markers as the distribution calculators (editable probability pills, editable ±critical-value boxes, snap points at common levels), and the results box shows the interval worked out. The Traditional Inference menu and the home-page grids now list a Confidence Interval and a Hypothesis Test entry for each procedure.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-13<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/bootstrap-mean/?dataset=ames_area">Bootstrap CIs: pick your method and see it on the plot</a></h2>
+            <p>Every bootstrap CI page now has a <strong>Percentile / ±2 SE / Both</strong> toggle next to the confidence level, and it drives the whole page — not just the number in the results box. <strong>±2 SE</strong> draws the interval at estimate ± 2·SE over a fitted normal curve; <strong>Both</strong> overlays the two intervals (dashed dusty-red percentile vs dashed teal normal-approximation) with a legend, so you can see where they agree — and, on a skewed distribution, where they part. The confidence control is now a number box plus 90/95/99 pills accepting any level, the histogram shows symmetric probability pills, and a longstanding bug that drew the theoretical curve wildly out of scale (and the two-group observed statistic in the wrong place) is fixed.</p>
+        </article>
+
+        <article class="cl-entry">
             <div class="cl-date">2026-07-06<span class="cl-tag">New</span></div>
             <h2><a href="../explore/regression/?dataset=cats&amp;bands=true">Interactive regression prediction — drag to predict at any x</a></h2>
             <p>In the Two Quantitative Variables explorer, turning on the bands now gives you a real prediction tool. The two bands are clearly distinct — a <strong>blue solid</strong> confidence band (mean response) inside a wider <strong>orange dashed</strong> prediction band (a new observation), with a legend. And there's a <strong>draggable marker</strong>: drag it along the plot (or type a value of x) to see the fitted ŷ, the CI for the mean response, and the prediction interval at that x, updating live. Also: every inference procedure now links out to explore its dataset, and the slope test's "predict a response" box was tidied up.</p>
@@ -204,5 +216,6 @@
             <p>Click to add or remove points and watch the summary statistics update live — a hands-on way to build intuition for center and variability.</p>
         </article>
     </main>
+    <script src="../js/feedback.js"></script>
 </body>
 </html>

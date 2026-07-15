@@ -99,7 +99,8 @@ export function overlayTheoryCurve(options) {
     .attr('stroke-dasharray', '6,3')
     .attr('opacity', 0.85);
 
-  // Label near the peak
+  // Label on the curve's right shoulder. The apex is where the observed-statistic
+  // line and its label already are, so anchoring there guarantees a collision.
   if (label) {
     let peakX = (xDomain[0] + xDomain[1]) / 2;
     let peakY = 0;
@@ -108,11 +109,25 @@ export function overlayTheoryCurve(options) {
       const y = pdf(x);
       if (y > peakY) { peakY = y; peakX = x; }
     }
-    const lx = xScale(peakX);
-    const ly = yScale(scaleFactor * peakY);
+    // Walk right from the apex to where the curve has dropped to ~35% of its peak.
+    // The apex is where the observed-statistic line and its label live, so anchoring
+    // the label there collides with them whenever the statistic sits near the centre
+    // — which, on a bootstrap distribution, is always.
+    let shoulderX = peakX;
+    for (let i = 1; i <= 50; i++) {
+      const x = peakX + (xDomain[1] - peakX) * i / 50;
+      shoulderX = x;
+      if (pdf(x) <= 0.35 * peakY) break;
+    }
+    const plotWidth = xScale.range()[1];
+    const lx = xScale(shoulderX);
+    const ly = yScale(scaleFactor * pdf(shoulderX));
+    // Flip to the left of the curve rather than run off the right edge.
+    const flip = lx > plotWidth * 0.78;
     const textEl = g.append('text')
-      .attr('x', lx + 10)
-      .attr('y', Math.max(ly - 6, 14))
+      .attr('x', flip ? lx - 8 : lx + 8)
+      .attr('y', Math.max(ly - 8, 30))
+      .attr('text-anchor', flip ? 'end' : 'start')
       .attr('fill', color)
       .attr('class', 'stat-marker-label')
       .attr('font-weight', '700')

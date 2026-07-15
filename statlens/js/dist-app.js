@@ -15,7 +15,8 @@
 import { parseParams } from './url-params.js';
 import { drawCurve, computeDomain } from './curve.js';
 import { debounce, pillDimensions } from './chart-utils.js';
-import { enableHorizontalDrag, showInlineEdit, formatEditValue } from './chart-interactions.js';
+import { formatEditValue } from './chart-interactions.js';
+import { drawSnapTriangles, addBoundaryLine as drawBoundaryLine, addProbPill, addAxisValueBox } from './dist-markers.js';
 import { initHelp, setPageTitle } from './page-utils.js';
 import * as d3Selection from 'd3-selection';
 
@@ -483,9 +484,6 @@ export function initDistCalculator(config) {
    */
   function addSnapIndicators(group, frame, xScale, tail) {
     if (!currentInv) return;
-    const [lo, hi] = xScale.domain();
-    const y = frame.height;
-    const size = 4;
 
     // Build tail-specific snap points
     /** @type {number[]} */
@@ -506,15 +504,7 @@ export function initDistCalculator(config) {
       }
     }
 
-    const visible = points.filter(sp => sp > lo && sp < hi);
-    for (const sp of visible) {
-      const px = xScale(sp);
-      group.append('polygon')
-        .attr('class', 'snap-indicator')
-        .attr('points', `${px},${y} ${px - size},${y + size + 1} ${px + size},${y + size + 1}`)
-        .attr('fill', '#569BBD')
-        .attr('opacity', 0.5);
-    }
+    drawSnapTriangles(group, frame, xScale, points);
   }
 
   /**
@@ -527,43 +517,14 @@ export function initDistCalculator(config) {
    * @param {'single'|'lo'|'hi'} [boundKey] - Which bound this line controls (pair modes)
    */
   function addBoundaryLine(group, frame, xScale, value, tail, boundKey = 'single') {
-    const px = xScale(value);
-    const handleWidth = 44;
-
-    // Visible dashed line
-    const line = group.append('line')
-      .attr('class', 'crit-line')
-      .attr('data-bound', boundKey)
-      .attr('x1', px).attr('y1', 0)
-      .attr('x2', px).attr('y2', frame.height)
-      .attr('stroke', '#333')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-dasharray', '6,3');
-
-    // Invisible wider handle for dragging
-    const handle = group.append('rect')
-      .attr('class', 'drag-handle')
-      .attr('data-bound', boundKey)
-      .attr('x', px - handleWidth / 2)
-      .attr('y', 0)
-      .attr('width', handleWidth)
-      .attr('height', frame.height)
-      .attr('fill', 'transparent')
-      .attr('cursor', 'ew-resize');
-
-    enableHorizontalDrag(
-      handle.node(),
-      /** @type {SVGSVGElement} */ (frame.svg),
-      frame,
-      xScale,
-      (rawX) => {
-        // Snap to common critical values
-        const newX = snapValue(rawX, xScale);
-        // Move this line + handle (lightweight, no DOM rebuild)
+    const handleWidth = 44; // must match the primitive for partner-mirror math
+    drawBoundaryLine(group, frame, xScale, value, {
+      boundKey,
+      snap: (rawX) => snapValue(rawX, xScale),
+      // The primitive has already moved THIS line + handle to xScale(newX); the
+      // callback does the page-specific rest (mirror partner, sync labels/state).
+      onDrag: (newX) => {
         const newPx = xScale(newX);
-        line.attr('x1', newPx).attr('x2', newPx);
-        handle.attr('x', newPx - handleWidth / 2);
-
         if (isPair(tail)) {
           setBound(/** @type {'between'|'symmetric'} */ (tail), boundKey === 'hi' ? 'hi' : 'lo', newX);
           // symmetric: the partner line mirrors about the center.
@@ -588,8 +549,8 @@ export function initDistCalculator(config) {
           inputX.value = formatForInput(newX);
           onDragMove(newX, tail);
         }
-      }
-    );
+      },
+    });
   }
 
   /**
@@ -619,72 +580,16 @@ export function initDistCalculator(config) {
    * @param {'left'|'right'|'left-of-both'|'right-of-both'|'center'} [region]
    */
   function addProbLabel(group, frame, xScale, xLo, xHi, prob, isComplement = false, region) {
-    // Fixed vertical position: 60% down the chart (consistent across all distributions)
-    const labelY = frame.height * 0.6;
-
-    // Horizontal: midpoint of region, clamped to stay in chart
-    const midX = (xLo + xHi) / 2;
-    const midPx = xScale(midX);
-    const clampedX = Math.max(45, Math.min(frame.width - 45, midPx));
-
-    // Background pill
-    const labelText = prob.toFixed(4);
-    const { charW: _pCharW, pad: _pPad, pillH } = pillDimensions('prob');
-    const textWidth = labelText.length * _pCharW + _pPad;
-
-    const bgRect = group.append('rect')
-      .attr('class', isComplement ? 'prob-label-bg prob-complement-bg' : 'prob-label-bg')
-      .attr('x', clampedX - textWidth / 2)
-      .attr('y', labelY - pillH / 2)
-      .attr('width', textWidth)
-      .attr('height', pillH)
-      .attr('rx', 4)
-      .attr('fill', isComplement ? '#ffffff' : '#e8f4f8')
-      .attr('stroke', isComplement ? '#888' : '#569BBD')
-      .attr('stroke-width', 1)
-      .attr('cursor', 'pointer');
-
     // Tooltip describing what editing this pill does (varies by mode/region).
     const tipText = region && region.startsWith('pair') && getTail() === 'between'
       ? 'Click to edit — the other two regions adjust proportionally'
       : 'Click to edit this probability';
-    bgRect.append('title').text(tipText);
 
-    const textEl = group.append('text')
-      .attr('class', isComplement ? 'prob-label prob-complement' : 'prob-label')
-      .attr('x', clampedX)
-      .attr('y', labelY)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('fill', isComplement ? '#6B6B6B' : '#7B2D8E')
-      .attr('cursor', 'pointer')
-      .text(labelText);
-
-    // Dashed leader line from pill into the shaded region
-    const leaderTargetX = Math.max(4, Math.min(frame.width - 4, midPx));
-    const pillBottomY = labelY + pillH / 2 + 2;
-    const endY = leaderEndY(midX, pillBottomY);
-    group.append('line')
-      .attr('class', 'prob-leader')
-      .attr('x1', clampedX).attr('y1', labelY + pillH / 2 + 2)
-      .attr('x2', leaderTargetX).attr('y2', endY)
-      .attr('stroke', isComplement ? '#888' : '#569BBD')
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '3,2')
-      .style('pointer-events', 'none');
-
-    // Click handler — scoped to THIS pill (text + its own background rect) so the
-    // three pair-mode pills each edit their own region.
-    const clickHandler = async () => {
+    // The commit handler carries the page semantics; the pill drawing itself is
+    // shared with the CI figure via js/dist-markers.js.
+    const onEdit = (/** @type {number} */ newProb) => {
       if (!currentInv || !currentCdf) return;
       const mode = getTail();
-      const newProb = await showInlineEdit(
-        chartContainer,
-        textEl.node(),
-        prob,
-        prob.toFixed(4)
-      );
-      if (newProb == null || newProb <= 0 || newProb >= 1) return;
 
       if (!isPair(mode)) {
         // Single tail: left → area to the left; right → area to the right.
@@ -743,8 +648,13 @@ export function initDistCalculator(config) {
       onValueChange(undefined, mode);
     };
 
-    textEl.on('click', clickHandler);
-    bgRect.on('click', clickHandler);
+    addProbPill(group, frame, xScale, xLo, xHi, prob, {
+      isComplement,
+      leaderEndY,
+      editContainer: chartContainer,
+      tip: tipText,
+      onEdit,
+    });
   }
 
   /**
@@ -757,76 +667,23 @@ export function initDistCalculator(config) {
    * @param {'left'|'right'|'both'} tail
    */
   function addEditableValueLabel(group, frame, xScale, value, tail) {
-    const displayValue = value;
-    const px = xScale(displayValue);
-
-    // Background pill for the label
-    const labelText = formatEditValue(displayValue);
-    const { charW: _cCharW, pad: _cPad, pillH: _cPillH } = pillDimensions('crit');
-    const textWidth = labelText.length * _cCharW + _cPad;
-
-    group.append('rect')
-      .attr('class', 'crit-label-bg')
-      .attr('x', px - textWidth / 2)
-      .attr('y', frame.height + 6)
-      .attr('width', textWidth)
-      .attr('height', _cPillH)
-      .attr('rx', 3)
-      .attr('fill', '#fff')
-      .attr('stroke', '#569BBD')
-      .attr('stroke-width', 1)
-      .attr('cursor', 'pointer');
-
-    const textEl = group.append('text')
-      .attr('class', 'crit-label')
-      .attr('x', px)
-      .attr('y', frame.height + 6 + _cPillH / 2)
-      .attr('text-anchor', 'middle')
-      .attr('dominant-baseline', 'central')
-      .attr('fill', '#333')
-      .attr('cursor', 'pointer')
-      .text(labelText);
-
-    // Hide axis tick labels that overlap with value label pills
-    const pillRanges = [[px - textWidth / 2, px + textWidth / 2]];
-    const inner = d3Selection.select(frame.inner);
-    inner.select('.x-axis').selectAll('.tick').each(function () {
-      const tick = d3Selection.select(this);
-      const tickX = parseFloat(tick.attr('transform')?.replace(/translate\(([^,]+).*/, '$1') || '0');
-      for (const [lo, hi] of pillRanges) {
-        if (tickX >= lo - 4 && tickX <= hi + 4) {
-          tick.select('text').attr('visibility', 'hidden');
-          break;
+    // Click-to-edit commits carry the page semantics; the box drawing (and axis
+    // tick-hiding) is shared with the CI figure via js/dist-markers.js.
+    addAxisValueBox(group, frame, xScale, value, {
+      editContainer: chartContainer,
+      onEdit: (/** @type {number} */ newVal) => {
+        if (isPair(tail)) {
+          // The label nearest `value` is the one being edited.
+          const { lo } = pairBounds(tail);
+          setBound(/** @type {'between'|'symmetric'} */ (tail),
+            Math.abs(value - lo) < 1e-9 ? 'lo' : 'hi', newVal);
+          onValueChange(undefined, tail);
+        } else {
+          inputX.value = formatForInput(newVal);
+          onValueChange(newVal, tail);
         }
-      }
+      },
     });
-
-    // Click-to-edit on the label (and its background). Each pill edits its own
-    // bound; in pair modes the bound nearest the edited value is updated.
-    const clickHandler = async () => {
-      const newVal = await showInlineEdit(
-        chartContainer,
-        textEl.node(),
-        displayValue
-      );
-      if (newVal == null) return;
-      if (isPair(tail)) {
-        // The label nearest `displayValue` is the one being edited.
-        const { lo } = pairBounds(tail);
-        setBound(/** @type {'between'|'symmetric'} */ (tail),
-          Math.abs(displayValue - lo) < 1e-9 ? 'lo' : 'hi', newVal);
-        onValueChange(undefined, tail);
-      } else {
-        inputX.value = formatForInput(newVal);
-        onValueChange(newVal, tail);
-      }
-    };
-
-    textEl.on('click', clickHandler);
-    // Also make the background pill clickable — scope to THIS label's pill so the
-    // two pair-mode labels don't both fire.
-    textEl.node()?.previousSibling &&
-      d3Selection.select(textEl.node().previousSibling).on('click', clickHandler);
   }
 
   // --- Value change handler (from drag or edit) ---
