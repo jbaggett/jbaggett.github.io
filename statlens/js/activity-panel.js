@@ -287,6 +287,26 @@
     document.body.setAttribute('data-activity', 'true');
     // Also hide data panel and controls row
     document.body.setAttribute('data-guided', 'true');
+    // Opt-in "minimal chrome": an activity can strip the host tool's advanced
+    // controls (hypotheses, success selector, Copy link, More options, seed) down
+    // to just the mechanism + chart + generate bar — for gentle conceptual intros
+    // where that machinery is clutter. CSS keys off body[data-chrome="minimal"].
+    if (activity.chrome === 'minimal') {
+      document.body.setAttribute('data-chrome', 'minimal');
+    }
+
+    // Optional friendlier page heading (the host tool's h1 can be clunky for an
+    // intro, e.g. "Randomization Test for Difference in Proportions"). Replace the
+    // leading heading text while keeping the header-actions (home/help/settings).
+    if (activity.heading) {
+      const h1 = document.querySelector('main > h1');
+      if (h1) {
+        const actions = h1.querySelector('.header-actions');
+        h1.textContent = activity.heading;
+        if (actions) h1.appendChild(actions);
+        document.title = `${activity.heading} | StatLens`;
+      }
+    }
 
     // ─── Desktop side panel ──────────────────────────────────────
     const panel = document.createElement('aside');

@@ -728,7 +728,7 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
  * State is persisted in sessionStorage so it survives within a session.
  * @param {HTMLElement|null} mechanismStrip - The #mechanism-strip element
  */
-export function initMechanismCollapse(mechanismStrip) {
+export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } = {}) {
   if (!mechanismStrip || mechanismStrip.querySelector('.mechanism-collapse-bar')) return;
 
   const bar = document.createElement('div');
@@ -832,9 +832,11 @@ export function initMechanismCollapse(mechanismStrip) {
     attrObserver.observe(mechResampleContent, { attributes: true, attributeFilter: ['class'], subtree: true });
   }
 
-  // Restore persisted state
+  // Restore the persisted collapsed state — UNLESS the caller needs the strip open
+  // (e.g. a card-mechanism activity whose instructions point at the cards it shows;
+  // a stale "collapsed" carried over from another sim page would hide them).
   const collapsed = sessionStorage.getItem('mechanism-collapsed') === 'true';
-  if (collapsed) {
+  if (collapsed && !forceExpanded) {
     strip.classList.add('collapsed');
     btn.textContent = 'Show sampling detail';
     btn.setAttribute('aria-expanded', 'false');

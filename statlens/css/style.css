@@ -1515,6 +1515,17 @@ input[aria-invalid="true"] {
   line-height: 1.5;
 }
 
+/* "Shuffled/Resampled Groups" panel before the first draw — muted hint, centered,
+   holding roughly the panel's height so the strip doesn't jump when the first
+   shuffle fills it. */
+.mech-resample-empty {
+  color: var(--ims-gray-text, #6B6B6B);
+  font-style: italic;
+  text-align: center;
+  padding: 2.75rem 0.5rem;
+  margin: 0;
+}
+
 .mech-group-row {
   display: flex;
   align-items: baseline;
@@ -3745,6 +3756,20 @@ body[data-static="true"] *::after {
 
 /* Hide data panel when activity is active (dataset comes from URL params) */
 body[data-activity="true"] #data-panel {
+  display: none !important;
+}
+
+/* ─── Minimal chrome (opt-in per activity via "chrome": "minimal") ───
+   For gentle conceptual intros, strip the host tool's advanced machinery —
+   hypotheses + Swap, success selector, Copy link, More options, seed — down to
+   just the mechanism strip, chart, generate bar, and the activity steps. The
+   generate bar lives in #controls, so hide its clutter siblings, not the row. */
+body[data-chrome="minimal"] #hypothesis-display,
+body[data-chrome="minimal"] #success-selector,
+body[data-chrome="minimal"] #seed-notice,
+body[data-chrome="minimal"] .share-link-btn,
+body[data-chrome="minimal"] .expert-toggle,
+body[data-chrome="minimal"] .mech-view-toggle {
   display: none !important;
 }
 

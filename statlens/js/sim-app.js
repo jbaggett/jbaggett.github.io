@@ -985,9 +985,12 @@ export function initSimPage(config) {
     // demos, and (in card mode) the first +1 has cards to deal from.
     if (cardsAllowed() && mechanismStrip && mechResampleContent) {
       mechanismStrip.hidden = false;
-      initMechanismCollapse(mechanismStrip);
+      // When cards were explicitly requested (an activity that points at them),
+      // open the strip even if a stale "collapsed" is remembered from another page.
+      initMechanismCollapse(mechanismStrip, { forceExpanded: cardMechanism });
       renderTwoGroupOriginal();
-      mechResampleContent.innerHTML = buildTwoGroupHTML(data1, data2, false);
+      // Blank until the first shuffle — don't seed the panel with the original.
+      mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
       mechanismInitialized = true;
       ensureViewToggle();
       // Card legend (decodes filled vs outline) shows only in card view.
@@ -1367,10 +1370,10 @@ export function initSimPage(config) {
         initMechanismCollapse(mechanismStrip);
         if (useNewPropMech2) ensurePropStyleToggle();
         renderTwoGroupOriginal();
-        // In card mode, seed the resample panel with the original grouping so
-        // the first +1 has cards to deal from (FLIP needs a starting layout).
-        if (cardMechanism && mechResampleContent) {
-          mechResampleContent.innerHTML = buildTwoGroupHTML(data1, data2, false);
+        // Blank until the first shuffle (was seeded with the original grouping,
+        // which looked like a completed shuffle).
+        if (mechResampleContent) {
+          mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
         }
       }
       // Randomization: explain *why* we shuffle, right by the mechanism.
@@ -1881,6 +1884,17 @@ export function initSimPage(config) {
   }
 
   /**
+   * Placeholder for the resample ("Shuffled/Resampled Groups") panel BEFORE the
+   * first draw. Previously the panel was seeded with a copy of the original
+   * grouping (and its diff), which read as if a shuffle had already happened.
+   * @returns {string}
+   */
+  function resamplePanelPlaceholderHTML() {
+    const verb = config.mode === 'randomization' ? 'shuffle' : 'resample';
+    return `<p class="mech-resample-empty">Click <strong>+1</strong> to ${verb}.</p>`;
+  }
+
+  /**
    * Render mini histograms into the two-group mechanism containers.
    * Must be called AFTER innerHTML is set (so the containers exist in DOM).
    * @param {number[]} g1 - Group 1 values
@@ -2034,13 +2048,14 @@ export function initSimPage(config) {
     renderTwoGroupOriginal();
     if (mechResampleContent) {
       const haveResample = lastTwoG1.length > 0 && lastTwoG2.length > 0;
-      const g1 = haveResample ? lastTwoG1 : data1;
-      const g2 = haveResample ? lastTwoG2 : data2;
-      if (useNewPropMech2) {
-        showTwoPropResample(g1, g2, false); // view switch → no draw animation
+      if (!haveResample) {
+        // No shuffle yet — keep the panel blank rather than mirroring the original.
+        mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
+      } else if (useNewPropMech2) {
+        showTwoPropResample(lastTwoG1, lastTwoG2, false); // view switch → no draw animation
       } else {
-        mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, false);
-        renderTwoGroupCharts(g1, g2, 'resamp');
+        mechResampleContent.innerHTML = buildTwoGroupHTML(lastTwoG1, lastTwoG2, false);
+        renderTwoGroupCharts(lastTwoG1, lastTwoG2, 'resamp');
       }
     }
     updateMechCardLegend();
@@ -2155,10 +2170,18 @@ export function initSimPage(config) {
     const canAnimateProps = config.proportion && highlight && !cardMechanism
       && mechResampleContent.querySelector('.mech-prop-bar');
 
-    // Card mode: re-deal the cards (FLIP) on a single shuffle
-    const cardContainer = cardMechanism && highlight
-      ? mechResampleContent.querySelector('.mech-card-display')
-      : null;
+    // Card mode: re-deal the cards (FLIP) on a single shuffle. On the FIRST
+    // shuffle the panel is still the blank "click +1" placeholder — seed it
+    // instantly with the ORIGINAL grouping so the deal has a starting layout to
+    // animate from (otherwise the first shuffle would just snap in, unanimated).
+    let cardContainer = null;
+    if (cardMechanism && highlight) {
+      cardContainer = mechResampleContent.querySelector('.mech-card-display');
+      if (!cardContainer) {
+        mechResampleContent.innerHTML = buildTwoGroupHTML(data1, data2, false);
+        cardContainer = mechResampleContent.querySelector('.mech-card-display');
+      }
+    }
 
     let morphMs = 0;
 

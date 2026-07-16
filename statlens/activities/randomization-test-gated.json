@@ -1,6 +1,8 @@
 {
   "title": "Randomization Test, Step by Step",
   "tool": "simulate/randomization-diff-props",
+  "chrome": "minimal",
+  "heading": "What is a Randomization Test?",
   "params": {
     "dataset": "sex_discrimination",
     "seed": "rtgated1",
