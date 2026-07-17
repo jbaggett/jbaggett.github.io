@@ -22,9 +22,7 @@ import { linkFormula } from '../../../js/formula-link.js';
 
 initHelp();
 
-/** Render LaTeX to HTML string via KaTeX (trust enables \htmlClass for formula linking). */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
+import { tex } from '../../../js/tex.js';
 
 setJStat(jstat.default || jstat);
 

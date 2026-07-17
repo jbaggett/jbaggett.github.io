@@ -13,10 +13,7 @@ import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
 import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. `trust` enables \htmlClass for C3
- *  formula-value linking (our LaTeX is hardcoded, so this is safe). */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
+import { tex } from '../../js/tex.js';
 
 // jStat's ESM build exposes the object as the default export; the bare namespace
 // has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.

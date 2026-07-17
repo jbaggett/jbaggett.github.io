@@ -18,10 +18,7 @@ import { formatStat, detectPrecision, linreg } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. `trust` enables \htmlClass for C3
- *  formula-value linking (our LaTeX is hardcoded, so this is safe). */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
+import { tex, escapeTex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -421,7 +418,7 @@ function renderResults(r, d, alternative, confLevel) {
   if (hasFullRegression) {
     const r2Pct = (r.rSquared * 100).toFixed(1);
     regressionInterp = `
-      <p>${tex(`\\hat{y} = ${formatStat(r.intercept, d)} + ${formatStat(r.slope, d)} \\cdot \\text{${xName}}`)}</p>
+      <p>${tex(`\\hat{y} = ${formatStat(r.intercept, d)} + ${formatStat(r.slope, d)} \\cdot \\text{${escapeTex(xName)}}`)}</p>
       <p>${tex(`r = ${formatStat(r.r, d, 'correlation')}`)}, ${tex(`R^2 = ${r2Pct}\\%`)}.</p>`;
   }
 

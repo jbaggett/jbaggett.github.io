@@ -4,9 +4,9 @@
   "params": {},
   "steps": [
     {
-      "instruction": "Pick any multi-group numeric dataset (3+ groups of a quantitative response). State H0 and Ha in your head.",
-      "observe": "What does Ha actually claim - that ALL group means differ, or that AT LEAST ONE differs?",
-      "reveal": "H0: mu_1 = mu_2 = ... = mu_k vs. Ha: AT LEAST ONE mu_i differs from the others. The F-test never tells you all are different - and never tells you which one is different."
+      "instruction": "Pick any multi-group numeric dataset (3+ groups of a quantitative response). State H₀ and Hₐ in your head.",
+      "observe": "What does Hₐ actually claim - that ALL group means differ, or that AT LEAST ONE differs?",
+      "reveal": "H₀: μ₁ = μ₂ = ... = μₖ vs. Hₐ: AT LEAST ONE μᵢ differs from the others. The F-test never tells you all are different - and never tells you which one is different."
     },
     {
       "instruction": "Look at the side-by-side boxplots the tool displays. Eyeball whether within-group spreads look roughly equal and whether each group is roughly symmetric.",
@@ -15,13 +15,13 @@
     },
     {
       "instruction": "Run the F-test. Note F, the two df values (between = k - 1, within = N - k), and the p-value.",
-      "observe": "What is your decision at alpha = 0.05?",
-      "reveal": "At alpha = 0.05 reject H0 iff p < 0.05. F = (between-group variance) / (within-group variance). Under H0 both estimate the same noise and F is approximately 1. Large F means between-group differences are bigger than within-group noise can explain by chance."
+      "observe": "What is your decision at α = 0.05?",
+      "reveal": "At α = 0.05 reject H₀ iff p < 0.05. F = (between-group variance) / (within-group variance). Under H₀ both estimate the same noise and F is approximately 1. Large F means between-group differences are bigger than within-group noise can explain by chance."
     },
     {
-      "instruction": "Suppose H0 is rejected. A student writes 'all three groups have different means.' Why is that wrong?",
+      "instruction": "Suppose H₀ is rejected. A student writes 'all three groups have different means.' Why is that wrong?",
       "observe": "What follow-up would tell you WHICH pairs of groups actually differ?",
-      "reveal": "Ha says AT LEAST ONE differs, not all. To identify which pairs, run a POST-HOC procedure (Tukey HSD, Bonferroni-adjusted pairwise comparisons) - those control the family-wise Type I error rate across multiple pairwise tests. A bare F-rejection is the green light to ask WHICH; it is not the answer."
+      "reveal": "Hₐ says AT LEAST ONE differs, not all. To identify which pairs, run a POST-HOC procedure (Tukey HSD, Bonferroni-adjusted pairwise comparisons) - those control the family-wise Type I error rate across multiple pairwise tests. A bare F-rejection is the green light to ask WHICH; it is not the answer."
     },
     {
       "instruction": "Open /simulate/randomization-anova/ on the same data (new tab) and run 5000 shuffles. Compare its p-value to the F-distribution's.",

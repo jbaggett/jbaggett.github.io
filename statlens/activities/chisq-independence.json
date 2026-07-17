@@ -5,26 +5,26 @@
   "steps": [
     {
       "instruction": "Pick any two-categorical-variable dataset (a contingency table with at least 2 rows and 2 columns). Read the table carefully.",
-      "observe": "What are the two variables? State H0 and Ha in words.",
-      "reveal": "H0: the two variables are independent (knowing one tells you nothing about the other). Ha: the two variables are associated. If the study collected one sample and measured both variables at random, this is a test of INDEPENDENCE. If separate samples were drawn per level of one variable, it's a test of HOMOGENEITY - same arithmetic, different interpretation."
+      "observe": "What are the two variables? State H₀ and Hₐ in words.",
+      "reveal": "H₀: the two variables are independent (knowing one tells you nothing about the other). Hₐ: the two variables are associated. If the study collected one sample and measured both variables at random, this is a test of INDEPENDENCE. If separate samples were drawn per level of one variable, it's a test of HOMOGENEITY - same arithmetic, different interpretation."
     },
     {
-      "instruction": "The tool computes expected counts under H0: E_ij = (row_i total * col_j total) / grand total. Look at the expected counts alongside the observed counts.",
+      "instruction": "The tool computes expected counts under H₀: E<sub>ij</sub> = (row i total · col j total) / grand total. Look at the expected counts alongside the observed counts.",
       "observe": "Are all expected counts at least 5? Is any cell suspiciously small?",
-      "reveal": "The expected-count condition: E_ij >= 5 in every cell. If violated, use the randomization chi-square, or merge substantively-similar categories, or collect more data. Small expected counts distort the chi-square approximation."
+      "reveal": "The expected-count condition: E<sub>ij</sub> ≥ 5 in every cell. If violated, use the randomization chi-square, or merge substantively-similar categories, or collect more data. Small expected counts distort the chi-square approximation."
     },
     {
       "instruction": "Run the test. Read chi-square, df = (rows - 1)(cols - 1), and the p-value.",
-      "observe": "What is your decision at alpha = 0.05?",
-      "reveal": "At alpha = 0.05 reject H0 iff p < 0.05. Rejection means the variables are associated - it does NOT identify which specific row-column combinations are the drivers."
+      "observe": "What is your decision at α = 0.05?",
+      "reveal": "At α = 0.05 reject H₀ iff p < 0.05. Rejection means the variables are associated - it does NOT identify which specific row-column combinations are the drivers."
     },
     {
-      "instruction": "If H0 is rejected, examine the per-cell contributions (O - E)^2 / E. Also compute standardized residuals (O - E) / sqrt(E) for each cell.",
+      "instruction": "If H₀ is rejected, examine the per-cell contributions (O - E)² / E. Also compute standardized residuals (O - E) / √E for each cell.",
       "observe": "Which cells have the largest absolute standardized residuals? Are they over- or under-represented compared to independence?",
       "reveal": "Standardized residuals larger than |2| flag cells where the observed count is noticeably different from what independence would predict. Positive means over-represented (that combination co-occurs MORE than chance), negative means under-represented. These cells tell you WHERE the association lives."
     },
     {
-      "instruction": "Suppose you rejected H0 and concluded: 'Variable X CAUSES variable Y.' Push back on that conclusion.",
+      "instruction": "Suppose you rejected H₀ and concluded: 'Variable X CAUSES variable Y.' Push back on that conclusion.",
       "observe": "What alternative explanations are consistent with an observed association?",
       "reveal": "Chi-square detects ASSOCIATION, not causation. Alternative explanations: (i) X causes Y, (ii) Y causes X, (iii) a third variable Z causes both (confounding). The test cannot rule out (ii) or (iii). Only random assignment can establish causation from an association."
     }

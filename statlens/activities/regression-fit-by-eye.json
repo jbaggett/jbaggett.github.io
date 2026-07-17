@@ -24,9 +24,9 @@
       "reveal": "Most beginners get within roughly plus-or-minus 10-20% of OLS on slope and intercept. The fact that the math gets it 'exactly right' isn't because it is smarter - it is because it minimizes a specific loss (SSE) that you cannot optimize by inspection. The line you find depends on the loss you minimize."
     },
     {
-      "instruction": "Reset to a new random seed (or change sigma) to see a noisier dataset. Re-fit by eye. Notice how confidently you can place the line when noise is large vs. small.",
+      "instruction": "Reset to a new random seed (or change σ) to see a noisier dataset. Re-fit by eye. Notice how confidently you can place the line when noise is large vs. small.",
       "observe": "How does the UNCERTAINTY of your fit grow with noise?",
-      "reveal": "Larger sigma (residual SD) makes the by-eye fit more ambiguous - multiple lines look roughly equally good. The standard error of the slope formalizes this: SE(b_1) grows with the residual SD and shrinks with the spread of x. Inference for slope quantifies the uncertainty you just FELT."
+      "reveal": "Larger σ (residual SD) makes the by-eye fit more ambiguous - multiple lines look roughly equally good. The standard error of the slope formalizes this: SE(b₁) grows with the residual SD and shrinks with the spread of x. Inference for slope quantifies the uncertainty you just FELT."
     }
   ]
 }

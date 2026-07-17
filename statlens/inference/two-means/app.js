@@ -18,9 +18,7 @@ import { mean, detectPrecision, formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
+import { tex, escapeTex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -563,7 +561,7 @@ function renderResults(r) {
     </div>
 
     <div class="interpretation">
-      <p>${tex(`\\bar{x}_{\\text{${esc(group1Name)}}} - \\bar{x}_{\\text{${esc(group2Name)}}}`)} = ${formatStat(r.diff, d)}, Welch df = ${r.df.toFixed(1)}.</p>
+      <p>${tex(`\\bar{x}_{\\text{${escapeTex(group1Name)}}} - \\bar{x}_{\\text{${escapeTex(group2Name)}}}`)} = ${formatStat(r.diff, d)}, Welch df = ${r.df.toFixed(1)}.</p>
       <p><strong>Formal conclusion:</strong> ${conclusions.formal}</p>
       ${conclusions.practical ? `<p><strong>Practical conclusion:</strong> ${conclusions.practical}</p>` : ''}
       <p>${confPct}% CI: (${formatStat(r.ciLower, d)}, ${formatStat(r.ciUpper, d)}). ${ciInterpretation}</p>

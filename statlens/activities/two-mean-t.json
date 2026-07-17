@@ -5,8 +5,8 @@
   "steps": [
     {
       "instruction": "Pick any two-group numeric dataset. State the question in words: are the population means the same in the two groups?",
-      "observe": "What are H0 and Ha in symbols?",
-      "reveal": "H0: mu_1 - mu_2 = 0 vs. Ha: mu_1 - mu_2 != 0 (two-sided, unless you have a directional claim stated in advance)."
+      "observe": "What are H₀ and Hₐ in symbols?",
+      "reveal": "H₀: μ₁ - μ₂ = 0 vs. Hₐ: μ₁ - μ₂ ≠ 0 (two-sided, unless you have a directional claim stated in advance)."
     },
     {
       "instruction": "Look at the side-by-side displays for the two groups. Note each group's n, mean, and SD.",
@@ -15,12 +15,12 @@
     },
     {
       "instruction": "Run the two-sided Welch t-test. Read off t, df (usually not a whole number - that's the Welch correction), and the p-value.",
-      "observe": "What is your decision at alpha = 0.05? Does the 95% CI for mu_1 - mu_2 exclude 0?",
-      "reveal": "At alpha = 0.05 reject H0 iff p < 0.05. The 95% CI and the two-sided test always agree: the test rejects H0 exactly when the CI excludes 0."
+      "observe": "What is your decision at α = 0.05? Does the 95% CI for μ₁ - μ₂ exclude 0?",
+      "reveal": "At α = 0.05 reject H₀ iff p < 0.05. The 95% CI and the two-sided test always agree: the test rejects H₀ exactly when the CI excludes 0."
     },
     {
       "instruction": "Write a one-sentence conclusion in context, naming both groups and stating the direction and strength of evidence.",
-      "observe": "Does your conclusion talk about the POPULATIONS (mu_1 vs. mu_2), or does it slip into talking about the SAMPLES (x-bar_1 vs. x-bar_2)?",
+      "observe": "Does your conclusion talk about the POPULATIONS (μ₁ vs. μ₂), or does it slip into talking about the SAMPLES (x̄₁ vs. x̄₂)?",
       "reveal": "Inference is about the populations, not the samples. A good conclusion: 'The data provide [strong/no] evidence that the mean [response] in group 1 differs from group 2 (p = ...).' The samples ARE different (we can see); the question is whether the underlying populations differ."
     },
     {

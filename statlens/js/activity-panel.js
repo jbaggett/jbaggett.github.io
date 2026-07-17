@@ -27,6 +27,9 @@
   })();
 
   activityPromise
+    // KaTeX must be in place BEFORE the first render — md() is synchronous, so a
+    // late-arriving KaTeX would leave step 1 showing raw-TeX <code> fallbacks.
+    .then(activity => (activity && usesMath(activity) ? ensureKatex().then(() => activity) : activity))
     .then(activity => {
       if (!activity) return; // fetch failed in page-number.js
       // Params already injected by page-number.js; just trigger dataset load and render UI
@@ -100,7 +103,30 @@
    */
   function md(text) {
     if (!text) return '';
-    return text
+    // Math is extracted FIRST and parked behind placeholders. `_`, `*`, `[` and
+    // `{` are meaningful in BOTH TeX and markdown, so the rules below would
+    // otherwise mangle a formula (e.g. $a * b$ would trip the *italic* rule).
+    const math = [];
+    const ESC = '\u0001';   // parks an escaped \$ so it cannot open a math span
+    const MARK = '\u0000';  // brackets a parked math span
+    const park = (tex, display) => {
+      math.push({ tex: tex, display: display });
+      return MARK + 'M' + (math.length - 1) + MARK;
+    };
+    let src = String(text).split('\\$').join(ESC);
+    // Display math first, so $$…$$ is not eaten by the $…$ rule below. \(…\)
+    // and $$…$$ are the delimiters REQ-031 documented; $…$ is the shorthand.
+    src = src.replace(/\$\$([\s\S]+?)\$\$/g, (m, tex) => park(tex, true));
+    src = src.replace(/\\\[([\s\S]+?)\\\]/g, (m, tex) => park(tex, true));
+    src = src.replace(/\\\(([\s\S]+?)\\\)/g, (m, tex) => park(tex, false));
+    src = src.replace(/\$([^$]+)\$(?!\d)/g, (m, tex) => {
+      // Pandoc's delimiter rule, which is what keeps prose currency out of the
+      // math parser: no space just inside either delimiter, and no digit right
+      // after the closing one. It is why '$100,000-$250,000' stays money.
+      if (/^\s|\s$/.test(tex)) return m;
+      return park(tex, false);
+    });
+    return src
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
@@ -115,7 +141,67 @@
         + '<span>Enlarge</span></button>'
         + '<img class="activity-img" src="$2" alt="$1" loading="lazy" title="Enlarge">'
         + '</span>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      // Math last: swap the parked spans for rendered KaTeX, then un-escape \$.
+      .replace(new RegExp(MARK + 'M(\\d+)' + MARK, 'g'), (m, i) => renderTex(math[+i]))
+      .split(ESC).join('$');
+  }
+
+  /**
+   * Render one inline TeX span. KaTeX is loaded lazily (see ensureKatex) and only
+   * when an activity actually contains math — most tool pages never load it. If it
+   * is unavailable or the TeX is malformed, fall back to the raw source in <code>
+   * rather than dropping the formula on the floor.
+   */
+  function renderTex(span) {
+    const tex = span.tex;
+    const katex = /** @type {any} */ (window).katex;
+    if (katex) {
+      try {
+        return katex.renderToString(tex, {
+          throwOnError: false, strict: false, trust: true, displayMode: !!span.display,
+        });
+      } catch (err) {
+        console.warn('Activity panel: bad TeX', tex, err);
+      }
+    }
+    return '<code>' + String(tex).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code>';
+  }
+
+  /**
+   * Load KaTeX from the CDN on demand. Activities render on top of ANY tool page,
+   * and only the inference pages ship KaTeX themselves — so the panel cannot
+   * assume it exists. Resolves even on failure; renderTex degrades to <code>.
+   */
+  function ensureKatex() {
+    const w = /** @type {any} */ (window);
+    if (w.katex) return Promise.resolve();
+    if (w.__katexReady) return w.__katexReady;
+    w.__katexReady = new Promise((resolve) => {
+      if (!document.querySelector('link[href*="katex"]')) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css';
+        document.head.appendChild(css);
+      }
+      const js = document.createElement('script');
+      js.src = 'https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js';
+      js.onload = () => resolve();
+      js.onerror = () => { console.warn('Activity panel: KaTeX failed to load'); resolve(); };
+      document.head.appendChild(js);
+    });
+    return w.__katexReady;
+  }
+
+  /** True if any string anywhere in the activity uses $…$ math. */
+  function usesMath(activity) {
+    // Must match EVERY delimiter md() understands, not just $…$ — an activity
+    // written entirely in \(…\) would otherwise never load KaTeX and would
+    // silently render as <code> on any page that does not ship KaTeX itself.
+    try {
+      const s = JSON.stringify(activity);
+      return /\$[^$]+\$/.test(s) || /\\\\\(/.test(s) || /\\\\\[/.test(s);
+    } catch { return false; }
   }
 
   /**
@@ -440,16 +526,10 @@
         + `${html}<button type="button" class="activity-sheet-close" aria-label="Hide instructions">✕</button>`;
       fab.textContent = `${currentStep + 1}/${steps.length}`;
 
-      // Typeset any LaTeX in the freshly-injected step text (REQ-031). KaTeX
-      // auto-render only fires once at load, so panel content added later needs
-      // an explicit pass. Guarded — not every tool page loads KaTeX.
-      if (typeof window !== 'undefined' && typeof window.renderMathInElement === 'function') {
-        const opts = { delimiters: [
-          { left: '\\(', right: '\\)', display: false },
-          { left: '$$', right: '$$', display: true },
-        ], throwOnError: false };
-        try { window.renderMathInElement(panel, opts); window.renderMathInElement(sheet, opts); } catch { /* ignore */ }
-      }
+      // No KaTeX pass needed here: md() renders every math span to HTML before
+      // this point (REQ-031 originally relied on KaTeX auto-render, but that only
+      // ever existed on conceptual/sampling-lab, so panel math silently never
+      // typeset anywhere else — which is why activities were authored in ASCII).
 
       // Wire events — identical controls exist in panel and sheet
       for (const root of [panel, sheet]) {

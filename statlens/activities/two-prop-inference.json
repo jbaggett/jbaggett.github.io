@@ -4,24 +4,24 @@
   "params": { "dataset": "malaria" },
   "steps": [
     {
-      "instruction": "The Malaria Vaccine dataset randomly assigned children to vaccine or control and recorded who got infected. The question: does the vaccine CHANGE the infection rate? State H0 and Ha in your head.",
+      "instruction": "The Malaria Vaccine dataset randomly assigned children to vaccine or control and recorded who got infected. The question: does the vaccine CHANGE the infection rate? State H₀ and Hₐ in your head.",
       "observe": "Is this naturally one-sided or two-sided?",
-      "reveal": "H0: p1 - p2 = 0 vs. Ha: p1 - p2 != 0. 'Change' gives no direction, so it is two-sided."
+      "reveal": "H₀: p₁ - p₂ = 0 vs. Hₐ: p₁ - p₂ ≠ 0. 'Change' gives no direction, so it is two-sided."
     },
     {
-      "instruction": "Look at the per-group counts the tool reports. Compute (or read) the pooled proportion p-hat and check n_i * p-hat and n_i * (1 - p-hat) for both groups.",
+      "instruction": "Look at the per-group counts the tool reports. Compute (or read) the pooled proportion p̂ and check n<sub>i</sub> · p̂ and n<sub>i</sub> · (1 - p̂) for both groups.",
       "observe": "Are all four counts at least 10?",
       "reveal": "For the malaria data both groups have plenty of successes and failures - success-failure condition is met. Normal approximation is fine here."
     },
     {
-      "instruction": "Run the two-sided z-test. Read off z, the p-value, and the 95% CI for p1 - p2.",
-      "observe": "Does the CI contain 0? Does the p-value reject H0 at alpha = 0.05?",
-      "reveal": "CI and test always agree: the test rejects H0 at alpha = 0.05 exactly when the 95% CI excludes 0. For the malaria data the CI typically lies entirely below 0 - lower infection rate in the vaccine group."
+      "instruction": "Run the two-sided z-test. Read off z, the p-value, and the 95% CI for p₁ - p₂.",
+      "observe": "Does the CI contain 0? Does the p-value reject H₀ at α = 0.05?",
+      "reveal": "CI and test always agree: the test rejects H₀ at α = 0.05 exactly when the 95% CI excludes 0. For the malaria data the CI typically lies entirely below 0 - lower infection rate in the vaccine group."
     },
     {
-      "instruction": "Write a one-sentence conclusion in context. Then evaluate: 'There is a 95% probability that p1 - p2 lies in this interval.'",
+      "instruction": "Write a one-sentence conclusion in context. Then evaluate: 'There is a 95% probability that p₁ - p₂ lies in this interval.'",
       "observe": "Why is that interpretation wrong?",
-      "reveal": "p1 - p2 is a FIXED but unknown number. The 95% refers to the long-run success rate of the interval-building procedure: across many studies, 95% of intervals built this way would capture the true difference."
+      "reveal": "p₁ - p₂ is a FIXED but unknown number. The 95% refers to the long-run success rate of the interval-building procedure: across many studies, 95% of intervals built this way would capture the true difference."
     },
     {
       "instruction": "Open /simulate/randomization-diff-props/?dataset=malaria in a new tab and run 5000 shuffles. Compare its p-value to the z-test's.",

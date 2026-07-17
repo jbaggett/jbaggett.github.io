@@ -18,10 +18,7 @@ import { formatStat, detectPrecision, mean, sd } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. `trust` enables \htmlClass for C3
- *  formula-value linking (our LaTeX is hardcoded, so this is safe). */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display, trust: true, strict: false });
+import { tex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 

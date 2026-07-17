@@ -18,9 +18,7 @@ import { generateConclusions, findContext } from '../../js/conclusions.js';
 
 initHelp();
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 

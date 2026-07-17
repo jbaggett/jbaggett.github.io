@@ -19,10 +19,7 @@ await new Promise((resolve) => {
   }, 50);
 });
 
-/** Render LaTeX to HTML string. */
-function tex(latex, display = false) {
-  return katex.renderToString(latex, { throwOnError: false, displayMode: display });
-}
+import { tex, escapeTex } from '../../js/tex.js';
 
 // Wait for jStat so we can compute test results
 const jstatMod = await import('jstat');
@@ -298,8 +295,8 @@ function buildScenario(ds, ctx) {
       }
     }
     const p = 1 - jStat.chisquare.cdf(chiSq, df);
-    const h0 = tex(`H_0\\text{: ${rVar} and ${cVar} are independent}`);
-    const ha = tex(`H_a\\text{: There is an association between ${rVar} and ${cVar}}`);
+    const h0 = tex(`H_0\\text{: ${escapeTex(rVar)} and ${escapeTex(cVar)} are independent}`);
+    const ha = tex(`H_a\\text{: There is an association between ${escapeTex(rVar)} and ${escapeTex(cVar)}}`);
     return {
       ...base, testType: 'chisq',
       hypotheses: `${h0}<br>${ha}`,
