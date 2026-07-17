@@ -3769,7 +3769,11 @@ body[data-chrome="minimal"] #success-selector,
 body[data-chrome="minimal"] #seed-notice,
 body[data-chrome="minimal"] .share-link-btn,
 body[data-chrome="minimal"] .expert-toggle,
-body[data-chrome="minimal"] .mech-view-toggle {
+body[data-chrome="minimal"] .mech-view-toggle,
+/* Minimal chrome also strips the stat / confidence-level / tail control row —
+   the piece an activity would otherwise reveal. (Interactive activities keep it;
+   only chrome:minimal intros hide it.) */
+body[data-chrome="minimal"] .control-row {
   display: none !important;
 }
 

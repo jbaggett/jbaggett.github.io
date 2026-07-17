@@ -369,14 +369,23 @@
     // `statlens:state` should answer `statlens:request-state` with a fresh emit.
     try { window.dispatchEvent(new CustomEvent('statlens:request-state')); } catch { /* no CustomEvent */ }
 
-    // Mark body so CSS can adjust layout
+    // Mark body so CSS can adjust layout. The data panel is hidden via
+    // body[data-activity]; that is all activity mode hides by default.
     document.body.setAttribute('data-activity', 'true');
-    // Also hide data panel and controls row
-    document.body.setAttribute('data-guided', 'true');
+    // NOTE: activities deliberately do NOT set data-guided. That flag hides the
+    // .control-row (stat / confidence-level / tail dropdowns) and belongs to the
+    // textbook *embed* path (?embed=true&guided=true, wired in page-number.js),
+    // where parameters are pre-set and the student shouldn't touch them. An
+    // activity is the opposite: its steps walk the student *through* those
+    // controls, so hiding them makes an instruction like "change the confidence
+    // level to 90%" impossible to follow (this broke ci-level.json). Activities
+    // that want a stripped-down surface opt into chrome:minimal below, which now
+    // also hides the control row.
     // Opt-in "minimal chrome": an activity can strip the host tool's advanced
-    // controls (hypotheses, success selector, Copy link, More options, seed) down
-    // to just the mechanism + chart + generate bar — for gentle conceptual intros
-    // where that machinery is clutter. CSS keys off body[data-chrome="minimal"].
+    // controls (hypotheses, success selector, Copy link, More options, seed, and
+    // the stat/CI control row) down to just the mechanism + chart + generate bar
+    // — for gentle conceptual intros where that machinery is clutter. CSS keys
+    // off body[data-chrome="minimal"].
     if (activity.chrome === 'minimal') {
       document.body.setAttribute('data-chrome', 'minimal');
     }
