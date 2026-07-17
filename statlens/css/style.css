@@ -1331,6 +1331,23 @@ input[aria-invalid="true"] {
   background: var(--surface);
 }
 
+/* A method that doesn't apply to the current statistic (e.g. the ±SE / Both
+   normal approximation under a median) is disabled, not hidden — the tooltip
+   explains why. Disabled controls are exempt from WCAG contrast minimums. */
+.seg-control button:disabled,
+.seg-control button:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg);
+}
+
+/* The "Show theoretical curve" toggle is the same normal approximation, so it
+   dims alongside the buttons for non-mean statistics. */
+.theory-toggle.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .mechanism-arrow {
   flex-shrink: 0;
   font-size: 1.4rem;

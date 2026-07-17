@@ -80,7 +80,7 @@ export function normalApproxCI(stats, ciLevel) {
  * @param {object} opts
  * @param {string} opts.method - Initial method: 'percentile' | 'se' | 'both'.
  * @param {(method: string) => void} opts.onChange
- * @returns {{ syncPressed: (method: string) => void, syncLabel: (ciLevel: number) => void }}
+ * @returns {{ syncPressed: (method: string) => void, syncLabel: (ciLevel: number) => void, setNormalAvailable: (available: boolean) => void }}
  */
 export function createCiMethodControl(ciPrimary, { method, onChange }) {
   const row = document.createElement('div');
@@ -95,8 +95,11 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
 
   const toggle = /** @type {HTMLElement} */ (row.querySelector('.ci-method-toggle'));
   toggle.addEventListener('click', (e) => {
-    const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-cim]');
-    if (btn) onChange(btn.getAttribute('data-cim') || 'percentile');
+    const btn = /** @type {HTMLButtonElement} */ (
+      /** @type {HTMLElement} */ (e.target).closest('button[data-cim]'));
+    // A disabled button emits no native click, but the listener is delegated to
+    // the group, so guard explicitly for keyboard/synthetic events.
+    if (btn && !btn.disabled) onChange(btn.getAttribute('data-cim') || 'percentile');
   });
 
   const syncPressed = (/** @type {string} */ m) => {
@@ -108,9 +111,24 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
     const btn = toggle.querySelector('button[data-cim="se"]');
     if (btn) btn.textContent = `±${zLabelFor(ciLevel)} SE`;
   };
+  // The ±z·SE and Both methods ARE the normal approximation, which only holds for
+  // a statistic whose sampling distribution is ~normal (the mean, via CLT). The
+  // caller disables them for a median / SD / quartile, where percentile is the
+  // honest interval. Disabled buttons carry a tooltip so the "why" is discoverable.
+  const setNormalAvailable = (/** @type {boolean} */ available) => {
+    for (const cim of ['se', 'both']) {
+      const b = /** @type {HTMLButtonElement|null} */ (
+        toggle.querySelector(`button[data-cim="${cim}"]`));
+      if (!b) continue;
+      b.disabled = !available;
+      b.setAttribute('aria-disabled', String(!available));
+      if (available) b.removeAttribute('title');
+      else b.title = 'The normal approximation (±z·SE) applies to the mean. For this statistic, use the percentile interval.';
+    }
+  };
 
   syncPressed(method);
-  return { syncPressed, syncLabel };
+  return { syncPressed, syncLabel, setNormalAvailable };
 }
 
 /**

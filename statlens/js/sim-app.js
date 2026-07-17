@@ -3168,6 +3168,45 @@ export function initSimPage(config) {
     if (ciPrimary) {
       methodControl = createCiMethodControl(ciPrimary, { method: ciMethod, onChange: setCiMethod });
       methodControl.syncLabel(getCiLevel());
+      // Honour the current statistic before the first render: a ?stat=median link
+      // that also asked for ci_method=se must land on percentile, not the normal
+      // approximation. This calls syncTheoryToMethod() itself.
+      syncNormalApproxAvailability();
+    }
+  }
+
+  /**
+   * The normal approximation — the ±z·SE / Both CI methods and the fitted normal
+   * curve — assumes the bootstrap statistic's sampling distribution is roughly
+   * normal. The CLT gives that for the MEAN (and the difference in means), but the
+   * bootstrap distribution of a median, SD, or quartile is often skewed, discrete,
+   * or lumpy, so a normal approximation there teaches a method that doesn't hold.
+   * Percentile is the honest interval for those, so we take the normal approximation
+   * off the table entirely when the chosen statistic isn't the mean.
+   */
+  function normalApproxApplies() {
+    return (bootStatSelect?.value ?? 'mean') === 'mean';
+  }
+
+  function syncNormalApproxAvailability() {
+    const ok = normalApproxApplies();
+    methodControl?.setNormalAvailable(ok);
+    if (theoryCheckbox) {
+      theoryCheckbox.disabled = !ok;
+      theoryCheckbox.closest('.theory-toggle')?.classList.toggle('is-disabled', !ok);
+    }
+    if (!ok) {
+      // Fall back to percentile and drop any normal-curve overlay the previous
+      // statistic (or a URL param) had switched on.
+      if (ciMethod !== 'percentile') setCiMethod('percentile');
+      if (theoryOverlayOn) {
+        theoryOverlayOn = false;
+        theoryAutoOn = false;
+        if (theoryCheckbox) theoryCheckbox.checked = false;
+        if (chartContainer) removeTheoryOverlay(chartContainer);
+      }
+    } else {
+      // Mean again: let the method drive the overlay as usual.
       syncTheoryToMethod();
     }
   }
@@ -3214,13 +3253,19 @@ export function initSimPage(config) {
   // Reset when bootstrap stat changes (mixing stats would be meaningless)
   if (bootStatSelect) {
     bootStatSelect.addEventListener('change', () => {
+      // The normal approximation is offered only for the mean; recheck first so
+      // the ±SE/Both buttons and normal-curve toggle enable or disable to match.
+      syncNormalApproxAvailability();
       if (allStats.length > 0) {
         resetSimulation();
         // Re-show original sample since data is still loaded
         if (data1.length > 0) {
           showDataLoaded();
         }
-        announce(`Statistic changed to ${getBootstrapStat().label}. Simulation reset.`);
+        const suffix = normalApproxApplies()
+          ? ''
+          : ' The normal approximation is unavailable for this statistic; showing the percentile interval.';
+        announce(`Statistic changed to ${getBootstrapStat().label}. Simulation reset.${suffix}`);
       }
     });
   }
