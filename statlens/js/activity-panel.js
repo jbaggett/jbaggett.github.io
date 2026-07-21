@@ -300,7 +300,18 @@
    * @property {string} [hint] - Shown while locked ("Draw at least 100 samples")
    * @property {boolean} [autoAdvance] - Advance automatically once satisfied
    *
-   * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, demo?: {type: string, label?: string, options?: object}}> }} activity
+   * @typedef {object} RespondPrompt
+   * @property {string} id - Stable field id (part of the localStorage key + export)
+   * @property {string} [label] - Shown above the textarea
+   * @property {string} [placeholder]
+   * @property {number} [rows] - Textarea height in rows (1–6, default 2)
+   *
+   * @typedef {object} RespondSpec
+   * @property {RespondPrompt[]} prompts - One labeled textarea per prompt
+   * @property {boolean} [gateOnNonEmpty] - Block "Next" until every field has content
+   *   (REQ-041: forces the predict-before-reveal commit; never a correctness check)
+   *
+   * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, respond?: RespondSpec, demo?: {type: string, label?: string, options?: object}}> }} activity
    */
   function renderPanel(activity) {
     const steps = activity.steps || [];
@@ -312,6 +323,173 @@
     /** @type {Map<number, {chosen: number, passed: boolean}>} */
     const gateState = new Map();
     const present = getMode() === 'present';
+
+    // ─── Free-text response capture (REQ-041) ─────────────────────────────────
+    // A step can declare a `respond` block of labeled textareas. The textbook
+    // keeps the Predict/Explain *prompts* (narrative, print, offline); the typed
+    // *answers* live here, so e-book / rental / library students who can't write
+    // in the book still can. Answers persist to localStorage and export.
+    //
+    // Everything routes through ONE response store (load / save / serialize).
+    // Today it feeds a single sink — Download. The Gen-2 seam (Jeff's AI-eval
+    // vision) is exactly this: a future `postMessage`-emit or POST is just a
+    // second sink over `serializeResponses()`, no re-plumbing. That is also why
+    // Download emits a machine-readable `.json` beside the human-readable file.
+    const escapeAttr = (/** @type {string} */ s) =>
+      String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const escapeTextarea = (/** @type {string} */ s) =>
+      String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+    const activitySlug = String(activityUrl || 'activity').split('/').pop().replace(/\.json$/, '');
+    const RESP_KEY = `statlens-activity-responses:${activitySlug}`;
+    const activityHasRespond = steps.some(s => s && s.respond && Array.isArray(s.respond.prompts));
+
+    /** @type {Record<string, Record<string, string>>} step-index → field-id → text */
+    const responses = (() => {
+      try { return JSON.parse(localStorage.getItem(RESP_KEY) || '{}') || {}; }
+      catch { return {}; }
+    })();
+    // True once the student has typed something not yet exported — arms the
+    // beforeunload hint. localStorage already persists every keystroke, so this
+    // warns about un-downloaded work, not lost work.
+    let responsesDirty = false;
+
+    function saveResponses() {
+      try { localStorage.setItem(RESP_KEY, JSON.stringify(responses)); }
+      catch { /* quota / private mode: the in-memory copy still works this session */ }
+    }
+    function respVal(/** @type {number} */ stepIdx, /** @type {string} */ fieldId) {
+      return (responses[stepIdx] && responses[stepIdx][fieldId]) || '';
+    }
+    /** Every prompt on a `respond` step has non-blank content. */
+    function respondComplete(/** @type {number} */ stepIdx) {
+      const r = steps[stepIdx] && steps[stepIdx].respond;
+      if (!r || !Array.isArray(r.prompts)) return true;
+      return r.prompts.every(p => respVal(stepIdx, p.id).trim().length > 0);
+    }
+    function anyResponses() {
+      return Object.values(responses).some(
+        step => Object.values(step || {}).some(v => String(v).trim().length > 0));
+    }
+
+    /** Structured snapshot — the single source every export/emit sink reads. */
+    function serializeResponses() {
+      const out = [];
+      steps.forEach((s, i) => {
+        if (!s.respond || !Array.isArray(s.respond.prompts)) return;
+        out.push({
+          step: i + 1,
+          instruction: typeof s.instruction === 'string' ? s.instruction : '',
+          fields: s.respond.prompts.map(p => ({
+            id: p.id, label: p.label || p.id, response: respVal(i, p.id),
+          })),
+        });
+      });
+      return { activity: activitySlug, title: activity.title || activitySlug, steps: out };
+    }
+    function responsesToText() {
+      const data = serializeResponses();
+      const lines = [`# ${data.title} — my responses`, ''];
+      for (const step of data.steps) {
+        lines.push(`## Step ${step.step}`);
+        for (const f of step.fields) lines.push(`**${f.label}:** ${f.response || '(blank)'}`);
+        lines.push('');
+      }
+      return lines.join('\n');
+    }
+    function downloadBlob(/** @type {string} */ text, /** @type {string} */ mime, /** @type {string} */ ext) {
+      try {
+        const url = URL.createObjectURL(new Blob([text], { type: mime }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${activitySlug}-responses.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
+      } catch { /* download unavailable in this context */ }
+    }
+    function downloadResponses() {
+      // Two sinks over the same store: a readable file for the student, a JSON
+      // sibling for a machine (LMS / the future AI-eval pipeline).
+      downloadBlob(responsesToText(), 'text/markdown;charset=utf-8', 'md');
+      downloadBlob(JSON.stringify(serializeResponses(), null, 2), 'application/json;charset=utf-8', 'json');
+      responsesDirty = false;
+    }
+    function clearResponses() {
+      // Confirm before wiping — shared lab / classroom workstations are a real
+      // usage mode (textbook agent's explicit ask).
+      if (anyResponses() && !window.confirm('Clear all your typed responses for this activity? This cannot be undone.')) return;
+      for (const k of Object.keys(responses)) delete responses[k];
+      saveResponses();
+      responsesDirty = false;
+      render();
+    }
+
+    /**
+     * Free-text response fields for a step. Values come from the persisted store
+     * so they survive re-render, reload, and tab close. The <textarea> is wrapped
+     * in its <label> (implicit association) so the panel and the mobile sheet —
+     * which render identical markup — don't collide on duplicate `id`s.
+     * @param {number} stepIdx
+     * @param {RespondSpec} respond
+     */
+    function respondHtml(stepIdx, respond) {
+      if (!respond || !Array.isArray(respond.prompts)) return '';
+      const fields = respond.prompts.map(p => {
+        const rows = Math.max(1, Math.min(6, Number(p.rows) || 2));
+        const ph = p.placeholder ? ` placeholder="${escapeAttr(p.placeholder)}"` : '';
+        return `<label class="activity-respond-field">
+          <span class="activity-respond-label">${md(p.label || p.id)}</span>
+          <textarea class="activity-respond-input" rows="${rows}"
+            data-respond-step="${stepIdx}" data-respond-field="${escapeAttr(p.id)}"${ph}>${escapeTextarea(respVal(stepIdx, p.id))}</textarea>
+        </label>`;
+      }).join('');
+      return `<div class="activity-respond" role="group" aria-label="Write your response">${fields}</div>`;
+    }
+
+    /** Persist one field on input WITHOUT a re-render (which would blur the box). */
+    function onRespondInput(/** @type {HTMLTextAreaElement} */ ta) {
+      const stepIdx = ta.dataset.respondStep;
+      const fieldId = ta.dataset.respondField;
+      if (stepIdx == null || fieldId == null) return;
+      const val = ta.value;
+      if (!responses[stepIdx]) responses[stepIdx] = {};
+      responses[stepIdx][fieldId] = val;
+      saveResponses();
+      if (val.trim().length > 0) responsesDirty = true;
+      // Mirror into the twin textarea in the other root (panel <-> sheet).
+      document.querySelectorAll('.activity-respond-input').forEach(el => {
+        const other = /** @type {HTMLTextAreaElement} */ (el);
+        if (other !== ta && other.dataset.respondStep === stepIdx
+            && other.dataset.respondField === fieldId && other.value !== val) {
+          other.value = val;
+        }
+      });
+      updateNextEnabled();
+    }
+
+    /** Re-evaluate the Next button without a full re-render (keeps textarea focus). */
+    function updateNextEnabled() {
+      const step = steps[currentStep];
+      const isLast = currentStep === steps.length - 1;
+      const gateB = !present && step.gate && !gateState.get(currentStep)?.passed;
+      const requiresB = !present && step.requires && !requiresMet(step);
+      const respondB = !present && step.respond && step.respond.gateOnNonEmpty && !respondComplete(currentStep);
+      const disabled = isLast || gateB || requiresB || respondB;
+      for (const root of [panel, sheet]) {
+        const nb = /** @type {HTMLButtonElement|null} */ (root.querySelector('.activity-next'));
+        if (!nb) continue;
+        nb.disabled = !!disabled;
+        // Keep aria-disabled in sync with the property — the initial render sets
+        // it when a gate blocks, and a stale "true" would report the enabled
+        // button as disabled to assistive tech (and to Playwright's toBeEnabled).
+        if (disabled) nb.setAttribute('aria-disabled', 'true');
+        else nb.removeAttribute('aria-disabled');
+        if (respondB) nb.setAttribute('title', 'Fill in every field above to continue');
+        else nb.removeAttribute('title');
+      }
+    }
 
     // ─── Live tool state (REQ-034: action-gates + result-aware feedback) ──────
     // Tools dispatch `statlens:state` CustomEvents carrying a flat `state` bag of
@@ -502,6 +680,7 @@
       const isRevealed = revealed.has(currentStep);
       const gateBlocks = !present && step.gate && !gateState.get(currentStep)?.passed;
       const requiresBlocks = !present && step.requires && !requiresMet(step);
+      const respondBlocks = !present && step.respond && step.respond.gateOnNonEmpty && !respondComplete(currentStep);
 
       const html = `
         <div class="activity-header">
@@ -514,6 +693,7 @@
           ${step.demo && DEMOS[step.demo.type] ? `<button type="button" class="activity-demo-btn">▶ ${md(step.demo.label || 'Watch a demonstration')}</button>` : ''}
           ${step.observe ? `<div class="activity-observe"><span class="activity-observe-label">Look for:</span> ${md(interp(step.observe))}</div>` : ''}
           ${step.gate ? gateHtml(step.gate) : ''}
+          ${step.respond ? respondHtml(currentStep, step.respond) : ''}
           ${requiresBlocks && step.requires.hint ? `<div class="activity-requires" role="status">${md(interp(step.requires.hint))}</div>` : ''}
           ${step.reveal ? `
             <div class="activity-reveal-section">
@@ -522,10 +702,14 @@
             </div>
           ` : ''}
         </div>
+        ${activityHasRespond && !present ? `<div class="activity-responses-bar">
+          <button type="button" class="activity-download-responses" title="Download your typed responses as a file">⬇ Download my responses</button>
+          <button type="button" class="activity-clear-responses" title="Erase your typed responses">Clear</button>
+        </div>` : ''}
         <div class="activity-nav">
           <button type="button" class="activity-prev" ${isFirst ? 'disabled' : ''}>← Back</button>
-          <button type="button" class="activity-next" ${isLast || gateBlocks || requiresBlocks ? 'disabled' : ''}
-            ${gateBlocks ? 'title="Answer the question above to continue" aria-disabled="true"' : requiresBlocks ? 'title="Do the action above to continue" aria-disabled="true"' : ''}>Next →</button>
+          <button type="button" class="activity-next" ${isLast || gateBlocks || requiresBlocks || respondBlocks ? 'disabled' : ''}
+            ${gateBlocks ? 'title="Answer the question above to continue" aria-disabled="true"' : requiresBlocks ? 'title="Do the action above to continue" aria-disabled="true"' : respondBlocks ? 'title="Fill in every field above to continue" aria-disabled="true"' : ''}>Next →</button>
         </div>
       `;
 
@@ -559,6 +743,15 @@
             commitGate(parseInt(/** @type {HTMLElement} */ (btn).dataset.choice || '0', 10));
           });
         }
+        // REQ-041 free-text fields: persist + sync on input, but never re-render
+        // here (that would blur the box mid-keystroke — see onRespondInput).
+        for (const ta of root.querySelectorAll('.activity-respond-input')) {
+          ta.addEventListener('input', () => onRespondInput(/** @type {HTMLTextAreaElement} */ (ta)));
+        }
+        const dlBtn = root.querySelector('.activity-download-responses');
+        if (dlBtn) dlBtn.addEventListener('click', () => downloadResponses());
+        const clrBtn = root.querySelector('.activity-clear-responses');
+        if (clrBtn) clrBtn.addEventListener('click', () => clearResponses());
         // Embedded images open full-screen in a lightbox (the panel is too narrow
         // to read a figure like a comic comfortably). A click anywhere in the
         // wrapper — the image or its "Enlarge" button — opens it; the <button>
@@ -641,6 +834,16 @@
     // Tapping the dimmed area collapses to peek (keeps the step visible) rather
     // than hiding entirely — students rarely want to lose their place.
     sheetBackdrop.addEventListener('click', () => peekSheet());
+
+    // Warn on tab close if the student has typed responses they haven't exported.
+    // localStorage already persisted them, so this guards un-downloaded work, not
+    // lost work — relevant on rental / shared / private-mode machines where the
+    // store won't survive, and the download is the way to keep it (REQ-041).
+    if (activityHasRespond) {
+      window.addEventListener('beforeunload', (e) => {
+        if (responsesDirty && anyResponses()) { e.preventDefault(); e.returnValue = ''; }
+      });
+    }
 
     // Insert into DOM
     document.body.appendChild(panel);
