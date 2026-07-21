@@ -4268,6 +4268,22 @@ body[data-chrome="minimal"] .control-row {
 }
 .activity-respond-input::placeholder { color: #7a8a91; }
 
+/* REQ-044: "what to notice" note — appears once every field is filled. */
+.activity-respond-answer {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: #EBF5FB;
+  border-left: 3px solid #569BBD;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+}
+.activity-respond-answer[hidden] { display: none; }
+.activity-respond-answer-label {
+  font-weight: 700;
+  color: #114B5F;
+  margin-right: 0.25rem;
+}
+
 /* Download / Clear row — sits between the body and the Back/Next nav. */
 .activity-responses-bar {
   display: flex;

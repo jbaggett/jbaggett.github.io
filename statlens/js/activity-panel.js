@@ -310,6 +310,10 @@
    * @property {RespondPrompt[]} prompts - One labeled textarea per prompt
    * @property {boolean} [gateOnNonEmpty] - Block "Next" until every field has content
    *   (REQ-041: forces the predict-before-reveal commit; never a correctness check)
+   * @property {string} [answer] - REQ-044: a short "what to notice / expert reasoning"
+   *   note that appears once every field is filled — self-study calibration for the
+   *   student to check their typed prediction against. NOT grading (free text is
+   *   never scored); the same role MC gate `feedback` plays, tied to a text field.
    *
    * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, respond?: RespondSpec, demo?: {type: string, label?: string, options?: object}}> }} activity
    */
@@ -445,7 +449,16 @@
             data-respond-step="${stepIdx}" data-respond-field="${escapeAttr(p.id)}"${ph}>${escapeTextarea(respVal(stepIdx, p.id))}</textarea>
         </label>`;
       }).join('');
-      return `<div class="activity-respond" role="group" aria-label="Write your response">${fields}</div>`;
+      // REQ-044: optional "what to notice" note, revealed once every field is
+      // filled (never in presentation mode). Rendered hidden and toggled live by
+      // updateNextEnabled so it appears without a full re-render (which would
+      // blur the textarea the student just finished typing in).
+      const answer = respond.answer && !present
+        ? `<div class="activity-respond-answer" role="note"${respondComplete(stepIdx) ? '' : ' hidden'}>
+             <span class="activity-respond-answer-label">Compare your prediction:</span> ${md(interp(respond.answer))}
+           </div>`
+        : '';
+      return `<div class="activity-respond" role="group" aria-label="Write your response">${fields}${answer}</div>`;
     }
 
     /** Persist one field on input WITHOUT a re-render (which would blur the box). */
@@ -488,6 +501,9 @@
         else nb.removeAttribute('aria-disabled');
         if (respondB) nb.setAttribute('title', 'Fill in every field above to continue');
         else nb.removeAttribute('title');
+        // REQ-044: reveal the "what to notice" note once every field is filled.
+        const ans = root.querySelector('.activity-respond-answer');
+        if (ans) ans.toggleAttribute('hidden', !respondComplete(currentStep));
       }
     }
 
