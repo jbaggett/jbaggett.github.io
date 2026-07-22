@@ -9,7 +9,7 @@
       "reveal": "H₀: p = 0.10 vs. Hₐ: p < 0.10. The claim is *lower*, so this is a one-sided test in the left direction."
     },
     {
-      "instruction": "Look at the panel's reported observed count, sample size, and sample proportion p̂. Also note the expected counts under H₀.",
+      "instruction": "Look at the panel's reported observed count, sample size, and sample proportion \\(\\hat{p}\\). Also note the expected counts under H₀.",
       "observe": "Are n·p₀ and n·(1 − p₀) both at least 10? What does that mean about the normal-approximation z-test?",
       "reveal": "n·p₀ = 62 × 0.10 = 6.2, below 10 — the success-failure condition FAILS. The normal approximation is unreliable for this dataset; the z-test's p-value should not be trusted. (This is exactly why earlier chapters used a bootstrap CI for this same data.)"
     },
@@ -26,7 +26,7 @@
     {
       "instruction": "Open the bootstrap CI tool for one proportion in a new tab (/simulate/bootstrap-prop/?dataset=medical_consultant) and run 10000 resamples. Compare its 95% percentile interval to the z-interval you just read.",
       "observe": "How do the two intervals differ — in center, width, or shape?",
-      "reveal": "The bootstrap interval is right-skewed, mirroring the actual sampling distribution of p̂ when p is small. The z-interval is symmetric by construction and gets the shape wrong. When conditions fail, trust the simulation."
+      "reveal": "The bootstrap interval is right-skewed, mirroring the actual sampling distribution of \\(\\hat{p}\\) when p is small. The z-interval is symmetric by construction and gets the shape wrong. When conditions fail, trust the simulation."
     }
   ]
 }

@@ -9,7 +9,7 @@
       "reveal": "H₀: μ = 32 vs. Hₐ: μ ≠ 32 - two-sided, because we ask whether the mean differs (in either direction) from the target."
     },
     {
-      "instruction": "Look at the displayed dotplot or histogram alongside the test statistics. Note n, x̄, and s.",
+      "instruction": "Look at the displayed dotplot or histogram alongside the test statistics. Note n, \\(\\bar{x}\\), and s.",
       "observe": "Does the distribution look roughly symmetric? Any outliers? Do you trust the t-procedure?",
       "reveal": "If n is moderate (>=30) and the distribution looks roughly symmetric without extreme outliers, the t-procedure is trustworthy. If n is small and the data are skewed or have outliers, switch to a bootstrap CI - the t's normality assumption gets shaky."
     },

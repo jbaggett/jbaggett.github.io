@@ -335,10 +335,11 @@
     // in the book still can. Answers persist to localStorage and export.
     //
     // Everything routes through ONE response store (load / save / serialize).
-    // Today it feeds a single sink — Download. The Gen-2 seam (Jeff's AI-eval
-    // vision) is exactly this: a future `postMessage`-emit or POST is just a
-    // second sink over `serializeResponses()`, no re-plumbing. That is also why
-    // Download emits a machine-readable `.json` beside the human-readable file.
+    // localStorage persistence is the whole v1 story: a student who returns to
+    // the same activity on the same machine sees their typed work. There is no
+    // Download button (REQ-045: Jeff — students weren't going to use it), but
+    // `serializeResponses()` is kept as the Gen-2 seam — a future `postMessage`
+    // emit or POST for AI-eval is just a sink over it, no re-plumbing.
     const escapeAttr = (/** @type {string} */ s) =>
       String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
     const escapeTextarea = (/** @type {string} */ s) =>
@@ -353,11 +354,6 @@
       try { return JSON.parse(localStorage.getItem(RESP_KEY) || '{}') || {}; }
       catch { return {}; }
     })();
-    // True once the student has typed something not yet exported — arms the
-    // beforeunload hint. localStorage already persists every keystroke, so this
-    // warns about un-downloaded work, not lost work.
-    let responsesDirty = false;
-
     function saveResponses() {
       try { localStorage.setItem(RESP_KEY, JSON.stringify(responses)); }
       catch { /* quota / private mode: the in-memory copy still works this session */ }
@@ -371,12 +367,11 @@
       if (!r || !Array.isArray(r.prompts)) return true;
       return r.prompts.every(p => respVal(stepIdx, p.id).trim().length > 0);
     }
-    function anyResponses() {
-      return Object.values(responses).some(
-        step => Object.values(step || {}).some(v => String(v).trim().length > 0));
-    }
-
-    /** Structured snapshot — the single source every export/emit sink reads. */
+    /**
+     * Structured snapshot of every typed response — the Gen-2 seam (REQ-041 Q3 /
+     * REQ-045). No sink surfaces it in v1; a future postMessage/POST for AI-eval
+     * reads this. Exposed on the panel root so a host page can pull it if wired.
+     */
     function serializeResponses() {
       const out = [];
       steps.forEach((s, i) => {
@@ -390,44 +385,6 @@
         });
       });
       return { activity: activitySlug, title: activity.title || activitySlug, steps: out };
-    }
-    function responsesToText() {
-      const data = serializeResponses();
-      const lines = [`# ${data.title} — my responses`, ''];
-      for (const step of data.steps) {
-        lines.push(`## Step ${step.step}`);
-        for (const f of step.fields) lines.push(`**${f.label}:** ${f.response || '(blank)'}`);
-        lines.push('');
-      }
-      return lines.join('\n');
-    }
-    function downloadBlob(/** @type {string} */ text, /** @type {string} */ mime, /** @type {string} */ ext) {
-      try {
-        const url = URL.createObjectURL(new Blob([text], { type: mime }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${activitySlug}-responses.${ext}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 0);
-      } catch { /* download unavailable in this context */ }
-    }
-    function downloadResponses() {
-      // Two sinks over the same store: a readable file for the student, a JSON
-      // sibling for a machine (LMS / the future AI-eval pipeline).
-      downloadBlob(responsesToText(), 'text/markdown;charset=utf-8', 'md');
-      downloadBlob(JSON.stringify(serializeResponses(), null, 2), 'application/json;charset=utf-8', 'json');
-      responsesDirty = false;
-    }
-    function clearResponses() {
-      // Confirm before wiping — shared lab / classroom workstations are a real
-      // usage mode (textbook agent's explicit ask).
-      if (anyResponses() && !window.confirm('Clear all your typed responses for this activity? This cannot be undone.')) return;
-      for (const k of Object.keys(responses)) delete responses[k];
-      saveResponses();
-      responsesDirty = false;
-      render();
     }
 
     /**
@@ -470,7 +427,6 @@
       if (!responses[stepIdx]) responses[stepIdx] = {};
       responses[stepIdx][fieldId] = val;
       saveResponses();
-      if (val.trim().length > 0) responsesDirty = true;
       // Mirror into the twin textarea in the other root (panel <-> sheet).
       document.querySelectorAll('.activity-respond-input').forEach(el => {
         const other = /** @type {HTMLTextAreaElement} */ (el);
@@ -718,10 +674,6 @@
             </div>
           ` : ''}
         </div>
-        ${activityHasRespond && !present ? `<div class="activity-responses-bar">
-          <button type="button" class="activity-download-responses" title="Download your typed responses as a file">⬇ Download my responses</button>
-          <button type="button" class="activity-clear-responses" title="Erase your typed responses">Clear</button>
-        </div>` : ''}
         <div class="activity-nav">
           <button type="button" class="activity-prev" ${isFirst ? 'disabled' : ''}>← Back</button>
           <button type="button" class="activity-next" ${isLast || gateBlocks || requiresBlocks || respondBlocks ? 'disabled' : ''}
@@ -764,10 +716,6 @@
         for (const ta of root.querySelectorAll('.activity-respond-input')) {
           ta.addEventListener('input', () => onRespondInput(/** @type {HTMLTextAreaElement} */ (ta)));
         }
-        const dlBtn = root.querySelector('.activity-download-responses');
-        if (dlBtn) dlBtn.addEventListener('click', () => downloadResponses());
-        const clrBtn = root.querySelector('.activity-clear-responses');
-        if (clrBtn) clrBtn.addEventListener('click', () => clearResponses());
         // Embedded images open full-screen in a lightbox (the panel is too narrow
         // to read a figure like a comic comfortably). A click anywhere in the
         // wrapper — the image or its "Enlarge" button — opens it; the <button>
@@ -851,14 +799,14 @@
     // than hiding entirely — students rarely want to lose their place.
     sheetBackdrop.addEventListener('click', () => peekSheet());
 
-    // Warn on tab close if the student has typed responses they haven't exported.
-    // localStorage already persisted them, so this guards un-downloaded work, not
-    // lost work — relevant on rental / shared / private-mode machines where the
-    // store won't survive, and the download is the way to keep it (REQ-041).
+    // No beforeunload guard: localStorage persists every keystroke, so there is
+    // no un-saved work to warn about (and there is no Download to nag toward).
+
+    // Expose the structured responses on the panel node — the Gen-2 seam a host
+    // page / AI-eval pipeline can read without StatLens surfacing any UI (REQ-045).
     if (activityHasRespond) {
-      window.addEventListener('beforeunload', (e) => {
-        if (responsesDirty && anyResponses()) { e.preventDefault(); e.returnValue = ''; }
-      });
+      // @ts-ignore — attach a reader for host integrations
+      panel.getResponses = serializeResponses;
     }
 
     // Insert into DOM

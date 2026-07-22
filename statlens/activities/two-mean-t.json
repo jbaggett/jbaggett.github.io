@@ -20,7 +20,7 @@
     },
     {
       "instruction": "Write a one-sentence conclusion in context, naming both groups and stating the direction and strength of evidence.",
-      "observe": "Does your conclusion talk about the POPULATIONS (μ₁ vs. μ₂), or does it slip into talking about the SAMPLES (x̄₁ vs. x̄₂)?",
+      "observe": "Does your conclusion talk about the POPULATIONS (μ₁ vs. μ₂), or does it slip into talking about the SAMPLES (\\(\\bar{x}\\)₁ vs. \\(\\bar{x}\\)₂)?",
       "reveal": "Inference is about the populations, not the samples. A good conclusion: 'The data provide [strong/no] evidence that the mean [response] in group 1 differs from group 2 (p = ...).' The samples ARE different (we can see); the question is whether the underlying populations differ."
     },
     {

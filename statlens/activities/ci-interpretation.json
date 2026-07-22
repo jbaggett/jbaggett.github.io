@@ -21,7 +21,7 @@
       "gate": {
         "question": "What does it mean for one interval to \"miss\" μ?",
         "choices": [
-          { "text": "The sample mean x̄ was wrong / miscalculated" },
+          { "text": "The sample mean \\(\\bar{x}\\) was wrong / miscalculated" },
           { "text": "The interval's range does not include the true value 50", "correct": true },
           { "text": "The sample was too small to count" }
         ],
@@ -45,15 +45,15 @@
     },
     {
       "instruction": "**Hover** (or tap) any interval. Instead of a flat bar, it shows a **peaked** shape — a cat's-eye.",
-      "observe": "The bar bulges in the middle (near x̄) and tapers at the ends.",
+      "observe": "The bar bulges in the middle (near \\(\\bar{x}\\)) and tapers at the ends.",
       "gate": {
         "question": "What is the cat's-eye telling you about the values inside a confidence interval?",
         "choices": [
           { "text": "Every value in the interval is equally plausible" },
-          { "text": "Values near the center (x̄) are more plausible than values out near the endpoints", "correct": true },
+          { "text": "Values near the center (\\(\\bar{x}\\)) are more plausible than values out near the endpoints", "correct": true },
           { "text": "Only the two endpoints matter" }
         ],
-        "feedback": "Yes. A confidence interval is not a list of equally-likely values. Estimates near x̄ are best supported by the data; the endpoints are the least plausible values still inside the net. \"In the interval\" doesn't mean \"all equally likely.\"",
+        "feedback": "Yes. A confidence interval is not a list of equally-likely values. Estimates near \\(\\bar{x}\\) are best supported by the data; the endpoints are the least plausible values still inside the net. \"In the interval\" doesn't mean \"all equally likely.\"",
         "retryFeedback": "Look at where the shape is fattest versus thinnest, and what that says about which values the data support most."
       }
     },

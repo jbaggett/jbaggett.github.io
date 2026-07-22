@@ -9,7 +9,7 @@
   },
   "steps": [
     {
-      "instruction": "The consultant had **3 complications in 62 surgeries** (p̂ = 0.048), versus a national rate of **10%**. You'll bootstrap a 95% confidence interval for her true rate. **Before you start, commit to a prediction.**",
+      "instruction": "The consultant had **3 complications in 62 surgeries** (\\(\\hat{p}\\) = 0.048), versus a national rate of **10%**. You'll bootstrap a 95% confidence interval for her true rate. **Before you start, commit to a prediction.**",
       "gate": {
         "question": "Where do you think the 95% bootstrap CI will fall relative to the national 10%?",
         "choices": [

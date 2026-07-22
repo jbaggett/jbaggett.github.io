@@ -6,7 +6,7 @@
     {
       "instruction": "Pick any regression dataset (two quantitative variables). Identify the explanatory and response variables and state the parameter of interest.",
       "observe": "What symbol represents the population slope? What does it MEAN in context, including units?",
-      "reveal": "Population slope: β₁ (the unknown true slope). Interpretation: 'for each additional unit of the explanatory variable, the MEAN response changes by β₁ [units].' Sample estimate b₁ = β̂₁ is what OLS computes from your data."
+      "reveal": "Population slope: β₁ (the unknown true slope). Interpretation: 'for each additional unit of the explanatory variable, the MEAN response changes by β₁ [units].' Sample estimate b₁ = \\(\\hat{\\beta}_1\\) is what OLS computes from your data."
     },
     {
       "instruction": "Look at the tool's fitted-line plot AND the residual plot. Check the four regression conditions (LINE): Linearity, Independence, Normality of residuals, Equal variance.",

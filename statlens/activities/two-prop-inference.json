@@ -9,7 +9,7 @@
       "reveal": "H₀: p₁ - p₂ = 0 vs. Hₐ: p₁ - p₂ ≠ 0. 'Change' gives no direction, so it is two-sided."
     },
     {
-      "instruction": "Look at the per-group counts the tool reports. Compute (or read) the pooled proportion p̂ and check n<sub>i</sub> · p̂ and n<sub>i</sub> · (1 - p̂) for both groups.",
+      "instruction": "Look at the per-group counts the tool reports. Compute (or read) the pooled proportion \\(\\hat{p}\\) and check n<sub>i</sub> · \\(\\hat{p}\\) and n<sub>i</sub> · (1 - \\(\\hat{p}\\)) for both groups.",
       "observe": "Are all four counts at least 10?",
       "reveal": "For the malaria data both groups have plenty of successes and failures - success-failure condition is met. Normal approximation is fine here."
     },
