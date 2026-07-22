@@ -60,7 +60,8 @@
             "placeholder": "Your suggestion",
             "rows": 2
           }
-        ]
+        ],
+        "answer": "A strong answer: including 10% means we **can't rule it out** — not that the rates are equal (absence of evidence isn't evidence of absence). Small-n discreteness makes it borderline because the CI bound lurches between whole-count outcomes (6/62 vs 7/62), so 'just includes' vs 'just excludes' can flip on a single patient. The strongest fix is **more data** — a larger n narrows the CI and steadies the boundary."
       }
     }
   ]

@@ -18,9 +18,16 @@
       "gate": {
         "question": "How big is the gap between the two promotion rates?",
         "choices": [
-          { "text": "About 7 percentage points (21/24 vs 14/24 — only 7 files apart)" },
-          { "text": "About 29 percentage points (87.5% vs 58.3%)", "correct": true },
-          { "text": "About 50 percentage points" }
+          {
+            "text": "About 7 percentage points (21/24 vs 14/24 — only 7 files apart)"
+          },
+          {
+            "text": "About 29 percentage points (87.5% vs 58.3%)",
+            "correct": true
+          },
+          {
+            "text": "About 50 percentage points"
+          }
         ],
         "feedback": "21/24 = 87.5% and 14/24 = 58.3%, a 29.2 percentage point difference. The question for the rest of this activity: could a gap that large happen just by chance?",
         "retryFeedback": "Convert each count to a rate first: 21 out of 24, and 14 out of 24."
@@ -31,10 +38,19 @@
       "gate": {
         "question": "If sex truly had no effect on promotions, what would that mean about these 48 files?",
         "choices": [
-          { "text": "No one would be promoted" },
-          { "text": "Exactly 50% in each group would be promoted" },
-          { "text": "The same 35 people would have been promoted regardless of the name on the file", "correct": true },
-          { "text": "We would need more data to tell" }
+          {
+            "text": "No one would be promoted"
+          },
+          {
+            "text": "Exactly 50% in each group would be promoted"
+          },
+          {
+            "text": "The same 35 people would have been promoted regardless of the name on the file",
+            "correct": true
+          },
+          {
+            "text": "We would need more data to tell"
+          }
         ],
         "feedback": "Under the null hypothesis the outcomes are fixed — the same 35 promotions would have happened either way. Only the group labels are random. That's exactly what shuffling simulates.",
         "retryFeedback": "Think about what \"no effect\" means: the decision was already determined by the file's contents, not the name."
@@ -45,9 +61,18 @@
       "gate": {
         "question": "How big do you expect the difference in promotion rates to be in one shuffle, if only chance is at work?",
         "choices": [
-          { "text": "Around 29 points, like the observed difference", "feedback": "You've committed — now click **+1** and see where the shuffle actually lands." },
-          { "text": "Usually small, somewhere near 0", "feedback": "You've committed — now click **+1** and see where the shuffle actually lands." },
-          { "text": "Exactly 0 every time", "feedback": "You've committed — now click **+1** and see. (Watch whether chance alone produces *exactly* zero.)" }
+          {
+            "text": "Around 29 points, like the observed difference",
+            "feedback": "You've committed — now click **+1** and see where the shuffle actually lands."
+          },
+          {
+            "text": "Usually small, somewhere near 0",
+            "feedback": "You've committed — now click **+1** and see where the shuffle actually lands."
+          },
+          {
+            "text": "Exactly 0 every time",
+            "feedback": "You've committed — now click **+1** and see. (Watch whether chance alone produces *exactly* zero.)"
+          }
         ]
       },
       "observe": "Click **+1** a few times. Watch the mechanism strip deal the same promotions into new groups, and watch where each shuffled difference lands on the chart."
@@ -58,9 +83,16 @@
       "gate": {
         "question": "Look at the histogram. Where does the observed difference fall?",
         "choices": [
-          { "text": "In the middle of the distribution — it looks typical for chance" },
-          { "text": "Out in the tail — very few shuffles produced a difference this large", "correct": true },
-          { "text": "I can't tell from the histogram" }
+          {
+            "text": "In the middle of the distribution — it looks typical for chance"
+          },
+          {
+            "text": "Out in the tail — very few shuffles produced a difference this large",
+            "correct": true
+          },
+          {
+            "text": "I can't tell from the histogram"
+          }
         ],
         "feedback": "The observed 29.2 pp gap sits far in the right tail. The p-value (shown in the results panel) is the fraction of shuffles at least that extreme — and it's small.",
         "retryFeedback": "Compare the red line's position to where most of the dots piled up. Is 29.2 pp common among the shuffles?"
@@ -70,10 +102,26 @@
       "instruction": "Time to conclude. The p-value in the results panel tells you how often chance alone produced a difference as large as the one observed. Before you read the conclusion, put the reasoning in your own words.",
       "respond": {
         "prompts": [
-          { "id": "center_at_zero", "label": "Why does shuffling produce a distribution centered at zero, even though the actual study's observed difference is 29.2 pp?", "placeholder": "Your reasoning", "rows": 2 },
-          { "id": "tail_fraction_is_pvalue", "label": "What does the fraction of shuffles at or beyond 29.2 pp tell us — and why is that fraction the p-value?", "placeholder": "Your reasoning", "rows": 2 },
-          { "id": "reproducibility", "label": "If we ran the shuffle again with a different random seed, would the p-value be exactly the same, roughly the same, or wildly different? Why?", "placeholder": "Your reasoning", "rows": 2 }
-        ]
+          {
+            "id": "center_at_zero",
+            "label": "Why does shuffling produce a distribution centered at zero, even though the actual study's observed difference is 29.2 pp?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "tail_fraction_is_pvalue",
+            "label": "What does the fraction of shuffles at or beyond 29.2 pp tell us — and why is that fraction the p-value?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "reproducibility",
+            "label": "If we ran the shuffle again with a different random seed, would the p-value be exactly the same, roughly the same, or wildly different? Why?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: shuffling enforces the null (labels don't matter), so on average the groups differ by 0 — the distribution centers at zero **by construction**, regardless of the real 29.2 pp gap. The fraction of shuffles at least as extreme as 29.2 pp **is** the p-value: how often chance alone matches the data. A different seed gives a **roughly** equal p-value (it's an estimate from finitely many shuffles); more shuffles → more stable."
       },
       "reveal": "Because differences of 29.2 pp or more almost never occur when promotions are shuffled randomly, chance is not a plausible explanation. The data provide convincing evidence that sex influenced the promotion decisions. Note the logic: we didn't prove discrimination directly — we ruled out the skeptic's \"just luck\" explanation."
     }

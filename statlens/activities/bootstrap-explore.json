@@ -69,7 +69,8 @@
             "placeholder": "Your reasoning",
             "rows": 2
           }
-        ]
+        ],
+        "answer": "A strong answer: the bootstrap resamples from **your one sample**, so it can only know x̄, not μ — it centers on x̄. It comes out bell-shaped even from skewed pennies because it's a distribution of **means**, and averaging invokes the CLT. A different original sample of 648 would center on **its** x̄ and give a slightly different CI — the *method* has 95% coverage, but any single interval is just one draw."
       }
     }
   ]

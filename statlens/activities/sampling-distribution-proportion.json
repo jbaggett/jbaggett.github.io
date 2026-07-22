@@ -1,7 +1,12 @@
 {
   "title": "Building a Sampling Distribution of p̂ — Medical Consultant",
   "tool": "conceptual/sampling-lab",
-  "params": { "type": "prop", "p": "0.10", "n": "62", "seed": "medical62" },
+  "params": {
+    "type": "prop",
+    "p": "0.10",
+    "n": "62",
+    "seed": "medical62"
+  },
   "steps": [
     {
       "instruction": "Imagine a large bag of marbles: **10% orange** (complication) and **90% blue** (no complication). This bag models the world under **H₀**: the consultant's true complication rate matches the national **10%**. We can't see the whole bag in real life, but here we can — that's the **Population** panel, with the true proportion marked at **p = 0.10**. Each surgery is one draw from the bag; a \"study\" of **n = 62** surgeries is one scoop of 62 marbles, and the proportion of orange marbles in the scoop is one simulated **p̂** from the null distribution.",
@@ -12,9 +17,18 @@
       "gate": {
         "question": "Where will those sample proportions (p̂) pile up?",
         "choices": [
-          { "text": "Centered around 0.10", "feedback": "You've committed — now draw samples and see whether the pile-up lands where you expected." },
-          { "text": "Centered around 0.50", "feedback": "You've committed — draw samples and check. Watch where the center of the pile actually falls." },
-          { "text": "Spread evenly between 0 and 1", "feedback": "You've committed — draw samples and see whether the proportions really spread out evenly, or cluster somewhere." }
+          {
+            "text": "Centered around 0.10",
+            "feedback": "You've committed — now draw samples and see whether the pile-up lands where you expected."
+          },
+          {
+            "text": "Centered around 0.50",
+            "feedback": "You've committed — draw samples and check. Watch where the center of the pile actually falls."
+          },
+          {
+            "text": "Spread evenly between 0 and 1",
+            "feedback": "You've committed — draw samples and see whether the proportions really spread out evenly, or cluster somewhere."
+          }
         ]
       }
     },
@@ -24,14 +38,25 @@
     },
     {
       "instruction": "Now click **+1000** to run a thousand simulated studies quickly and let the null distribution fill in.",
-      "requires": { "metric": "samples", "atLeast": 500, "hint": "Click **+1000** to draw at least 500 samples, then answer below." },
+      "requires": {
+        "metric": "samples",
+        "atLeast": 500,
+        "hint": "Click **+1000** to draw at least 500 samples, then answer below."
+      },
       "observe": "Look at the bottom panel and the **SD of p̂'s** readout, then compare it to the theory value **√(p(1−p)/n)**.",
       "gate": {
         "question": "Where is the null distribution of p̂ centered, and what is its shape?",
         "choices": [
-          { "text": "Centered near 0.10 and roughly bell-shaped (with a mild right skew)", "correct": true },
-          { "text": "Centered near 0.50" },
-          { "text": "Flat — every proportion equally likely" }
+          {
+            "text": "Centered near 0.10 and roughly bell-shaped (with a mild right skew)",
+            "correct": true
+          },
+          {
+            "text": "Centered near 0.50"
+          },
+          {
+            "text": "Flat — every proportion equally likely"
+          }
         ],
         "feedback": "It centers at p = 0.10 (the true rate under H₀). The shape is roughly bell-shaped but with a **mild right skew**: np = 6.2 is below the usual threshold of 10, and p = 0.10 sits close to the floor of 0, so the normal approximation is only approximate here. Your **{{samples}}** studies gave an SD of p̂'s of **{{statSD}}** — very close to the theory value √(p(1−p)/n) = **{{theorySE}}**.",
         "retryFeedback": "Look at where the dots pile up relative to the 0.10 line, and whether the shape is mound-shaped or flat."
@@ -42,9 +67,16 @@
       "gate": {
         "question": "Which change made the distribution narrower?",
         "choices": [
-          { "text": "Drawing more studies (more dots)" },
-          { "text": "Increasing the sample size n", "correct": true },
-          { "text": "Both narrowed it equally" }
+          {
+            "text": "Drawing more studies (more dots)"
+          },
+          {
+            "text": "Increasing the sample size n",
+            "correct": true
+          },
+          {
+            "text": "Both narrowed it equally"
+          }
         ],
         "feedback": "Only larger n narrows it. More studies just fill in the *same* distribution more smoothly — its spread doesn't change. A larger n produces a *different*, narrower distribution, because √(p(1−p)/n) shrinks as n grows. (A consultant with more surgeries per study would see less sample-to-sample wobble.)",
         "retryFeedback": "Compare the frozen n = 62 distribution to the n = 200 one — same center, different width. Then recall what adding more dots at a fixed n did to the width."
@@ -54,10 +86,26 @@
       "instruction": "You've built the null distribution of a proportion from scratch. Before you read the summary, put the key ideas in your own words.",
       "respond": {
         "prompts": [
-          { "id": "predictions_held", "label": "How well did each of your three predictions (center, spread, shape) hold up?", "placeholder": "Compare to what you saw", "rows": 2 },
-          { "id": "samples_vs_n", "label": "Why do more studies fill in the same distribution, while a larger n produces a different (narrower) distribution?", "placeholder": "Your reasoning", "rows": 2 },
-          { "id": "stable_center_purpose", "label": "Why does the null distribution having a stable center and spread make the p-value calculation possible?", "placeholder": "Your reasoning", "rows": 2 }
-        ]
+          {
+            "id": "predictions_held",
+            "label": "How well did each of your three predictions (center, spread, shape) hold up?",
+            "placeholder": "Compare to what you saw",
+            "rows": 2
+          },
+          {
+            "id": "samples_vs_n",
+            "label": "Why do more studies fill in the same distribution, while a larger n produces a different (narrower) distribution?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "stable_center_purpose",
+            "label": "Why does the null distribution having a stable center and spread make the p-value calculation possible?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: more studies just **fill in** the same null distribution — its center (0.10) and spread (√(p(1−p)/n)) are fixed by p and n, not by how many scoops you take. A larger n produces a genuinely **different**, narrower distribution. That stable, knowable center-and-spread is exactly what lets us say how surprising the observed p̂ = 0.048 is — i.e. compute a p-value."
       },
       "reveal": "The sample proportion p̂ varies from study to study, but predictably: under H₀ its distribution is centered at the true p = 0.10, has standard deviation √(p(1−p)/n), and is approximately normal — here only *roughly*, with a mild right skew, because np = 6.2 falls below about 10. **More studies** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This null distribution is exactly what we compare the consultant's observed p̂ = 0.048 against to get a p-value."
     }

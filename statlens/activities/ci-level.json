@@ -64,7 +64,8 @@
             "placeholder": "Your prediction",
             "rows": 2
           }
-        ]
+        ],
+        "answer": "A strong answer: '95% confident' refers to the **method** — 95% of intervals built this way capture the true value; 99% must be wider because covering the truth more often needs a bigger net. A '5–50 mg/dL, 99% CI' is technically honest but nearly useless — they bought confidence at the cost of all precision. Quadrupling the data halves the width (width ∝ 1/√n), so 4× data → about half as wide."
       }
     }
   ]
