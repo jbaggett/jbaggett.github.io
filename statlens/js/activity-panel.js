@@ -611,7 +611,13 @@
             cls += ' incorrect';
           }
         }
-        return `<button type="button" class="${cls}" data-choice="${i}" ${disabled}>${md(interp(c.text))}</button>`;
+        // Wrap the label in a span so it is ONE flex child of the flex button.
+        // Without this, KaTeX's inline-block `.katex` becomes its own flex item,
+        // getting the button's `gap` on both sides and vertical centering — inline
+        // math floats into its own column (REQ-047). Inside the span it flows as
+        // normal text. The span takes the row (flex:1), leaving the ✓/✗/● ::after
+        // marker at the far end.
+        return `<button type="button" class="${cls}" data-choice="${i}" ${disabled}><span class="gate-choice-text">${md(interp(c.text))}</span></button>`;
       }).join('');
 
       let feedback = '';

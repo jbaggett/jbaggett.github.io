@@ -2936,6 +2936,10 @@ body[data-mode="discover"] .present-only { display: none !important; }
   cursor: pointer; font-size: 0.9rem; font-family: inherit;
   text-align: left;
 }
+/* Choice label is one flex child so inline KaTeX flows as text, not as its own
+   flex item (REQ-047). flex:1 lets it fill the row; the ✓/✗/● ::after marker
+   then sits at the far end. */
+.gate-choice-text { flex: 1 1 auto; min-width: 0; }
 .gate-choice:hover { background: #f0f7ff; }
 .gate-choice:focus-visible { outline: 2px solid var(--ims-blue); outline-offset: 2px; }
 /* Correct/incorrect pair color with a ✓/✗ marker so the result is
