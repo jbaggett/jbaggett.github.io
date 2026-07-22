@@ -51,7 +51,14 @@
       }
     },
     {
-      "instruction": "You've built the null distribution of a proportion from scratch.",
+      "instruction": "You've built the null distribution of a proportion from scratch. Before you read the summary, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          { "id": "predictions_held", "label": "How well did each of your three predictions (center, spread, shape) hold up?", "placeholder": "Compare to what you saw", "rows": 2 },
+          { "id": "samples_vs_n", "label": "Why do more studies fill in the same distribution, while a larger n produces a different (narrower) distribution?", "placeholder": "Your reasoning", "rows": 2 },
+          { "id": "stable_center_purpose", "label": "Why does the null distribution having a stable center and spread make the p-value calculation possible?", "placeholder": "Your reasoning", "rows": 2 }
+        ]
+      },
       "reveal": "The sample proportion p̂ varies from study to study, but predictably: under H₀ its distribution is centered at the true p = 0.10, has standard deviation √(p(1−p)/n), and is approximately normal — here only *roughly*, with a mild right skew, because np = 6.2 falls below about 10. **More studies** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This null distribution is exactly what we compare the consultant's observed p̂ = 0.048 against to get a p-value."
     }
   ]

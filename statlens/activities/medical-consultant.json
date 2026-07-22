@@ -1,7 +1,12 @@
 {
   "title": "Medical Consultant: Bootstrap CI for a Proportion",
   "tool": "simulate/bootstrap-prop",
-  "params": { "dataset": "medical_consultant", "success": "complication", "ci": 95, "seed": "ch8med" },
+  "params": {
+    "dataset": "medical_consultant",
+    "success": "complication",
+    "ci": 95,
+    "seed": "ch8med"
+  },
   "steps": [
     {
       "instruction": "Click **+1** several times and watch the resampled proportion after each click.",
@@ -12,6 +17,31 @@
       "instruction": "Click the **Play** button and watch the bootstrap distribution build, then **Pause** and click **+1000**.",
       "observe": "Read the **95% CI** bounds. Is 0.10 (the national complication rate) inside the interval, outside it, or right on the boundary?",
       "reveal": "The upper bound of the 95% CI is near 0.10 — it may just barely include or exclude it depending on the number of resamples. This is a borderline case. Either way, we don't have strong evidence that the consultant's rate is truly lower than average. The sample is small (n = 62) and the CI is wide, so complication rates anywhere from 0% up to around 10% are plausible."
+    },
+    {
+      "instruction": "You've bootstrapped the consultant's complication rate. Put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "cant_conclude_equal",
+            "label": "Given the 95% CI includes 10%, can we conclude the consultant's rate is no different from the national rate — or only that we can't rule it out?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "borderline_hardness",
+            "label": "Why does small-sample discreteness make the borderline-vs-clear-cut distinction harder here than at n = 620?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "study_design_improvement",
+            "label": "What one change to the study design would give the strongest chance of demonstrating a real improvement?",
+            "placeholder": "Your suggestion",
+            "rows": 2
+          }
+        ]
+      }
     }
   ]
 }

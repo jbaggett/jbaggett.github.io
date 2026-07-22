@@ -67,7 +67,14 @@
       }
     },
     {
-      "instruction": "Time to conclude. The p-value in the results panel tells you how often chance alone produced a difference as large as the one observed.",
+      "instruction": "Time to conclude. The p-value in the results panel tells you how often chance alone produced a difference as large as the one observed. Before you read the conclusion, put the reasoning in your own words.",
+      "respond": {
+        "prompts": [
+          { "id": "center_at_zero", "label": "Why does shuffling produce a distribution centered at zero, even though the actual study's observed difference is 29.2 pp?", "placeholder": "Your reasoning", "rows": 2 },
+          { "id": "tail_fraction_is_pvalue", "label": "What does the fraction of shuffles at or beyond 29.2 pp tell us — and why is that fraction the p-value?", "placeholder": "Your reasoning", "rows": 2 },
+          { "id": "reproducibility", "label": "If we ran the shuffle again with a different random seed, would the p-value be exactly the same, roughly the same, or wildly different? Why?", "placeholder": "Your reasoning", "rows": 2 }
+        ]
+      },
       "reveal": "Because differences of 29.2 pp or more almost never occur when promotions are shuffled randomly, chance is not a plausible explanation. The data provide convincing evidence that sex influenced the promotion decisions. Note the logic: we didn't prove discrimination directly — we ruled out the skeptic's \"just luck\" explanation."
     }
   ]

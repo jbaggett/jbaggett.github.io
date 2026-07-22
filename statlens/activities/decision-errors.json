@@ -1,7 +1,13 @@
 {
   "title": "Type I & Type II Errors",
   "tool": "conceptual/decision-errors",
-  "params": { "truth": "none", "n": 30, "alpha": "0.05", "ptrue": 65, "seed": "ch8errors" },
+  "params": {
+    "truth": "none",
+    "n": 30,
+    "alpha": "0.05",
+    "ptrue": 65,
+    "seed": "ch8errors"
+  },
   "steps": [
     {
       "instruction": "Leave the truth set to **H₀ is true — the treatment does nothing**. Click **+1000** to run a thousand studies of a treatment that genuinely has no effect.",
@@ -32,6 +38,25 @@
       "instruction": "Finally, with **Hₐ true** and the success rate at 65%, n = 30, change **α** to **0.01**. Reset and run **+1000**, then compare to α = 0.05.",
       "observe": "Did power go up or down when you made α stricter?",
       "reveal": "Stricter α (0.01) lowers the Type I error rate but *raises* Type II errors — power **drops**. You can't shrink both error types at once for a fixed n: that trade-off is the heart of choosing a significance level."
+    },
+    {
+      "instruction": "You've run studies under both H₀ and Hₐ, varying n and α. Put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "alpha_beta_asymmetry",
+            "label": "Why is the Type I error rate exactly α regardless of the data, while β depends on the true effect, sample size, AND α?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "tradeoff",
+            "label": "Why does lowering α raise β unless you also raise n?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ]
+      }
     }
   ]
 }

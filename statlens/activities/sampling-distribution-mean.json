@@ -54,7 +54,13 @@
       }
     },
     {
-      "instruction": "You've built the sampling distribution of a sample mean from scratch — starting from a skewed population.",
+      "instruction": "You've built the sampling distribution of a sample mean from scratch — starting from a skewed population. Before you read the summary, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          { "id": "why_clt", "label": "Why does the sampling distribution of x̄ end up centered at μ and roughly bell-shaped even when the population is skewed?", "placeholder": "Your reasoning", "rows": 2 },
+          { "id": "spread_reason", "label": "Why does a larger n shrink the spread but not move the center?", "placeholder": "Your reasoning", "rows": 2 }
+        ]
+      },
       "reveal": "The sample mean x̄ varies from sample to sample, but predictably: its distribution is **centered at the population mean μ**, has standard deviation **σ/√n**, and becomes approximately **normal** as n grows — even when the population itself is skewed. That last part is the **Central Limit Theorem**. Crucially, **more samples** sharpen the picture of that distribution, while a **larger n** changes it — shrinking the spread. This is the engine behind every confidence interval and t-test for a mean."
     }
   ]
