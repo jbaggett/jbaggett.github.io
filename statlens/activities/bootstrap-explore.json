@@ -25,7 +25,8 @@
         ],
         "feedback": "It centers at **\\(\\bar{x}^*\\)* — the bootstrap only knows your sample, not μ — and comes out **bell-shaped** even though the pennies are skewed. That's the Central Limit Theorem acting on the mean. Now build it and watch.",
         "retryFeedback": "The bootstrap resamples from *your sample*, so what's the most it can center on? And what does averaging do to skew?"
-      }
+      },
+      "phase": "predict"
     },
     {
       "instruction": "Click **+1** once to draw a single bootstrap resample.",
@@ -71,7 +72,8 @@
           }
         ],
         "answer": "A strong answer: the bootstrap resamples from **your one sample**, so it can only know \\(\\bar{x}\\), not μ — it centers on \\(\\bar{x}\\). It comes out bell-shaped even from skewed pennies because it's a distribution of **means**, and averaging invokes the CLT. A different original sample of 648 would center on **its** \\(\\bar{x}\\) and give a slightly different CI — the *method* has 95% coverage, but any single interval is just one draw."
-      }
+      },
+      "phase": "explain"
     }
   ]
 }

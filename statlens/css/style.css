@@ -4231,6 +4231,77 @@ body[data-chrome="minimal"] .control-row {
   color: #569BBD;
 }
 
+/* ── Predict → Do → Explain phase cues (REQ-046) ──────────────────── */
+/* Badge: names the current move. Backgrounds are darkened brand shades so
+   white text clears WCAG AA (the raw #569BBD/#E07020 are too light as text
+   backgrounds — see CLAUDE.md a11y notes); the strip dots below use the exact
+   brand hues since a filled dot is graphical (3:1) not text. */
+.activity-phase-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 2px 9px;
+  border-radius: 10px;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.activity-phase-badge.phase-predict { background: #2A7AAB; }
+.activity-phase-badge.phase-do      { background: #C05E10; }
+.activity-phase-badge.phase-explain { background: #114B5F; }
+
+/* Progress strip: one node per step, colored by phase where it has one
+   (Predict start, Explain end), neutral for the unlabeled middle "Do" steps.
+   Reached nodes are filled; upcoming ones are hollow so the arc reads ahead. */
+.activity-progress {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  list-style: none;
+  margin: 0.1rem 0 0.6rem;
+  padding: 0;
+}
+.activity-progress .pstep {
+  flex: 1 1 auto;
+  min-width: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.activity-progress .pdot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: #fff;
+  border: 2px solid #C9D3D8;   /* neutral, hollow by default */
+}
+.pstep-label {
+  font-size: 9px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: #6C6C6C;
+  white-space: nowrap;
+}
+/* phase hues on the border (visible even while hollow/upcoming) */
+.pstep.phase-predict .pdot { border-color: #569BBD; }
+.pstep.phase-do      .pdot { border-color: #E07020; }
+.pstep.phase-explain .pdot { border-color: #114B5F; }
+.pstep.phase-predict .pstep-label { color: #2A7AAB; }
+.pstep.phase-explain .pstep-label { color: #114B5F; }
+/* reached (past + current) → fill with the hue */
+.pstep.past.phase-predict .pdot, .pstep.current.phase-predict .pdot { background: #569BBD; }
+.pstep.past.phase-do .pdot,       .pstep.current.phase-do .pdot      { background: #E07020; }
+.pstep.past.phase-explain .pdot,  .pstep.current.phase-explain .pdot { background: #114B5F; }
+.pstep.past.phase-none .pdot,     .pstep.current.phase-none .pdot    { background: #C9D3D8; }
+/* current node emphasized */
+.pstep.current .pdot { transform: scale(1.25); box-shadow: 0 0 0 3px rgba(86, 155, 189, 0.25); }
+.pstep.past .pdot { opacity: 0.7; }
+
 /* ── Free-text response capture (REQ-041) ─────────────────────────── */
 .activity-respond {
   margin: 0.75rem 0;

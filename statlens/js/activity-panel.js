@@ -315,7 +315,7 @@
    *   student to check their typed prediction against. NOT grading (free text is
    *   never scored); the same role MC gate `feedback` plays, tied to a text field.
    *
-   * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, respond?: RespondSpec, demo?: {type: string, label?: string, options?: object}}> }} activity
+   * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, respond?: RespondSpec, phase?: string, demo?: {type: string, label?: string, options?: object}}> }} activity
    */
   function renderPanel(activity) {
     const steps = activity.steps || [];
@@ -348,6 +348,15 @@
     const activitySlug = String(activityUrl || 'activity').split('/').pop().replace(/\.json$/, '');
     const RESP_KEY = `statlens-activity-responses:${activitySlug}`;
     const activityHasRespond = steps.some(s => s && s.respond && Array.isArray(s.respond.prompts));
+
+    // REQ-046: the pedagogical arc (Predict → Do → Explain) made visible in the
+    // tool, so a student who arrived without reading the textbook box still sees
+    // the frame. Only the load-bearing moves are labeled — the anchor Predict at
+    // the start and Explain at the end; middle "Do" steps stay unbadged so the
+    // badges keep their meaning (name the moves, not the plumbing).
+    const PHASES = { predict: 'Predict', do: 'Do', explain: 'Explain' };
+    const phaseOf = (/** @type {any} */ s) => (s && PHASES[s.phase] ? s.phase : null);
+    const activityHasPhase = steps.some(s => phaseOf(s));
 
     /** @type {Record<string, Record<string, string>>} step-index → field-id → text */
     const responses = (() => {
@@ -654,13 +663,24 @@
       const requiresBlocks = !present && step.requires && !requiresMet(step);
       const respondBlocks = !present && step.respond && step.respond.gateOnNonEmpty && !respondComplete(currentStep);
 
+      const curPhase = phaseOf(step);
       const html = `
         <div class="activity-header">
           <span class="activity-title">${md(activity.title)}</span>
           <span class="activity-step-count">Step ${currentStep + 1} of ${steps.length}</span>
           <button type="button" class="activity-end-btn" aria-label="End activity and keep the tool open" title="End activity">✕</button>
         </div>
+        ${activityHasPhase ? `<ol class="activity-progress" aria-label="Predict, Do, Explain progress">
+          ${steps.map((s, i) => {
+            const ph = phaseOf(s) || 'none';
+            const state = i < currentStep ? 'past' : i === currentStep ? 'current' : 'future';
+            const lbl = ph !== 'none' ? `<span class="pstep-label">${PHASES[s.phase]}</span>` : '';
+            const aria = `Step ${i + 1}${ph !== 'none' ? ', ' + PHASES[s.phase] : ''}${i === currentStep ? ' (current)' : i < currentStep ? ' (done)' : ''}`;
+            return `<li class="pstep phase-${ph} ${state}" aria-label="${aria}"${i === currentStep ? ' aria-current="step"' : ''}><span class="pdot"></span>${lbl}</li>`;
+          }).join('')}
+        </ol>` : ''}
         <div class="activity-body">
+          ${curPhase ? `<div class="activity-phase-badge phase-${curPhase}">${PHASES[step.phase]}</div>` : ''}
           <div class="activity-instruction">${md(interp(step.instruction))}</div>
           ${step.demo && DEMOS[step.demo.type] ? `<button type="button" class="activity-demo-btn">▶ ${md(step.demo.label || 'Watch a demonstration')}</button>` : ''}
           ${step.observe ? `<div class="activity-observe"><span class="activity-observe-label">Look for:</span> ${md(interp(step.observe))}</div>` : ''}

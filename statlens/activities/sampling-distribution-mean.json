@@ -30,7 +30,8 @@
             "feedback": "You've committed — draw and see whether the means spread out evenly or cluster somewhere."
           }
         ]
-      }
+      },
+      "phase": "predict"
     },
     {
       "instruction": "Click **+1** once. The **One sample** panel shows your 10 drawn values; they collapse to a single mean **\\(\\bar{x}^*\\)*, which drops as one dot into the **Sampling distribution** panel at the bottom. Click **+1** a few more times.",
@@ -112,7 +113,8 @@
         ],
         "answer": "A strong answer: the sampling distribution centers at μ because \\(\\bar{x}\\) is an **unbiased** estimator — over many samples the highs and lows cancel — and it turns bell-shaped because averaging washes out the population's skew (the Central Limit Theorem). A larger n shrinks the spread (σ/√n) because each mean rests on more information, but it never moves the center — the target μ doesn't change."
       },
-      "reveal": "The sample mean \\(\\bar{x}\\) varies from sample to sample, but predictably: its distribution is **centered at the population mean μ**, has standard deviation **σ/√n**, and becomes approximately **normal** as n grows — even when the population itself is skewed. That last part is the **Central Limit Theorem**. Crucially, **more samples** sharpen the picture of that distribution, while a **larger n** changes it — shrinking the spread. This is the engine behind every confidence interval and t-test for a mean."
+      "reveal": "The sample mean \\(\\bar{x}\\) varies from sample to sample, but predictably: its distribution is **centered at the population mean μ**, has standard deviation **σ/√n**, and becomes approximately **normal** as n grows — even when the population itself is skewed. That last part is the **Central Limit Theorem**. Crucially, **more samples** sharpen the picture of that distribution, while a **larger n** changes it — shrinking the spread. This is the engine behind every confidence interval and t-test for a mean.",
+      "phase": "explain"
     }
   ]
 }

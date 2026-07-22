@@ -27,7 +27,8 @@
         ],
         "feedback": "About α × 500 = 0.05 × 500 = **25** studies reject even though H₀ is true. Each is a **Type I error** — the test crying wolf — and that rate is exactly α, no matter the data. Now run them and watch the false-alarm strip.",
         "retryFeedback": "α is the false-alarm rate under a true H₀. What fraction of 500 is α = 0.05?"
-      }
+      },
+      "phase": "predict"
     },
     {
       "instruction": "Leave the truth set to **H₀ is true — the treatment does nothing**. Click **+1000** to run a thousand studies of a treatment that genuinely has no effect.",
@@ -77,7 +78,8 @@
           }
         ],
         "answer": "A strong answer: the Type I rate is α **by definition** — you set the rejection threshold, so under a true H₀ exactly that fraction cross it, whatever the data. β is different: it depends on how far the truth sits from H₀ (effect size), how much data you have (n), and where the threshold sits (α) — so it isn't a single number. Lowering α moves the threshold farther out, catching fewer false alarms **and** fewer true effects (higher β) — unless you buy back sensitivity with a larger n."
-      }
+      },
+      "phase": "explain"
     }
   ]
 }

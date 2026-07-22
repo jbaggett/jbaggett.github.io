@@ -26,7 +26,8 @@
         ],
         "feedback": "With only 62 patients the CI is wide and its upper bound lands right around 10% — so 10% is **not** ruled out. A small sample can't separate 'genuinely better' from 'lucky.' Now bootstrap it and see.",
         "retryFeedback": "Think about how wide a CI built from just 62 observations (3 complications) will be."
-      }
+      },
+      "phase": "predict"
     },
     {
       "instruction": "Click **+1** several times and watch the resampled proportion after each click.",
@@ -62,7 +63,8 @@
           }
         ],
         "answer": "A strong answer: including 10% means we **can't rule it out** — not that the rates are equal (absence of evidence isn't evidence of absence). Small-n discreteness makes it borderline because the CI bound lurches between whole-count outcomes (6/62 vs 7/62), so 'just includes' vs 'just excludes' can flip on a single patient. The strongest fix is **more data** — a larger n narrows the CI and steadies the boundary."
-      }
+      },
+      "phase": "explain"
     }
   ]
 }

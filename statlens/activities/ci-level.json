@@ -25,7 +25,8 @@
         ],
         "feedback": "Higher confidence → **wider** interval. To be more sure you've captured the true value, you cast a wider net — the confidence-vs-precision trade-off. Now read the three intervals and see.",
         "retryFeedback": "To be *more* confident you've captured the true value, do you need a wider or a narrower interval?"
-      }
+      },
+      "phase": "predict"
     },
     {
       "instruction": "Click **+1000** to generate 1,000 bootstrap resamples.",
@@ -66,7 +67,8 @@
           }
         ],
         "answer": "A strong answer: '95% confident' refers to the **method** — 95% of intervals built this way capture the true value; 99% must be wider because covering the truth more often needs a bigger net. A '5–50 mg/dL, 99% CI' is technically honest but nearly useless — they bought confidence at the cost of all precision. Quadrupling the data halves the width (width ∝ 1/√n), so 4× data → about half as wide."
-      }
+      },
+      "phase": "explain"
     }
   ]
 }

@@ -75,7 +75,8 @@
           }
         ]
       },
-      "observe": "Click **+1** a few times. Watch the mechanism strip deal the same promotions into new groups, and watch where each shuffled difference lands on the chart."
+      "observe": "Click **+1** a few times. Watch the mechanism strip deal the same promotions into new groups, and watch where each shuffled difference lands on the chart.",
+      "phase": "predict"
     },
     {
       "instruction": "One shuffle is one data point. Click **+100**, then **+1000**, to see what chance alone typically produces.",
@@ -123,7 +124,8 @@
         ],
         "answer": "A strong answer: shuffling enforces the null (labels don't matter), so on average the groups differ by 0 — the distribution centers at zero **by construction**, regardless of the real 29.2 pp gap. The fraction of shuffles at least as extreme as 29.2 pp **is** the p-value: how often chance alone matches the data. A different seed gives a **roughly** equal p-value (it's an estimate from finitely many shuffles); more shuffles → more stable."
       },
-      "reveal": "Because differences of 29.2 pp or more almost never occur when promotions are shuffled randomly, chance is not a plausible explanation. The data provide convincing evidence that sex influenced the promotion decisions. Note the logic: we didn't prove discrimination directly — we ruled out the skeptic's \"just luck\" explanation."
+      "reveal": "Because differences of 29.2 pp or more almost never occur when promotions are shuffled randomly, chance is not a plausible explanation. The data provide convincing evidence that sex influenced the promotion decisions. Note the logic: we didn't prove discrimination directly — we ruled out the skeptic's \"just luck\" explanation.",
+      "phase": "explain"
     }
   ]
 }

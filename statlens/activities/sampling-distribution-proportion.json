@@ -30,7 +30,8 @@
             "feedback": "You've committed — draw samples and see whether the proportions really spread out evenly, or cluster somewhere."
           }
         ]
-      }
+      },
+      "phase": "predict"
     },
     {
       "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 62 marbles, collapse to a single proportion **\\(\\hat{p}^*\\)*, and drop that one dot into the **Sampling distribution** panel at the bottom — one simulated study under H₀.",
@@ -107,7 +108,8 @@
         ],
         "answer": "A strong answer: more studies just **fill in** the same null distribution — its center (0.10) and spread (√(p(1−p)/n)) are fixed by p and n, not by how many scoops you take. A larger n produces a genuinely **different**, narrower distribution. That stable, knowable center-and-spread is exactly what lets us say how surprising the observed \\(\\hat{p}\\) = 0.048 is — i.e. compute a p-value."
       },
-      "reveal": "The sample proportion \\(\\hat{p}\\) varies from study to study, but predictably: under H₀ its distribution is centered at the true p = 0.10, has standard deviation √(p(1−p)/n), and is approximately normal — here only *roughly*, with a mild right skew, because np = 6.2 falls below about 10. **More studies** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This null distribution is exactly what we compare the consultant's observed \\(\\hat{p}\\) = 0.048 against to get a p-value."
+      "reveal": "The sample proportion \\(\\hat{p}\\) varies from study to study, but predictably: under H₀ its distribution is centered at the true p = 0.10, has standard deviation √(p(1−p)/n), and is approximately normal — here only *roughly*, with a mild right skew, because np = 6.2 falls below about 10. **More studies** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This null distribution is exactly what we compare the consultant's observed \\(\\hat{p}\\) = 0.048 against to get a p-value.",
+      "phase": "explain"
     }
   ]
 }
