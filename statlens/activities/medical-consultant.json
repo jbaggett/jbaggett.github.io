@@ -9,6 +9,26 @@
   },
   "steps": [
     {
+      "instruction": "The consultant had **3 complications in 62 surgeries** (p̂ = 0.048), versus a national rate of **10%**. You'll bootstrap a 95% confidence interval for her true rate. **Before you start, commit to a prediction.**",
+      "gate": {
+        "question": "Where do you think the 95% bootstrap CI will fall relative to the national 10%?",
+        "choices": [
+          {
+            "text": "It will include 10% — we won't be able to rule out the national rate",
+            "correct": true
+          },
+          {
+            "text": "It will sit entirely below 10% — clear evidence she's better"
+          },
+          {
+            "text": "It will sit entirely above 10%"
+          }
+        ],
+        "feedback": "With only 62 patients the CI is wide and its upper bound lands right around 10% — so 10% is **not** ruled out. A small sample can't separate 'genuinely better' from 'lucky.' Now bootstrap it and see.",
+        "retryFeedback": "Think about how wide a CI built from just 62 observations (3 complications) will be."
+      }
+    },
+    {
       "instruction": "Click **+1** several times and watch the resampled proportion after each click.",
       "observe": "Does the proportion change each time? Does it ever hit exactly 3/62 (0.048)? Does it ever reach 0? Does it get as high as 0.10 (the national average)?",
       "reveal": "Because we resample with replacement, each resample is different. With only 3 complications in 62 patients, most resamples have 2, 3, or 4 complications. Proportions near 0 are possible. Reaching 0.10 (about 6 complications) is less common but possible."

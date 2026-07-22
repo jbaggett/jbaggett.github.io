@@ -10,6 +10,26 @@
   },
   "steps": [
     {
+      "instruction": "You're about to run many studies of the same test. First the truth is set to **H₀ is true** — the treatment does nothing — and you'll run studies at **α = 0.05**. **Before you run them, commit to a prediction.**",
+      "gate": {
+        "question": "Out of 500 studies where H₀ is really true, about how many do you expect to reject H₀ — and what is each such rejection?",
+        "choices": [
+          {
+            "text": "About 25 — and each one is a Type I error (a false alarm)",
+            "correct": true
+          },
+          {
+            "text": "About 0 — if H₀ is true, the test won't reject it"
+          },
+          {
+            "text": "About 250 — roughly half will reject by chance"
+          }
+        ],
+        "feedback": "About α × 500 = 0.05 × 500 = **25** studies reject even though H₀ is true. Each is a **Type I error** — the test crying wolf — and that rate is exactly α, no matter the data. Now run them and watch the false-alarm strip.",
+        "retryFeedback": "α is the false-alarm rate under a true H₀. What fraction of 500 is α = 0.05?"
+      }
+    },
+    {
       "instruction": "Leave the truth set to **H₀ is true — the treatment does nothing**. Click **+1000** to run a thousand studies of a treatment that genuinely has no effect.",
       "observe": "What fraction of these studies still *rejected* H₀ — that is, raised a false alarm?",
       "reveal": "About **5%** of studies reject H₀ even though it's true. These are *Type I errors*. The rate isn't an accident — it matches the significance level α = 0.05 we chose. Rejecting H₀ at the 5% level *means* allowing a 5% false-alarm rate."

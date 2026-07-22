@@ -8,6 +8,26 @@
   },
   "steps": [
     {
+      "instruction": "You'll build one bootstrap distribution, then read a confidence interval off it at **90%, then 95%, then 99%** confidence. **Before you start, commit to a prediction.**",
+      "gate": {
+        "question": "As you raise the confidence level from 90% → 95% → 99%, what happens to the width of the interval?",
+        "choices": [
+          {
+            "text": "It gets wider — more confidence needs a wider net",
+            "correct": true
+          },
+          {
+            "text": "It gets narrower — more confidence means more precision"
+          },
+          {
+            "text": "It stays the same — the confidence level doesn't affect width"
+          }
+        ],
+        "feedback": "Higher confidence → **wider** interval. To be more sure you've captured the true value, you cast a wider net — the confidence-vs-precision trade-off. Now read the three intervals and see.",
+        "retryFeedback": "To be *more* confident you've captured the true value, do you need a wider or a narrower interval?"
+      }
+    },
+    {
       "instruction": "Click **+1000** to generate 1,000 bootstrap resamples.",
       "observe": "Note the **95% CI** bounds in the results panel. How wide is the interval?",
       "reveal": "The 95% CI is roughly (9.7, 11.1) — a width of about 1.4 years."

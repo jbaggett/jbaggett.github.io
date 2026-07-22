@@ -8,6 +8,26 @@
   },
   "steps": [
     {
+      "instruction": "You're about to build the bootstrap distribution of the mean penny age — resampling the 648 pennies **with replacement** 1,000 times. The original pennies are strongly **right-skewed**. **Before you start, commit to a prediction.**",
+      "gate": {
+        "question": "After 1,000 resamples, where will the bootstrap distribution of x̄* be centered, and what shape will it take?",
+        "choices": [
+          {
+            "text": "Centered at the sample mean x̄, and roughly bell-shaped",
+            "correct": true
+          },
+          {
+            "text": "Centered at the true population mean μ, and bell-shaped"
+          },
+          {
+            "text": "Centered at x̄, but right-skewed like the original pennies"
+          }
+        ],
+        "feedback": "It centers at **x̄** — the bootstrap only knows your sample, not μ — and comes out **bell-shaped** even though the pennies are skewed. That's the Central Limit Theorem acting on the mean. Now build it and watch.",
+        "retryFeedback": "The bootstrap resamples from *your sample*, so what's the most it can center on? And what does averaging do to skew?"
+      }
+    },
+    {
       "instruction": "Click **+1** once to draw a single bootstrap resample.",
       "observe": "Look at the **This Resample** panel. How many pennies were selected once? Twice? Three or more times? How many were not selected at all?",
       "reveal": "Because we sample *with replacement*, some pennies get picked multiple times while others are left out entirely. The resample is the same size as the original, but it's not the same pennies."
