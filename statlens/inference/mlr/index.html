@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Multiple Linear Regression | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm",
+            "jstat":        "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .var-selectors { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-start; margin-bottom: 0.75rem; }
+        .var-selectors > div { display: flex; flex-direction: column; gap: 0.3rem; }
+        .var-selectors label.field-label { font-size: 0.9rem; font-weight: 700; }
+        #predictor-list { display: flex; flex-direction: column; gap: 0.2rem; max-height: 12rem; overflow-y: auto; padding: 0.25rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; }
+        #predictor-list label { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; font-size: 0.9rem; }
+        .mlr-coef-table td, .mlr-coef-table th { text-align: right; }
+        .mlr-coef-table th[scope="col"]:first-child, .mlr-coef-table th[scope="row"] { text-align: left; }
+        .mlr-coef-table .vif-col { color: var(--ims-gray-text); }
+        .mlr-fit-stats { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; margin: 0.5rem 0; }
+        .mlr-fit-stats div { font-size: 0.9rem; }
+        .mlr-fit-stats strong { font-family: var(--font-mono); }
+        .influence-flag { background: #FCF3E7; border-left: 3px solid #E07020; padding: 0.5rem 0.75rem; border-radius: 0 4px 4px 0; font-size: 0.85rem; margin: 0.5rem 0; }
+        .scatter-matrix { display: grid; gap: 4px; margin-top: 0.5rem; overflow-x: auto; }
+        .scatter-matrix .cell svg { display: block; }
+        .scatter-matrix .diag-label { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem; background: var(--surface); border-radius: 4px; text-align: center; padding: 2px; }
+        .mlr-diag-charts { display: flex; flex-wrap: wrap; gap: 1rem; }
+        .mlr-diag-charts figure { margin: 0; flex: 1 1 260px; }
+        .mlr-diag-charts figcaption { font-size: 0.8rem; color: var(--ims-gray-text); text-align: center; }
+        details.mlr-section > summary { cursor: pointer; }
+        details.mlr-section > summary h3 { display: inline; vertical-align: middle; }
+    </style>
+</head>
+<body>
+    <div class="skip-links">
+        <a href="#data-panel">Skip to Data</a>
+        <a href="#variable-selector">Skip to Variables</a>
+        <a href="#results-panel">Skip to Results</a>
+    </div>
+
+    <main>
+        <h1>Multiple Linear Regression<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+
+        <section id="data-panel" aria-label="Data input">
+            <div role="tablist" aria-label="Data source" class="tabs">
+                <button role="tab" id="tab-dataset" aria-selected="true" aria-controls="panel-dataset">Datasets</button>
+                <button role="tab" id="tab-file" aria-selected="false" aria-controls="panel-file">Upload CSV</button>
+            </div>
+            <div role="tabpanel" id="panel-dataset" aria-labelledby="tab-dataset">
+                <label for="dataset-select">Choose a dataset:
+                    <select id="dataset-select"></select>
+                </label>
+            </div>
+            <div role="tabpanel" id="panel-file" aria-labelledby="tab-file" hidden>
+                <label for="file-input">Upload a CSV (needs 3+ numeric columns):
+                    <input type="file" id="file-input" accept=".csv,text/csv">
+                </label>
+            </div>
+        </section>
+
+        <div id="variable-selector" hidden>
+            <div class="var-selectors">
+                <div>
+                    <label class="field-label" for="response-select">Response variable (Y)</label>
+                    <select id="response-select"></select>
+                </div>
+                <div>
+                    <span class="field-label" id="predictors-label">Predictor variables (X)</span>
+                    <div id="predictor-list" role="group" aria-labelledby="predictors-label"></div>
+                </div>
+            </div>
+            <label class="expert-check"><input type="checkbox" id="expert-toggle"> Expert mode (show VIF)</label>
+        </div>
+
+        <section id="results-section" aria-label="Model results" hidden>
+            <div id="results-panel" tabindex="-1"></div>
+        </section>
+
+        <div id="sr-announce" class="visually-hidden" aria-live="polite"></div>
+    </main>
+
+    <dialog id="page-help" class="help-dialog">
+        <h2>Multiple Linear Regression — help</h2>
+        <p>Fit a model <em>Y = β₀ + β₁x₁ + … + βₖxₖ</em> and read the standard software output.</p>
+        <ul>
+            <li><strong>Pick a response (Y)</strong> and check two or more numeric <strong>predictors (X)</strong>. Rows with missing values in any chosen variable are dropped.</li>
+            <li><strong>Coefficient table</strong> — each estimate with its standard error, <em>t</em>-statistic, p-value, and 95% CI, matching <code>summary(lm)</code>.</li>
+            <li><strong>Model F-test</strong> tests whether the predictors <em>together</em> explain anything (H₀: all slopes = 0).</li>
+            <li><strong>R² / adjusted R²</strong> — proportion of variation explained; adjusted R² penalizes extra predictors.</li>
+            <li><strong>Diagnostics</strong> — residuals vs fitted (look for random scatter), the residual distribution, and a Cook's-distance flag for high-influence rows.</li>
+            <li><strong>Predictor relationships</strong> — pairwise scatterplots to spot multicollinearity by eye. <strong>Expert mode</strong> adds the VIF metric.</li>
+        </ul>
+        <p>Link with <code>?dataset=</code>, <code>?response=</code>, <code>?predictors=a,b,c</code>, <code>?diagnostics=true</code>, <code>?expert=true</code>.</p>
+        <button type="button" autofocus>Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

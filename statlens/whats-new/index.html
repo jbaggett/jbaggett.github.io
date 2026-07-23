@@ -39,6 +39,12 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry">
+            <div class="cl-date">2026-07-23<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../inference/mlr/?dataset=possum&amp;predictors=total_l,skull_w">Multiple Linear Regression</a></h2>
+            <p>Fit <em>Y = β₀ + β₁x₁ + … + βₖxₖ</em> on a bundled or uploaded dataset and read the full software-style output: a coefficient table (estimate, SE, <em>t</em>, p-value, 95% CI) matching <code>summary(lm)</code>, the model <strong>ANOVA F-test</strong>, <strong>R² / adjusted R²</strong> and residual standard error, and diagnostics (residuals-vs-fitted, residual distribution, and a Cook's-distance flag for high-influence points). To judge <strong>multicollinearity</strong>, the base view shows a pairwise scatterplot matrix of the predictors; <strong>Expert mode</strong> adds the VIF metric. The <a href="../inference/slope/?dataset=possum_regression&amp;anova=true">single-predictor slope tool</a> also gained an ANOVA-for-regression table (SST = SSR + SSE, and the F = t² equivalence).</p>
+        </article>
+
+        <article class="cl-entry">
             <div class="cl-date">2026-07-14<span class="cl-tag">New</span></div>
             <h2><a href="../inference/estimate/one-mean/?dataset=ames_area">Confidence-interval pages for every parametric procedure</a></h2>
             <p>Traditional inference now splits estimation from testing, the way the simulation side already does (bootstrap = CI, randomization = test). Six new <strong>Confidence Interval</strong> pages — for a mean, a proportion, a difference in means, paired differences, a difference in proportions, and a regression slope — each let you set the confidence level with a number box or preset pills, <strong>or drag the critical values</strong> right on a t- or z-curve. The plot uses the same interactive markers as the distribution calculators (editable probability pills, editable ±critical-value boxes, snap points at common levels), and the results box shows the interval worked out. The Traditional Inference menu and the home-page grids now list a Confidence Interval and a Hypothesis Test entry for each procedure.</p>
