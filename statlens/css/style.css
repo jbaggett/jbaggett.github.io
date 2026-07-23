@@ -3567,6 +3567,32 @@ body[data-mode="discover"] .present-only { display: none !important; }
   margin: 0 0 0.35rem;
 }
 
+/* REQ-037: ANOVA-for-regression panel (collapsible <details>). */
+.anova-table > summary {
+  cursor: pointer;
+  list-style-position: outside;
+}
+/* Keep the heading inline with the disclosure triangle, not on its own row. */
+.anova-table > summary h3 {
+  display: inline;
+  vertical-align: middle;
+}
+.anova-table > summary::-webkit-details-marker { vertical-align: middle; }
+/* The 6-column table scrolls horizontally on a narrow results panel rather
+   than forcing the panel to overflow. */
+.anova-results {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-top: 0.5rem;
+}
+.anova-results td, .anova-results th { text-align: right; }
+.anova-results th[scope="col"], .anova-results th[scope="row"] { text-align: left; }
+.anova-results .anova-total th, .anova-results .anova-total td {
+  border-top: 2px solid var(--border);
+  font-weight: 600;
+}
+
 /* KaTeX formula container: center display math, allow overflow scroll */
 .formula-display .katex-display {
   margin: 0.4rem 0;

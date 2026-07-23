@@ -24,7 +24,12 @@ const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
 // ── Initialize jStat before anything else ──────────────────────────
 const jstatMod = await import('jstat');
-setJStat(jstatMod.default || jstatMod);
+const jStat = jstatMod.default || jstatMod;
+setJStat(jStat);
+
+// REQ-037: `?anova=true` opens the ANOVA-table panel by default (chapter links).
+const anovaOpenByDefault = /^(true|1|yes)$/i.test(
+  new URLSearchParams(location.search).get('anova') || '');
 
 // ── DOM references ─────────────────────────────────────────────────
 const controlsSection = /** @type {HTMLElement} */ (document.getElementById('controls'));
@@ -374,6 +379,55 @@ function renderResidualPlot(container) {
  * @param {string} alternative
  * @param {number} confLevel
  */
+/**
+ * REQ-037: the regression ANOVA decomposition (SST = SSR + SSE) and the model
+ * F-test, computed from the raw data so it matches R's `anova(lm(y ~ x))` exactly.
+ * @param {{x:number[], y:number[]}} xy
+ * @param {{intercept:number, slope:number}} r
+ */
+function computeAnova(xy, r) {
+  const n = xy.x.length;
+  const ybar = xy.y.reduce((s, v) => s + v, 0) / n;
+  const fitted = xy.x.map(xi => r.intercept + r.slope * xi);
+  const ssr = fitted.reduce((s, f) => s + (f - ybar) ** 2, 0);       // regression / model
+  const sse = xy.y.reduce((s, yi, i) => s + (yi - fitted[i]) ** 2, 0); // residual
+  const sst = ssr + sse;                                              // total
+  const dfR = 1, dfE = n - 2, dfT = n - 1;
+  const msr = ssr / dfR, mse = sse / dfE;
+  const F = msr / mse;
+  // Model F-test is inherently two-sided (H0: β1 = 0); its p-value is the upper
+  // F tail, independent of the slope test's chosen alternative.
+  const pValue = 1 - jStat.centralF.cdf(F, dfR, dfE);
+  return { n, ssr, sse, sst, dfR, dfE, dfT, msr, mse, F, pValue };
+}
+
+/**
+ * Render the collapsible ANOVA-table panel + the F = t² equivalence note.
+ * @param {ReturnType<typeof computeAnova>} a
+ * @param {number} tStat
+ * @param {number} d - decimal precision
+ */
+function anovaPanelHtml(a, tStat, d) {
+  const num = (/** @type {number} */ v) => formatStat(v, Math.max(d, 2));
+  const pStr = formatStat(a.pValue, d, 'pvalue');
+  return `
+    <details class="formula-display anova-table"${anovaOpenByDefault ? ' open' : ''}>
+      <summary><h3>ANOVA table for the regression</h3></summary>
+      <table class="results-table anova-results" aria-label="Analysis of variance for the regression">
+        <thead>
+          <tr><th scope="col">Source</th><th scope="col">df</th><th scope="col">SS</th><th scope="col">MS</th><th scope="col">F</th><th scope="col">p-value</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Regression</th><td>${a.dfR}</td><td>${num(a.ssr)}</td><td>${num(a.msr)}</td><td>${num(a.F)}</td><td>${pStr}</td></tr>
+          <tr><th scope="row">Residual</th><td>${a.dfE}</td><td>${num(a.sse)}</td><td>${num(a.mse)}</td><td></td><td></td></tr>
+          <tr class="anova-total"><th scope="row">Total</th><td>${a.dfT}</td><td>${num(a.sst)}</td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+      <p class="formula-detail">${tex(`F = \\frac{\\text{MSR}}{\\text{MSE}} = ${a.F.toFixed(4)} = t^2 = (${tStat.toFixed(4)})^2`)}</p>
+      <p class="hint">For a single predictor the ANOVA <em>F</em>-test and the slope <em>t</em>-test are the same test: <em>F</em> = <em>t</em>², and they share the p-value (${pStr}).</p>
+    </details>`;
+}
+
 function renderResults(r, d, alternative, confLevel) {
   const confPct = (confLevel * 100).toFixed(0);
   const pStr = formatStat(r.pValue, d, 'pvalue');
@@ -437,6 +491,12 @@ function renderResults(r, d, alternative, confLevel) {
   // REQ-027: mean-response CI + prediction interval at x₀ (needs raw x/y).
   const xy = fromSummary ? null : extractXY();
   const ri = xy ? regressionIntervals(xy.x, xy.y, { confLevel }) : null;
+
+  // REQ-037: ANOVA table for the regression (raw data only — the SS decomposition
+  // needs the individual points; summary mode has slope/SE/n but not the SS).
+  const anovaSection = (xy && hasFullRegression)
+    ? anovaPanelHtml(computeAnova(xy, r), r.tStat, d)
+    : '';
   let predictSection = '';
   if (ri) {
     if (x0Value == null) x0Value = Math.round(ri.xbar * 100) / 100;
@@ -478,6 +538,8 @@ function renderResults(r, d, alternative, confLevel) {
       <h3>${confPct}% CI for ${tex('\\beta_1')}</h3>
       ${ciFormula}
     </div>
+
+    ${anovaSection}
 
     ${predictSection}
 
