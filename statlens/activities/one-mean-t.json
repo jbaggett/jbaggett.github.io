@@ -1,8 +1,31 @@
 {
   "title": "One-Sample t-Inference",
   "tool": "inference/one-mean",
-  "params": { "dataset": "epa2021_mpg" },
+  "params": {
+    "dataset": "epa2021_mpg"
+  },
   "steps": [
+    {
+      "phase": "predict",
+      "instruction": "The sample is moderately sized and a little skewed. **Predict first.**",
+      "gate": {
+        "question": "Can we still trust a one-sample \\(t\\)-test here?",
+        "choices": [
+          {
+            "text": "Yes — the \\(t\\)-test is robust to mild skew when \\(n\\) is not tiny (CLT)",
+            "correct": true
+          },
+          {
+            "text": "No — the data must be exactly normal"
+          },
+          {
+            "text": "Only if \\(n < 30\\)"
+          }
+        ],
+        "feedback": "Right. The \\(t\\)-test needs the sampling distribution of \\(\\bar{x}\\) to be roughly normal, which the CLT gives for moderate \\(n\\) even with mild skew. Worry only when \\(n\\) is small AND the data are strongly skewed or have outliers.",
+        "retryFeedback": "It's the sampling distribution of \\(\\bar{x}\\) that must be ~normal, not the raw data — and the CLT handles mild skew at moderate \\(n\\)."
+      }
+    },
     {
       "instruction": "The EPA 2021 MPG dataset reports highway mileage for a sample of cars. Suppose the EPA target is 32 mpg. Test whether the true mean differs from 32.",
       "observe": "Is your alternative one-sided or two-sided?",
@@ -27,6 +50,27 @@
       "instruction": "Reset to a one-sided alternative (Hₐ: μ < 32) and re-run. Notice the new p-value is roughly half the two-sided one.",
       "observe": "Why does this halving happen - and what is the DANGER of switching sides after peeking at the data?",
       "reveal": "Two-sided p = 2 · one-sided p when the test statistic lies in the predicted direction. Switching to one-sided AFTER peeking doubles your effective Type I error rate - you have already used both tails to pick a direction. One-sided is honest only when the direction was chosen BEFORE seeing the data."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "robustness",
+            "label": "When is the one-sample \\(t\\)-test trustworthy despite non-normal data, and when should you worry?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "pvalue_meaning",
+            "label": "State what the p-value means here — the probability of what, given what?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: the \\(t\\)-test assumes the sampling distribution of \\(\\bar{x}\\) is roughly normal, which the CLT delivers for moderate-to-large \\(n\\) even when the data are mildly skewed; worry when \\(n\\) is small **and** the data are strongly skewed or have outliers. The p-value is the probability of a sample mean at least this far from \\(\\mu_0\\) **if** \\(H_0\\) were true — not the probability that \\(H_0\\) is true."
+      }
     }
   ]
 }

@@ -4,6 +4,27 @@
   "params": {},
   "steps": [
     {
+      "phase": "predict",
+      "instruction": "The \\(F\\)-statistic is a ratio of between-group to within-group variation. **Predict first.**",
+      "gate": {
+        "question": "If all the group means are truly equal (\\(H_0\\)), what should \\(F\\) be near?",
+        "choices": [
+          {
+            "text": "Near 1 — between-group and within-group variation are similar",
+            "correct": true
+          },
+          {
+            "text": "Near 0"
+          },
+          {
+            "text": "Very large, by design"
+          }
+        ],
+        "feedback": "Right. Under \\(H_0\\) the numerator (spread of group means) and denominator (scatter within groups) both estimate the same error variance, so \\(F \\approx 1\\). A large \\(F\\) is the signal of a real difference.",
+        "retryFeedback": "Both parts of \\(F\\) estimate the same variance when \\(H_0\\) holds — so their ratio sits near 1, not 0."
+      }
+    },
+    {
       "instruction": "Pick any multi-group numeric dataset (3+ groups of a quantitative response). State H₀ and Hₐ in your head.",
       "observe": "What does Hₐ actually claim - that ALL group means differ, or that AT LEAST ONE differs?",
       "reveal": "H₀: μ₁ = μ₂ = ... = μₖ vs. Hₐ: AT LEAST ONE μᵢ differs from the others. The F-test never tells you all are different - and never tells you which one is different."
@@ -27,6 +48,27 @@
       "instruction": "Open /simulate/randomization-anova/ on the same data (new tab) and run 5000 shuffles. Compare its p-value to the F-distribution's.",
       "observe": "How close are the two p-values?",
       "reveal": "On well-behaved data the two p-values agree closely - the F distribution is a good approximation. On data with small groups, outliers, or unequal variances they diverge; the simulation is the safer report. The F-test is a convenient shortcut; the randomization is the gold standard."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "f_ratio",
+            "label": "What do the numerator and denominator of \\(F\\) measure, and why does \\(F\\) near 1 support \\(H_0\\)?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "at_least_one",
+            "label": "A significant \\(F\\) lets you conclude 'at least one mean differs.' Why can't you conclude that all groups differ from each other?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: \\(F = \\text{MSG}/\\text{MSE}\\) compares between-group variation (how far the group means spread from the grand mean) to within-group variation (scatter inside groups). Under \\(H_0\\) both estimate the same error variance, so \\(F\\approx 1\\); a large \\(F\\) means the means spread more than chance alone would produce. Rejecting \\(H_0\\) says **at least one** mean differs — the omnibus test doesn't say which or how many; that needs a post-hoc comparison."
+      }
     }
   ]
 }

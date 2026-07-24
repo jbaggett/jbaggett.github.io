@@ -4,6 +4,27 @@
   "params": {},
   "steps": [
     {
+      "phase": "predict",
+      "instruction": "You're about to compare two group means with Welch's \\(t\\). **Predict first.**",
+      "gate": {
+        "question": "If the two groups truly have equal means, where will the \\(t\\)-statistic tend to fall?",
+        "choices": [
+          {
+            "text": "Near 0",
+            "correct": true
+          },
+          {
+            "text": "Near 1"
+          },
+          {
+            "text": "Far out in the tail"
+          }
+        ],
+        "feedback": "Right. \\(t\\) measures the observed difference in SE units; under \\(H_0\\) the difference is near 0, so \\(t\\) clusters around 0 and only lands in the tail when the means genuinely differ.",
+        "retryFeedback": "\\(t\\) is (difference)/(SE of the difference); if the true difference is 0, \\(t\\) sits near 0."
+      }
+    },
+    {
       "instruction": "Pick any two-group numeric dataset. State the question in words: are the population means the same in the two groups?",
       "observe": "What are H₀ and Hₐ in symbols?",
       "reveal": "H₀: μ₁ - μ₂ = 0 vs. Hₐ: μ₁ - μ₂ ≠ 0 (two-sided, unless you have a directional claim stated in advance)."
@@ -27,6 +48,27 @@
       "instruction": "Open /simulate/randomization-diff-means/ in a new tab on the same data and run 5000 label-shuffles. Compare the simulation p-value to the Welch t p-value.",
       "observe": "How close are they? What is the shape of the simulated null distribution?",
       "reveal": "On well-behaved data the simulation and the Welch t agree closely, and the simulated null distribution is approximately normal with mean 0 (by construction). On small skewed data they diverge and the simulation is the safer report - it makes no distributional assumption."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "welch_df",
+            "label": "Why does Welch's \\(t\\) use a fractional degrees of freedom instead of \\(n_1+n_2-2\\)?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "conclusion",
+            "label": "Write the conclusion in context (name both groups). Does the CI for the difference include 0, and what does that imply?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: Welch's test does not assume the two groups share a variance, so it adjusts the degrees of freedom (a weighted combination that's usually fractional) to account for unequal spreads and sample sizes — keeping the p-value trustworthy. If the CI for \\(\\mu_1-\\mu_2\\) includes 0, the data are consistent with no difference; if it excludes 0, there's evidence of a real difference in the direction shown."
+      }
     }
   ]
 }

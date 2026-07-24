@@ -1,8 +1,31 @@
 {
   "title": "Inference for the Difference in Two Proportions",
   "tool": "inference/two-props",
-  "params": { "dataset": "malaria" },
+  "params": {
+    "dataset": "malaria"
+  },
   "steps": [
+    {
+      "phase": "predict",
+      "instruction": "A randomized vaccine trial compares complication/infection rates in two groups. **Predict first.**",
+      "gate": {
+        "question": "If the vaccine truly had no effect, where should the difference \\(\\hat{p}_1 - \\hat{p}_2\\) tend to fall?",
+        "choices": [
+          {
+            "text": "Near 0",
+            "correct": true
+          },
+          {
+            "text": "Near 1"
+          },
+          {
+            "text": "Always negative"
+          }
+        ],
+        "feedback": "Right. With no real effect the two sample proportions differ only by chance, so \\(\\hat{p}_1 - \\hat{p}_2\\) clusters around 0 and lands in the tail only when there is a genuine difference.",
+        "retryFeedback": "No effect means the groups are alike; the difference in their proportions should sit near 0."
+      }
+    },
     {
       "instruction": "The Malaria Vaccine dataset randomly assigned children to vaccine or control and recorded who got infected. The question: does the vaccine CHANGE the infection rate? State H₀ and Hₐ in your head.",
       "observe": "Is this naturally one-sided or two-sided?",
@@ -27,6 +50,27 @@
       "instruction": "Open /simulate/randomization-diff-props/?dataset=malaria in a new tab and run 5000 shuffles. Compare its p-value to the z-test's.",
       "observe": "How close are they?",
       "reveal": "On well-behaved data the randomization and z-test give nearly identical p-values. When conditions fail the simulation stays honest and the z drifts - this calibration check is what keeps the analytic answer trustworthy."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "pooled_se",
+            "label": "The \\(z\\)-test uses a pooled SE but the CI uses an unpooled SE. Why the difference?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "ci_zero",
+            "label": "What does it mean if the 95% CI for \\(p_1 - p_2\\) includes 0?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: the hypothesis test assumes \\(H_0: p_1 = p_2\\), so it **pools** both groups to estimate that single common proportion for the SE — the most accurate SE under the null. The confidence interval makes no such assumption, so it estimates each proportion **separately** (unpooled). If the 95% CI for \\(p_1 - p_2\\) includes 0, the data are consistent with no difference between the groups."
+      }
     }
   ]
 }

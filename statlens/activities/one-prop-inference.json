@@ -1,8 +1,31 @@
 {
   "title": "Inference for One Proportion",
   "tool": "inference/one-prop",
-  "params": { "dataset": "medical_consultant" },
+  "params": {
+    "dataset": "medical_consultant"
+  },
   "steps": [
+    {
+      "phase": "predict",
+      "instruction": "A surgeon had **3 complications in 62 surgeries**; the national rate is **10%**. Before the \\(z\\)-test, **predict first.**",
+      "gate": {
+        "question": "Is the success–failure condition (\\(np_0 \\ge 10\\) and \\(n(1-p_0) \\ge 10\\)) satisfied here?",
+        "choices": [
+          {
+            "text": "No — \\(np_0 = 62(0.10) = 6.2\\) is below 10, so the normal approximation is shaky",
+            "correct": true
+          },
+          {
+            "text": "Yes — \\(n = 62\\) is plenty large"
+          },
+          {
+            "text": "The condition doesn't apply to proportions"
+          }
+        ],
+        "feedback": "Right. \\(np_0 = 6.2 < 10\\), so the normal approximation is only rough here and a simulation-based test is safer — exactly the tension this activity explores.",
+        "retryFeedback": "Check \\(np_0\\): \\(62 \\times 0.10 = 6.2\\). Is that at least 10?"
+      }
+    },
     {
       "instruction": "The Medical Consultant dataset records complications among a surgeon's 62 patients. She claims her complication rate is lower than the national 10% rate. State H₀ and Hₐ in your head before continuing.",
       "observe": "What direction does the alternative point — lower, higher, or just different?",
@@ -27,6 +50,27 @@
       "instruction": "Open the bootstrap CI tool for one proportion in a new tab (/simulate/bootstrap-prop/?dataset=medical_consultant) and run 10000 resamples. Compare its 95% percentile interval to the z-interval you just read.",
       "observe": "How do the two intervals differ — in center, width, or shape?",
       "reveal": "The bootstrap interval is right-skewed, mirroring the actual sampling distribution of \\(\\hat{p}\\) when p is small. The z-interval is symmetric by construction and gets the shape wrong. When conditions fail, trust the simulation."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "condition_matters",
+            "label": "Why does the success–failure condition matter, and what does \\(np_0 = 6.2\\) mean for trusting this z-test's p-value?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "no_prove",
+            "label": "Write the conclusion without the word 'prove.' Why can a hypothesis test never prove \\(H_0\\)?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: the \\(z\\)-test approximates the sampling distribution of \\(\\hat{p}\\) with a normal curve, accurate only when \\(np_0\\) and \\(n(1-p_0)\\) are both \\(\\ge\\) about 10; here \\(np_0 = 6.2\\), so the p-value is approximate and a simulation-based test is safer. A test gives evidence against \\(H_0\\) or fails to — 'fail to reject' means the data are consistent with \\(H_0\\), not that it's proven. Absence of evidence isn't proof."
+      }
     }
   ]
 }

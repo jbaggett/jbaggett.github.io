@@ -4,6 +4,27 @@
   "params": {},
   "steps": [
     {
+      "phase": "predict",
+      "instruction": "The data are paired (before/after on the same subject). **Predict first.**",
+      "gate": {
+        "question": "Why analyze the differences instead of treating the two columns as independent groups?",
+        "choices": [
+          {
+            "text": "Pairing removes between-subject variation, so the paired test is more powerful",
+            "correct": true
+          },
+          {
+            "text": "It doesn't matter — you get the same result either way"
+          },
+          {
+            "text": "Only because there happen to be two columns"
+          }
+        ],
+        "feedback": "Right. Each pair shares that subject's baseline, so the difference cancels between-subject variation, shrinking the SE and giving more power.",
+        "retryFeedback": "The pairs are linked; differencing removes the shared person-to-person variation the independent test would leave in the SE."
+      }
+    },
+    {
       "instruction": "Pick a paired-data dataset (each row is a matched pair: same subject before/after, twin pairs, matched cases and controls, etc.). Confirm the data are truly paired before continuing.",
       "observe": "What is the parameter of interest here - a single mean, a difference of two independent means, or the mean of the WITHIN-pair differences?",
       "reveal": "The parameter is μ<sub>D</sub>, the mean of the within-pair differences (e.g., mean of afterᵢ - beforeᵢ). Analyzing paired data as if it were two independent groups throws away the pairing and inflates the standard error."
@@ -27,6 +48,27 @@
       "instruction": "Write a one-sentence conclusion in context. Address whether the interpretation is CAUSAL (if the pairs were randomly assigned) or merely ASSOCIATIONAL.",
       "observe": "Was the pairing achieved by random assignment (e.g., a within-subject randomized study) or by matching on observed characteristics?",
       "reveal": "Random assignment within pairs supports a causal reading (the within-pair difference isolates the treatment effect). Observed matching only controls for the variables you matched on; unmeasured confounders can still create associations without causation."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "paired_power",
+            "label": "Why does the paired \\(t\\)-test usually have a smaller SE (more power) than treating the data as two independent groups?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "design_locks",
+            "label": "The pairing is a feature of the DESIGN. What happens to the analysis if you ignore it?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: paired subjects share person-to-person variation; each pair's difference \\(D_i\\) cancels that shared variation, leaving only the within-pair change — a smaller SE and more power. Analyzing the same numbers as independent groups re-introduces the between-subject variability into the SE, inflating it and usually giving a larger p-value. The correct analysis is dictated by **how the data were collected**, not by what's convenient."
+      }
     }
   ]
 }
