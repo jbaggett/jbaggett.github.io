@@ -59,6 +59,13 @@ let rng = null;
 // for graded/homework use (matches the sim-app.js tools); random otherwise.
 const urlSeed = new URLSearchParams(location.search).get('seed');
 let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+// Reasoning mode (?readout=false) / figure-only embed (?plot=only): hide the
+// computed answer (p-value + tail shading + pills) so students read it off the
+// distribution. plot=only also auto-runs and shows only the chart (MOM, 2026-07-25).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
 if (urlSeed) {
   const sn = document.getElementById('seed-notice');
   if (sn) { sn.hidden = false; sn.textContent = `Seed: ${urlSeed}`; }
@@ -258,6 +265,11 @@ function showDataLoaded() {
   }
 
   for (const btn of genBtns) btn.disabled = false;
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    const bigBtn = genBtns[genBtns.length - 1];
+    requestAnimationFrame(() => bigBtn && bigBtn.click());
+  }
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
   // Populate mechanism strip observed panel (stays hidden until first generate)
@@ -445,7 +457,8 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     highlightIndices,
     prevBinCounts,
     thresholds: hlThresholds,
-    pillMode: stats.length > 0 ? 'randomization' : undefined,
+    regionPredicate: showReadout ? undefined : () => false,
+    pillMode: (showReadout && stats.length > 0) ? 'randomization' : undefined,
     pValue,
   });
 
@@ -515,10 +528,12 @@ function displayResults(stats, observed, pValue, extremeCount) {
       <p><strong>Null Distribution</strong> (${stats.length} simulations)</p>
       ${groupSummaryTable}
       <p>Observed F = ${formatStat(observed, 2)}</p>
+      ${showReadout ? `
       <p>Extreme count: ${extremeCount} of ${stats.length} (right-tail)</p>
       <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}</p>
       <p class="interpretation">${extremeCount} of ${stats.length} shuffled datasets had F ≥ ${formatStat(observed, 2)}. This provides ${strength} evidence against H₀: ${nullClaim}.</p>
-      ${conclusionHTML}
+      ${conclusionHTML}` : `
+      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed F is marked on the distribution — hover the bars to count how many of the ${stats.length} shuffles have F at least as large.</p>`}
     `;
   }
 }

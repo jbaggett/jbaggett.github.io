@@ -51,6 +51,13 @@ let rng = null;
 // for graded/homework use (matches the sim-app.js tools); random otherwise.
 const urlSeed = new URLSearchParams(location.search).get('seed');
 let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+// Reasoning mode (?readout=false) / figure-only embed (?plot=only): hide the
+// computed answer (p-value + tail shading + pills) so students read it off the
+// distribution. plot=only also auto-runs and shows only the chart (MOM, 2026-07-25).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
 if (urlSeed) {
   const sn = document.getElementById('seed-notice');
   if (sn) { sn.hidden = false; sn.textContent = `Seed: ${urlSeed}`; }
@@ -183,6 +190,11 @@ function showDataLoaded() {
     dataSummary.textContent = `${namePrefix}n = ${xValues.length}, observed r = ${formatStat(observedR, 4)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    const bigBtn = genBtns[genBtns.length - 1];
+    requestAnimationFrame(() => bigBtn && bigBtn.click());
+  }
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
   if (hypothesisDisplay) hypothesisDisplay.hidden = false;
 
@@ -353,7 +365,8 @@ function renderChart(stats, observed, direction, highlightIndex = -1, highlightI
     highlightIndices,
     prevBinCounts,
     thresholds: hlThresholds,
-    pillMode: stats.length > 0 ? 'randomization' : undefined,
+    regionPredicate: showReadout ? undefined : () => false,
+    pillMode: (showReadout && stats.length > 0) ? 'randomization' : undefined,
     pValue,
     precision: 4,
   });
@@ -399,9 +412,11 @@ function displayResults(stats, observed, pValue, extremeCount, direction) {
     resultDiv.innerHTML = `
       <p><strong>Null Distribution</strong> (${stats.length} simulations)</p>
       <p>Observed r = ${formatStat(observed, 4)}</p>
+      ${showReadout ? `
       <p>Extreme count: ${extremeCount} of ${stats.length} (${dirLabel})</p>
       <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}</p>
-      <p class="interpretation">${extremeCount} of ${stats.length} shuffled datasets had ${comparison} ${formatStat(direction === 'both' ? Math.abs(observed) : observed, 4)}. This provides ${strength} evidence against H\u2080: \u03C1 = 0 (H\u2090: \u03C1 ${altSymbol} 0).</p>
+      <p class="interpretation">${extremeCount} of ${stats.length} shuffled datasets had ${comparison} ${formatStat(direction === 'both' ? Math.abs(observed) : observed, 4)}. This provides ${strength} evidence against H\u2080: \u03C1 = 0 (H\u2090: \u03C1 ${altSymbol} 0).</p>` : `
+      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed r is marked on the distribution (${dirLabel}) \u2014 hover the bars to count how many of the ${stats.length} shuffles are at least as extreme.</p>`}
     `;
   }
 }
