@@ -3807,6 +3807,16 @@ body[data-plot="only"] main {
   padding: 0.25rem;
   max-width: none;
 }
+/* Sampling Distribution Lab: keep only the sampling-distribution panel — drop the
+   population settings, the population + one-sample "draw" side, and the prose. */
+body[data-plot="only"] #population-section,
+body[data-plot="only"] .lab-left,
+body[data-plot="only"] .sampling-controls-row,
+body[data-plot="only"] #results {
+  display: none !important;
+}
+body[data-plot="only"] .lab-layout { display: block; }
+body[data-plot="only"] .lab-right { width: 100%; }
 
 body[data-static="true"] .app-body {
   display: block;

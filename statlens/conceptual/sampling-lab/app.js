@@ -163,6 +163,13 @@ let rng = null;
 // otherwise a fresh random seed each session.
 const urlSeed = new URLSearchParams(location.search).get('seed');
 let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+// Reasoning mode (?readout=false): hide the computed SD readout so the student
+// reads spread off the distribution. Figure-only (?plot=only): also auto-draw
+// 1000 samples on load and show only the sampling-distribution panel (MOM, 2026-07-25).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
 
 // Cached chart params for checkbox toggle re-render
 /** @type {[number,number]|undefined} */
@@ -806,8 +813,13 @@ function updateStatsAndRender(prevLength, count) {
   // Update stats
   if (samplingStats) {
     const wasHidden = samplingStats.hidden;
-    samplingStats.hidden = false;
-    if (wasHidden && typeof renderMathInElement === 'function') {
+    // Reasoning / figure-only mode hides the computed SD-of-statistics + theory-SE
+    // readout so the student estimates the spread from the distribution itself.
+    // (.stats-row sets display:flex, which overrides [hidden] — so set the inline
+    // display too, not just the attribute.)
+    samplingStats.hidden = !showReadout;
+    samplingStats.style.display = showReadout ? '' : 'none';
+    if (showReadout && wasHidden && typeof renderMathInElement === 'function') {
       renderMathInElement(samplingStats, {
         delimiters: [{ left: '\\(', right: '\\)', display: false }],
       });
@@ -890,7 +902,9 @@ function renderFrozen() {
     showExport: false,
     ...(isCat() && { thresholds: snappedPropThresholds(frozen.n, unionSamplingDomain(), frozen.means.length) }),
   });
-  if (frozenLabel) frozenLabel.textContent = `n = ${frozen.n}, SD of ${lab().stat} = ${sd(frozen.means).toFixed(3)}`;
+  if (frozenLabel) frozenLabel.textContent = showReadout
+    ? `n = ${frozen.n}, SD of ${lab().stat} = ${sd(frozen.means).toFixed(3)}`
+    : `n = ${frozen.n} — estimate the SD of ${lab().stat} from the spread`;
 }
 
 /** Render the live distribution (relative frequency) on the shared axis. */
@@ -916,9 +930,11 @@ function renderComparisonLive() {
     }),
   });
   if (liveLabel) {
-    liveLabel.textContent = sampleMeans.length >= 2
-      ? `n = ${n}, SD of ${lab().stat} = ${sd(sampleMeans).toFixed(3)}`
-      : `n = ${n} — draw samples`;
+    liveLabel.textContent = sampleMeans.length < 2
+      ? `n = ${n} — draw samples`
+      : showReadout
+        ? `n = ${n}, SD of ${lab().stat} = ${sd(sampleMeans).toFixed(3)}`
+        : `n = ${n} — estimate the SD of ${lab().stat} from the spread`;
   }
 }
 
@@ -1402,4 +1418,10 @@ function initFromUrl() {
   applyModeLabels();
   updateSampleSubtitle();
   initPopulation();
+  // Figure-only embed: auto-draw the sampling distribution once, so the embedded
+  // figure is already built with no click (MOM plot=only).
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    requestAnimationFrame(() => drawSamples(1000));
+  }
 })();
