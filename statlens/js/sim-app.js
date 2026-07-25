@@ -53,7 +53,14 @@ export function initSimPage(config) {
   // distribution themselves (MOM "estimate from the histogram" exercises). The
   // mechanism strip, generate bar, and tooltips stay so the reasoning is feasible.
   // Read straight from the URL — parseParams only surfaces known typed params.
-  const showReadout = !/^(false|0|no)$/i.test(new URLSearchParams(window.location.search).get('readout') || '');
+  // `?plot=only` is the figure-only embed: auto-run on load, show ONLY the
+  // distribution (with tooltips + observed marker), hide all other UI. It implies
+  // reasoning mode (no answer on the chart). CSS (data-plot="only") does the
+  // hiding; the auto-run + readout logic live here.
+  const plotOnly = new URLSearchParams(window.location.search).get('plot') === 'only';
+  let plotOnlyRan = false; // guard so the figure auto-runs exactly once
+  const showReadout = !plotOnly
+    && !/^(false|0|no)$/i.test(new URLSearchParams(window.location.search).get('readout') || '');
 
   // Card mechanism: render the two-group proportion shuffle as dealt cards
   // instead of proportion bars. Available on any two-group proportion page; a
@@ -979,6 +986,14 @@ export function initSimPage(config) {
     updateToggleButtons(!!config.proportion);
     // Clear stale results
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
+    // ?plot=only: auto-run the full distribution once, so the embedded figure is
+    // already drawn with no Generate click. genBtns[3] = +1000 (data-count order).
+    if (plotOnly && !plotOnlyRan) {
+      plotOnlyRan = true;
+      const bigBtn = genBtns[genBtns.length - 1] || genBtns[3];
+      // Defer so the chart container has laid out before the first draw.
+      requestAnimationFrame(() => bigBtn && bigBtn.click());
+    }
     // Samples too large for a readable card grid → fall back to bars (and skip
     // the early strip + toggle), even if ?mechanism=cards was requested. Also
     // remove any stale toggle left over from a previously-loaded small dataset.

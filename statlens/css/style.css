@@ -3763,6 +3763,51 @@ body[data-static="true"] .app-sidebar {
   display: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════ */
+/* Figure-only embed — ?plot=only → body[data-plot="only"]         */
+/* An interactive plot with nothing around it, for embedding in a  */
+/* problem: the student reads it (and its tooltips), no controls.  */
+/* Generic across tools (explore + simulate); simulate pages also  */
+/* auto-run the distribution (sim-app.js). Overrides the "never    */
+/* hide the mechanism strip" rule for THIS explicit mode only.     */
+/* ═══════════════════════════════════════════════════════════════ */
+body[data-plot="only"] #controls,
+body[data-plot="only"] .control-row,
+body[data-plot="only"] #variable-selector,
+body[data-plot="only"] #var-selectors,
+body[data-plot="only"] .var-selectors,
+body[data-plot="only"] .generate-bar,
+body[data-plot="only"] #mechanism-strip,
+body[data-plot="only"] .chart-selector,
+body[data-plot="only"] .chart-controls-bar,
+body[data-plot="only"] .hypothesis-display,
+body[data-plot="only"] #conditions-checkpoint,
+body[data-plot="only"] .step-progress,
+body[data-plot="only"] .discover-only,
+body[data-plot="only"] .present-only,
+body[data-plot="only"] #page-help,
+body[data-plot="only"] #data-preview,
+body[data-plot="only"] #data-panel,
+body[data-plot="only"] #settings,
+body[data-plot="only"] .coverage-controls,
+body[data-plot="only"] .app-sidebar,
+body[data-plot="only"] .expert-toggle,
+body[data-plot="only"] .theory-toggle,
+body[data-plot="only"] .bin-adjuster,
+body[data-plot="only"] .chart-save-btn,
+body[data-plot="only"] .chart-copy-btn {
+  display: none !important;
+}
+/* Let the chart fill the freed space. */
+body[data-plot="only"] .app-main {
+  width: 100%;
+  max-width: none;
+}
+body[data-plot="only"] main {
+  padding: 0.25rem;
+  max-width: none;
+}
+
 body[data-static="true"] .app-body {
   display: block;
 }
