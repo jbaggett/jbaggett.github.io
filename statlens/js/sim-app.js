@@ -46,6 +46,15 @@ export function initSimPage(config) {
   initHelp();
   const urlParams = parseParams(window.location.search);
 
+  // Reasoning mode (?readout=false): show the distribution + histogram tooltips
+  // (bin edges + count) + the observed-stat marker, but HIDE the computed answer —
+  // the CI/p-value numbers, the region shading, the CI bound lines, and the
+  // probability pills/legend. The student must read the interval / p-value off the
+  // distribution themselves (MOM "estimate from the histogram" exercises). The
+  // mechanism strip, generate bar, and tooltips stay so the reasoning is feasible.
+  // Read straight from the URL — parseParams only surfaces known typed params.
+  const showReadout = !/^(false|0|no)$/i.test(new URLSearchParams(window.location.search).get('readout') || '');
+
   // Card mechanism: render the two-group proportion shuffle as dealt cards
   // instead of proportion bars. Available on any two-group proportion page; a
   // live "Bars / Cards" toggle in the strip flips between views (great for
@@ -3446,6 +3455,11 @@ export function initSimPage(config) {
       regionPredicate = (v) => v >= ci[0] && v <= ci[1];
     }
 
+    // Reasoning mode hides everything that reveals the answer on the chart: no
+    // region shading, no CI bound lines. The observed-stat marker stays.
+    const ciForChart = showReadout ? ci : null;
+    if (!showReadout) regionPredicate = undefined;
+
     /** @type {import('./chart-utils.js').ChartFrame|undefined} */
     let chartResult;
     /** @type {any} */
@@ -3453,8 +3467,8 @@ export function initSimPage(config) {
     // Bootstrap: inside CI = blue (region), outside = gray (de-emphasized)
     // Randomization: tail = darker blue (extreme), body = blue (normal)
     const isBootstrap = config.mode === 'bootstrap';
-    const dotBaseFill = isBootstrap && ci ? '#a0a0a0' : undefined;   // gray for outside-CI
-    const dotExtremeFill = isBootstrap && ci ? '#569BBD' : undefined; // blue for inside-CI
+    const dotBaseFill = isBootstrap && ciForChart ? '#a0a0a0' : undefined;   // gray for outside-CI
+    const dotExtremeFill = isBootstrap && ciForChart ? '#569BBD' : undefined; // blue for inside-CI
 
     if (activeChart === 'dotplot') {
       const r = drawDotplot(chartContainer, stats, {
@@ -3463,7 +3477,7 @@ export function initSimPage(config) {
         titleText,
         isExtreme: regionPredicate,
         observedStat,
-        ciLines: ci ?? undefined,
+        ciLines: ciForChart ?? undefined,
         ciColor: ciLineColor,
         animate: false,
         domain,
@@ -3497,7 +3511,7 @@ export function initSimPage(config) {
         titleText,
         isTail: regionPredicate,
         observedStat: observedStat ?? undefined,
-        ciLines: ci ?? undefined,
+        ciLines: ciForChart ?? undefined,
         ciColor: ciLineColor,
         animate: false,
         domain,
@@ -3511,7 +3525,7 @@ export function initSimPage(config) {
         titleText,
         isTail: regionPredicate,
         observedStat: observedStat ?? undefined,
-        ciLines: ci ?? undefined,
+        ciLines: ciForChart ?? undefined,
         ciColor: ciLineColor,
         animate: false,
         domain,
@@ -3527,8 +3541,9 @@ export function initSimPage(config) {
       lastDotResult = null;
     }
 
-    // Add probability pills
-    if (chartResult && chartXScale && stats.length > 0) {
+    // Add probability pills — the pills print the p-value / CI %, so they are part
+    // of the "answer" and are suppressed in reasoning mode.
+    if (showReadout && chartResult && chartXScale && stats.length > 0) {
       if (config.mode === 'randomization' && observedStat != null && direction) {
         const { pValue } = permutationPValue(stats, observedStat, direction);
         renderSimPills(chartResult, chartXScale, {
@@ -3543,7 +3558,7 @@ export function initSimPage(config) {
     // them, dark teal instead of dusty red) plus a legend, so the student can see
     // where the two methods agree — and, on a skewed bootstrap distribution, where
     // they don't.
-    if (compareCI && chartResult && chartXScale) {
+    if (showReadout && compareCI && chartResult && chartXScale) {
       const prec = config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1;
       drawCompareBounds(chartResult, chartXScale, compareCI, prec);
       appendCiLegend(chartContainer, getCiLevel());
@@ -3657,7 +3672,7 @@ export function initSimPage(config) {
     const interpLo = ciMethod === 'se' ? seLo : ciLo;
     const interpHi = ciMethod === 'se' ? seHi : ciHi;
 
-    resultDiv.innerHTML = `
+    resultDiv.innerHTML = showReadout ? `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
       <p>${paramLabel}: ${fmt(m)}</p>
       <p>SE: ${fmt(se)}</p>
@@ -3666,6 +3681,10 @@ export function initSimPage(config) {
       ${bothNote}
       <p class="interpretation">We are ${ciPct}% confident that the ${ctxParam}${popPhrase} is between ${interpLo}${unitSuffix} and ${interpHi}${unitSuffix}.</p>
       ${stats.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}
+    ` : `
+      <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
+      <p class="reasoning-prompt"><strong>Estimate the ${ciPct}% confidence interval yourself.</strong> Hover (or focus) the bars to read each bin's edges and count, and find the values that cut off the bottom ${((100 - ciPct) / 2).toFixed(1)}% and top ${((100 - ciPct) / 2).toFixed(1)}% of the ${stats.length} resamples.</p>
+      ${stats.length < 50 ? '<p class="hint">Generate more resamples for a clearer distribution.</p>' : ''}
     `;
   }
 
@@ -3711,12 +3730,16 @@ export function initSimPage(config) {
     const pLine = extremeCount === 0
       ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
       : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
-    resultDiv.innerHTML = `
+    resultDiv.innerHTML = showReadout ? `
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
       <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). The “±” is the 95% Monte-Carlo margin — <strong>more shuffles → a tighter estimate</strong>.</p>
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
+    ` : `
+      <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
+      <p>Observed statistic: ${obsLabel}</p>
+      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed value is marked on the distribution. Hover (or focus) the bars to read each bin's count, then find the fraction of the ${N} shuffles that are at least as extreme as the observed value (${dirLabel}).</p>
     `;
   }
 
