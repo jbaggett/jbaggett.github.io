@@ -55,7 +55,14 @@ initPlayPause(genBtns, resetBtn);
 let allStats = [];
 /** @type {(() => number)|null} */
 let rng = null;
-let seed = Math.random().toString(36).slice(2, 10);
+// Use the URL seed when present, so ?seed= gives Oracle-verifiable reproducibility
+// for graded/homework use (matches the sim-app.js tools); random otherwise.
+const urlSeed = new URLSearchParams(location.search).get('seed');
+let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+if (urlSeed) {
+  const sn = document.getElementById('seed-notice');
+  if (sn) { sn.hidden = false; sn.textContent = `Seed: ${urlSeed}`; }
+}
 /** Whether the mechanism strip has been initialized (deferred to first generate). */
 let mechanismInitialized = false;
 
@@ -529,7 +536,9 @@ function resetSimulation() {
   allStats = [];
   rng = null;
   mechanismInitialized = false;
-  seed = Math.random().toString(36).slice(2, 10);
+  // Preserve the URL seed across resets (incl. the reset fired on data load) so
+  // ?seed= stays reproducible; only re-randomize when no seed was pinned.
+  seed = urlSeed || Math.random().toString(36).slice(2, 10);
   if (chartContainer) chartContainer.innerHTML = '';
   if (resultDiv) resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'run a simulation to see results')}</p>`;
   if (resetBtn) resetBtn.hidden = true;
