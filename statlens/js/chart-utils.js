@@ -967,19 +967,22 @@ export function renderCutlines(frame, xScale, stats, opts) {
       .attr('class', 'cutline-grip')
       .attr('y', -4).attr('width', 10).attr('height', 8).attr('rx', 2)
       .attr('fill', color).style('pointer-events', 'none');
-    // The line's current x-value, shown at the foot of the line by the axis —
-    // this is the number the student reports (a CI bound / cutoff value). The
-    // region COUNTS live in the pills (see updateReadout).
+    // The line's current x-value, shown in a prominent pill at the foot of the
+    // line — this is the number the student reports (a CI bound / cutoff value),
+    // so it's a solid coloured pill (bigger + higher-contrast than the count
+    // pills) that also masks the axis ticks it sits over. Rect first, text on top.
+    const xValBg = g.append('rect')
+      .attr('class', 'cutline-xval-bg')
+      .attr('rx', 5)
+      .attr('fill', color)
+      .style('pointer-events', 'none');
     const xValLabel = g.append('text')
       .attr('class', 'cutline-xval')
       .attr('text-anchor', 'middle')
-      .attr('y', h + 13)
-      .attr('font-size', 11).attr('font-weight', 700)
-      .attr('fill', color)
-      .style('pointer-events', 'none');
-    const xValBg = g.insert('rect', '.cutline-xval')
-      .attr('class', 'cutline-xval-bg')
-      .attr('fill', 'rgba(255,255,255,0.9)').attr('rx', 3)
+      .attr('dominant-baseline', 'central')
+      .attr('y', h + 17)
+      .attr('font-size', 13).attr('font-weight', 700)
+      .attr('fill', '#ffffff')
       .style('pointer-events', 'none');
 
     function render() {
@@ -987,13 +990,14 @@ export function renderCutlines(frame, xScale, stats, opts) {
       hit.attr('x', px - 12);
       line.attr('x1', px).attr('x2', px);
       grip.attr('x', px - 5);
-      const clampedLabelX = Math.max(20, Math.min(w - 20, px));
+      const clampedLabelX = Math.max(28, Math.min(w - 28, px));
       xValLabel.attr('x', clampedLabelX).text(fmtX(dataX));
       try {
         const bb = /** @type {SVGTextElement} */ (xValLabel.node()).getBBox();
-        xValBg.attr('x', bb.x - 3).attr('y', bb.y - 1)
-          .attr('width', bb.width + 6).attr('height', bb.height + 2);
-      } catch { /* getBBox throws if not yet laid out; skip halo this frame */ }
+        const padX = 8, padY = 4;
+        xValBg.attr('x', bb.x - padX).attr('y', bb.y - padY)
+          .attr('width', bb.width + padX * 2).attr('height', bb.height + padY * 2);
+      } catch { /* getBBox throws if not yet laid out; skip pill this frame */ }
       g.attr('aria-valuenow', fmtX(dataX))
         .attr('aria-valuetext', ariaValueText(role, dataX));
       // Region counts depend on line position(s) — redraw the pills.
