@@ -1,0 +1,216 @@
+{
+  "id": "diamonds_99_1ct",
+  "name": "Diamonds: Price per Carat (0.99 vs 1 carat)",
+  "description": "Price per carat (hundreds of $) for 23 diamonds at 0.99 carat vs 23 at 1 carat. IMS Ch. 20.",
+  "source": "ggplot2::diamonds",
+  "chapter": "IMS Ch. 20",
+  "type": "randomization",
+  "variables": [
+    {
+      "name": "carat_class",
+      "label": "Carat Class",
+      "type": "categorical"
+    },
+    {
+      "name": "price_per_carat",
+      "label": "Price per Carat (hundreds $)",
+      "type": "numeric"
+    }
+  ],
+  "studyDescription": "A random sample of 23 diamonds weighing exactly 0.99 carat and 23 weighing exactly 1.00 carat, drawn from the ggplot2 diamonds catalog. For each diamond the price per carat (in hundreds of dollars) is recorded. This illustrates the 1-carat price premium: 1-carat stones tend to cost more per carat than nearly-identical 0.99-carat stones.",
+  "variableDescriptions": {
+    "carat_class": "Whether the diamond weighs 0.99 carat or 1.00 carat.",
+    "price_per_carat": "Sale price divided by carat weight, expressed in hundreds of US dollars."
+  },
+  "sourceDetail": "IMS Ch. 20 (bootstrap for a difference in means). Sample drawn from ggplot2::diamonds with set.seed(47).",
+  "context": {
+    "population": "diamonds near 1 carat",
+    "parameter": "difference in mean price per carat (0.99 carat - 1.00 carat)"
+  },
+  "rows": [
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 59.5253
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 53.404
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 60.9899
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 28.3939
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 50.4343
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 40.4242
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 48.1111
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 19.202
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 57.2828
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 60.0707
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 49.1212
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 41.1616
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 51.6364
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 36.2929
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 33.7071
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 29.7879
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 49.0101
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 57.8586
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 61.5556
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 48.2828
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 28.404
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 18.0707
+    },
+    {
+      "carat_class": "0.99 carat",
+      "price_per_carat": 40.9293
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 41.02
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 62.72
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 42.13
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 78.4
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 36.4
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 80.08
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 44.05
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 55.44
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 40.32
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 27.95
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 96.6
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 56.19
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 41.5
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 51.97
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 87.72
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 53.9
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 47.04
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 60.3
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 62.72
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 48.05
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 81.54
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 74.52
+    },
+    {
+      "carat_class": "1.00 carat",
+      "price_per_carat": 44.99
+    }
+  ]
+}

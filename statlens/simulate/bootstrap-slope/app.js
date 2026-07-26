@@ -76,7 +76,21 @@ let allSlopes = [];
 let bootLines = [];
 /** @type {(() => number)|null} */
 let rng = null;
-let seed = Math.random().toString(36).slice(2, 10);
+// Use the URL seed when present so ?seed= gives Oracle-verifiable reproducibility
+// (matches the other sim tools); random otherwise. (REQ-049)
+const urlSeed = new URLSearchParams(location.search).get('seed');
+let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+if (urlSeed) {
+  const sn = document.getElementById('seed-notice');
+  if (sn) { sn.hidden = false; sn.textContent = `Seed: ${urlSeed}`; }
+}
+// Reasoning mode (?readout=false) / figure-only embed (?plot=only): hide the
+// computed CI + shading + pills so students read the interval off the histogram;
+// plot=only also auto-runs and shows only the chart (REQ-049).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
 let mechanismInitialized = false;
 
 let observedSlope = 0;
@@ -171,6 +185,14 @@ function showDataLoaded() {
   for (const btn of genBtns) btn.disabled = false;
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
+  // Figure-only embed: auto-run the largest batch once so the finished, hoverable
+  // bootstrap distribution appears with no click. (REQ-049)
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    const bigBtn = genBtns[genBtns.length - 1];
+    if (bigBtn) requestAnimationFrame(() => bigBtn.click());
+  }
+
   // Populate mechanism strip observed scatterplot (stays hidden until first generate)
   const mechMargin = { top: 8, right: 8, bottom: 28, left: 22 };
   if (mechObservedPlot) {
@@ -205,6 +227,11 @@ function showDataLoaded() {
 
 /** Current confidence level as a percent in [50, 99.9]. */
 const getCiLevel = () => Math.min(99.9, Math.max(50, parseFloat(ciSelect?.value ?? '95') || 95));
+
+// Honor a ?ci= confidence level from the URL (e.g. MOM homework links). Only the
+// level is URL-driven here; the ±z·SE / percentile choice stays on ci_method. (REQ-049)
+const urlCi = parseFloat(new URLSearchParams(location.search).get('ci') || '');
+if (ciSelect && urlCi >= 50 && urlCi <= 99.9) ciSelect.value = String(urlCi);
 
 let ciMethod = ciMethodFromUrl();
 /** @type {{syncPressed: (m: string) => void, syncLabel: (l: number) => void}|null} */
@@ -425,11 +452,18 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
 
   // The CI method drives the picture, not just the results box (see js/ci-method.js).
   const normalCI = (ci && n > 1) ? normalApproxCI(slopes, getCiLevel()) : null;
-  const shownCI = (normalCI && ciMethod === 'se') ? normalCI : ci;
-  const compareCI = (normalCI && ciMethod === 'both') ? normalCI : null;
+  let shownCI = (normalCI && ciMethod === 'se') ? normalCI : ci;
+  let compareCI = (normalCI && ciMethod === 'both') ? normalCI : null;
+  // Reasoning / figure-only mode: no CI shading, bound lines, or pills — the
+  // student reads the interval off the histogram. Nulling shownCI cascades
+  // through regionPred, ciLines, baseFill, and the pill block below. (REQ-049)
+  if (!showReadout) { shownCI = null; compareCI = null; }
 
   const regionPred = shownCI ? (/** @type {number} */ v) => v >= shownCI[0] && v <= shownCI[1] : undefined;
-  const activeChart = resolveChartType(n, 'auto');
+  // Reasoning-mode figures force a binned, hoverable histogram (the dotplot
+  // auto-choice degrades into a spike cloud at 1000 resamples, and the
+  // draggable cutoff lines need a binned shape to read mass off of). (REQ-049)
+  const activeChart = !showReadout ? 'histogram' : resolveChartType(n, 'auto');
 
   // A ±z·SE bound can sit outside the range of the resamples — keep it on screen.
   /** @type {[number,number]|undefined} */
@@ -521,6 +555,16 @@ function displayResults(slopes, ci, se, ciLevel) {
   const interpLo = ciMethod === 'se' ? seLo : ciLo;
   const interpHi = ciMethod === 'se' ? seHi : ciHi;
 
+  if (!showReadout) {
+    // Reasoning mode: keep the count, hide the computed interval — the student
+    // estimates it off the bootstrap histogram. (REQ-049)
+    resultDiv.innerHTML = `
+      <p><strong>Bootstrap Distribution</strong> (${slopes.length} resamples)</p>
+      <p class="hint">Estimate the ${getCiLevel()}% confidence interval for the slope by reading the middle of the bootstrap distribution off the histogram.</p>
+    `;
+    return;
+  }
+
   resultDiv.innerHTML = `
     <p><strong>Bootstrap Distribution</strong> (${slopes.length} resamples)</p>
     <p>Observed slope: ${fmt(observedSlope)}</p>
@@ -548,7 +592,9 @@ function resetSimulation() {
   bootLines = [];
   rng = null;
   mechanismInitialized = false;
-  seed = Math.random().toString(36).slice(2, 10);
+  // Preserve a URL-provided seed across resets/data-loads so ?seed= stays
+  // reproducible; only re-randomize when no seed was pinned. (REQ-049)
+  seed = urlSeed || Math.random().toString(36).slice(2, 10);
   if (histContainer) histContainer.innerHTML = '';
   if (resultDiv) resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'run a simulation to see results')}</p>`;
   if (resetBtn) resetBtn.hidden = true;

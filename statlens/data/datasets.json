@@ -61,6 +61,22 @@
     "minGroupN": 2
   },
   {
+    "id": "asian_smoke",
+    "name": "Asian-American Tobacco Use by Ethnicity",
+    "description": "Smoking status by ethnicity for 14,021 Asian-American adults (Asian-Indian, Chinese, Filipino). IMS Ch. 18.",
+    "type": "chisq",
+    "chapter": "IMS Ch. 18",
+    "n": 14021,
+    "variables": [
+      "ethnicity",
+      "outcome"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 4373
+  },
+  {
     "id": "ask",
     "name": "iPod Question Framing",
     "description": "219 participants: does framing an iPod purchase question differently affect the decision? Three question types (control, give up, keep) x two outcomes. IMS Ch. 18.",
@@ -166,6 +182,22 @@
     "chapter": "IMS Ch. 12",
     "n": 507,
     "variables": [
+      "hgt"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "bdims_regression",
+    "name": "Body Dimensions: Shoulder Girth vs Height",
+    "description": "Shoulder girth (cm) vs height (cm) for 507 physically active adults. IMS Ch. 7, 24.",
+    "type": "regression",
+    "chapter": "IMS Ch. 7, 24",
+    "n": 507,
+    "variables": [
+      "sho_gi",
       "hgt"
     ],
     "hasNumeric": true,
@@ -704,6 +736,22 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "diamonds_99_1ct",
+    "name": "Diamonds: Price per Carat (0.99 vs 1 carat)",
+    "description": "Price per carat (hundreds of $) for 23 diamonds at 0.99 carat vs 23 at 1 carat. IMS Ch. 20.",
+    "type": "randomization",
+    "chapter": "IMS Ch. 20",
+    "n": 46,
+    "variables": [
+      "carat_class",
+      "price_per_carat"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 23
   },
   {
     "id": "dolphins_mercury",
@@ -1455,6 +1503,24 @@
     "minGroupN": 6
   },
   {
+    "id": "murders",
+    "name": "Murders vs Poverty (US Metro Areas)",
+    "description": "Annual murders per million vs poverty rate for 20 US metropolitan areas. IMS/OS Ch. 24.",
+    "type": "regression",
+    "chapter": "IMS Ch. 24",
+    "n": 20,
+    "variables": [
+      "perc_pov",
+      "annual_murders_per_mil",
+      "perc_unemp",
+      "population"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "nba_heights",
     "name": "NBA Player Heights",
     "description": "Heights (inches) of NBA players. Approximately normal distribution.",
@@ -2025,6 +2091,22 @@
     "hasCategorical": true,
     "groupLevels": 52,
     "minGroupN": 1
+  },
+  {
+    "id": "us_temperature",
+    "name": "US 90th-Percentile Daily Highs: 1950 vs 2022",
+    "description": "90th-percentile daily high temperature (°F) at 26 NOAA stations in 1950 vs 2022. IMS Ch. 21.",
+    "type": "paired",
+    "chapter": "IMS Ch. 21",
+    "n": 26,
+    "variables": [
+      "y1950",
+      "y2022"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "usstates",

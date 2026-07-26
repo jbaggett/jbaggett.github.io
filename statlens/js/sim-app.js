@@ -13,7 +13,7 @@ import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
-import { renderSimPills, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
+import { renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend,
@@ -21,7 +21,7 @@ import {
 } from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
-import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
+import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
 import { createMeanMechanism } from './mean-mechanism.js';
@@ -61,6 +61,9 @@ export function initSimPage(config) {
   let plotOnlyRan = false; // guard so the figure auto-runs exactly once
   const showReadout = !plotOnly
     && !/^(false|0|no)$/i.test(new URLSearchParams(window.location.search).get('readout') || '');
+  // Opt-in reasoning overlay: draggable cutoff line(s) with a live tail readout.
+  // ci = two lines (percentile bounds); tail = one line (p-value). See renderCutlines.
+  const cutlinesMode = new URLSearchParams(window.location.search).get('cutlines');
 
   // Card mechanism: render the two-group proportion shuffle as dealt cards
   // instead of proportion bars. Available on any two-group proportion page; a
@@ -443,6 +446,15 @@ export function initSimPage(config) {
 
   /** Get the currently active chart type (resolving 'auto'). */
   function getActiveChartType() {
+    // Reasoning-mode figures (plot=only / readout=false) hide the chart toggle,
+    // so pick a shape that reads well without controls: discrete spike bars for
+    // a small/moderate-n proportion (the honest "possible k/n" picture), binning
+    // to a histogram only once the discrete values would crowd into a cloud, and
+    // a histogram for continuous statistics. (readout=false keeps the toggle, so
+    // the student can still switch.)
+    if ((plotOnly || !showReadout) && chartType === 'auto') {
+      return reasoningChartType(allStats, { proportion: !!config.proportion });
+    }
     return resolveChartType(allStats.length, chartType);
   }
 
@@ -3453,8 +3465,11 @@ export function initSimPage(config) {
       propThresholds = snappedPropThresholds(sampleSize, domain, n);
     }
 
-    // Determine which chart type to render
-    const activeChart = resolveChartType(n, chartType);
+    // Determine which chart type to render (reasoning mode picks spike-vs-
+    // histogram by the statistic's discreteness — see getActiveChartType).
+    const activeChart = ((plotOnly || !showReadout) && chartType === 'auto')
+      ? reasoningChartType(stats, { proportion: !!config.proportion })
+      : resolveChartType(n, chartType);
 
     // Sync toggle radios and bin adjuster label to reflect actual chart type
     if (setToggleSelected) setToggleSelected(activeChart);
@@ -3577,6 +3592,20 @@ export function initSimPage(config) {
       const prec = config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1;
       drawCompareBounds(chartResult, chartXScale, compareCI, prec);
       appendCiLegend(chartContainer, getCiLevel());
+    }
+
+    // Opt-in draggable cutoff line(s) — the student positions the line(s) and
+    // reads the tail mass off the live label instead of counting bars. Only on
+    // the binned histogram (reasoning mode forces one); mode 'ci' = two lines
+    // for the percentile bounds, 'tail' = one line for the p-value.
+    if ((cutlinesMode === 'ci' || cutlinesMode === 'tail')
+        && (activeChart === 'histogram' || activeChart === 'spike')
+        && chartResult && chartXScale && stats.length > 0) {
+      renderCutlines(chartResult, chartXScale, stats, {
+        mode: cutlinesMode,
+        direction: direction ?? undefined,
+        precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
+      });
     }
 
     // Theory overlay (histogram or dotplot, bootstrap mode only). The ±SE and Both

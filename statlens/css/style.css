@@ -4801,3 +4801,26 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .ci-level-control label { display: inline-flex; flex-direction: row; align-items: baseline; gap: 0.4rem; font-size: 0.9rem; font-weight: 600; }
 .ci-level-control input[type="number"] { width: 4.5rem; display: inline-block; }
 .ci-level-control select { width: auto; }
+
+/* ── Draggable cutoff lines (reasoning-mode ?cutlines= overlay) ──────────────
+   Vertical lines a student drags to read tail mass off the label instead of
+   counting bars. Keyboard-accessible (each line is a role="slider"). */
+.cutline { cursor: ew-resize; }
+.cutline:focus { outline: none; }
+/* Visible focus indicator: thicken + solidify the grip and add a ring, since
+   SVG outline rendering is unreliable across browsers. */
+.cutline:focus-visible .cutline-grip {
+  stroke: #114B5F;
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+.cutline:focus-visible .cutline-line,
+.cutline:focus-visible line {
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+}
+.cutline-xval { paint-order: stroke; }
+.cutline-hit { touch-action: none; }
+@media (prefers-reduced-motion: reduce) {
+  .cutline, .cutline * { transition: none !important; }
+}

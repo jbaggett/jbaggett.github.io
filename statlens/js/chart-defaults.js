@@ -10,7 +10,8 @@
 import * as d3Scale from 'd3-scale';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
-import { renderSimPills } from './chart-utils.js';
+import { drawSpike } from './spike.js';
+import { renderSimPills, renderCutlines } from './chart-utils.js';
 import { formatStat } from './stats.js';
 import { wrapWithStepper } from './page-utils.js';
 
@@ -21,6 +22,14 @@ export const DOTPLOT_AUTO_THRESHOLD = 1000;
 
 /** Default max bins for dotplots. */
 export const DOTPLOT_MAX_BINS = 40;
+
+/**
+ * Max distinct values a discrete statistic (a sample proportion k/n) can take
+ * before its reasoning-mode figure switches from non-touching spike bars to a
+ * binned histogram. Below this the discrete bars are readable and honest (each
+ * bar is one possible k/n); above it they crowd into an unhoverable cloud.
+ */
+export const DISCRETE_BAR_MAX = 40;
 
 /** Default max bins for histograms (Sturges' cap). */
 export const HIST_MAX_BINS = 50;
@@ -42,6 +51,22 @@ export const DOMAIN_PADDING = 0.05;
 export function resolveChartType(n, userChoice) {
   if (userChoice && userChoice !== 'auto') return /** @type {any} */ (userChoice);
   return n <= DOTPLOT_AUTO_THRESHOLD ? 'dotplot' : 'histogram';
+}
+
+/**
+ * Chart type for a reasoning-mode figure (plot=only / readout=false), where the
+ * chrome-hidden embed can't offer the dotplot/spike/histogram toggle. A discrete
+ * statistic (a sample proportion) shows as non-touching spike bars — the honest
+ * "these are the possible k/n" picture — up to DISCRETE_BAR_MAX distinct values,
+ * then bins into a histogram so large n doesn't degrade into a spike cloud.
+ * Continuous statistics (means, slopes) always histogram.
+ * @param {number[]} stats - the simulated statistics
+ * @param {{ proportion?: boolean }} [opts]
+ * @returns {'spike'|'histogram'}
+ */
+export function reasoningChartType(stats, opts = {}) {
+  if (opts.proportion && new Set(stats).size <= DISCRETE_BAR_MAX) return 'spike';
+  return 'histogram';
 }
 
 // ─── Bin counts ─────────────────────────────────────────────────────
@@ -295,6 +320,17 @@ export function createBinAdjuster(parent, opts) {
 export function renderSimChart(container, stats, opts) {
   container.innerHTML = '';
 
+  // Opt-in reasoning-mode overlay: draggable cutoff line(s) with a live tail
+  // readout. `?cutlines=ci|tail` — read straight from the URL so every sim tool
+  // that calls renderSimChart gets it with no per-tool wiring. Cutlines ride on
+  // a binned shape (spike bars or histogram) — never a raw dot cloud — so if the
+  // caller asked for a dotplot while cutlines are on, coerce to a histogram.
+  const cutlinesMode = opts.cutlines
+    ?? (typeof location !== 'undefined' && new URLSearchParams(location.search).get('cutlines'));
+  const cutlinesOn = cutlinesMode === 'ci' || cutlinesMode === 'tail';
+  let effectiveChartType = opts.chartType;
+  if (cutlinesOn && effectiveChartType !== 'spike') effectiveChartType = 'histogram';
+
   // Build region predicate from direction if not provided
   let regionPred = opts.regionPredicate;
   if (!regionPred && opts.observedStat != null && opts.direction) {
@@ -321,7 +357,7 @@ export function renderSimChart(container, stats, opts) {
   /** @type {((count: number) => number)|undefined} */
   let dotCountToY;
 
-  if (opts.chartType === 'dotplot') {
+  if (effectiveChartType === 'dotplot') {
     const r = drawDotplot(container, stats, {
       id: opts.id,
       xLabel: opts.xLabel,
@@ -353,6 +389,24 @@ export function renderSimChart(container, stats, opts) {
         .domain([0, r.maxStack * 1.05])
         .range([frame.height, 0]);
     }
+    chartDomain = opts.domain;
+  } else if (effectiveChartType === 'spike') {
+    // Discrete non-touching bars — one per distinct value — for a discrete
+    // statistic (a sample proportion) at small/moderate n.
+    const r = drawSpike(container, stats, {
+      id: opts.id,
+      xLabel: opts.xLabel,
+      titleText: opts.titleText ?? 'Null Distribution',
+      isTail: regionPred,
+      observedStat: opts.observedStat,
+      ciLines: opts.ciLines,
+      animate: false,
+      domain: opts.domain,
+      precision: opts.precision,
+    });
+    frame = r.frame;
+    xScale = r.xScale;
+    yScale = r.yScale;
     chartDomain = opts.domain;
   } else {
     const r = drawHistogram(container, stats, {
@@ -394,6 +448,17 @@ export function renderSimChart(container, stats, opts) {
         ci: opts.ciLines,
       });
     }
+  }
+
+  // Draw the draggable cutoff line(s) over the binned shape (spike bars or
+  // histogram) — the mass is read from the stats, so either works.
+  if (cutlinesOn && frame && xScale && stats.length > 0
+      && (effectiveChartType === 'histogram' || effectiveChartType === 'spike')) {
+    renderCutlines(frame, xScale, stats, {
+      mode: /** @type {'ci'|'tail'} */ (cutlinesMode),
+      direction: opts.direction,
+      precision: opts.precision,
+    });
   }
 
   return { frame, xScale, yScale, bins, domain: chartDomain, maxStack: dotMaxStack, binWidth: dotBinWidth, countToY: dotCountToY };

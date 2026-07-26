@@ -1,0 +1,164 @@
+{
+  "id": "murders",
+  "name": "Murders vs Poverty (US Metro Areas)",
+  "description": "Annual murders per million vs poverty rate for 20 US metropolitan areas. IMS/OS Ch. 24.",
+  "source": "openintro::murders",
+  "chapter": "IMS Ch. 24",
+  "type": "regression",
+  "variables": [
+    {
+      "name": "perc_pov",
+      "label": "Poverty Rate (%)",
+      "type": "numeric"
+    },
+    {
+      "name": "annual_murders_per_mil",
+      "label": "Annual Murders per Million",
+      "type": "numeric"
+    },
+    {
+      "name": "perc_unemp",
+      "label": "Unemployment Rate (%)",
+      "type": "numeric"
+    },
+    {
+      "name": "population",
+      "label": "Population",
+      "type": "numeric"
+    }
+  ],
+  "studyDescription": "Annual murder counts (per million residents), poverty rates, unemployment rates, and population for 20 metropolitan areas in the United States. This is an observational dataset assembled from US city statistics.",
+  "variableDescriptions": {
+    "perc_pov": "Percentage of the metro-area population living below the poverty line.",
+    "annual_murders_per_mil": "Annual number of murders per one million residents.",
+    "perc_unemp": "Percentage of the metro-area labor force that is unemployed.",
+    "population": "Metropolitan-area population."
+  },
+  "sourceDetail": "OpenIntro / OS Ch. 8 (simple linear regression) end-of-chapter exercise; openintro::murders.",
+  "context": {
+    "population": "US metropolitan areas",
+    "parameter": "slope of annual murders per million on poverty rate"
+  },
+  "rows": [
+    {
+      "perc_pov": 16.5,
+      "annual_murders_per_mil": 11.2,
+      "perc_unemp": 6.2,
+      "population": 587000
+    },
+    {
+      "perc_pov": 20.5,
+      "annual_murders_per_mil": 13.4,
+      "perc_unemp": 6.4,
+      "population": 643000
+    },
+    {
+      "perc_pov": 26.3,
+      "annual_murders_per_mil": 40.7,
+      "perc_unemp": 9.3,
+      "population": 635000
+    },
+    {
+      "perc_pov": 16.5,
+      "annual_murders_per_mil": 5.3,
+      "perc_unemp": 5.3,
+      "population": 692000
+    },
+    {
+      "perc_pov": 19.2,
+      "annual_murders_per_mil": 24.8,
+      "perc_unemp": 7.3,
+      "population": 1248000
+    },
+    {
+      "perc_pov": 16.5,
+      "annual_murders_per_mil": 12.7,
+      "perc_unemp": 5.9,
+      "population": 643000
+    },
+    {
+      "perc_pov": 20.2,
+      "annual_murders_per_mil": 20.9,
+      "perc_unemp": 6.4,
+      "population": 1964000
+    },
+    {
+      "perc_pov": 21.3,
+      "annual_murders_per_mil": 35.7,
+      "perc_unemp": 7.6,
+      "population": 1531000
+    },
+    {
+      "perc_pov": 17.2,
+      "annual_murders_per_mil": 8.7,
+      "perc_unemp": 4.9,
+      "population": 713000
+    },
+    {
+      "perc_pov": 14.3,
+      "annual_murders_per_mil": 9.6,
+      "perc_unemp": 6.4,
+      "population": 749000
+    },
+    {
+      "perc_pov": 18.1,
+      "annual_murders_per_mil": 14.5,
+      "perc_unemp": 6,
+      "population": 7895000
+    },
+    {
+      "perc_pov": 23.1,
+      "annual_murders_per_mil": 26.9,
+      "perc_unemp": 7.4,
+      "population": 762000
+    },
+    {
+      "perc_pov": 19.1,
+      "annual_murders_per_mil": 15.7,
+      "perc_unemp": 5.8,
+      "population": 2793000
+    },
+    {
+      "perc_pov": 24.7,
+      "annual_murders_per_mil": 36.2,
+      "perc_unemp": 8.6,
+      "population": 741000
+    },
+    {
+      "perc_pov": 18.6,
+      "annual_murders_per_mil": 18.1,
+      "perc_unemp": 6.5,
+      "population": 625000
+    },
+    {
+      "perc_pov": 24.9,
+      "annual_murders_per_mil": 28.9,
+      "perc_unemp": 8.3,
+      "population": 854000
+    },
+    {
+      "perc_pov": 17.9,
+      "annual_murders_per_mil": 14.9,
+      "perc_unemp": 6.7,
+      "population": 716000
+    },
+    {
+      "perc_pov": 22.4,
+      "annual_murders_per_mil": 25.8,
+      "perc_unemp": 8.6,
+      "population": 921000
+    },
+    {
+      "perc_pov": 20.2,
+      "annual_murders_per_mil": 21.7,
+      "perc_unemp": 8.4,
+      "population": 595000
+    },
+    {
+      "perc_pov": 16.9,
+      "annual_murders_per_mil": 25.7,
+      "perc_unemp": 6.7,
+      "population": 3353000
+    }
+  ]
+}

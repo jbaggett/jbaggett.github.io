@@ -39,6 +39,12 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry">
+            <div class="cl-date">2026-07-26<span class="cl-tag tool">Reasoning mode</span></div>
+            <h2><a href="../simulate/bootstrap-two-means/?dataset=diamonds_99_1ct&amp;ci=90&amp;plot=only&amp;cutlines=ci">Drag-a-line reasoning figures</a></h2>
+            <p>Every bootstrap and randomization tool now supports a <strong>draggable cutoff-line</strong> overlay for "read it off the histogram" exercises: instead of counting bars, the student drags a vertical line and reads the <strong>tail mass</strong> off a live label. <code>?cutlines=ci</code> gives two lines (drag until each tail hits the confidence level's leftover %, and the line positions are your CI bounds); <code>?cutlines=tail</code> gives one line to drag to the observed statistic for a p-value. Fully keyboard-drivable (arrow keys, Home/End). Same update also <strong>fixes a large-<em>n</em> figure bug</strong> — reasoning-mode distributions now always render as a clean, hoverable binned histogram instead of degrading into an unreadable spike cloud when the sample is big.</p>
+        </article>
+
+        <article class="cl-entry">
             <div class="cl-date">2026-07-23<span class="cl-tag tool">New tool</span></div>
             <h2><a href="../inference/mlr/?dataset=possum&amp;predictors=total_l,skull_w">Multiple Linear Regression</a></h2>
             <p>Fit <em>Y = β₀ + β₁x₁ + … + βₖxₖ</em> on a bundled or uploaded dataset and read the full software-style output: a coefficient table (estimate, SE, <em>t</em>, p-value, 95% CI) matching <code>summary(lm)</code>, the model <strong>ANOVA F-test</strong>, <strong>R² / adjusted R²</strong> and residual standard error, and diagnostics (residuals-vs-fitted, residual distribution, and a Cook's-distance flag for high-influence points). To judge <strong>multicollinearity</strong>, the base view shows a pairwise scatterplot matrix of the predictors; <strong>Expert mode</strong> adds the VIF metric. The <a href="../inference/slope/?dataset=possum_regression&amp;anova=true">single-predictor slope tool</a> also gained an ANOVA-for-regression table (SST = SSR + SSE, and the F = t² equivalence).</p>
