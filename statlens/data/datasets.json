@@ -222,6 +222,22 @@
     "minGroupN": 1129
   },
   {
+    "id": "births14_fage",
+    "name": "Baby Weight vs Father's Age",
+    "description": "Father's age (years) vs baby birth weight (lbs) for 886 US births, 2014. A weak predictor. IMS Ch. 24.",
+    "type": "regression",
+    "chapter": "IMS Ch. 24",
+    "n": 886,
+    "variables": [
+      "fage",
+      "weight"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "births14_regression",
     "name": "Births: Gestation vs Weight",
     "description": "Gestation weeks vs birth weight (lbs) for US babies, 2014. IMS Ch. 24.",

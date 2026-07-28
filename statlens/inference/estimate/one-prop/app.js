@@ -103,14 +103,30 @@ const dataPanel = initDataPanel({
   },
   onText: (parsed, sourceName) => {
     currentContext = null;
-    const catIdx = parsed.types.findIndex(t => t === 'categorical');
-    if (catIdx < 0) {
+    // Offer a selector across ALL categorical columns (mirrors onDataset + the
+    // means tools) so a multi-variable CSV isn't locked to the first one.
+    // (Melissa's request, 2026-07.)
+    const catCols = parsed.headers.filter((h, i) => parsed.types[i] === 'categorical');
+    if (catCols.length === 0) {
       announce('No categorical column found in the data.');
       return;
     }
-    const colName = parsed.headers[catIdx];
-    if (variableSelector) variableSelector.hidden = true;
-    showSuccessSelector(parsed.data.map(row => String(row[colName])), sourceName);
+    if (catCols.length > 1 && varSelect && variableSelector) {
+      varSelect.innerHTML = '';
+      for (const name of catCols) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        varSelect.appendChild(opt);
+      }
+      variableSelector.hidden = false;
+      varSelect.onchange = () => {
+        showSuccessSelector(parsed.data.map(row => String(row[varSelect.value])), sourceName);
+      };
+    } else if (variableSelector) {
+      variableSelector.hidden = true;
+    }
+    showSuccessSelector(parsed.data.map(row => String(row[catCols[0]])), sourceName);
   },
   onClear: () => {
     currentSuccesses = 0;

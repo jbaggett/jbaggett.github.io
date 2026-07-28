@@ -1,0 +1,3576 @@
+{
+  "id": "births14_fage",
+  "name": "Baby Weight vs Father's Age",
+  "description": "Father's age (years) vs baby birth weight (lbs) for 886 US births, 2014. A weak predictor. IMS Ch. 24.",
+  "source": "openintro::births14",
+  "chapter": "IMS Ch. 24",
+  "type": "regression",
+  "variables": [
+    {
+      "name": "fage",
+      "label": "Father's Age (years)",
+      "type": "numeric"
+    },
+    {
+      "name": "weight",
+      "label": "Baby Weight (lbs)",
+      "type": "numeric"
+    }
+  ],
+  "studyDescription": "A random sample of 886 births in the United States in 2014 (those with both the father's age and the baby's birth weight recorded), drawn from US Department of Health birth records. Each case pairs the father's age in years with the baby's birth weight in pounds. This is an observational dataset.",
+  "variableDescriptions": {
+    "fage": "The father's age, in years, at the time of the birth.",
+    "weight": "The baby's birth weight, in pounds."
+  },
+  "sourceDetail": "OpenIntro IMS Ch. 24. US Department of Health and Human Services; openintro::births14 (fage, weight columns, complete cases).",
+  "context": {
+    "population": "US births",
+    "parameter": "slope of baby weight on father's age"
+  },
+  "rows": [
+    {
+      "fage": 34,
+      "weight": 6.96
+    },
+    {
+      "fage": 36,
+      "weight": 8.86
+    },
+    {
+      "fage": 37,
+      "weight": 7.51
+    },
+    {
+      "fage": 32,
+      "weight": 6.75
+    },
+    {
+      "fage": 32,
+      "weight": 6.69
+    },
+    {
+      "fage": 37,
+      "weight": 6.13
+    },
+    {
+      "fage": 29,
+      "weight": 6.74
+    },
+    {
+      "fage": 30,
+      "weight": 8.94
+    },
+    {
+      "fage": 29,
+      "weight": 9.12
+    },
+    {
+      "fage": 30,
+      "weight": 8.91
+    },
+    {
+      "fage": 34,
+      "weight": 8
+    },
+    {
+      "fage": 28,
+      "weight": 7.25
+    },
+    {
+      "fage": 28,
+      "weight": 8.2
+    },
+    {
+      "fage": 32,
+      "weight": 6.81
+    },
+    {
+      "fage": 24,
+      "weight": 5.56
+    },
+    {
+      "fage": 29,
+      "weight": 6.75
+    },
+    {
+      "fage": 35,
+      "weight": 4.75
+    },
+    {
+      "fage": 25,
+      "weight": 5.99
+    },
+    {
+      "fage": 22,
+      "weight": 8
+    },
+    {
+      "fage": 32,
+      "weight": 8.54
+    },
+    {
+      "fage": 21,
+      "weight": 7.69
+    },
+    {
+      "fage": 36,
+      "weight": 6.56
+    },
+    {
+      "fage": 35,
+      "weight": 6.08
+    },
+    {
+      "fage": 22,
+      "weight": 8.54
+    },
+    {
+      "fage": 29,
+      "weight": 8.31
+    },
+    {
+      "fage": 38,
+      "weight": 6.98
+    },
+    {
+      "fage": 40,
+      "weight": 7.87
+    },
+    {
+      "fage": 26,
+      "weight": 9.72
+    },
+    {
+      "fage": 20,
+      "weight": 7.03
+    },
+    {
+      "fage": 32,
+      "weight": 7.13
+    },
+    {
+      "fage": 31,
+      "weight": 6.97
+    },
+    {
+      "fage": 38,
+      "weight": 7.58
+    },
+    {
+      "fage": 34,
+      "weight": 8.2
+    },
+    {
+      "fage": 30,
+      "weight": 6
+    },
+    {
+      "fage": 38,
+      "weight": 4.31
+    },
+    {
+      "fage": 27,
+      "weight": 7.31
+    },
+    {
+      "fage": 39,
+      "weight": 7.75
+    },
+    {
+      "fage": 31,
+      "weight": 7.17
+    },
+    {
+      "fage": 28,
+      "weight": 7.06
+    },
+    {
+      "fage": 32,
+      "weight": 6.94
+    },
+    {
+      "fage": 25,
+      "weight": 8.19
+    },
+    {
+      "fage": 21,
+      "weight": 7.63
+    },
+    {
+      "fage": 30,
+      "weight": 6.5
+    },
+    {
+      "fage": 28,
+      "weight": 6.81
+    },
+    {
+      "fage": 26,
+      "weight": 8
+    },
+    {
+      "fage": 42,
+      "weight": 4.19
+    },
+    {
+      "fage": 35,
+      "weight": 6.32
+    },
+    {
+      "fage": 30,
+      "weight": 4.75
+    },
+    {
+      "fage": 32,
+      "weight": 5.94
+    },
+    {
+      "fage": 38,
+      "weight": 7.58
+    },
+    {
+      "fage": 33,
+      "weight": 5.88
+    },
+    {
+      "fage": 32,
+      "weight": 8.15
+    },
+    {
+      "fage": 28,
+      "weight": 7.61
+    },
+    {
+      "fage": 27,
+      "weight": 4.32
+    },
+    {
+      "fage": 32,
+      "weight": 7.72
+    },
+    {
+      "fage": 25,
+      "weight": 7.98
+    },
+    {
+      "fage": 31,
+      "weight": 7.13
+    },
+    {
+      "fage": 21,
+      "weight": 6.43
+    },
+    {
+      "fage": 47,
+      "weight": 8.75
+    },
+    {
+      "fage": 37,
+      "weight": 6.79
+    },
+    {
+      "fage": 20,
+      "weight": 2.16
+    },
+    {
+      "fage": 33,
+      "weight": 7.13
+    },
+    {
+      "fage": 41,
+      "weight": 7.42
+    },
+    {
+      "fage": 37,
+      "weight": 7.89
+    },
+    {
+      "fage": 43,
+      "weight": 8.39
+    },
+    {
+      "fage": 38,
+      "weight": 1.81
+    },
+    {
+      "fage": 36,
+      "weight": 5.56
+    },
+    {
+      "fage": 31,
+      "weight": 7.19
+    },
+    {
+      "fage": 31,
+      "weight": 8
+    },
+    {
+      "fage": 25,
+      "weight": 6.56
+    },
+    {
+      "fage": 43,
+      "weight": 9.06
+    },
+    {
+      "fage": 21,
+      "weight": 7.01
+    },
+    {
+      "fage": 38,
+      "weight": 5.44
+    },
+    {
+      "fage": 31,
+      "weight": 7.65
+    },
+    {
+      "fage": 34,
+      "weight": 4.31
+    },
+    {
+      "fage": 25,
+      "weight": 7.69
+    },
+    {
+      "fage": 25,
+      "weight": 7.45
+    },
+    {
+      "fage": 35,
+      "weight": 8.07
+    },
+    {
+      "fage": 26,
+      "weight": 6.06
+    },
+    {
+      "fage": 36,
+      "weight": 8
+    },
+    {
+      "fage": 19,
+      "weight": 7.94
+    },
+    {
+      "fage": 25,
+      "weight": 6.69
+    },
+    {
+      "fage": 24,
+      "weight": 5.11
+    },
+    {
+      "fage": 33,
+      "weight": 8.07
+    },
+    {
+      "fage": 37,
+      "weight": 6.04
+    },
+    {
+      "fage": 21,
+      "weight": 7.37
+    },
+    {
+      "fage": 21,
+      "weight": 6.97
+    },
+    {
+      "fage": 32,
+      "weight": 7.5
+    },
+    {
+      "fage": 27,
+      "weight": 6.36
+    },
+    {
+      "fage": 39,
+      "weight": 8.25
+    },
+    {
+      "fage": 29,
+      "weight": 8.73
+    },
+    {
+      "fage": 26,
+      "weight": 7.44
+    },
+    {
+      "fage": 25,
+      "weight": 6.38
+    },
+    {
+      "fage": 31,
+      "weight": 8.31
+    },
+    {
+      "fage": 38,
+      "weight": 7.77
+    },
+    {
+      "fage": 26,
+      "weight": 6.69
+    },
+    {
+      "fage": 25,
+      "weight": 5.81
+    },
+    {
+      "fage": 28,
+      "weight": 6.44
+    },
+    {
+      "fage": 27,
+      "weight": 9.68
+    },
+    {
+      "fage": 29,
+      "weight": 5.94
+    },
+    {
+      "fage": 32,
+      "weight": 7.37
+    },
+    {
+      "fage": 43,
+      "weight": 8.69
+    },
+    {
+      "fage": 29,
+      "weight": 5.89
+    },
+    {
+      "fage": 30,
+      "weight": 7.63
+    },
+    {
+      "fage": 24,
+      "weight": 8.31
+    },
+    {
+      "fage": 15,
+      "weight": 6.94
+    },
+    {
+      "fage": 38,
+      "weight": 8.25
+    },
+    {
+      "fage": 28,
+      "weight": 8.88
+    },
+    {
+      "fage": 36,
+      "weight": 7.54
+    },
+    {
+      "fage": 37,
+      "weight": 6.56
+    },
+    {
+      "fage": 27,
+      "weight": 8.87
+    },
+    {
+      "fage": 25,
+      "weight": 5.9
+    },
+    {
+      "fage": 46,
+      "weight": 8.88
+    },
+    {
+      "fage": 27,
+      "weight": 5.97
+    },
+    {
+      "fage": 43,
+      "weight": 8.75
+    },
+    {
+      "fage": 41,
+      "weight": 7.26
+    },
+    {
+      "fage": 39,
+      "weight": 8.56
+    },
+    {
+      "fage": 34,
+      "weight": 5.58
+    },
+    {
+      "fage": 36,
+      "weight": 7.69
+    },
+    {
+      "fage": 31,
+      "weight": 6.27
+    },
+    {
+      "fage": 27,
+      "weight": 5.91
+    },
+    {
+      "fage": 43,
+      "weight": 7.39
+    },
+    {
+      "fage": 20,
+      "weight": 7.86
+    },
+    {
+      "fage": 34,
+      "weight": 4.55
+    },
+    {
+      "fage": 29,
+      "weight": 5.07
+    },
+    {
+      "fage": 25,
+      "weight": 7
+    },
+    {
+      "fage": 30,
+      "weight": 9.24
+    },
+    {
+      "fage": 25,
+      "weight": 6.5
+    },
+    {
+      "fage": 31,
+      "weight": 7.22
+    },
+    {
+      "fage": 43,
+      "weight": 6.92
+    },
+    {
+      "fage": 32,
+      "weight": 7.8
+    },
+    {
+      "fage": 34,
+      "weight": 5.13
+    },
+    {
+      "fage": 21,
+      "weight": 6.65
+    },
+    {
+      "fage": 29,
+      "weight": 5.5
+    },
+    {
+      "fage": 38,
+      "weight": 7.78
+    },
+    {
+      "fage": 31,
+      "weight": 3.93
+    },
+    {
+      "fage": 21,
+      "weight": 6.94
+    },
+    {
+      "fage": 28,
+      "weight": 6.95
+    },
+    {
+      "fage": 32,
+      "weight": 6.87
+    },
+    {
+      "fage": 22,
+      "weight": 8.87
+    },
+    {
+      "fage": 18,
+      "weight": 8.84
+    },
+    {
+      "fage": 31,
+      "weight": 6.81
+    },
+    {
+      "fage": 26,
+      "weight": 7.61
+    },
+    {
+      "fage": 20,
+      "weight": 8.06
+    },
+    {
+      "fage": 34,
+      "weight": 7.21
+    },
+    {
+      "fage": 32,
+      "weight": 7.21
+    },
+    {
+      "fage": 29,
+      "weight": 6.5
+    },
+    {
+      "fage": 34,
+      "weight": 5.62
+    },
+    {
+      "fage": 29,
+      "weight": 8.54
+    },
+    {
+      "fage": 32,
+      "weight": 6
+    },
+    {
+      "fage": 22,
+      "weight": 9.25
+    },
+    {
+      "fage": 20,
+      "weight": 5.93
+    },
+    {
+      "fage": 32,
+      "weight": 7.69
+    },
+    {
+      "fage": 23,
+      "weight": 9.31
+    },
+    {
+      "fage": 47,
+      "weight": 8.44
+    },
+    {
+      "fage": 26,
+      "weight": 6.19
+    },
+    {
+      "fage": 24,
+      "weight": 4.44
+    },
+    {
+      "fage": 24,
+      "weight": 5.5
+    },
+    {
+      "fage": 33,
+      "weight": 7.44
+    },
+    {
+      "fage": 35,
+      "weight": 7.19
+    },
+    {
+      "fage": 34,
+      "weight": 7
+    },
+    {
+      "fage": 39,
+      "weight": 9.19
+    },
+    {
+      "fage": 30,
+      "weight": 8.54
+    },
+    {
+      "fage": 42,
+      "weight": 7.53
+    },
+    {
+      "fage": 26,
+      "weight": 6.64
+    },
+    {
+      "fage": 27,
+      "weight": 8.75
+    },
+    {
+      "fage": 25,
+      "weight": 6.81
+    },
+    {
+      "fage": 27,
+      "weight": 9.7
+    },
+    {
+      "fage": 43,
+      "weight": 7.87
+    },
+    {
+      "fage": 21,
+      "weight": 8.69
+    },
+    {
+      "fage": 33,
+      "weight": 7.83
+    },
+    {
+      "fage": 23,
+      "weight": 6.78
+    },
+    {
+      "fage": 42,
+      "weight": 7.5
+    },
+    {
+      "fage": 48,
+      "weight": 7.63
+    },
+    {
+      "fage": 29,
+      "weight": 6.43
+    },
+    {
+      "fage": 25,
+      "weight": 5.64
+    },
+    {
+      "fage": 30,
+      "weight": 7.75
+    },
+    {
+      "fage": 27,
+      "weight": 6.12
+    },
+    {
+      "fage": 31,
+      "weight": 7.23
+    },
+    {
+      "fage": 16,
+      "weight": 9.06
+    },
+    {
+      "fage": 31,
+      "weight": 7.24
+    },
+    {
+      "fage": 28,
+      "weight": 8.95
+    },
+    {
+      "fage": 22,
+      "weight": 7.84
+    },
+    {
+      "fage": 27,
+      "weight": 7.81
+    },
+    {
+      "fage": 39,
+      "weight": 6.56
+    },
+    {
+      "fage": 37,
+      "weight": 7.94
+    },
+    {
+      "fage": 31,
+      "weight": 6.38
+    },
+    {
+      "fage": 21,
+      "weight": 6.44
+    },
+    {
+      "fage": 38,
+      "weight": 6.86
+    },
+    {
+      "fage": 33,
+      "weight": 4.85
+    },
+    {
+      "fage": 24,
+      "weight": 5.06
+    },
+    {
+      "fage": 33,
+      "weight": 7.5
+    },
+    {
+      "fage": 38,
+      "weight": 8.3
+    },
+    {
+      "fage": 41,
+      "weight": 7.17
+    },
+    {
+      "fage": 21,
+      "weight": 6.69
+    },
+    {
+      "fage": 24,
+      "weight": 7.19
+    },
+    {
+      "fage": 26,
+      "weight": 6.5
+    },
+    {
+      "fage": 24,
+      "weight": 7.37
+    },
+    {
+      "fage": 30,
+      "weight": 7.95
+    },
+    {
+      "fage": 30,
+      "weight": 7.31
+    },
+    {
+      "fage": 29,
+      "weight": 7.09
+    },
+    {
+      "fage": 37,
+      "weight": 7.9
+    },
+    {
+      "fage": 28,
+      "weight": 6.53
+    },
+    {
+      "fage": 53,
+      "weight": 5.94
+    },
+    {
+      "fage": 31,
+      "weight": 6.57
+    },
+    {
+      "fage": 21,
+      "weight": 7.65
+    },
+    {
+      "fage": 33,
+      "weight": 8.23
+    },
+    {
+      "fage": 38,
+      "weight": 6.87
+    },
+    {
+      "fage": 22,
+      "weight": 7.1
+    },
+    {
+      "fage": 30,
+      "weight": 7.35
+    },
+    {
+      "fage": 32,
+      "weight": 7.01
+    },
+    {
+      "fage": 38,
+      "weight": 8.88
+    },
+    {
+      "fage": 35,
+      "weight": 6.25
+    },
+    {
+      "fage": 25,
+      "weight": 6.5
+    },
+    {
+      "fage": 30,
+      "weight": 10.62
+    },
+    {
+      "fage": 36,
+      "weight": 6.72
+    },
+    {
+      "fage": 38,
+      "weight": 7.98
+    },
+    {
+      "fage": 37,
+      "weight": 7.44
+    },
+    {
+      "fage": 44,
+      "weight": 4.56
+    },
+    {
+      "fage": 35,
+      "weight": 8.14
+    },
+    {
+      "fage": 32,
+      "weight": 6.55
+    },
+    {
+      "fage": 18,
+      "weight": 6.86
+    },
+    {
+      "fage": 35,
+      "weight": 8.31
+    },
+    {
+      "fage": 28,
+      "weight": 9.45
+    },
+    {
+      "fage": 28,
+      "weight": 9.39
+    },
+    {
+      "fage": 41,
+      "weight": 8.69
+    },
+    {
+      "fage": 37,
+      "weight": 8.13
+    },
+    {
+      "fage": 31,
+      "weight": 6.89
+    },
+    {
+      "fage": 38,
+      "weight": 7.66
+    },
+    {
+      "fage": 37,
+      "weight": 6.1
+    },
+    {
+      "fage": 33,
+      "weight": 5.51
+    },
+    {
+      "fage": 20,
+      "weight": 8.5
+    },
+    {
+      "fage": 27,
+      "weight": 7.87
+    },
+    {
+      "fage": 25,
+      "weight": 8.94
+    },
+    {
+      "fage": 38,
+      "weight": 6.92
+    },
+    {
+      "fage": 37,
+      "weight": 7.5
+    },
+    {
+      "fage": 20,
+      "weight": 8.25
+    },
+    {
+      "fage": 25,
+      "weight": 6.98
+    },
+    {
+      "fage": 38,
+      "weight": 8.75
+    },
+    {
+      "fage": 40,
+      "weight": 7.66
+    },
+    {
+      "fage": 22,
+      "weight": 7.12
+    },
+    {
+      "fage": 44,
+      "weight": 8.19
+    },
+    {
+      "fage": 29,
+      "weight": 6.69
+    },
+    {
+      "fage": 31,
+      "weight": 3.97
+    },
+    {
+      "fage": 27,
+      "weight": 6
+    },
+    {
+      "fage": 31,
+      "weight": 6.72
+    },
+    {
+      "fage": 24,
+      "weight": 6.31
+    },
+    {
+      "fage": 24,
+      "weight": 8.62
+    },
+    {
+      "fage": 26,
+      "weight": 8.25
+    },
+    {
+      "fage": 26,
+      "weight": 7.25
+    },
+    {
+      "fage": 35,
+      "weight": 7.58
+    },
+    {
+      "fage": 30,
+      "weight": 7.67
+    },
+    {
+      "fage": 36,
+      "weight": 8.12
+    },
+    {
+      "fage": 35,
+      "weight": 7.98
+    },
+    {
+      "fage": 47,
+      "weight": 7.13
+    },
+    {
+      "fage": 23,
+      "weight": 7.56
+    },
+    {
+      "fage": 23,
+      "weight": 8.23
+    },
+    {
+      "fage": 22,
+      "weight": 6.53
+    },
+    {
+      "fage": 33,
+      "weight": 7.69
+    },
+    {
+      "fage": 31,
+      "weight": 7.19
+    },
+    {
+      "fage": 43,
+      "weight": 8.25
+    },
+    {
+      "fage": 21,
+      "weight": 10.21
+    },
+    {
+      "fage": 39,
+      "weight": 6.66
+    },
+    {
+      "fage": 24,
+      "weight": 7.95
+    },
+    {
+      "fage": 39,
+      "weight": 8.28
+    },
+    {
+      "fage": 29,
+      "weight": 7.28
+    },
+    {
+      "fage": 33,
+      "weight": 6.75
+    },
+    {
+      "fage": 33,
+      "weight": 7.37
+    },
+    {
+      "fage": 28,
+      "weight": 7
+    },
+    {
+      "fage": 25,
+      "weight": 8.79
+    },
+    {
+      "fage": 34,
+      "weight": 7.9
+    },
+    {
+      "fage": 33,
+      "weight": 7.25
+    },
+    {
+      "fage": 25,
+      "weight": 8.57
+    },
+    {
+      "fage": 31,
+      "weight": 7.75
+    },
+    {
+      "fage": 32,
+      "weight": 8.17
+    },
+    {
+      "fage": 44,
+      "weight": 7.69
+    },
+    {
+      "fage": 28,
+      "weight": 8
+    },
+    {
+      "fage": 43,
+      "weight": 7.19
+    },
+    {
+      "fage": 31,
+      "weight": 5.97
+    },
+    {
+      "fage": 45,
+      "weight": 8.94
+    },
+    {
+      "fage": 18,
+      "weight": 5.69
+    },
+    {
+      "fage": 20,
+      "weight": 7.61
+    },
+    {
+      "fage": 21,
+      "weight": 6.68
+    },
+    {
+      "fage": 30,
+      "weight": 8.48
+    },
+    {
+      "fage": 36,
+      "weight": 6.74
+    },
+    {
+      "fage": 34,
+      "weight": 7.58
+    },
+    {
+      "fage": 25,
+      "weight": 9
+    },
+    {
+      "fage": 33,
+      "weight": 6.81
+    },
+    {
+      "fage": 44,
+      "weight": 8.7
+    },
+    {
+      "fage": 30,
+      "weight": 6.75
+    },
+    {
+      "fage": 27,
+      "weight": 2.13
+    },
+    {
+      "fage": 35,
+      "weight": 7.63
+    },
+    {
+      "fage": 29,
+      "weight": 8.31
+    },
+    {
+      "fage": 20,
+      "weight": 7.04
+    },
+    {
+      "fage": 31,
+      "weight": 7.4
+    },
+    {
+      "fage": 49,
+      "weight": 6.57
+    },
+    {
+      "fage": 42,
+      "weight": 7.91
+    },
+    {
+      "fage": 29,
+      "weight": 6.17
+    },
+    {
+      "fage": 25,
+      "weight": 6.61
+    },
+    {
+      "fage": 19,
+      "weight": 6.38
+    },
+    {
+      "fage": 33,
+      "weight": 8.56
+    },
+    {
+      "fage": 39,
+      "weight": 8.12
+    },
+    {
+      "fage": 27,
+      "weight": 6.62
+    },
+    {
+      "fage": 30,
+      "weight": 6.75
+    },
+    {
+      "fage": 41,
+      "weight": 5.5
+    },
+    {
+      "fage": 33,
+      "weight": 4.94
+    },
+    {
+      "fage": 26,
+      "weight": 6.75
+    },
+    {
+      "fage": 32,
+      "weight": 6.48
+    },
+    {
+      "fage": 33,
+      "weight": 5.81
+    },
+    {
+      "fage": 33,
+      "weight": 8.31
+    },
+    {
+      "fage": 38,
+      "weight": 8.37
+    },
+    {
+      "fage": 43,
+      "weight": 6.94
+    },
+    {
+      "fage": 20,
+      "weight": 8.11
+    },
+    {
+      "fage": 34,
+      "weight": 7.94
+    },
+    {
+      "fage": 38,
+      "weight": 6.88
+    },
+    {
+      "fage": 39,
+      "weight": 7.81
+    },
+    {
+      "fage": 33,
+      "weight": 8
+    },
+    {
+      "fage": 32,
+      "weight": 6.44
+    },
+    {
+      "fage": 26,
+      "weight": 8.59
+    },
+    {
+      "fage": 33,
+      "weight": 6.19
+    },
+    {
+      "fage": 26,
+      "weight": 8.31
+    },
+    {
+      "fage": 38,
+      "weight": 8.19
+    },
+    {
+      "fage": 39,
+      "weight": 7.44
+    },
+    {
+      "fage": 29,
+      "weight": 6.82
+    },
+    {
+      "fage": 28,
+      "weight": 7.25
+    },
+    {
+      "fage": 29,
+      "weight": 7.5
+    },
+    {
+      "fage": 25,
+      "weight": 7.37
+    },
+    {
+      "fage": 26,
+      "weight": 7.13
+    },
+    {
+      "fage": 45,
+      "weight": 4.25
+    },
+    {
+      "fage": 34,
+      "weight": 7.94
+    },
+    {
+      "fage": 26,
+      "weight": 7.46
+    },
+    {
+      "fage": 25,
+      "weight": 8.24
+    },
+    {
+      "fage": 21,
+      "weight": 7.13
+    },
+    {
+      "fage": 24,
+      "weight": 7.87
+    },
+    {
+      "fage": 20,
+      "weight": 6.56
+    },
+    {
+      "fage": 34,
+      "weight": 5.56
+    },
+    {
+      "fage": 27,
+      "weight": 7.75
+    },
+    {
+      "fage": 34,
+      "weight": 7.19
+    },
+    {
+      "fage": 41,
+      "weight": 7.23
+    },
+    {
+      "fage": 42,
+      "weight": 5.75
+    },
+    {
+      "fage": 34,
+      "weight": 7.39
+    },
+    {
+      "fage": 39,
+      "weight": 7.56
+    },
+    {
+      "fage": 23,
+      "weight": 8.31
+    },
+    {
+      "fage": 34,
+      "weight": 9.57
+    },
+    {
+      "fage": 35,
+      "weight": 7.34
+    },
+    {
+      "fage": 32,
+      "weight": 7.06
+    },
+    {
+      "fage": 25,
+      "weight": 8.75
+    },
+    {
+      "fage": 32,
+      "weight": 8.99
+    },
+    {
+      "fage": 34,
+      "weight": 7.37
+    },
+    {
+      "fage": 21,
+      "weight": 7.94
+    },
+    {
+      "fage": 42,
+      "weight": 7.87
+    },
+    {
+      "fage": 34,
+      "weight": 7.75
+    },
+    {
+      "fage": 34,
+      "weight": 10.42
+    },
+    {
+      "fage": 34,
+      "weight": 7.66
+    },
+    {
+      "fage": 26,
+      "weight": 7.22
+    },
+    {
+      "fage": 36,
+      "weight": 7.69
+    },
+    {
+      "fage": 44,
+      "weight": 9.93
+    },
+    {
+      "fage": 33,
+      "weight": 6.38
+    },
+    {
+      "fage": 36,
+      "weight": 9.12
+    },
+    {
+      "fage": 24,
+      "weight": 9.84
+    },
+    {
+      "fage": 30,
+      "weight": 8.19
+    },
+    {
+      "fage": 34,
+      "weight": 5.05
+    },
+    {
+      "fage": 26,
+      "weight": 8.44
+    },
+    {
+      "fage": 37,
+      "weight": 7.56
+    },
+    {
+      "fage": 39,
+      "weight": 4.94
+    },
+    {
+      "fage": 32,
+      "weight": 7.19
+    },
+    {
+      "fage": 27,
+      "weight": 7.13
+    },
+    {
+      "fage": 26,
+      "weight": 7.87
+    },
+    {
+      "fage": 26,
+      "weight": 7.13
+    },
+    {
+      "fage": 25,
+      "weight": 6.86
+    },
+    {
+      "fage": 43,
+      "weight": 7.21
+    },
+    {
+      "fage": 34,
+      "weight": 5.94
+    },
+    {
+      "fage": 41,
+      "weight": 7.13
+    },
+    {
+      "fage": 25,
+      "weight": 5.29
+    },
+    {
+      "fage": 26,
+      "weight": 7.59
+    },
+    {
+      "fage": 31,
+      "weight": 7.62
+    },
+    {
+      "fage": 33,
+      "weight": 6.44
+    },
+    {
+      "fage": 28,
+      "weight": 7.56
+    },
+    {
+      "fage": 37,
+      "weight": 9.02
+    },
+    {
+      "fage": 43,
+      "weight": 5.94
+    },
+    {
+      "fage": 25,
+      "weight": 8.21
+    },
+    {
+      "fage": 32,
+      "weight": 6.56
+    },
+    {
+      "fage": 29,
+      "weight": 7.06
+    },
+    {
+      "fage": 28,
+      "weight": 6.99
+    },
+    {
+      "fage": 25,
+      "weight": 4.87
+    },
+    {
+      "fage": 27,
+      "weight": 6.06
+    },
+    {
+      "fage": 26,
+      "weight": 7.13
+    },
+    {
+      "fage": 31,
+      "weight": 8.62
+    },
+    {
+      "fage": 46,
+      "weight": 8.77
+    },
+    {
+      "fage": 85,
+      "weight": 5.95
+    },
+    {
+      "fage": 34,
+      "weight": 8.22
+    },
+    {
+      "fage": 28,
+      "weight": 7.57
+    },
+    {
+      "fage": 25,
+      "weight": 7.69
+    },
+    {
+      "fage": 21,
+      "weight": 8.5
+    },
+    {
+      "fage": 30,
+      "weight": 7.5
+    },
+    {
+      "fage": 35,
+      "weight": 6.81
+    },
+    {
+      "fage": 34,
+      "weight": 7.41
+    },
+    {
+      "fage": 41,
+      "weight": 6.25
+    },
+    {
+      "fage": 26,
+      "weight": 8.31
+    },
+    {
+      "fage": 28,
+      "weight": 7.07
+    },
+    {
+      "fage": 39,
+      "weight": 7.81
+    },
+    {
+      "fage": 32,
+      "weight": 6.59
+    },
+    {
+      "fage": 30,
+      "weight": 7.13
+    },
+    {
+      "fage": 24,
+      "weight": 7.44
+    },
+    {
+      "fage": 38,
+      "weight": 7.86
+    },
+    {
+      "fage": 26,
+      "weight": 6.56
+    },
+    {
+      "fage": 36,
+      "weight": 5.78
+    },
+    {
+      "fage": 22,
+      "weight": 9.12
+    },
+    {
+      "fage": 38,
+      "weight": 7.96
+    },
+    {
+      "fage": 34,
+      "weight": 7.25
+    },
+    {
+      "fage": 28,
+      "weight": 8.6
+    },
+    {
+      "fage": 33,
+      "weight": 6.64
+    },
+    {
+      "fage": 31,
+      "weight": 2.5
+    },
+    {
+      "fage": 33,
+      "weight": 7.15
+    },
+    {
+      "fage": 41,
+      "weight": 4.5
+    },
+    {
+      "fage": 29,
+      "weight": 7.1
+    },
+    {
+      "fage": 28,
+      "weight": 1.12
+    },
+    {
+      "fage": 29,
+      "weight": 7.44
+    },
+    {
+      "fage": 41,
+      "weight": 6.06
+    },
+    {
+      "fage": 45,
+      "weight": 5.22
+    },
+    {
+      "fage": 29,
+      "weight": 8.5
+    },
+    {
+      "fage": 38,
+      "weight": 8.56
+    },
+    {
+      "fage": 28,
+      "weight": 7.25
+    },
+    {
+      "fage": 20,
+      "weight": 7.59
+    },
+    {
+      "fage": 30,
+      "weight": 9.65
+    },
+    {
+      "fage": 29,
+      "weight": 7.81
+    },
+    {
+      "fage": 35,
+      "weight": 8.94
+    },
+    {
+      "fage": 29,
+      "weight": 1.81
+    },
+    {
+      "fage": 27,
+      "weight": 6.05
+    },
+    {
+      "fage": 31,
+      "weight": 5.65
+    },
+    {
+      "fage": 29,
+      "weight": 7.36
+    },
+    {
+      "fage": 29,
+      "weight": 7.69
+    },
+    {
+      "fage": 20,
+      "weight": 5.19
+    },
+    {
+      "fage": 27,
+      "weight": 7.53
+    },
+    {
+      "fage": 21,
+      "weight": 6.12
+    },
+    {
+      "fage": 32,
+      "weight": 6.75
+    },
+    {
+      "fage": 32,
+      "weight": 9
+    },
+    {
+      "fage": 34,
+      "weight": 7.85
+    },
+    {
+      "fage": 24,
+      "weight": 7.12
+    },
+    {
+      "fage": 28,
+      "weight": 8.31
+    },
+    {
+      "fage": 37,
+      "weight": 5
+    },
+    {
+      "fage": 44,
+      "weight": 7.82
+    },
+    {
+      "fage": 33,
+      "weight": 6.31
+    },
+    {
+      "fage": 43,
+      "weight": 9.06
+    },
+    {
+      "fage": 22,
+      "weight": 5.13
+    },
+    {
+      "fage": 26,
+      "weight": 6.06
+    },
+    {
+      "fage": 40,
+      "weight": 7.69
+    },
+    {
+      "fage": 43,
+      "weight": 7.34
+    },
+    {
+      "fage": 24,
+      "weight": 6.33
+    },
+    {
+      "fage": 36,
+      "weight": 7.5
+    },
+    {
+      "fage": 27,
+      "weight": 5.69
+    },
+    {
+      "fage": 26,
+      "weight": 7.56
+    },
+    {
+      "fage": 44,
+      "weight": 7.1
+    },
+    {
+      "fage": 22,
+      "weight": 6.85
+    },
+    {
+      "fage": 28,
+      "weight": 6.25
+    },
+    {
+      "fage": 37,
+      "weight": 6.5
+    },
+    {
+      "fage": 33,
+      "weight": 7.37
+    },
+    {
+      "fage": 33,
+      "weight": 6.68
+    },
+    {
+      "fage": 23,
+      "weight": 8.38
+    },
+    {
+      "fage": 35,
+      "weight": 7.72
+    },
+    {
+      "fage": 31,
+      "weight": 6.56
+    },
+    {
+      "fage": 36,
+      "weight": 7.28
+    },
+    {
+      "fage": 22,
+      "weight": 9.13
+    },
+    {
+      "fage": 31,
+      "weight": 5.49
+    },
+    {
+      "fage": 27,
+      "weight": 8.13
+    },
+    {
+      "fage": 33,
+      "weight": 6.75
+    },
+    {
+      "fage": 25,
+      "weight": 8.31
+    },
+    {
+      "fage": 31,
+      "weight": 7.34
+    },
+    {
+      "fage": 35,
+      "weight": 7.7
+    },
+    {
+      "fage": 25,
+      "weight": 7.25
+    },
+    {
+      "fage": 17,
+      "weight": 7.43
+    },
+    {
+      "fage": 26,
+      "weight": 6.79
+    },
+    {
+      "fage": 28,
+      "weight": 6.25
+    },
+    {
+      "fage": 33,
+      "weight": 7.25
+    },
+    {
+      "fage": 21,
+      "weight": 6.9
+    },
+    {
+      "fage": 26,
+      "weight": 6.06
+    },
+    {
+      "fage": 37,
+      "weight": 6.94
+    },
+    {
+      "fage": 34,
+      "weight": 6.97
+    },
+    {
+      "fage": 37,
+      "weight": 9.44
+    },
+    {
+      "fage": 28,
+      "weight": 5.75
+    },
+    {
+      "fage": 28,
+      "weight": 8.7
+    },
+    {
+      "fage": 25,
+      "weight": 8.05
+    },
+    {
+      "fage": 20,
+      "weight": 7
+    },
+    {
+      "fage": 31,
+      "weight": 6.94
+    },
+    {
+      "fage": 40,
+      "weight": 6.92
+    },
+    {
+      "fage": 32,
+      "weight": 7.19
+    },
+    {
+      "fage": 39,
+      "weight": 8.81
+    },
+    {
+      "fage": 31,
+      "weight": 8.49
+    },
+    {
+      "fage": 15,
+      "weight": 7.37
+    },
+    {
+      "fage": 38,
+      "weight": 8.44
+    },
+    {
+      "fage": 38,
+      "weight": 7.61
+    },
+    {
+      "fage": 36,
+      "weight": 6.05
+    },
+    {
+      "fage": 27,
+      "weight": 6.25
+    },
+    {
+      "fage": 35,
+      "weight": 7
+    },
+    {
+      "fage": 35,
+      "weight": 8.14
+    },
+    {
+      "fage": 37,
+      "weight": 8.11
+    },
+    {
+      "fage": 44,
+      "weight": 7.87
+    },
+    {
+      "fage": 34,
+      "weight": 7.84
+    },
+    {
+      "fage": 37,
+      "weight": 7.69
+    },
+    {
+      "fage": 30,
+      "weight": 7.94
+    },
+    {
+      "fage": 25,
+      "weight": 5.96
+    },
+    {
+      "fage": 17,
+      "weight": 6.49
+    },
+    {
+      "fage": 28,
+      "weight": 7.75
+    },
+    {
+      "fage": 37,
+      "weight": 8.61
+    },
+    {
+      "fage": 33,
+      "weight": 8.69
+    },
+    {
+      "fage": 31,
+      "weight": 6.46
+    },
+    {
+      "fage": 30,
+      "weight": 6.21
+    },
+    {
+      "fage": 27,
+      "weight": 9
+    },
+    {
+      "fage": 29,
+      "weight": 7.37
+    },
+    {
+      "fage": 28,
+      "weight": 8.56
+    },
+    {
+      "fage": 24,
+      "weight": 7.8
+    },
+    {
+      "fage": 39,
+      "weight": 7.93
+    },
+    {
+      "fage": 25,
+      "weight": 6.04
+    },
+    {
+      "fage": 29,
+      "weight": 8.13
+    },
+    {
+      "fage": 26,
+      "weight": 8.62
+    },
+    {
+      "fage": 26,
+      "weight": 7.44
+    },
+    {
+      "fage": 28,
+      "weight": 5.61
+    },
+    {
+      "fage": 30,
+      "weight": 6.25
+    },
+    {
+      "fage": 28,
+      "weight": 7.13
+    },
+    {
+      "fage": 29,
+      "weight": 7.28
+    },
+    {
+      "fage": 30,
+      "weight": 8.38
+    },
+    {
+      "fage": 34,
+      "weight": 9.81
+    },
+    {
+      "fage": 32,
+      "weight": 9
+    },
+    {
+      "fage": 22,
+      "weight": 6.5
+    },
+    {
+      "fage": 30,
+      "weight": 7.31
+    },
+    {
+      "fage": 21,
+      "weight": 7.63
+    },
+    {
+      "fage": 29,
+      "weight": 8.39
+    },
+    {
+      "fage": 42,
+      "weight": 6.32
+    },
+    {
+      "fage": 30,
+      "weight": 7.39
+    },
+    {
+      "fage": 30,
+      "weight": 7.74
+    },
+    {
+      "fage": 34,
+      "weight": 7.5
+    },
+    {
+      "fage": 22,
+      "weight": 5.94
+    },
+    {
+      "fage": 34,
+      "weight": 5.68
+    },
+    {
+      "fage": 27,
+      "weight": 5.6
+    },
+    {
+      "fage": 28,
+      "weight": 7.25
+    },
+    {
+      "fage": 28,
+      "weight": 8.06
+    },
+    {
+      "fage": 38,
+      "weight": 8.53
+    },
+    {
+      "fage": 42,
+      "weight": 7.81
+    },
+    {
+      "fage": 29,
+      "weight": 7.54
+    },
+    {
+      "fage": 24,
+      "weight": 7.25
+    },
+    {
+      "fage": 27,
+      "weight": 8.75
+    },
+    {
+      "fage": 25,
+      "weight": 8.5
+    },
+    {
+      "fage": 35,
+      "weight": 8.19
+    },
+    {
+      "fage": 34,
+      "weight": 8.44
+    },
+    {
+      "fage": 48,
+      "weight": 6.8
+    },
+    {
+      "fage": 41,
+      "weight": 9.87
+    },
+    {
+      "fage": 27,
+      "weight": 6.94
+    },
+    {
+      "fage": 47,
+      "weight": 7.89
+    },
+    {
+      "fage": 27,
+      "weight": 6.77
+    },
+    {
+      "fage": 30,
+      "weight": 9.12
+    },
+    {
+      "fage": 34,
+      "weight": 8.72
+    },
+    {
+      "fage": 41,
+      "weight": 9
+    },
+    {
+      "fage": 22,
+      "weight": 3.33
+    },
+    {
+      "fage": 25,
+      "weight": 7.56
+    },
+    {
+      "fage": 23,
+      "weight": 7.29
+    },
+    {
+      "fage": 37,
+      "weight": 6.94
+    },
+    {
+      "fage": 32,
+      "weight": 8.26
+    },
+    {
+      "fage": 34,
+      "weight": 8.38
+    },
+    {
+      "fage": 33,
+      "weight": 7.69
+    },
+    {
+      "fage": 29,
+      "weight": 6.92
+    },
+    {
+      "fage": 20,
+      "weight": 7.87
+    },
+    {
+      "fage": 28,
+      "weight": 8.27
+    },
+    {
+      "fage": 21,
+      "weight": 8.52
+    },
+    {
+      "fage": 18,
+      "weight": 7.87
+    },
+    {
+      "fage": 20,
+      "weight": 5.37
+    },
+    {
+      "fage": 35,
+      "weight": 5.81
+    },
+    {
+      "fage": 36,
+      "weight": 6.53
+    },
+    {
+      "fage": 44,
+      "weight": 6.62
+    },
+    {
+      "fage": 35,
+      "weight": 9
+    },
+    {
+      "fage": 22,
+      "weight": 5.69
+    },
+    {
+      "fage": 31,
+      "weight": 7.18
+    },
+    {
+      "fage": 27,
+      "weight": 6.94
+    },
+    {
+      "fage": 42,
+      "weight": 7.94
+    },
+    {
+      "fage": 36,
+      "weight": 8.88
+    },
+    {
+      "fage": 24,
+      "weight": 7.22
+    },
+    {
+      "fage": 21,
+      "weight": 8.46
+    },
+    {
+      "fage": 31,
+      "weight": 7.71
+    },
+    {
+      "fage": 35,
+      "weight": 4.63
+    },
+    {
+      "fage": 41,
+      "weight": 9.5
+    },
+    {
+      "fage": 26,
+      "weight": 6.27
+    },
+    {
+      "fage": 28,
+      "weight": 7.63
+    },
+    {
+      "fage": 33,
+      "weight": 6.88
+    },
+    {
+      "fage": 36,
+      "weight": 8.18
+    },
+    {
+      "fage": 38,
+      "weight": 8.19
+    },
+    {
+      "fage": 22,
+      "weight": 8.82
+    },
+    {
+      "fage": 25,
+      "weight": 7.19
+    },
+    {
+      "fage": 34,
+      "weight": 6.89
+    },
+    {
+      "fage": 22,
+      "weight": 9.23
+    },
+    {
+      "fage": 30,
+      "weight": 6.08
+    },
+    {
+      "fage": 23,
+      "weight": 7.36
+    },
+    {
+      "fage": 31,
+      "weight": 8.35
+    },
+    {
+      "fage": 39,
+      "weight": 7.3
+    },
+    {
+      "fage": 20,
+      "weight": 8.87
+    },
+    {
+      "fage": 35,
+      "weight": 4.38
+    },
+    {
+      "fage": 32,
+      "weight": 5.31
+    },
+    {
+      "fage": 26,
+      "weight": 6.11
+    },
+    {
+      "fage": 30,
+      "weight": 5.88
+    },
+    {
+      "fage": 30,
+      "weight": 5.81
+    },
+    {
+      "fage": 28,
+      "weight": 7.56
+    },
+    {
+      "fage": 25,
+      "weight": 7.18
+    },
+    {
+      "fage": 40,
+      "weight": 5.47
+    },
+    {
+      "fage": 42,
+      "weight": 6.9
+    },
+    {
+      "fage": 20,
+      "weight": 6.22
+    },
+    {
+      "fage": 35,
+      "weight": 5.71
+    },
+    {
+      "fage": 25,
+      "weight": 7.44
+    },
+    {
+      "fage": 33,
+      "weight": 9.46
+    },
+    {
+      "fage": 38,
+      "weight": 5
+    },
+    {
+      "fage": 27,
+      "weight": 6.94
+    },
+    {
+      "fage": 36,
+      "weight": 6.81
+    },
+    {
+      "fage": 21,
+      "weight": 7.11
+    },
+    {
+      "fage": 20,
+      "weight": 8.69
+    },
+    {
+      "fage": 21,
+      "weight": 6.76
+    },
+    {
+      "fage": 43,
+      "weight": 8.72
+    },
+    {
+      "fage": 36,
+      "weight": 6.31
+    },
+    {
+      "fage": 28,
+      "weight": 8.06
+    },
+    {
+      "fage": 30,
+      "weight": 7.5
+    },
+    {
+      "fage": 31,
+      "weight": 2.06
+    },
+    {
+      "fage": 31,
+      "weight": 7.94
+    },
+    {
+      "fage": 29,
+      "weight": 7.5
+    },
+    {
+      "fage": 44,
+      "weight": 7.77
+    },
+    {
+      "fage": 30,
+      "weight": 9.33
+    },
+    {
+      "fage": 30,
+      "weight": 7.52
+    },
+    {
+      "fage": 24,
+      "weight": 7.76
+    },
+    {
+      "fage": 32,
+      "weight": 6.62
+    },
+    {
+      "fage": 34,
+      "weight": 6.69
+    },
+    {
+      "fage": 28,
+      "weight": 7.63
+    },
+    {
+      "fage": 30,
+      "weight": 6.12
+    },
+    {
+      "fage": 20,
+      "weight": 8.5
+    },
+    {
+      "fage": 27,
+      "weight": 8.54
+    },
+    {
+      "fage": 39,
+      "weight": 6.45
+    },
+    {
+      "fage": 23,
+      "weight": 6.5
+    },
+    {
+      "fage": 21,
+      "weight": 5.82
+    },
+    {
+      "fage": 23,
+      "weight": 6.88
+    },
+    {
+      "fage": 26,
+      "weight": 6.66
+    },
+    {
+      "fage": 20,
+      "weight": 8.37
+    },
+    {
+      "fage": 31,
+      "weight": 7.63
+    },
+    {
+      "fage": 30,
+      "weight": 7.81
+    },
+    {
+      "fage": 37,
+      "weight": 6.37
+    },
+    {
+      "fage": 29,
+      "weight": 7.56
+    },
+    {
+      "fage": 36,
+      "weight": 9
+    },
+    {
+      "fage": 33,
+      "weight": 6.19
+    },
+    {
+      "fage": 38,
+      "weight": 7.87
+    },
+    {
+      "fage": 29,
+      "weight": 5.3
+    },
+    {
+      "fage": 18,
+      "weight": 8.75
+    },
+    {
+      "fage": 32,
+      "weight": 6.87
+    },
+    {
+      "fage": 27,
+      "weight": 7.19
+    },
+    {
+      "fage": 21,
+      "weight": 7.84
+    },
+    {
+      "fage": 39,
+      "weight": 9.43
+    },
+    {
+      "fage": 35,
+      "weight": 7.81
+    },
+    {
+      "fage": 37,
+      "weight": 5.03
+    },
+    {
+      "fage": 39,
+      "weight": 6.26
+    },
+    {
+      "fage": 35,
+      "weight": 8.6
+    },
+    {
+      "fage": 30,
+      "weight": 7.69
+    },
+    {
+      "fage": 23,
+      "weight": 6.62
+    },
+    {
+      "fage": 27,
+      "weight": 6.67
+    },
+    {
+      "fage": 34,
+      "weight": 7.75
+    },
+    {
+      "fage": 29,
+      "weight": 7.44
+    },
+    {
+      "fage": 30,
+      "weight": 10.13
+    },
+    {
+      "fage": 20,
+      "weight": 10.03
+    },
+    {
+      "fage": 24,
+      "weight": 9.03
+    },
+    {
+      "fage": 24,
+      "weight": 6.92
+    },
+    {
+      "fage": 27,
+      "weight": 5.72
+    },
+    {
+      "fage": 24,
+      "weight": 8.08
+    },
+    {
+      "fage": 22,
+      "weight": 5.99
+    },
+    {
+      "fage": 31,
+      "weight": 8.25
+    },
+    {
+      "fage": 30,
+      "weight": 7.61
+    },
+    {
+      "fage": 45,
+      "weight": 5.75
+    },
+    {
+      "fage": 34,
+      "weight": 7.39
+    },
+    {
+      "fage": 37,
+      "weight": 8.99
+    },
+    {
+      "fage": 23,
+      "weight": 5.91
+    },
+    {
+      "fage": 43,
+      "weight": 7.5
+    },
+    {
+      "fage": 34,
+      "weight": 6.88
+    },
+    {
+      "fage": 44,
+      "weight": 6.5
+    },
+    {
+      "fage": 29,
+      "weight": 8.99
+    },
+    {
+      "fage": 42,
+      "weight": 8.25
+    },
+    {
+      "fage": 36,
+      "weight": 5.22
+    },
+    {
+      "fage": 29,
+      "weight": 3.22
+    },
+    {
+      "fage": 27,
+      "weight": 7.93
+    },
+    {
+      "fage": 24,
+      "weight": 7.31
+    },
+    {
+      "fage": 33,
+      "weight": 7.39
+    },
+    {
+      "fage": 35,
+      "weight": 7.06
+    },
+    {
+      "fage": 39,
+      "weight": 7.5
+    },
+    {
+      "fage": 34,
+      "weight": 7.71
+    },
+    {
+      "fage": 35,
+      "weight": 5.18
+    },
+    {
+      "fage": 22,
+      "weight": 7.61
+    },
+    {
+      "fage": 24,
+      "weight": 6.75
+    },
+    {
+      "fage": 27,
+      "weight": 7.63
+    },
+    {
+      "fage": 30,
+      "weight": 7.56
+    },
+    {
+      "fage": 28,
+      "weight": 6.93
+    },
+    {
+      "fage": 38,
+      "weight": 8.11
+    },
+    {
+      "fage": 27,
+      "weight": 6.94
+    },
+    {
+      "fage": 38,
+      "weight": 7.13
+    },
+    {
+      "fage": 37,
+      "weight": 10.13
+    },
+    {
+      "fage": 29,
+      "weight": 8.01
+    },
+    {
+      "fage": 44,
+      "weight": 7.41
+    },
+    {
+      "fage": 21,
+      "weight": 2.2
+    },
+    {
+      "fage": 26,
+      "weight": 7.96
+    },
+    {
+      "fage": 28,
+      "weight": 7.33
+    },
+    {
+      "fage": 38,
+      "weight": 5.29
+    },
+    {
+      "fage": 33,
+      "weight": 6.75
+    },
+    {
+      "fage": 41,
+      "weight": 7.19
+    },
+    {
+      "fage": 29,
+      "weight": 5.4
+    },
+    {
+      "fage": 28,
+      "weight": 7.15
+    },
+    {
+      "fage": 38,
+      "weight": 7.46
+    },
+    {
+      "fage": 31,
+      "weight": 6.69
+    },
+    {
+      "fage": 40,
+      "weight": 7.94
+    },
+    {
+      "fage": 32,
+      "weight": 7.25
+    },
+    {
+      "fage": 42,
+      "weight": 7.12
+    },
+    {
+      "fage": 32,
+      "weight": 7.56
+    },
+    {
+      "fage": 30,
+      "weight": 8.25
+    },
+    {
+      "fage": 34,
+      "weight": 8.19
+    },
+    {
+      "fage": 34,
+      "weight": 7.64
+    },
+    {
+      "fage": 28,
+      "weight": 9.57
+    },
+    {
+      "fage": 21,
+      "weight": 8.56
+    },
+    {
+      "fage": 30,
+      "weight": 8.31
+    },
+    {
+      "fage": 32,
+      "weight": 5.05
+    },
+    {
+      "fage": 39,
+      "weight": 6.75
+    },
+    {
+      "fage": 33,
+      "weight": 8.93
+    },
+    {
+      "fage": 21,
+      "weight": 4.14
+    },
+    {
+      "fage": 27,
+      "weight": 9.33
+    },
+    {
+      "fage": 32,
+      "weight": 7.44
+    },
+    {
+      "fage": 40,
+      "weight": 9.63
+    },
+    {
+      "fage": 31,
+      "weight": 7.19
+    },
+    {
+      "fage": 31,
+      "weight": 9.41
+    },
+    {
+      "fage": 26,
+      "weight": 7.94
+    },
+    {
+      "fage": 26,
+      "weight": 6.31
+    },
+    {
+      "fage": 33,
+      "weight": 7.25
+    },
+    {
+      "fage": 38,
+      "weight": 7.73
+    },
+    {
+      "fage": 22,
+      "weight": 7.13
+    },
+    {
+      "fage": 35,
+      "weight": 7.75
+    },
+    {
+      "fage": 43,
+      "weight": 6.33
+    },
+    {
+      "fage": 32,
+      "weight": 8.81
+    },
+    {
+      "fage": 28,
+      "weight": 7.37
+    },
+    {
+      "fage": 40,
+      "weight": 6.56
+    },
+    {
+      "fage": 29,
+      "weight": 7.69
+    },
+    {
+      "fage": 65,
+      "weight": 4.54
+    },
+    {
+      "fage": 34,
+      "weight": 8.81
+    },
+    {
+      "fage": 19,
+      "weight": 8.66
+    },
+    {
+      "fage": 30,
+      "weight": 5.06
+    },
+    {
+      "fage": 33,
+      "weight": 6.15
+    },
+    {
+      "fage": 26,
+      "weight": 7.19
+    },
+    {
+      "fage": 30,
+      "weight": 6.45
+    },
+    {
+      "fage": 15,
+      "weight": 4.32
+    },
+    {
+      "fage": 35,
+      "weight": 7.63
+    },
+    {
+      "fage": 35,
+      "weight": 8.13
+    },
+    {
+      "fage": 35,
+      "weight": 6.32
+    },
+    {
+      "fage": 37,
+      "weight": 7.11
+    },
+    {
+      "fage": 29,
+      "weight": 7.81
+    },
+    {
+      "fage": 32,
+      "weight": 8.38
+    },
+    {
+      "fage": 18,
+      "weight": 6.25
+    },
+    {
+      "fage": 25,
+      "weight": 6.81
+    },
+    {
+      "fage": 29,
+      "weight": 7.82
+    },
+    {
+      "fage": 32,
+      "weight": 8.56
+    },
+    {
+      "fage": 32,
+      "weight": 5.88
+    },
+    {
+      "fage": 25,
+      "weight": 6.94
+    },
+    {
+      "fage": 34,
+      "weight": 7.19
+    },
+    {
+      "fage": 39,
+      "weight": 8.06
+    },
+    {
+      "fage": 38,
+      "weight": 8.31
+    },
+    {
+      "fage": 38,
+      "weight": 7.37
+    },
+    {
+      "fage": 35,
+      "weight": 8.38
+    },
+    {
+      "fage": 27,
+      "weight": 8.02
+    },
+    {
+      "fage": 48,
+      "weight": 6.62
+    },
+    {
+      "fage": 22,
+      "weight": 6.44
+    },
+    {
+      "fage": 22,
+      "weight": 6.19
+    },
+    {
+      "fage": 20,
+      "weight": 7.49
+    },
+    {
+      "fage": 26,
+      "weight": 7
+    },
+    {
+      "fage": 34,
+      "weight": 8.6
+    },
+    {
+      "fage": 33,
+      "weight": 8.98
+    },
+    {
+      "fage": 30,
+      "weight": 4.31
+    },
+    {
+      "fage": 25,
+      "weight": 7.94
+    },
+    {
+      "fage": 23,
+      "weight": 8.31
+    },
+    {
+      "fage": 36,
+      "weight": 6.81
+    },
+    {
+      "fage": 28,
+      "weight": 7.06
+    },
+    {
+      "fage": 39,
+      "weight": 6.38
+    },
+    {
+      "fage": 43,
+      "weight": 7.87
+    },
+    {
+      "fage": 26,
+      "weight": 7.81
+    },
+    {
+      "fage": 35,
+      "weight": 8.72
+    },
+    {
+      "fage": 32,
+      "weight": 7.98
+    },
+    {
+      "fage": 28,
+      "weight": 7.91
+    },
+    {
+      "fage": 25,
+      "weight": 8.63
+    },
+    {
+      "fage": 29,
+      "weight": 7.75
+    },
+    {
+      "fage": 22,
+      "weight": 5.47
+    },
+    {
+      "fage": 43,
+      "weight": 10.41
+    },
+    {
+      "fage": 43,
+      "weight": 6.94
+    },
+    {
+      "fage": 30,
+      "weight": 8.2
+    },
+    {
+      "fage": 31,
+      "weight": 7.97
+    },
+    {
+      "fage": 30,
+      "weight": 6.32
+    },
+    {
+      "fage": 27,
+      "weight": 7.89
+    },
+    {
+      "fage": 35,
+      "weight": 6.39
+    },
+    {
+      "fage": 32,
+      "weight": 7.47
+    },
+    {
+      "fage": 21,
+      "weight": 5.9
+    },
+    {
+      "fage": 37,
+      "weight": 7.56
+    },
+    {
+      "fage": 33,
+      "weight": 6.91
+    },
+    {
+      "fage": 38,
+      "weight": 7.45
+    },
+    {
+      "fage": 37,
+      "weight": 8.64
+    },
+    {
+      "fage": 42,
+      "weight": 5.11
+    },
+    {
+      "fage": 37,
+      "weight": 9.44
+    },
+    {
+      "fage": 31,
+      "weight": 7.25
+    },
+    {
+      "fage": 32,
+      "weight": 5.06
+    },
+    {
+      "fage": 25,
+      "weight": 7.56
+    },
+    {
+      "fage": 35,
+      "weight": 8
+    },
+    {
+      "fage": 36,
+      "weight": 6.83
+    },
+    {
+      "fage": 25,
+      "weight": 6.75
+    },
+    {
+      "fage": 25,
+      "weight": 7.11
+    },
+    {
+      "fage": 43,
+      "weight": 6.94
+    },
+    {
+      "fage": 43,
+      "weight": 7.19
+    },
+    {
+      "fage": 36,
+      "weight": 9.35
+    },
+    {
+      "fage": 49,
+      "weight": 8
+    },
+    {
+      "fage": 38,
+      "weight": 7.85
+    },
+    {
+      "fage": 32,
+      "weight": 7.94
+    },
+    {
+      "fage": 34,
+      "weight": 6.25
+    },
+    {
+      "fage": 20,
+      "weight": 6.37
+    },
+    {
+      "fage": 27,
+      "weight": 7.56
+    },
+    {
+      "fage": 29,
+      "weight": 8.95
+    },
+    {
+      "fage": 21,
+      "weight": 7.13
+    },
+    {
+      "fage": 21,
+      "weight": 8.62
+    },
+    {
+      "fage": 30,
+      "weight": 7.87
+    },
+    {
+      "fage": 25,
+      "weight": 5.97
+    },
+    {
+      "fage": 27,
+      "weight": 8
+    },
+    {
+      "fage": 31,
+      "weight": 7
+    },
+    {
+      "fage": 26,
+      "weight": 5.69
+    },
+    {
+      "fage": 39,
+      "weight": 5.81
+    },
+    {
+      "fage": 31,
+      "weight": 7.19
+    },
+    {
+      "fage": 17,
+      "weight": 7.19
+    },
+    {
+      "fage": 34,
+      "weight": 8.98
+    },
+    {
+      "fage": 36,
+      "weight": 7.12
+    },
+    {
+      "fage": 27,
+      "weight": 7.87
+    },
+    {
+      "fage": 37,
+      "weight": 8.16
+    },
+    {
+      "fage": 28,
+      "weight": 7.31
+    },
+    {
+      "fage": 34,
+      "weight": 4.28
+    },
+    {
+      "fage": 33,
+      "weight": 7.34
+    },
+    {
+      "fage": 26,
+      "weight": 6.87
+    },
+    {
+      "fage": 22,
+      "weight": 7.94
+    },
+    {
+      "fage": 32,
+      "weight": 8.62
+    },
+    {
+      "fage": 23,
+      "weight": 6.82
+    },
+    {
+      "fage": 31,
+      "weight": 6.6
+    },
+    {
+      "fage": 20,
+      "weight": 7.78
+    },
+    {
+      "fage": 49,
+      "weight": 8.13
+    },
+    {
+      "fage": 32,
+      "weight": 7.87
+    },
+    {
+      "fage": 32,
+      "weight": 6.84
+    },
+    {
+      "fage": 34,
+      "weight": 6.74
+    },
+    {
+      "fage": 32,
+      "weight": 6.57
+    },
+    {
+      "fage": 35,
+      "weight": 5.85
+    },
+    {
+      "fage": 49,
+      "weight": 6.99
+    },
+    {
+      "fage": 34,
+      "weight": 9.19
+    },
+    {
+      "fage": 20,
+      "weight": 6.19
+    },
+    {
+      "fage": 30,
+      "weight": 6.77
+    },
+    {
+      "fage": 43,
+      "weight": 6.5
+    },
+    {
+      "fage": 44,
+      "weight": 7.37
+    },
+    {
+      "fage": 28,
+      "weight": 5.75
+    },
+    {
+      "fage": 34,
+      "weight": 8.12
+    },
+    {
+      "fage": 30,
+      "weight": 3.64
+    },
+    {
+      "fage": 26,
+      "weight": 7.19
+    },
+    {
+      "fage": 29,
+      "weight": 8.81
+    },
+    {
+      "fage": 32,
+      "weight": 5.88
+    },
+    {
+      "fage": 31,
+      "weight": 7.25
+    },
+    {
+      "fage": 35,
+      "weight": 6.69
+    },
+    {
+      "fage": 32,
+      "weight": 6.83
+    },
+    {
+      "fage": 44,
+      "weight": 4.8
+    },
+    {
+      "fage": 30,
+      "weight": 8.63
+    },
+    {
+      "fage": 36,
+      "weight": 8.44
+    },
+    {
+      "fage": 37,
+      "weight": 5.13
+    },
+    {
+      "fage": 48,
+      "weight": 8.07
+    },
+    {
+      "fage": 24,
+      "weight": 6.03
+    },
+    {
+      "fage": 25,
+      "weight": 7.62
+    },
+    {
+      "fage": 29,
+      "weight": 6.05
+    },
+    {
+      "fage": 21,
+      "weight": 7.45
+    },
+    {
+      "fage": 25,
+      "weight": 7.31
+    },
+    {
+      "fage": 15,
+      "weight": 6.64
+    },
+    {
+      "fage": 25,
+      "weight": 5.58
+    },
+    {
+      "fage": 30,
+      "weight": 7.5
+    },
+    {
+      "fage": 41,
+      "weight": 5.82
+    },
+    {
+      "fage": 28,
+      "weight": 9
+    },
+    {
+      "fage": 23,
+      "weight": 8.05
+    },
+    {
+      "fage": 38,
+      "weight": 9.14
+    },
+    {
+      "fage": 38,
+      "weight": 8.19
+    },
+    {
+      "fage": 20,
+      "weight": 7.87
+    },
+    {
+      "fage": 33,
+      "weight": 9.37
+    },
+    {
+      "fage": 36,
+      "weight": 6.38
+    },
+    {
+      "fage": 33,
+      "weight": 7.35
+    },
+    {
+      "fage": 48,
+      "weight": 9
+    },
+    {
+      "fage": 29,
+      "weight": 2.33
+    },
+    {
+      "fage": 28,
+      "weight": 6.49
+    },
+    {
+      "fage": 37,
+      "weight": 5.8
+    },
+    {
+      "fage": 27,
+      "weight": 6.75
+    },
+    {
+      "fage": 21,
+      "weight": 7.13
+    }
+  ]
+}

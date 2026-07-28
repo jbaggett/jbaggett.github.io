@@ -61,14 +61,6 @@
                     </select>
                 </label>
                 <p id="dataset-desc" class="hint"></p>
-                <div id="variable-selectors" hidden>
-                    <label for="group-var-select">Grouping variable:
-                        <select id="group-var-select"></select>
-                    </label>
-                    <label for="outcome-var-select">Outcome variable:
-                        <select id="outcome-var-select"></select>
-                    </label>
-                </div>
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
@@ -119,6 +111,17 @@
                 <output id="data-summary"></output>
             </div>
         </section>
+
+        <!-- Group + outcome selectors (outside the data panel so they stay
+             visible after the panel collapses and on the file/paste tabs). -->
+        <div id="variable-selectors" class="var-selector-row" hidden>
+            <label for="group-var-select">Grouping variable:
+                <select id="group-var-select"></select>
+            </label>
+            <label for="outcome-var-select">Outcome variable:
+                <select id="outcome-var-select"></select>
+            </label>
+        </div>
 
         <section id="controls" aria-label="Test parameters">
             <h2 class="sr-only">Parameters</h2>

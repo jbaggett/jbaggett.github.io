@@ -69,11 +69,6 @@
                     </select>
                 </label>
                 <p id="dataset-desc" class="hint"></p>
-                <div id="variable-selector" hidden>
-                    <label for="var-select">Variable:
-                        <select id="var-select"></select>
-                    </label>
-                </div>
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
@@ -109,6 +104,14 @@
                 <output id="data-summary"></output>
             </div>
         </section>
+
+        <!-- Variable selector (outside the data panel so it stays visible after
+             the panel collapses and on the file/paste tabs — matches one-mean) -->
+        <div id="variable-selector" class="var-selector-row" hidden>
+            <label for="var-select">Variable:
+                <select id="var-select"></select>
+            </label>
+        </div>
 
         <!-- Parameters -->
         <section id="controls" aria-label="Confidence level" hidden>

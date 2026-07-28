@@ -4824,3 +4824,11 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 @media (prefers-reduced-motion: reduce) {
   .cutline, .cutline * { transition: none !important; }
 }
+
+/* ── Variable selector row (proportion inference tools) ──────────────────────
+   Sits between the data panel and the controls so it stays visible after the
+   data panel auto-collapses and on the file/paste tabs — matching the means
+   tools, so a multi-variable CSV can be re-pointed at any categorical column. */
+.var-selector-row { margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; align-items: center; }
+.var-selector-row label { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; margin: 0; }
+.var-selector-row select { width: auto; }
