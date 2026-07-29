@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>For Instructors | StatLens</title>
+    <meta name="description" content="How to use StatLens in your course: load your own data, share pre-configured and reproducible links, embed in your LMS, and author guided activities.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <style>
+        main { max-width: 860px; }
+
+        .back-link {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            font-size: 0.85rem; color: var(--ims-blue, #569BBD);
+            text-decoration: none; margin-bottom: 0.5rem;
+        }
+        .back-link:hover { text-decoration: underline; }
+
+        .lead { font-size: 1.02rem; color: #444; line-height: 1.55; margin: 0 0 1.6rem; }
+
+        /* "What you can do" overview cards (jump links) */
+        .cando-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 0.7rem; margin: 0 0 2rem;
+        }
+        .cando-card {
+            display: block; padding: 0.9rem 1.05rem; border: 1px solid var(--border, #ddd);
+            border-radius: 8px; text-decoration: none; color: inherit;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .cando-card:hover { border-color: var(--ims-blue); box-shadow: 0 2px 8px rgba(86,155,189,0.15); }
+        .cando-card h3 { margin: 0 0 0.25rem; font-size: 0.92rem; color: var(--ims-blue); }
+        .cando-card p { margin: 0; font-size: 0.82rem; color: #555; line-height: 1.4; }
+
+        .section-label {
+            font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+            color: var(--ims-gray-text, #888); margin: 2.4rem 0 0.4rem;
+            padding-top: 0.6rem; border-top: 1px solid var(--border, #ddd);
+        }
+        .guide h2 { font-size: 1.15rem; color: var(--ims-dark, #114B5F); margin: 0 0 0.5rem; scroll-margin-top: 1rem; }
+        .guide h3 { font-size: 0.98rem; color: var(--ims-blue, #569BBD); margin: 1.2rem 0 0.35rem; }
+        .guide p, .guide li { line-height: 1.55; color: #333; }
+        .guide ul { padding-left: 1.2rem; }
+        .guide li { margin: 0.25rem 0; }
+
+        /* Copyable URL / code examples */
+        .url-example {
+            display: block; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.82rem; background: #f6f8fa; border: 1px solid var(--border, #e2e8ee);
+            border-left: 3px solid var(--ims-blue, #569BBD); border-radius: 4px;
+            padding: 0.6rem 0.8rem; margin: 0.5rem 0 0.9rem; overflow-x: auto; white-space: pre;
+            color: #114B5F;
+        }
+        .url-example .pk { color: #F05133; font-weight: 700; }   /* param key highlight */
+
+        /* Callout boxes */
+        .callout {
+            border: 1px solid var(--border, #e2e8ee); border-left: 4px solid var(--ims-blue, #569BBD);
+            background: #f2f8fb; border-radius: 6px; padding: 0.85rem 1.05rem; margin: 1.1rem 0;
+            font-size: 0.9rem; line-height: 1.5;
+        }
+        .callout.accent { border-left-color: #E07020; background: #fdf5ef; }
+        .callout strong { color: #114B5F; }
+
+        /* Tables */
+        .guide table { border-collapse: collapse; width: 100%; margin: 0.6rem 0 1.2rem; font-size: 0.86rem; }
+        .guide th, .guide td { text-align: left; padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border, #e2e8ee); vertical-align: top; }
+        .guide th { color: #114B5F; font-weight: 700; border-bottom: 2px solid var(--border, #ccc); }
+        .guide td code, .guide p code, .guide li code {
+            font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.85em;
+            background: #eef3f6; padding: 0.08em 0.35em; border-radius: 3px; color: #F05133; white-space: nowrap;
+        }
+        .table-scroll { overflow-x: auto; }
+
+        /* "Explore more" footer cards */
+        .more-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 0.7rem; margin: 0.6rem 0 1rem;
+        }
+        .more-card {
+            display: block; padding: 0.9rem 1.05rem; border: 1px solid var(--border, #ddd);
+            border-radius: 8px; text-decoration: none; color: inherit; transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .more-card:hover { border-color: var(--ims-blue); box-shadow: 0 2px 8px rgba(86,155,189,0.15); }
+        .more-card h3 { margin: 0 0 0.2rem; font-size: 0.92rem; color: var(--ims-blue); }
+        .more-card p { margin: 0; font-size: 0.8rem; color: #555; line-height: 1.4; }
+        .status {
+            display: inline-block; font-size: 0.7rem; font-weight: 600; padding: 0.08rem 0.4rem;
+            border-radius: 3px; margin-left: 0.35rem; vertical-align: middle;
+        }
+        .status-new { background: #fff3e0; color: #e65100; }
+    </style>
+</head>
+<body>
+    <main class="guide">
+        <a class="back-link" href="../">&larr; StatLens Home</a>
+        <h1>StatLens for Instructors</h1>
+        <p class="lead">StatLens is a free, open, accessible toolkit for teaching statistics &mdash; simulation-based inference, distribution calculators, traditional tests, and data exploration, all in the browser with no install. This page shows what you can do with it in your course: bring your own data, hand students pre-configured and reproducible links, embed tools in your LMS, and add guided activities on top of any tool.</p>
+
+        <!-- ── What you can do ─────────────────────────────────── -->
+        <div class="cando-grid">
+            <a class="cando-card" href="#data">
+                <h3>Use your own data</h3>
+                <p>Upload a CSV, paste from a spreadsheet, or auto-load from a URL &mdash; on every tool.</p>
+            </a>
+            <a class="cando-card" href="#links">
+                <h3>Share pre-configured links</h3>
+                <p>Open a tool with the exact dataset, variables, and view your students should see.</p>
+            </a>
+            <a class="cando-card" href="#grading">
+                <h3>Reproducible for grading</h3>
+                <p>A seed makes every simulated result identical &mdash; auto-gradable in MyOpenMath &amp; Canvas.</p>
+            </a>
+            <a class="cando-card" href="#embed">
+                <h3>Embed in your LMS</h3>
+                <p>Drop a tool &mdash; or just a figure &mdash; into Canvas, Moodle, or a webpage via iframe.</p>
+            </a>
+            <a class="cando-card" href="#activities">
+                <h3>Add guided activities</h3>
+                <p>Overlay a step-by-step panel on any tool for in-class walkthroughs or homework.</p>
+            </a>
+            <a class="cando-card" href="#accessibility">
+                <h3>Works for everyone</h3>
+                <p>WCAG-AA accessible, keyboard-operable, mobile-friendly &mdash; and free.</p>
+            </a>
+        </div>
+
+        <!-- ── Data ────────────────────────────────────────────── -->
+        <p class="section-label">Bring your own data</p>
+        <h2 id="data">Getting your data into StatLens</h2>
+        <p>Every tool page has the same data panel with several ways to load data, from zero-setup to fully automated.</p>
+
+        <h3>Built-in datasets</h3>
+        <p>The <strong>Datasets</strong> tab offers 100+ curated datasets, automatically filtered to those that fit the tool. Students pick from a dropdown &mdash; no files or URLs needed. <a href="../data/">Browse the dataset index &rarr;</a></p>
+
+        <h3>Open a file</h3>
+        <p>The <strong>Open File</strong> tab accepts <strong>CSV</strong>, <strong>TSV</strong> (handy when copying from a spreadsheet), and StatLens <strong>JSON</strong> datasets. Multi-column files are fine &mdash; the page shows variable pickers so students choose the relevant column(s).</p>
+        <div class="callout">
+            <strong>Simplest way to distribute custom data:</strong> build a dataset in the <a href="../data/builder/">Dataset Builder</a>, download the <code>.json</code>, and share that file (LMS, email, course site). Students open it on whichever StatLens page they need &mdash; the study description and variable labels travel with it.
+        </div>
+
+        <h3>Paste or type</h3>
+        <p>The <strong>Edit Data</strong> tab lets students paste CSV, type into a spreadsheet-style editor, or (on categorical pages) enter summary counts directly. A pasted JSON dataset is auto-detected.</p>
+
+        <h3>Load from a URL</h3>
+        <p>For links, LMS integration, and activities, data can load straight from a URL parameter:</p>
+        <div class="table-scroll">
+        <table>
+            <thead><tr><th>Parameter</th><th>Use case</th></tr></thead>
+            <tbody>
+                <tr><td><code>?dataset=penny_ages</code></td><td>Load a built-in dataset by ID (textbook callouts)</td></tr>
+                <tr><td><code>?csv=https://&hellip;</code></td><td>Fetch a CSV/TSV from any HTTPS URL (quick sharing, no JSON conversion)</td></tr>
+                <tr><td><code>?json=https://&hellip;</code></td><td>Fetch a hosted StatLens JSON dataset</td></tr>
+                <tr><td><code>?data=1.2,3.4,5.6</code></td><td>Inline numeric data (e.g. per-student values from MyOpenMath)</td></tr>
+            </tbody>
+        </table>
+        </div>
+        <p><strong>To make a link that auto-loads your dataset:</strong> host a CSV or JSON on <a href="https://gist.github.com" target="_blank" rel="noopener">GitHub Gist</a> (use the &ldquo;Raw&rdquo; URL) or any HTTPS server, then append <code>?csv=YOUR_RAW_URL</code> to any tool page.</p>
+
+        <!-- ── Links ───────────────────────────────────────────── -->
+        <p class="section-label">Share &amp; pre-configure</p>
+        <h2 id="links">Pre-configuring tools with links</h2>
+        <p>Every page reads URL parameters to pre-set its state, so you can hand students a link that opens <em>exactly</em> the view you want. A few common patterns:</p>
+
+        <p><strong>Point at a specific dataset</strong> (e.g. a textbook callout):</p>
+        <code class="url-example">https://learnlens.org/statlens/simulate/bootstrap-mean/?<span class="pk">dataset=</span>penny_ages</code>
+
+        <p><strong>Hide the numbers for a visual-judgment exercise</strong> &mdash; students read the shape, not a readout:</p>
+        <code class="url-example">https://learnlens.org/statlens/explore/one-cat/?dataset=brexit&amp;<span class="pk">labels=</span>names</code>
+
+        <p><strong>Start with alphabetical sort</strong> so students discover that ordering by frequency is better:</p>
+        <code class="url-example">https://learnlens.org/statlens/explore/one-cat/?dataset=brexit&amp;<span class="pk">sort=</span>alpha</code>
+
+        <p><strong>Estimate a CI / p-value off the figure</strong> &mdash; a figure-only embed that auto-runs the simulation:</p>
+        <code class="url-example">https://learnlens.org/statlens/simulate/bootstrap-slope/?dataset=bdims_regression&amp;<span class="pk">plot=</span>only&amp;<span class="pk">cutlines=</span>ci</code>
+        <p class="callout">The full list of parameters &mdash; and the guarantee that they never change or disappear &mdash; is in the <a href="../docs/url-api.md">URL API reference</a>. Documented parameters are a stable contract, safe to bake into homework.</p>
+
+        <!-- ── Grading ─────────────────────────────────────────── -->
+        <p class="section-label">Assessment</p>
+        <h2 id="grading">Reproducible output for graded work</h2>
+        <p>StatLens uses a deterministic seeded PRNG: <strong>the same <code>?seed=</code> always produces the exact same simulated result.</strong> That is what makes randomization tests and bootstrap CIs auto-gradable.</p>
+        <code class="url-example">https://learnlens.org/statlens/simulate/randomization-one-prop/?dataset=opportunity_cost&amp;<span class="pk">seed=</span>hw3q5&amp;direction=less</code>
+        <div class="callout accent">
+            <strong>MyOpenMath:</strong> a homework problem can generate per-student data, build a StatLens link with <code>?data=</code> and <code>?seed=</code>, and check the returned result against the theoretical answer with tolerance. <strong>Canvas New Quizzes:</strong> pre-computed variants link to specific seeds for reproducible grading. See the <a href="../docs/MyOpenMath_Investigation_Report.md">MyOpenMath</a> and <a href="../docs/Canvas_Quiz_StatLens_Integration_Report.md">Canvas</a> integration notes.
+        </div>
+
+        <!-- ── Embed ───────────────────────────────────────────── -->
+        <p class="section-label">Embedding</p>
+        <h2 id="embed">Embedding in your LMS or webpage</h2>
+        <p>Any tool works inside an <code>&lt;iframe&gt;</code>. Add <code>?embed=true</code> to hide the site header, data panel, and footer so only the tool shows:</p>
+        <code class="url-example">&lt;iframe src="https://learnlens.org/statlens/simulate/bootstrap-mean/?dataset=penny_ages&amp;<span class="pk">embed=</span>true"
+        width="100%" height="700" style="border:0"&gt;&lt;/iframe&gt;</code>
+        <p>For a <strong>figure only</strong> &mdash; a finished, hoverable distribution with no controls &mdash; use <code>?plot=only</code>. It auto-runs the simulation at the given seed, so the figure is just there:</p>
+        <code class="url-example">https://learnlens.org/statlens/simulate/bootstrap-two-means/?dataset=diamonds_99_1ct&amp;<span class="pk">plot=</span>only&amp;seed=demo</code>
+
+        <!-- ── Activities ──────────────────────────────────────── -->
+        <p class="section-label">Guided activities</p>
+        <h2 id="activities">Adding a step-by-step activity to any tool</h2>
+        <p>Activities are small JSON files that add a guided instruction panel alongside a tool &mdash; used for in-class walkthroughs and homework explorations. Load one by appending <code>?activity=</code>:</p>
+        <code class="url-example">https://learnlens.org/statlens/simulate/bootstrap-mean/?<span class="pk">activity=</span>ch08-bootstrap-explore.json</code>
+        <ul>
+            <li><strong>Browse existing activities</strong> in the <a href="../activities/">activities folder</a>.</li>
+            <li><strong>Author your own</strong> &mdash; the <a href="../docs/activity-authoring-guide.md">Activity Authoring Guide</a> covers the JSON schema, step types (predict / do / explain, gated questions, free-response), and conventions.</li>
+        </ul>
+        <h3>Discovery vs. Presentation mode</h3>
+        <p>Activity pages support two modes: <strong>Discovery</strong> (default) reveals steps progressively with gated questions for student self-pacing; <strong>Presentation</strong> shows every step in a clean interface for projecting in class. Toggle with the settings gear, or add <code>?mode=present</code> to the link.</p>
+
+        <!-- ── Accessibility ───────────────────────────────────── -->
+        <p class="section-label">Accessibility</p>
+        <h2 id="accessibility">Built for every student</h2>
+        <p>Accessibility is designed in, not bolted on. Every tool is <strong>WCAG 2.1 AA</strong>: fully keyboard-operable (every drag has an arrow-key alternative), screen-reader labeled with live regions for dynamic results, colorblind-safe palettes that never rely on color alone, and 44px touch targets on mobile. It respects <code>prefers-reduced-motion</code>, and it's free &mdash; no accounts, no paywall, no tracking of students.</p>
+
+        <!-- ── Quick reference ─────────────────────────────────── -->
+        <p class="section-label">Quick reference</p>
+        <h2 id="quick">&ldquo;I want to&hellip;&rdquo;</h2>
+        <div class="table-scroll">
+        <table>
+            <thead><tr><th>I want to&hellip;</th><th>Do this</th></tr></thead>
+            <tbody>
+                <tr><td>Share a custom dataset with students</td><td>Build in the <a href="../data/builder/">Dataset Builder</a> &rarr; download JSON &rarr; share the file</td></tr>
+                <tr><td>Link students to a pre-loaded tool</td><td>Add <code>?dataset=id</code> or <code>?csv=url</code> to the link</td></tr>
+                <tr><td>Hide numbers for a visual exercise</td><td>Add <code>?labels=names</code> or <code>?readout=false</code></td></tr>
+                <tr><td>Make output reproducible for grading</td><td>Add <code>?seed=some_string</code></td></tr>
+                <tr><td>Embed in Canvas / Moodle</td><td>Add <code>?embed=true</code> and drop it in an <code>&lt;iframe&gt;</code></td></tr>
+                <tr><td>Show just a figure to read off</td><td>Add <code>?plot=only</code> (add <code>?cutlines=ci</code> for drag-to-estimate)</td></tr>
+                <tr><td>Create a guided walkthrough</td><td>Write an activity JSON, link with <code>?activity=filename.json</code></td></tr>
+                <tr><td>Project in class without gates</td><td>Add <code>?mode=present</code> or use the settings gear</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <!-- ── Explore more ────────────────────────────────────── -->
+        <p class="section-label">Explore more</p>
+        <div class="more-grid">
+            <a class="more-card" href="../tools/">
+                <h3>Tool catalog</h3>
+                <p>Every interactive tool on the site, organized by procedure.</p>
+            </a>
+            <a class="more-card" href="../data/builder/">
+                <h3>Dataset Builder <span class="status status-new">New</span></h3>
+                <p>Turn a CSV into a StatLens dataset with metadata. Export JSON.</p>
+            </a>
+            <a class="more-card" href="../data/">
+                <h3>Dataset index</h3>
+                <p>Browse 100+ bundled datasets by variable type.</p>
+            </a>
+            <a class="more-card" href="../activities/">
+                <h3>Activities</h3>
+                <p>Ready-made guided walkthroughs to drop onto any tool.</p>
+            </a>
+            <a class="more-card" href="../docs/url-api.md">
+                <h3>URL parameter reference</h3>
+                <p>The full, stable contract of every link parameter.</p>
+            </a>
+            <a class="more-card" href="../whats-new/">
+                <h3>What's new</h3>
+                <p>Recent tools, activities, and features.</p>
+            </a>
+        </div>
+    </main>
+
+    <script src="../js/page-number.js"></script>
+    <script src="../js/feedback.js"></script>
+</body>
+</html>
