@@ -120,17 +120,19 @@
             <div id="data-preview" hidden>
                 <output id="data-summary"></output>
             </div>
-
-            <!-- Variable selectors (shown when dataset has multiple numeric/categorical vars) -->
-            <div id="var-selectors" hidden>
-                <label for="group-var-select">Grouping variable:
-                    <select id="group-var-select"></select>
-                </label>
-                <label for="response-var-select">Response variable:
-                    <select id="response-var-select"></select>
-                </label>
-            </div>
         </section>
+
+        <!-- Variable selectors — outside the data panel so they stay visible after
+             the panel collapses and on the file/paste tabs (shown when the data has
+             multiple numeric/categorical vars to choose between). -->
+        <div id="var-selectors" class="var-selector-row" hidden>
+            <label for="group-var-select">Grouping variable:
+                <select id="group-var-select"></select>
+            </label>
+            <label for="response-var-select">Response variable:
+                <select id="response-var-select"></select>
+            </label>
+        </div>
 
         <section id="controls" aria-label="Test parameters">
             <h2 class="sr-only">Parameters</h2>

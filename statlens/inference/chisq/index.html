@@ -220,14 +220,6 @@
                     </select>
                 </label>
                 <p id="dataset-desc" class="hint"></p>
-                <div id="variable-selectors" hidden>
-                    <label for="row-var-select">Row variable:
-                        <select id="row-var-select"></select>
-                    </label>
-                    <label for="col-var-select">Column variable:
-                        <select id="col-var-select"></select>
-                    </label>
-                </div>
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
@@ -269,6 +261,17 @@
                 <output id="data-summary"></output>
             </div>
         </section>
+
+        <!-- Row + column selectors (outside the data panel so they stay visible
+             after the panel collapses and on the file/paste tabs). -->
+        <div id="variable-selectors" class="var-selector-row" hidden>
+            <label for="row-var-select">Row variable:
+                <select id="row-var-select"></select>
+            </label>
+            <label for="col-var-select">Column variable:
+                <select id="col-var-select"></select>
+            </label>
+        </div>
 
         <section id="controls" aria-label="Test parameters" hidden>
             <button type="button" id="compute-btn" class="btn-primary">Compute</button>
