@@ -426,6 +426,19 @@ function displayResults(r, lbl1, lbl2) {
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
 
+  // Explicit p̂₁/p̂₂ ↔ group mapping + success level, so the sign of the
+  // difference and CI is unambiguous (the student shouldn't have to infer it).
+  const x1 = Math.round(r.pHat1 * r.n1), x2 = Math.round(r.pHat2 * r.n2);
+  const named = lbl1 !== 'Group 1' || lbl2 !== 'Group 2';  // real group names present
+  const P1 = 'p̂₁', P2 = 'p̂₂';
+  const groupLegend = `
+    <div class="group-legend">
+      <span><strong>Group 1</strong>${named ? ` = ${escapeHTML(lbl1)}` : ''} &nbsp;(${P1} = ${x1}/${r.n1} = ${formatStat(r.pHat1, 0, 'proportion')})</span>
+      <span><strong>Group 2</strong>${named ? ` = ${escapeHTML(lbl2)}` : ''} &nbsp;(${P2} = ${x2}/${r.n2} = ${formatStat(r.pHat2, 0, 'proportion')})</span>
+      ${(fromRawData && successValue) ? `<span><strong>Success</strong> = &ldquo;${escapeHTML(successValue)}&rdquo;</span>` : ''}
+      <span class="legend-diff">Difference reported as <strong>${P1} − ${P2}</strong></span>
+    </div>`;
+
   resultsPanel.innerHTML = `
     <h3>Sample Summary</h3>
     <table class="results-table" aria-label="Sample summary">
@@ -438,6 +451,7 @@ function displayResults(r, lbl1, lbl2) {
         <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat1">${formatStat(r.pHat1, 0, 'proportion')}</td><td data-fx="phat2">${formatStat(r.pHat2, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
+    ${groupLegend}
 
     <div class="formula-display">
       <h3>Test Statistic</h3>

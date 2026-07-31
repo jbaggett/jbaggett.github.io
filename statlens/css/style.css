@@ -4832,3 +4832,16 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .var-selector-row { margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; align-items: center; }
 .var-selector-row label { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; margin: 0; }
 .var-selector-row select { width: auto; }
+
+/* ── Group ↔ p̂₁/p̂₂ + success legend (two-proportion tools) ──────────────────
+   Names which group is Group 1 (p̂₁) vs Group 2 (p̂₂) and the success level, so
+   the sign of the difference and CI is explicit rather than inferred. */
+.group-legend {
+  display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; align-items: baseline;
+  margin: 0.5rem 0 1rem; padding: 0.6rem 0.85rem;
+  background: #f2f8fb; border: 1px solid var(--ims-border, #e2e8ee);
+  border-left: 3px solid var(--ims-blue, #569BBD); border-radius: 6px;
+  font-size: 0.88rem; line-height: 1.45;
+}
+.group-legend strong { color: #114B5F; }
+.group-legend .legend-diff { color: #555; font-style: italic; }

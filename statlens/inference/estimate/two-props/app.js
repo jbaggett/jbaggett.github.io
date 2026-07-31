@@ -333,6 +333,17 @@ function renderResults(zStar) {
   // Dataset contexts already read as "the difference in callback rates between …".
   const paramLabel = currentContext?.parameter || 'the difference in population proportions';
 
+  // Explicit p̂₁/p̂₂ ↔ group mapping + success level, so the sign of the interval
+  // is unambiguous (student shouldn't have to infer which group is p̂₁).
+  const named = label1 !== 'Group 1' || label2 !== 'Group 2';
+  const groupLegend = `
+    <div class="group-legend">
+      <span><strong>Group 1</strong>${named ? ` = ${escapeHTML(label1)}` : ''} &nbsp;(p̂₁ = ${currentX1}/${currentN1} = ${pf(p1)})</span>
+      <span><strong>Group 2</strong>${named ? ` = ${escapeHTML(label2)}` : ''} &nbsp;(p̂₂ = ${currentX2}/${currentN2} = ${pf(p2)})</span>
+      ${successValue ? `<span><strong>Success</strong> = &ldquo;${escapeHTML(successValue)}&rdquo;</span>` : ''}
+      <span class="legend-diff">Interval reported for <strong>p̂₁ − p̂₂</strong></span>
+    </div>`;
+
   resultsPanel.innerHTML = `
     <h3>Group Summary</h3>
     <table class="results-table" aria-label="Group summary statistics">
@@ -344,6 +355,7 @@ function renderResults(zStar) {
         <tr><td>${escapeHTML(label2)}</td><td>${currentX2}</td><td data-fx="n2">${currentN2}</td><td data-fx="phat2">${pf(p2)}</td></tr>
       </tbody>
     </table>
+    ${groupLegend}
 
     <div class="formula-display formula-ci">
       <h3>${confPct}% Confidence Interval</h3>

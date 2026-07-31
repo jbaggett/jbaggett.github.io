@@ -374,6 +374,7 @@ function displayResults(r, successLabel) {
         <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat">${formatStat(r.pHat, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
+    ${successLabel && successLabel !== 'Successes' ? `<p class="group-legend"><span>Counting <strong>&ldquo;${escapeHTML(successLabel)}&rdquo;</strong> as the success &nbsp;(${'p̂'} = successes ÷ n)</span></p>` : ''}
 
     <div class="formula-display">
       <h3>Test Statistic</h3>
