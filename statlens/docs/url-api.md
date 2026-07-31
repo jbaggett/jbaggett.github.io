@@ -524,9 +524,11 @@ These are parsed by `url-params.js` and available in `StatLensParams`. Some are 
 |-----------|------|-------------|------------|
 | `stat` | string | Bootstrap statistic selector: `mean`, `median`, `sd`, `q1`, `q3` (bootstrap-mean). Also planned for inference pages: `prop`, `diff_mean`, `diff_prop`, `chisq`, `F`, `slope`. | **Active** (bootstrap-mean); Planned (others) |
 | `direction` | string | Tail direction for simulation pages: `less`, `greater`, `two-sided`. | sim-app.js, one-sample-sim.js |
-| `alt` | string | Alternative hypothesis direction for inference pages: `less`, `greater`, `two-sided`. Only these three values are accepted; all others are rejected. | Planned for inference cross-links |
+| `alt` | string | Alternative hypothesis direction for inference pages: `less`, `greater`, `two-sided`. Parsed/validated defensively but **intentionally not consumed** — see note. | **Not implemented (by design)** |
 | `x_label` | string | X-axis label (regression). | Planned |
 | `y_label` | string | Y-axis label (regression). | Planned |
+
+> **Note on `alt` (by design, 2026-07-31):** StatLens deliberately does **not** let a URL force the alternative-hypothesis direction on the analytic inference tools. Choosing the direction of the alternative is a skill students are meant to exercise; pre-setting it via an embed would train them to skip that decision. The direction stays student-selectable in the tool. (The parameter is still parsed/validated so links carrying it don't error, but it has no effect.) If a prompt's stated alternative clashes with a dataset's default, fix the dataset's `inferenceContext` or the prompt wording rather than overriding via URL.
 
 ---
 
