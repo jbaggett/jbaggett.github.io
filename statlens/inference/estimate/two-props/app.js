@@ -341,7 +341,7 @@ function renderResults(zStar) {
       <span><strong>Group 1</strong>${named ? ` = ${escapeHTML(label1)}` : ''} &nbsp;(p̂₁ = ${currentX1}/${currentN1} = ${pf(p1)})</span>
       <span><strong>Group 2</strong>${named ? ` = ${escapeHTML(label2)}` : ''} &nbsp;(p̂₂ = ${currentX2}/${currentN2} = ${pf(p2)})</span>
       ${successValue ? `<span><strong>Success</strong> = &ldquo;${escapeHTML(successValue)}&rdquo;</span>` : ''}
-      <span class="legend-diff">Interval reported for <strong>p̂₁ − p̂₂</strong></span>
+      <span class="legend-diff">Interval reported for <strong>p₁ − p₂</strong></span>
     </div>`;
 
   resultsPanel.innerHTML = `

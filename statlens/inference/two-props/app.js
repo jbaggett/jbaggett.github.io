@@ -267,7 +267,7 @@ function renderGroupLegend() {
   groupLegendEl.innerHTML = `
     <span><strong>Group 1</strong> = ${escapeHTML(label1)} &nbsp;(p̂₁ = ${currentX1}/${currentN1} = ${p1})</span>
     <span><strong>Group 2</strong> = ${escapeHTML(label2)} &nbsp;(p̂₂ = ${currentX2}/${currentN2} = ${p2})</span>
-    <span class="legend-diff">Hypotheses &amp; CI are about <strong>p̂₁ − p̂₂</strong></span>`;
+    <span class="legend-diff">Hypotheses &amp; CI are about <strong>p₁ − p₂</strong></span>`;
   groupLegendEl.hidden = false;
 }
 
