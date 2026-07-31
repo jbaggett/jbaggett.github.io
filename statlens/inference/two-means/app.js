@@ -79,8 +79,20 @@ const dataPanel = initDataPanel({
 
 // Listen for parameter changes
 const altSelect = initHypToggle('input-alt', runAnalysis);
-const confSelect = /** @type {HTMLSelectElement} */ (document.getElementById('conf-level'));
-confSelect?.addEventListener('change', runAnalysis);
+// Confidence level is chosen from a dropdown inlined into the CI heading (built
+// fresh on each render). Keep the chosen level in state and listen via
+// delegation on the (persistent) results container so the handler survives the
+// innerHTML rebuild; restore focus to the recreated select for keyboard users.
+let confLevelState = 0.95;
+let confFocusPending = false;
+resultDiv?.addEventListener('change', (e) => {
+  const t = /** @type {HTMLElement} */ (e.target);
+  if (t && t.id === 'conf-level') {
+    confLevelState = Number(/** @type {HTMLSelectElement} */ (t).value);
+    confFocusPending = true;
+    runAnalysis();
+  }
+});
 
 const inputMu0 = /** @type {HTMLInputElement} */ (document.getElementById('input-mu0'));
 const nullDisplay = document.getElementById('null-display');
@@ -364,7 +376,19 @@ function getAlternative() {
 
 /** Get current confidence level. */
 function getConfLevel() {
-  return parseFloat(confSelect?.value ?? '0.95');
+  return confLevelState;
+}
+
+/** Build the inline confidence-level dropdown that lives in the CI heading. */
+function confSelectHTML(confLevel) {
+  const levels = [0.90, 0.95, 0.99];
+  if (!levels.some(l => Math.abs(l - confLevel) < 1e-9)) levels.push(confLevel);
+  levels.sort((a, b) => a - b);
+  const opts = levels.map(l => {
+    const pct = +(l * 100).toFixed(1);
+    return `<option value="${l}"${Math.abs(l - confLevel) < 1e-9 ? ' selected' : ''}>${pct}%</option>`;
+  }).join('');
+  return `<select id="conf-level" class="ci-conf-select" aria-label="Confidence level">${opts}</select>`;
 }
 
 /** Run the two-sample t-test and update chart + results. */
@@ -613,7 +637,7 @@ function renderResults(r) {
     </div>
 
     <div class="formula-display formula-ci">
-      <h3>${confPct}% CI for ${tex('\\mu_1 - \\mu_2')}</h3>
+      <h3>${confSelectHTML(r.confLevel)} CI for ${tex('\\mu_1 - \\mu_2')}</h3>
       ${ciFormula}
     </div>
 
@@ -627,6 +651,12 @@ function renderResults(r) {
 
   // C3: link formula values (x̄₁, x̄₂, s₁, s₂, n₁, n₂, δ₀) to their sources in the summary / interpretation.
   linkFormula(document.querySelector('main') || resultDiv);
+
+  // Keyboard users stay on the inline confidence dropdown after it rebuilds.
+  if (confFocusPending) {
+    /** @type {HTMLElement|null} */ (resultDiv.querySelector('#conf-level'))?.focus();
+    confFocusPending = false;
+  }
 }
 
 /**

@@ -31,7 +31,6 @@ const inputN2 = /** @type {HTMLInputElement} */ (document.getElementById('input-
 const inputAlt = initHypToggle('input-alternative', () => {
   if (resultsPanel.querySelector('.results-table')) compute();
 });
-const inputConfLevel = /** @type {HTMLInputElement} */ (document.getElementById('input-conf-level'));
 const computeBtn = /** @type {HTMLButtonElement} */ (document.getElementById('compute-btn'));
 const conditionsCheckpoint = /** @type {HTMLElement} */ (document.getElementById('conditions-checkpoint'));
 const resultsPanel = /** @type {HTMLElement} */ (document.getElementById('results-panel'));
@@ -365,9 +364,31 @@ for (const el of [inputX1, inputN1, inputX2, inputN2, inputLabel1, inputLabel2])
 // change (blur / Enter / spinner); the null value, alternative, success outcome, and
 // summary fields already recompute on change/typing.
 computeBtn?.addEventListener('click', compute);
-inputConfLevel.addEventListener('change', () => {
-  if (resultsPanel.querySelector('.results-table')) compute();
+
+// Confidence level is chosen from a dropdown inlined into the CI heading (rebuilt
+// on each compute). Keep it in state and listen via delegation on the persistent
+// results container so the handler survives the rebuild; restore keyboard focus.
+let confLevelState = 0.95;
+let confFocusPending = false;
+resultsPanel.addEventListener('change', (e) => {
+  const t = /** @type {HTMLElement} */ (e.target);
+  if (t && t.id === 'conf-level') {
+    confLevelState = Number(/** @type {HTMLSelectElement} */ (t).value);
+    if (resultsPanel.querySelector('.results-table')) { confFocusPending = true; compute(); }
+  }
 });
+
+/** Build the inline confidence-level dropdown that lives in the CI heading. */
+function confSelectHTML(confLevel) {
+  const levels = [0.90, 0.95, 0.99];
+  if (!levels.some(l => Math.abs(l - confLevel) < 1e-9)) levels.push(confLevel);
+  levels.sort((a, b) => a - b);
+  const opts = levels.map(l => {
+    const pct = +(l * 100).toFixed(1);
+    return `<option value="${l}"${Math.abs(l - confLevel) < 1e-9 ? ' selected' : ''}>${pct}%</option>`;
+  }).join('');
+  return `<select id="conf-level" class="ci-conf-select" aria-label="Confidence level">${opts}</select>`;
+}
 
 // Note: alternative change handler is wired via initHypToggle callback above
 
@@ -383,7 +404,7 @@ function compute() {
   }
 
   const alternative = /** @type {'less'|'greater'|'two-sided'} */ (inputAlt.getValue());
-  const confLevel = Number(inputConfLevel.value);
+  const confLevel = confLevelState;
 
   if (!Number.isFinite(confLevel) || confLevel <= 0 || confLevel >= 1) {
     announce('Confidence level must be between 0 and 1 (exclusive).');
@@ -503,7 +524,7 @@ function displayResults(r, lbl1, lbl2) {
     </div>
 
     <div class="formula-display formula-ci">
-      <h3>${confPct}% CI for ${tex('p_1 - p_2')}</h3>
+      <h3>${confSelectHTML(r.confLevel)} CI for ${tex('p_1 - p_2')}</h3>
       ${ciFormula}
     </div>
 
@@ -534,6 +555,11 @@ function displayResults(r, lbl1, lbl2) {
   // C3: link formula values (p̂₁, p̂₂, n₁, n₂, pooled p̂) to their sources in the summary.
   linkFormula(document.querySelector('main') || resultsPanel);
 
+  // Keyboard users stay on the inline confidence dropdown after it rebuilds.
+  if (confFocusPending) {
+    /** @type {HTMLElement|null} */ (resultsPanel.querySelector('#conf-level'))?.focus();
+    confFocusPending = false;
+  }
 }
 
 // ── Chart ───────────────────────────────────────────────────────────

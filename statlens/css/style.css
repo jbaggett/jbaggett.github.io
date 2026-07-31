@@ -3567,6 +3567,24 @@ body[data-mode="discover"] .present-only { display: none !important; }
   color: var(--ims-gray-text);
   margin: 0 0 0.35rem;
 }
+/* Don't let the uppercase heading transform mangle the math — it turns the
+   lowercase population symbols μ → Μ (looks like M) and p → P. */
+.formula-display h3 .katex { text-transform: none; letter-spacing: normal; }
+
+/* Confidence-level dropdown inlined into the "95% CI for …" heading, so the
+   percent itself is the control (no separate row above the results). */
+.ci-conf-select {
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+  width: auto;
+  min-height: 0;
+  padding: 0.05rem 1.3rem 0.05rem 0.35rem;
+  margin-right: 0.15rem;
+  vertical-align: baseline;
+  cursor: pointer;
+}
 
 /* REQ-037: ANOVA-for-regression panel (collapsible <details>). */
 .anova-table > summary {
