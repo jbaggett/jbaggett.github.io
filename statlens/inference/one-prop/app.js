@@ -10,7 +10,7 @@ import { onePropZ } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
-import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 import { parseCSV } from '../../js/csv-parser.js';
 import { linkFormula } from '../../js/formula-link.js';
 
@@ -33,7 +33,6 @@ const inputAlt = initHypToggle('input-alternative', () => {
 const inputConfLevel = /** @type {HTMLInputElement} */ (document.getElementById('input-conf-level'));
 const computeBtn = /** @type {HTMLButtonElement} */ (document.getElementById('compute-btn'));
 const conditionsCheckpoint = /** @type {HTMLElement} */ (document.getElementById('conditions-checkpoint'));
-const resultBanner = /** @type {HTMLElement} */ (document.getElementById('result-summary'));
 const resultsPanel = /** @type {HTMLElement} */ (document.getElementById('results-panel'));
 const chartContainer = /** @type {HTMLElement} */ (document.getElementById('chart-container'));
 const dataPreview = document.getElementById('data-preview');
@@ -143,7 +142,6 @@ const dataPanel = initDataPanel({
     if (variableSelector) variableSelector.hidden = true;
     chartContainer.innerHTML = '';
     resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
-    resultBanner.innerHTML = '';
     announce('Data cleared.');
   },
 });
@@ -291,11 +289,10 @@ function compute() {
       params: { p: p0, direction: alternative },
     });
     const bootLink = buildSimLink('simulate/bootstrap-prop/', linkBase);
-    conditionsCheckpoint.innerHTML = `
-      <p><strong>Before interpreting:</strong> Have you checked the conditions for the one-proportion z-test?
-      Verify: np\u2080 = ${formatStat(np0, 0, 'stat')} and n(1\u2212p\u2080) = ${formatStat(nq0, 0, 'stat')} (both should be \u2265 10).</p>
-      <p>Alternatives: <a href="${randLink}">Randomization Test</a> | <a href="${bootLink}">Bootstrap CI</a> (no conditions required).</p>`;
-    conditionsCheckpoint.hidden = false;
+    renderConditionsCheckpoint(conditionsCheckpoint, {
+      alts: [{ label: 'Randomization Test', href: randLink }, { label: 'Bootstrap CI', href: bootLink }],
+      detailsHTML: `<p>For the one-proportion z-test, verify np₀ = ${formatStat(np0, 0, 'stat')} and n(1−p₀) = ${formatStat(nq0, 0, 'stat')} (both should be ≥ 10).</p>`,
+    });
   }
 
   // ── Run test ──
@@ -409,8 +406,6 @@ function displayResults(r, successLabel) {
     })()}
   `;
 
-  resultBanner.innerHTML =
-    `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
 
   linkFormula(document.querySelector('main') || resultsPanel);
 }

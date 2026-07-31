@@ -10,7 +10,7 @@ import { twoPropZ } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
-import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 import { linkFormula } from '../../js/formula-link.js';
 
 import { tex } from '../../js/tex.js';
@@ -34,7 +34,6 @@ const inputAlt = initHypToggle('input-alternative', () => {
 const inputConfLevel = /** @type {HTMLInputElement} */ (document.getElementById('input-conf-level'));
 const computeBtn = /** @type {HTMLButtonElement} */ (document.getElementById('compute-btn'));
 const conditionsCheckpoint = /** @type {HTMLElement} */ (document.getElementById('conditions-checkpoint'));
-const resultBanner = /** @type {HTMLElement} */ (document.getElementById('result-summary'));
 const resultsPanel = /** @type {HTMLElement} */ (document.getElementById('results-panel'));
 const chartContainer = /** @type {HTMLElement} */ (document.getElementById('chart-container'));
 const dataPreview = document.getElementById('data-preview');
@@ -151,7 +150,6 @@ const dataPanel = initDataPanel({
     if (groupLegendEl) { groupLegendEl.hidden = true; groupLegendEl.innerHTML = ''; }
     chartContainer.innerHTML = '';
     resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
-    resultBanner.innerHTML = '';
     announce('Data cleared.');
   },
 });
@@ -375,11 +373,10 @@ function compute() {
       `n\u2082p\u0302\u2082 = ${formatStat(currentN2 * pHat2, 0, 'stat')}`,
       `n\u2082(1\u2212p\u0302\u2082) = ${formatStat(currentN2 * (1 - pHat2), 0, 'stat')}`,
     ].join(', ');
-    conditionsCheckpoint.innerHTML = `
-      <p><strong>Before interpreting:</strong> Have you checked the conditions for the two-proportion z-test?
-      Verify each group has \u2265 5 successes and \u2265 5 failures: ${counts}.</p>
-      <p>Alternative: <a href="${randLink}">Randomization Test</a> (no conditions required).</p>`;
-    conditionsCheckpoint.hidden = false;
+    renderConditionsCheckpoint(conditionsCheckpoint, {
+      altLabel: 'Randomization Test', altHref: randLink,
+      detailsHTML: `<p>For the two-proportion z-test, each group needs at least 5 successes and 5 failures: ${counts}.</p>`,
+    });
   }
 
   // ── Run test ──
@@ -506,8 +503,6 @@ function displayResults(r, lbl1, lbl2) {
   // C3: link formula values (p̂₁, p̂₂, n₁, n₂, pooled p̂) to their sources in the summary.
   linkFormula(document.querySelector('main') || resultsPanel);
 
-  resultBanner.innerHTML =
-    `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
 }
 
 // ── Chart ───────────────────────────────────────────────────────────

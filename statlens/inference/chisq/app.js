@@ -11,7 +11,7 @@ import { chisqTest } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
-import { announce, initTabs, initDataPanel, initKeyboardShortcuts, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initKeyboardShortcuts, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 
 import { tex } from '../../js/tex.js';
 
@@ -379,11 +379,10 @@ function showResults(observed, rowLabels, colLabels) {
     const condNote = lowExpected
       ? ' Note: one or more expected counts are below 5.'
       : '';
-    conditionsCheckpoint.innerHTML = `
-      <p><strong>Before interpreting:</strong> Have you checked the conditions for the chi-square test?
-      Verify that all expected counts are \u2265 5.${condNote}</p>
-      <p>Alternative: <a href="${randLink}">Simulation-Based Chi-Square Test</a> (no conditions required).</p>`;
-    conditionsCheckpoint.hidden = false;
+    renderConditionsCheckpoint(conditionsCheckpoint, {
+      altLabel: 'Simulation-Based Chi-Square Test', altHref: randLink,
+      detailsHTML: `<p>For the chi-square test, all expected counts should be at least 5.${condNote}</p>`,
+    });
   }
 
   // Render formula display

@@ -15,7 +15,7 @@ import * as jstat from 'jstat';
 import { setJStat, pdfNormal, normalCDF, normalInv } from '../../../js/distributions.js';
 import { computeDomain } from '../../../js/curve.js';
 import { mountCriticalValueFigure } from '../../../js/critical-value-figure.js';
-import { initTabs, initDataPanel, announce, initHelp, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../../js/page-utils.js';
+import { initTabs, initDataPanel, announce, initHelp, getActiveTabId, getTabHintText, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../../js/page-utils.js';
 import { formatStat } from '../../../js/stats.js';
 import { findContext } from '../../../js/conclusions.js';
 import { linkFormula } from '../../../js/formula-link.js';
@@ -341,12 +341,10 @@ function showConditionsCheckpoint() {
     ? buildSimLink('simulate/bootstrap-prop/', { dataset: dsId })
     : buildSimLink('simulate/bootstrap-prop/');
 
-  conditionsCheckpoint.innerHTML = `
-    <p><strong>Before interpreting:</strong> the normal approximation needs at least 10 successes and
-    10 failures. Here there are <strong>${successes}</strong> successes and <strong>${failures}</strong>
-    failures — ${ok ? 'both are at least 10.' : '<strong>not both are at least 10</strong>, so this interval may be unreliable.'}</p>
-    <p>Simulation alternative: <a href="${bootLink}">Bootstrap CI</a> (no normal approximation required).</p>`;
-  conditionsCheckpoint.hidden = false;
+  renderConditionsCheckpoint(conditionsCheckpoint, {
+    altLabel: 'Bootstrap CI', altHref: bootLink,
+    detailsHTML: `<p>The normal approximation needs at least 10 successes and 10 failures. Here there are <strong>${successes}</strong> successes and <strong>${failures}</strong> failures — ${ok ? 'both are at least 10.' : '<strong>not both are at least 10</strong>, so this interval may be unreliable.'}</p>`,
+  });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────

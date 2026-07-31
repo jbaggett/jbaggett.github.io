@@ -2020,3 +2020,43 @@ export function setPageTitle(pageLabel, datasetName, opts) {
   title += ' | StatLens';
   document.title = title;
 }
+
+/**
+ * Render a standardized, collapsed "Check Conditions" checkpoint: a compact
+ * toggle button plus the assumption-free alternative link, with the actual
+ * conditions (rule text and/or a diagnostic plot) tucked inside a collapsed
+ * panel. Unifies the conditions UI across every inference tool and keeps
+ * vertical space at a premium — the details only appear on demand.
+ *
+ * @param {HTMLElement} el - the #conditions-checkpoint container
+ * @param {object} o
+ * @param {{label:string,href:string}[]} [o.alts] - assumption-free alternative link(s); rendered as "Alternative(s): a | b (no conditions required)."
+ * @param {string} [o.altLabel] - convenience for a single alternative (with altHref)
+ * @param {string} [o.altHref] - href for the single alternative
+ * @param {string} o.detailsHTML - HTML shown inside the collapsed panel (the rule text and/or a chart mount point)
+ * @param {(panel: HTMLElement) => void} [o.onFirstExpand] - called once, the first time the panel opens (for lazy chart drawing)
+ */
+export function renderConditionsCheckpoint(el, o) {
+  if (!el) return;
+  const alts = o.alts || (o.altHref ? [{ label: o.altLabel || 'alternative', href: o.altHref }] : []);
+  const altLinks = alts.map(a => `<a href="${a.href}">${a.label}</a>`).join(' | ');
+  const altPart = altLinks
+    ? `&nbsp;|&nbsp; ${alts.length > 1 ? 'Alternatives' : 'Alternative'}: ${altLinks} (no conditions required).`
+    : '';
+  el.innerHTML = `
+    <p><button type="button" class="conditions-toggle" aria-expanded="false" aria-controls="conditions-panel">Check Conditions</button>${altPart}</p>
+    <div id="conditions-panel" class="conditions-panel" hidden>${o.detailsHTML}</div>`;
+  el.hidden = false;
+
+  const toggle = el.querySelector('.conditions-toggle');
+  const panel = /** @type {HTMLElement|null} */ (el.querySelector('#conditions-panel'));
+  let firstOpen = true;
+  if (toggle && panel) {
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      panel.hidden = expanded;
+      if (!expanded && firstOpen) { firstOpen = false; o.onFirstExpand?.(panel); }
+    });
+  }
+}
