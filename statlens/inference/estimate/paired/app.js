@@ -316,9 +316,6 @@ function renderResults(tStar) {
       <p class="formula-detail">${tex(`t^{\\!*} = ${P}{${tStar.toFixed(3)}}`)} &nbsp;·&nbsp; ${tex(`\\text{margin of error} = ${P}{${formatStat(margin, d)}}`)}</p>
     </div>
 
-    <div class="ci-result-headline" aria-live="polite">
-      <span class="ci-bounds">(${formatStat(lower, d)}, ${formatStat(upper, d)})</span>
-    </div>
 
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel} is

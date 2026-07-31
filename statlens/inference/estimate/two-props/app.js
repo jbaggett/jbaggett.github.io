@@ -364,9 +364,6 @@ function renderResults(zStar) {
       <p class="formula-detail">${tex(`z^{\\!*} = ${P}{${zStar.toFixed(3)}}`)} &nbsp;·&nbsp; ${tex(`SE = ${P}{${pf(se)}}`)}</p>
     </div>
 
-    <div class="ci-result-headline" aria-live="polite">
-      <span class="ci-bounds">(${pf(lower)}, ${pf(upper)})</span>
-    </div>
 
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel}
