@@ -166,8 +166,12 @@ function showSuccessSelector(values, sourceName) {
     successSelector.hidden = false;
 
     // Prefer the dataset's defined success label; fall back to the first category.
-    const selectedSuccess = (currentContext?.successLabel && categories.includes(currentContext.successLabel))
+    let selectedSuccess = (currentContext?.successLabel && categories.includes(currentContext.successLabel))
       ? currentContext.successLabel : categories[0];
+    // ?success= URL param pins the success level (highest priority) so a graded
+    // embed stays fixed regardless of context/default changes.
+    const urlSuccess = new URLSearchParams(location.search).get('success');
+    if (urlSuccess && categories.includes(urlSuccess)) selectedSuccess = urlSuccess;
     successOutcome.value = selectedSuccess;
     countAndLoad(values, selectedSuccess, sourceName);
     compute(); // auto-compute on load — each dataset ships with "success" defined

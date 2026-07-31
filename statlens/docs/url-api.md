@@ -53,7 +53,7 @@ These parameters are parsed and available in `StatLensParams` but are currently 
 | `y` | string | _(none)_ | Y variable for bivariate analysis. | `?y=price` |
 | `group` | string | _(none)_ | Grouping variable column name (two-group tests, ANOVA). | `?group=treatment` |
 | `response` | string | _(none)_ | Response variable column name (ANOVA, grouped analysis). | `?response=score` |
-| `success` | string | _(none)_ | Label for the "success" category (proportion tests). | `?success=yes` |
+| `success` | string | _(none)_ | Label for the "success" category (proportion tools). Highest priority — overrides the dataset's `inferenceContext` success label and the first-level default. Honored by the simulation proportion pages **and** the analytic `inference/one-prop` + `inference/two-props` pages, so a graded embed can pin the success level (e.g. `?dataset=malaria&success=Infected`) and stay fixed regardless of later context/default changes. An unrecognized level is ignored (falls back to the normal default). | `?success=yes` |
 | `failure` | string | _(none)_ | Label for the "failure" category (proportion tests). | `?failure=no` |
 | `group1` | string | _(none)_ | Label for group 1 (two-group comparisons). | `?group1=control` |
 | `group2` | string | _(none)_ | Label for group 2 (two-group comparisons). | `?group2=treatment` |
