@@ -167,6 +167,12 @@ function setupVariableSelectors(varNames, sourceName) {
 
   rowVar = varNames[0];
   colVar = varNames.length > 1 ? varNames[1] : varNames[0];
+  // Honor an inferenceContext's intended pairing when present (e.g. a dataset
+  // with 3-4 categorical columns needs to know which two to cross-tabulate).
+  if (currentContext) {
+    if (currentContext.rowVar && varNames.includes(currentContext.rowVar)) rowVar = currentContext.rowVar;
+    if (currentContext.colVar && varNames.includes(currentContext.colVar)) colVar = currentContext.colVar;
+  }
   rowVarSelect.value = rowVar;
   colVarSelect.value = colVar;
   variableSelectors.hidden = false;
@@ -216,6 +222,10 @@ function buildFromRawData(sourceName) {
   }
   controlsSection.hidden = false;
   announce(`Contingency table: ${rowCats.length} × ${colCats.length}, n = ${rawRows.length}.`);
+  // Auto-run the test so a loaded dataset / direct ?dataset= link shows the full
+  // result immediately (matching the other analytic tools), and so live variable
+  // changes update the result — not just the contingency table.
+  showResults(currentObserved, currentRowLabels, currentColLabels);
 }
 
 // ── Editable table (Enter Table tab) ────────────────────────────────
@@ -314,6 +324,7 @@ loadTableBtn.addEventListener('click', () => {
   dataPanel.triggerPostLoad();
   controlsSection.hidden = false;
   announce(`Table loaded: ${data.rowLabels.length} × ${data.colLabels.length}, n = ${total}.`);
+  showResults(currentObserved, currentRowLabels, currentColLabels);
 });
 
 // Allow Enter in count inputs to trigger load
