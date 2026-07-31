@@ -366,8 +366,8 @@ function renderResults(tStar) {
         <tr><th scope="col">Group</th><th scope="col">${tex('n')}</th><th scope="col">${tex('\\bar{x}')}</th><th scope="col">${tex('s')}</th></tr>
       </thead>
       <tbody>
-        <tr><td>${escapeHTML(group1Name)}</td><td data-fx="n1">${r.n1}</td><td data-fx="xbar1">${formatStat(r.xbar1, d)}</td><td data-fx="s1">${formatStat(r.s1, d)}</td></tr>
-        <tr><td>${escapeHTML(group2Name)}</td><td data-fx="n2">${r.n2}</td><td data-fx="xbar2">${formatStat(r.xbar2, d)}</td><td data-fx="s2">${formatStat(r.s2, d)}</td></tr>
+        <tr><td>1 &middot; ${escapeHTML(group1Name)}</td><td data-fx="n1">${r.n1}</td><td data-fx="xbar1">${formatStat(r.xbar1, d)}</td><td data-fx="s1">${formatStat(r.s1, d)}</td></tr>
+        <tr><td>2 &middot; ${escapeHTML(group2Name)}</td><td data-fx="n2">${r.n2}</td><td data-fx="xbar2">${formatStat(r.xbar2, d)}</td><td data-fx="s2">${formatStat(r.s2, d)}</td></tr>
       </tbody>
     </table>
 

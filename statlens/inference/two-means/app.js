@@ -37,6 +37,7 @@ const groupVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById
 const responseVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('response-var-select'));
 const groupOrderEl = document.getElementById('group-order');
 const swapGroupsBtn = document.getElementById('swap-groups');
+const groupLegendEl = document.getElementById('group-legend');
 
 // ── State ───────────────────────────────────────────────────────────
 /** @type {number[]} */
@@ -347,6 +348,7 @@ function clearData() {
   if (dataPreview) dataPreview.hidden = true;
   if (varSelectorsDiv) varSelectorsDiv.hidden = true;
   if (groupOrderEl) groupOrderEl.hidden = true;
+  if (groupLegendEl) { groupLegendEl.hidden = true; groupLegendEl.innerHTML = ''; }
   if (chartContainer) chartContainer.innerHTML = '';
   if (resultDiv) {
     resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;
@@ -495,9 +497,33 @@ function renderChart(r) {
  * Render the results panel.
  * @param {import('../../js/inference.js').TwoMeanResult} r
  */
+/**
+ * Render the "which group is x̄₁ vs x̄₂" legend above the hypotheses, so students
+ * can decide the alternative direction (and read the sign of the difference)
+ * without scrolling to the results. Shown only when the groups have real names;
+ * in summary mode with default labels the input fields already say Group 1 / 2.
+ * @param {{xbar1:number,n1:number,xbar2:number,n2:number}} r
+ */
+function renderGroupLegend(r) {
+  if (!groupLegendEl) return;
+  const named = group1Name !== 'Group 1' || group2Name !== 'Group 2';
+  if (!named || !isFinite(r.xbar1) || !isFinite(r.xbar2)) {
+    groupLegendEl.hidden = true;
+    groupLegendEl.innerHTML = '';
+    return;
+  }
+  const d = dataPrecision;
+  groupLegendEl.innerHTML = `
+    <span><strong>Group 1</strong> = ${esc(group1Name)} &nbsp;(x̄₁ = ${formatStat(r.xbar1, d)}, n₁ = ${r.n1})</span>
+    <span><strong>Group 2</strong> = ${esc(group2Name)} &nbsp;(x̄₂ = ${formatStat(r.xbar2, d)}, n₂ = ${r.n2})</span>
+    <span class="legend-diff">Hypotheses &amp; CI are about <strong>μ₁ − μ₂</strong></span>`;
+  groupLegendEl.hidden = false;
+}
+
 function renderResults(r) {
   if (!resultDiv) return;
   setPageTitle(baseTitle, dataPanel.currentSourceName, { n: group1.length + group2.length });
+  renderGroupLegend(r);
 
   const d = dataPrecision;
   const altSymbol = r.alternative === 'less' ? '&lt;' :
@@ -565,13 +591,13 @@ function renderResults(r) {
       </thead>
       <tbody>
         <tr>
-          <td>${esc(group1Name)}</td>
+          <td>1 &middot; ${esc(group1Name)}</td>
           <td data-fx="n1">${r.n1}</td>
           <td data-fx="xbar1">${formatStat(r.xbar1, d)}</td>
           <td data-fx="s1">${formatStat(r.s1, d)}</td>
         </tr>
         <tr>
-          <td>${esc(group2Name)}</td>
+          <td>2 &middot; ${esc(group2Name)}</td>
           <td data-fx="n2">${r.n2}</td>
           <td data-fx="xbar2">${formatStat(r.xbar2, d)}</td>
           <td data-fx="s2">${formatStat(r.s2, d)}</td>

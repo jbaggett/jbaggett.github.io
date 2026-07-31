@@ -112,30 +112,30 @@
             </div>
         </section>
 
-        <!-- Group + outcome selectors (outside the data panel so they stay
-             visible after the panel collapses and on the file/paste tabs). -->
-        <div id="variable-selectors" class="var-selector-row" hidden>
-            <label for="group-var-select">Grouping variable:
-                <select id="group-var-select"></select>
-            </label>
-            <label for="outcome-var-select">Outcome variable:
-                <select id="outcome-var-select"></select>
-            </label>
-        </div>
-
-        <section id="controls" aria-label="Test parameters">
-            <h2 class="sr-only">Parameters</h2>
+        <!-- Group + outcome selectors + "count as success" on one row (outside
+             the data panel so they stay visible after the panel collapses). -->
+        <div class="selector-bar">
+            <div id="variable-selectors" class="var-selector-row" hidden>
+                <label for="group-var-select">Grouping variable:
+                    <select id="group-var-select"></select>
+                </label>
+                <label for="outcome-var-select">Outcome variable:
+                    <select id="outcome-var-select"></select>
+                </label>
+            </div>
             <div id="success-selector" class="success-selector-row" hidden>
                 <label for="success-outcome">Count as success:
                     <select id="success-outcome"></select>
                 </label>
             </div>
+        </div>
+
+        <section id="controls" aria-label="Test parameters">
+            <h2 class="sr-only">Parameters</h2>
             <!-- Which group is p̂₁ vs p̂₂ — shown here (by the hypotheses) so students
                  can decide the alternative direction without scrolling to results. -->
             <div id="group-legend" class="group-legend" hidden></div>
-            <div id="group-order" class="group-order" hidden>
-                <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
-            </div>
+            <div class="hypothesis-bar">
             <div class="hypothesis-display">
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H<sub>0</sub>:</span>
@@ -158,6 +158,10 @@
                     <span class="standard-only">0</span>
                     <span id="null-display" class="null-value-mirror expert-only">0</span>
                 </div>
+            </div>
+            <div id="group-order" class="group-order" hidden>
+                <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
+            </div>
             </div>
         </section>
 

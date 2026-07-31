@@ -126,29 +126,30 @@
             </div>
         </section>
 
-        <!-- Group + outcome selectors (outside the data panel so they stay
-             visible after the panel collapses and on the file/paste tabs). -->
-        <div id="variable-selectors" class="var-selector-row" hidden>
-            <label for="group-var-select">Grouping variable:
-                <select id="group-var-select"></select>
-            </label>
-            <label for="outcome-var-select">Outcome variable:
-                <select id="outcome-var-select"></select>
-            </label>
-        </div>
-
-        <div id="group-order" class="group-order" hidden>
-            <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
-        </div>
-
-        <!-- Parameters -->
-        <section id="controls" aria-label="Confidence level" hidden>
-            <h2 class="sr-only">Confidence level</h2>
+        <!-- Group + outcome selectors + "count as success" + group-swap all on
+             one row (outside the data panel so they survive its collapse). -->
+        <div class="selector-bar">
+            <div id="variable-selectors" class="var-selector-row" hidden>
+                <label for="group-var-select">Grouping variable:
+                    <select id="group-var-select"></select>
+                </label>
+                <label for="outcome-var-select">Outcome variable:
+                    <select id="outcome-var-select"></select>
+                </label>
+            </div>
             <div id="success-selector" class="success-selector-row" hidden>
                 <label for="success-outcome">Count as success:
                     <select id="success-outcome"></select>
                 </label>
             </div>
+            <div id="group-order" class="group-order" hidden>
+                <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
+            </div>
+        </div>
+
+        <!-- Parameters -->
+        <section id="controls" aria-label="Confidence level" hidden>
+            <h2 class="sr-only">Confidence level</h2>
             <div class="ci-primary">
                 <label for="input-conf">Confidence level
                     <span class="conf-input-wrap"><input type="number" id="input-conf" value="95"

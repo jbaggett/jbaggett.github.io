@@ -136,19 +136,20 @@
             </div>
         </section>
 
-        <!-- Variable selectors — outside the data panel so they stay visible after
-             the panel collapses and on the file/paste tabs. -->
-        <div id="var-selectors" class="var-selector-row" hidden>
-            <label for="group-var-select">Grouping variable:
-                <select id="group-var-select"></select>
-            </label>
-            <label for="response-var-select">Response variable:
-                <select id="response-var-select"></select>
-            </label>
-        </div>
-
-        <div id="group-order" class="group-order" hidden>
-            <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
+        <!-- Variable selectors + group-swap on one row (outside the data panel so
+             they stay visible after the panel collapses and on the file/paste tabs). -->
+        <div class="selector-bar">
+            <div id="var-selectors" class="var-selector-row" hidden>
+                <label for="group-var-select">Grouping variable:
+                    <select id="group-var-select"></select>
+                </label>
+                <label for="response-var-select">Response variable:
+                    <select id="response-var-select"></select>
+                </label>
+            </div>
+            <div id="group-order" class="group-order" hidden>
+                <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
+            </div>
         </div>
 
         <!-- Parameters -->
