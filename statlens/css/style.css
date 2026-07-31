@@ -4849,6 +4849,6 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 /* ── Test ↔ CI cross-link (inference tools) ─────────────────────────────────
    Small pointer under the heading so a student who opened the test page when
    they wanted the interval (or vice versa) can hop to the companion page. */
-.tool-crosslink { margin: 0.1rem 0 0.9rem; font-size: 0.86rem; color: #555; }
+.tool-crosslink { margin: 1.2rem 0 0.4rem; padding-top: 0.9rem; border-top: 1px solid var(--border, #e2e8ee); font-size: 0.86rem; color: #555; }
 .tool-crosslink a { color: var(--ims-blue, #569BBD); font-weight: 600; text-decoration: none; }
 .tool-crosslink a:hover { text-decoration: underline; }
