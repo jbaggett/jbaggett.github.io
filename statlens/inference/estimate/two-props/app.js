@@ -351,8 +351,8 @@ function renderResults(zStar) {
         <tr><th scope="col">Group</th><th scope="col">Successes</th><th scope="col">${tex('n')}</th><th scope="col">${tex('\\hat{p}')}</th></tr>
       </thead>
       <tbody>
-        <tr><td>${escapeHTML(label1)}</td><td>${currentX1}</td><td data-fx="n1">${currentN1}</td><td data-fx="phat1">${pf(p1)}</td></tr>
-        <tr><td>${escapeHTML(label2)}</td><td>${currentX2}</td><td data-fx="n2">${currentN2}</td><td data-fx="phat2">${pf(p2)}</td></tr>
+        <tr><td>1 &middot; ${escapeHTML(label1)}</td><td>${currentX1}</td><td data-fx="n1">${currentN1}</td><td data-fx="phat1">${pf(p1)}</td></tr>
+        <tr><td>2 &middot; ${escapeHTML(label2)}</td><td>${currentX2}</td><td data-fx="n2">${currentN2}</td><td data-fx="phat2">${pf(p2)}</td></tr>
       </tbody>
     </table>
     ${groupLegend}

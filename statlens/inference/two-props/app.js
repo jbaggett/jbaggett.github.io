@@ -148,6 +148,7 @@ const dataPanel = initDataPanel({
     if (dataPreview) dataPreview.hidden = true;
     if (variableSelectors) variableSelectors.hidden = true;
     if (successSelector) successSelector.hidden = true;
+    if (groupLegendEl) { groupLegendEl.hidden = true; groupLegendEl.innerHTML = ''; }
     chartContainer.innerHTML = '';
     resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
     resultBanner.innerHTML = '';
@@ -243,7 +244,33 @@ function countFromData(sourceName) {
       `${sourceName}: ${label1} ${currentX1}/${currentN1} (p\u0302=${p1}), ${label2} ${currentX2}/${currentN2} (p\u0302=${p2}). Success = "${successValue}"`;
   }
   announce(`${label1}: ${currentX1}/${currentN1}, ${label2}: ${currentX2}/${currentN2}.`);
+  renderGroupLegend();
   return true;
+}
+
+const groupLegendEl = document.getElementById('group-legend');
+
+/**
+ * Render the "which group is p̂₁ vs p̂₂" legend into the top container (next to the
+ * hypotheses), so students can decide the alternative direction without scrolling
+ * to the results. Shown only when the groups have real names (raw data); in
+ * summary mode the input fields are already labelled Group 1 / Group 2.
+ */
+function renderGroupLegend() {
+  if (!groupLegendEl) return;
+  const named = label1 !== 'Group 1' || label2 !== 'Group 2';
+  if (!named || currentN1 <= 0 || currentN2 <= 0) {
+    groupLegendEl.hidden = true;
+    groupLegendEl.innerHTML = '';
+    return;
+  }
+  const p1 = formatStat(currentX1 / currentN1, 0, 'proportion');
+  const p2 = formatStat(currentX2 / currentN2, 0, 'proportion');
+  groupLegendEl.innerHTML = `
+    <span><strong>Group 1</strong> = ${escapeHTML(label1)} &nbsp;(p̂₁ = ${currentX1}/${currentN1} = ${p1})</span>
+    <span><strong>Group 2</strong> = ${escapeHTML(label2)} &nbsp;(p̂₂ = ${currentX2}/${currentN2} = ${p2})</span>
+    <span class="legend-diff">Hypotheses &amp; CI are about <strong>p̂₁ − p̂₂</strong></span>`;
+  groupLegendEl.hidden = false;
 }
 
 // ── Summary input ───────────────────────────────────────────────────
@@ -281,6 +308,7 @@ function applySummaryInputs(quiet) {
     dataSummary.textContent =
       `Summary: ${label1} ${currentX1}/${currentN1}, ${label2} ${currentX2}/${currentN2}`;
   }
+  renderGroupLegend();
   return true;
 }
 
@@ -426,24 +454,11 @@ function displayResults(r, lbl1, lbl2) {
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
 
-  // Explicit p̂₁/p̂₂ ↔ group mapping + success level, so the sign of the
-  // difference and CI is unambiguous (the student shouldn't have to infer it).
-  const x1 = Math.round(r.pHat1 * r.n1), x2 = Math.round(r.pHat2 * r.n2);
-  const named = lbl1 !== 'Group 1' || lbl2 !== 'Group 2';  // real group names present
-  const P1 = 'p̂₁', P2 = 'p̂₂';
-  const groupLegend = `
-    <div class="group-legend">
-      <span><strong>Group 1</strong>${named ? ` = ${escapeHTML(lbl1)}` : ''} &nbsp;(${P1} = ${x1}/${r.n1} = ${formatStat(r.pHat1, 0, 'proportion')})</span>
-      <span><strong>Group 2</strong>${named ? ` = ${escapeHTML(lbl2)}` : ''} &nbsp;(${P2} = ${x2}/${r.n2} = ${formatStat(r.pHat2, 0, 'proportion')})</span>
-      ${(fromRawData && successValue) ? `<span><strong>Success</strong> = &ldquo;${escapeHTML(successValue)}&rdquo;</span>` : ''}
-      <span class="legend-diff">Difference reported as <strong>${P1} − ${P2}</strong></span>
-    </div>`;
-
   resultsPanel.innerHTML = `
     <h3>Sample Summary</h3>
     <table class="results-table" aria-label="Sample summary">
       <thead>
-        <tr><th></th><th scope="col">${escapeHTML(lbl1)}</th><th scope="col">${escapeHTML(lbl2)}</th></tr>
+        <tr><th></th><th scope="col">1 &middot; ${escapeHTML(lbl1)}</th><th scope="col">2 &middot; ${escapeHTML(lbl2)}</th></tr>
       </thead>
       <tbody>
         <tr><th scope="row">Successes</th><td>${Math.round(r.pHat1 * r.n1)}</td><td>${Math.round(r.pHat2 * r.n2)}</td></tr>
@@ -451,7 +466,6 @@ function displayResults(r, lbl1, lbl2) {
         <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat1">${formatStat(r.pHat1, 0, 'proportion')}</td><td data-fx="phat2">${formatStat(r.pHat2, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
-    ${groupLegend}
 
     <div class="formula-display">
       <h3>Test Statistic</h3>
