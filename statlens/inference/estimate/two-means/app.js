@@ -43,6 +43,8 @@ const dataSummary = document.getElementById('data-summary');
 const varSelectorsDiv = document.getElementById('var-selectors');
 const groupVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('group-var-select'));
 const responseVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('response-var-select'));
+const groupOrderEl = document.getElementById('group-order');
+const swapGroupsBtn = document.getElementById('swap-groups');
 
 // ── State ──────────────────────────────────────────────────────────
 /** @type {number[]} */
@@ -51,6 +53,7 @@ let group1 = [];
 let group2 = [];
 let group1Name = 'Group 1';
 let group2Name = 'Group 2';
+let groupsSwapped = false;  // when true, Group 1/2 (and the reported difference) are reversed
 let dataPrecision = 1;
 
 /** @type {{ headers: string[], types: string[], data: Array<Record<string,any>> } | null} */
@@ -132,6 +135,7 @@ function loadFromParsed(parsed) {
  */
 function showVarSelectors(catCols, numCols) {
   if (!varSelectorsDiv || !groupVarSelect || !responseVarSelect) return;
+  groupsSwapped = false;  // fresh data starts in natural order
   const needSelector = catCols.length > 1 || numCols.length > 1;
 
   groupVarSelect.innerHTML = '';
@@ -152,6 +156,23 @@ function showVarSelectors(catCols, numCols) {
 groupVarSelect?.addEventListener('change', extractGroups);
 responseVarSelect?.addEventListener('change', extractGroups);
 
+if (swapGroupsBtn) {
+  swapGroupsBtn.addEventListener('click', () => {
+    if (summaryActive()) {
+      for (const [a, c] of [['input-xbar1', 'input-xbar2'], ['input-s1', 'input-s2'], ['input-n1', 'input-n2'], ['input-label1', 'input-label2']]) {
+        const ea = /** @type {HTMLInputElement} */ (document.getElementById(a));
+        const ec = /** @type {HTMLInputElement} */ (document.getElementById(c));
+        if (ea && ec) { const t = ea.value; ea.value = ec.value; ec.value = t; }
+      }
+      if (applySummaryInputs()) build();
+    } else {
+      groupsSwapped = !groupsSwapped;
+      extractGroups();
+    }
+    announce(`Swapped groups: now ${group1Name} − ${group2Name}.`);
+  });
+}
+
 /** Split the cached rows into the two groups named by the current selections. */
 function extractGroups() {
   if (!parsedCache || !groupVarSelect || !responseVarSelect) return;
@@ -165,10 +186,11 @@ function extractGroups() {
     return;
   }
 
-  group1Name = String(levels[0]);
-  group2Name = String(levels[1]);
-  group1 = parsedCache.data.filter(r => r[groupCol] === levels[0]).map(r => parseFloat(r[valCol])).filter(v => isFinite(v));
-  group2 = parsedCache.data.filter(r => r[groupCol] === levels[1]).map(r => parseFloat(r[valCol])).filter(v => isFinite(v));
+  const i1 = groupsSwapped ? 1 : 0, i2 = groupsSwapped ? 0 : 1;
+  group1Name = String(levels[i1]);
+  group2Name = String(levels[i2]);
+  group1 = parsedCache.data.filter(r => r[groupCol] === levels[i1]).map(r => parseFloat(r[valCol])).filter(v => isFinite(v));
+  group2 = parsedCache.data.filter(r => r[groupCol] === levels[i2]).map(r => parseFloat(r[valCol])).filter(v => isFinite(v));
 
   if (group1.length < 2 || group2.length < 2) {
     announce('Each group needs at least 2 valid numeric values.');
@@ -184,6 +206,7 @@ function extractGroups() {
       `${namePrefix}${group1Name}: n = ${group1.length}, x̄ = ${formatStat(mean(group1), dataPrecision)} | ` +
       `${group2Name}: n = ${group2.length}, x̄ = ${formatStat(mean(group2), dataPrecision)}${varSuffix}`;
   }
+  if (groupOrderEl) groupOrderEl.hidden = false;
   build();
 }
 
@@ -196,8 +219,10 @@ function clearData() {
   currentContext = null;
   currentSourceName = '';
   figure = null;
+  groupsSwapped = false;
   if (dataPreview) dataPreview.hidden = true;
   if (varSelectorsDiv) varSelectorsDiv.hidden = true;
+  if (groupOrderEl) groupOrderEl.hidden = true;
   controlsSection.hidden = true;
   chartAndResults.hidden = true;
   conditionsCheckpoint.hidden = true;
@@ -243,6 +268,7 @@ function applySummaryInputs(quiet) {
 
   dataPrecision = Math.max(...[xbar1, s1, xbar2, s2].map(v => detectPrecision([v])));
   summaryStats = { xbar1, s1, n1, xbar2, s2, n2 };
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
 }
 

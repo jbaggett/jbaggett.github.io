@@ -35,6 +35,8 @@ const dataPreview = document.getElementById('data-preview');
 const varSelectorsDiv = document.getElementById('var-selectors');
 const groupVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('group-var-select'));
 const responseVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('response-var-select'));
+const groupOrderEl = document.getElementById('group-order');
+const swapGroupsBtn = document.getElementById('swap-groups');
 
 // ── State ───────────────────────────────────────────────────────────
 /** @type {number[]} */
@@ -43,6 +45,8 @@ let group1 = [];
 let group2 = [];
 let group1Name = 'Group 1';
 let group2Name = 'Group 2';
+/** Whether the two groups have been swapped (persists across recomputes). */
+let groupsSwapped = false;
 let dataPrecision = 1;
 
 /** Cached parsed data for variable re-selection. @type {{ headers: string[], types: string[], data: Array<Record<string,any>> } | null} */
@@ -140,6 +144,7 @@ function applySummaryInputs(quiet) {
   );
 
   summaryResult = { xbar1, s1, n1, xbar2, s2, n2 };
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
 }
 
@@ -147,6 +152,25 @@ function applySummaryInputs(quiet) {
 for (const id of ['input-xbar1', 'input-s1', 'input-n1', 'input-xbar2', 'input-s2', 'input-n2', 'input-label1', 'input-label2']) {
   document.getElementById(id)?.addEventListener('input', () => {
     if (summaryActive() && applySummaryInputs(true)) runAnalysis();
+  });
+}
+
+// Swap Group 1 ↔ Group 2 — flips the sign of the difference; the whole display
+// re-renders from the swapped state.
+if (swapGroupsBtn) {
+  swapGroupsBtn.addEventListener('click', () => {
+    if (summaryActive()) {
+      for (const [a, c] of [['input-xbar1', 'input-xbar2'], ['input-s1', 'input-s2'], ['input-n1', 'input-n2'], ['input-label1', 'input-label2']]) {
+        const ea = /** @type {HTMLInputElement} */ (document.getElementById(a));
+        const ec = /** @type {HTMLInputElement} */ (document.getElementById(c));
+        if (ea && ec) { const t = ea.value; ea.value = ec.value; ec.value = t; }
+      }
+      if (applySummaryInputs()) runAnalysis();
+    } else {
+      groupsSwapped = !groupsSwapped;
+      extractGroups();
+    }
+    announce(`Swapped groups: now ${group1Name} − ${group2Name}.`);
   });
 }
 
@@ -227,6 +251,7 @@ function loadFromParsed(parsed, _sourceName) {
  */
 function showVarSelectors(catCols, numCols) {
   if (!varSelectorsDiv || !groupVarSelect || !responseVarSelect) return;
+  groupsSwapped = false;  // fresh data starts in natural order
 
   // Only show selectors if there are multiple options
   const needSelector = catCols.length > 1 || numCols.length > 1;
@@ -270,16 +295,19 @@ function extractGroups() {
     return;
   }
 
-  group1Name = String(groups[0]);
-  group2Name = String(groups[1]);
+  // Group order (which level is Group 1) respects the swap toggle so it persists
+  // across recomputes; flipping it flips the sign of the difference.
+  const gi1 = groupsSwapped ? 1 : 0, gi2 = groupsSwapped ? 0 : 1;
+  group1Name = String(groups[gi1]);
+  group2Name = String(groups[gi2]);
 
   group1 = parsedCache.data
-    .filter(r => r[groupCol] === groups[0])
+    .filter(r => r[groupCol] === groups[gi1])
     .map(r => parseFloat(r[valCol]))
     .filter(v => isFinite(v));
 
   group2 = parsedCache.data
-    .filter(r => r[groupCol] === groups[1])
+    .filter(r => r[groupCol] === groups[gi2])
     .map(r => parseFloat(r[valCol]))
     .filter(v => isFinite(v));
 
@@ -289,6 +317,7 @@ function extractGroups() {
   }
 
   dataPrecision = Math.max(detectPrecision(group1), detectPrecision(group2));
+  if (groupOrderEl) groupOrderEl.hidden = false;
   showDataSummary();
   runAnalysis();
 }
@@ -314,8 +343,10 @@ function clearData() {
   summaryResult = null;
   currentContext = null;
   currentSourceName = '';
+  groupsSwapped = false;
   if (dataPreview) dataPreview.hidden = true;
   if (varSelectorsDiv) varSelectorsDiv.hidden = true;
+  if (groupOrderEl) groupOrderEl.hidden = true;
   if (chartContainer) chartContainer.innerHTML = '';
   if (resultDiv) {
     resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;

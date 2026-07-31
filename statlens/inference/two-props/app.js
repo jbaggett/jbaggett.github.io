@@ -43,6 +43,8 @@ const outcomeVarSelect = /** @type {HTMLSelectElement|null} */ (document.getElem
 const variableSelectors = document.getElementById('variable-selectors');
 const successSelector = document.getElementById('success-selector');
 const successOutcome = /** @type {HTMLSelectElement|null} */ (document.getElementById('success-outcome'));
+const groupOrderEl = document.getElementById('group-order');
+const swapGroupsBtn = document.getElementById('swap-groups');
 const loadSummaryBtn = document.getElementById('load-summary');
 const inputP0 = /** @type {HTMLInputElement} */ (document.getElementById('input-p0'));
 const nullDisplay = document.getElementById('null-display');
@@ -84,6 +86,8 @@ let currentX2 = 0;
 let currentN2 = 0;
 /** Whether data was loaded from a dataset/paste/file (vs. summary) */
 let fromRawData = false;
+/** Whether the two groups have been swapped (Group 1 ↔ Group 2) — persists across recomputes. */
+let groupsSwapped = false;
 
 /** @type {import('../../js/conclusions.js').ConclusionContext|null} */
 let currentContext = null;
@@ -148,6 +152,8 @@ const dataPanel = initDataPanel({
     if (variableSelectors) variableSelectors.hidden = true;
     if (successSelector) successSelector.hidden = true;
     if (groupLegendEl) { groupLegendEl.hidden = true; groupLegendEl.innerHTML = ''; }
+    groupsSwapped = false;
+    if (groupOrderEl) groupOrderEl.hidden = true;
     chartContainer.innerHTML = '';
     resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
     announce('Data cleared.');
@@ -161,6 +167,7 @@ const dataPanel = initDataPanel({
  */
 function setupVariableSelectors(varNames, sourceName) {
   if (!groupVarSelect || !outcomeVarSelect || !variableSelectors) return;
+  groupsSwapped = false;  // fresh data starts in natural order
 
   groupVarSelect.innerHTML = '';
   outcomeVarSelect.innerHTML = '';
@@ -181,7 +188,7 @@ function setupVariableSelectors(varNames, sourceName) {
   outcomeVarSelect.value = outcomeVar;
   variableSelectors.hidden = false;
 
-  groupVarSelect.onchange = () => { groupVar = groupVarSelect.value; showSuccessSelector(sourceName); };
+  groupVarSelect.onchange = () => { groupVar = groupVarSelect.value; groupsSwapped = false; showSuccessSelector(sourceName); };
   outcomeVarSelect.onchange = () => { outcomeVar = outcomeVarSelect.value; showSuccessSelector(sourceName); };
 
   showSuccessSelector(sourceName);
@@ -225,8 +232,11 @@ function countFromData(sourceName) {
     return false;
   }
 
-  label1 = groups[0];
-  label2 = groups[1];
+  // Group order (which level is Group 1 = p̂₁) respects the swap toggle so it
+  // persists across recomputes. The student can flip it to control the sign of
+  // the difference (some prefer to label so p̂₁ − p̂₂ comes out positive).
+  label1 = groupsSwapped ? groups[1] : groups[0];
+  label2 = groupsSwapped ? groups[0] : groups[1];
   const g1Rows = rawRows.filter(r => r[groupVar] === label1);
   const g2Rows = rawRows.filter(r => r[groupVar] === label2);
   currentN1 = g1Rows.length;
@@ -243,7 +253,27 @@ function countFromData(sourceName) {
   }
   announce(`${label1}: ${currentX1}/${currentN1}, ${label2}: ${currentX2}/${currentN2}.`);
   renderGroupLegend();
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
+}
+
+// Swap Group 1 ↔ Group 2 so the sign of the difference flips. The whole display
+// re-renders from the swapped state, so every "Group 1 − Group 2" reference, the
+// CI, and the interpretation update accordingly.
+if (swapGroupsBtn) {
+  swapGroupsBtn.addEventListener('click', () => {
+    if (fromRawData) {
+      groupsSwapped = !groupsSwapped;
+      if (countFromData(dataPanel.currentSourceName || 'data')) compute();
+    } else {
+      // Summary mode: swap the entered values; the input listeners recompute.
+      [inputX1.value, inputX2.value] = [inputX2.value, inputX1.value];
+      [inputN1.value, inputN2.value] = [inputN2.value, inputN1.value];
+      [inputLabel1.value, inputLabel2.value] = [inputLabel2.value, inputLabel1.value];
+      if (applySummaryInputs()) compute();
+    }
+    announce(`Swapped groups: now ${label1} − ${label2}.`);
+  });
 }
 
 const groupLegendEl = document.getElementById('group-legend');
@@ -307,6 +337,7 @@ function applySummaryInputs(quiet) {
       `Summary: ${label1} ${currentX1}/${currentN1}, ${label2} ${currentX2}/${currentN2}`;
   }
   renderGroupLegend();
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
 }
 

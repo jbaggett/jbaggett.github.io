@@ -51,6 +51,8 @@ const groupVarSelect = /** @type {HTMLSelectElement|null} */ (document.getElemen
 const outcomeVarSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('outcome-var-select'));
 const successSelector = document.getElementById('success-selector');
 const successOutcome = /** @type {HTMLSelectElement|null} */ (document.getElementById('success-outcome'));
+const groupOrderEl = document.getElementById('group-order');
+const swapGroupsBtn = document.getElementById('swap-groups');
 
 // ── State ──────────────────────────────────────────────────────────
 /** @type {Array<Record<string, string>>} */
@@ -62,6 +64,7 @@ let outcomeVar = '';
 let successValue = '';
 let label1 = 'Group 1';
 let label2 = 'Group 2';
+let groupsSwapped = false;
 
 let currentX1 = 0, currentN1 = 0, currentX2 = 0, currentN2 = 0;
 let hasCounts = false;
@@ -123,6 +126,8 @@ const dataPanel = initDataPanel({
     hasCounts = false;
     currentContext = null;
     figure = null;
+    groupsSwapped = false;
+    if (groupOrderEl) groupOrderEl.hidden = true;
     if (dataPreview) dataPreview.hidden = true;
     if (variableSelectors) variableSelectors.hidden = true;
     if (successSelector) successSelector.hidden = true;
@@ -138,6 +143,7 @@ const dataPanel = initDataPanel({
 /** @param {string} sourceName */
 function setupVariableSelectors(sourceName) {
   if (!groupVarSelect || !outcomeVarSelect || !variableSelectors) return;
+  groupsSwapped = false;
 
   groupVarSelect.innerHTML = '';
   outcomeVarSelect.innerHTML = '';
@@ -197,8 +203,8 @@ function countFromData(sourceName) {
     return false;
   }
 
-  label1 = groups[0];
-  label2 = groups[1];
+  label1 = groupsSwapped ? groups[1] : groups[0];
+  label2 = groupsSwapped ? groups[0] : groups[1];
   const g1 = rawRows.filter(r => r[groupVar] === label1);
   const g2 = rawRows.filter(r => r[groupVar] === label2);
   currentN1 = g1.length;
@@ -213,6 +219,7 @@ function countFromData(sourceName) {
     dataSummary.textContent =
       `${sourceName}: ${label1} ${currentX1}/${currentN1} (p̂=${p1}), ${label2} ${currentX2}/${currentN2} (p̂=${p2}). Success = "${successValue}"`;
   }
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return hasCounts;
 }
 
@@ -250,11 +257,28 @@ function applySummaryInputs(quiet) {
     dataSummary.textContent =
       `Summary: ${label1} ${x1}/${n1} (p̂=${formatStat(x1 / n1, 0, 'proportion')}), ${label2} ${x2}/${n2} (p̂=${formatStat(x2 / n2, 0, 'proportion')})`;
   }
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
 }
 
 for (const el of [inputX1, inputN1, inputX2, inputN2, inputLabel1, inputLabel2]) {
   el?.addEventListener('input', () => { if (summaryActive() && applySummaryInputs(true)) build(); });
+}
+
+// Swap Group 1 ↔ Group 2 — flips the sign of the difference; the whole display re-renders.
+if (swapGroupsBtn) {
+  swapGroupsBtn.addEventListener('click', () => {
+    if (summaryActive()) {
+      [inputX1.value, inputX2.value] = [inputX2.value, inputX1.value];
+      [inputN1.value, inputN2.value] = [inputN2.value, inputN1.value];
+      [inputLabel1.value, inputLabel2.value] = [inputLabel2.value, inputLabel1.value];
+      if (applySummaryInputs()) build();
+    } else {
+      groupsSwapped = !groupsSwapped;
+      if (countFromData(dataPanel.currentSourceName || 'data')) build();
+    }
+    announce(`Swapped groups: now ${label1} − ${label2}.`);
+  });
 }
 
 // ── Core ───────────────────────────────────────────────────────────
