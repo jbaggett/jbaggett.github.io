@@ -1235,6 +1235,38 @@
     "minGroupN": 106
   },
   {
+    "id": "arthritis",
+    "name": "Rheumatoid Arthritis Treatment",
+    "description": "Improvement outcome by treatment (placebo vs. active) for 84 rheumatoid arthritis patients. IMS Ch. 18 (chi-square).",
+    "type": "chisq",
+    "chapter": "IMS Ch. 18",
+    "n": 84,
+    "variables": [
+      "treatment",
+      "improved"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 41
+  },
+  {
+    "id": "arthritis_male",
+    "name": "Rheumatoid Arthritis Treatment (Male Patients)",
+    "description": "Improvement by treatment for the 25 male patients in the arthritis trial — a borderline association (p ≈ 0.09). IMS Ch. 18 (chi-square).",
+    "type": "chisq",
+    "chapter": "IMS Ch. 18",
+    "n": 25,
+    "variables": [
+      "treatment",
+      "improved"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 11
+  },
+  {
     "id": "lizard_run",
     "name": "Lizard Sprint Speed",
     "description": "Top sprint speed (m/s) for two lizard species: Sagebrush lizard vs. Western fence lizard. IMS Ch. 20.",
