@@ -200,7 +200,11 @@ const dataApi = initDataPanel({
   autoCollapse: true,
   stickyControls: true,
   showPreview: true,
-  datasetFilter: ds => ds.type === 'chisq',
+  // Accept both chi-square tables and two-proportion (randomization_prop) datasets:
+  // a 2-group × 2-outcome experiment is a 2×2 table, so it's a valid test of
+  // independence here. Matches the analytic inference/chisq filter, and makes
+  // datasets like `yawn` (the clean not-significant case) loadable.
+  datasetFilter: ds => ds.type === 'chisq' || ds.type === 'randomization_prop',
   onDataset: (ds) => {
     resetSimulation();
     datasetContext = ds.context || {};
