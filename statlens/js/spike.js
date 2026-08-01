@@ -83,7 +83,14 @@ export function drawSpike(container, values, options = {}) {
     showExport,
     observedLabel,
     color,
+    showObservedMarker,
   } = options;
+  // Reasoning-mode `?observed=off` hides the observed-statistic marker so a
+  // student must place the cutoff line at the value given in the problem text.
+  const showObsMarker = showObservedMarker ?? (
+    typeof location === 'undefined' ||
+    new URLSearchParams(location.search).get('observed') !== 'off'
+  );
   // Base spike/cap colour when no isTail predicate is active (default IMS blue).
   const baseColor = color || SPIKE_COLOR;
 
@@ -184,7 +191,7 @@ export function drawSpike(container, values, options = {}) {
 
   // Overlay lines (observed stat, CI bounds)
   const overlays = d3Selection.select(frame.inner).select('.overlays');
-  if (observedStat != null) {
+  if (observedStat != null && showObsMarker) {
     renderOverlayLine(overlays, observedStat, xScale, frame.height,
       '#7B2D8E', 'Observed statistic', false, observedLabel ? `${observedLabel} = ` : '');
   }

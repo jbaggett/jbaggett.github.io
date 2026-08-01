@@ -189,7 +189,17 @@ export function drawHistogram(container, values, options = {}) {
     showExport,
     filename,
     labels = 'full',
+    showObservedMarker,
   } = options;
+
+  // Reasoning-mode `?observed=off` hides the observed-statistic marker (and its
+  // bar-split seam) so a student must place the cutoff line at the value given in
+  // the problem text. An explicit `showObservedMarker` option overrides the URL.
+  const showObsMarker = showObservedMarker ?? (
+    typeof location === 'undefined' ||
+    new URLSearchParams(location.search).get('observed') !== 'off'
+  );
+  const obsForChart = showObsMarker ? observedStat : null;
   const effectiveYLabel = yLabel ?? (relativeFrequency ? 'Proportion' : 'Frequency');
 
   const frame = createChart(container, { titleText, descText, id, margin, showExport, filename, ...(viewHeight != null && { viewHeight }) });
@@ -226,7 +236,7 @@ export function drawHistogram(container, values, options = {}) {
   // drawHorizontalGridlines(frame); // disabled — bars are readable without gridlines (theme_classic style)
 
   const dataGroup = d3Selection.select(frame.inner).select('.data');
-  renderBars(dataGroup, bins, xScale, yScale, frame.height, isTail, animate, frame.inner, observedStat, ciLines, relativeFrequency, totalN, fillColor, labels);
+  renderBars(dataGroup, bins, xScale, yScale, frame.height, isTail, animate, frame.inner, obsForChart, ciLines, relativeFrequency, totalN, fillColor, labels);
 
   // Stacked delta highlight: show new portions of bars in orange
   if (prevBinCounts) {
@@ -240,8 +250,8 @@ export function drawHistogram(container, values, options = {}) {
 
   // Overlay lines
   const overlays = d3Selection.select(frame.inner).select('.overlays');
-  if (observedStat != null) {
-    renderOverlayLine(overlays, observedStat, xScale, frame.height,
+  if (obsForChart != null) {
+    renderOverlayLine(overlays, obsForChart, xScale, frame.height,
       '#7B2D8E', observedLabel, precision, observedLabel);
   }
   if (ciLines) {
@@ -260,7 +270,7 @@ export function drawHistogram(container, values, options = {}) {
       const newNumBins = opts.numBins ?? numBins;
       const result = computeBins(newValues, { numBins: newNumBins });
       const newIsTail = opts.isTail ?? isTail;
-      const newObserved = opts.observedStat ?? observedStat;
+      const newObserved = showObsMarker ? (opts.observedStat ?? observedStat) : null;
       const newCiLines = opts.ciLines ?? ciLines;
 
       // Extend to full first/last bin edges

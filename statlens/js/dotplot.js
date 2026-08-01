@@ -206,7 +206,16 @@ export function drawDotplot(container, values, options = {}) {
     sizingMaxStack,
     forceDotMode = false,
     viewWidth,
+    showObservedMarker,
   } = options;
+
+  // Reasoning-mode `?observed=off` hides the observed-statistic marker so a
+  // student must place the cutoff line at the value given in the problem text.
+  // An explicit `showObservedMarker` option overrides the URL.
+  const showObsMarker = showObservedMarker ?? (
+    typeof location === 'undefined' ||
+    new URLSearchParams(location.search).get('observed') !== 'off'
+  );
 
   const result = computeDots(values, { numBins, domain, binWidth: lockedBinWidth, binOrigin: lockedBinOrigin });
   const { dots, maxStack, domain: finalDomain, binWidth: actualBinWidth } = result;
@@ -297,7 +306,7 @@ export function drawDotplot(container, values, options = {}) {
 
   // Observed statistic line
   const overlaysGroup = d3Selection.select(frame.inner).select('.overlays');
-  if (observedStat != null) {
+  if (observedStat != null && showObsMarker) {
     renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel);
   }
   if (ciLines) {
@@ -322,7 +331,7 @@ export function drawDotplot(container, values, options = {}) {
     update: (newValues, opts = {}) => {
       const newNumBins = opts.numBins ?? numBins;
       const newIsExtreme = opts.isExtreme ?? isExtreme;
-      const newObserved = opts.observedStat ?? observedStat;
+      const newObserved = showObsMarker ? (opts.observedStat ?? observedStat) : null;
       const newCiLines = opts.ciLines ?? ciLines;
       const newHighlight = opts.highlightIndex ?? -1;
       const newHighlightSet = opts.highlightIndices;

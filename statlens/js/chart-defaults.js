@@ -331,9 +331,15 @@ export function renderSimChart(container, stats, opts) {
   let effectiveChartType = opts.chartType;
   if (cutlinesOn && effectiveChartType !== 'spike') effectiveChartType = 'histogram';
 
+  // `?observed=off` hides the observed-stat marker (handled inside the chart
+  // primitives) AND must suppress the auto tail-shading below, which would
+  // otherwise reveal the observed location the student is meant to place.
+  const observedOff = typeof location !== 'undefined'
+    && new URLSearchParams(location.search).get('observed') === 'off';
+
   // Build region predicate from direction if not provided
   let regionPred = opts.regionPredicate;
-  if (!regionPred && opts.observedStat != null && opts.direction) {
+  if (!regionPred && !observedOff && opts.observedStat != null && opts.direction) {
     const obs = opts.observedStat;
     const dir = opts.direction;
     const nc = opts.nullCenter;
