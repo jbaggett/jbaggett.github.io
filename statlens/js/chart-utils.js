@@ -1055,8 +1055,7 @@ export function renderCutlines(frame, xScale, stats, opts) {
     const above = n - below;
     if (role === 'left') return `left cutoff at ${fmtX(x)}: ${below} of ${n} (${fmtPct(below / n)}) below it`;
     if (role === 'right') return `right cutoff at ${fmtX(x)}: ${above} of ${n} (${fmtPct(above / n)}) above it`;
-    const tp = tailMass(x);
-    return `cutoff at ${fmtX(x)}: ${Math.round(tp * n)} of ${n} (${fmtPct(tp)}) in the tail beyond it`;
+    return `cutoff at ${fmtX(x)}: ${above} of ${n} (${fmtPct(above / n)}) above it, ${below} of ${n} (${fmtPct(below / n)}) below it`;
   }
   function tailMass(x) {
     const dir = opts.direction;
@@ -1096,12 +1095,17 @@ export function renderCutlines(frame, xScale, stats, opts) {
       if (!tail) return;
       const x = tail.getX(), px = xScale(x);
       const below = stats.filter(v => v <= x).length, above = n - below;
-      let cTail, tailCenter;
-      if (opts.direction === 'left') { cTail = below; tailCenter = (xScale(dMin) + px) / 2; }
-      else if (opts.direction === 'right') { cTail = above; tailCenter = (px + xScale(dMax)) / 2; }
-      else if (below <= above) { cTail = below; tailCenter = (xScale(dMin) + px) / 2; }
-      else { cTail = above; tailCenter = (px + xScale(dMax)) / 2; }
-      pill(tailCenter, cTail, true);       // the tail count = the p-value
+      const leftCenter = (xScale(dMin) + px) / 2;
+      const rightCenter = (px + xScale(dMax)) / 2;
+      // Label BOTH regions the line splits the distribution into, so the reader
+      // sees the tail AND its complement (they sum to 100%). Highlight the tail
+      // (the p-value side) as primary; the body region is secondary.
+      let tailOnLeft;
+      if (opts.direction === 'left') tailOnLeft = true;
+      else if (opts.direction === 'right') tailOnLeft = false;
+      else tailOnLeft = below <= above; // two-sided: the smaller side is the tail
+      pill(leftCenter, below, tailOnLeft);
+      pill(rightCenter, above, !tailOnLeft);
     }
   }
   onChange = updateReadout;
