@@ -985,6 +985,38 @@ export function renderCutlines(frame, xScale, stats, opts) {
       .attr('fill', '#ffffff')
       .style('pointer-events', 'none');
 
+    // −/+ fine-adjust buttons flanking the x-value pill: a mouse path to the exact
+    // value a problem quotes (drag gets close, click nails it), mirroring the
+    // keyboard arrow-nudge. One step = the smallest displayed unit (10^-precision),
+    // so any value the pill can show is reachable and clicks land on a clean grid.
+    const fineStep = Math.pow(10, -prec);
+    const snap = (/** @type {number} */ v) => Math.round(v / fineStep) * fineStep;
+    function nudge(/** @type {number} */ sign) {
+      dataX = Math.max(dMin, Math.min(dMax, snap(dataX) + sign * fineStep));
+      render(); persist();
+    }
+    const BTN = 20;
+    /** @param {string} glyph @param {number} sign @param {string} name */
+    function stepBtn(glyph, sign, name) {
+      const b = g.append('g')
+        .attr('class', 'cutline-stepbtn')
+        .attr('role', 'button').attr('tabindex', 0)
+        .attr('aria-label', `${name} the cutoff value by ${fmtX(fineStep)}`);
+      b.append('rect').attr('class', 'cutline-stepbtn-bg')
+        .attr('y', h + 7).attr('width', BTN).attr('height', BTN).attr('rx', 4);
+      b.append('text').attr('class', 'cutline-stepbtn-tx')
+        .attr('y', h + 17 + 1).attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+        .text(glyph);
+      const act = (/** @type {Event} */ ev) => { ev.preventDefault(); ev.stopPropagation(); nudge(sign); };
+      b.on('pointerdown', act);
+      b.on('keydown', (/** @type {KeyboardEvent} */ ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') act(ev);
+      });
+      return b;
+    }
+    const minusBtn = stepBtn('−', -1, 'decrease');
+    const plusBtn = stepBtn('+', 1, 'increase');
+
     function render() {
       const px = xScale(dataX);
       hit.attr('x', px - 12);
@@ -995,8 +1027,18 @@ export function renderCutlines(frame, xScale, stats, opts) {
       try {
         const bb = /** @type {SVGTextElement} */ (xValLabel.node()).getBBox();
         const padX = 8, padY = 4;
-        xValBg.attr('x', bb.x - padX).attr('y', bb.y - padY)
+        const pillLeft = bb.x - padX;
+        const pillRight = bb.x + bb.width + padX;
+        xValBg.attr('x', pillLeft).attr('y', bb.y - padY)
           .attr('width', bb.width + padX * 2).attr('height', bb.height + padY * 2);
+        // Flank the pill: −  [ 8.16 ]  +  (clamped inside the plot width).
+        const gap = 5;
+        const minusX = Math.max(0, pillLeft - gap - BTN);
+        const plusX = Math.min(w - BTN, pillRight + gap);
+        minusBtn.select('rect').attr('x', minusX);
+        minusBtn.select('text').attr('x', minusX + BTN / 2);
+        plusBtn.select('rect').attr('x', plusX);
+        plusBtn.select('text').attr('x', plusX + BTN / 2);
       } catch { /* getBBox throws if not yet laid out; skip pill this frame */ }
       g.attr('aria-valuenow', fmtX(dataX))
         .attr('aria-valuetext', ariaValueText(role, dataX));

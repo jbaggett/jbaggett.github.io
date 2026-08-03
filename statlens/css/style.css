@@ -4840,6 +4840,24 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 }
 .cutline-xval { paint-order: stroke; }
 .cutline-hit { touch-action: none; }
+/* −/+ fine-adjust buttons flanking the x-value pill. */
+.cutline-stepbtn { cursor: pointer; }
+.cutline-stepbtn-bg {
+  fill: #ffffff;
+  stroke: #114B5F;
+  stroke-width: 1.5;
+}
+.cutline-stepbtn:hover .cutline-stepbtn-bg { fill: #e8f2f7; stroke: #569BBD; }
+.cutline-stepbtn:focus { outline: none; }
+.cutline-stepbtn:focus-visible .cutline-stepbtn-bg { stroke: #569BBD; stroke-width: 2.75; }
+.cutline-stepbtn-tx {
+  fill: #114B5F;
+  font-size: 17px;
+  font-weight: 700;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .cutline, .cutline * { transition: none !important; }
 }
