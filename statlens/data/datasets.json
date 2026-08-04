@@ -1265,6 +1265,21 @@
     "minGroupN": 4
   },
   {
+    "id": "blood_types",
+    "name": "Blood Types (Illustrative)",
+    "description": "Small ABO blood-type sample (n=80) vs. the approximate US distribution — a goodness-of-fit where an expected count is below 5. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 80,
+    "variables": [
+      "blood_type"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 4
+  },
+  {
     "id": "textbooks_format",
     "name": "Textbook Format Preference",
     "description": "Format used by 126 students vs. a predicted 60/25/15% split — goodness-of-fit. IMS Ch. 16.",
