@@ -58,7 +58,7 @@ function setData(pts, xl = 'x', yl = 'y') {
   original = pts.map(p => ({ ...p }));
   xLabel = xl; yLabel = yl;
   computeDomains();
-  render();
+  buildChart();
 }
 
 /** Fixed, generously padded domains so points have room to be dragged out. */
@@ -72,57 +72,70 @@ function computeDomains() {
 }
 
 // ── Rendering ──────────────────────────────────────────────────────
-function render() {
+// The chart is built ONCE per dataset (buildChart) and then updated in place
+// (update) on edits. Crucially, dragging calls update() — NOT buildChart() — so
+// the SVG (and thus d3-drag's coordinate container) is never torn down mid-drag,
+// which is what made grabbed points jump.
+/** @type {any} */ let x = null, y = null, gRoot = null, ptsG = null, residG = null, lineEl = null;
+
+function buildChart() {
   if (!chartArea) return;
   W = Math.max(320, Math.min(720, chartArea.clientWidth || 640));
   const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
-  const x = d3Scale.scaleLinear().domain(xDomain).range([0, iw]);
-  const y = d3Scale.scaleLinear().domain(yDomain).range([ih, 0]);
+  x = d3Scale.scaleLinear().domain(xDomain).range([0, iw]);
+  y = d3Scale.scaleLinear().domain(yDomain).range([ih, 0]);
 
   d3.select(chartArea).selectAll('*').remove();
   const svg = d3.select(chartArea).append('svg')
     .attr('viewBox', `0 0 ${W} ${H}`).attr('width', '100%')
-    .attr('role', 'img').attr('aria-label', `Editable scatterplot with ${points.length} points`);
-  const g = svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
+    .attr('role', 'img').attr('aria-label', 'Editable scatterplot');
+  gRoot = svg.append('g').attr('transform', `translate(${M.left},${M.top})`);
 
   // Background — click to add a point.
-  g.append('rect').attr('width', iw).attr('height', ih)
+  gRoot.append('rect').attr('width', iw).attr('height', ih)
     .attr('fill', 'transparent').style('cursor', 'crosshair')
     .on('click', function (ev) {
       const [px, py] = d3.pointer(ev, this);
       points.push({ x: +x.invert(px).toFixed(2), y: +y.invert(py).toFixed(2) });
       announce(`Added a point. ${points.length} points.`);
-      render();
+      update();
     });
 
-  // Axes.
-  g.append('g').attr('transform', `translate(0,${ih})`).call(d3Axis.axisBottom(x).ticks(6));
-  g.append('g').call(d3Axis.axisLeft(y).ticks(6));
+  // Axes (static — the domain only changes on load/reset, i.e. on buildChart).
+  gRoot.append('g').attr('transform', `translate(0,${ih})`).call(d3Axis.axisBottom(x).ticks(6));
+  gRoot.append('g').call(d3Axis.axisLeft(y).ticks(6));
   svg.append('text').attr('x', M.left + iw / 2).attr('y', H - 6)
     .attr('text-anchor', 'middle').attr('font-size', 13).text(xLabel);
   svg.append('text').attr('transform', 'rotate(-90)').attr('x', -(M.top + ih / 2)).attr('y', 14)
     .attr('text-anchor', 'middle').attr('font-size', 13).text(yLabel);
 
+  residG = gRoot.append('g').attr('class', 'sp-residuals');
+  lineEl = gRoot.append('line').attr('class', 'sp-fit-line').attr('stroke', '#114B5F').attr('stroke-width', 2.5);
+  ptsG = gRoot.append('g').attr('class', 'sp-points');
+
+  update();
+}
+
+function update() {
+  if (!ptsG) return;
   const fit = points.length >= 2 ? linreg(points.map(p => p.x), points.map(p => p.y)) : null;
 
-  // Residuals (vertical segments to the line).
-  if (fit && showResidualsCheck?.checked) {
-    for (const p of points) {
-      const yhat = fit.intercept + fit.slope * p.x;
-      g.append('line').attr('x1', x(p.x)).attr('x2', x(p.x))
-        .attr('y1', y(p.y)).attr('y2', y(yhat))
-        .attr('stroke', '#D89A9E').attr('stroke-width', 1.5).attr('stroke-dasharray', '3,2');
-    }
-  }
+  // Residuals.
+  const rsel = residG.selectAll('line').data(fit && showResidualsCheck?.checked ? points : []);
+  rsel.exit().remove();
+  rsel.enter().append('line')
+    .attr('stroke', '#D89A9E').attr('stroke-width', 1.5).attr('stroke-dasharray', '3,2')
+    .merge(rsel)
+    .attr('x1', d => x(d.x)).attr('x2', d => x(d.x))
+    .attr('y1', d => y(d.y)).attr('y2', d => y(fit.intercept + fit.slope * d.x));
 
   // OLS line across the visible x-domain.
   if (fit && isFinite(fit.slope)) {
     const [x0, x1] = xDomain;
-    g.append('line').attr('class', 'sp-fit-line')
+    lineEl.attr('display', null)
       .attr('x1', x(x0)).attr('y1', y(fit.intercept + fit.slope * x0))
-      .attr('x2', x(x1)).attr('y2', y(fit.intercept + fit.slope * x1))
-      .attr('stroke', '#114B5F').attr('stroke-width', 2.5);
-  }
+      .attr('x2', x(x1)).attr('y2', y(fit.intercept + fit.slope * x1));
+  } else lineEl.attr('display', 'none');
 
   // High-influence flag: the point whose removal moves the slope most.
   let influentialIdx = -1;
@@ -136,26 +149,29 @@ function render() {
     }
   }
 
-  // Points — draggable; click (no drag) removes.
-  const rMove = { moved: false };
-  g.selectAll('circle.sp-point').data(points).enter().append('circle')
-    .attr('class', (d, i) => 'sp-point' + (i === influentialIdx ? ' sp-influential' : ''))
-    .attr('cx', d => x(d.x)).attr('cy', d => y(d.y)).attr('r', 6)
-    .attr('fill', '#569BBD').attr('fill-opacity', 0.85).attr('stroke', '#fff')
+  // Points — join; drag is attached once per element (on enter).
+  const sel = ptsG.selectAll('circle.sp-point').data(points);
+  sel.exit().remove();
+  sel.enter().append('circle').attr('class', 'sp-point')
+    .attr('r', 6).attr('fill', '#569BBD').attr('fill-opacity', 0.85).attr('stroke', '#fff')
     .call(d3drag()
-      .on('start', () => { rMove.moved = false; })
+      .subject(function (ev, d) { return { x: x(d.x), y: y(d.y) }; })
+      .on('start', function () { this.__moved = false; })
       .on('drag', function (ev, d) {
-        rMove.moved = rMove.moved || Math.hypot(ev.dx, ev.dy) > 0.5;
+        this.__moved = this.__moved || Math.hypot(ev.dx, ev.dy) > 0.5;
         d.x = +Math.max(xDomain[0], Math.min(xDomain[1], x.invert(ev.x))).toFixed(2);
         d.y = +Math.max(yDomain[0], Math.min(yDomain[1], y.invert(ev.y))).toFixed(2);
-        render();
+        update();
       })
       .on('end', function (ev, d) {
-        if (!rMove.moved) { // a click, not a drag → remove
+        if (!this.__moved) { // a click, not a drag → remove
           const i = points.indexOf(d);
-          if (i >= 0 && points.length > 1) { points.splice(i, 1); announce(`Removed a point. ${points.length} points.`); render(); }
+          if (i >= 0 && points.length > 1) { points.splice(i, 1); announce(`Removed a point. ${points.length} points.`); update(); }
         }
-      }));
+      }))
+    .merge(sel)
+    .classed('sp-influential', (d, i) => i === influentialIdx)
+    .attr('cx', d => x(d.x)).attr('cy', d => y(d.y));
 
   updateReadout(fit, influentialIdx);
 }
@@ -189,12 +205,12 @@ presetSelect?.addEventListener('change', () => {
 });
 document.getElementById('reset-btn')?.addEventListener('click', () => {
   points = original.map(p => ({ ...p }));
-  computeDomains(); render();
+  computeDomains(); buildChart();
   announce('Reset to the starting scatter.');
 });
-showResidualsCheck?.addEventListener('change', render);
-flagInfluenceCheck?.addEventListener('change', render);
-window.addEventListener('resize', render);
+showResidualsCheck?.addEventListener('change', update);
+flagInfluenceCheck?.addEventListener('change', update);
+window.addEventListener('resize', buildChart);
 
 // Dataset dropdown (regression-type: two numeric variables).
 (async () => {
