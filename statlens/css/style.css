@@ -4926,3 +4926,8 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 /* Dashed marker at the expected count (n·p0) so deviation from H0 is visible. */
 .gof-bar-exp { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px dashed #114B5F; }
 .gof-bar-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* Goodness-of-fit hypotheses block (per-category hypothesized proportions). */
+.gof-hypotheses { font-size: 0.95rem; line-height: 1.5; }
+.gof-hypotheses .hypothesis-row { align-items: baseline; }
+.gof-hypotheses sub { font-size: 0.72em; }

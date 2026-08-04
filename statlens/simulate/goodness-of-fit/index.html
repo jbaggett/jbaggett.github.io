@@ -80,6 +80,16 @@
             <div class="control-row">
                 <p id="seed-notice" class="seed-notice" hidden></p>
             </div>
+            <div class="hypothesis-display gof-hypotheses" id="gof-hyp" hidden>
+                <div class="hypothesis-row">
+                    <span class="hypothesis-label">H<sub>0</sub>:</span>
+                    <span id="gof-h0"></span>
+                </div>
+                <div class="hypothesis-row">
+                    <span class="hypothesis-label">H<sub>a</sub>:</span>
+                    <span>at least one proportion differs from its hypothesized value</span>
+                </div>
+            </div>
             <div class="generate-bar" role="group" aria-label="Generate simulated samples">
                 <button type="button" class="gen-btn" data-count="1" disabled>+1</button>
                 <button type="button" class="gen-btn" data-count="10" disabled>+10</button>

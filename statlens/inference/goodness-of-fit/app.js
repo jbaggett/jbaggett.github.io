@@ -171,6 +171,9 @@ function showResults() {
   }
   if (controlsSection) controlsSection.hidden = false;
   if (resultsSection) resultsSection.hidden = false;
+  // Hypotheses with the specific hypothesized proportions per category.
+  const h0El = document.getElementById('gof-h0');
+  if (h0El) h0El.innerHTML = categories.map((c, i) => `p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}`).join(', ');
   setPageTitle(baseTitle, currentSourceName, { n });
 
   if (resChisq) resChisq.textContent = formatStat(chiSq, 3);

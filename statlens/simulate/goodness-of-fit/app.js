@@ -189,6 +189,11 @@ function showDataLoaded() {
     dataSummary.textContent = `${namePrefix}${categories.length} categories, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  // Hypotheses with the specific hypothesized proportions per category.
+  const hypBox = document.getElementById('gof-hyp');
+  const h0El = document.getElementById('gof-h0');
+  if (h0El) h0El.innerHTML = categories.map((c, i) => `p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}`).join(', ');
+  if (hypBox) hypBox.hidden = false;
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Draw simulated samples to build the null distribution.</p>';
   if (mechObserved) mechObserved.innerHTML = miniBarsHTML(observed);
   if (mechObservedChisq) mechObservedChisq.textContent = formatStat(observedChisq, 2);
