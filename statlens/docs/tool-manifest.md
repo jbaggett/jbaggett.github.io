@@ -614,7 +614,26 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 
 **Compatible Datasets:** `type === 'gof'` datasets (a single categorical variable with observed counts + `gofNull` proportions). Includes: `mendel_peas` (great fit, χ²=0.47, p≈0.93), `jury` (strong reject, χ²=33, p≈0).
 
-**Textbook Integration Notes:** Fills the Ch. 16 goodness-of-fit gap — the simulation-first half that the `distribution/chisq/` calculator (theory route) could not provide. Pairs with the calculator: simulate the null, then meet the χ² formula. Supports the full reasoning-mode embed stack (`plot=only` / `readout=false` / `cutlines` / `observed=off`).
+**Textbook Integration Notes:** Fills the Ch. 16 goodness-of-fit gap — the simulation-first half that the `distribution/chisq/` calculator (theory route) could not provide. Pairs with the calculator: simulate the null, then meet the χ² formula. Supports the full reasoning-mode embed stack (`plot=only` / `readout=false` / `cutlines` / `observed=off`). Its analytic counterpart is `inference/goodness-of-fit/`.
+
+---
+
+### Chi-Square Goodness-of-Fit Test (analytic)
+
+**Path:** `inference/goodness-of-fit/`
+**Category:** Compute (Inference)
+**Description:** Theory-based goodness-of-fit test: compares one categorical variable's observed counts to a hypothesized distribution p₀ using the chi-square distribution. Reports χ² = Σ(O−E)²/E, df = k−1, and the right-tail p-value; shows an observed / expected / (O−E)²/E table (flagging expected counts below 5), the chi-square density curve with the right tail shaded, the formula, and a plain-language conclusion. The **Check Conditions** panel lists the Goodness-of-Fit *Simulation* as the assumption-free alternative when expected counts are small. Load a `type: gof` dataset or enter counts + proportions manually.
+**Concepts:** Goodness-of-fit test, chi-square distribution, expected counts (n·p₀), degrees of freedom (k−1), per-category contributions, expected-count condition (≥ 5)
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `dataset` | string | Pre-load a `type: gof` dataset | `dataset=mendel_peas` |
+
+**Compatible Datasets:** `type === 'gof'` datasets — `mendel_peas` (χ²=0.47, df=3, p≈0.93), `jury` (χ²=33, df=3, p≈0).
+
+**Textbook Integration Notes:** The analytic node of the Ch. 16 goodness-of-fit trio (`explore/one-cat/` → `simulate/goodness-of-fit/` → `inference/goodness-of-fit/`). Its conditions checkpoint cross-links to the simulation, mirroring `inference/chisq/` → `simulate/randomization-chisq/`.
 
 ---
 
