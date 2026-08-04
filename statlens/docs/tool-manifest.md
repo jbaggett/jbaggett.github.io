@@ -190,6 +190,25 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 ---
 
+### Scatterplot Editor
+
+**Path:** `explore/scatterplot-editor/`
+**Category:** Explore (interactive)
+**Description:** The 2-D analog of the Dotplot Editor: drag data points, click empty space to add a point, click a point to remove it, and watch the least-squares line, r, R², slope, and intercept update live. Built to make **leverage vs. influence** tangible — pull a point far out in x and the OLS line chases it (high leverage + influence); pull it far in y near mid-x and it barely moves the line (an outlier). Optional residual overlay and a "high-influence point" flag (the point whose removal shifts the slope most). Presets (linear / weak / none / one far-out point) or load a regression-type dataset.
+**Concepts:** Least-squares regression, correlation (r), R², leverage, influence, outliers, residuals, slope sensitivity
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `preset` | string | Starting scatter: `linear`, `weak`, `none`, `leverage` | `preset=leverage` |
+| `dataset` | string | Load a regression-type dataset (first two numeric vars) | `dataset=possum_regression` |
+| `seed` | string | Deterministic starting scatter for presets | `seed=demo` |
+
+**Textbook Integration Notes:** Ch 7 (bivariate) and Ch 20/22 (regression diagnostics) — the manipulate→observe tool for leverage and influential points (`original-22-05`, `fig-leverage-influence`). Complements `explore/regression-by-eye/` (which drags the *line*, points fixed) — here the *points* move.
+
+---
+
 ### Categorical Data (Two Variables)
 
 **Path:** `explore/categorical/`

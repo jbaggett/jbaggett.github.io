@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scatterplot Editor | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-drag":      "https://cdn.jsdelivr.net/npm/d3-drag@3/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .sp-hint { font-size: 0.9rem; color: var(--ims-gray-text); margin: 0.3rem 0 0.5rem; }
+        .sp-readout { font-family: var(--font-mono, monospace); }
+        .sp-eqn { font-size: 1.05rem; margin: 0.2rem 0 0.6rem; }
+        #chart-area svg { touch-action: none; }
+        .sp-point { cursor: grab; }
+        .sp-point:active { cursor: grabbing; }
+        .sp-point.sp-influential { stroke: #F05133; stroke-width: 2.5; }
+    </style>
+</head>
+<body>
+    <main id="main-content">
+        <h1>Scatterplot Editor<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button></span></h1>
+
+        <div aria-live="polite" id="sr-announce" class="sr-only"></div>
+
+        <p class="sp-hint"><strong>Drag</strong> a point to move it &middot; <strong>click empty space</strong> to add a point &middot; <strong>click a point</strong> to remove it. Watch the least-squares line, <em>r</em>, and <em>R²</em> respond.</p>
+
+        <div class="app-body">
+            <div class="app-main">
+                <div class="preset-bar">
+                    <label for="preset-select">Start from:
+                        <select id="preset-select">
+                            <option value="linear">Linear cloud</option>
+                            <option value="weak">Weak relationship</option>
+                            <option value="none">No relationship</option>
+                            <option value="leverage">One far-out point (leverage)</option>
+                        </select>
+                    </label>
+                    <label for="dataset-select" style="margin-left:1rem;">or a dataset:
+                        <select id="dataset-select"><option value="">-- Select --</option></select>
+                    </label>
+                </div>
+
+                <div id="chart-area"></div>
+
+                <div class="btn-row">
+                    <button id="reset-btn" class="btn-secondary">Reset</button>
+                    <label class="boxplot-toggle"><input type="checkbox" id="show-residuals"> Show residuals</label>
+                    <label class="boxplot-toggle"><input type="checkbox" id="flag-influence"> Flag high-influence point</label>
+                </div>
+            </div>
+
+            <aside class="app-sidebar">
+                <h2 class="sr-only">Regression readout</h2>
+                <p class="sp-eqn" id="sp-eqn">&nbsp;</p>
+                <table class="sidebar-stats sp-readout">
+                    <tbody>
+                        <tr><th scope="row">n</th><td id="stat-n">&mdash;</td></tr>
+                        <tr><th scope="row">Slope (b&#8321;)</th><td id="stat-slope">&mdash;</td></tr>
+                        <tr><th scope="row">Intercept (b&#8320;)</th><td id="stat-intercept">&mdash;</td></tr>
+                        <tr><th scope="row">r</th><td id="stat-r">&mdash;</td></tr>
+                        <tr><th scope="row">R&sup2;</th><td id="stat-r2">&mdash;</td></tr>
+                    </tbody>
+                </table>
+                <p class="hint" id="sp-influence-note" hidden></p>
+            </aside>
+        </div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Scatterplot Editor</h2>
+        <p class="help-intro">Build and reshape a scatterplot and watch the least-squares regression line respond in real time. Grab an ordinary point and pull it far out in <em>x</em> — the line chases it (<strong>high leverage &amp; influence</strong>). Pull a point far in <em>y</em> near the middle of the <em>x</em> range — it barely moves the line (an <strong>outlier</strong>, high residual but low leverage). Click empty space to add a point; click a point to remove it.</p>
+        <dl>
+            <dt><kbd>Drag</kbd></dt><dd>Move a point</dd>
+            <dt><kbd>Click empty</kbd></dt><dd>Add a point</dd>
+            <dt><kbd>Click point</kbd></dt><dd>Remove it</dd>
+            <dt><kbd>?</kbd></dt><dd>Show this help</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
+        </dl>
+        <button type="button" autofocus>Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>
