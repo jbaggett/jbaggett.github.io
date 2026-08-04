@@ -1250,6 +1250,36 @@
     "minGroupN": 10
   },
   {
+    "id": "barking_deer",
+    "name": "Barking Deer Foraging Sites",
+    "description": "Barking deer forage-site habitats vs. available land proportions — a strong-preference goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 426,
+    "variables": [
+      "habitat"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 4
+  },
+  {
+    "id": "textbooks_format",
+    "name": "Textbook Format Preference",
+    "description": "Format used by 126 students vs. a predicted 60/25/15% split — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 126,
+    "variables": [
+      "format"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 25
+  },
+  {
     "id": "lizard_habitat",
     "name": "Lizard Habitat Preference",
     "description": "Perch sunlight preference (sun, shade, partial) for lizards at 3 sites. IMS Ch. 18.",
