@@ -1207,7 +1207,7 @@
   {
     "id": "jury",
     "name": "Jury Racial Composition",
-    "description": "Race of 275 jurors from a county, used to assess if jury composition reflects the community. IMS Ch. 2, 18.",
+    "description": "Race of 275 jurors vs. the community distribution (72/7/12/9%) — goodness-of-fit. IMS Ch. 16.",
     "chapter": "IMS Ch. 16",
     "n": 275,
     "variables": [
@@ -1233,6 +1233,21 @@
     "hasCategorical": true,
     "groupLevels": 4,
     "minGroupN": 32
+  },
+  {
+    "id": "stock_geometric",
+    "name": "Stock Streaks (Geometric Model)",
+    "description": "Days since a stock index last rose over 1,362 trading days vs. a geometric model — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 1362,
+    "variables": [
+      "streak"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 7,
+    "minGroupN": 10
   },
   {
     "id": "lizard_habitat",

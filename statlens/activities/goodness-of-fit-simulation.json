@@ -42,9 +42,9 @@
       }
     },
     {
-      "instruction": "Contrast it with a case that *does* reject. Switch datasets to **Jury Racial Composition** (Datasets tab → Jury), then click **+1000** again. This is the racial makeup of 275 jurors compared to the community's distribution.",
-      "observe": "Where does the observed \\(\\chi^2 \\approx 33\\) land now, and what is the p-value?",
-      "reveal": "The observed \\(\\chi^2 \\approx 33\\) sits far past the entire null distribution — essentially **0 of 1000** simulated samples reach it, so p ≈ 0. The jury composition is very unlikely under random selection from the community: strong evidence against \\(H_0\\)."
+      "instruction": "Now try a genuinely *ambiguous* case. Switch datasets to **Jury Racial Composition** (Datasets tab → Jury) and click **+1000**. These are the races of 275 jurors compared to the community distribution (72% / 7% / 12% / 9%). The observed \\(\\chi^2 = 5.89\\).",
+      "observe": "Where does \\(\\chi^2 = 5.89\\) fall — is the tail beyond it clearly tiny, or is a meaningful fraction of the null distribution out there too?",
+      "reveal": "Unlike Mendel, the observed \\(\\chi^2 = 5.89\\) sits inside the body of the null distribution — a meaningful fraction (p ≈ 0.12) of simulated samples reach or exceed it. So at α = 0.05 we **fail to reject**: the jury data differ from the community, but not by more than sampling chance could plausibly produce. This is the honest 'is this convincing?' moment — the differences are suggestive but not statistically discernible."
     },
     {
       "phase": "explain",

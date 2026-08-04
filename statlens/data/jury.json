@@ -1,7 +1,7 @@
 {
   "id": "jury",
   "name": "Jury Racial Composition",
-  "description": "Race of 275 jurors from a county, used to assess if jury composition reflects the community. IMS Ch. 2, 18.",
+  "description": "Race of 275 jurors vs. the community distribution (72/7/12/9%) — goodness-of-fit. IMS Ch. 16.",
   "source": "openintro",
   "variables": [
     {
@@ -10,12 +10,12 @@
       "type": "categorical"
     }
   ],
-  "studyDescription": "The racial composition of 275 jurors selected for jury panels in a county was recorded. The community's racial distribution was known to be 80.29% White, 12.06% Black, 5.21% Hispanic, and 2.44% Other. The data were collected from court records to assess whether jury selection reflected the community's demographics.",
+  "studyDescription": "The racial composition of 275 jurors selected for jury panels in a county was recorded. The community’s eligible-juror distribution was 72% White, 7% Black, 12% Hispanic, and 9% Other. The goodness-of-fit test asks whether the jury pool is consistent with that community distribution.",
   "variableDescriptions": {
     "race": "The juror's race: White, Black, Hispanic, or Other"
   },
-  "sourceDetail": "OpenIntro datasets (openintro R package). IMS Ch. 2, 18. Based on real jury composition data used in legal challenges.",
-  "context": "Were the jurors selected at random from the community? The community racial distribution is 80.29% White, 12.06% Black, 5.21% Hispanic, and 2.44% Other.",
+  "sourceDetail": "OpenIntro / IMS Ch. 16 (chi-square goodness-of-fit). Community proportions 0.72 / 0.07 / 0.12 / 0.09; observed 205 / 26 / 25 / 19. χ² = 5.89, df = 3, p ≈ 0.12 — a borderline case (“unclear whether the difference is convincing”).",
+  "context": "Were the jurors selected at random from the community? The community distribution is 72% White, 7% Black, 12% Hispanic, and 9% Other.",
   "rows": [
     {
       "race": "White"
@@ -857,10 +857,10 @@
     19
   ],
   "gofNull": {
-    "White": 0.8029,
-    "Black": 0.1206,
-    "Hispanic": 0.0521,
-    "Other": 0.0244
+    "White": 0.72,
+    "Black": 0.07,
+    "Hispanic": 0.12,
+    "Other": 0.09
   },
   "chapter": "IMS Ch. 16"
 }

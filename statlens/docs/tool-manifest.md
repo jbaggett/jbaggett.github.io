@@ -612,7 +612,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `cutlines` | string | `tail` — draggable cutoff line + count pill | `cutlines=tail` |
 | `observed` | string | `off` — hide the observed-stat marker (connect-the-dots) | `observed=off` |
 
-**Compatible Datasets:** `type === 'gof'` datasets (a single categorical variable with observed counts + `gofNull` proportions). Includes: `mendel_peas` (great fit, χ²=0.47, p≈0.93), `jury` (strong reject, χ²=33, p≈0).
+**Compatible Datasets:** `type === 'gof'` datasets (a single categorical variable with observed counts + `gofNull` proportions). Includes: `mendel_peas` (great fit, χ²=0.47, p≈0.93), `jury` (borderline, χ²=5.89, p≈0.12), `stock_geometric` (geometric model, χ²=4.61, p≈0.60).
 
 **Textbook Integration Notes:** Fills the Ch. 16 goodness-of-fit gap — the simulation-first half that the `distribution/chisq/` calculator (theory route) could not provide. Pairs with the calculator: simulate the null, then meet the χ² formula. Supports the full reasoning-mode embed stack (`plot=only` / `readout=false` / `cutlines` / `observed=off`). Its analytic counterpart is `inference/goodness-of-fit/`.
 
@@ -631,7 +631,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a `type: gof` dataset | `dataset=mendel_peas` |
 
-**Compatible Datasets:** `type === 'gof'` datasets — `mendel_peas` (χ²=0.47, df=3, p≈0.93), `jury` (χ²=33, df=3, p≈0).
+**Compatible Datasets:** `type === 'gof'` datasets — `mendel_peas` (χ²=0.47, df=3, p≈0.93), `jury` (χ²=5.89, df=3, p≈0.12), `stock_geometric` (χ²=4.61, df=6, p≈0.60).
 
 **Textbook Integration Notes:** The analytic node of the Ch. 16 goodness-of-fit trio (`explore/one-cat/` → `simulate/goodness-of-fit/` → `inference/goodness-of-fit/`). Its conditions checkpoint cross-links to the simulation, mirroring `inference/chisq/` → `simulate/randomization-chisq/`.
 
