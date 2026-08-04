@@ -365,6 +365,28 @@ export function chisqStat(observed) {
 }
 
 /**
+ * Chi-square goodness-of-fit statistic: Σ (Oᵢ − Eᵢ)² / Eᵢ, where the expected
+ * count Eᵢ = n·p0ᵢ (n = total observed). Unlike {@link chisqStat} (which derives
+ * expecteds from row/column marginals of a contingency table), GOF compares a
+ * single categorical variable's observed counts to a *specified* distribution.
+ * @param {number[]} observed - observed counts per category
+ * @param {number[]} p0 - hypothesized proportions, same length as `observed`
+ * @returns {number} the χ² statistic, or NaN if n = 0 or lengths mismatch
+ */
+export function gofChisqStat(observed, p0) {
+    if (!observed || !p0 || observed.length !== p0.length) return NaN;
+    const n = observed.reduce((a, b) => a + b, 0);
+    if (n === 0) return NaN;
+    let stat = 0;
+    for (let i = 0; i < observed.length; i++) {
+        const expected = n * p0[i];
+        if (expected === 0) continue;
+        stat += (observed[i] - expected) ** 2 / expected;
+    }
+    return stat;
+}
+
+/**
  * F-statistic for one-way ANOVA.
  * @param {number[][]} groups - Array of numeric arrays, one per group
  * @returns {number}

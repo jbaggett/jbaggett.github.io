@@ -1,0 +1,71 @@
+{
+  "title": "Goodness-of-Fit, the Simulation Way",
+  "tool": "simulate/goodness-of-fit",
+  "params": { "dataset": "mendel_peas", "seed": "gof-activity" },
+  "steps": [
+    {
+      "phase": "predict",
+      "instruction": "Mendel counted 556 pea plants and sorted them into four phenotypes. His theory of independent assortment predicts a **9 : 3 : 3 : 1** ratio. The tool has loaded the observed counts and that hypothesized distribution. **Predict first**, before running anything.",
+      "gate": {
+        "question": "If Mendel's 9:3:3:1 theory (\\(H_0\\)) is exactly right, what should a *fresh* sample of 556 plants drawn under that theory look like?",
+        "choices": [
+          { "text": "Close to the 9:3:3:1 expected counts, but wobbling from sample to sample", "correct": true },
+          { "text": "Exactly the expected counts every time" },
+          { "text": "Nothing like the expected counts" }
+        ],
+        "feedback": "Right — even when \\(H_0\\) is true, random sampling makes the counts wobble around the expected values. The question is whether Mendel's *observed* wobble is bigger than that chance wobble.",
+        "retryFeedback": "Sampling variation means a fresh sample won't land exactly on the expected counts — it should land near them."
+      }
+    },
+    {
+      "instruction": "Look at the **mechanism strip**. On the left are Mendel's *observed* counts with dashed markers at the *expected* counts \\((n\\cdot p_0)\\). Click **+1** a few times and watch the right panel: each is one fresh sample of 556 drawn from the 9:3:3:1 model.",
+      "observe": "How does each simulated sample's \\(\\chi^2\\) compare to Mendel's observed \\(\\chi^2 = 0.47\\)? Are most bigger or smaller?",
+      "reveal": "Most simulated samples — pure chance under \\(H_0\\) — land *further* from the expected counts than Mendel's data did, so their \\(\\chi^2\\) is usually **larger** than 0.47. Mendel's fit is unusually tight."
+    },
+    {
+      "instruction": "Now click **+1000** to build the whole null distribution of \\(\\chi^2\\) under \\(H_0\\).",
+      "observe": "Where does the observed \\(\\chi^2 = 0.47\\) fall on the distribution — in the bulk, in the right tail, or far left?",
+      "reveal": "It sits at the **far left**. A small \\(\\chi^2\\) means the observed counts are *closer* to 9:3:3:1 than a typical random sample would be. The p-value (the fraction of simulations with \\(\\chi^2 \\ge 0.47\\)) is large — around 0.93."
+    },
+    {
+      "phase": "predict",
+      "instruction": "A large p-value here has a specific meaning.",
+      "gate": {
+        "question": "The simulation p-value is about 0.93. What do you conclude about Mendel's 9:3:3:1 theory?",
+        "choices": [
+          { "text": "Fail to reject \\(H_0\\) — the data are entirely consistent with 9:3:3:1", "correct": true },
+          { "text": "Reject \\(H_0\\) — the fit is too good to be real" },
+          { "text": "The theory is proven true" }
+        ],
+        "feedback": "Correct. p ≈ 0.93 means a fit this good (or worse) is very common under \\(H_0\\), so there's no evidence against the 9:3:3:1 ratio. We *fail to reject* — we never *prove* \\(H_0\\).",
+        "retryFeedback": "A large p-value means the observed statistic is unremarkable under \\(H_0\\); that's a fail-to-reject, not a rejection and not a proof."
+      }
+    },
+    {
+      "instruction": "Contrast it with a case that *does* reject. Switch datasets to **Jury Racial Composition** (Datasets tab → Jury), then click **+1000** again. This is the racial makeup of 275 jurors compared to the community's distribution.",
+      "observe": "Where does the observed \\(\\chi^2 \\approx 33\\) land now, and what is the p-value?",
+      "reveal": "The observed \\(\\chi^2 \\approx 33\\) sits far past the entire null distribution — essentially **0 of 1000** simulated samples reach it, so p ≈ 0. The jury composition is very unlikely under random selection from the community: strong evidence against \\(H_0\\)."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Put the simulation-first logic in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "what_is_simulated",
+            "label": "What exactly is one dot (one simulated \\(\\chi^2\\)) in the null distribution, and what assumption is it drawn under?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "pvalue_meaning",
+            "label": "Why does a goodness-of-fit p-value use only the *right* tail of the \\(\\chi^2\\) distribution?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: each simulated \\(\\chi^2\\) comes from drawing a fresh sample of the same size **from the hypothesized distribution \\(p_0\\)** (assuming \\(H_0\\) is true) and computing \\(\\sum (O-E)^2/E\\). The null distribution is what \\(\\chi^2\\) looks like when only chance is at work. The p-value is right-tailed because *any* departure from \\(p_0\\) — in any category, any direction — makes the squared gaps bigger, so evidence against \\(H_0\\) always pushes \\(\\chi^2\\) **up**. A small \\(\\chi^2\\) (left tail) means an unusually good fit, which is not evidence against \\(H_0\\)."
+      }
+    }
+  ]
+}

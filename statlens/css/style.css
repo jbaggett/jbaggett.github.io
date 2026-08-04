@@ -4903,3 +4903,26 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .tool-crosslink { margin: 1.2rem 0 0.4rem; padding-top: 0.9rem; border-top: 1px solid var(--border, #e2e8ee); font-size: 0.86rem; color: #555; }
 .tool-crosslink a { color: var(--ims-blue, #569BBD); font-weight: 600; text-decoration: none; }
 .tool-crosslink a:hover { text-decoration: underline; }
+
+/* ── Goodness-of-fit simulation tool (simulate/goodness-of-fit/) ────────────── */
+/* Manual "Enter Counts" table. */
+.gof-input { border-collapse: collapse; margin: 0.4rem 0; width: 100%; max-width: 30rem; }
+.gof-input th, .gof-input td { padding: 0.2rem 0.4rem; text-align: left; }
+.gof-input th { font-size: 0.85rem; color: var(--ims-gray-text); font-weight: 600; }
+.gof-input input[type="text"] { width: 8rem; }
+.gof-input input[type="number"] { width: 5rem; }
+.btn-icon {
+  border: none; background: none; cursor: pointer; font-size: 1.1rem; line-height: 1;
+  color: var(--ims-gray-text); padding: 0.15rem 0.4rem; border-radius: 4px;
+}
+.btn-icon:hover, .btn-icon:focus-visible { color: #c0392b; background: #f6e9e9; }
+
+/* Mechanism-strip mini bars: observed vs one simulated sample under H0. */
+.gof-bars { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.3rem 0; }
+.gof-bar-row { display: grid; grid-template-columns: 6.5rem 1fr 2.2rem; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
+.gof-bar-cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gof-bar-track { position: relative; height: 14px; background: #eef3f6; border-radius: 3px; }
+.gof-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--ims-blue, #569BBD); border-radius: 3px; }
+/* Dashed marker at the expected count (n·p0) so deviation from H0 is visible. */
+.gof-bar-exp { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px dashed #114B5F; }
+.gof-bar-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }

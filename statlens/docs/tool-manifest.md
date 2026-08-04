@@ -594,6 +594,30 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 
 ---
 
+### Chi-Square Goodness-of-Fit Simulation
+
+**Path:** `simulate/goodness-of-fit/`
+**Category:** Simulate
+**Description:** Simulation-based goodness-of-fit test for a single categorical variable against a specified distribution p₀. Repeatedly draws a fresh multinomial sample of size n *from* p₀ (seeded), computes the χ² goodness-of-fit statistic Σ(O−E)²/E each time, and builds the null distribution; the observed χ² is marked and the p-value is the right-tail fraction. The mechanism strip shows observed counts vs. one simulated sample under H₀ (with dashed expected-count markers). Load a `type: gof` dataset or enter categories + observed counts + hypothesized proportions manually.
+**Concepts:** Goodness-of-fit test, multinomial sampling, chi-square statistic, expected counts (n·p₀), simulation-based inference, null distribution, p-value
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `dataset` | string | Pre-load a `type: gof` dataset | `dataset=mendel_peas` |
+| `seed` | string | Deterministic seed (reproducible for grading) | `seed=demo` |
+| `plot` | string | `only` — figure-only auto-run embed | `plot=only` |
+| `readout` | string | `false` — hide the p-value (read it off the distribution) | `readout=false` |
+| `cutlines` | string | `tail` — draggable cutoff line + count pill | `cutlines=tail` |
+| `observed` | string | `off` — hide the observed-stat marker (connect-the-dots) | `observed=off` |
+
+**Compatible Datasets:** `type === 'gof'` datasets (a single categorical variable with observed counts + `gofNull` proportions). Includes: `mendel_peas` (great fit, χ²=0.47, p≈0.93), `jury` (strong reject, χ²=33, p≈0).
+
+**Textbook Integration Notes:** Fills the Ch. 16 goodness-of-fit gap — the simulation-first half that the `distribution/chisq/` calculator (theory route) could not provide. Pairs with the calculator: simulate the null, then meet the χ² formula. Supports the full reasoning-mode embed stack (`plot=only` / `readout=false` / `cutlines` / `observed=off`).
+
+---
+
 ### Randomization: Correlation
 
 **Path:** `simulate/randomization-correlation/`

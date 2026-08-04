@@ -1208,7 +1208,7 @@
     "id": "jury",
     "name": "Jury Racial Composition",
     "description": "Race of 275 jurors from a county, used to assess if jury composition reflects the community. IMS Ch. 2, 18.",
-    "chapter": "",
+    "chapter": "IMS Ch. 16",
     "n": 275,
     "variables": [
       "race"
@@ -1216,7 +1216,23 @@
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 4,
-    "minGroupN": 19
+    "minGroupN": 19,
+    "type": "gof"
+  },
+  {
+    "id": "mendel_peas",
+    "name": "Mendel's Peas",
+    "description": "Phenotype counts from Mendel's dihybrid cross (n=556) vs. the 9:3:3:1 ratio — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 556,
+    "variables": [
+      "phenotype"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 32
   },
   {
     "id": "lizard_habitat",

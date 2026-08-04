@@ -842,5 +842,25 @@
     {
       "race": "Other"
     }
-  ]
+  ],
+  "type": "gof",
+  "categories": [
+    "White",
+    "Black",
+    "Hispanic",
+    "Other"
+  ],
+  "observed": [
+    205,
+    26,
+    25,
+    19
+  ],
+  "gofNull": {
+    "White": 0.8029,
+    "Black": 0.1206,
+    "Hispanic": 0.0521,
+    "Other": 0.0244
+  },
+  "chapter": "IMS Ch. 16"
 }
