@@ -1,0 +1,74 @@
+{
+  "title": "Distributional Shape of \\(\\hat{p}\\) — When Does the CLT Kick In?",
+  "tool": "conceptual/sampling-lab",
+  "params": {
+    "type": "prop",
+    "p": "0.40",
+    "n": "10",
+    "seed": "shape11"
+  },
+  "steps": [
+    {
+      "instruction": "In **Class Example 11.2** you used formulas to predict the *center* and *spread* of \\(\\hat{p}\\). But a formula can't tell you the **shape** — that depends on the *success–failure condition*: \\(np \\ge 10\\) **and** \\(n(1-p) \\ge 10\\). This activity runs all three scenarios from 11.2 and lets you *see* the shape. The tool is already set to scenario **(a): \\(p = 0.40\\), \\(n = 10\\)**.",
+      "observe": "In 11.2, scenario (a) works out to \\(np = 4\\) and \\(n(1-p) = 6\\) — **both below 10**. Hold that thought for your prediction."
+    },
+    {
+      "instruction": "Before drawing anything, reason from the success–failure condition for all three scenarios: **(a)** \\(n=10, p=0.4\\); **(b)** \\(n=100, p=0.6\\); **(c)** \\(n=40, p=0.9\\).",
+      "phase": "predict",
+      "gate": {
+        "question": "Which scenario(s) will the CLT make look approximately **normal**?",
+        "choices": [
+          { "text": "Only **(b)** — \\(n=100, p=0.6\\)", "correct": true },
+          { "text": "All three — the CLT always applies to proportions" },
+          { "text": "**(b)** and **(c)** — both have a large \\(np\\)" },
+          { "text": "**(a)** and **(b)** — because \\(p\\) is closest to 0.5 there" }
+        ],
+        "feedback": "Only **(b)** clears **both** \\(np \\ge 10\\) and \\(n(1-p) \\ge 10\\) (\\(np=60,\\ n(1-p)=40\\)). Scenario (c) has a big \\(np=36\\) — but \\(n(1-p)=4\\) fails. Draw each one and watch.",
+        "retryFeedback": "Compute \\(np\\) **and** \\(n(1-p)\\) for each scenario. The rule needs *both* at least 10 — a large \\(np\\) alone isn't enough."
+      }
+    },
+    {
+      "instruction": "Scenario **(a)** is already loaded (\\(p=0.40,\\ n=10\\)). Tick **Show normal curve**, then click **+1000** three times (about 3000 studies).",
+      "requires": {
+        "metric": "samples",
+        "atLeast": 1000,
+        "hint": "Click **+1000** to draw at least 1000 samples of \\(\\hat{p}\\), then continue."
+      },
+      "observe": "Two things stand out: the bars are **chunky and granular** (only 11 possible \\(\\hat{p}\\) values when \\(n=10\\)), and the pile is **right-skewed** — it doesn't hug the normal curve.",
+      "reveal": "With \\(np = 4\\) and \\(n(1-p) = 6\\), the success–failure condition **fails**, so \\(\\hat{p}\\) is *not* normal. It's right-skewed (with \\(p<0.5\\), the longer tail points toward larger values) and granular because \\(n\\) is so small."
+    },
+    {
+      "instruction": "Now set **Population proportion \\(p\\)** to **0.60**, then **Sample size \\(n\\)** to **100** (this clears the plot). Keep **Show normal curve** on and click **+1000** three times.",
+      "requires": {
+        "metric": "n",
+        "equals": 100,
+        "hint": "Set **\\(n = 100\\)** and **\\(p = 0.60\\)**, then click **+1000** to fill the new distribution."
+      },
+      "observe": "This time the pile is a smooth, symmetric **bell** that tracks the normal curve closely.",
+      "reveal": "Here \\(np = 60\\) and \\(n(1-p) = 40\\) — **both well above 10** — so the CLT applies and \\(\\hat{p}\\) is approximately normal. Your **{{samples}}** draws gave an SD of \\(\\hat{p}\\)'s of **{{statSD}}**, matching the theory value \\(\\sqrt{p(1-p)/n} = \\) **{{theorySE}}**."
+    },
+    {
+      "instruction": "Last one — the case to watch. Set **\\(p\\)** to **0.90**, then **\\(n\\)** to **40** (this clears the plot), and draw **+1000** three times.",
+      "requires": {
+        "metric": "n",
+        "equals": 40,
+        "hint": "Set **\\(n = 40\\)** and **\\(p = 0.90\\)**, then click **+1000** to fill the new distribution."
+      },
+      "observe": "Even though \\(n=40\\) is *larger* than scenario (a)'s, the shape is clearly **left-skewed** — a long tail toward smaller values, bunched against the ceiling at 1.0.",
+      "reveal": "This is the trap. \\(np = 36\\) is large, so it's tempting to call it normal — but \\(n(1-p) = 4\\) **fails**, and that alone keeps it skewed. The condition is an *and*, not an *or*: a large \\(np\\) can't rescue a small \\(n(1-p)\\)."
+    },
+    {
+      "instruction": "You've now seen all three shapes. Put the pattern into your own words before the summary.",
+      "phase": "explain",
+      "respond": {
+        "prompts": [
+          { "id": "shapes", "label": "Shape of each", "placeholder": "(a) …, (b) …, (c) …", "rows": 2 },
+          { "id": "why_c", "label": "Why is (c) skewed even though \\(np = 36\\) is large?", "placeholder": "Your reasoning", "rows": 2 }
+        ],
+        "gateOnNonEmpty": true,
+        "answer": "Only **(b)** is normal. **(a)** is right-skewed and granular (\\(np=4,\\ n(1-p)=6\\), tiny \\(n\\)); **(c)** is left-skewed because \\(n(1-p)=4\\) fails, even though \\(np=36\\) is large. The rule is an **and**, not an **or** — both \\(np\\) and \\(n(1-p)\\) must reach about 10."
+      },
+      "reveal": "The sampling distribution of \\(\\hat{p}\\) is only approximately normal when **both** \\(np \\ge 10\\) and \\(n(1-p) \\ge 10\\). When either part fails, the shape skews toward whichever boundary (0 or 1) that \\(p\\) sits nearer — right-skew for small \\(p\\), left-skew for large \\(p\\) — and a small \\(n\\) also makes it granular. That's why (b) looks normal while (a) and (c) don't, confirming the conditions you checked in Example 11.2."
+    }
+  ]
+}
