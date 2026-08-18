@@ -1318,6 +1318,7 @@ function fetchExternalCSV(url, handleText, populateEditor, resolve) {
  *
  * @param {object} config
  * @param {(ds: {id:string, type:string}) => boolean} config.datasetFilter - Filter for dataset dropdown
+ * @param {(ds: any) => boolean} [config.deepLinkFilter] - Capability guard for `?dataset=` deep-links that are filtered out of the dropdown. When set, a `?dataset=NAME` whose id isn't in the curated dropdown still loads if it exists in the full index and passes this (more permissive, structural) filter. Omit to keep deep-links gated by `datasetFilter` (the default).
  * @param {(ds: any, meta: {id:string,name:string,description:string,type:string,n:number}) => void} config.onDataset - Called with fetched dataset JSON + metadata
  * @param {(parsed: {headers:string[], types:string[], data:Array<Record<string,any>>}, sourceName: string) => void} [config.onText] - Called with parseCSV result for paste/file
  * @param {(text: string, sourceName: string) => void} [config.onRawText] - Receive raw text instead (overrides onText)
@@ -1329,7 +1330,7 @@ function fetchExternalCSV(url, handleText, populateEditor, resolve) {
  * @returns {{ getDatasetIndex: () => Array<{id:string,name:string,description:string,type:string,n:number}>, populateEditor: (csvText:string, sourceName:string) => void, refilterDatasets: (filterFn: (ds: any) => boolean, groupFn?: (ds: any) => string) => void, ready: Promise<void>, currentDatasetId: string|null, currentSourceName: string, triggerPostLoad: () => void }}
  */
 export function initDataPanel(config) {
-  const { datasetFilter, onDataset, onText, onRawText, onClear,
+  const { datasetFilter, deepLinkFilter, onDataset, onText, onRawText, onClear,
     autoCollapse = false, stickyControls = false, showPreview = false,
     datasetGroupFn } = config;
 
@@ -1385,6 +1386,55 @@ export function initDataPanel(config) {
     }
   }
 
+  /**
+   * Load a dataset by id: fetch, apply the generator (when gen_seed is present),
+   * invoke onDataset, sync the editor, and resolve `ready`. Shared by the dropdown
+   * change handler and the `?dataset=` deep-link bypass.
+   * @param {string} id
+   * @param {any} [meta] - index metadata for this id (may be undefined)
+   * @returns {Promise<void>}
+   */
+  function loadDatasetById(id, meta) {
+    if (meta && datasetDesc) datasetDesc.textContent = meta.description;
+    return fetchDataset(id)
+      .then(ds => {
+        currentDatasetId = id;
+        currentSourceName = meta?.name || ds.name || id;
+
+        // Generator block: if the dataset has a generator and gen_seed is present,
+        // generate fresh data instead of using stored rows (REQ-023 mode 2).
+        const curParams = parseParams();
+        if (ds.generator && curParams.gen_seed) {
+          const genConfig = configFromGenerator(ds.generator, curParams);
+          const overrides = /** @type {Object<string,number>} */ ({});
+          for (const k of ['mu', 'sigma', 'shape', 'scale', 'lambda', 'prob', 'trials', 'a', 'b', 'df']) {
+            const v = /** @type {any} */ (curParams)[k];
+            if (v != null && typeof v === 'number') overrides[k] = v;
+          }
+          if (curParams.n) overrides.n = curParams.n;
+          const result = generateFromConfig(genConfig, curParams.gen_seed, overrides);
+          const varName = genConfig.var || 'value';
+          ds.rows = result.values.map(/** @param {any} v */ v => ({ [varName]: v }));
+          if (!ds.variables) ds.variables = [];
+          if (!ds.variables.some(/** @param {any} v */ v => v.name === varName)) {
+            const vType = typeof result.values[0] === 'string' ? 'categorical' : 'numeric';
+            ds.variables = [{ name: varName, label: genConfig.label || varName, type: vType }];
+          }
+        }
+
+        lastLoadedDataset = ds;
+        onDataset(ds, meta);
+        // Populate editor with dataset as CSV
+        if (ds.rows && ds.variables) {
+          const cols = ds.variables.map(/** @param {any} v */ v => v.name);
+          populateEditor(rowsToCSV(ds.rows, cols), meta?.name ?? id);
+        }
+        postLoadUI();
+        resolveReady();
+      })
+      .catch(() => announce('Failed to load dataset.'));
+  }
+
   /** Full unfiltered dataset index (loaded once). @type {Array<{id:string,name:string,description:string,type:string,n:number}>} */
   let fullIndex = [];
 
@@ -1424,6 +1474,20 @@ export function initDataPanel(config) {
         if (effectiveParams.dataset && index.some(ds => ds.id === effectiveParams.dataset)) {
           datasetSelect.value = effectiveParams.dataset;
           datasetSelect.dispatchEvent(new Event('change'));
+        } else if (effectiveParams.dataset && deepLinkFilter) {
+          // Deep-link bypass: a `?dataset=` link is an explicit request, so honor it
+          // even when the dataset is filtered out of the curated dropdown — provided
+          // it exists in the full index AND passes deepLinkFilter, a capability guard
+          // that keeps e.g. a categorical-only dataset out of a numeric-only tool.
+          const wanted = effectiveParams.dataset;
+          fetch(dataPath('datasets.json'))
+            .then(r => r.ok ? r.json() : [])
+            .then(full => {
+              const meta = full.find(/** @param {any} d */ d => d.id === wanted);
+              if (meta && deepLinkFilter(meta)) loadDatasetById(wanted, meta);
+              else resolveReady();
+            })
+            .catch(() => resolveReady());
         } else if (effectiveParams.dist) {
           // Inline parametric data generation (?dist=normal&mu=100&sigma=15&n=50&gen_seed=abc)
           const distConfig = configFromUrlParams(effectiveParams);
@@ -1517,48 +1581,7 @@ export function initDataPanel(config) {
         if (datasetDesc) datasetDesc.textContent = '';
         return;
       }
-      const meta = datasetIndex.find(d => d.id === id);
-      if (meta && datasetDesc) datasetDesc.textContent = meta.description;
-
-      fetchDataset(id)
-        .then(ds => {
-          currentDatasetId = id;
-          currentSourceName = meta?.name || ds.name || id;
-
-          // Generator block: if dataset has a generator and gen_seed is present,
-          // generate fresh data instead of using stored rows (REQ-023 mode 2)
-          const curParams = parseParams();
-          if (ds.generator && curParams.gen_seed) {
-            const genConfig = configFromGenerator(ds.generator, curParams);
-            const overrides = /** @type {Object<string,number>} */ ({});
-            for (const k of ['mu', 'sigma', 'shape', 'scale', 'lambda', 'prob', 'trials', 'a', 'b', 'df']) {
-              const v = /** @type {any} */ (curParams)[k];
-              if (v != null && typeof v === 'number') overrides[k] = v;
-            }
-            if (curParams.n) overrides.n = curParams.n;
-            const result = generateFromConfig(genConfig, curParams.gen_seed, overrides);
-            // Replace rows with generated data
-            const varName = genConfig.var || 'value';
-            ds.rows = result.values.map(v => ({ [varName]: v }));
-            // Ensure variables array includes the generated variable
-            if (!ds.variables) ds.variables = [];
-            if (!ds.variables.some(/** @param {any} v */ v => v.name === varName)) {
-              const vType = typeof result.values[0] === 'string' ? 'categorical' : 'numeric';
-              ds.variables = [{ name: varName, label: genConfig.label || varName, type: vType }];
-            }
-          }
-
-          lastLoadedDataset = ds;
-          onDataset(ds, meta);
-          // Populate editor with dataset as CSV
-          if (ds.rows && ds.variables) {
-            const cols = ds.variables.map(/** @param {any} v */ v => v.name);
-            populateEditor(rowsToCSV(ds.rows, cols), meta?.name ?? id);
-          }
-          postLoadUI();
-          resolveReady();
-        })
-        .catch(() => announce('Failed to load dataset.'));
+      loadDatasetById(id, datasetIndex.find(d => d.id === id));
     });
   } else {
     resolveReady();

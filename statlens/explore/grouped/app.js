@@ -568,6 +568,11 @@ const dataPanel = initDataPanel({
   // per group. Excludes datasets like urban_owner (52 single-record state
   // "groups") that produce nonsense boxplots/stats (REQ-024).
   datasetFilter: (/** @type {any} */ ds) => ds.hasNumeric && ds.hasCategorical && ds.groupLevels >= 2 && ds.minGroupN >= 3,
+  // Deep-link bypass: honor a `?dataset=` link to any dataset with the structure
+  // this tool needs (a numeric variable and a grouping factor with ≥ 2 levels),
+  // even if the curated dropdown hid it (e.g. small `minGroupN`). The tiny-group
+  // quality gate is only about dropdown browsing, not capability.
+  deepLinkFilter: (/** @type {any} */ ds) => ds.hasNumeric && ds.hasCategorical && ds.groupLevels >= 2,
   onDataset: (ds) => {
     loadedDataset = ds;
     currentDatasetId = ds.id;

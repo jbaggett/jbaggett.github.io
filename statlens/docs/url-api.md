@@ -36,11 +36,12 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 
 **Data loading priority** (in `initDataPanel`):
 1. `?dataset=` — auto-selects from the dataset dropdown
-2. `?data=` — converted to single-column CSV and loaded as "URL data"
-3. `?json=` — fetched as external JSON dataset
-4. `?csv=` — fetched as external CSV file
-5. sessionStorage transfer data (cross-page navigation)
-6. No auto-load (user picks manually)
+2. `?dataset=` **deep-link bypass** — if the id isn't in the (curated) dropdown but the tool opts in (a `deepLinkFilter`), it still loads when the dataset exists in the full index and passes that tool's capability guard. Lets a deep-link open a dataset the browse-dropdown deliberately hides. Enabled on `explore/descriptive` (any dataset with a numeric column) and `explore/grouped` (numeric + a grouping factor with ≥ 2 levels); a dataset that fails the guard (e.g. categorical-only into `explore/descriptive`) silently does nothing, as before. A `?dataset=` naming an id that isn't in the full index still no-ops.
+3. `?data=` — converted to single-column CSV and loaded as "URL data"
+4. `?json=` — fetched as external JSON dataset
+5. `?csv=` — fetched as external CSV file
+6. sessionStorage transfer data (cross-page navigation)
+7. No auto-load (user picks manually)
 
 ### Variable Selection
 
