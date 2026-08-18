@@ -466,10 +466,14 @@ See `/home/jbaggett/statlens/docs/tool-manifest.md` for the complete catalog. Ke
 | `conceptual/randomization-test/` | _Legacy — redirects to `simulate/randomization-diff-props/?activity=randomization-test-gated.json`. Author new randomization activities against the `simulate/` tools directly._ |
 
 ### Distribution Calculators (Part III: Ch 10-13)
-| Tool Path | What Students Do |
-|-----------|-----------------|
-| `distribution/normal/` | Find areas/quantiles on normal curve |
-| `distribution/t/` | Find areas/quantiles on t distribution |
+
+All distribution calculators host the activity panel (via `page-number.js`). Activity `params` map to their URL parameters (see `docs/url-api.md`). These pages emit **no live state**, so use `gate` / `respond` steps, not `requires`.
+
+| Tool Path | What Students Do | Activity `params` |
+|-----------|-----------------|-------------------|
+| `distribution/normal/` | Find areas/quantiles on the normal curve | `mu`, `sigma`, `tail` (`left`/`right`/`between`/`symmetric`), `lo`, `hi` — e.g. `activities/normal-area.json` |
+| `distribution/binomial/` | Find `P(X=k)`, `P(X≤k)`, `P(X≥k)`, … on the binomial PMF | `n`, `p`, `k`, `type` (`exact`/`leq`/`geq`/`lt`/`gt`) — e.g. `activities/binomial-esp.json` |
+| `distribution/t/` | Find areas/quantiles on the t distribution | `df`, `tail`, `lo`, `hi` |
 
 ### Inference Tools (Part III: Ch 10-13)
 | Tool Path | What Students Do |

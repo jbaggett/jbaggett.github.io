@@ -1,0 +1,61 @@
+{
+  "title": "Areas Under the Normal Curve — SAT Scores",
+  "tool": "distribution/normal",
+  "params": {
+    "mu": 609,
+    "sigma": 80,
+    "tail": "left"
+  },
+  "steps": [
+    {
+      "phase": "predict",
+      "instruction": "SAT math scores for science & engineering majors follow $X \\sim N(609, 80)$ — the calculator is already set to $\\mu = 609$, $\\sigma = 80$. First, **529** and **689** are each exactly one standard deviation from the mean ($609 \\pm 80$). Before you compute anything, predict what fraction of scores land in that interval.",
+      "gate": {
+        "question": "What proportion of SAT scores should fall between 529 and 689?",
+        "choices": [
+          { "text": "About 68%" },
+          { "text": "About 95%" },
+          { "text": "About 50%" }
+        ],
+        "feedback": "Committed — now let the tool give the exact area."
+      }
+    },
+    {
+      "phase": "do",
+      "instruction": "Under **Region to shade**, click **Between**, then enter **529** as the lower bound and **689** as the upper bound. Read off the area.",
+      "observe": "The shaded area should be right around 0.68.",
+      "reveal": "529 and 689 are exactly $\\mu \\pm \\sigma$, so the **68**–95–99.7 rule predicts ≈ 68%. The tool reports ≈ 0.6827 — the rule's \"68\" rounded."
+    },
+    {
+      "phase": "predict",
+      "instruction": "Now part (b): a score of **769** is $609 + 2(80)$, i.e. **two** standard deviations above the mean. Predict the probability a randomly selected student scores **at least 769**.",
+      "gate": {
+        "question": "What is $P(X \\ge 769)$?",
+        "choices": [
+          { "text": "About 2.5%" },
+          { "text": "About 5%" },
+          { "text": "About 16%" }
+        ],
+        "feedback": "Committed — check it against the tool's right tail."
+      }
+    },
+    {
+      "phase": "do",
+      "instruction": "Under **Region to shade**, click **Right** (the upper tail) and enter **769**. Read the area to the right.",
+      "observe": "The right-tail area should be about 0.025.",
+      "reveal": "769 is $\\mu + 2\\sigma$. The 68-95-99.7 rule puts ≈ 95% within two SDs, leaving ≈ 5% split between the two tails — so ≈ 2.5% in the upper tail. The tool confirms ≈ 0.0228."
+    },
+    {
+      "phase": "explain",
+      "instruction": "You found the same answers two ways — the empirical rule (in your head) and the exact area (from the tool). Reflect on when each is enough.",
+      "respond": {
+        "prompts": [
+          { "id": "agree", "label": "Why do the rule and the tool agree here?", "placeholder": "Both describe the area under the same normal curve…", "rows": 2 },
+          { "id": "whentool", "label": "When would you NEED the tool instead of the rule?", "placeholder": "e.g. a cutoff that isn't a whole number of SDs, like 700", "rows": 2 }
+        ],
+        "gateOnNonEmpty": true,
+        "answer": "The empirical rule only gives clean answers at exactly $\\pm 1, 2, 3$ SD. For any other cutoff — say $P(X \\ge 700)$, where $700$ is $1.14$ SD above the mean — you need the tool (or a Z-table) to get the area. The rule is a fast sanity check; the tool is the general method."
+      }
+    }
+  ]
+}

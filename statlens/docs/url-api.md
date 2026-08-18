@@ -193,7 +193,16 @@ Accepted by pages under `distribution/`. Parsed by `js/url-params.js`, consumed 
 
 ### Binomial (`distribution/binomial/`)
 
-The binomial calculator does not currently read URL parameters. Its inputs (`n`, `p`, `k`) are set through the page UI only.
+Reads its parameters directly (standalone page, not `dist-app.js`). Values are clamped to the same ranges the page enforces; existing behaviour (draggable `k`, presets) is unchanged.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `n` | integer | `20` | Number of trials. Clamped to 1–500. | `?n=8` |
+| `p` | float | `0.5` | Success probability. Clamped to 0–1. | `?p=0.25` |
+| `k` | integer | `0` | The boundary value. Clamped to 0–`n`. | `?k=6` |
+| `type` | string | `leq` | Probability type. Values: `exact` (`P(X=k)`), `leq` (`P(X≤k)`), `geq` (`P(X≥k)`), `lt` (`P(X<k)`), `gt` (`P(X>k)`). Aliases `eq`→`exact`, `le`→`leq`, `ge`→`geq` are accepted. | `?type=geq` |
+
+> Deep-link a specific probability with `?n=8&p=0.25&k=6&type=geq` → `P(X ≥ 6) ≈ 0.0042`. Activities can set these via `params` (e.g. `activities/binomial-esp.json`).
 
 ### Power & Error Visualizer (`distribution/power/`)
 
