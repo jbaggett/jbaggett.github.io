@@ -431,6 +431,9 @@ export function createChart(container, options = {}) {
   inner.append('g').attr('class', 'overlays');
   inner.append('g').attr('class', 'annotations');
   inner.append('g').attr('class', 'chart-tooltip')
+    // Stash the inner width so showTooltip can clamp a tooltip that would
+    // otherwise overflow (and get clipped at) the chart's left/right edge.
+    .attr('data-inner-width', innerWidth)
     .style('pointer-events', 'none')
     .attr('visibility', 'hidden');
 
@@ -1255,7 +1258,20 @@ export function showTooltip(innerNode, lines, x, y) {
     if (tooltipY + bbox.y - pad < -20) {
       tooltipY = y + 20; // flip below instead
     }
-    g.attr('transform', `translate(${x}, ${tooltipY})`);
+
+    // Clamp horizontally so a tooltip near an edge isn't clipped by the chart
+    // bounds — e.g. the largest outlier's wide value at the far right of a
+    // boxplot. Text is centre-anchored (bbox.x ≈ -width/2), so the box spans
+    // [x + bbox.x - pad, x + bbox.x + bbox.width + pad]; shift x to fit [0, W].
+    let tooltipX = x;
+    const innerW = parseFloat(g.attr('data-inner-width'));
+    if (isFinite(innerW)) {
+      const overflowRight = (tooltipX + bbox.x + bbox.width + pad) - innerW;
+      if (overflowRight > 0) tooltipX -= overflowRight;
+      const overflowLeft = tooltipX + bbox.x - pad;
+      if (overflowLeft < 0) tooltipX -= overflowLeft; // keep the left edge visible
+    }
+    g.attr('transform', `translate(${tooltipX}, ${tooltipY})`);
   } catch {
     // getBBox fails in JSDOM — position without measurement
     g.attr('transform', `translate(${x}, ${y - 20})`);
