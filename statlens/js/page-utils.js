@@ -6,7 +6,7 @@
  */
 
 import { parseCSV, rowsToCSV, downloadCSV } from './csv-parser.js';
-import { renderDatasetActions } from './dataset-actions.js';
+import { renderDatasetActions, icon } from './dataset-actions.js';
 import { getSettings, setSettings, resetSettings, applySettings, getActivityMode, getExpertMode, prefersReducedMotion } from './settings.js';
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
@@ -869,8 +869,10 @@ export function collapseDataPanel(dataPanel, dataset) {
   if (!dataPanel.querySelector('.data-panel-expand-btn')) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'data-panel-expand-btn';
-    btn.textContent = 'Change Data';
+    btn.className = 'data-panel-expand-btn icon-btn';
+    btn.setAttribute('aria-label', 'Change data');
+    btn.title = 'Change data';
+    btn.innerHTML = icon('swap');
     btn.addEventListener('click', () => {
       dataPanel.classList.remove('collapsed');
       // Remove info panel when expanding (will be re-added on next collapse)

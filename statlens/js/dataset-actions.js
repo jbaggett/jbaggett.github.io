@@ -25,6 +25,70 @@ function sitePrefix() {
 }
 
 /**
+ * Inline SVG icons (stroke = currentColor so they inherit text color and adapt to
+ * hover/dark). 24×24 viewBox, sized down via CSS. Kept local — no icon font/CDN.
+ * @type {Record<string, string>}
+ */
+const ICON_PATHS = {
+  // Two opposite horizontal arrows — "change / swap the data"
+  swap: '<path d="M8 4 4 8l4 4"/><path d="M4 8h15"/><path d="m16 20 4-4-4-4"/><path d="M20 16H5"/>',
+  // Bar chart — "explore / visualize"
+  explore: '<line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="10"/>',
+  // Grid / spreadsheet — "preview the data table"
+  table: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="10" x2="9" y2="20"/>',
+  // Down arrow into a tray — "download CSV"
+  download: '<path d="M12 3v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/>',
+};
+
+/**
+ * Build an inline SVG icon string for the given name.
+ * @param {string} name - Key in ICON_PATHS
+ * @returns {string}
+ */
+export function icon(name) {
+  const paths = ICON_PATHS[name] || '';
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" `
+    + `stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">${paths}</svg>`;
+}
+
+/**
+ * Create a compact icon action button (or link). Always carries an accessible name
+ * via aria-label plus a hover title.
+ * @param {{ icon:string, label:string, title?:string, href?:string, onClick?:(e:Event)=>void, extraClass?:string }} opts
+ * @returns {HTMLElement}
+ */
+export function makeActionButton(opts) {
+  const el = opts.href
+    ? /** @type {HTMLElement} */ (document.createElement('a'))
+    : /** @type {HTMLElement} */ (document.createElement('button'));
+  el.className = `dataset-action-btn icon-btn${opts.extraClass ? ' ' + opts.extraClass : ''}`;
+  if (opts.href) {
+    /** @type {HTMLAnchorElement} */ (el).href = opts.href;
+  } else {
+    /** @type {HTMLButtonElement} */ (el).type = 'button';
+  }
+  el.setAttribute('aria-label', opts.label);
+  el.title = opts.title || opts.label;
+  el.innerHTML = icon(opts.icon);
+  if (opts.onClick) el.addEventListener('click', opts.onClick);
+  return el;
+}
+
+/**
+ * Fetch the full dataset JSON (with rows) by id. Used where only the index metadata
+ * is on hand — e.g. the dataset catalog previewing/downloading on demand.
+ * @param {string} id
+ * @returns {Promise<any>}
+ */
+export function fetchFullDataset(id) {
+  return fetch(`${sitePrefix()}data/${encodeURIComponent(id)}.json`)
+    .then(r => {
+      if (!r.ok) throw new Error(`Failed to load ${id}`);
+      return r.json();
+    });
+}
+
+/**
  * Normalize a dataset's `variables` into `{name, label, type}` objects and count types.
  * @param {any} ds
  * @returns {{ vars: Array<{name:string,label:string,type:string}>, numeric:number, categorical:number }}
@@ -212,8 +276,8 @@ export function openDatasetPreview(ds, opener = null) {
   actions.className = 'dataset-preview-footer-actions';
   const dlBtn = document.createElement('button');
   dlBtn.type = 'button';
-  dlBtn.className = 'dataset-action-btn primary';
-  dlBtn.textContent = 'Download CSV';
+  dlBtn.className = 'dataset-action-btn primary has-icon';
+  dlBtn.innerHTML = `${icon('download')}<span>Download CSV</span>`;
   dlBtn.addEventListener('click', () => downloadDataset(ds));
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
@@ -265,31 +329,30 @@ export function renderDatasetActions(panel, ds) {
   // Explore — only when we're not already in the right explorer.
   const explorer = explorerFor(ds);
   if (explorer && !isCurrentPage(explorer.path)) {
-    const a = document.createElement('a');
-    a.className = 'dataset-action-btn';
-    a.href = explorer.href;
-    a.textContent = 'Explore';
-    a.title = `Open this dataset in the ${explorer.kind} explorer`;
-    group.appendChild(a);
+    group.appendChild(makeActionButton({
+      icon: 'explore',
+      label: 'Explore this dataset',
+      title: `Open this dataset in the ${explorer.kind} explorer`,
+      href: explorer.href,
+    }));
   }
 
   // Preview
-  const previewBtn = document.createElement('button');
-  previewBtn.type = 'button';
-  previewBtn.className = 'dataset-action-btn';
-  previewBtn.textContent = 'Preview';
-  previewBtn.title = 'View the data values';
-  previewBtn.addEventListener('click', () => openDatasetPreview(ds, previewBtn));
+  const previewBtn = makeActionButton({
+    icon: 'table',
+    label: 'Preview the data',
+    title: 'Preview the data values',
+    onClick: () => openDatasetPreview(ds, previewBtn),
+  });
   group.appendChild(previewBtn);
 
   // Download
-  const dlBtn = document.createElement('button');
-  dlBtn.type = 'button';
-  dlBtn.className = 'dataset-action-btn';
-  dlBtn.textContent = 'Download';
-  dlBtn.title = 'Download this dataset as a CSV file';
-  dlBtn.addEventListener('click', () => downloadDataset(ds));
-  group.appendChild(dlBtn);
+  group.appendChild(makeActionButton({
+    icon: 'download',
+    label: 'Download as CSV',
+    title: 'Download this dataset as a CSV file',
+    onClick: () => downloadDataset(ds),
+  }));
 
   // Insert right after the "Change Data" button when present, else at the end.
   const changeBtn = panel.querySelector('.data-panel-expand-btn');

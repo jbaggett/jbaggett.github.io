@@ -115,6 +115,9 @@
             color: #444;
             max-width: 350px;
         }
+        .ds-actions-col { white-space: nowrap; width: 1%; }
+        .ds-actions-col .dataset-action-btn + .dataset-action-btn { margin-left: 0.2rem; }
+        thead .ds-actions-col { font-weight: 700; }
         .ds-hidden { display: none; }
 
         .back-link {
@@ -157,6 +160,15 @@
     </main>
 
     <script type="module">
+    import { makeActionButton, fetchFullDataset, openDatasetPreview, downloadDataset } from '../js/dataset-actions.js';
+
+    function announce(msg) {
+      const el = document.getElementById('sr-announce');
+      if (!el) return;
+      el.textContent = '';
+      requestAnimationFrame(() => { el.textContent = msg; });
+    }
+
     // Dataset category definitions — order matters for display
     const CATEGORIES = [
       {
@@ -213,6 +225,33 @@
     function getVarNames(ds) {
       if (!ds.variables) return [];
       return ds.variables.map(v => typeof v === 'object' ? v.name : v);
+    }
+
+    // Append Preview + Download icon buttons to a catalog row. The index metadata
+    // has no rows, so both lazily fetch the full dataset JSON on first click.
+    function addRowActions(cell, ds) {
+      if (!cell) return;
+      const lazy = (btn, run) => async () => {
+        if (btn.classList.contains('loading')) return;
+        btn.classList.add('loading');
+        try {
+          const full = await fetchFullDataset(ds.id);
+          run(full, btn);
+        } catch {
+          announce(`Could not load ${ds.name}.`);
+        } finally {
+          btn.classList.remove('loading');
+        }
+      };
+      const previewBtn = makeActionButton({
+        icon: 'table', label: `Preview ${ds.name}`, title: 'Preview the data',
+      });
+      previewBtn.addEventListener('click', lazy(previewBtn, (full, b) => openDatasetPreview(full, b)));
+      const dlBtn = makeActionButton({
+        icon: 'download', label: `Download ${ds.name} as CSV`, title: 'Download CSV',
+      });
+      dlBtn.addEventListener('click', lazy(dlBtn, (full) => downloadDataset(full)));
+      cell.append(previewBtn, dlBtn);
     }
 
     // Load and render
@@ -278,6 +317,7 @@
       table.innerHTML = `
         <thead><tr>
           <th>Dataset</th>
+          <th class="ds-actions-col">Data</th>
           <th>n</th>
           <th>Variables</th>
           <th>Description</th>
@@ -302,10 +342,12 @@
 
         tr.innerHTML = `
           <td class="ds-name"><a href="${tool}?dataset=${ds.id}" title="Open in ${cat.title.split('(')[0].trim()} explorer">${ds.name}</a></td>
+          <td class="ds-actions-col"></td>
           <td class="ds-n">${ds.n ? ds.n.toLocaleString() : '—'}</td>
           <td class="ds-vars">${vars.join(', ')}</td>
           <td class="ds-desc">${ds.description || ''}</td>
         `;
+        addRowActions(tr.querySelector('.ds-actions-col'), ds);
         tbody.appendChild(tr);
       }
 
