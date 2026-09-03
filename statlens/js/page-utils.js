@@ -6,6 +6,7 @@
  */
 
 import { parseCSV, rowsToCSV, downloadCSV } from './csv-parser.js';
+import { renderDatasetActions } from './dataset-actions.js';
 import { getSettings, setSettings, resetSettings, applySettings, getActivityMode, getExpertMode, prefersReducedMotion } from './settings.js';
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
@@ -878,6 +879,9 @@ export function collapseDataPanel(dataPanel, dataset) {
     });
     dataPanel.appendChild(btn);
   }
+
+  // Explore / Preview / Download buttons (bundled datasets with row data only)
+  renderDatasetActions(dataPanel, dataset);
 
   // Render "About this data" if enriched metadata is available
   renderDatasetInfo(dataPanel, dataset);
