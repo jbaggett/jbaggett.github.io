@@ -227,9 +227,10 @@
       return ds.variables.map(v => typeof v === 'object' ? v.name : v);
     }
 
-    // Append Preview + Download icon buttons to a catalog row. The index metadata
-    // has no rows, so both lazily fetch the full dataset JSON on first click.
-    function addRowActions(cell, ds) {
+    // Append Explore + Preview + Download icon buttons to a catalog row. Explore
+    // links to the same explorer as the dataset name. Preview/Download lazily
+    // fetch the full dataset JSON on first click (the index metadata has no rows).
+    function addRowActions(cell, ds, tool) {
       if (!cell) return;
       const lazy = (btn, run) => async () => {
         if (btn.classList.contains('loading')) return;
@@ -243,6 +244,10 @@
           btn.classList.remove('loading');
         }
       };
+      const exploreBtn = makeActionButton({
+        icon: 'explore', label: `Explore ${ds.name}`, title: 'Open this dataset in the explorer',
+        href: `${tool}?dataset=${ds.id}`,
+      });
       const previewBtn = makeActionButton({
         icon: 'table', label: `Preview ${ds.name}`, title: 'Preview the data',
       });
@@ -251,7 +256,7 @@
         icon: 'download', label: `Download ${ds.name} as CSV`, title: 'Download CSV',
       });
       dlBtn.addEventListener('click', lazy(dlBtn, (full) => downloadDataset(full)));
-      cell.append(previewBtn, dlBtn);
+      cell.append(exploreBtn, previewBtn, dlBtn);
     }
 
     // Load and render
@@ -347,7 +352,7 @@
           <td class="ds-vars">${vars.join(', ')}</td>
           <td class="ds-desc">${ds.description || ''}</td>
         `;
-        addRowActions(tr.querySelector('.ds-actions-col'), ds);
+        addRowActions(tr.querySelector('.ds-actions-col'), ds, tool);
         tbody.appendChild(tr);
       }
 
