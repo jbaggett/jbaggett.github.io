@@ -1,6 +1,7 @@
 {
   "title": "Chi-Square Test of Independence",
   "tool": "inference/chisq",
+  "chooseData": true,
   "params": {},
   "steps": [
     {

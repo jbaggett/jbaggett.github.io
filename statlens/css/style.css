@@ -4075,8 +4075,10 @@ body[data-static="true"] *::after {
 /* Desktop: fixed left side panel. Mobile: bottom sheet + FAB.    */
 /* ═══════════════════════════════════════════════════════════════ */
 
-/* Hide data panel when activity is active (dataset comes from URL params) */
-body[data-activity="true"] #data-panel {
+/* Hide data panel when activity is active (dataset comes from URL params).
+   Exception: activities that ask the student to load their own dataset opt in
+   with "chooseData": true — they need the panel, so it stays visible. */
+body[data-activity="true"]:not([data-activity-choosedata="true"]) #data-panel {
   display: none !important;
 }
 

@@ -34,6 +34,7 @@ A JSON file that loads a step-by-step instruction panel alongside any StatLens t
 | `title` | Yes | Activity name shown in the panel header |
 | `tool` | No | Tool path (for documentation/indexing; the URL determines the actual tool) |
 | `params` | No | Default URL parameters injected when the activity loads. Existing URL params override these. Use this for `dataset`, `seed`, `ci`, `direction`, etc. |
+| `chooseData` | No | `true` keeps the tool's data panel visible so the student can **load their own dataset**. Activity mode hides the data panel by default (it assumes the dataset comes from `params.dataset`). If your activity has no `params.dataset` and asks the student to pick a dataset on a data-driven tool (ANOVA, chi-square, paired, slope, two-means), you **must** set `"chooseData": true` — otherwise the variable selectors never populate and the student is stuck. |
 | `steps` | Yes | Array of step objects (at least 1) |
 | `steps[].instruction` | Yes | Action prompt — what the student should do. Supports inline markdown. |
 | `steps[].observe` | No | Observation prompt — what to watch for. Rendered in a distinct callout style. |

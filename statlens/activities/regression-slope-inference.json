@@ -1,6 +1,7 @@
 {
   "title": "Inference for the Regression Slope",
   "tool": "inference/slope",
+  "chooseData": true,
   "params": {},
   "steps": [
     {

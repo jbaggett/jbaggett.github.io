@@ -1,6 +1,7 @@
 {
   "title": "Chi-Square Goodness of Fit",
   "tool": "inference/chisq",
+  "chooseData": true,
   "params": {},
   "steps": [
     {

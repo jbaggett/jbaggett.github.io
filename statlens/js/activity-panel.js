@@ -531,6 +531,13 @@
     // Mark body so CSS can adjust layout. The data panel is hidden via
     // body[data-activity]; that is all activity mode hides by default.
     document.body.setAttribute('data-activity', 'true');
+    // Activities that ask the student to load their own dataset (no dataset in
+    // params) must keep the data panel visible — otherwise its variable
+    // selectors never populate and the student is stuck. Opt in per activity
+    // with "chooseData": true (CSS un-hides #data-panel for these).
+    if (activity.chooseData) {
+      document.body.setAttribute('data-activity-choosedata', 'true');
+    }
     // NOTE: activities deliberately do NOT set data-guided. That flag hides the
     // .control-row (stat / confidence-level / tail dropdowns) and belongs to the
     // textbook *embed* path (?embed=true&guided=true, wired in page-number.js),

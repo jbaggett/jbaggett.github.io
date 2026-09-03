@@ -1,6 +1,7 @@
 {
   "title": "Two-Sample t-Inference (Welch)",
   "tool": "inference/two-means",
+  "chooseData": true,
   "params": {},
   "steps": [
     {
