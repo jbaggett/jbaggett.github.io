@@ -30,11 +30,10 @@
       }
     },
     {
-      "instruction": "Let's make the comic concrete so we can run it. Picture testing **one color at a time**: **n = 30 people eat that color, and we count how many break out.** If the color is harmless, breaking out is a coin flip — **p = 0.50**. We're testing whether the color *causes* acne — that *more* than half break out, **p > 0.50**.\n\nThe tool is already set to **\"H₀ is true — does nothing,\"** so on this screen *every* color is genuinely harmless. Each dot is one color's study; an **✗** marks a color that came out \"significant\" (p < 0.05). Click **+1** about twenty times — one study per color.",
+      "instruction": "Let's make the comic concrete so we can run it. For each color, researchers run a study testing whether that color is **linked to acne**, and get a p-value. **If the color is truly harmless, the test is a roll of the dice — it still comes out \"significant\" (p < 0.05) about 5% of the time, a false alarm, purely by chance.** (These are observational studies, so even a real hit would mean the color is *associated* with acne, not that it caused it.)\n\nThe tool is set to **\"H₀ is true — nothing going on,\"** so every color on this screen is genuinely unrelated to acne. Each dot is one color's study; an **✗** marks one that came out \"significant\" (p < 0.05). Click **+1** about twenty times — one study per color.",
       "observe": "Most colors land in the \"correct call\" pile; every so often one gets an **✗**.",
-      "reveal": "**Why just a coin flip?** Strictly, showing a color *causes* acne would take a randomized experiment — randomly assign some people to eat that color and others to eat none, then compare the two breakout rates. We've simplified to one group against a 50/50 null so the screen can focus on the multiple-comparisons problem. Worth remembering, though: even a single \"significant\" proportion test wouldn't establish causation on its own.",
       "gate": {
-        "question": "A color gets an **✗** — flagged \"significant, p < 0.05.\" Does that color actually cause acne?",
+        "question": "A color gets an **✗** — flagged \"significant, p < 0.05.\" Is that color actually linked to acne?",
         "choices": [
           { "text": "Yes — p < 0.05 means this color is linked to acne" },
           { "text": "No — it's a false alarm; we set every color to be harmless, and ~5% of true-null tests reject by chance", "correct": true },
