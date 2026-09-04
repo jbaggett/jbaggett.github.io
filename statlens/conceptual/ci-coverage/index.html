@@ -178,9 +178,23 @@
              aria-atomic="true" class="sr-only"></div>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Run repeated samples to visualize how sampling distributions and confidence intervals behave.</p>
+    <dialog id="page-help" aria-label="Confidence Interval Coverage help">
+        <h2>Confidence Interval Coverage</h2>
+        <p class="help-intro">Draw many samples from a population whose true mean you can see, build a confidence interval from each sample, and count how often the interval captures that true mean. That long-run capture rate is what "95% confidence" means.</p>
+        <h3>Predict first</h3>
+        <p>Before any intervals appear, a prompt asks how many of the next batch you think will <em>miss</em> the true mean. Enter a guess and choose <strong>Lock &amp; draw</strong> to commit and compare against what actually happens, or <strong>Skip</strong>. Predicting first makes the result stick.</p>
+        <h3>Set up the population</h3>
+        <ul>
+            <li><strong>Population</strong> &mdash; the shape sampled from: Normal, Right-skewed, or Uniform. Its true mean is drawn on the chart as the target line.</li>
+            <li><strong>Sample size (n)</strong> &mdash; how many observations go into each sample (and each interval).</li>
+            <li><strong>Confidence level</strong> &mdash; 90%, 95%, or 99%. Higher confidence makes wider intervals that capture the mean more often.</li>
+            <li><strong>CI method</strong> &mdash; how each interval is built: <strong>t-interval</strong> (the formula-based interval) or <strong>Percentile bootstrap</strong> (resampled from the sample). Compare how their coverage behaves, especially for skewed populations or small n.</li>
+        </ul>
+        <h3>Draw samples</h3>
+        <p>Use <strong>+1 / +10 / +25 / +100</strong> to draw that many samples; each adds an interval to the chart. Intervals that miss the true mean are marked. The running coverage rate below settles toward the confidence level as you draw more. <strong>Reset</strong> clears them.</p>
+        <h3>Plausibility shape (cat's-eye)</h3>
+        <p>Tick <strong>Show plausibility shape (cat's-eye)</strong>, then hover an interval. The bulge shows that values near the sample mean are more plausible than values near the interval's ends &mdash; the interval is not a band of equally likely values.</p>
+        <h3>Keyboard shortcuts</h3>
         <dl>
             <dt><kbd>1</kbd></dt><dd>+1 sample</dd>
             <dt><kbd>2</kbd></dt><dd>+10 samples</dd>
@@ -189,6 +203,7 @@
             <dt><kbd>0</kbd></dt><dd>Reset</dd>
             <dt><kbd>Space</kbd></dt><dd>Play / Pause</dd>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
         <button type="button" autofocus>Close</button>
     </dialog>

@@ -191,7 +191,7 @@
                         </label>
                     </div>
                     <div id="results-panel" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </aside>
             </div>
@@ -202,9 +202,17 @@
         <p class="tool-crosslink">Just estimating? <a href="../estimate/slope/">Confidence Interval for a Regression Slope &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>t-Test for Regression Slope</h2>
+        <p class="help-intro">Test whether the slope β<sub>1</sub> of the least-squares regression line differs from 0 — that is, whether x and y are linearly related — using a t-statistic and the t-distribution.</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (two numeric columns, x and y), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the slope, its standard error, and n.</li>
+            <li><strong>X / Y selectors</strong> let you pick the explanatory and response variables when the data has more than two columns.</li>
+            <li><strong>Hypotheses:</strong> H<sub>0</sub> is fixed at β<sub>1</sub> = 0. Click the alternative (H<sub>a</sub>) toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check linearity, constant spread, and the shape of the residuals.</li>
+            <li><strong>Confidence level</strong> sets the matching interval for the slope (default 0.95).</li>
+            <li>Results — t, df, p-value, the confidence interval, and the plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

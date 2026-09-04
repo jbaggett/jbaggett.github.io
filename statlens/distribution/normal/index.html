@@ -97,9 +97,27 @@
              aria-atomic="true" class="sr-only"></div>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Adjust parameters and boundaries to compute probabilities and critical values.</p>
+    <dialog id="page-help" aria-label="Normal Distribution Calculator help">
+        <h2>Normal Distribution Calculator</h2>
+        <p class="help-intro">Computes areas (probabilities) under a normal curve. With the mean at 0 and SD at 1, the boundary is a z-score.</p>
+        <h3>Region to shade</h3>
+        <p>The buttons above the chart choose which area is shaded and reported:</p>
+        <ul>
+            <li><strong>Left</strong> &mdash; area below the boundary</li>
+            <li><strong>Right</strong> &mdash; area above the boundary</li>
+            <li><strong>Between</strong> &mdash; area in the middle band between two boundaries (a second input appears)</li>
+            <li><strong>Symmetric</strong> &mdash; the two outer tails, mirrored about the mean</li>
+        </ul>
+        <h3>Two-way lookup</h3>
+        <p>The calculator works in both directions &mdash; edit whichever value you know:</p>
+        <ul>
+            <li>Type a boundary in the <strong>z&nbsp;score</strong> box to get the shaded <strong>area</strong>.</li>
+            <li>Type an <strong>area</strong> in the <strong>Probability</strong> box to get the boundary (the critical value) that produces it.</li>
+        </ul>
+        <p>You can also drag the boundary line(s) directly on the chart. The banner beside the buttons reports the current area.</p>
+        <h3>Distribution shape</h3>
+        <p>Set <strong>Mean (&mu;)</strong> and <strong>SD (&sigma;)</strong> to match your distribution. Leaving them at 0 and 1 gives the standard normal, so the boundary reads as a z-score.</p>
+        <h3>Keyboard shortcuts</h3>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

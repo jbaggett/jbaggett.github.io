@@ -178,7 +178,7 @@
                 </div>
                 <div class="app-sidebar" id="results">
                     <div id="result-summary" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </div>
             </div>
@@ -189,9 +189,17 @@
         <p class="tool-crosslink">Just estimating? <a href="../estimate/two-means/">Confidence Interval for a Difference in Means &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>Two-Sample t-Test</h2>
+        <p class="help-intro">Compare the means of two independent groups (μ<sub>1</sub> − μ<sub>2</sub>), using a t-statistic and the t-distribution.</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (a group column and a value column), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the mean, SD, and n for each group.</li>
+            <li><strong>Grouping / response selectors</strong> let you choose the columns when raw data has more than one. <strong>Swap Group 1 ↔ Group 2</strong> flips which group is subtracted.</li>
+            <li><strong>Alternative (H<sub>a</sub>):</strong> click the toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Null value:</strong> standard mode tests μ<sub>1</sub> − μ<sub>2</sub> = 0. Turn on <strong>Expert mode</strong> (settings gear) to make the null difference δ<sub>0</sub> editable and test a nonzero difference.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check sample sizes and shape before trusting the result.</li>
+            <li>Results — t, df, p-value, the confidence interval, and the plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

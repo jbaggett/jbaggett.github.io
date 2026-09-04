@@ -202,8 +202,15 @@
 
 
     <dialog id="page-help" aria-label="Help">
-        <h2>Help</h2>
-        <p class="help-intro">Load a dataset to explore a single categorical variable with a bar chart and frequency table.</p>
+        <h2>One Categorical Variable</h2>
+        <p class="help-intro">Explore a single categorical variable. Load a dataset (or type your own values), and the chart and frequency table update together. If a dataset has more than one categorical column, a <strong>Variable</strong> menu lets you pick which one to display.</p>
+        <ul class="help-list">
+            <li><strong>Chart type</strong> — switch between a <strong>Bar Chart</strong>, <strong>Pie Chart</strong>, or <strong>Waffle Chart</strong>. All three show the same counts in a different form.</li>
+            <li><strong>Frequency vs Relative</strong> — for the bar chart, choose whether the axis shows raw counts (Frequency) or proportions (Relative). This option applies to the bar chart.</li>
+            <li><strong>Show values</strong> — turn on to print each category's count or percentage directly on the chart.</li>
+            <li><strong>Order</strong> — arrange the categories by <strong>Data order</strong>, by <strong>Frequency</strong> (largest or smallest first), or <strong>A–Z</strong>. Sorting by frequency makes a Pareto-style ranking easy to read.</li>
+        </ul>
+        <p>The <strong>Frequency Table</strong> on the right lists every category with its count and proportion. Once data loads, a summary bar appears with buttons to Explore, Preview, or Download the data, and a <strong>Change Data</strong> button to load something else.</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

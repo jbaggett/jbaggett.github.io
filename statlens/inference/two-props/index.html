@@ -187,9 +187,17 @@
         <p class="tool-crosslink">Just estimating? <a href="../estimate/two-props/">Confidence Interval for a Difference in Proportions &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>Two-Proportion z-Test</h2>
+        <p class="help-intro">Compare the proportions of two independent groups (p<sub>1</sub> − p<sub>2</sub>), using a z-statistic and the standard normal distribution.</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (a group column and an outcome column), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the successes and n for each group.</li>
+            <li><strong>Grouping / outcome selectors</strong> and <strong>Count as success</strong> let you choose the columns and the success category when loading raw data. <strong>Swap Group 1 ↔ Group 2</strong> flips which group is subtracted.</li>
+            <li><strong>Alternative (H<sub>a</sub>):</strong> click the toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Null value:</strong> standard mode tests p<sub>1</sub> − p<sub>2</sub> = 0. Turn on <strong>Expert mode</strong> (settings gear) to make the null difference editable.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check the success/failure counts in each group.</li>
+            <li>Results — the z-statistic, p-value, confidence interval, and plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

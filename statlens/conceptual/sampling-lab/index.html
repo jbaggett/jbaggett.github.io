@@ -261,9 +261,31 @@
              aria-atomic="true" class="sr-only"></div>
     </main>
 
-    <dialog id="page-help" aria-label="Help">
+    <dialog id="page-help" aria-label="Sampling Distribution Lab help">
         <h2>Sampling Distribution Lab</h2>
         <p class="help-intro">Draw repeated samples and watch the sampling distribution of the statistic build up. <strong>Sample size <i>n</i></strong> and <strong>number of samples</strong> are two different controls with two different effects: more samples fill in the same distribution; larger <i>n</i> produces a different, narrower one.</p>
+        <h3>What am I looking at?</h3>
+        <p>Three linked panels: the <strong>Population</strong> you sample from, the latest <strong>One sample</strong> of <i>n</i> values, and the <strong>Sampling distribution</strong> on the right, where each dot is one sample's statistic. The sampling distribution is what builds up as you draw.</p>
+        <h3>Choose the statistic</h3>
+        <p>The toggle picks what each sample reports:</p>
+        <ul>
+            <li><strong>Quantitative (mean)</strong> &mdash; each dot is a sample mean (x&#772;).</li>
+            <li><strong>Categorical (proportion)</strong> &mdash; each dot is a sample proportion (p&#770;).</li>
+        </ul>
+        <h3>Set up the population</h3>
+        <ul>
+            <li><strong>Population shape</strong> (mean mode) &mdash; Normal, Right-skewed, Left-skewed, Uniform, or Bimodal. Try a skewed or bimodal shape to see how the sampling distribution still becomes bell-shaped as <i>n</i> grows.</li>
+            <li><strong>Population proportion (<i>p</i>)</strong> (proportion mode) &mdash; the true success rate the samples are drawn from.</li>
+            <li><strong>Sample size (<i>n</i>)</strong> &mdash; how many observations go into each sample. Larger <i>n</i> gives a narrower sampling distribution.</li>
+        </ul>
+        <h3>Draw samples</h3>
+        <p>Use <strong>+1 / +10 / +100 / +1000</strong> to add that many samples; each drops a dot into the sampling distribution. <strong>Reset</strong> clears it. Changing <i>n</i> or the population starts a fresh distribution.</p>
+        <h3>Compare and overlay</h3>
+        <ul>
+            <li><strong>Freeze this distribution to compare</strong> &mdash; pins the current sampling distribution so you can change <i>n</i> and draw again to see the new one against it side by side.</li>
+            <li><strong>Show normal curve</strong> &mdash; overlays the matching normal curve, so you can judge how close the sampling distribution is to normal.</li>
+        </ul>
+        <h3>Keyboard shortcuts</h3>
         <dl>
             <dt><kbd>1</kbd></dt><dd>+1 sample</dd>
             <dt><kbd>2</kbd></dt><dd>+10 samples</dd>

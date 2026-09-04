@@ -211,9 +211,29 @@
     </main>
 
     
-    <dialog id="page-help" aria-label="Help">
-        <h2>Help</h2>
-        <p class="help-intro">Set the number of trials and probability of success to calculate binomial probabilities and visualize the distribution.</p>
+    <dialog id="page-help" aria-label="Binomial Distribution Calculator help">
+        <h2>Binomial Distribution Calculator</h2>
+        <p class="help-intro">Finds the probability of a given number of successes in a fixed number of independent trials, each with the same chance of success. The bars show the whole distribution; the highlighted bars are the ones your probability adds up.</p>
+        <h3>Setting up the distribution</h3>
+        <ul>
+            <li><strong>Trials (n)</strong> &mdash; how many trials (e.g. coin flips, patients, at-bats).</li>
+            <li><strong>Probability (p)</strong> &mdash; the chance of success on a single trial, between 0 and 1.</li>
+        </ul>
+        <p>The mean (&mu;&nbsp;=&nbsp;np) and standard deviation (&sigma;&nbsp;=&nbsp;&radic;npq) update automatically below the inputs.</p>
+        <h3>Asking a probability question</h3>
+        <ul>
+            <li><strong>k value</strong> &mdash; the number of successes you are asking about.</li>
+            <li><strong>Probability type</strong> &mdash; which question to answer: exactly k <strong>P(X&nbsp;=&nbsp;k)</strong>, or a range: <strong>P(X&nbsp;&le;&nbsp;k)</strong>, <strong>P(X&nbsp;&ge;&nbsp;k)</strong>, <strong>P(X&nbsp;&lt;&nbsp;k)</strong>, or <strong>P(X&nbsp;&gt;&nbsp;k)</strong>.</li>
+        </ul>
+        <p>The banner above the chart reports the result, and the matching bars are highlighted.</p>
+        <h3>Overlays</h3>
+        <ul>
+            <li><strong>Show mean line</strong> &mdash; marks &mu;&nbsp;=&nbsp;np on the chart.</li>
+            <li><strong>Show normal approximation</strong> &mdash; overlays the normal curve that approximates this binomial. The approximation is good when both np and n(1&minus;p) are large enough (roughly &ge;&nbsp;10).</li>
+        </ul>
+        <h3>Probability table</h3>
+        <p>Expand <strong>Probability table</strong> below the chart for the exact and cumulative probability of every value of k.</p>
+        <h3>Keyboard shortcuts</h3>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

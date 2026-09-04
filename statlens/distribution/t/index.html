@@ -93,9 +93,27 @@
              aria-atomic="true" class="sr-only"></div>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Adjust parameters and boundaries to compute probabilities and critical values.</p>
+    <dialog id="page-help" aria-label="t Distribution Calculator help">
+        <h2>t Distribution Calculator</h2>
+        <p class="help-intro">Computes areas (probabilities) under a t curve. The t distribution is bell-shaped like the normal but has heavier tails; its exact shape depends on the degrees of freedom.</p>
+        <h3>Region to shade</h3>
+        <p>The buttons above the chart choose which area is shaded and reported:</p>
+        <ul>
+            <li><strong>Left</strong> &mdash; area below the boundary</li>
+            <li><strong>Right</strong> &mdash; area above the boundary</li>
+            <li><strong>Between</strong> &mdash; area in the middle band between two boundaries (a second input appears)</li>
+            <li><strong>Symmetric</strong> &mdash; the two outer tails, mirrored about 0 (useful for two-sided critical values)</li>
+        </ul>
+        <h3>Two-way lookup</h3>
+        <p>The calculator works in both directions &mdash; edit whichever value you know:</p>
+        <ul>
+            <li>Type a boundary in the <strong>t&nbsp;value</strong> box to get the shaded <strong>area</strong>.</li>
+            <li>Type an <strong>area</strong> in the <strong>Probability</strong> box to get the t value (the critical value) that produces it.</li>
+        </ul>
+        <p>You can also drag the boundary line(s) directly on the chart. The banner beside the buttons reports the current area.</p>
+        <h3>Degrees of freedom</h3>
+        <p>Set <strong>Degrees of freedom</strong> with the number box or the slider. Fewer df means heavier tails; as df grows the curve approaches the standard normal.</p>
+        <h3>Keyboard shortcuts</h3>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

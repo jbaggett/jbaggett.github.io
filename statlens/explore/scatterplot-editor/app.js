@@ -116,6 +116,36 @@ function buildChart() {
   update();
 }
 
+/**
+ * Keyboard handler for a focused point — the non-drag alternative.
+ * Arrows move (Shift = larger step); Delete/Backspace/Enter/Space remove.
+ * @this {SVGCircleElement}
+ * @param {KeyboardEvent} ev
+ * @param {{x:number,y:number}} d
+ */
+function onPointKey(ev, d) {
+  const rx = xDomain[1] - xDomain[0], ry = yDomain[1] - yDomain[0];
+  const sx = (ev.shiftKey ? 0.05 : 0.01) * rx;
+  const sy = (ev.shiftKey ? 0.05 : 0.01) * ry;
+  switch (ev.key) {
+    case 'ArrowLeft':  d.x = +Math.max(xDomain[0], d.x - sx).toFixed(2); break;
+    case 'ArrowRight': d.x = +Math.min(xDomain[1], d.x + sx).toFixed(2); break;
+    case 'ArrowUp':    d.y = +Math.min(yDomain[1], d.y + sy).toFixed(2); break;
+    case 'ArrowDown':  d.y = +Math.max(yDomain[0], d.y - sy).toFixed(2); break;
+    case 'Delete': case 'Backspace': case 'Enter': case ' ': {
+      const i = points.indexOf(d);
+      if (i >= 0 && points.length > 1) { points.splice(i, 1); announce(`Removed a point. ${points.length} points left.`); update(); }
+      else announce('Keep at least one point.');
+      ev.preventDefault();
+      return;
+    }
+    default: return;
+  }
+  ev.preventDefault();
+  update();
+  announce(`Point moved to x ${d.x}, y ${d.y}.`);
+}
+
 function update() {
   if (!ptsG) return;
   const fit = points.length >= 2 ? linreg(points.map(p => p.x), points.map(p => p.y)) : null;
@@ -154,6 +184,8 @@ function update() {
   sel.exit().remove();
   sel.enter().append('circle').attr('class', 'sp-point')
     .attr('r', 6).attr('fill', '#569BBD').attr('fill-opacity', 0.85).attr('stroke', '#fff')
+    .attr('tabindex', 0).attr('role', 'button')
+    .on('keydown', onPointKey)
     .call(d3drag()
       .subject(function (ev, d) { return { x: x(d.x), y: y(d.y) }; })
       .on('start', function () { this.__moved = false; })
@@ -171,6 +203,7 @@ function update() {
       }))
     .merge(sel)
     .classed('sp-influential', (d, i) => i === influentialIdx)
+    .attr('aria-label', d => `Data point at x ${d.x}, y ${d.y}. Arrow keys move it; Delete removes it.`)
     .attr('cx', d => x(d.x)).attr('cy', d => y(d.y));
 
   updateReadout(fit, influentialIdx);
@@ -211,6 +244,19 @@ document.getElementById('reset-btn')?.addEventListener('click', () => {
 showResidualsCheck?.addEventListener('change', update);
 flagInfluenceCheck?.addEventListener('change', update);
 window.addEventListener('resize', buildChart);
+
+// Numeric add-point control — the non-drag way to add a point.
+document.getElementById('add-point-btn')?.addEventListener('click', () => {
+  const ax = /** @type {HTMLInputElement} */ (document.getElementById('add-x'));
+  const ay = /** @type {HTMLInputElement} */ (document.getElementById('add-y'));
+  const xv = parseFloat(ax?.value ?? ''), yv = parseFloat(ay?.value ?? '');
+  if (!isFinite(xv) || !isFinite(yv)) { announce('Enter a number for both x and y.'); return; }
+  points.push({ x: +xv.toFixed(2), y: +yv.toFixed(2) });
+  computeDomains(); buildChart(); // re-pad so a point outside the old range is visible
+  announce(`Added a point at x ${+xv.toFixed(2)}, y ${+yv.toFixed(2)}. ${points.length} points.`);
+  if (ax) ax.value = ''; if (ay) ay.value = '';
+  ax?.focus();
+});
 
 // Dataset dropdown (regression-type: two numeric variables).
 (async () => {

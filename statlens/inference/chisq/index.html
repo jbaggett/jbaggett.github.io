@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi-Square Test | StatLens</title>
+    <title>Chi-Square Test of Independence | StatLens</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -320,9 +320,15 @@
              aria-atomic="true" class="sr-only"></div>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>Chi-Square Test of Independence</h2>
+        <p class="help-intro">Test whether two categorical variables are associated. The null hypothesis is fixed — H<sub>0</sub> says the variables are <em>independent</em> (not related) — so there is nothing to edit and no confidence interval. The test compares the counts you observe with the counts expected under independence: χ² = Σ(O−E)²/E, with df = (rows − 1)(columns − 1), and the p-value is the right tail.</p>
+        <ul>
+            <li><strong>Load raw data</strong> from the <em>Datasets</em>, <em>Edit Data</em>, or <em>Open File</em> tab, then choose a <strong>Row variable</strong> and <strong>Column variable</strong> to cross-tabulate.</li>
+            <li><strong>Or use the <em>Enter Table</em> tab</strong> to type observed counts directly — set the number of rows and columns, fill in the table, and click <em>Load</em>.</li>
+            <li><strong>Click <em>Compute</em></strong> to run the test. (This is the only inference page with a Compute button; the others update automatically.)</li>
+            <li><strong>Read the results:</strong> the χ² statistic, degrees of freedom, and p-value, plus the observed and expected count tables. Every expected count should be at least 5 for the approximation to hold.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
