@@ -15,7 +15,7 @@ import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanism
 import { renderSimChart, resolveChartType, createChartToggle, computeDomain } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
 import {
-  ciMethodFromUrl, createCiMethodControl, normalApproxCI, zLabelFor,
+  ciMethodFromUrl, createCiMethodControl, normalApproxCI, zLabelFor, bcaCI,
   drawCiPills, drawCompareBounds, appendCiLegend,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from '../../js/ci-method.js';
@@ -269,6 +269,7 @@ if (ciSelect) {
         refreshCi();
         announce(m === 'percentile' ? 'Percentile method.'
           : m === 'se' ? 'Normal-approximation method: slope ± z · SE.'
+          : m === 'bca' ? 'BCa method: the percentile interval corrected for bias and skew.'
           : 'Showing both the percentile and the normal-approximation interval.');
       },
     });
@@ -452,7 +453,9 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
 
   // The CI method drives the picture, not just the results box (see js/ci-method.js).
   const normalCI = (ci && n > 1) ? normalApproxCI(slopes, getCiLevel()) : null;
-  let shownCI = (normalCI && ciMethod === 'se') ? normalCI : ci;
+  const bcaRes = (ci && ciMethod === 'bca') ? bcaSlopeCI(slopes, getCiLevel()) : null;
+  let shownCI = (bcaRes && ciMethod === 'bca') ? bcaRes.ci
+    : (normalCI && ciMethod === 'se') ? normalCI : ci;
   let compareCI = (normalCI && ciMethod === 'both') ? normalCI : null;
   // Reasoning / figure-only mode: no CI shading, bound lines, or pills — the
   // student reads the interval off the histogram. Nulling shownCI cascades
@@ -531,6 +534,25 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
  * @param {number} se
  * @param {number} ciLevel
  */
+/**
+ * BCa interval for the regression slope (expert-only method).
+ * Jackknife = leave-one-out OLS slope over the (x, y) pairs.
+ * @param {number[]} slopes - bootstrap replicate slopes
+ * @param {number} ciLevel
+ * @returns {{ci:[number,number],z0:number,a:number,fellBack:boolean}|null}
+ */
+function bcaSlopeCI(slopes, ciLevel) {
+  const n = xData.length;
+  if (n < 3 || !slopes || slopes.length < 20) return null;
+  const jack = [];
+  for (let i = 0; i < n; i++) {
+    const xs = [], ys = [];
+    for (let j = 0; j < n; j++) if (j !== i) { xs.push(xData[j]); ys.push(yData[j]); }
+    jack.push(linreg(xs, ys).slope);
+  }
+  return bcaCI([...slopes], observedSlope, jack, ciLevel);
+}
+
 function displayResults(slopes, ci, se, ciLevel) {
   if (!resultDiv) return;
   const d = dataPrecision;
@@ -547,13 +569,29 @@ function displayResults(slopes, ci, se, ciLevel) {
 
   const pctLine = `<p><strong>${ciPct}% CI (percentile):</strong> (${ciLo}, ${ciHi})</p>`;
   const seLine = `<p><strong>${ciPct}% CI (±${zLabel}·SE):</strong> <span class="ci-formula">b&#8321; &plusmn; ${zLabel}&middot;SE = ${fmt(m)} &plusmn; ${zLabel} &times; ${fmt(se)} = (${seLo}, ${seHi})</span></p>`;
-  const ciBlock = ciMethod === 'se' ? seLine : ciMethod === 'both' ? pctLine + seLine : pctLine;
+  // BCa (expert-only): bias-corrected & accelerated slope interval.
+  let bcaLine = '', bcaLo = ciLo, bcaHi = ciHi;
+  if (ciMethod === 'bca') {
+    const r = bcaSlopeCI(slopes, ciLevel);
+    if (r) {
+      bcaLo = `<span class="ci-value">${fmt(r.ci[0])}</span>`;
+      bcaHi = `<span class="ci-value">${fmt(r.ci[1])}</span>`;
+      const fell = r.fellBack
+        ? ' (bootstrap distribution too degenerate for the adjustment; showing the plain percentile interval)'
+        : ` The cutoffs are shifted for bias (z&#8320; = ${r.z0.toFixed(3)}) and skew (a = ${r.a.toFixed(3)}).`;
+      bcaLine = `<p><strong>${ciPct}% CI (BCa):</strong> (${bcaLo}, ${bcaHi})<span class="hint" style="display:block">Bias-corrected and accelerated.${fell}</span></p>`;
+    }
+  }
+  const ciBlock = ciMethod === 'se' ? seLine
+    : ciMethod === 'both' ? pctLine + seLine
+    : ciMethod === 'bca' ? (bcaLine || pctLine)
+    : pctLine;
   const bothNote = ciMethod === 'both'
     ? '<p class="hint">The two methods agree closely when the bootstrap distribution is symmetric; they diverge when it’s skewed (where the percentile CI is the more honest one).</p>'
     : '';
   // The interval the student reads is the one the chart draws.
-  const interpLo = ciMethod === 'se' ? seLo : ciLo;
-  const interpHi = ciMethod === 'se' ? seHi : ciHi;
+  const interpLo = ciMethod === 'se' ? seLo : ciMethod === 'bca' ? bcaLo : ciLo;
+  const interpHi = ciMethod === 'se' ? seHi : ciMethod === 'bca' ? bcaHi : ciHi;
 
   if (!showReadout) {
     // Reasoning mode: keep the count, hide the computed interval — the student

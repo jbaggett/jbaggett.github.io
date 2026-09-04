@@ -16,7 +16,7 @@ import { drawSpike } from './spike.js';
 import { renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
-  drawCiPills, drawCompareBounds, appendCiLegend,
+  drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
@@ -3233,8 +3233,9 @@ export function initSimPage(config) {
     }
     if (!ok) {
       // Fall back to percentile and drop any normal-curve overlay the previous
-      // statistic (or a URL param) had switched on.
-      if (ciMethod !== 'percentile') setCiMethod('percentile');
+      // statistic (or a URL param) had switched on. BCa is left alone — it's
+      // valid for any statistic, not just the mean.
+      if (ciMethod === 'se' || ciMethod === 'both') setCiMethod('percentile');
       if (theoryOverlayOn) {
         theoryOverlayOn = false;
         theoryAutoOn = false;
@@ -3259,6 +3260,7 @@ export function initSimPage(config) {
     }
     announce(method === 'percentile' ? 'Percentile method.'
       : method === 'se' ? 'Normal-approximation method: estimate ± z · SE.'
+      : method === 'bca' ? 'BCa method: the percentile interval corrected for bias and skew.'
       : 'Showing both the percentile and the normal-approximation interval.');
   }
 
@@ -3273,7 +3275,9 @@ export function initSimPage(config) {
    * the percentile method, unless the student had switched it on themselves.
    */
   function syncTheoryToMethod() {
-    const want = ciMethod !== 'percentile';
+    // Only the normal-approximation methods pair with the fitted normal curve.
+    // Percentile and BCa are read off the bootstrap distribution itself.
+    const want = ciMethod === 'se' || ciMethod === 'both';
     if (want && !theoryOverlayOn) {
       theoryOverlayOn = true;
       theoryAutoOn = true;
@@ -3383,6 +3387,42 @@ export function initSimPage(config) {
     return getBootstrapStat().fn(data1);
   }
 
+  /**
+   * BCa bootstrap interval (expert-only method). Uses the SAME statistic that
+   * generated the replicates (getBootstrapStat().fn) for the observed value and
+   * the jackknife, so bias-correction and acceleration are consistent.
+   * @param {number[]} stats - Bootstrap replicate statistics
+   * @param {number} ciLevel
+   * @returns {{ ci: [number,number], z0: number, a: number, fellBack: boolean } | null}
+   */
+  function computeBcaResult(stats, ciLevel) {
+    if (config.mode !== 'bootstrap' || !stats || stats.length < 20) return null;
+    const thetaHat = computeObservedStat();
+    if (thetaHat == null) return null;
+    const statFn = getBootstrapStat().fn;
+    /** @type {number[]} */
+    let jack;
+    if (config.paired && data2.length === data1.length && data2.length > 0) {
+      const diffs = data1.map((v, i) => data2[i] - v);
+      jack = jackknife1(diffs, statFn);
+    } else if (config.twoGroup && data2.length > 0) {
+      // Jackknife over the pooled observations: leave out each point from its
+      // own group and recompute the difference statistic.
+      jack = [];
+      const s2Full = statFn(data2);
+      for (let i = 0; i < data1.length; i++) {
+        jack.push(statFn(data1.filter((_, j) => j !== i)) - s2Full);
+      }
+      const s1Full = statFn(data1);
+      for (let i = 0; i < data2.length; i++) {
+        jack.push(s1Full - statFn(data2.filter((_, j) => j !== i)));
+      }
+    } else {
+      jack = jackknife1(data1, statFn);
+    }
+    return bcaCI([...stats], thetaHat, jack, ciLevel);
+  }
+
   function renderChart(stats, ci, observedStat, direction) {
     chartContainer.innerHTML = '';
     const n = stats.length;
@@ -3402,8 +3442,15 @@ export function initSimPage(config) {
     if (config.mode === 'bootstrap' && ci && stats.length > 1) {
       normalCI = normalApproxCI(stats, getCiLevel());
     }
+    /** BCa bounds (expert-only method) — read off the distribution like percentile. */
+    let bcaBounds = null;
+    if (config.mode === 'bootstrap' && ci && ciMethod === 'bca') {
+      const r = computeBcaResult(stats, getCiLevel());
+      if (r) bcaBounds = r.ci;
+    }
     /** Bounds that shade the distribution and drive the pills. */
-    const shownCI = (normalCI && ciMethod === 'se') ? normalCI : ci;
+    const shownCI = (bcaBounds && ciMethod === 'bca') ? bcaBounds
+      : (normalCI && ciMethod === 'se') ? normalCI : ci;
     /** A second pair of bounds drawn for comparison (Both mode only). */
     const compareCI = (normalCI && ciMethod === 'both') ? normalCI : null;
     // Percentile bounds are dusty red; normal-approximation bounds are dark teal.
@@ -3704,8 +3751,24 @@ export function initSimPage(config) {
     const pctLine = `<p><strong>${ciPct}% CI (percentile):</strong> (${ciLo}, ${ciHi})</p>`;
     // Worked normal-approximation formula, e.g. "x̄ ± 2·SE = 20.0 ± 2 × 0.99 = (18.0, 22.0)".
     const seLineHtml = `<p><strong>${ciPct}% CI (±${zLabel}·SE):</strong> <span class="ci-formula">${statSymbol} &plusmn; ${zLabel}&middot;SE = ${fmt(m)} &plusmn; ${zLabel} &times; ${fmt(se)} = (${seLo}, ${seHi})</span></p>`;
+    // BCa (expert-only): bias-corrected & accelerated interval, read off the
+    // distribution like percentile but with the cutoffs shifted for skew/bias.
+    let bcaLine = '';
+    let bcaLo = ciLo, bcaHi = ciHi;
+    if (ciMethod === 'bca') {
+      const r = computeBcaResult(stats, ciLevel);
+      if (r) {
+        bcaLo = `<span class="ci-value">${fmt(r.ci[0])}</span>`;
+        bcaHi = `<span class="ci-value">${fmt(r.ci[1])}</span>`;
+        const fell = r.fellBack
+          ? ' (bootstrap distribution too degenerate for the adjustment; showing the plain percentile interval)'
+          : ` The cutoffs are shifted for bias (z&#8320; = ${r.z0.toFixed(3)}) and skew (a = ${r.a.toFixed(3)}).`;
+        bcaLine = `<p><strong>${ciPct}% CI (BCa):</strong> (${bcaLo}, ${bcaHi})<span class="hint" style="display:block">Bias-corrected and accelerated.${fell}</span></p>`;
+      }
+    }
     const ciBlock = ciMethod === 'se' ? seLineHtml
       : ciMethod === 'both' ? pctLine + seLineHtml
+      : ciMethod === 'bca' ? (bcaLine || pctLine)
       : pctLine;
     const bothNote = ciMethod === 'both'
       ? '<p class="hint">The two methods agree closely when the bootstrap distribution is symmetric; they diverge when it’s skewed (where the percentile CI is the more honest one).</p>'
@@ -3713,8 +3776,8 @@ export function initSimPage(config) {
 
     // The interval the student reads is the one the chart draws. In Both mode the
     // percentile interval is the one being shaded, so it carries the interpretation.
-    const interpLo = ciMethod === 'se' ? seLo : ciLo;
-    const interpHi = ciMethod === 'se' ? seHi : ciHi;
+    const interpLo = ciMethod === 'se' ? seLo : ciMethod === 'bca' ? bcaLo : ciLo;
+    const interpHi = ciMethod === 'se' ? seHi : ciMethod === 'bca' ? bcaHi : ciHi;
 
     resultDiv.innerHTML = showReadout ? `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>

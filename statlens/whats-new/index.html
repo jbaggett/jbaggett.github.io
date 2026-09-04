@@ -39,6 +39,12 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-09-04<span class="cl-tag tool">Feature</span></div>
+            <h2>BCa bootstrap confidence intervals (expert mode)</h2>
+            <p>Every bootstrap CI page now offers a third method — <strong>BCa</strong> (bias-corrected and accelerated) — alongside Percentile and ±2 SE. BCa shifts the percentile cutoffs to correct for <em>bias</em> and <em>skew</em> in the bootstrap distribution, so it's the more accurate interval when the distribution isn't symmetric (a skewed mean, a proportion near 0 or 1, a slope). It's an <strong>expert-mode</strong> option (turn on "Expert mode" in Settings, or add <code>?ci_method=bca</code>), so the student default stays the plain percentile interval. Available on one-mean, one-proportion, two-means, two-proportions, paired, and slope. The math is validated against R/scipy's BCa.</p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-09-04<span class="cl-tag tool">Improved</span></div>
             <h2>Clearer help on every tool — and keyboard editing in the Scatterplot Editor</h2>
             <p>A site-wide pass on the in-tool help (the <strong>?</strong> button). The distribution calculators, the traditional-inference tests, and the explore pages now have help that actually describes their controls instead of a generic one-liner. We also corrected the simulation help so it names the right idea: <strong>bootstrap</strong> pages estimate a <em>confidence interval</em>, <strong>randomization</strong> pages compute a <em>p-value</em> — no more mixing the two. The chi-square test help no longer mentions a confidence interval it never had. And the <a href="../explore/scatterplot-editor/">Scatterplot Editor</a> is now fully <strong>keyboard-operable</strong>: Tab to a point, arrow-keys to move it (Shift for bigger steps), Delete to remove it, and a numeric box to add one — no dragging required. The <a href="../data/">dataset catalog</a> gained a help panel too.</p>

@@ -14,7 +14,7 @@
  */
 
 import * as d3Selection from 'd3-selection';
-import { mean, sd } from './stats.js';
+import { mean, sd, quantile } from './stats.js';
 import { addProbPill } from './dist-markers.js';
 
 /** Bound-line colours, one per method. Both draw dashed — the colour says which. */
@@ -46,6 +46,83 @@ export function invNorm(p) {
   }
   q = Math.sqrt(-2 * Math.log(1 - p));
   return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+}
+
+/**
+ * Error function (Abramowitz & Stegun 7.1.26; |error| < 1.5e-7). Dependency-free.
+ * @param {number} x
+ * @returns {number}
+ */
+function erf(x) {
+  const s = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return s * y;
+}
+
+/** Standard-normal CDF Φ. */
+export function normCDF(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+
+/**
+ * Leave-one-out jackknife statistic values for a ONE-sample statistic.
+ * @param {number[]} data
+ * @param {(sample: number[]) => number} statFn
+ * @returns {number[]}
+ */
+export function jackknife1(data, statFn) {
+  const n = data.length;
+  const out = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const loo = new Array(n - 1);
+    let k = 0;
+    for (let j = 0; j < n; j++) if (j !== i) loo[k++] = data[j];
+    out[i] = statFn(loo);
+  }
+  return out;
+}
+
+/**
+ * BCa (bias-corrected and accelerated) bootstrap confidence interval.
+ * Matches R's boot::boot.ci(type="bca") / scipy.stats.bootstrap(method="BCa"):
+ *   z0 = Φ⁻¹( #{θ*_b < θ̂} / B )                (bias correction)
+ *   a  = Σ(θ̄_(·) − θ̂_(i))³ / (6 [Σ(θ̄_(·) − θ̂_(i))²]^{3/2})   (acceleration, from jackknife)
+ *   endpoints at adjusted percentiles Φ( z0 + (z0 ± z*)/(1 − a(z0 ± z*)) ).
+ * Falls back to the plain percentile interval when z0/a are undefined
+ * (e.g. all replicates on one side, or a degenerate jackknife).
+ *
+ * @param {number[]} stats - Bootstrap replicate statistics
+ * @param {number} thetaHat - Observed statistic on the original sample
+ * @param {number[]} jack - Jackknife leave-one-out statistic values
+ * @param {number} ciLevel - Percent, e.g. 95
+ * @returns {{ ci: [number, number], z0: number, a: number, fellBack: boolean }}
+ */
+export function bcaCI(stats, thetaHat, jack, ciLevel) {
+  const B = stats.length;
+  const alpha = (100 - ciLevel) / 100;
+  const pct = () => /** @type {[number, number]} */ ([quantile(stats, alpha / 2), quantile(stats, 1 - alpha / 2)]);
+  if (B < 2 || !jack || jack.length < 3) return { ci: pct(), z0: NaN, a: NaN, fellBack: true };
+
+  // Bias correction (strict "<", matching scipy/R).
+  let below = 0;
+  for (const s of stats) if (s < thetaHat) below++;
+  const z0 = invNorm(below / B);
+
+  // Acceleration from the jackknife.
+  const jbar = jack.reduce((s, v) => s + v, 0) / jack.length;
+  let num = 0, den = 0;
+  for (const ji of jack) { const d = jbar - ji; num += d * d * d; den += d * d; }
+  const a = den === 0 ? 0 : num / (6 * Math.pow(den, 1.5));
+
+  if (!isFinite(z0) || !isFinite(a)) return { ci: pct(), z0, a, fellBack: true };
+
+  const zLo = invNorm(alpha / 2), zHi = invNorm(1 - alpha / 2);
+  const adj = (/** @type {number} */ z) => { const t = z0 + z; return normCDF(z0 + t / (1 - a * t)); };
+  let a1 = adj(zLo), a2 = adj(zHi);
+  if (!isFinite(a1) || !isFinite(a2) || a1 >= a2) return { ci: pct(), z0, a, fellBack: true };
+  a1 = Math.min(Math.max(a1, 1e-4), 1 - 1e-4);
+  a2 = Math.min(Math.max(a2, 1e-4), 1 - 1e-4);
+  return { ci: [quantile(stats, a1), quantile(stats, a2)], z0, a, fellBack: false };
 }
 
 /** z for a confidence level, with z = 2 exactly at 95% (the "±2 SE" rule of thumb). */
@@ -90,6 +167,7 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
       <button type="button" data-cim="percentile">Percentile</button>
       <button type="button" data-cim="se">±2 SE</button>
       <button type="button" data-cim="both">Both</button>
+      <button type="button" data-cim="bca" class="expert-only" title="Bias-corrected and accelerated — adjusts the percentile interval for skew and bias in the bootstrap distribution.">BCa</button>
     </div>`;
   ciPrimary.insertAdjacentElement('afterend', row);
 
@@ -137,7 +215,7 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
  */
 export function ciMethodFromUrl() {
   const m = (new URLSearchParams(location.search).get('ci_method') || '').toLowerCase();
-  return (m === 'se' || m === 'both') ? m : 'percentile';
+  return (m === 'se' || m === 'both' || m === 'bca') ? m : 'percentile';
 }
 
 /**
