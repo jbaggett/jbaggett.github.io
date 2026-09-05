@@ -31,9 +31,10 @@
 
 import { createRng } from '../../js/prng.js';
 import { quantile, sd } from '../../js/stats.js';
-import { normCDF } from '../../js/ci-method.js';
+import { normCDF, invNorm } from '../../js/ci-method.js';
 import { initHelp, initSettings, initKeyboardShortcuts, announce } from '../../js/page-utils.js';
 import { prefersReducedMotion } from '../../js/settings.js';
+import { flyOntoTargets } from '../../js/dotplot-resample.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -44,6 +45,9 @@ const POOL = 4000;          // pre-drawn samples — the "true" sampling distrib
 const BOOT = 4000;          // pre-drawn bootstrap resamples
 const CI_LEVEL = 0.95;
 const BAND_MIN = 200;       // resamples/samples before a CI or band is trustworthy enough to draw
+/** Charcoal — the ±z·SE comparison bracket. Neutral on purpose: it is a
+ *  reference line, not a third distribution, and must not fight blue vs red. */
+const SE_COLOR = '#3B3B3B';
 
 /** True sampling distribution — blue. Solid outline. */
 const BLUE = '#0072B2';
@@ -97,9 +101,12 @@ const sampleTally = document.getElementById('sample-tally');
 const insetWrap = document.getElementById('inset-wrap');
 const insetContainer = document.getElementById('inset-container');
 const insetTally = document.getElementById('inset-tally');
+const insetTitle = document.getElementById('inset-title');
 
 const distContainer = document.getElementById('dist-container');
 const distSub = document.getElementById('dist-subtitle');
+const seOption = document.getElementById('se-option');
+const showSeCheckbox = /** @type {HTMLInputElement|null} */ (document.getElementById('show-se'));
 const xbarRow = document.getElementById('xbar-row');
 const xbarSlider = /** @type {HTMLInputElement} */ (document.getElementById('xbar-slider'));
 const xbarVal = document.getElementById('xbar-val');
@@ -156,6 +163,11 @@ let candIdx = 0;            // which of those is currently frozen
 let domain = [0, 1];
 
 const reduceMotion = prefersReducedMotion();
+
+/** Last inset render — its circles are the flight's targets. @type {{circles: SVGCircleElement[], statX: number, statY: number}|null} */
+let lastInset = null;
+/** Pending auto-run step, so a new selection cancels the previous sequence. */
+let autoRunTimer = 0;
 
 // ---------------------------------------------------------------------------
 // Population construction
@@ -283,6 +295,28 @@ function buildBoots() {
     boots.push(idx);
     bootMeans.push(meanOf(idx));
   }
+}
+
+/**
+ * x̄ ± z·SE_boot — the interval Todd would build, for comparison.
+ *
+ * Centred on x̄ (the textbook form), not on the bootstrap distribution's own
+ * mean the way js/ci-method.js `normalApproxCI` does; the difference is the
+ * bootstrap bias and is negligible for a mean, but x̄ is what "x-bar plus or
+ * minus two SEs" actually means.
+ *
+ * Uses the EXACT z (1.96), deliberately not the house `zFor(95)` = 2 used on
+ * the bootstrap pages. This page's whole question is whether the two intervals
+ * coincide; the "±2 SE" rule of thumb is ~2% wider than a true 95% interval,
+ * which would show up here as a permanent small gap that is an artifact of the
+ * convention rather than a real difference between the methods.
+ */
+function seInterval() {
+  if (bootShown < BAND_MIN) return null;
+  const z = invNorm(1 - (1 - CI_LEVEL) / 2);
+  const xb = poolMeans[origIndex];
+  const half = z * bootSE();
+  return /** @type {[number, number]} */ ([xb - half, xb + half]);
 }
 
 /** The percentile CI from the resamples revealed so far, or null. */
@@ -428,8 +462,16 @@ function renderPopulation(base, top, color) {
         'fill-opacity': m ? fmt(opacityFor(m), 3) : (inBag ? 0.14 : 1),
         stroke: m || inBag ? color : '#8a8a8a',
         // Stroke thickens with multiplicity — a second, non-colour cue.
-        'stroke-width': m ? Math.min(1 + 0.9 * m, 3.5) : (inBag ? 1.8 : 0.8),
+        'stroke-width': m ? Math.min(1 + 0.9 * m, 3.5) : (inBag ? 2.2 : 0.8),
       });
+      // The bag stays the primary mark even while a resample is filled in on
+      // top of it: an outer halo keeps "these ten are the sample" readable.
+      if (inBag) {
+        g.appendChild(el('circle', {
+          cx: fmt(cx, 1), cy: fmt(cy, 1), r: fmt(r + 1.4, 2),
+          fill: 'none', stroke: color, 'stroke-width': 1, 'stroke-opacity': 0.35,
+        }));
+      }
       g.appendChild(c);
     }
   }
@@ -499,89 +541,107 @@ function axisGroup(y, height, opts = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * The frozen sample, blown up — Todd's inset. Every dot of the ORIGINAL sample
- * appears exactly once; the shading is how many times the CURRENT resample drew
- * it. That is the picture the whole page turns on: the bootstrap's bag is these
- * n values, and a resample is this bag with some dots taken repeatedly and
- * others left white.
- * @param {number[]|null} resample - the current bootstrap resample, or null
+ * The inset box. Before a resample it holds the ORIGINAL sample — the bag the
+ * bootstrap draws from. Once a resample exists it holds the BOOTSTRAP SAMPLE:
+ * one dot per draw, so a value taken four times shows four dots rather than one
+ * dark one. Todd Will's staging — the dots fly up into this box from the
+ * population, the box relabels, and its x̄* then falls to the plot below — which
+ * splits "resample, compute, record" into three legible beats instead of one
+ * mid-air blur.
+ *
+ * Returns the circles indexed by DRAW ORDER (aligned to `resample`), so the
+ * flight can pair each one with the population dot it came from. Two draws of
+ * the same dot correctly share one source and get two targets.
+ *
+ * @param {number[]|null} resample - dot indices of the current resample, or null
+ * @returns {{ circles: SVGCircleElement[], statX: number, statY: number }|null}
  */
 function renderInset(resample) {
-  if (!insetContainer || !insetTally) return;
-  const idx = pool[origIndex];
-  const counts = resample ? tally(resample) : new Map();
+  if (!insetContainer || !insetTally) return null;
+  const shown = resample ?? pool[origIndex];
+  const isBoot = !!resample;
 
-  // One column per distinct value in the sample, in value order, evenly spaced.
-  /** @type {Map<number, number[]>} value -> dot ids of the sample at that value */
-  const byValue = new Map();
-  for (const i of idx) {
-    if (!byValue.has(population[i])) byValue.set(population[i], []);
-    byValue.get(population[i]).push(i);
-  }
-  const cols = [...byValue.keys()].sort((a, b) => a - b);
-  const maxStack = Math.max(...cols.map(v => byValue.get(v).length));
+  // Sort by value so the box reads left-to-right like a dotplot; keep the draw
+  // index so the caller can pair circle -> source.
+  const draws = shown.map((dotIdx, i) => ({ dotIdx, value: population[dotIdx], i }))
+    .sort((a, b) => a.value - b.value || a.i - b.i);
+  const cols = [...new Set(draws.map(d => d.value))];
+  const stackCount = new Map();
+  const maxStack = Math.max(...cols.map(v => draws.filter(d => d.value === v).length));
 
-  const IW = 320, IL = 10, IR = 10, inner = IW - IL - IR;
-  const r = Math.min(inner / (2 * cols.length), 64 / (2 * maxStack), 19);
-  const axisH = 22, topPad = 15;   // headroom for the ×n badges above the top row
+  // A CONTINUOUS value axis, not one column per distinct value. Ordinal spacing
+  // packed 52 and 57 side by side with no gap between them, which misreads the
+  // sample's spread and put the x̄* marker at a meaningless position.
+  const IW = 320, IL = 12, IR = 12, inner = IW - IL - IR;
+  const lo = cols[0] - 0.5, hi = cols[cols.length - 1] + 0.5;
+  const slots = Math.max(1, Math.round(hi - lo));
+  const r = Math.min(inner / (2 * slots), 96 / (2 * maxStack), 11);
+  const axisH = 30, topPad = 8;
   const height = topPad + maxStack * 2 * r + axisH;
   const baseY = topPad + maxStack * 2 * r;
-  // Centre the columns in the available width when there are few of them.
-  const span = cols.length * 2 * r;
-  const x0 = IL + (inner - span) / 2;
-  const cxOf = (/** @type {number} */ k) => x0 + k * 2 * r + r;
+  const stat = meanOf(shown);
+  const ix = (/** @type {number} */ v) => IL + ((v - lo) / (hi - lo)) * inner;
 
   const svg = el('svg', {
     viewBox: `0 0 ${IW} ${height}`, preserveAspectRatio: 'xMidYMid meet',
-    'aria-label': `The frozen sample, the values the bootstrap resamples from: `
-      + `${tallyText(idx)}. Sample mean ${fmt(meanOf(idx))}.`
-      + (resample ? ` This resample drew ${tallyText(resample)}, mean ${fmt(meanOf(resample))}.` : ''),
+    'aria-label': isBoot
+      ? `Bootstrap sample: ${tallyText(shown)}. Its mean is ${fmt(stat)}.`
+      : `The original sample, the values the bootstrap resamples from: `
+        + `${tallyText(shown)}. Sample mean ${fmt(stat)}.`,
   });
   svg.style.width = '100%';
   svg.style.height = 'auto';
 
-  cols.forEach((value, k) => {
-    const ids = byValue.get(value);
-    ids.forEach((id, j) => {
-      const m = counts.get(id) || 0;
-      const cx = cxOf(k), cy = baseY - (j * 2 * r) - r;
-      svg.appendChild(el('circle', {
-        cx: fmt(cx, 1), cy: fmt(cy, 1), r: fmt(r - 1.4, 2),
-        fill: RED_FILL, 'fill-opacity': m ? fmt(opacityFor(m), 3) : 0.09,
-        stroke: RED, 'stroke-width': m ? Math.min(1 + 0.9 * m, 3.5) : 1.2,
-      }));
+  /** @type {SVGCircleElement[]} circles indexed by draw order */
+  const circles = new Array(shown.length);
+  for (const d of draws) {
+    const j = stackCount.get(d.value) || 0;
+    stackCount.set(d.value, j + 1);
+    const cx = ix(d.value), cy = baseY - (j * 2 * r) - r;
+    const c = el('circle', {
+      cx: fmt(cx, 1), cy: fmt(cy, 1), r: fmt(Math.max(2, r - 1.4), 2),
+      fill: RED_FILL, 'fill-opacity': isBoot ? 0.62 : 0.12,
+      stroke: RED, 'stroke-width': isBoot ? 1.6 : 1.2,
+    });
+    svg.appendChild(c);
+    circles[d.i] = /** @type {SVGCircleElement} */ (c);
+    // Labels only while they can actually be read.
+    if (r >= 7) {
       svg.appendChild(el('text', {
         x: fmt(cx, 1), y: fmt(cy + r * 0.33, 1), 'text-anchor': 'middle',
-        'font-size': fmt(r * 0.88, 1), 'font-weight': m ? 700 : 400,
-        fill: m && opacityFor(m) > 0.6 ? '#fff' : '#444',
-      }, String(value)));
-      // Multiplicity in words as well as in shade — the shading alone is a
-      // colour-only cue, and how many times a value was drawn is the point.
-      if (j === ids.length - 1) {
-        const total = ids.reduce((t, i2) => t + (counts.get(i2) || 0), 0);
-        if (total > 1) {
-          svg.appendChild(el('text', {
-            x: fmt(cx, 1), y: fmt(cy - r - 1.5, 1), 'text-anchor': 'middle',
-            'font-size': fmt(Math.max(9, r * 0.62), 1), 'font-weight': 700, fill: RED,
-          }, `×${total}`));
-        }
-      }
-    });
-  });
+        'font-size': fmt(r * 0.86, 1), 'font-weight': isBoot ? 700 : 400,
+        fill: isBoot ? '#fff' : '#444', 'pointer-events': 'none',
+      }, String(d.value)));
+    }
+  }
 
   svg.appendChild(el('line', {
-    x1: fmt(x0, 1), y1: baseY, x2: fmt(x0 + span, 1), y2: baseY, stroke: '#777', 'stroke-width': 1,
+    x1: fmt(IL, 1), y1: baseY, x2: fmt(IW - IR, 1), y2: baseY, stroke: '#777', 'stroke-width': 1,
+  }));
+  // Ticks at every value present, so the gaps read as gaps.
+  for (const v of cols) {
+    svg.appendChild(el('line', { x1: fmt(ix(v), 1), y1: baseY, x2: fmt(ix(v), 1), y2: baseY + 4, stroke: '#999' }));
+  }
+  // The statistic sits at its true position on the box's own axis — this is the
+  // point the x̄* dot falls from.
+  const statX = ix(stat);
+  svg.appendChild(el('line', {
+    x1: fmt(statX, 1), y1: topPad, x2: fmt(statX, 1), y2: baseY + 7,
+    stroke: RED, 'stroke-width': 2, 'stroke-dasharray': '5 3',
   }));
   svg.appendChild(xbarText({
-    x: fmt(x0 + span / 2, 1), y: baseY + 16, 'text-anchor': 'middle',
+    x: fmt(statX, 1), y: baseY + 22, 'text-anchor': 'middle',
     'font-size': 12, 'font-weight': 700, fill: RED,
-  }, ` = ${fmt(meanOf(idx))}`));
+  }, ` = ${fmt(stat)}`, isBoot));
 
   insetContainer.innerHTML = '';
   insetContainer.appendChild(svg);
-  insetTally.innerHTML = resample
-    ? `This resample: ${tallyText(resample)} \u2192 <i class="xb">x</i>* = ${fmt(meanOf(resample))}`
-    : `The bag — the bootstrap draws only from these ${idx.length} values.`;
+  if (insetTitle) insetTitle.textContent = isBoot ? 'Bootstrap sample' : 'Original sample';
+  insetTally.innerHTML = isBoot
+    ? `${tallyText(shown)} \u2192 <i class="xb">x</i>* = ${fmt(stat)}`
+    : `The bag \u2014 the bootstrap draws only from these ${shown.length} values.`;
+
+  return { circles, statX, statY: baseY };
 }
 
 // ---------------------------------------------------------------------------
@@ -649,7 +709,8 @@ let distGeom = { baseY: 0, height: 0 };
 
 function renderDistribution() {
   if (!distContainer) return;
-  const topPad = 30, plotH = 162, axisH = fs(62);
+  const showSe = stage === 2 && !!showSeCheckbox?.checked;
+  const topPad = 30, plotH = 162, axisH = fs(showSe ? 92 : 62);
   const baseY = topPad + plotH;
   const height = baseY + axisH;
   distGeom = { baseY, height };
@@ -759,20 +820,28 @@ function renderDistribution() {
     'font-weight': 700, fill: '#333',
   }, ''));
 
-  // --- the percentile CI, as a bracket under the axis ----------------------
+  // --- the intervals, as brackets under the axis ---------------------------
+  // Percentile is primary (thick, red). The ±z·SE comparison, when switched on,
+  // sits directly beneath in thinner charcoal — same axis, so "they line up" or
+  // "they don't" is readable as two bar widths, with no arithmetic.
   const ci = stage === 2 ? percentileCI() : null;
   if (ci) {
     const y = baseY + fs(40);
-    svg.appendChild(el('line', {
-      x1: sx(ci[0]), y1: y, x2: sx(ci[1]), y2: y, stroke: RED, 'stroke-width': 3,
-    }));
-    for (const b of ci) {
-      svg.appendChild(el('line', { x1: sx(b), y1: y - 6, x2: sx(b), y2: y + 6, stroke: RED, 'stroke-width': 3 }));
-    }
-    svg.appendChild(el('text', {
-      x: fmt((sx(ci[0]) + sx(ci[1])) / 2, 1), y: y + fs(18), 'text-anchor': 'middle',
-      'font-size': fs(11.5), 'font-weight': 700, fill: RED,
-    }, `95% percentile CI  (${fmt(ci[0])}, ${fmt(ci[1])})`));
+    const bracket = (/** @type {[number,number]} */ iv, /** @type {number} */ yy,
+                     /** @type {string} */ col, /** @type {number} */ w,
+                     /** @type {string} */ label) => {
+      svg.appendChild(el('line', { x1: sx(iv[0]), y1: yy, x2: sx(iv[1]), y2: yy, stroke: col, 'stroke-width': w }));
+      for (const bb of iv) {
+        svg.appendChild(el('line', { x1: sx(bb), y1: yy - 6, x2: sx(bb), y2: yy + 6, stroke: col, 'stroke-width': w }));
+      }
+      svg.appendChild(el('text', {
+        x: fmt((sx(iv[0]) + sx(iv[1])) / 2, 1), y: yy + fs(15), 'text-anchor': 'middle',
+        'font-size': fs(11), 'font-weight': 700, fill: col,
+      }, label));
+    };
+    bracket(ci, y, RED, 3, `95% percentile CI  (${fmt(ci[0])}, ${fmt(ci[1])})`);
+    const seCi = showSe ? seInterval() : null;
+    if (seCi) bracket(seCi, y + fs(30), SE_COLOR, 2, `x\u0304 \u00B1 1.96\u00B7SE  (${fmt(seCi[0])}, ${fmt(seCi[1])})`);
   }
 
   distContainer.innerHTML = '';
@@ -849,25 +918,37 @@ function renderVerdict() {
   const tick = (/** @type {boolean} */ ok) => (ok ? '✓' : '✗');
 
   let note;
+  // Todd Will's observation, measured: corr(x̄, s) = 0.59 on the skewed
+  // population vs 0.00 on the normal one (where x̄ and s are independent). It
+  // explains the direction of the under-coverage, so it belongs on screen.
+  const xbarSNote = shapeSelect.value === 'skewed'
+    ? ` <span class="skew-note">On a skewed population, <em>where</em> ${XB} lands and `
+      + `<em>how spread out</em> the sample is turn out to be linked: a high ${XB} usually `
+      + `caught the long tail, so <em>s</em> is large and the interval comes out wide, while a `
+      + `low ${XB} gets a narrow one — which is why the misses pile up on the low side.</span>`
+    : '';
+
   if (agree && captures) {
     note = `<p class="verdict-note"><strong>The two agree.</strong> That is the argument for `
-      + `the percentile method: the bootstrap distribution is the sampling distribution slid `
-      + `over to sit at ${XB}, so reading the middle 95% off it captures μ exactly when `
-      + `${XB} was a typical draw — which is 95% of the time. Sweep the slider and watch both `
-      + `lines flip together at the edges of the blue band.</p>`;
+      + `the percentile method: the bootstrap distribution carries roughly the shape and spread `
+      + `of the sampling distribution but sits at ${XB} instead of μ, so reading the middle 95% `
+      + `off it captures μ close to whenever ${XB} was a typical draw — which is 95% of the `
+      + `time. Sweep the slider and watch both lines flip together at the edges of the blue `
+      + `band.${xbarSNote}</p>`;
   } else if (agree) {
     note = `<p class="verdict-note"><strong>The two agree — and this is the 5%.</strong> `
       + `The interval missed μ, but not because the method failed: it missed because this `
       + `${XB} was an unusually extreme draw, outside the blue band. A 95% method is supposed `
       + `to miss exactly this often, and only for samples like this one. Slide ${XB} back `
-      + `toward the band and both lines flip together.</p>`;
+      + `toward the band and both lines flip together.${xbarSNote}</p>`;
   } else {
     note = `<p class="verdict-note"><strong>Here they disagree — and that is worth seeing.</strong> `
-      + `The argument above assumes the bootstrap distribution is the sampling distribution simply `
-      + `<em>shifted</em>. It is not, quite: its width came from this one sample. True SE = `
+      + `The argument above leans on the bootstrap distribution having the same spread as the `
+      + `sampling distribution, just shifted. It does not, quite: its width came from this one `
+      + `sample. True SE = `
       + `${fmt(trueSe)}, bootstrap SE = ${fmt(bootSE())}. With n = ${n()} the width is estimated `
       + `from ${n()} values, so the interval comes out too narrow or too wide and the two verdicts `
-      + `come apart. Raise n and disagreements get rare.</p>`;
+      + `come apart. Raise n and disagreements get rare.${xbarSNote}</p>`;
   }
 
   verdictBox.className = 'verdict ' + (agree ? (captures ? 'verdict-yes' : 'verdict-no') : 'verdict-mixed');
@@ -892,6 +973,109 @@ function bootSE() {
 // ---------------------------------------------------------------------------
 // Drop animation — a mean "falls" from the population panel into the plot below
 // ---------------------------------------------------------------------------
+
+/**
+ * A single dot falling from `from` to `to`, accelerating. The last beat of both
+ * stages: a computed statistic dropping into the distribution that records it.
+ * @param {{x:number,y:number}} from
+ * @param {{x:number,y:number}} to
+ * @param {string} color
+ * @param {() => void} onDone
+ */
+function dropDot(from, to, color, onDone) {
+  const SZ = 13;
+  const d = document.createElement('div');
+  d.style.cssText = `position:fixed;left:${from.x - SZ / 2}px;top:${from.y - SZ / 2}px;`
+    + `width:${SZ}px;height:${SZ}px;border-radius:50%;background:${color};`
+    + `box-shadow:0 0 0 1.5px #fff, 0 1px 4px rgba(0,0,0,.45);z-index:1000;pointer-events:none;`;
+  document.body.appendChild(d);
+  const t0 = performance.now(), DUR = 480;
+  function fall(now) {
+    const t = Math.min((now - t0) / DUR, 1);
+    const e = t * t;                       // falling, not gliding
+    d.style.left = `${from.x + (to.x - from.x) * t - SZ / 2}px`;
+    d.style.top = `${from.y + (to.y - from.y) * e - SZ / 2}px`;
+    if (t < 1) requestAnimationFrame(fall);
+    else { d.remove(); onDone(); }
+  }
+  requestAnimationFrame(fall);
+}
+
+/** Centre of the newest dot in the plot below, or the axis point for `value`. */
+function landingPoint(/** @type {Element|null} */ newest, /** @type {number} */ value) {
+  const distSvg = distContainer?.querySelector('svg');
+  if (!distSvg) return null;
+  if (newest) {
+    const b = newest.getBoundingClientRect();
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  }
+  const dr = distSvg.getBoundingClientRect();
+  const k = dr.width / VW;
+  return { x: dr.left + sx(value) * k, y: dr.top + distGeom.baseY * k };
+}
+
+/**
+ * Stage 2's +1, staged the way Todd Will asked for it:
+ *
+ *   FLY   each draw lifts off the population circle it came from — the ringed
+ *         original sample, never the wider population — and lands in the inset
+ *         box, which assembles a visible bootstrap sample and relabels itself.
+ *         A dot taken twice sends two flyers from the same circle, which is what
+ *         "with replacement" looks like.
+ *   DROP  the box's x̄* then falls from the box into the bootstrap distribution.
+ *
+ * Splitting it in two is the point: resample, compute, record are three separate
+ * things, and the old mid-air merge blurred them into one.
+ *
+ * @param {number[]} resample - population dot indices
+ * @param {number} statValue
+ */
+function animateBootstrapDraw(resample, statValue) {
+  const newest = distContainer?.querySelector('[data-newest]');
+  const reveal = () => {
+    if (newest) /** @type {SVGElement} */ (newest).style.removeProperty('opacity');
+  };
+  const popSvg = popContainer?.querySelector('svg');
+  const insetSvg = insetContainer?.querySelector('svg');
+  if (reduceMotion || !popSvg || !insetSvg || !lastInset) return;
+
+  const dropFromBox = () => {
+    const ir = insetSvg.getBoundingClientRect();
+    const k = ir.width / 320;              // the inset's own viewBox width
+    const from = { x: ir.left + lastInset.statX * k, y: ir.top + lastInset.statY * k };
+    const to = landingPoint(newest, statValue);
+    if (!to) { reveal(); return; }
+    dropDot(from, to, RED_FILL, reveal);
+  };
+
+  // Above ~30 draws the flight is a swarm rather than a mechanism, so skip it —
+  // but keep the second beat. "The box's statistic falls into the distribution"
+  // is the half that carries the idea, and it reads fine at any n.
+  if (resample.length > 30) {
+    if (newest) /** @type {SVGElement} */ (newest).style.opacity = '0';
+    setTimeout(dropFromBox, 220);
+    return;
+  }
+
+  const pairs = [];
+  for (let i = 0; i < resample.length; i++) {
+    const src = popSvg.querySelector(`[data-dot="${resample[i]}"]`);
+    const tgt = lastInset.circles[i];
+    if (!src || !tgt) continue;
+    const b = src.getBoundingClientRect();
+    pairs.push({ source: { x: b.left + b.width / 2, y: b.top + b.height / 2 }, target: tgt });
+  }
+  if (!pairs.length) return;
+
+  if (newest) /** @type {SVGElement} */ (newest).style.opacity = '0';
+  // No footprints: the population already marks every drawn dot by filling it,
+  // so a second mark on the same circle would just be noise.
+  const ran = flyOntoTargets(pairs, {
+    color: RED_FILL, footprints: false,
+    onDone: () => setTimeout(dropFromBox, 260),
+  });
+  if (!ran) reveal();
+}
 
 /**
  * The +1 flight, in three phases — the mechanism the whole page is about, so it
@@ -978,23 +1162,7 @@ function animateSampleFly(dotIndices, meanValue, color) {
 
     // Merged: one dot carrying the statistic, dropping into the plot below.
     for (const f of flyers) f.d.remove();
-    const merged = document.createElement('div');
-    const SZ = 13;
-    merged.style.cssText = `position:fixed;left:${mergeX - SZ / 2}px;top:${mergeY - SZ / 2}px;`
-      + `width:${SZ}px;height:${SZ}px;border-radius:50%;background:${color};`
-      + `box-shadow:0 0 0 1.5px #fff, 0 1px 4px rgba(0,0,0,.45);z-index:1000;pointer-events:none;`;
-    document.body.appendChild(merged);
-    const t1 = performance.now();
-    function fall(now2) {
-      const td = Math.min((now2 - t1) / DROP, 1);
-      // Accelerate downward — it is falling, not gliding.
-      const ed = td * td;
-      merged.style.left = `${mergeX + (landX - mergeX) * td - SZ / 2}px`;
-      merged.style.top = `${mergeY + (landY - mergeY) * ed - SZ / 2}px`;
-      if (td < 1) requestAnimationFrame(fall);
-      else { merged.remove(); reveal(); }
-    }
-    requestAnimationFrame(fall);
+    dropDot({ x: mergeX, y: mergeY }, { x: landX, y: landY }, color, reveal);
   }
   requestAnimationFrame(frame);
 }
@@ -1045,10 +1213,11 @@ function render() {
         : `Frozen sample (n = ${n()}): ${tallyText(pool[origIndex])}  \u2192  `
           + `<i class="xb">x</i> = ${fmt(poolMeans[origIndex])}`;
     }
-    renderInset(cur);
+    lastInset = renderInset(cur);
   }
   if (insetWrap) insetWrap.hidden = stage !== 2;
   if (xbarRow) xbarRow.hidden = stage !== 2;
+  if (seOption) seOption.hidden = stage !== 2 || !params.has('se');
   if (distSub) {
     distSub.textContent = stage === 1
       ? 'one dot per sample mean — the true sampling distribution'
@@ -1064,6 +1233,12 @@ function render() {
 
 /** @param {number} count */
 function draw(count) {
+  // Landing on ?stage=2, or moving the slider, fills the distribution to its
+  // maximum — after which +1 clamped and silently did nothing. If it is already
+  // complete, a generate click means "let me watch it build", so start over.
+  if (stage === 1 && shown >= POOL) shown = 0;
+  if (stage === 2 && bootShown >= BOOT) bootShown = 0;
+
   if (stage === 1) {
     const before = shown;
     shown = Math.min(POOL, shown + count);
@@ -1077,7 +1252,7 @@ function draw(count) {
     bootShown = Math.min(BOOT, bootShown + count);
     render();
     if (count === 1 && bootShown > before) {
-      animateSampleFly(boots[bootShown - 1], bootMeans[bootShown - 1], RED_FILL);
+      animateBootstrapDraw(boots[bootShown - 1], bootMeans[bootShown - 1]);
     }
     const ci = percentileCI();
     announce(`${bootShown} resamples drawn.`
@@ -1137,20 +1312,62 @@ function updateXbarReadout() {
       + `different spread. Watch the interval width and the verdict change.`;
 }
 
+/** Cancel any queued auto-run step (a new selection supersedes the old one). */
+function cancelAutoRun() {
+  if (autoRunTimer) { clearTimeout(autoRunTimer); autoRunTimer = 0; }
+}
+
+/**
+ * Todd's "+1, +1, +1, then the rest": after a NEW original sample is chosen the
+ * bootstrap distribution restarts from empty and rebuilds itself, so it is
+ * visible that each original sample produces its own bootstrap rather than the
+ * red curve simply sliding around.
+ *
+ * Only fires on a deliberate pick (the "Another sample" button). Dragging the
+ * slider keeps the instant morph — running a 5-second sequence on every tick
+ * would make sweeping for the verdict flip unusable, which is the page's other
+ * main gesture.
+ */
+function autoRunBootstrap() {
+  cancelAutoRun();
+  bootShown = 0;
+  render();
+  const step = (/** @type {number} */ k) => {
+    if (k >= 3) {
+      autoRunTimer = window.setTimeout(() => { bootShown = BOOT; render(); autoRunTimer = 0; }, 520);
+      return;
+    }
+    bootShown += 1;
+    render();
+    animateBootstrapDraw(boots[bootShown - 1], bootMeans[bootShown - 1]);
+    autoRunTimer = window.setTimeout(() => step(k + 1), reduceMotion ? 260 : 1750);
+  };
+  autoRunTimer = window.setTimeout(() => step(0), 320);
+}
+
+/** A quick "this is a new bootstrap" blink — used when the slider is released. */
+function blinkRebuild() {
+  cancelAutoRun();
+  bootShown = 0;
+  render();
+  autoRunTimer = window.setTimeout(() => { bootShown = BOOT; render(); autoRunTimer = 0; }, 220);
+}
+
 // ---------------------------------------------------------------------------
 // Wiring
 // ---------------------------------------------------------------------------
 
 for (const btn of genBtns) {
-  btn.addEventListener('click', () => draw(Number(btn.dataset.count)));
+  btn.addEventListener('click', () => { cancelAutoRun(); draw(Number(btn.dataset.count)); });
 }
 resetBtn?.addEventListener('click', () => {
+  cancelAutoRun();
   if (stage === 1) shown = 0; else bootShown = 0;
   render();
   announce('Reset.');
 });
 for (const btn of stageBtns) {
-  btn.addEventListener('click', () => setStage(Number(btn.dataset.stage)));
+  btn.addEventListener('click', () => { cancelAutoRun(); setStage(Number(btn.dataset.stage)); });
 }
 let resizeTimer = 0;
 window.addEventListener('resize', () => {
@@ -1158,30 +1375,35 @@ window.addEventListener('resize', () => {
   resizeTimer = window.setTimeout(() => { if (syncViewport()) render(); }, 150);
 });
 
-shapeSelect.addEventListener('change', rebuild);
-nInput.addEventListener('change', rebuild);
+showSeCheckbox?.addEventListener('change', () => render());
+
+shapeSelect.addEventListener('change', () => { cancelAutoRun(); rebuild(); });
+nInput.addEventListener('change', () => { cancelAutoRun(); rebuild(); });
 
 xbarSlider.addEventListener('input', () => {
+  cancelAutoRun();
   setTarget(Number(xbarSlider.value));
   buildBoots();
-  // Changing the frozen sample shows its finished bootstrap distribution — the
-  // point of the slider is to sweep capture/miss, not to re-run the animation.
+  // Dragging shows the finished bootstrap distribution — the point of the slider
+  // is to sweep capture/miss, not to re-run the animation each tick.
   bootShown = BOOT;
   updateXbarReadout();
   render();
 });
+
+// On release, blink the distribution back through empty: a short reminder that
+// this is a different original sample with its own bootstrap.
+xbarSlider.addEventListener('change', () => { if (stage === 2) blinkRebuild(); });
 
 anotherBtn?.addEventListener('click', () => {
   if (candidates.length < 2) return;
   candIdx = (candIdx + 1) % candidates.length;
   origIndex = candidates[candIdx];
   buildBoots();
-  bootShown = BOOT;
   updateXbarReadout();
-  render();
-  const ci = percentileCI();
-  announce(`Frozen a different sample with mean ${fmt(poolMeans[origIndex])}.`
-    + (ci ? ` 95% percentile CI ${fmt(ci[0])} to ${fmt(ci[1])}.` : ''));
+  autoRunBootstrap();
+  announce(`Frozen a different sample with mean ${fmt(poolMeans[origIndex])}. `
+    + 'Rebuilding its bootstrap distribution.');
 });
 
 initSettings();
@@ -1190,6 +1412,9 @@ initKeyboardShortcuts(genBtns, resetBtn);
 
 // --- URL params -------------------------------------------------------------
 if (params.get('shape') === 'skewed') shapeSelect.value = 'skewed';
+if (showSeCheckbox && ['1', 'true', 'yes'].includes((params.get('se') || '').toLowerCase())) {
+  showSeCheckbox.checked = true;
+}
 const nParam = Number(params.get('n'));
 if (Number.isFinite(nParam) && nParam >= 2 && nParam <= 60) nInput.value = String(nParam);
 

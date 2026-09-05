@@ -154,6 +154,15 @@
             background: repeating-linear-gradient(45deg, #F05133 0, #F05133 2px, transparent 2px, transparent 5px);
         }
         .legend span + span { margin-left: 1.1rem; }
+        .chart-option {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center; gap: 0.35rem;
+            font-size: 0.85rem; margin-top: 0.15rem;
+        }
+        .chart-option > span { white-space: nowrap; }
+        .chart-option[hidden] { display: none; }
 
         /* x-bar. A combining macron (U+0304) collides with the following space
            in body text and drifts on some phone fonts, so draw the bar with an
@@ -171,7 +180,7 @@
 
     <main>
         <h1>Why the Percentile CI Works<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
-        <p>A bootstrap distribution is the sampling distribution <strong>slid over</strong> to sit at your sample mean. If that were exactly true, the middle 95% of the bootstrap distribution would capture &mu; precisely when <i class="xb">x</i> was a typical draw. Build both distributions on one axis and check.</p>
+        <p>A bootstrap distribution has roughly the <strong>shape and spread</strong> of the true sampling distribution, but it is <strong>shifted</strong> to centre on your sample mean instead of on &mu;. <em>If that shift were exact</em>, the middle 95% of the bootstrap distribution would capture &mu; precisely when <i class="xb">x</i> was a typical draw. Build both distributions on one axis and see how close it gets.</p>
 
         <section id="controls" aria-label="Controls">
             <div class="controls">
@@ -206,7 +215,7 @@
                 <div id="pop-container"></div>
                 <p class="tally" id="sample-tally" aria-live="polite"></p>
                 <div class="inset" id="inset-wrap" hidden>
-                    <h3>Original sample</h3>
+                    <h3 id="inset-title">Original sample</h3>
                     <div id="inset-container"></div>
                     <p class="tally" id="inset-tally"></p>
                 </div>
@@ -225,6 +234,10 @@
                     <span><span class="sw sw-blue"></span>True sampling distribution (solid)</span>
                     <span><span class="sw sw-red"></span>Bootstrap distribution (dashed, hatched)</span>
                 </p>
+                <label class="chart-option" id="se-option" hidden>
+                    <input type="checkbox" id="show-se">
+                    <span>Also draw <i class="xb">x</i> &plusmn; 1.96&middot;SE for comparison</span>
+                </label>
             </div>
 
             <div class="stats-row" id="stats-row" hidden>
@@ -251,7 +264,7 @@
         <p class="help-intro">The percentile method reads a confidence interval straight off the bootstrap distribution &mdash; the middle 95%. This page shows <em>why</em> that captures &mu; about 95% of the time, by building the true sampling distribution and a bootstrap distribution on the same axis.</p>
 
         <h3>The argument in one line</h3>
-        <p>If the bootstrap distribution were exactly the sampling distribution <strong>shifted</strong> from &mu; over to <i class="xb">x</i>, then the middle 95% of the bootstrap distribution would contain &mu; <em>exactly when</em> <i class="xb">x</i> itself landed in the middle 95% of the sampling distribution &mdash; which happens 95% of the time. That is the whole justification, and the page lets you check both halves of it every frame.</p>
+        <p><em>If</em> the bootstrap distribution were exactly the sampling distribution <strong>shifted</strong> from &mu; over to <i class="xb">x</i> &mdash; same shape, same spread, new centre &mdash; then the middle 95% of the bootstrap distribution would contain &mu; <em>exactly when</em> <i class="xb">x</i> itself landed in the middle 95% of the sampling distribution, which happens 95% of the time. That is the whole justification. The shift is never exact, so the page lets you check both halves of it every frame and see where it frays.</p>
 
         <h3>Stage 1 &mdash; the true sampling distribution</h3>
         <p>The top panel is a population of about 200 values, one circle each. Each draw takes a sample of <i>n</i>, highlights the circles it drew (darker where a circle was drawn more than once), and drops that sample's <i class="xb">x</i> into the blue distribution below. Use <strong>+1</strong> to watch one at a time, then <strong>+1000</strong> to fill it in.</p>
