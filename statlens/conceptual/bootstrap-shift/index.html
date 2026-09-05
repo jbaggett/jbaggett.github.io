@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Why the Percentile CI Works | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+        }
+    }
+    </script>
+    <style>
+        @media (min-width: 900px) { main { max-width: 1080px; } }
+
+        .panel {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem 0.5rem;
+            position: relative;
+            margin: 0.6rem 0;
+        }
+        .panel-pop  { border-left: 4px solid #0072B2; }
+        .panel-dist { border-left: 4px solid var(--ims-dark, #114B5F); }
+        .panel h2 {
+            font-size: 0.85rem; margin: 0 0 0.2rem;
+            color: var(--ims-gray-text); font-weight: 400;
+            display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap;
+        }
+        .panel-tag {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: #fff; padding: 0.05rem 0.4rem;
+            border-radius: 3px; background: #0072B2;
+        }
+        .panel-dist .panel-tag { background: var(--ims-dark, #114B5F); }
+        .panel svg { font-family: var(--font-body); display: block; }
+
+        /* The frozen sample, blown up. Todd's "inset": the sample shown at
+           readable size while still visibly highlighted inside the population. */
+        .inset {
+            border: 1px solid #d6a89e; border-radius: 6px;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 0.3rem 0.5rem 0.4rem;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+            margin: 0.4rem 0 0;
+        }
+        .inset h3 {
+            font-size: 0.75rem; margin: 0 0 0.1rem; color: #C0341C;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+        @media (min-width: 900px) {
+            .inset { position: absolute; top: 30px; right: 12px; width: 320px; margin: 0; }
+        }
+
+        .tally {
+            font-family: var(--font-mono); font-size: 0.78rem;
+            color: var(--ims-gray-text); margin: 0.15rem 0 0; min-height: 1.1em;
+        }
+        .inset .tally { font-size: 0.75rem; color: #7a3626; }
+
+        /* Value labels inside the population dots become noise once the SVG is
+           scaled down on a phone. */
+        @media (max-width: 640px) { .pop-labels { display: none; } }
+
+        .controls {
+            display: flex; flex-wrap: wrap; gap: 1rem 1.4rem;
+            align-items: center; margin: 0.6rem 0;
+        }
+        .controls label { display: inline-flex; align-items: center; gap: 0.4rem; }
+        .controls select, .controls input[type="number"] { width: auto; }
+        .n-input { width: 4.5rem !important; }
+
+        .xbar-row {
+            display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+            margin: 0.5rem 0 0.2rem; padding: 0.5rem 0.6rem;
+            background: #fdf3f1; border: 1px solid #e8c4bc; border-radius: 6px;
+        }
+        .xbar-row[hidden] { display: none; }
+        /* A global `label { flex-direction: column }` otherwise stacks the
+           slider under its text and strands the value at the bottom. */
+        .xbar-row label {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center; gap: 0.5rem; flex: 1 1 22rem;
+        }
+        .xbar-row input[type="range"] { flex: 1 1 10rem; min-width: 8rem; }
+        .xbar-label { flex: 0 0 auto; white-space: nowrap; }
+        /* On a phone the label, slider and value stack rather than squeeze. */
+        @media (max-width: 560px) {
+            .xbar-row label { flex-wrap: wrap !important; }
+            .xbar-label { flex: 1 0 100%; }
+        }
+        .xbar-row .stat-value { font-family: var(--font-mono); font-weight: 700; color: #C0341C; }
+        .xbar-row #another-btn { flex: 0 0 auto; white-space: nowrap; }
+        .xbar-row #another-btn .xb { font-style: italic; }
+
+        .stats-row {
+            display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem;
+            margin: 0.5rem 0; font-size: 0.85rem;
+        }
+        .stats-row .stat-item { display: flex; gap: 0.3rem; }
+        .stats-row .stat-label { color: var(--ims-gray-text); }
+        .stats-row .stat-value { font-family: var(--font-mono); font-weight: 600; }
+        .stat-item[hidden] { display: none; }
+
+        /* Verdict. Colour is the LAST cue here: the ✓/✗ marks and the words
+           "inside/outside" and "captures/misses" carry the meaning on their own. */
+        .verdict {
+            border: 1px solid var(--border); border-left-width: 5px;
+            border-radius: 6px; padding: 0.6rem 0.8rem; margin: 0.7rem 0;
+            background: #fafafa;
+        }
+        .verdict-idle  { border-left-color: #9a9a9a; }
+        .verdict-yes   { border-left-color: #1B7F4B; background: #f2f9f4; }
+        .verdict-no    { border-left-color: #C0341C; background: #fdf4f2; }
+        .verdict-mixed { border-left-color: #B36A00; background: #fdf8ef; }
+        .verdict p { margin: 0.3rem 0; font-size: 0.92rem; }
+        .verdict-list { list-style: none; margin: 0; padding: 0; }
+        .verdict-list li {
+            display: flex; gap: 0.5rem; align-items: baseline;
+            margin: 0.15rem 0; font-size: 0.95rem;
+        }
+        .v-mark { font-weight: 700; font-size: 1.05rem; flex: 0 0 1rem; }
+        .verdict-yes .v-mark   { color: #1B7F4B; }
+        .verdict-no .v-mark    { color: #C0341C; }
+        .verdict-mixed .v-mark { color: #B36A00; }
+        .verdict-note { color: #444; }
+
+        .legend { font-size: 0.8rem; color: var(--ims-gray-text); margin: 0.3rem 0 0; }
+        .legend .sw {
+            display: inline-block; width: 22px; height: 10px; vertical-align: -1px;
+            margin-right: 0.3rem; border-radius: 2px;
+        }
+        .legend .sw-blue { background: rgba(0,114,178,0.28); border: 2px solid #0072B2; }
+        .legend .sw-red {
+            border: 2px dashed #C0341C;
+            background: repeating-linear-gradient(45deg, #F05133 0, #F05133 2px, transparent 2px, transparent 5px);
+        }
+        .legend span + span { margin-left: 1.1rem; }
+
+        /* x-bar. A combining macron (U+0304) collides with the following space
+           in body text and drifts on some phone fonts, so draw the bar with an
+           overline instead. SVG <text> keeps the combining form — it renders
+           fine there and cannot carry markup. */
+        .xb { font-style: italic; text-decoration: overline; text-underline-offset: 0.1em; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#controls">Skip to Controls</a>
+        <a href="#charts">Skip to Charts</a>
+        <a href="#verdict">Skip to Verdict</a>
+    </nav>
+
+    <main>
+        <h1>Why the Percentile CI Works<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <p>A bootstrap distribution is the sampling distribution <strong>slid over</strong> to sit at your sample mean. If that were exactly true, the middle 95% of the bootstrap distribution would capture &mu; precisely when <i class="xb">x</i> was a typical draw. Build both distributions on one axis and check.</p>
+
+        <section id="controls" aria-label="Controls">
+            <div class="controls">
+                <label for="pop-shape">Population:
+                    <select id="pop-shape">
+                        <option value="normal" selected>Normal</option>
+                        <option value="skewed">Right-skewed</option>
+                    </select>
+                </label>
+                <label for="sample-size"><span style="white-space:nowrap">Sample size (<i>n</i>):</span>
+                    <input type="number" id="sample-size" class="n-input" value="10" min="2" max="60" step="1">
+                </label>
+                <span role="group" aria-label="Stage" class="seg-control" id="stage-control">
+                    <button type="button" data-stage="1" aria-pressed="true">1 &middot; Sampling distribution</button>
+                    <button type="button" data-stage="2" aria-pressed="false">2 &middot; Bootstrap</button>
+                </span>
+            </div>
+
+            <div class="generate-bar" role="group" aria-label="Draw">
+                <button type="button" class="gen-btn" data-count="1">+1</button>
+                <button type="button" class="gen-btn" data-count="10">+10</button>
+                <button type="button" class="gen-btn" data-count="100">+100</button>
+                <button type="button" class="gen-btn" data-count="1000">+1000</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Reset" title="Reset" hidden>&#x21BA;</button>
+                <span class="gen-label" id="gen-label">Samples</span>
+            </div>
+        </section>
+
+        <section id="charts" aria-label="Charts">
+            <div class="panel panel-pop" id="pop-panel">
+                <h2><span class="panel-tag">Population</span> <span id="pop-subtitle">each sample highlights the dots it drew</span></h2>
+                <div id="pop-container"></div>
+                <p class="tally" id="sample-tally" aria-live="polite"></p>
+                <div class="inset" id="inset-wrap" hidden>
+                    <h3>Original sample</h3>
+                    <div id="inset-container"></div>
+                    <p class="tally" id="inset-tally"></p>
+                </div>
+            </div>
+
+            <div class="xbar-row" id="xbar-row" hidden>
+                <label for="xbar-slider"><span class="xbar-label">Original sample mean (<i class="xb">x</i>):</span><input type="range" id="xbar-slider" min="44" max="56" step="0.1" value="52"><span class="stat-value" id="xbar-val">&mdash;</span></label>
+                <button type="button" id="another-btn" class="btn-secondary">Another sample with this <i class="xb">x</i></button>
+                <p class="hint" id="xbar-hint" style="flex:1 1 100%;margin:0">Sweep the slider to move <i class="xb">x</i> across the sampling distribution. <strong>Another sample</strong> keeps <i class="xb">x</i> where it is and freezes a <em>different</em> sample with the same mean &mdash; same centre, different spread, so a different interval width.</p>
+            </div>
+
+            <div class="panel panel-dist">
+                <h2><span class="panel-tag">Distribution of means</span> <span id="dist-subtitle">one dot per sample mean &mdash; the true sampling distribution</span></h2>
+                <div id="dist-container"></div>
+                <p class="legend">
+                    <span><span class="sw sw-blue"></span>True sampling distribution (solid)</span>
+                    <span><span class="sw sw-red"></span>Bootstrap distribution (dashed, hatched)</span>
+                </p>
+            </div>
+
+            <div class="stats-row" id="stats-row" hidden>
+                <span class="stat-item"><span class="stat-label" id="draw-count-label">Samples drawn:</span> <span class="stat-value" id="draw-count">0</span></span>
+                <span class="stat-item"><span class="stat-label">Population &mu;:</span> <span class="stat-value" id="pop-mu">&mdash;</span></span>
+                <span class="stat-item"><span class="stat-label">Population &sigma;:</span> <span class="stat-value" id="pop-sigma">&mdash;</span></span>
+                <span class="stat-item"><span class="stat-label">True SE:</span> <span class="stat-value" id="true-se">&mdash;</span></span>
+                <span class="stat-item" id="sample-sd-item" hidden><span class="stat-label">This sample's <i>s</i>:</span> <span class="stat-value" id="sample-sd">&mdash;</span></span>
+                <span class="stat-item" id="boot-se-item" hidden><span class="stat-label">Bootstrap SE:</span> <span class="stat-value" id="boot-se">&mdash;</span></span>
+            </div>
+        </section>
+
+        <section aria-label="Verdict">
+            <div class="verdict verdict-idle" id="verdict" aria-live="polite">
+                <p>Draw samples to build the true sampling distribution. Once it has taken shape, switch to Stage 2 to bootstrap from a single sample.</p>
+            </div>
+        </section>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Why the Percentile CI Works help">
+        <h2>Why the Percentile CI Works</h2>
+        <p class="help-intro">The percentile method reads a confidence interval straight off the bootstrap distribution &mdash; the middle 95%. This page shows <em>why</em> that captures &mu; about 95% of the time, by building the true sampling distribution and a bootstrap distribution on the same axis.</p>
+
+        <h3>The argument in one line</h3>
+        <p>If the bootstrap distribution were exactly the sampling distribution <strong>shifted</strong> from &mu; over to <i class="xb">x</i>, then the middle 95% of the bootstrap distribution would contain &mu; <em>exactly when</em> <i class="xb">x</i> itself landed in the middle 95% of the sampling distribution &mdash; which happens 95% of the time. That is the whole justification, and the page lets you check both halves of it every frame.</p>
+
+        <h3>Stage 1 &mdash; the true sampling distribution</h3>
+        <p>The top panel is a population of about 200 values, one circle each. Each draw takes a sample of <i>n</i>, highlights the circles it drew (darker where a circle was drawn more than once), and drops that sample's <i class="xb">x</i> into the blue distribution below. Use <strong>+1</strong> to watch one at a time, then <strong>+1000</strong> to fill it in.</p>
+
+        <h3>Stage 2 &mdash; the bootstrap</h3>
+        <p>One sample is frozen, highlighted in red inside the population and blown up in the <strong>Original sample</strong> inset. Every resample now comes from <em>those <i>n</i> values only</em>, drawn with replacement &mdash; which is why circles go dark: at <i>n</i> = 10 a resample typically uses some values three or four times and skips others entirely. Each <i class="xb">x</i>* lands in the red distribution, overlaid on the blue one.</p>
+
+        <h3>The slider</h3>
+        <p><strong>Original sample mean (<i class="xb">x</i>)</strong> picks a different frozen sample by its mean. Sweeping it slides the red distribution across the blue one. Watch the two lines in the verdict flip together as <i class="xb">x</i> crosses the edge of the blue band &mdash; that agreement <em>is</em> the percentile method's justification.</p>
+
+        <h3>Where it breaks &mdash; and why that matters</h3>
+        <ul>
+            <li><strong>The width is estimated.</strong> The bootstrap distribution's spread comes from your one sample, so it is not exactly a shift of the sampling distribution. At <i>n</i> = 10 the two verdicts sometimes disagree. Raise <i>n</i> and disagreements get rare.</li>
+            <li><strong>Symmetry is doing work.</strong> The clean &ldquo;if and only if&rdquo; needs the sampling distribution to be symmetric as well as shifted. Switch the population to <strong>Right-skewed</strong> to see the percentile interval come out <em>asymmetric</em> &mdash; a real advantage over &plusmn;2&nbsp;SE, which is always symmetric &mdash; and to see coverage slip below 95% at small <i>n</i>. That gap is what the <a href="../../simulate/bootstrap-mean/?expert=true">BCa interval</a> exists to correct.</li>
+        </ul>
+
+        <h3>Reading the lower panel</h3>
+        <ul>
+            <li><strong>Blue shaded band</strong> &mdash; the central 95% of the true sampling distribution: where a single <i class="xb">x</i> usually lands.</li>
+            <li><strong>Blue dashed line</strong> &mdash; &mu;. <strong>Red dashed line and triangle</strong> &mdash; the frozen sample's <i class="xb">x</i>.</li>
+            <li><strong>Red bracket under the axis</strong> &mdash; the 95% percentile CI. The question is whether it spans the &mu; line.</li>
+        </ul>
+
+        <h3>Keyboard shortcuts</h3>
+        <dl>
+            <dt><kbd>1</kbd></dt><dd>+1</dd>
+            <dt><kbd>2</kbd></dt><dd>+10</dd>
+            <dt><kbd>3</kbd></dt><dd>+100</dd>
+            <dt><kbd>4</kbd></dt><dd>+1000</dd>
+            <dt><kbd>0</kbd></dt><dd>Reset</dd>
+            <dt><kbd>?</kbd></dt><dd>Show this help</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
+        </dl>
+        <button type="button" autofocus>Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

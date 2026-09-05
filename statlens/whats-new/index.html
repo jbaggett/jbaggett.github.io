@@ -39,6 +39,12 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-09-05<span class="cl-tag tool">New tool</span></div>
+            <h2>Why the Percentile CI Works</h2>
+            <p>A new conceptual demo that answers the question students (and colleagues) actually ask about the bootstrap: <em>why</em> is the middle 95% of the bootstrap distribution a confidence interval? Build the <strong>true sampling distribution</strong> from a visible 200-dot population, then freeze one sample and bootstrap from it — both distributions land on the <strong>same axis</strong>, so you can see that the bootstrap distribution is the sampling distribution <strong>slid over</strong> to sit at x&#772;. A slider sweeps the frozen sample's mean across the sampling distribution while the page reports two verdicts side by side: did x&#772; land in the central 95%, and did the percentile interval capture &mu;? They flip together — that agreement <em>is</em> the justification. Switch the population to <strong>right-skewed</strong> to see where the argument strains, which is exactly what the <a href="../simulate/bootstrap-mean/?expert=true">BCa interval</a> exists to fix. <a href="../conceptual/bootstrap-shift/">Open the tool &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-09-04<span class="cl-tag tool">Feature</span></div>
             <h2>BCa bootstrap confidence intervals (expert mode)</h2>
             <p>Every bootstrap CI page now offers a third method — <strong>BCa</strong> (bias-corrected and accelerated) — alongside Percentile and ±2 SE. BCa shifts the percentile cutoffs to correct for <em>bias</em> and <em>skew</em> in the bootstrap distribution, so it's the more accurate interval when the distribution isn't symmetric (a skewed mean, a proportion near 0 or 1, a slope). It's an <strong>expert-mode</strong> option (turn on "Expert mode" in Settings, or add <code>?ci_method=bca</code>), so the student default stays the plain percentile interval. Available on one-mean, one-proportion, two-means, two-proportions, paired, and slope. The math is validated against R/scipy's BCa.</p>

@@ -764,6 +764,31 @@ contrasts more-samples vs larger-n.
 
 ---
 
+### Why the Percentile CI Works (`conceptual/bootstrap-shift/`)
+
+Standalone page. Two stages on one shared x-axis: Stage 1 builds the true
+sampling distribution from repeated samples of a visible ~200-dot population;
+Stage 2 freezes one sample and overlays the bootstrap distribution resampled
+from it, with the 95% percentile CI drawn as a bracket. The page reports two
+verdicts every frame — whether x̄ fell in the central 95% of the sampling
+distribution, and whether the percentile CI captured μ — so the "shift"
+justification for the percentile method can be checked rather than asserted.
+Read with `URLSearchParams` at load.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `shape` | string | `normal` | Population shape: `normal` (mean 50, SD 5) or `skewed` (right-skewed, same mean and SD). The skewed population is the stress test — the clean "if and only if" needs a symmetric sampling distribution, so disagreements between the two verdicts get noticeably more common. | `?shape=skewed` |
+| `n` | integer | `10` | Sample size, 2–60. Small `n` is the interesting case: the bootstrap SE is estimated from one sample, so the bootstrap distribution is not exactly a shift of the sampling distribution. Raising `n` makes the two verdicts agree far more often. | `?n=30` |
+| `stage` | integer | `1` | Which stage to open on. `1` = sampling distribution; `2` = bootstrap (jumps straight to a finished picture — the full sampling distribution, a frozen sample, and its complete bootstrap distribution). | `?stage=2` |
+| `xbar` | float | _(μ + 1.2 SE)_ | Target mean for the frozen "original sample" in Stage 2. The page picks the pre-drawn sample whose mean is closest, so the displayed x̄ is near, not exactly, this value. Clamped to the slider's range (roughly μ ± 3.5 SE). | `?stage=2&xbar=53.5` |
+| `seed` | string | _(random)_ | PRNG seed for the sample pool and the bootstrap resamples. Required for graded or activity use — without it the population is fixed but the draws are not. | `?seed=todd1` |
+
+Useful links: `?stage=2&seed=demo` opens the finished exhibit; `?shape=skewed&n=10&stage=2`
+opens the case where the percentile method's justification is weakest (and which
+`ci_method=bca` on the bootstrap pages exists to correct).
+
+---
+
 ## Practice Parameters
 
 ### Conclusion writing (`practice/conclusions/`)
@@ -833,6 +858,7 @@ produces six procedure types: `one-mean`, `paired`, `two-means`, `one-prop`,
 | `inference/estimate/slope/` | Confidence interval for a regression slope | dataset, csv, json |
 | `conceptual/sampling-lab/` | Sampling Distribution Lab (means + proportions, 3-tier, freeze/compare) | type, p, shape, n, seed |
 | `conceptual/ci-coverage/` | CI coverage demo | mode, dataset, mu, sigma, n, ci |
+| `conceptual/bootstrap-shift/` | Why the Percentile CI Works (sampling vs bootstrap distribution on one axis) | shape, n, stage, xbar, seed |
 | `conceptual/randomization-test/` | Randomization test walkthrough — **redirects** to `simulate/randomization-diff-props/?activity=randomization-test-gated.json` (legacy URL, still honored) | mode, dataset |
 | `conceptual/decision-errors/` | Decision Errors (one-proportion simulation: Type I / Type II) | truth, ptrue, n, alpha, seed |
 | `conceptual/power-sim/` | Power Lab (simulation: empirical power + p-value dance) | delta, sigma, n, alpha, tail, seed |

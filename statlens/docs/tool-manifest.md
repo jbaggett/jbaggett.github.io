@@ -1111,6 +1111,29 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ---
 
+### Why the Percentile CI Works
+
+**Path:** `conceptual/bootstrap-shift/`
+**Category:** Conceptual
+**Description:** The justification for the bootstrap **percentile** method, made checkable. Two stages share one x-axis. **Stage 1** draws repeated samples of *n* from a visible ~200-dot population (one labelled circle per value); each sample highlights the dots it drew and drops its x̄ into the blue **true sampling distribution** below. **Stage 2** freezes one sample — ringed inside the population and blown up in an inset — and resamples *from those n values only*, with repeat draws shaded darker; each x̄* builds the red **bootstrap distribution**, overlaid on the blue one so the shift is visible. The 95% percentile CI is drawn as a bracket under the axis. A slider moves the frozen sample's mean across the sampling distribution, and the page reports **two verdicts** every frame: whether x̄ fell in the central 95% of the true sampling distribution, and whether the percentile CI captured μ. Populations: Normal or right-skewed; *n* from 2 to 60.
+**Concepts:** Why the bootstrap percentile method works; the bootstrap distribution as a *shift* of the sampling distribution; percentile CI construction; capture rate and the meaning of "95%"; the limits of the shift argument (the bootstrap SE is estimated from one sample, and the clean "if and only if" also needs symmetry); why percentile intervals can be asymmetric; motivation for BCa
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `shape` | string | Population: `normal` (default) or `skewed` | `?shape=skewed` |
+| `n` | integer | Sample size, 2–60 (default 10) | `?n=30` |
+| `stage` | integer | `1` (sampling distribution) or `2` (bootstrap) | `?stage=2` |
+| `xbar` | float | Target mean for the frozen sample in Stage 2 | `?stage=2&xbar=53.5` |
+| `seed` | string | PRNG seed — required for graded/activity use | `?seed=todd1` |
+
+**Compatible Datasets:** N/A (uses built-in population shapes)
+
+**Textbook Integration Notes:** Built for the bootstrap-CI chapter, as the answer to "why is the middle 95% of the bootstrap distribution a confidence interval?" Sequence it **after** students have built a bootstrap distribution on `simulate/bootstrap-mean/` and after `conceptual/sampling-lab/` has established what a sampling distribution is; it assumes both. Open on `?stage=1`, build the blue distribution, then switch to Stage 2 and sweep the slider — the two verdicts flipping together *is* the argument. Then switch the population to **right-skewed** at *n* = 10 to see the argument strain: disagreements get noticeably more common, and the percentile interval comes out asymmetric (a genuine advantage over ±2 SE, which is always symmetric). That is the natural hand-off to the expert-mode `ci_method=bca` interval on the bootstrap pages. Pairs with `conceptual/ci-coverage/`, which shows the same capture idea for the *t*-interval.
+
+---
+
 ### Randomization Test Walkthrough
 
 **Canonical path:** `simulate/randomization-diff-props/?activity=randomization-test-gated.json`
