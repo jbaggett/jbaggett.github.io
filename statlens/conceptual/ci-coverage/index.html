@@ -97,6 +97,12 @@
             font-family: var(--font-mono);
             font-weight: 600;
         }
+        .help-table { border-collapse: collapse; margin: 0.4rem 0 0.6rem; font-size: 0.88rem; }
+        .help-table th, .help-table td {
+            border: 1px solid var(--border); padding: 0.15rem 0.55rem; text-align: right;
+        }
+        .help-table th { background: #f4f4f4; font-weight: 700; }
+        .help-table td:first-child, .help-table th:first-child { text-align: center; }
         .pop-info {
             font-size: 0.85rem;
             color: var(--ims-gray-text);
@@ -138,7 +144,9 @@
                 <label for="ci-method">CI method:
                     <select id="ci-method">
                         <option value="t" selected>t-interval</option>
-                        <option value="bootstrap">Percentile bootstrap</option>
+                        <option value="bootstrap">Bootstrap percentile</option>
+                        <option value="se">Bootstrap &plusmn;<i>z</i>&middot;SE</option>
+                        <option value="bca">Bootstrap BCa</option>
                     </select>
                 </label>
             </div>
@@ -192,6 +200,27 @@
         </ul>
         <h3>Draw samples</h3>
         <p>Use <strong>+1 / +10 / +25 / +100</strong> to draw that many samples; each adds an interval to the chart. Intervals that miss the true mean are marked. The running coverage rate below settles toward the confidence level as you draw more. <strong>Reset</strong> clears them.</p>
+        <h3>Compare the four interval methods</h3>
+        <p>The <strong>CI method</strong> selector builds every interval a different way from the same samples, so you can measure &mdash; not assert &mdash; which one actually delivers its advertised 95%:</p>
+        <ul>
+            <li><strong>t-interval</strong> &mdash; x&#772; &plusmn; <i>t*&middot;s</i>/&radic;<i>n</i>. The traditional interval.</li>
+            <li><strong>Bootstrap percentile</strong> &mdash; the middle 95% of the bootstrap distribution.</li>
+            <li><strong>Bootstrap &plusmn;<i>z</i>&middot;SE</strong> &mdash; the bootstrap distribution's centre, stepped out <i>z</i> of its own standard errors. Always symmetric.</li>
+            <li><strong>Bootstrap BCa</strong> &mdash; percentile with the cut-points shifted to correct for bias and skew.</li>
+        </ul>
+        <p>Add <code>?method=t</code>, <code>?method=bootstrap</code>, <code>?method=se</code>, or <code>?method=bca</code> to link straight to one.</p>
+        <p>What you will find, on a <strong>right-skewed</strong> population at nominal 95% (measured here, 1200 intervals per cell):</p>
+        <table class="help-table">
+            <thead><tr><th><i>n</i></th><th>t</th><th>percentile</th><th>&plusmn;2&middot;SE</th><th>BCa</th></tr></thead>
+            <tbody>
+                <tr><td>8</td><td>88.4%</td><td>83.7%</td><td>85.3%</td><td>85.8%</td></tr>
+                <tr><td>15</td><td>91.9%</td><td>88.9%</td><td>90.3%</td><td>90.1%</td></tr>
+                <tr><td>25</td><td>92.4%</td><td>90.3%</td><td>92.0%</td><td>92.3%</td></tr>
+                <tr><td>50</td><td>92.9%</td><td>92.5%</td><td>93.9%</td><td>93.8%</td></tr>
+            </tbody>
+        </table>
+        <p>Three things worth saying out loud. <strong>Every</strong> method under-covers here &mdash; the gap to 95% is larger than any gap between methods. <strong>BCa does help</strong>, but by a point or two, not by closing the gap; it estimates its correction from the same short sample. And the <strong>t-interval holds up best at very small <i>n</i></strong>, which is a genuine result worth showing students rather than hiding. On a <em>Normal</em> population, or once <i>n</i> is large, the four converge.</p>
+        <p>Because bootstrap bounds come from the replicate distribution rather than a stored standard error, changing the confidence level on a bootstrap method redraws the run instead of re-widening the existing intervals.</p>
         <h3>Plausibility shape (cat's-eye)</h3>
         <p>Tick <strong>Show plausibility shape (cat's-eye)</strong>, then hover an interval. The bulge shows that values near the sample mean are more plausible than values near the interval's ends &mdash; the interval is not a band of equally likely values.</p>
         <h3>Keyboard shortcuts</h3>

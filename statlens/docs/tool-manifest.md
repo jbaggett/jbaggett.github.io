@@ -1096,18 +1096,23 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 **Path:** `conceptual/ci-coverage/`
 **Category:** Conceptual
-**Description:** Confidence interval coverage simulator. Draws repeated samples from a known population, builds a t-interval for each, and visualizes which intervals capture the true population mean. Shows running coverage rate. Supports population shapes (normal, right-skewed, uniform), adjustable sample size and confidence level (90%, 95%, 99%).
-**Concepts:** Confidence interval interpretation, coverage rate, "95% of intervals capture the true parameter," effect of confidence level on interval width, effect of sample size on interval width
+**Description:** Confidence interval coverage simulator. Draws repeated samples from a known population, builds an interval for each, and visualizes which intervals capture the true population mean. Shows running coverage rate. Supports population shapes (normal, right-skewed, uniform), adjustable sample size and confidence level (90%, 95%, 99%). **Four interval methods** are selectable and directly comparable on the same population: the classical **t-interval**, and three bootstrap intervals — **percentile**, **±z·SE**, and **BCa** (600 resamples per sample; the BCa acceleration uses the shared, scipy-validated `jackknife1`/`bcaCI` in `js/ci-method.js`).
+**Concepts:** Confidence interval interpretation, coverage rate, "95% of intervals capture the true parameter," effect of confidence level on interval width, effect of sample size on interval width, **how coverage differs by construction method**, under-coverage of bootstrap intervals at small n from skewed populations, what BCa's bias/skew correction does and does not buy
 
 **URL Parameters:**
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| (none specific beyond global mode) | | | |
+| `dataset` | string | Bundled dataset as the population | `?dataset=penny_ages` |
+| `mu` / `sigma` | float | Custom normal population | `?mu=10.4&sigma=8.1` |
+| `n` | integer | Sample size per interval, 2–500 | `?n=8` |
+| `ci` | integer | Confidence level: 90, 95, 99 | `?ci=90` |
+| `method` | string | `t`, `bootstrap` (alias `percentile`), `se`, `bca` | `?method=bca` |
+| `catseye` | flag | Start with the plausibility overlay on | `?catseye=1` |
 
 **Compatible Datasets:** N/A (uses built-in population shapes)
 
-**Textbook Integration Notes:** Essential for Ch. 12 (understanding what "95% confidence" means). Students often misinterpret confidence intervals — this tool directly shows that 95% confidence means 95% of intervals contain the parameter, not that there's a 95% probability the parameter is in any specific interval. Run 100+ intervals to see the coverage rate stabilize near the confidence level.
+**Textbook Integration Notes:** Essential for Ch. 12 (understanding what "95% confidence" means). Students often misinterpret confidence intervals — this tool directly shows that 95% confidence means 95% of intervals contain the parameter, not that there's a 95% probability the parameter is in any specific interval. Run 100+ intervals to see the coverage rate stabilize near the confidence level. **For the bootstrap chapter**, the `method` selector turns this into the empirical companion to `conceptual/bootstrap-shift/`: that page argues *why* a percentile interval should work for one sample, this one measures how often each construction actually delivers its advertised rate. Measured here on a right-skewed population at nominal 95% (1200 intervals per cell): at n = 8, t 88.4% / percentile 83.7% / ±2·SE 85.3% / BCa 85.8%; at n = 50, 92.9% / 92.5% / 93.9% / 93.8%. The honest headline is that *every* method under-covers at small n, the gap to nominal is larger than the gaps between methods, BCa helps by a point or two rather than closing it, and the t-interval holds up best at very small n.
 
 ---
 

@@ -7,6 +7,7 @@
 
 import { createRng, randNormal } from '../../js/prng.js';
 import { mean, sd, resample, quantile } from '../../js/stats.js';
+import { bcaCI, jackknife1, normalApproxCI, zLabelFor } from '../../js/ci-method.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
@@ -30,6 +31,20 @@ const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
   document.querySelectorAll('.gen-btn'));
 
 // ─── URL params ───
+
+/** The three bootstrap methods. None can be re-widened from a stored SE — their
+ *  bounds come from the replicate distribution — so changing the confidence
+ *  level has to redraw rather than rescale. */
+const BOOT_METHODS = new Set(['bootstrap', 'se', 'bca']);
+const isBootMethod = (/** @type {string} */ m) => BOOT_METHODS.has(m);
+
+/** @param {string} m @param {number} ciLevel */
+function methodLabelFor(m, ciLevel) {
+  if (m === 'bootstrap') return 'percentile bootstrap';
+  if (m === 'se') return `bootstrap \u00B1${zLabelFor(ciLevel)}\u00B7SE`;
+  if (m === 'bca') return 'BCa bootstrap';
+  return 't-interval';
+}
 
 const params = new URLSearchParams(location.search);
 const urlDataset = params.get('dataset');
@@ -195,7 +210,7 @@ function drawCIs(count) {
   const tStar = tCritical(df, alpha);
 
   const method = ciMethodSelect?.value || 't';
-  const B = 600; // bootstrap resamples per sample (percentile method)
+  const B = 600; // bootstrap resamples per sample (all three bootstrap methods)
   for (let i = 0; i < count; i++) {
     // Draw sample from population
     const sample = [];
@@ -204,13 +219,26 @@ function drawCIs(count) {
     }
     const xbar = mean(sample);
     let lo, hi, se;
-    if (method === 'bootstrap') {
-      // Percentile bootstrap CI of the mean — under-covers for small-n skewed
-      // populations, the failure mode this view makes visible (REQ-032).
+    if (isBootMethod(method)) {
+      // One bootstrap distribution per sample, read three different ways — the
+      // comparison this page exists for. Percentile under-covers for small-n
+      // skewed populations (REQ-032); ±z·SE is always symmetric so it inherits
+      // the same problem plus a shape mismatch; BCa corrects the bias and skew
+      // and is the one that mostly closes the gap.
       const boot = [];
       for (let b = 0; b < B; b++) boot.push(mean(resample(sample, rng)));
-      lo = quantile(boot, alpha / 2);
-      hi = quantile(boot, 1 - alpha / 2);
+      if (method === 'se') {
+        [lo, hi] = normalApproxCI(boot, ciLevel);
+      } else if (method === 'bca') {
+        // Leave-one-out jackknife of the SAME statistic that made the
+        // replicates — the shared, scipy-validated implementation.
+        const r = bcaCI(boot, xbar, jackknife1(sample, mean), ciLevel);
+        lo = r.ci[0];
+        hi = r.ci[1];
+      } else {
+        lo = quantile(boot, alpha / 2);
+        hi = quantile(boot, 1 - alpha / 2);
+      }
       se = null; // bootstrap bounds can't be re-widened from se
     } else {
       se = sd(sample) / Math.sqrt(n);
@@ -590,7 +618,7 @@ function displayInterpretation() {
   const rate = (captured / total * 100).toFixed(1);
 
   const method = ciMethodSelect?.value || 't';
-  const methodLabel = method === 'bootstrap' ? 'percentile bootstrap' : 't-interval';
+  const methodLabel = methodLabelFor(method, ciLevel);
   let html = `<p><strong>${total} Confidence Intervals</strong> (${ciLevel}% ${methodLabel})</p>`;
   html += `<p><span style="color:#569BBD;font-weight:700">${captured}</span> captured μ, <span style="color:#A52714;font-weight:700">${total - captured}</span> missed. Coverage rate: ${rate}%</p>`;
 
@@ -598,8 +626,21 @@ function displayInterpretation() {
     html += `<p class="interpretation">"${ciLevel}% confidence" means that if we repeated this process many times, about ${ciLevel}% of the intervals would capture the true parameter. It does NOT mean there's a ${ciLevel}% chance the parameter is in any single interval — the parameter is fixed; the intervals are random.</p>`;
     // Flag a visible coverage shortfall — the percentile bootstrap's failure mode
     // for small-n skewed populations (REQ-032).
-    if (method === 'bootstrap' && Number(rate) < ciLevel - 3) {
-      html += `<p class="interpretation">Notice the coverage (${rate}%) is running <strong>below</strong> the nominal ${ciLevel}%. The percentile bootstrap <em>under-covers</em> for small samples from a skewed population — its intervals are a bit too short. Switch the population to <em>Normal</em> or raise <em>n</em> and the gap closes; compare against the <em>t-interval</em> method.</p>`;
+    if (isBootMethod(method) && Number(rate) < ciLevel - 3) {
+      // Measured on this page, right-skewed, nominal 95%, 1200 intervals/cell:
+      //    n |    t | pct | ±2SE |  BCa
+      //    8 | 88.4 | 83.7| 85.3 | 85.8
+      //   25 | 92.4 | 90.3| 92.0 | 92.3
+      //   50 | 92.9 | 92.5| 93.9 | 93.8
+      // So: every method under-covers, the spread BETWEEN methods is smaller
+      // than the gap to nominal, and BCa buys a point or two rather than a fix.
+      // The copy says that, because the tool shows it.
+      const why = {
+        bootstrap: `The percentile bootstrap is the shortest of the four here — it <em>under-covers</em> for small samples from a skewed population. <em>Bootstrap BCa</em> corrects part of the bias and skew, but expect a point or two, not the whole gap.`,
+        se: `The &plusmn;<i>z</i>&middot;SE interval is <strong>always symmetric</strong>, so it cannot track a skewed sampling distribution the way the percentile interval does. It still tends to score about as well here, partly because the &ldquo;&plusmn;2&rdquo; convention makes it a little wider than a strict 95% interval &mdash; a reminder that coverage alone doesn't tell you an interval has the right <em>shape</em>.`,
+        bca: `BCa corrects for bias and skew, but it estimates that correction from the same short sample &mdash; so at small <em>n</em> it recovers only part of the gap, not all of it.`,
+      }[method];
+      html += `<p class="interpretation">Notice the coverage (${rate}%) is running <strong>below</strong> the nominal ${ciLevel}%. ${why} Worth checking: at small <em>n</em> from a skewed population <em>every</em> method here under-covers, and the differences between them are smaller than the gap to ${ciLevel}%. Raise <em>n</em>, or switch the population to <em>Normal</em>, and the gap closes. Compare against the <em>t-interval</em> too &mdash; it holds up best of the four at very small <em>n</em>.</p>`;
     }
   } else {
     html += `<p class="hint">Draw more CIs (at least 50) to see the coverage rate stabilize near ${ciLevel}%.</p>`;
@@ -637,7 +678,7 @@ sampleSizeInput.addEventListener('change', () => {
 ciLevelSelect.addEventListener('change', () => {
   if (intervals.length === 0) return;
   // Percentile-bootstrap bounds can't be re-widened from se → redraw the run.
-  if ((ciMethodSelect?.value || 't') === 'bootstrap') resetSimulation();
+  if (isBootMethod(ciMethodSelect?.value || 't')) resetSimulation();
   else rewidthIntervals();
 });
 
@@ -686,6 +727,14 @@ if (urlN != null && !isNaN(urlN) && urlN >= 2 && urlN <= 500) {
 }
 if (urlCi && ['90', '95', '99'].includes(urlCi)) {
   ciLevelSelect.value = urlCi;
+}
+// ?method= picks the interval construction, so an instructor can link straight
+// to the comparison ("here is the same population read four ways").
+// `percentile` is accepted as an alias for the original `bootstrap` value.
+if (ciMethodSelect) {
+  const raw = (params.get('method') || '').toLowerCase();
+  const m = raw === 'percentile' ? 'bootstrap' : raw;
+  if (['t', 'bootstrap', 'se', 'bca'].includes(m)) ciMethodSelect.value = m;
 }
 
 if (urlDataset) {

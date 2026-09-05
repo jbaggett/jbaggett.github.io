@@ -704,6 +704,7 @@ Standalone page with its own population model. Supports URL parameters for datas
 | `n` | integer | `25` | Sample size for each CI. Range: 2–500. Sets the sample size input. | `?n=50` |
 | `ci` | integer | `95` | Confidence level. Valid values: 90, 95, 99. Sets the CI level dropdown. | `?ci=90` |
 | `catseye` | flag | _(off)_ | Start with the cat's-eye (peaked-plausibility) overlay enabled. `1`/`true` checks the "Show plausibility shape" box; off by default so the coverage headline stays clean. | `?catseye=1` |
+| `method` | string | `t` | How each interval is built. `t` = classical x̄ ± t*·s/√n; `bootstrap` (alias `percentile`) = middle 95% of the bootstrap distribution; `se` = the bootstrap distribution's centre ± z of its own SEs (always symmetric); `bca` = percentile with the cut-points shifted for bias and skew. The three bootstrap methods draw 600 resamples per sample and cannot be re-widened from a stored SE, so changing `ci` on one redraws the run instead of rescaling the existing intervals. | `?method=bca` |
 
 **Example: Matching textbook Figure 8.4 (penny ages, n = 50):**
 ```
@@ -714,6 +715,20 @@ https://learnlens.org/statlens/conceptual/ci-coverage/?dataset=penny_ages&n=50
 ```
 https://learnlens.org/statlens/conceptual/ci-coverage/?mu=10.4&sigma=8.1&n=50&ci=95
 ```
+
+**Example: comparing interval methods on the failure case.** Right-skewed
+population, small `n`, one link per method — the coverage rates separate:
+```
+https://learnlens.org/statlens/conceptual/ci-coverage/?method=t&n=8
+https://learnlens.org/statlens/conceptual/ci-coverage/?method=bootstrap&n=8
+https://learnlens.org/statlens/conceptual/ci-coverage/?method=se&n=8
+https://learnlens.org/statlens/conceptual/ci-coverage/?method=bca&n=8
+```
+Measured on the page (right-skewed, nominal 95%, 1200 intervals per cell):
+at n = 8 → t 88.4%, percentile 83.7%, ±2·SE 85.3%, BCa 85.8%; at n = 50 →
+92.9% / 92.5% / 93.9% / 93.8%. Every method under-covers at small n, the gap to
+nominal exceeds the gaps between methods, and BCa buys a point or two rather
+than closing it.
 
 ### Decision Errors (`conceptual/decision-errors/`)
 
@@ -857,7 +872,7 @@ produces six procedure types: `one-mean`, `paired`, `two-means`, `one-prop`,
 | `inference/estimate/two-props/` | Confidence interval for a difference in proportions | dataset, csv, json |
 | `inference/estimate/slope/` | Confidence interval for a regression slope | dataset, csv, json |
 | `conceptual/sampling-lab/` | Sampling Distribution Lab (means + proportions, 3-tier, freeze/compare) | type, p, shape, n, seed |
-| `conceptual/ci-coverage/` | CI coverage demo | mode, dataset, mu, sigma, n, ci |
+| `conceptual/ci-coverage/` | CI coverage demo (t / percentile / ±z·SE / BCa) | mode, dataset, mu, sigma, n, ci, method, catseye |
 | `conceptual/bootstrap-shift/` | Why the Percentile CI Works (sampling vs bootstrap distribution on one axis) | shape, n, stage, xbar, seed |
 | `conceptual/randomization-test/` | Randomization test walkthrough — **redirects** to `simulate/randomization-diff-props/?activity=randomization-test-gated.json` (legacy URL, still honored) | mode, dataset |
 | `conceptual/decision-errors/` | Decision Errors (one-proportion simulation: Type I / Type II) | truth, ptrue, n, alpha, seed |

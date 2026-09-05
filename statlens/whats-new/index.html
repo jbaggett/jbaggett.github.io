@@ -39,6 +39,12 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-09-05<span class="cl-tag tool">Improved</span></div>
+            <h2>CI Coverage now compares four interval methods</h2>
+            <p>The coverage demo already let you switch between the <strong>t-interval</strong> and the <strong>bootstrap percentile</strong> interval. It now offers two more — <strong>bootstrap &plusmn;<i>z</i>&middot;SE</strong> and <strong>bootstrap BCa</strong> — so you can measure, on the same population, how often each construction actually delivers its advertised 95%. Link straight to one with <code>?method=t</code>, <code>?method=bootstrap</code>, <code>?method=se</code> or <code>?method=bca</code>. What it shows on a right-skewed population is worth seeing: at <i>n</i> = 8 every method under-covers (t 88.4%, percentile 83.7%, &plusmn;2&middot;SE 85.3%, BCa 85.8%), the gap to 95% is bigger than any gap between methods, and BCa buys a point or two rather than closing it. Pairs with <a href="../conceptual/bootstrap-shift/">Why the Percentile CI Works</a>, which argues why the percentile interval should work at all. <a href="../conceptual/ci-coverage/?method=bca&n=8">Open the tool &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-09-05<span class="cl-tag tool">New tool</span></div>
             <h2>Why the Percentile CI Works</h2>
             <p>A new conceptual demo that answers the question students (and colleagues) actually ask about the bootstrap: <em>why</em> is the middle 95% of the bootstrap distribution a confidence interval? Build the <strong>true sampling distribution</strong> from a visible 200-dot population, then freeze one sample and bootstrap from it — both distributions land on the <strong>same axis</strong>, so you can see that the bootstrap distribution is the sampling distribution <strong>slid over</strong> to sit at x&#772;. A slider sweeps the frozen sample's mean across the sampling distribution while the page reports two verdicts side by side: did x&#772; land in the central 95%, and did the percentile interval capture &mu;? They flip together — that agreement <em>is</em> the justification. Switch the population to <strong>right-skewed</strong> to see where the argument strains, which is exactly what the <a href="../simulate/bootstrap-mean/?expert=true">BCa interval</a> exists to fix. <a href="../conceptual/bootstrap-shift/">Open the tool &rarr;</a></p>
