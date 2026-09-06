@@ -1,0 +1,19 @@
+{
+  "name": "CalcLens — Calculus Toolkit",
+  "short_name": "CalcLens",
+  "description": "Interactive tools for Calculus 1: limits, derivatives and integrals, plus a function evaluator that works instead of a calculator.",
+  "id": "/calclens/",
+  "start_url": "/calclens/",
+  "scope": "/calclens/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#569BBD",
+  "background_color": "#ffffff",
+  "categories": ["education", "utilities"],
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
