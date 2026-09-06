@@ -293,6 +293,22 @@ export function initSimPage(config) {
   let resampleViewMode = 'summary';
   /** Whether the view mode was explicitly chosen by the user (overrides auto-default). */
   let resampleViewExplicit = false;
+  // ?mview= pins the mechanism view so an activity can ask for one. Needed
+  // because a dataset over CHIP_THRESHOLD auto-switches to the histogram, and
+  // `bootstrap-explore` on penny_ages (648 rows) is built around COUNTING
+  // repeats — a task the histogram cannot do. Reported as "'Tiles' need to be
+  // selected to determine how many pennies were selected 3+ times"
+  // (REQ-057 item 2, Todd Will). Treated as an explicit choice, so the
+  // auto-default leaves it alone.
+  {
+    // Only `tiles` is honoured. The mean mechanism carries its own three-way
+    // Tiles|Dotplot|Histogram control, so forcing `histogram` from here sets
+    // sim-app's two-way mode without moving that one — a documented value that
+    // half-works is worse than no value, and the histogram is already the
+    // auto-default for large n anyway.
+    const mv = (new URLSearchParams(location.search).get('mview') || '').toLowerCase();
+    if (mv === 'tiles' || mv === 'summary') { resampleViewMode = 'summary'; resampleViewExplicit = true; }
+  }
   /** @type {number[]} */
   let lastResample = [];
   /** Last shuffled/resampled two-group grouping — lets the Bars/Cards toggle

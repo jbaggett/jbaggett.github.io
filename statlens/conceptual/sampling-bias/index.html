@@ -27,6 +27,20 @@
     }
     </script>
     <style>
+        /* The global `label { display:flex; flex-direction:column }` stacked the
+           text, the <i>n</i> and the input on three separate lines — the <i> is
+           its own flex item, so `white-space:nowrap` on the label could not help.
+           Reported as "the Sample size (n): label wraps onto separate lines"
+           (REQ-057 item 4, Todd Will). */
+        .inline-label {
+            display: inline-flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .inline-label > span { white-space: nowrap; }
+
         .controls-bar {
             display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center;
             margin: 0.5rem 0 0.75rem;
@@ -69,7 +83,8 @@
 
         <section id="settings" aria-label="Controls">
             <div class="controls-bar">
-                <label for="sample-size" style="white-space:nowrap">Sample size (<i>n</i>):
+                <label for="sample-size" class="inline-label">
+                    <span>Sample size (<i>n</i>):</span>
                     <input type="number" id="sample-size" value="10" min="2" max="25" step="1" style="width:4rem">
                 </label>
                 <button type="button" id="add-byeye" class="btn-secondary" disabled>Add my by-eye sample (<span class="pick-count" id="pick-count">0</span>/<span id="pick-target">10</span>)</button>
