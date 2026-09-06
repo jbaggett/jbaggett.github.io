@@ -4,7 +4,8 @@
   "params": {
     "dataset": "penny_ages",
     "ci": 95,
-    "seed": "ch8demo"
+    "seed": "ch8demo",
+    "mview": "tiles"
   },
   "steps": [
     {
@@ -23,7 +24,7 @@
             "text": "Centered at \\(\\bar{x}\\), but right-skewed like the original pennies"
           }
         ],
-        "feedback": "It centers at **\\(\\bar{x}^*\\)* — the bootstrap only knows your sample, not μ — and comes out **bell-shaped** even though the pennies are skewed. That's the Central Limit Theorem acting on the mean. Now build it and watch.",
+        "feedback": "It centers at **\\(\\bar{x}^*\\)* — the bootstrap only knows your sample, not μ — and comes out **bell-shaped** even though the pennies are skewed. Averaging does that, and we'll come back to why. Now build it and watch.",
         "retryFeedback": "The bootstrap resamples from *your sample*, so what's the most it can center on? And what does averaging do to skew?"
       },
       "phase": "predict"
@@ -41,7 +42,7 @@
     {
       "instruction": "Click the **Play** button and watch the animation for a while.",
       "observe": "Watch the histogram build up one bar at a time. What shape is emerging? Where is the distribution centered?",
-      "reveal": "The bootstrap distribution is approximately **bell-shaped** and centered near the original sample mean — even though the penny ages themselves are right-skewed. This is the Central Limit Theorem in action."
+      "reveal": "The bootstrap distribution is approximately **bell-shaped** and centered near the original sample mean — even though the penny ages themselves are right-skewed. Averaging pulls the shape toward symmetry \u2014 we'll name why later."
     },
     {
       "instruction": "Click **Pause** to stop the animation. Then click **+1000** to fill out the distribution.",
