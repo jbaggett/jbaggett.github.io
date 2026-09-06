@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Derivative Builder | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#charts">Skip to graphs</a>
+</nav>
+
+<main>
+  <h1>Derivative Builder
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Slide a point along <i>f</i> and read the slope of the tangent there. Each
+    slope is dropped onto the second graph as a height. Sweep all the way across
+    and the derivative draws itself — <i>f</i>′ is not a new kind of object, it
+    is a graph of slopes.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Function">
+    <div class="ll-controls">
+      <label for="fn-input" style="flex:1 1 260px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="x^3 - 3x" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+      </label>
+      <label for="window-select">
+        <span>Window</span>
+        <select id="window-select">
+          <option value="-2,2">−2 to 2</option>
+          <option value="-3,3" selected>−3 to 3</option>
+          <option value="-6.283,6.283">−2π to 2π</option>
+        </select>
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <p class="ll-hint" id="fn-syntax">
+      Try <code>x^3-3x</code>, <code>sin(x)</code>, <code>x^2</code>,
+      <code>abs(x)</code>, <code>e^x</code>, <code>ln(x)</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example functions">
+      <button type="button" class="preset" data-f="x^2">x²</button>
+      <button type="button" class="preset" data-f="x^3 - 3x">x³ − 3x</button>
+      <button type="button" class="preset" data-f="sin(x)">sin x</button>
+      <button type="button" class="preset" data-f="e^x">eˣ</button>
+      <button type="button" class="preset" data-f="abs(x)">|x|</button>
+    </div>
+  </section>
+
+  <section class="ll-panel" aria-label="Point and secant controls">
+    <label for="x-slider" style="display:block;">
+      <span>Point at <i>x</i> = <output id="x-out" for="x-slider">0.00</output></span>
+      <input type="range" id="x-slider" min="-3" max="3" step="0.02" value="-3">
+    </label>
+    <label for="h-slider" style="display:block; margin-top:0.6rem;">
+      <span>Secant gap <i>h</i> = <output id="h-out" for="h-slider">1.00</output>
+        <span class="ll-hint">(drag toward 0 to watch the secant become the tangent)</span></span>
+      <input type="range" id="h-slider" min="0" max="1.5" step="0.01" value="1">
+    </label>
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.6rem; flex-wrap:wrap;">
+      <button type="button" id="play-btn" class="ll-primary">▶ Sweep and trace</button>
+      <button type="button" id="clear-btn">Clear trace</button>
+      <label class="ll-row" style="font-size:0.9rem;">
+        <input type="checkbox" id="reveal"> Reveal the true <i>f</i>′
+      </label>
+    </div>
+  </section>
+
+  <section id="charts" aria-label="Graphs">
+    <div class="ll-chart">
+      <p class="ll-hint" style="margin:0.2rem 0 0 0.5rem;">
+        <b>Top:</b> <i>f</i>, with the secant and the tangent at the point.
+        Drag anywhere on this graph to move the point.
+      </p>
+      <div id="chart-f"></div>
+    </div>
+    <div class="ll-chart">
+      <p class="ll-hint" style="margin:0.2rem 0 0 0.5rem;">
+        <b>Bottom:</b> every slope you have visited, plotted as a height.
+      </p>
+      <div id="chart-d"></div>
+    </div>
+
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2"/></svg> tangent</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant</span>
+      <span><svg viewBox="0 0 26 10"><circle cx="13" cy="5" r="3.5" fill="#C05E10"/></svg> slopes you traced</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5" stroke-dasharray="7 4"/></svg> true f′(x)</span>
+    </div>
+
+    <div class="ll-readout" id="readout"></div>
+  </section>
+
+  <section class="ll-panel" aria-label="Interpretation">
+    <h3 style="margin-top:0">What the numbers say</h3>
+    <p id="story"></p>
+    <p id="symbolic"></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Derivative Builder</h2>
+  <p>The top graph shows <i>f</i>. A point slides along it, carrying a tangent
+     line. The <em>slope</em> of that tangent is plotted on the bottom graph as a
+     <em>height</em>. Sweep across and the bottom graph fills in: that is
+     <i>f</i>′.</p>
+
+  <h3>The secant gap <i>h</i></h3>
+  <p>The dashed secant joins <span class="ll-math" id="help-tex1"></span>. Its
+     slope is the difference quotient
+     <span class="ll-math" id="help-tex2"></span>. Drag <i>h</i> toward 0 and
+     watch the secant settle onto the tangent, and the difference quotient
+     settle onto <i>f</i>′(<i>x</i>). That limit <em>is</em> the definition.</p>
+
+  <h3>What to watch for</h3>
+  <ul>
+    <li>Where <i>f</i> is <b>rising</b>, the traced dots land <b>above</b> the
+        axis. Where <i>f</i> is <b>falling</b>, they land <b>below</b>.</li>
+    <li>At a <b>peak or valley</b> of <i>f</i>, the tangent is level and the dot
+        lands exactly <b>on</b> the axis. Students often expect a peak of
+        <i>f</i> to give a peak of <i>f</i>′; it gives a zero.</li>
+    <li>The steeper <i>f</i> is, the <b>further from the axis</b> the dot lands —
+        in either direction.</li>
+    <li>Try <b>|x|</b>. The trace has a hole at <i>x</i> = 0, because there is no
+        single tangent line there. Not every function has a derivative
+        everywhere.</li>
+  </ul>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Move the point (focus the <i>x</i> slider first)</dd>
+    <dt><kbd>Space</kbd></dt><dd>Start or stop the sweep</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Secant to Tangent | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#chart">Skip to the graph</a>
+  <a href="#table">Skip to the table</a>
+</nav>
+
+<main>
+  <h1 id="page-title">Secant to Tangent
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Hold one point <i>P</i> still and slide a second point <i>Q</i> toward it.
+    The line through them is a <b>secant</b>, and its slope is an average rate of
+    change. Watch what that slope does as the gap closes.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Function and point">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 260px;">
+        <span><i id="fn-label-var">f</i>(<i class="varname">x</i>) =</span>
+        <input type="text" id="fn-input" value="x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+      </label>
+      <label for="a-input" data-control="a">
+        <span><i>P</i> at <i class="varname">x</i> =</span>
+        <input type="number" id="a-input" value="1" step="0.1" style="width:6rem">
+      </label>
+      <label for="win-input" data-control="window">
+        <span>Window</span>
+        <input type="text" id="win-input" value="-1, 3" style="width:7rem"
+               aria-label="Graph window, as two numbers">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <p class="ll-hint" id="fn-syntax" data-control="f">
+      Write it as you would say it: <code>x^2</code>, <code>sin(x)</code>,
+      <code>-16x^2+32x+48</code>, <code>sqrt(x)</code>, <code>1/x</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example functions" data-control="f">
+      <button type="button" class="preset" data-f="x^2" data-a="1" data-win="-1, 3">x²</button>
+      <button type="button" class="preset" data-f="-16t^2 + 32t + 48" data-a="0.5" data-win="0, 2">falling ball</button>
+      <button type="button" class="preset" data-f="sin(x)" data-a="0" data-win="-3.2, 3.2">sin x</button>
+      <button type="button" class="preset" data-f="sqrt(x)" data-a="1" data-win="0, 4">√x</button>
+      <button type="button" class="preset" data-f="abs(x)" data-a="0" data-win="-2, 2">|x|</button>
+    </div>
+  </section>
+
+  <section class="ll-panel" aria-label="Position of Q">
+    <label for="h-slider" data-control="h" style="display:block;">
+      <span>Gap <i>h</i> = <output id="h-out" for="h-slider">1</output>
+        &nbsp; <span class="ll-hint">(<i>Q</i> sits at <i class="varname">x</i> = <span id="q-pos">2</span>)</span></span>
+      <input type="range" id="h-slider" min="-4" max="0.3" step="0.02" value="0"
+             aria-describedby="h-help">
+    </label>
+    <p class="ll-hint" id="h-help" data-control="h" style="margin:0.2rem 0 0;">
+      Slide right to left to close the gap. <i>h</i> never reaches 0 — at
+      <i>h</i> = 0 the difference quotient would be 0⁄0.
+    </p>
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.6rem;">
+      <div class="ll-segmented" role="group" data-control="h" aria-label="Which side Q approaches from">
+        <button type="button" id="side-right" class="side-btn" aria-pressed="true">From the right</button>
+        <button type="button" id="side-left" class="side-btn" aria-pressed="false">From the left</button>
+      </div>
+      <button type="button" id="close-btn" data-control="h" class="ll-primary">▶ Close the gap</button>
+      <label class="ll-row" style="font-size:0.9rem;" data-control="tangent">
+        <input type="checkbox" id="show-tangent"> Show the tangent
+      </label>
+    </div>
+  </section>
+
+  <section id="chart" aria-label="Graph">
+    <div class="ll-chart"><div id="chart-f"></div></div>
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> the function</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant <i>PQ</i></span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5"/></svg> tangent at <i>P</i></span>
+    </div>
+    <div class="ll-readout" id="readout"></div>
+  </section>
+
+  <section id="table" aria-label="Difference quotients" data-control="table">
+    <h2>Closing the gap</h2>
+    <table class="ll-table">
+      <caption id="table-caption">Slope of the secant as <i>h</i> shrinks</caption>
+      <thead>
+        <tr><th scope="col"><i>h</i></th><th scope="col"><i>Q</i> at</th>
+            <th scope="col">slope of <i>PQ</i></th></tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <p id="verdict" class="ll-result"></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Secant to Tangent</h2>
+  <p><i>P</i> stays put. <i>Q</i> slides along the curve toward it. The line
+     through <i>P</i> and <i>Q</i> is a secant, and its slope is the
+     <b>difference quotient</b> <span class="ll-math" id="help-tex1"></span> —
+     the average rate of change between the two points.</p>
+  <p>As <i>h</i> shrinks, the secant pivots. If it settles on one particular
+     line, that line is the <b>tangent</b> and its slope is the derivative
+     <span class="ll-math" id="help-tex2"></span>.</p>
+
+  <h3>What to watch for</h3>
+  <ul>
+    <li>The table converges from <b>both sides</b>. Switch sides and check that
+        the two columns of numbers head for the same place — if they do not,
+        there is no derivative there.</li>
+    <li>Try <b>|x|</b> with <i>P</i> at 0. From the right the slopes are all
+        +1, from the left all −1. They never agree, so no tangent exists — a
+        corner, not a smooth point.</li>
+    <li>The <b>falling ball</b> preset is the classic: height
+        −16<i>t</i>²+32<i>t</i>+48 with <i>P</i> at <i>t</i> = 0.5. Average
+        velocities over shorter and shorter intervals pile up at 16 ft/sec,
+        which is the speedometer reading at that instant.</li>
+    <li>Leave <b>Show the tangent</b> off until students have called out the
+        number they think the slopes are heading for.</li>
+  </ul>
+
+  <h3>Putting this in a slide or a page</h3>
+  <p>Every control is URL-addressable, so a lecture slide can link a stripped-down
+     version. For example:</p>
+  <pre class="ll-code">?f=-16x^2%2B32x%2B48&amp;var=t&amp;a=0.5&amp;window=0,2
+   &amp;embed=true&amp;controls=h&amp;tangent=false</pre>
+  <p>gives just the figure, the <i>h</i> slider and the table, with no function
+     box and no tangent revealed. See <code>docs/url-api.md</code> for every
+     parameter.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Change <i>h</i> (focus the slider first)</dd>
+    <dt><kbd>Space</kbd></dt><dd>Run or stop the gap closing</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>CalcLens</title>
+
+<link rel="stylesheet" href="../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../kit/css/tokens.css">
+<link rel="stylesheet" href="../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<main>
+  <h1>CalcLens
+    <span class="ll-tag">early prototype</span>
+  </h1>
+
+  <p class="ll-lede">
+    Interactive demonstrations for Calculus 1 — limits, derivatives and
+    integrals — built the same way as
+    <a href="../statlens/">StatLens</a>: no build step, keyboard-first, readable
+    on a phone, and aimed squarely at the places students actually get stuck.
+  </p>
+
+  <p class="ll-hint">
+    Cards without a link are sketched, not built. URL parameters for the
+    working tools are frozen — see <a href="../docs/url-api.md">the URL API</a>.
+  </p>
+
+  <h2>Integrals</h2>
+  <div class="ll-cards">
+    <a class="ll-card" href="integrals/accumulation/">
+      <strong>Accumulation Function</strong>
+      <span>Slide <i>x</i> and watch <i>A</i>(<i>x</i>) = ∫ₐˣ <i>f</i> build itself.
+        The height of <i>f</i> is the slope of <i>A</i> — the Fundamental Theorem,
+        on screen.</span>
+    </a>
+    <div class="ll-card ll-soon">
+      <strong>Riemann Sums</strong>
+      <span>Left, right, midpoint and trapezoid rectangles with an <i>n</i> slider
+        and a live error table.</span>
+    </div>
+    <div class="ll-card ll-soon">
+      <strong>u-Substitution</strong>
+      <span>Watch the region transform when the variable changes — and see why
+        <i>du</i> is not decoration.</span>
+    </div>
+  </div>
+
+  <h2>Derivatives</h2>
+  <div class="ll-cards">
+    <a class="ll-card" href="derivatives/secant/">
+      <strong>Secant to Tangent</strong>
+      <span>Hold <i>P</i> still, slide <i>Q</i> in, and watch the difference
+        quotient converge — with a table that approaches from either side.
+        Works for any function, and strips down to a lecture figure.</span>
+    </a>
+    <a class="ll-card" href="derivatives/builder/">
+      <strong>Derivative Builder</strong>
+      <span>Drag a point along <i>f</i>, drop each tangent slope onto a second
+        axis, and watch <i>f</i>′ draw itself. Includes the secant-to-tangent
+        limit.</span>
+    </a>
+    <div class="ll-card ll-soon">
+      <strong>Local Linearity Zoom</strong>
+      <span>Zoom until the curve looks straight — with |<i>x</i>| at the origin
+        as the control case that never does.</span>
+    </div>
+    <div class="ll-card ll-soon">
+      <strong>Match the Triple</strong>
+      <span>Given three graphs, decide which is <i>f</i>, which is <i>f</i>′ and
+        which is <i>f</i>″.</span>
+    </div>
+    <div class="ll-card ll-soon">
+      <strong>Related Rates</strong>
+      <span>An animated ladder, cone or shadow with every rate read out live as
+        the picture moves.</span>
+    </div>
+  </div>
+
+  <h2>Limits</h2>
+  <div class="ll-cards">
+    <div class="ll-card ll-soon">
+      <strong>Limit Explorer</strong>
+      <span>Table and graph together, approaching from both sides, with the
+        one-sided values side by side.</span>
+    </div>
+    <div class="ll-card ll-soon">
+      <strong>Epsilon–Delta Game</strong>
+      <span>Someone picks ε; you find a δ that works. Repeat until the
+        definition stops being frightening.</span>
+    </div>
+    <div class="ll-card ll-soon">
+      <strong>Continuity Classifier</strong>
+      <span>Removable, jump, or infinite — sort discontinuities by what the
+        one-sided limits do.</span>
+    </div>
+  </div>
+
+  <h2>Tools</h2>
+  <div class="ll-cards">
+    <a class="ll-card" href="tools/check-answer/">
+      <strong>Check My Answer</strong>
+      <span>Type a derivative or antiderivative and find out if it is right —
+        by the same differentiate-and-compare method you should use on
+        paper.</span>
+    </a>
+  </div>
+
+  <h2 id="about">About this prototype</h2>
+  <p>
+    CalcLens has its own small computer algebra system — about 950 lines in
+    <code>js/expr.js</code> — rather than a general library. Calculus 1 needs a
+    narrow catalogue of functions, but it needs the answers printed the way the
+    course prints them: <i>ln x</i> rather than <i>log(x)</i>,
+    <i>x</i>³⁄3 rather than <i>0.3333x</i>³. Owning the printer is the point.
+  </p>
+  <p>
+    Student answers are checked by evaluating both sides at a spread of points,
+    not by symbolic comparison. That never rejects a correct answer for being
+    written in an unexpected form, and it hands back a specific counterexample
+    when the answer is genuinely wrong.
+  </p>
+  <p class="ll-hint">
+    Notes on the architecture, the supported syntax and what is still missing
+    are in <code>calclens/README.md</code>. Page chrome, charts and maths
+    rendering come from the shared <code>kit/</code>.
+  </p>
+</main>
+
+</body>
+</html>

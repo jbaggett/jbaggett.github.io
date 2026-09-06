@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOOL NAME | LENS NAME</title>
+
+<!-- Depth note: these ../ counts are the ONLY paths that change when a tool
+     moves. Everything in app.js imports through the `kit/` prefix below, so
+     module code never encodes how deep it sits. This template assumes
+     <lens>/<section>/<tool>/, i.e. three levels down from the repo root. -->
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#chart">Skip to the graph</a>
+</nav>
+
+<main>
+  <h1>TOOL NAME
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="LENS NAME home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>LENS NAME</span>
+      </a>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">One or two sentences on what the student is looking at and
+     what to do with it.</p>
+
+  <!-- Wrap each control group in data-control="name" so ?controls= can strip
+       the page down to a lecture figure. A panel whose controls are all hidden
+       is hidden too. -->
+  <section id="controls" class="ll-panel" aria-label="Controls">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 260px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+  </section>
+
+  <section id="chart" aria-label="Graph">
+    <div class="ll-chart"><div id="chart-main"></div></div>
+    <div class="ll-readout" id="readout"></div>
+  </section>
+
+  <!-- Required: every dynamic update speaks through this one region. -->
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>TOOL NAME</h2>
+  <p>What it shows.</p>
+  <h3>What to watch for</h3>
+  <ul><li>The misconception this tool exists to break.</li></ul>
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

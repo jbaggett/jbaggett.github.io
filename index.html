@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LearnLens</title>
+<meta name="description" content="Interactive teaching tools for introductory statistics and calculus — accessible, keyboard-first, and free to use.">
+
+<link rel="stylesheet" href="kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="kit/css/tokens.css">
+<link rel="stylesheet" href="kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<style>
+  .ll-hero { border-bottom: 1px solid var(--border); padding-bottom: 1.2rem; margin-bottom: 1.6rem; }
+  .ll-hero h1 { font-size: 2rem; }
+  .ll-lens { display: block; text-decoration: none; color: inherit; padding: 1.1rem 1.2rem;
+             border: 1px solid var(--border); border-left: 5px solid var(--ims-blue);
+             border-radius: 10px; background: var(--bg); }
+  .ll-lens:hover { background: var(--surface); }
+  .ll-lens h2 { margin: 0 0 0.3rem; font-size: 1.25rem; color: var(--ims-blue-text); }
+  .ll-lens p { margin: 0 0 0.5rem; color: #333; }
+  .ll-lens .ll-hint { margin: 0; }
+  .ll-lenses { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  footer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border);
+           font-size: 0.88rem; color: var(--ims-gray-text); }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="ll-hero">
+    <h1>LearnLens</h1>
+    <p class="ll-lede">
+      Interactive tools for teaching introductory statistics and calculus. Built
+      for the places students actually get stuck, keyboard-accessible
+      throughout, and readable on a phone.
+    </p>
+  </div>
+
+  <div class="ll-lenses">
+    <a class="ll-lens" href="statlens/">
+      <h2>StatLens →</h2>
+      <p>Simulation-based inference, distribution calculators, and exploratory
+         data tools for an introductory statistics course. Bootstrap intervals,
+         randomization tests, ANOVA, regression.</p>
+      <p class="ll-hint">38 tools · used in Stat 145</p>
+    </a>
+
+    <a class="ll-lens" href="calclens/">
+      <h2>CalcLens →</h2>
+      <p>Limits, derivatives and integrals. Watch a derivative graph build
+         itself from tangent slopes, or an integral accumulate as you slide its
+         upper limit.</p>
+      <p class="ll-hint">early prototype · used in Math 207</p>
+    </a>
+  </div>
+
+  <h2>For instructors</h2>
+  <p>
+    Every tool is addressable by URL, so a slide, a textbook page or a homework
+    problem can link a specific function, dataset or seed — and can strip the
+    page down to just the figure for embedding. The parameters are documented
+    and frozen: <a href="docs/url-api.md">the URL API</a>.
+  </p>
+  <p>
+    Nothing loads from a content delivery network. Charts, fonts and maths all
+    ship with the tools, so a lecture does not depend on the room's wifi.
+  </p>
+
+  <footer>
+    <p>
+      Built by Jeff Baggett, University of Wisconsin–La Crosse. Source on
+      <a href="https://github.com/jbaggett">GitHub</a>.
+    </p>
+  </footer>
+</main>
+
+</body>
+</html>

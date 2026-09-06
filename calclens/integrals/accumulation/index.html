@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Accumulation Function | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#charts">Skip to graphs</a>
+</nav>
+
+<main>
+  <h1>Accumulation Function
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Pick a starting point <i>a</i>, then slide <i>x</i> to the right. The area
+    swept out under <i>f</i> is recorded as the height of a second graph. That
+    second graph is the accumulation function
+    <span id="lede-tex" class="ll-math"></span>.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Function and limits">
+    <div class="ll-controls">
+      <label for="fn-input" style="flex:1 1 240px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="2x - 2" autocomplete="off"
+               autocapitalize="off" spellcheck="false"
+               aria-describedby="fn-error fn-syntax">
+      </label>
+      <label for="a-input">
+        <span>Start at <i>a</i> =</span>
+        <input type="number" id="a-input" value="0" step="0.5" style="width:6rem">
+      </label>
+      <label for="window-select">
+        <span>Window</span>
+        <select id="window-select">
+          <option value="-2,2">−2 to 2</option>
+          <option value="-4,4" selected>−4 to 4</option>
+          <option value="-6.283,6.283">−2π to 2π</option>
+          <option value="0,10">0 to 10</option>
+        </select>
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <p class="ll-hint" id="fn-syntax">
+      Type it the way you write it: <code>2x-2</code>, <code>sin(x)</code>,
+      <code>x^2</code>, <code>e^(-x^2)</code>, <code>1/x</code>, <code>sqrt(x)</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example functions">
+      <button type="button" class="preset" data-f="x">x</button>
+      <button type="button" class="preset" data-f="2x - 2">2x − 2</button>
+      <button type="button" class="preset" data-f="x^2">x²</button>
+      <button type="button" class="preset" data-f="sin(x)">sin x</button>
+      <button type="button" class="preset" data-f="1/x">1/x</button>
+      <button type="button" class="preset" data-f="e^(-x^2)">e<sup>−x²</sup></button>
+    </div>
+  </section>
+
+  <section class="ll-panel" aria-label="Position of x">
+    <label for="x-slider" style="display:block;">
+      <span>Upper limit <i>x</i> = <output id="x-out" for="x-slider">0.00</output></span>
+      <input type="range" id="x-slider" min="-4" max="4" step="0.02" value="0">
+    </label>
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.5rem; flex-wrap:wrap;">
+      <button type="button" id="play-btn" class="ll-primary">▶ Sweep</button>
+      <button type="button" id="reset-btn">Reset <i>x</i> to <i>a</i></button>
+      <label class="ll-row" style="flex-direction:row; font-size:0.9rem;">
+        <input type="checkbox" id="slope-link" checked>
+        Show the slope link
+      </label>
+    </div>
+  </section>
+
+  <section id="charts" aria-label="Graphs">
+    <div class="ll-chart">
+      <p class="ll-hint" style="margin:0.2rem 0 0 0.5rem;">
+        <b>Top:</b> <i>f</i>, with the area from <i>a</i> to <i>x</i> shaded.
+        Drag anywhere on this graph to move <i>x</i>.
+      </p>
+      <div id="chart-f"></div>
+    </div>
+    <div class="ll-chart">
+      <p class="ll-hint" style="margin:0.2rem 0 0 0.5rem;">
+        <b>Bottom:</b> the accumulation function <i>A</i>. Its <em>height</em>
+        is the shaded area above.
+      </p>
+      <div id="chart-a"></div>
+    </div>
+
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#7B2D8E" stroke-width="2.5"/></svg> A(x)</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2"/></svg> slope of A at x</span>
+      <span><svg viewBox="0 0 26 10"><rect x="1" y="1" width="24" height="8" fill="rgba(86,155,189,0.38)"/></svg> counts positive</span>
+      <span><svg viewBox="0 0 26 10"><rect x="1" y="1" width="24" height="8" fill="rgba(192,94,16,0.30)"/></svg> counts negative</span>
+    </div>
+
+    <div class="ll-readout" id="readout" aria-live="off"></div>
+  </section>
+
+  <section class="ll-panel" aria-label="What the graphs say">
+    <h3 style="margin-top:0">The Fundamental Theorem, on screen</h3>
+    <p id="ftc-line"></p>
+    <p id="anti-line"></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Accumulation Function</h2>
+  <p>The top graph is a function <i>f</i>. The bottom graph records the
+     <em>signed area</em> collected under <i>f</i>, starting at <i>a</i> and
+     sweeping right to <i>x</i>. That running total is a new function of
+     <i>x</i>, written <span class="ll-math" id="help-tex1"></span>.</p>
+
+  <h3>What to watch for</h3>
+  <ul>
+    <li>Where <i>f</i> is <b>above</b> the axis, area is added and <i>A</i>
+        <b>rises</b>. Where <i>f</i> is <b>below</b>, area is subtracted and
+        <i>A</i> <b>falls</b>.</li>
+    <li>Where <i>f</i> <b>crosses zero</b>, <i>A</i> stops rising or falling and
+        turns around. That is a maximum or minimum of <i>A</i> — not of <i>f</i>.</li>
+    <li>The <b>steepness</b> of <i>A</i> at <i>x</i> equals the <b>height</b> of
+        <i>f</i> at <i>x</i>. Turn on "Show the slope link" and compare the two
+        marked values as you sweep. That is the Fundamental Theorem of Calculus,
+        Part 1.</li>
+    <li><i>A</i>(<i>a</i>) = 0 always — nothing has been collected yet.</li>
+  </ul>
+
+  <h3>Try this</h3>
+  <ol>
+    <li>With <i>f</i>(<i>x</i>) = 2<i>x</i> − 2 and <i>a</i> = 0, sweep from 0 to 3.
+        <i>A</i> dips, bottoms out at <i>x</i> = 1, then climbs. Ask why the low
+        point is exactly where <i>f</i> crosses the axis.</li>
+    <li>Move <i>a</i> from 0 to 1. The whole <i>A</i> graph shifts vertically but
+        its shape does not change — every antiderivative differs by a constant.</li>
+    <li>Try <i>f</i>(<i>x</i>) = e<sup>−x²</sup>. There is no formula for its
+        antiderivative, yet <i>A</i> is a perfectly ordinary curve. The
+        accumulation function exists whether or not anyone can write it down.</li>
+  </ol>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Move <i>x</i> (focus the slider first)</dd>
+    <dt><kbd>Space</kbd></dt><dd>Start or stop the sweep</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

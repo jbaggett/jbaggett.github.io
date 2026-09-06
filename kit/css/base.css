@@ -1,0 +1,254 @@
+/* LearnLens base — reset, layout, page chrome, controls, charts, dialogs.
+   Requires tokens.css. Everything here is lens-agnostic; anything that is
+   specific to one subject belongs in that lens's own stylesheet. */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+main { max-width: 860px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+
+h1, h2, h3 { color: var(--heading); margin: 0 0 0.6rem; line-height: 1.3; }
+h1 { font-size: 1.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+h2 { font-size: 1.2rem; margin-top: 1.8rem; }
+h3 { font-size: 1.02rem; color: var(--ims-green); margin-top: 1.2rem; }
+p { margin: 0 0 0.8rem; }
+a { color: var(--accent); }
+
+.ll-lede { color: #333; margin-bottom: 1.2rem; }
+.ll-hint { color: var(--ims-gray-text); font-size: 0.88rem; }
+
+/* ── Skip links + header actions ─────────────────────────────────────────── */
+
+.skip-links a {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--bg); padding: 0.5rem 0.9rem; border: 2px solid var(--accent);
+}
+.skip-links a:focus { left: 0; }
+
+.header-actions {
+  margin-left: auto; display: inline-flex; gap: 0.4rem; align-items: center;
+  font-size: 1rem; font-weight: normal;
+}
+.home-btn, .help-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  min-height: 34px; padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--accent);
+  text-decoration: none; cursor: pointer; font: inherit; font-size: 0.9rem;
+}
+.home-btn:hover, .help-btn:hover { background: var(--surface); }
+.home-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+:focus-visible { outline: 2px solid var(--highlight-orange-dark); outline-offset: 2px; }
+
+/* ── Panels and controls ─────────────────────────────────────────────────── */
+
+.ll-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin: 1rem 0;
+}
+
+.ll-controls { display: flex; flex-wrap: wrap; gap: 0.8rem 1.2rem; align-items: flex-end; }
+.ll-controls label { display: inline-flex; flex-direction: column; gap: 0.2rem; font-size: 0.9rem; }
+/* Flex at the top level, not only inside .ll-controls — a plain button row
+   needs it too, and without it the mobile wrap rule below has nothing to act on. */
+.ll-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+label.ll-row { display: inline-flex; }
+
+input[type="text"], input[type="number"], select {
+  font: inherit; padding: 0.4rem 0.5rem;
+  border: 1px solid #999; border-radius: 5px; background: var(--bg); color: var(--fg);
+  min-height: 38px;
+}
+input[type="text"] { font-family: var(--font-mono); }
+input[aria-invalid="true"] { border-color: var(--bad); background: #FFF6F5; }
+
+input[type="range"] { width: 100%; min-width: 160px; accent-color: var(--ims-blue-text); height: 24px; }
+
+button {
+  font: inherit; cursor: pointer;
+  min-height: 38px; padding: 0.4rem 0.9rem;
+  border: 1px solid var(--accent); border-radius: 6px;
+  background: var(--bg); color: var(--accent);
+}
+button:hover { background: #EAF3F8; }
+button[aria-pressed="true"] { background: var(--ims-blue-text); color: #fff; }
+button.ll-primary { background: var(--ims-blue-text); color: #fff; }
+button.ll-primary:hover { background: #2F6A8F; }
+
+.ll-error { color: var(--bad); font-size: 0.88rem; margin: 0.3rem 0 0; font-weight: bold; }
+
+.ll-segmented { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
+.ll-segmented button { border-radius: 5px; padding: 0.35rem 0.7rem; font-size: 0.9rem; }
+
+/* ── Charts ──────────────────────────────────────────────────────────────── */
+
+.ll-chart { border: 1px solid var(--border); border-radius: 8px; padding: 0.3rem; background: var(--bg); }
+.ll-chart + .ll-chart { margin-top: 0.6rem; }
+
+.ll-grid line { stroke: #ECECEC; stroke-width: 1; }
+.ll-axis path, .ll-axis line { stroke: #555; }
+.ll-axis text { font-family: var(--font-body); font-size: 12px; fill: #444; }
+.ll-axis-label { font-family: var(--font-body); font-size: 13px; font-style: italic; fill: #333; }
+
+/* Each curve has BOTH a hue and a dash signature — colour is never the only cue. */
+.ll-curve      { stroke: var(--curve-f);     stroke-width: 2.5; fill: none; }
+.ll-curve-df   { stroke: var(--curve-df);    stroke-width: 2.5; fill: none; stroke-dasharray: 7 4; }
+.ll-curve-acc  { stroke: var(--curve-accum); stroke-width: 2.5; fill: none; }
+.ll-curve-ghost{ stroke: #B0B0B0;            stroke-width: 1.5; fill: none; stroke-dasharray: 2 3; }
+.ll-tangent    { stroke: var(--tangent);     stroke-width: 2;   fill: none; }
+.ll-secant     { stroke: var(--tangent);     stroke-width: 2;   fill: none; stroke-dasharray: 6 3; }
+
+.ll-area-pos { fill: var(--area-pos); }
+.ll-area-neg { fill: var(--area-neg); }
+.ll-rect { stroke: var(--ims-green); stroke-width: 1; }
+
+.ll-point { fill: var(--tangent); stroke: #fff; stroke-width: 1.5; }
+.ll-point-acc { fill: var(--curve-accum); stroke: #fff; stroke-width: 1.5; }
+.ll-marker-line { stroke: #444; stroke-width: 1; stroke-dasharray: 3 3; }
+
+/* Drag handles are 44px of touch target around a smaller visible dot. */
+.ll-handle { cursor: grab; touch-action: none; }
+.ll-handle:active { cursor: grabbing; }
+.ll-handle-hit { fill: transparent; }
+.ll-handle:focus-visible .ll-handle-dot { stroke: var(--highlight-orange-dark); stroke-width: 3; }
+
+/* ── Legend and readouts ─────────────────────────────────────────────────── */
+
+.ll-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem; font-size: 0.88rem; margin: 0.5rem 0 0; }
+.ll-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.ll-legend svg { width: 26px; height: 10px; flex: none; }
+
+.ll-readout {
+  display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+  font-family: var(--font-mono); font-size: 0.95rem;
+  margin: 0.6rem 0 0;
+}
+.ll-readout b { font-family: var(--font-body); font-weight: normal; color: var(--ims-gray-text); }
+
+.ll-result { font-size: 1.05rem; margin: 0.6rem 0; }
+.ll-verdict { font-weight: bold; }
+.ll-verdict.ok { color: var(--ok); }
+.ll-verdict.bad { color: var(--bad); }
+
+.ll-tex-fallback { font-family: var(--font-mono); font-size: 0.92em; background: var(--surface); padding: 0 0.2em; }
+.katex { font-size: 1.05em; }
+.katex-display { margin: 0.6rem 0; }
+
+/* ── Tool index cards ────────────────────────────────────────────────────── */
+
+.ll-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.9rem; margin: 1rem 0 2rem; }
+.ll-card {
+  display: block; padding: 0.9rem 1rem; text-decoration: none; color: inherit;
+  border: 1px solid var(--border); border-left: 4px solid var(--ims-blue); border-radius: 8px;
+  background: var(--bg);
+}
+.ll-card:hover { background: var(--surface); }
+.ll-card strong { display: block; color: var(--ims-blue-text); margin-bottom: 0.2rem; }
+.ll-card span { font-size: 0.88rem; color: #444; }
+.ll-card.ll-soon { border-left-color: var(--ims-lgray); opacity: 0.72; cursor: default; }
+.ll-card.ll-soon strong { color: var(--ims-gray-text); }
+
+.ll-tag {
+  display: inline-block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  padding: 0.05rem 0.5rem; margin-left: 0.4rem; color: var(--ims-gray-text); vertical-align: middle;
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+.ll-table { border-collapse: collapse; width: 100%; max-width: 32rem;
+            font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.ll-table caption { text-align: left; font-family: var(--font-body);
+                    font-size: 0.9rem; color: var(--ims-gray-text); padding-bottom: 0.35rem; }
+.ll-table th, .ll-table td { text-align: right; padding: 0.25rem 0.7rem 0.25rem 0; }
+.ll-table th { font-family: var(--font-body); font-weight: 700; font-size: 0.88rem;
+               color: var(--ims-gray-text); border-bottom: 1px solid var(--border); }
+/* The current row is marked by weight and a rule as well as tint — a highlight
+   carried by background colour alone disappears for a good many readers. */
+.ll-table tr.ll-row-current td { font-weight: 700; background: #EAF3F8;
+                                 box-shadow: inset 3px 0 0 var(--ims-blue-text); }
+
+.ll-code { font-family: var(--font-mono); font-size: 0.85rem; background: var(--surface);
+           border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem 0.7rem;
+           overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+
+/* ── Steps (guided tools) ────────────────────────────────────────────────── */
+
+.ll-step { border-left: 3px solid var(--ims-blue); padding: 0.2rem 0 0.2rem 0.9rem; margin: 1rem 0; }
+.ll-step h3 { margin-top: 0; }
+
+/* ── Dialog ──────────────────────────────────────────────────────────────── */
+
+dialog.ll-help-dialog {
+  max-width: 640px; width: calc(100% - 2rem);
+  border: 1px solid var(--border); border-radius: 10px; padding: 1.2rem 1.4rem;
+  color: var(--fg);
+}
+dialog.ll-help-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+dialog.ll-help-dialog h2 { margin-top: 0; }
+dialog.ll-help-dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 0.3rem 0.8rem; }
+dialog.ll-help-dialog dt { font-family: var(--font-mono); }
+dialog.ll-help-dialog dd { margin: 0; }
+kbd {
+  font-family: var(--font-mono); font-size: 0.85em;
+  border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 0.3em;
+}
+
+/* ── Screen-reader live region ───────────────────────────────────────────── */
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ── Embed mode (?embed=true) ────────────────────────────────────────────── */
+
+body.ll-embed .header-actions,
+body.ll-embed .ll-breadcrumb,
+body.ll-embed .ll-lede,
+body.ll-embed .ll-embed-hide { display: none; }
+body.ll-embed main { padding: 0.5rem 0.7rem 1rem; max-width: none; }
+body.ll-embed h1 { font-size: 1.1rem; }
+
+/* ── Mobile: 44px touch targets ──────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  main { padding: 0.8rem 0.9rem 3rem; }
+  h1 { font-size: 1.25rem; }
+  button, .home-btn, .help-btn { min-height: 44px; padding: 0.5rem 0.8rem; }
+  input[type="text"], input[type="number"], select { min-height: 44px; font-size: 16px; }
+  input[type="range"] { height: 44px; }
+  .ll-controls { gap: 0.7rem; }
+  .ll-controls label { width: 100%; }
+  /* A checkbox label next to buttons wraps mid-phrase at this width. */
+  .ll-row > label { flex: 1 1 100%; }
+  .ll-readout { font-size: 0.88rem; gap: 0.3rem 1rem; }
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important; }
+}
+
+/* ── Print (instructor guides) ───────────────────────────────────────────── */
+
+@media print {
+  .header-actions, .skip-links, .ll-no-print { display: none !important; }
+  body { font-size: 11pt; }
+  main { max-width: none; }
+  .ll-step { break-inside: avoid; }
+}

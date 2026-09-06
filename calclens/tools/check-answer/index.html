@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check My Answer | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the form</a>
+  <a href="#verdict">Skip to the result</a>
+</nav>
+
+<main>
+  <h1>Check My Answer
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Did you get it right? Type the problem and your answer. This page does not
+    look your answer up — it <b>differentiates</b> it and checks whether the
+    result matches, which is the same thing you can do on paper.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Your problem and answer">
+    <div class="ll-segmented" role="group" aria-label="What kind of problem">
+      <button type="button" id="mode-anti" class="mode-btn" aria-pressed="true">Antiderivative</button>
+      <button type="button" id="mode-deriv" class="mode-btn" aria-pressed="false">Derivative</button>
+    </div>
+
+    <div class="ll-controls" style="margin-top:0.8rem;">
+      <label for="f-input" style="flex:1 1 100%;">
+        <span id="f-label">The problem: <span class="ll-math" id="f-prompt"></span></span>
+        <input type="text" id="f-input" value="x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="f-error">
+      </label>
+      <p class="ll-error" id="f-error" role="alert" hidden style="flex:1 1 100%"></p>
+
+      <label for="ans-input" style="flex:1 1 100%;">
+        <span id="ans-label">Your answer:</span>
+        <input type="text" id="ans-input" value="x^3/3" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="ans-error">
+      </label>
+      <p class="ll-error" id="ans-error" role="alert" hidden style="flex:1 1 100%"></p>
+    </div>
+
+    <p class="ll-hint" id="c-note">
+      Leave the <span class="ll-math" id="plusc"></span> off — any constant is
+      accepted, because every antiderivative is correct up to one.
+    </p>
+
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.4rem; flex-wrap:wrap;">
+      <button type="button" id="check-btn" class="ll-primary">Check it</button>
+      <button type="button" id="show-btn">Show me one</button>
+    </div>
+  </section>
+
+  <section id="verdict" aria-label="Result">
+    <p class="ll-result" id="result-line" aria-live="polite"></p>
+    <div id="detail"></div>
+    <div class="ll-chart" id="chart-wrap" hidden>
+      <p class="ll-hint" id="chart-caption" style="margin:0.2rem 0 0 0.5rem;"></p>
+      <div id="chart"></div>
+      <div class="ll-legend" aria-hidden="true">
+        <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> <span id="leg-a">what it should be</span></span>
+        <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5" stroke-dasharray="7 4"/></svg> <span id="leg-b">from your answer</span></span>
+      </div>
+    </div>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Check My Answer</h2>
+  <p>Pick <b>Antiderivative</b> or <b>Derivative</b>, type the problem, type your
+     answer, and press <b>Check it</b>.</p>
+
+  <h3>How the check actually works</h3>
+  <p>For an antiderivative, the page differentiates <em>your</em> answer and
+     compares it to the integrand at a spread of <i>x</i> values. If the two
+     agree everywhere they are tested, your answer is right. This is exactly the
+     check you should do by hand — <b>an antiderivative is verified by
+     differentiating it</b>, and that direction is always the easy one.</p>
+  <p>Because the comparison is numeric, your answer does not have to <em>look</em>
+     like anyone else's. <span class="ll-math" id="help-tex1"></span> and
+     <span class="ll-math" id="help-tex2"></span> both pass, and so does any
+     answer that differs by a constant.</p>
+
+  <h3>Reading a "no"</h3>
+  <p>When the answer is wrong, the page names one <i>x</i> where the two
+     disagree and shows both values. Substituting that number back into your
+     work is usually the fastest way to find the slip.</p>
+  <p>Two curves are also drawn. If your answer is right they sit exactly on top
+     of each other; where they peel apart is where the error is.</p>
+
+  <h3>What it will not do</h3>
+  <p><b>Show me one</b> gives a correct answer when the problem is inside
+     Calculus 1's standard catalogue. Some integrals have no elementary
+     antiderivative at all, and the page says so rather than inventing one —
+     but your answer can still be checked either way.</p>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

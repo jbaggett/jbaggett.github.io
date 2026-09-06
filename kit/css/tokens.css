@@ -1,0 +1,39 @@
+/* LearnLens design tokens — the shared visual identity for every lens.
+
+   Import this before base.css. A lens may add tokens of its own but should
+   never redefine these: the point of the kit is that two lenses opened side by
+   side look like one product.
+
+   Colour rule from the accessibility checklist: never carry meaning in colour
+   alone. f, f' and the accumulation curve differ by dash pattern as well as
+   hue; positive and negative signed area differ by hatch as well as fill. */
+
+:root {
+  /* IMSCOL palette (shared with StatLens) */
+  --ims-blue: #569BBD;
+  --ims-blue-text: #3A7CA5;         /* 4.56:1 on white */
+  --ims-green: #114B5F;
+  --ims-gray-text: #6B6B6B;         /* 5.33:1 on white */
+  --ims-lgray: #D9D9D9;
+  --highlight-orange-dark: #C05E10; /* 4.33:1 on white */
+
+  /* Calculus objects — each also gets a distinct dash pattern below */
+  --curve-f: #114B5F;               /* the function itself: solid, darkest */
+  --curve-df: #C05E10;              /* the derivative: dashed, warm */
+  --curve-accum: #7B2D8E;           /* the accumulation function: solid violet */
+  --tangent: #C2185B;               /* tangent / secant lines */
+  --area-pos: rgba(86, 155, 189, 0.38);
+  --area-neg: rgba(192, 94, 16, 0.30);
+
+  --accent: var(--ims-blue-text);
+  --fg: #000;
+  --bg: #fff;
+  --surface: #f8f8f8;
+  --border: var(--ims-lgray);
+  --heading: var(--ims-blue);
+  --ok: #1B7A3D;
+  --bad: #A52714;
+
+  --font-body: "Atkinson Hyperlegible", system-ui, sans-serif;
+  --font-mono: "Source Code Pro", ui-monospace, monospace;
+}
