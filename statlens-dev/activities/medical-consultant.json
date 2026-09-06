@@ -1,8 +1,34 @@
 {
   "title": "Medical Consultant: Bootstrap CI for a Proportion",
   "tool": "simulate/bootstrap-prop",
-  "params": { "dataset": "medical_consultant", "success": "complication", "ci": 95, "seed": "ch8med" },
+  "params": {
+    "dataset": "medical_consultant",
+    "success": "complication",
+    "ci": 95,
+    "seed": "ch8med"
+  },
   "steps": [
+    {
+      "instruction": "The consultant had **3 complications in 62 surgeries** (\\(\\hat{p}\\) = 0.048), versus a national rate of **10%**. You'll bootstrap a 95% confidence interval for her true rate. **Before you start, commit to a prediction.**",
+      "gate": {
+        "question": "Where do you think the 95% bootstrap CI will fall relative to the national 10%?",
+        "choices": [
+          {
+            "text": "It will include 10% — we won't be able to rule out the national rate",
+            "correct": true
+          },
+          {
+            "text": "It will sit entirely below 10% — clear evidence she's better"
+          },
+          {
+            "text": "It will sit entirely above 10%"
+          }
+        ],
+        "feedback": "With only 62 patients the CI is wide and its upper bound lands right around 10% — so 10% is **not** ruled out. A small sample can't separate 'genuinely better' from 'lucky.' Now bootstrap it and see.",
+        "retryFeedback": "Think about how wide a CI built from just 62 observations (3 complications) will be."
+      },
+      "phase": "predict"
+    },
     {
       "instruction": "Click **+1** several times and watch the resampled proportion after each click.",
       "observe": "Does the proportion change each time? Does it ever hit exactly 3/62 (0.048)? Does it ever reach 0? Does it get as high as 0.10 (the national average)?",
@@ -12,6 +38,33 @@
       "instruction": "Click the **Play** button and watch the bootstrap distribution build, then **Pause** and click **+1000**.",
       "observe": "Read the **95% CI** bounds. Is 0.10 (the national complication rate) inside the interval, outside it, or right on the boundary?",
       "reveal": "The upper bound of the 95% CI is near 0.10 — it may just barely include or exclude it depending on the number of resamples. This is a borderline case. Either way, we don't have strong evidence that the consultant's rate is truly lower than average. The sample is small (n = 62) and the CI is wide, so complication rates anywhere from 0% up to around 10% are plausible."
+    },
+    {
+      "instruction": "You've bootstrapped the consultant's complication rate. Put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "cant_conclude_equal",
+            "label": "Given the 95% CI includes 10%, can we conclude the consultant's rate is no different from the national rate — or only that we can't rule it out?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "borderline_hardness",
+            "label": "Why does small-sample discreteness make the borderline-vs-clear-cut distinction harder here than at n = 620?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "study_design_improvement",
+            "label": "What one change to the study design would give the strongest chance of demonstrating a real improvement?",
+            "placeholder": "Your suggestion",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: including 10% means we **can't rule it out** — not that the rates are equal (absence of evidence isn't evidence of absence). Small-n discreteness makes it borderline because the CI bound lurches between whole-count outcomes (6/62 vs 7/62), so 'just includes' vs 'just excludes' can flip on a single patient. The strongest fix is **more data** — a larger n narrows the CI and steadies the boundary."
+      },
+      "phase": "explain"
     }
   ]
 }

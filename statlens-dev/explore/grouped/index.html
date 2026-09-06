@@ -257,12 +257,22 @@
 
     
     <dialog id="page-help" aria-label="Help">
-        <h2>Help</h2>
-        <p class="help-intro">Load a dataset to compare a quantitative variable across groups using side-by-side charts and summary statistics.</p>
+        <h2>Compare Groups</h2>
+        <p class="help-intro">Compare one quantitative variable across the levels of a grouping variable. The chart and the summary-statistics table show every group side by side so you can compare centers, spreads, and shapes.</p>
+        <ul class="help-list">
+            <li><strong>Quantitative variable</strong> — the numeric measurement being compared (for example, height or test score).</li>
+            <li><strong>Grouping variable</strong> — the categorical variable that splits the data into groups (for example, treatment vs control).</li>
+            <li><strong>Chart type</strong> — view the groups as a <strong>Boxplot</strong> (five-number summary and outliers), a <strong>Dotplot</strong> (every value as a dot), a <strong>Histogram</strong>, or a <strong>Density</strong> curve. Boxplots make centers and spreads easy to line up; dotplots and histograms reveal shape and gaps.</li>
+        </ul>
+        <p>The <strong>Summary Statistics</strong> table on the right reports n, mean, standard deviation, and the five-number summary for each group. Once data loads, a summary bar appears with buttons to Explore, Preview, or Download the data, and a <strong>Change Data</strong> button to load something else.</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=comparing-groups.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -283,5 +293,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

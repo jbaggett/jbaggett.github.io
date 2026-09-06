@@ -1,8 +1,35 @@
 {
   "title": "Type I & Type II Errors",
   "tool": "conceptual/decision-errors",
-  "params": { "truth": "none", "n": 30, "alpha": "0.05", "ptrue": 65, "seed": "ch8errors" },
+  "params": {
+    "truth": "none",
+    "n": 30,
+    "alpha": "0.05",
+    "ptrue": 65,
+    "seed": "ch8errors"
+  },
   "steps": [
+    {
+      "instruction": "You're about to run many studies of the same test. First the truth is set to **H₀ is true** — the treatment does nothing — and you'll run studies at **α = 0.05**. **Before you run them, commit to a prediction.**",
+      "gate": {
+        "question": "Out of 500 studies where H₀ is really true, about how many do you expect to reject H₀ — and what is each such rejection?",
+        "choices": [
+          {
+            "text": "About 25 — and each one is a Type I error (a false alarm)",
+            "correct": true
+          },
+          {
+            "text": "About 0 — if H₀ is true, the test won't reject it"
+          },
+          {
+            "text": "About 250 — roughly half will reject by chance"
+          }
+        ],
+        "feedback": "About α × 500 = 0.05 × 500 = **25** studies reject even though H₀ is true. Each is a **Type I error** — the test crying wolf — and that rate is exactly α, no matter the data. Now run them and watch the false-alarm strip.",
+        "retryFeedback": "α is the false-alarm rate under a true H₀. What fraction of 500 is α = 0.05?"
+      },
+      "phase": "predict"
+    },
     {
       "instruction": "Leave the truth set to **H₀ is true — the treatment does nothing**. Click **+1000** to run a thousand studies of a treatment that genuinely has no effect.",
       "observe": "What fraction of these studies still *rejected* H₀ — that is, raised a false alarm?",
@@ -32,6 +59,27 @@
       "instruction": "Finally, with **Hₐ true** and the success rate at 65%, n = 30, change **α** to **0.01**. Reset and run **+1000**, then compare to α = 0.05.",
       "observe": "Did power go up or down when you made α stricter?",
       "reveal": "Stricter α (0.01) lowers the Type I error rate but *raises* Type II errors — power **drops**. You can't shrink both error types at once for a fixed n: that trade-off is the heart of choosing a significance level."
+    },
+    {
+      "instruction": "You've run studies under both H₀ and Hₐ, varying n and α. Put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "alpha_beta_asymmetry",
+            "label": "Why is the Type I error rate exactly α regardless of the data, while β depends on the true effect, sample size, AND α?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "tradeoff",
+            "label": "Why does lowering α raise β unless you also raise n?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: the Type I rate is α **by definition** — you set the rejection threshold, so under a true H₀ exactly that fraction cross it, whatever the data. β is different: it depends on how far the truth sits from H₀ (effect size), how much data you have (n), and where the threshold sits (α) — so it isn't a single number. Lowering α moves the threshold farther out, catching fewer false alarms **and** fewer true effects (higher β) — unless you buy back sensitivity with a larger n."
+      },
+      "phase": "explain"
     }
   ]
 }

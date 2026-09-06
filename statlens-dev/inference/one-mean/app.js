@@ -16,10 +16,9 @@ initHelp();
 import { parseCSV } from '../../js/csv-parser.js';
 import { formatStat, detectPrecision, mean, sd } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -359,16 +358,22 @@ function renderResults(r, d, mu0, alternative, confLevel) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // Symbolic wrapper: makes the SYMBOL (e.g. \bar{x}) hoverable too, without recoloring it.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
   const testFormula = tex(`\\begin{aligned}
-    t &= \\frac{\\bar{x} - \\mu_0}{s \\,/\\, \\sqrt{n}} \\\\[8pt]
-    &= \\frac{${V}{${formatStat(r.xbar, d)}} - ${V}{${mu0}}}{${V}{${formatStat(r.s, d)}} \\,/\\, \\sqrt{${V}{${r.n}}}} \\\\[8pt]
+    t &= \\frac{${fxs('xbar', '\\bar{x}')} - ${fxs('mu0', '\\mu_0')}}{${fxs('s', 's')} \\,/\\, \\sqrt{${fxs('n', 'n')}}} \\\\[8pt]
+    &= \\frac{${fx('xbar', formatStat(r.xbar, d))} - ${fx('mu0', mu0)}}{${fx('s', formatStat(r.s, d))} \\,/\\, \\sqrt{${fx('n', r.n)}}} \\\\[8pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &\\bar{x} \\pm t^{\\!*} \\cdot \\frac{s}{\\sqrt{n}} \\\\[8pt]
-    &${V}{${formatStat(r.xbar, d)}} \\pm ${V}{${tStar}} \\cdot \\frac{${V}{${formatStat(r.s, d)}}}{\\sqrt{${V}{${r.n}}}} \\\\[8pt]
+    &${fxs('xbar', '\\bar{x}')} \\pm t^{\\!*} \\cdot \\frac{${fxs('s', 's')}}{\\sqrt{${fxs('n', 'n')}}} \\\\[8pt]
+    &${fx('xbar', formatStat(r.xbar, d))} \\pm ${V}{${tStar}} \\cdot \\frac{${fx('s', formatStat(r.s, d))}}{\\sqrt{${fx('n', r.n)}}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
 
@@ -376,9 +381,9 @@ function renderResults(r, d, mu0, alternative, confLevel) {
     <h3>Sample Summary</h3>
     <table class="results-table" aria-label="Sample summary">
       <tbody>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n}</td></tr>
-        <tr><th scope="row">${tex('\\bar{x}')}</th><td>${formatStat(r.xbar, d)}</td></tr>
-        <tr><th scope="row">${tex('s')}</th><td>${formatStat(r.s, d)}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n">${r.n}</td></tr>
+        <tr><th scope="row">${tex('\\bar{x}')}</th><td data-fx="xbar">${formatStat(r.xbar, d)}</td></tr>
+        <tr><th scope="row">${tex('s')}</th><td data-fx="s">${formatStat(r.s, d)}</td></tr>
         <tr><th scope="row">${tex('SE')}</th><td>${formatStat(r.se, d)}</td></tr>
       </tbody>
     </table>
@@ -397,12 +402,15 @@ function renderResults(r, d, mu0, alternative, confLevel) {
 
     <div class="interpretation" aria-live="polite">
       <p>The sample mean ${tex('\\bar{x}')} = ${formatStat(r.xbar, d)} is ${Math.abs(r.tStat).toFixed(2)} standard errors
-        ${r.tStat >= 0 ? 'above' : 'below'} the null value ${tex('\\mu_0')} = ${mu0}.</p>
+        ${r.tStat >= 0 ? 'above' : 'below'} the null value ${tex('\\mu_0')} = <span class="fx-src" data-fx="mu0">${mu0}</span>.</p>
       <p><strong>Formal conclusion:</strong> ${conclusions.formal}</p>
       ${conclusions.practical ? `<p><strong>Practical conclusion:</strong> ${conclusions.practical}</p>` : ''}
       <p>${confPct}% CI for ${tex('\\mu')}: (${formatStat(r.ciLower, d)}, ${formatStat(r.ciUpper, d)}).</p>
     </div>
   `;
+
+  // C3: link formula values (x̄, μ₀, s, n) to their sources in the summary / hypothesis.
+  linkFormula(document.querySelector('main') || resultsPanel);
 }
 
 // ── Conditions checkpoint ────────────────────────────────────────────
@@ -494,7 +502,7 @@ function drawChart(result) {
   });
 
   addInferenceAnnotations(chart, {
-    statValue: Math.abs(tStat),
+    statValue: tail === 'both' ? Math.abs(tStat) : tStat, // signed for one-sided so the line aligns with the shaded tail
     statLabel: 't',
     pValue: result.pValue,
     pdfFn,

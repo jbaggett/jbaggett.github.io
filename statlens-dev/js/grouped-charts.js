@@ -40,6 +40,17 @@ export function renderStackedHistograms(container, grouped, options) {
   const maxGroupN = Math.max(...groupNames.map(g => grouped[g].length));
   const compactHeight = Math.min(371, Math.max(160, 100 + maxGroupN * 4));
 
+  // Shared y-axis (D2): bin each group on the SAME edges and lock every panel's
+  // y-max to the tallest bar across groups — so a bar of 10 towers over a bar of 4
+  // instead of both filling their panel. In relative-frequency mode share the
+  // proportion ceiling (per-panel count = proportion × that group's n).
+  const groupBinMax = groupNames.map(g => {
+    const { bins } = computeBins(grouped[g], { domain, thresholds });
+    return Math.max(0, ...bins.map(b => b.length));
+  });
+  const sharedCountMax = Math.max(1, ...groupBinMax);
+  const sharedPropMax = Math.max(1e-9, ...groupNames.map((g, i) => groupBinMax[i] / (grouped[g].length || 1)));
+
   for (let i = 0; i < groupNames.length; i++) {
     const name = groupNames[i];
     const values = grouped[name];
@@ -66,6 +77,7 @@ export function renderStackedHistograms(container, grouped, options) {
       relativeFrequency: options.relativeFrequency,
       fillColor: colors[i],
       viewHeight: compactHeight,
+      yMax: options.relativeFrequency ? sharedPropMax * (values.length || 1) : sharedCountMax,
     });
 
     if (options.showMean) {

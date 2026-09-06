@@ -122,6 +122,65 @@ export function bagSource(bag) {
 }
 
 /**
+ * The shared flight: hide each target, fly an orange clone from its source point
+ * onto it, reveal it on landing, and stamp a footprint where it came from.
+ *
+ * Extracted from `animateDrawInto` so callers that do NOT render through
+ * `drawDotplot` can reuse the same motion — `conceptual/bootstrap-shift/` flies
+ * from labelled population circles into a hand-built inset. Targets are plain
+ * elements; the caller supplies the pairing.
+ *
+ * @param {Array<{source: {x:number,y:number}|null, target: Element}>} pairs
+ * @param {{ footprints?: boolean, color?: string, hold?: number, fly?: number,
+ *   size?: number, onDone?: () => void }} [opts]
+ * @returns {number} total duration in ms, or 0 if it declined to run
+ */
+export function flyOntoTargets(pairs, opts = {}) {
+  const { color = FLY_COLOR, hold = 320, fly = 620, footprints = true, onDone } = opts;
+  if (prefersReducedMotion() || !pairs.length) return 0;
+
+  /** @type {Array<{el: HTMLElement, sx:number, sy:number, ex:number, ey:number, circle: Element, foot:boolean}>} */
+  const flyers = [];
+  for (const { source, target } of pairs) {
+    const tr = target.getBoundingClientRect();
+    const ex = tr.left + tr.width / 2, ey = tr.top + tr.height / 2;
+    const sz = opts.size ?? Math.max(tr.width || 8, 7);
+    const sx = source ? source.x : ex, sy = source ? source.y : ey - 60;
+    const el = document.createElement('div');
+    el.className = 'dpr-flyer';
+    el.style.cssText = `position:fixed;left:${sx - sz / 2}px;top:${sy - sz / 2}px;`
+      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${color};`
+      + `z-index:1000;pointer-events:none;opacity:0;transition:opacity .15s ease-in;`;
+    document.body.appendChild(el);
+    /** @type {SVGElement} */ (target).style.opacity = '0';
+    flyers.push({ el, sx, sy, ex, ey, circle: target, foot: !!source });
+  }
+
+  requestAnimationFrame(() => flyers.forEach(f => { f.el.style.opacity = '1'; }));
+
+  setTimeout(() => {
+    if (footprints) stampFootprints(flyers);
+    const t0 = performance.now();
+    const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    function step(now) {
+      const t = Math.min((now - t0) / fly, 1);
+      const e = ease(t);
+      for (const f of flyers) {
+        f.el.style.left = `${f.sx + (f.ex - f.sx) * e - (f.el.offsetWidth / 2)}px`;
+        f.el.style.top = `${f.sy + (f.ey - f.sy) * e - (f.el.offsetHeight / 2)}px`;
+      }
+      if (t < 1) { requestAnimationFrame(step); return; }
+      // Reveal the real dots; remove the flyers.
+      for (const f of flyers) { /** @type {SVGElement} */ (f.circle).style.removeProperty('opacity'); f.el.remove(); }
+      onDone?.();
+    }
+    requestAnimationFrame(step);
+  }, hold);
+
+  return hold + fly + 80;
+}
+
+/**
  * Animate drawing `values` into a freshly-drawn target dotplot: hide its dots,
  * fly an orange clone from each value's source onto its target dot, reveal the
  * dot on landing, and stamp a footprint at the source.
@@ -137,49 +196,13 @@ export function animateDrawInto(target, values, sourceAt, opts = {}) {
   if (prefersReducedMotion() || !circles.length || circles.length !== values.length) return 0;
 
   // computeDots order == circle order; align each circle to its value.
-  const info = computeDots(values, { domain: target.frame ? undefined : undefined, binWidth: target.binWidth });
-  circles.forEach(c => { /** @type {SVGElement} */ (c).style.opacity = '0'; });
-
-  /** @type {Array<{el: HTMLElement, sx:number, sy:number, ex:number, ey:number, circle: Element, foot:boolean}>} */
-  const flyers = [];
-  for (let i = 0; i < circles.length; i++) {
-    const value = info.dots[i]?.value ?? values[i];
-    const src = sourceAt(value, i);
-    const tr = circles[i].getBoundingClientRect();
-    const ex = tr.left + tr.width / 2, ey = tr.top + tr.height / 2;
-    const sz = Math.max(tr.width || 8, 7);
-    const el = document.createElement('div');
-    el.className = 'dpr-flyer';
-    const sx = src ? src.x : ex, sy = src ? src.y : ey - 60;
-    el.style.cssText = `position:fixed;left:${sx - sz / 2}px;top:${sy - sz / 2}px;`
-      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${FLY_COLOR};`
-      + `z-index:1000;pointer-events:none;opacity:0;transition:opacity .15s ease-in;`;
-    document.body.appendChild(el);
-    flyers.push({ el, sx, sy, ex, ey, circle: circles[i], foot: !!src });
-  }
-
-  requestAnimationFrame(() => flyers.forEach(f => { f.el.style.opacity = '1'; }));
-  const FLY = 620, HOLD = 320;
-
-  setTimeout(() => {
-    if (opts.footprints !== false) stampFootprints(flyers);
-    const t0 = performance.now();
-    const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    function step(now) {
-      const t = Math.min((now - t0) / FLY, 1);
-      const e = ease(t);
-      for (const f of flyers) {
-        f.el.style.left = `${f.sx + (f.ex - f.sx) * e - (f.el.offsetWidth / 2)}px`;
-        f.el.style.top = `${f.sy + (f.ey - f.sy) * e - (f.el.offsetHeight / 2)}px`;
-      }
-      if (t < 1) { requestAnimationFrame(step); return; }
-      // Reveal the real dots; remove the flyers.
-      for (const f of flyers) { /** @type {SVGElement} */ (f.circle).style.removeProperty('opacity'); f.el.remove(); }
-    }
-    requestAnimationFrame(step);
-  }, HOLD);
-
-  return HOLD + FLY + 80;
+  const info = computeDots(values, { binWidth: target.binWidth });
+  // sourceAt is called in circle order — bagSource round-robins on call order.
+  const pairs = circles.map((c, i) => ({
+    source: sourceAt(info.dots[i]?.value ?? values[i], i),
+    target: c,
+  }));
+  return flyOntoTargets(pairs, { footprints: opts.footprints !== false });
 }
 
 /** Stamp faded squares at each flyer's source (cleared by the next draw). */

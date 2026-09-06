@@ -1,32 +1,75 @@
 {
   "title": "Chi-Square Goodness of Fit",
   "tool": "inference/chisq",
+  "chooseData": true,
   "params": {},
   "steps": [
     {
-      "instruction": "Use the tool in GOF-style entry mode. Enter (or load) a categorical dataset with 4-6 categories and a claimed reference distribution (e.g., a candy company's claimed color proportions).",
-      "observe": "What are the null and alternative hypotheses? Why is the GOF test always 'two-sided in spirit'?",
-      "reveal": "H0: the true distribution matches the claim. Ha: at least one proportion differs from the claim. GOF is always right-tail on the chi-square statistic because ANY departure - in any category, in any direction - inflates the sum of squared deviations."
+      "phase": "predict",
+      "instruction": "You're about to compare observed category counts to the counts \\(H_0\\) predicts. **Commit to a prediction first.**",
+      "gate": {
+        "question": "If \\(H_0\\) is true, how should the observed counts compare to the expected counts?",
+        "choices": [
+          {
+            "text": "Close, but rarely exactly equal — chi-square measures the total gap",
+            "correct": true
+          },
+          {
+            "text": "Exactly equal in every category"
+          },
+          {
+            "text": "Completely unrelated to the expected counts"
+          }
+        ],
+        "feedback": "Right. Even when \\(H_0\\) holds, sampling makes observed counts wobble around the expected ones; \\(\\chi^2\\) sums the standardized gaps to ask whether the total wobble is more than chance.",
+        "retryFeedback": "Under \\(H_0\\) the counts still vary sample to sample — they should be near, not exactly at, the expected values."
+      }
     },
     {
-      "instruction": "The tool computes expected counts under H0. Note both the observed counts and the expected counts.",
+      "instruction": "Use the tool in GOF-style entry mode. Enter (or load) a categorical dataset with 4-6 categories and a claimed reference distribution (e.g., a candy company's claimed color proportions).",
+      "observe": "What are the null and alternative hypotheses? Why is the GOF test always 'two-sided in spirit'?",
+      "reveal": "H₀: the true distribution matches the claim. Hₐ: at least one proportion differs from the claim. GOF is always right-tail on the chi-square statistic because ANY departure - in any category, in any direction - inflates the sum of squared deviations."
+    },
+    {
+      "instruction": "The tool computes expected counts under H₀. Note both the observed counts and the expected counts.",
       "observe": "Are all expected counts at least 5? What does that tell you about the reliability of the chi-square approximation?",
-      "reveal": "The expected-count condition requires E_i >= 5 for every category. If any expected count is below 5, the chi-square distribution is a poor approximation to the actual sampling distribution of the test statistic - switch to a randomization chi-square or merge categories."
+      "reveal": "The expected-count condition requires Eᵢ ≥ 5 for every category. If any expected count is below 5, the chi-square distribution is a poor approximation to the actual sampling distribution of the test statistic - switch to a randomization chi-square or merge categories."
     },
     {
       "instruction": "Read off the chi-square statistic, degrees of freedom (df = number of categories - 1), and the p-value.",
-      "observe": "What is your decision at alpha = 0.05?",
-      "reveal": "At alpha = 0.05, reject H0 iff p < 0.05. Rejection means the observed distribution differs discernibly from the claim - but it does not tell you WHICH categories are responsible."
+      "observe": "What is your decision at α = 0.05?",
+      "reveal": "At α = 0.05, reject H₀ iff p < 0.05. Rejection means the observed distribution differs discernibly from the claim - but it does not tell you WHICH categories are responsible."
     },
     {
-      "instruction": "If H0 is rejected, examine the per-category contributions (O - E)^2 / E. The categories with the largest contributions are the strongest 'drivers' of the departure from H0.",
-      "observe": "Which category or categories have the largest (O - E)^2 / E? Are they over-represented (O > E) or under-represented (O < E)?",
+      "instruction": "If H₀ is rejected, examine the per-category contributions (O - E)² / E. The categories with the largest contributions are the strongest 'drivers' of the departure from H₀.",
+      "observe": "Which category or categories have the largest (O - E)² / E? Are they over-represented (O > E) or under-represented (O < E)?",
       "reveal": "Large positive (O - E) in a cell means that category is over-represented compared to the claim; large negative means under-represented. This is how you tell the STORY of a rejected GOF, not just the fact of the rejection."
     },
     {
       "instruction": "Open /simulate/randomization-chisq/ on the same data (in a new tab) and run 5000 simulated chi-square statistics. Compare the simulation p-value to the chi-square approximation.",
       "observe": "How close are they? Are they closer or farther apart than you expected?",
       "reveal": "On well-behaved data the two p-values agree closely - the chi-square approximation is doing its job. When expected counts are small the two diverge and the simulation is the trustworthy report. This is the same pattern as bootstrap-vs-z and randomization-vs-t: simulation is the gold standard; the formula is a convenient approximation that only applies when conditions hold."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "expected_meaning",
+            "label": "What do the expected counts represent, and why compare against them rather than against equal counts?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "contributions",
+            "label": "How do the per-category \\((O-E)^2/E\\) contributions tell you WHICH categories drive a significant result?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: expected counts are what \\(H_0\\) predicts for this sample size (\\(n\\times\\) the hypothesized proportion), so they encode the null model, not a blanket 'all equal.' \\(\\chi^2\\) sums the standardized squared gaps \\((O-E)^2/E\\); a large total means the pattern is unlikely under \\(H_0\\). The individual contributions localize the misfit — the categories with the biggest \\((O-E)^2/E\\) are where the data depart most from \\(H_0\\)."
+      }
     }
   ]
 }

@@ -81,7 +81,7 @@
     </nav>
 
     <main>
-        <h1>Paired t-Test and Confidence Interval<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <h1>Paired t-Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
         <!-- Data Panel -->
         <section id="data-panel" aria-label="Data input">
@@ -159,9 +159,10 @@
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H<sub>0</sub>:</span>
                     <span>&mu;<sub>d</sub></span>
-                    <span class="standard-only">= 0</span>
+                    <span class="standard-only">= <span class="fx-src" data-fx="mu0">0</span></span>
                     <span class="expert-only">=
                         <input type="number" id="input-mu0" value="0" step="any"
+                               class="fx-src" data-fx="mu0"
                                aria-label="Null hypothesis mean difference">
                     </span>
                 </div>
@@ -177,12 +178,6 @@
                     <span id="null-display" class="null-value-mirror expert-only">0</span>
                 </div>
             </div>
-            <div class="controls-row">
-                <label for="input-conf">Confidence level
-                    <input type="number" id="input-conf" value="0.95"
-                           step="0.01" min="0.80" max="0.99">
-                </label>
-            </div>
         </section>
 
         <div id="conditions-checkpoint" class="conditions-checkpoint" hidden></div>
@@ -194,8 +189,14 @@
                     <div id="chart-container"></div>
                 </div>
                 <aside class="app-sidebar" id="results">
+                    <div class="ci-level-control">
+                        <label for="input-conf">Confidence level
+                            <input type="number" id="input-conf" value="0.95"
+                                   step="0.01" min="0.80" max="0.99">
+                        </label>
+                    </div>
                     <div id="results-panel" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </aside>
             </div>
@@ -203,15 +204,29 @@
 
         <div id="sr-announce" role="status" aria-live="polite"
              aria-atomic="true" class="sr-only"></div>
+        <p class="tool-crosslink">Just estimating? <a href="../estimate/paired/">Confidence Interval for a Mean Difference &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>Paired t-Test</h2>
+        <p class="help-intro">Test whether the mean of the paired differences μ<sub>d</sub> differs from a hypothesized value, using a t-statistic and the t-distribution. Each row is one pair (for example, a before and an after measurement on the same subject).</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (two columns, such as before and after), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the mean difference, its SD, and n.</li>
+            <li><strong>Variable selectors</strong> let you pick the two paired columns when the data has more than two.</li>
+            <li><strong>Alternative (H<sub>a</sub>):</strong> click the toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Null value:</strong> standard mode tests μ<sub>d</sub> = 0. Turn on <strong>Expert mode</strong> (settings gear) to make the null difference δ<sub>0</sub> editable.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check the number of pairs and the shape of the differences.</li>
+            <li><strong>Confidence level</strong> sets the matching interval (default 0.95).</li>
+            <li>Results — t, df, p-value, the confidence interval, and the plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=paired-t.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -232,5 +247,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

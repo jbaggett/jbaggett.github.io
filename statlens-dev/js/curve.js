@@ -380,11 +380,19 @@ export function addInferenceAnnotations(chart, opts) {
       .attr('stroke', STAT_COLOR)
       .attr('stroke-width', 2.5);
 
+    // Keep the labels inside the chart: flip the text anchor near either edge so a
+    // stat in the far tail (or clamped to the boundary) doesn't get truncated.
+    const near = 46;
+    let labelAnchor = 'middle';
+    let labelX = sx;
+    if (sx > w - near) { labelAnchor = 'end'; labelX = Math.min(sx, w - 2); }
+    else if (sx < near) { labelAnchor = 'start'; labelX = Math.max(sx, 2); }
+
     // "observed" label above the line (matches simulation pages)
     annotations.append('text')
       .attr('class', 'inf-annotation')
-      .attr('x', sx).attr('y', -16)
-      .attr('text-anchor', 'middle')
+      .attr('x', labelX).attr('y', -16)
+      .attr('text-anchor', labelAnchor)
       .attr('fill', STAT_COLOR)
       .classed('overlay-label', true)
       .text('observed');
@@ -393,8 +401,8 @@ export function addInferenceAnnotations(chart, opts) {
     const valueText = `${statLabel} = ${sv.toFixed(decimals)}`;
     annotations.append('text')
       .attr('class', 'inf-annotation inf-stat-label overlay-label')
-      .attr('x', sx).attr('y', -4)
-      .attr('text-anchor', 'middle')
+      .attr('x', labelX).attr('y', -4)
+      .attr('text-anchor', labelAnchor)
       .attr('fill', STAT_COLOR)
       .text(valueText);
   }

@@ -1,12 +1,34 @@
 {
   "title": "Inference for the Regression Slope",
   "tool": "inference/slope",
+  "chooseData": true,
   "params": {},
   "steps": [
     {
+      "phase": "predict",
+      "instruction": "You're about to test the regression slope. **Predict first.**",
+      "gate": {
+        "question": "What does \\(H_0: \\beta_1 = 0\\) claim about the two variables?",
+        "choices": [
+          {
+            "text": "No linear relationship — the predictor does not help explain \\(y\\)",
+            "correct": true
+          },
+          {
+            "text": "The slope is exactly 1"
+          },
+          {
+            "text": "The variables are independent in every possible way"
+          }
+        ],
+        "feedback": "Right. A zero slope means \\(x\\) carries no linear information about \\(y\\); the test asks whether the observed slope is farther from 0 than chance allows.",
+        "retryFeedback": "\\(\\beta_1 = 0\\) is specifically about the LINE being flat — no linear signal — not about the value 1 or every kind of dependence."
+      }
+    },
+    {
       "instruction": "Pick any regression dataset (two quantitative variables). Identify the explanatory and response variables and state the parameter of interest.",
       "observe": "What symbol represents the population slope? What does it MEAN in context, including units?",
-      "reveal": "Population slope: beta_1 (the unknown true slope). Interpretation: 'for each additional unit of the explanatory variable, the MEAN response changes by beta_1 [units].' Sample estimate b_1 = beta_1-hat is what OLS computes from your data."
+      "reveal": "Population slope: β₁ (the unknown true slope). Interpretation: 'for each additional unit of the explanatory variable, the MEAN response changes by β₁ [units].' Sample estimate b₁ = \\(\\hat{\\beta}_1\\) is what OLS computes from your data."
     },
     {
       "instruction": "Look at the tool's fitted-line plot AND the residual plot. Check the four regression conditions (LINE): Linearity, Independence, Normality of residuals, Equal variance.",
@@ -14,19 +36,40 @@
       "reveal": "Common failure patterns: (i) curved residuals -> linearity fails; use a transformation or a non-linear model. (ii) fan shape -> equal-variance fails; the reported SE of the slope is untrustworthy - use a bootstrap CI instead. (iii) single huge residual -> possible outlier or data-quality issue - investigate before trusting the fit."
     },
     {
-      "instruction": "Read off the estimated slope b_1, its standard error, the t statistic, and the p-value for a two-sided test of H0: beta_1 = 0.",
-      "observe": "What is your decision at alpha = 0.05? Does the 95% CI for beta_1 exclude 0?",
-      "reveal": "At alpha = 0.05 reject H0 iff p < 0.05. The 95% CI and the two-sided test always agree: reject exactly when the CI excludes 0. Rejecting means: statistically discernible LINEAR association between the two variables."
+      "instruction": "Read off the estimated slope b₁, its standard error, the t statistic, and the p-value for a two-sided test of H₀: β₁ = 0.",
+      "observe": "What is your decision at α = 0.05? Does the 95% CI for β₁ exclude 0?",
+      "reveal": "At α = 0.05 reject H₀ iff p < 0.05. The 95% CI and the two-sided test always agree: reject exactly when the CI excludes 0. Rejecting means: statistically discernible LINEAR association between the two variables."
     },
     {
-      "instruction": "Interpret the estimated slope b_1 in context, with units. Then interpret the 95% CI for beta_1 in context, with units.",
+      "instruction": "Interpret the estimated slope b₁ in context, with units. Then interpret the 95% CI for β₁ in context, with units.",
       "observe": "Does your interpretation say 'mean response'? Does it name the units? Does it avoid causal language when the data are observational?",
-      "reveal": "Slope: 'for each additional [x-unit], the MEAN [response] changes by b_1 [response-units].' CI: 'we are 95% confident that the true slope is between [lo] and [hi] [response-units per x-unit].' Avoid 'causes' unless you had random assignment - regression detects association, not causation."
+      "reveal": "Slope: 'for each additional [x-unit], the MEAN [response] changes by b₁ [response-units].' CI: 'we are 95% confident that the true slope is between [lo] and [hi] [response-units per x-unit].' Avoid 'causes' unless you had random assignment - regression detects association, not causation."
     },
     {
       "instruction": "Open /simulate/bootstrap-slope/ on the same data (new tab) and generate 5000 bootstrap resamples. Compare the bootstrap 95% CI for the slope to the analytic (t-based) 95% CI.",
       "observe": "How close are the two intervals? Which is more honest if the residual plot showed a fan shape?",
       "reveal": "On well-behaved (LINE-compliant) data the two intervals agree closely. When residuals are heteroscedastic, the bootstrap CI is typically WIDER and more honest - the t-based CI uses a single pooled SE that under-counts variability in the high-spread region. The bootstrap 'sees' the actual variability in the (x, y) pairs; the formula doesn't."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "line_conditions",
+            "label": "Which LINE conditions did you check, and what in the residual plot would signal a problem?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "slope_meaning",
+            "label": "Interpret the estimated slope in context (with units), and say what a small p-value for the slope tells you.",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: **LINE** — Linearity (residuals show no curve), Independence (from how the data were collected), Normality of residuals (roughly symmetric), Equal variance (no funnel in the residual-vs-fitted plot). The slope estimates the average change in \\(y\\) per one-unit increase in \\(x\\); a small p-value for \\(H_0: \\beta_1 = 0\\) is evidence of a real linear association — not that it's strong or causal."
+      }
     }
   ]
 }

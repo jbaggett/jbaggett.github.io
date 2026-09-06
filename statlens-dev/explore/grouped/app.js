@@ -12,7 +12,7 @@ import { computeDots } from '../../js/dotplot.js';
 import { drawBoxplot } from '../../js/boxplot.js';
 import { drawGroupedDensity } from '../../js/kde.js';
 import { wrapTable } from '../../js/export.js';
-import { announce, initTabs, initDataPanel, initHelp, wrapWithStepper, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initHelp, wrapWithStepper, setPageTitle, initToolHandoff } from '../../js/page-utils.js';
 import { getColors } from '../../js/chart-utils.js';
 import { DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
 import { renderStackedHistograms, renderStackedDotplots } from '../../js/grouped-charts.js';
@@ -44,6 +44,9 @@ let activeChart = 'boxplot';
 
 /** Current quantitative variable label. */
 let currentVarLabel = 'Value';
+
+/** Bundled dataset id currently loaded (null for pasted/file data) — for the E1 handoff. */
+let currentDatasetId = null;
 
 /** Current grouping variable label. */
 let currentGroupLabel = 'Group';
@@ -565,12 +568,31 @@ const dataPanel = initDataPanel({
   // per group. Excludes datasets like urban_owner (52 single-record state
   // "groups") that produce nonsense boxplots/stats (REQ-024).
   datasetFilter: (/** @type {any} */ ds) => ds.hasNumeric && ds.hasCategorical && ds.groupLevels >= 2 && ds.minGroupN >= 3,
+  // Deep-link bypass: honor a `?dataset=` link to any dataset with the structure
+  // this tool needs (a numeric variable and a grouping factor with ≥ 2 levels),
+  // even if the curated dropdown hid it (e.g. small `minGroupN`). The tiny-group
+  // quality gate is only about dropdown browsing, not capability.
+  deepLinkFilter: (/** @type {any} */ ds) => ds.hasNumeric && ds.hasCategorical && ds.groupLevels >= 2,
   onDataset: (ds) => {
     loadedDataset = ds;
+    currentDatasetId = ds.id;
     setupVariableSelectors(ds, ds.name ?? 'Dataset');
   },
-  onRawText: loadRawText,
-  onClear: clearDisplay,
+  onRawText: (text, name) => { currentDatasetId = null; loadRawText(text, name); },
+  onClear: () => { currentDatasetId = null; clearDisplay(); },
+});
+
+// Cross-tool handoff: carry the dataset + group/response to the matching test (E1).
+const groupedHandoff = initToolHandoff(resultsSection, () => {
+  const nGroups = Object.keys(groupedData).length;
+  if (!currentDatasetId || nGroups < 2) return null;
+  const two = nGroups === 2;
+  return {
+    label: two ? 'Test the difference in means' : 'Test these groups (ANOVA)',
+    target: two ? 'inference/two-means/' : 'inference/anova/',
+    dataset: currentDatasetId,
+    params: { group: groupVarSelect.value, response: quantVarSelect.value },
+  };
 });
 
 // Override the Apply button to handle two-column spreadsheet
@@ -678,6 +700,7 @@ function renderStats() {
     catLabel: currentGroupLabel,
   });
   table.id = 'grouped-stats-table';
+  groupedHandoff?.refresh();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────

@@ -1,0 +1,163 @@
+{
+  "id": "us_temperature",
+  "name": "US 90th-Percentile Daily Highs: 1950 vs 2022",
+  "description": "90th-percentile daily high temperature (°F) at 26 NOAA stations in 1950 vs 2022. IMS Ch. 21.",
+  "source": "openintro::us_temperature",
+  "chapter": "IMS Ch. 21",
+  "type": "paired",
+  "variables": [
+    {
+      "name": "y1950",
+      "label": "1950 (°F)",
+      "type": "numeric"
+    },
+    {
+      "name": "y2022",
+      "label": "2022 (°F)",
+      "type": "numeric"
+    }
+  ],
+  "studyDescription": "For each of 26 NOAA weather stations across the United States, the 90th-percentile daily high temperature (°F) was recorded in 1950 and again in 2022. Because both measurements come from the same station, the data are paired by station.",
+  "variableDescriptions": {
+    "y1950": "The 90th-percentile daily high temperature (°F) at the station in 1950.",
+    "y2022": "The 90th-percentile daily high temperature (°F) at the same station in 2022."
+  },
+  "sourceDetail": "OpenIntro IMS 2e Exercise 21.9. NOAA station records; openintro::us_temperature.",
+  "context": {
+    "population": "US weather stations",
+    "parameter": "mean difference in 90th-percentile daily high (2022 − 1950)",
+    "nullClaim": "no change in the 90th-percentile daily high between 1950 and 2022"
+  },
+  "rows": [
+    {
+      "station": "Station 1",
+      "y1950": 102,
+      "y2022": 106
+    },
+    {
+      "station": "Station 2",
+      "y1950": 103,
+      "y2022": 99.6
+    },
+    {
+      "station": "Station 3",
+      "y1950": 90,
+      "y2022": 93
+    },
+    {
+      "station": "Station 4",
+      "y1950": 88,
+      "y2022": 90
+    },
+    {
+      "station": "Station 5",
+      "y1950": 84,
+      "y2022": 86.7
+    },
+    {
+      "station": "Station 6",
+      "y1950": 89,
+      "y2022": 89
+    },
+    {
+      "station": "Station 7",
+      "y1950": 86,
+      "y2022": 97
+    },
+    {
+      "station": "Station 8",
+      "y1950": 82,
+      "y2022": 85
+    },
+    {
+      "station": "Station 9",
+      "y1950": 83,
+      "y2022": 82
+    },
+    {
+      "station": "Station 10",
+      "y1950": 92,
+      "y2022": 92.6
+    },
+    {
+      "station": "Station 11",
+      "y1950": 80,
+      "y2022": 83.7
+    },
+    {
+      "station": "Station 12",
+      "y1950": 91.8,
+      "y2022": 95
+    },
+    {
+      "station": "Station 13",
+      "y1950": 91,
+      "y2022": 90
+    },
+    {
+      "station": "Station 14",
+      "y1950": 89,
+      "y2022": 90
+    },
+    {
+      "station": "Station 15",
+      "y1950": 86,
+      "y2022": 91.6
+    },
+    {
+      "station": "Station 16",
+      "y1950": 80,
+      "y2022": 86
+    },
+    {
+      "station": "Station 17",
+      "y1950": 84,
+      "y2022": 86
+    },
+    {
+      "station": "Station 18",
+      "y1950": 81.8,
+      "y2022": 82
+    },
+    {
+      "station": "Station 19",
+      "y1950": 77,
+      "y2022": 83.6
+    },
+    {
+      "station": "Station 20",
+      "y1950": 99,
+      "y2022": 101
+    },
+    {
+      "station": "Station 21",
+      "y1950": 85,
+      "y2022": 88
+    },
+    {
+      "station": "Station 22",
+      "y1950": 81,
+      "y2022": 87
+    },
+    {
+      "station": "Station 23",
+      "y1950": 92,
+      "y2022": 95
+    },
+    {
+      "station": "Station 24",
+      "y1950": 89,
+      "y2022": 91
+    },
+    {
+      "station": "Station 25",
+      "y1950": 86,
+      "y2022": 87
+    },
+    {
+      "station": "Station 26",
+      "y1950": 92.6,
+      "y2022": 92
+    }
+  ]
+}

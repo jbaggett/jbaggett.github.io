@@ -56,6 +56,7 @@ function countValues(values, precision = 8) {
  * @param {number} [options.viewHeight] - Override SVG viewBox height (compact mode)
  * @param {boolean} [options.showExport] - Whether to render copy/download buttons
  * @param {[number,number]} [options.ciLines] - CI bound values to draw as vertical lines
+ * @param {string} [options.ciColor] - Colour of the CI bound lines (default: dusty red)
  * @param {boolean} [options.animate] - Whether to animate (default: true)
  * @param {[number,number]} [options.domain] - Override x-axis domain
  * @param {{top:number,right:number,bottom:number,left:number}} [options.margin]
@@ -73,6 +74,7 @@ export function drawSpike(container, values, options = {}) {
     isTail,
     observedStat,
     ciLines,
+    ciColor = '#B5747A',
     animate = true,
     margin,
     domain: domainOpt,
@@ -81,7 +83,14 @@ export function drawSpike(container, values, options = {}) {
     showExport,
     observedLabel,
     color,
+    showObservedMarker,
   } = options;
+  // Reasoning-mode `?observed=off` hides the observed-statistic marker so a
+  // student must place the cutoff line at the value given in the problem text.
+  const showObsMarker = showObservedMarker ?? (
+    typeof location === 'undefined' ||
+    new URLSearchParams(location.search).get('observed') !== 'off'
+  );
   // Base spike/cap colour when no isTail predicate is active (default IMS blue).
   const baseColor = color || SPIKE_COLOR;
 
@@ -182,15 +191,15 @@ export function drawSpike(container, values, options = {}) {
 
   // Overlay lines (observed stat, CI bounds)
   const overlays = d3Selection.select(frame.inner).select('.overlays');
-  if (observedStat != null) {
+  if (observedStat != null && showObsMarker) {
     renderOverlayLine(overlays, observedStat, xScale, frame.height,
       '#7B2D8E', 'Observed statistic', false, observedLabel ? `${observedLabel} = ` : '');
   }
   if (ciLines) {
     renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
-      '#B5747A', 'CI lower bound', true);
+      ciColor, 'CI lower bound', true);
     renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
-      '#B5747A', 'CI upper bound', true);
+      ciColor, 'CI upper bound', true);
   }
 
   return { frame, xScale, yScale, counts };

@@ -38,6 +38,160 @@
              to the tool/activity. Use class "activity"/"tool" on the entry + tag.
              ════════════════════════════════════════════════════════════════ -->
 
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-06<span class="cl-tag tool">Improved</span></div>
+            <h2>Sampling Distribution Lab can hide the true parameter</h2>
+            <p>The sampling chapters ask students to estimate a population mean they're told is <em>unknown</em> &mdash; while the app printed &mu; on screen the whole time. Add <code>?parameter=locked</code> and the true value is withheld: the &mu; readout, the marker on both charts, and the population line in the results. Use <code>?parameter=hidden</code> instead and you also get a <strong>Reveal the true value</strong> button, for driving a demo live &mdash; uncover it once the class has committed to an estimate, then hide it again for the next group. The population shape and all three tiers stay visible throughout, and &sigma;/&radic;<i>n</i> stays too, so the theory story is intact. Works in proportion mode as well. <a href="../conceptual/sampling-lab/?type=quant&amp;parameter=locked">Try it &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-05<span class="cl-tag tool">Improved</span></div>
+            <h2>CI Coverage now compares four interval methods</h2>
+            <p>The coverage demo already let you switch between the <strong>t-interval</strong> and the <strong>bootstrap percentile</strong> interval. It now offers two more — <strong>bootstrap &plusmn;<i>z</i>&middot;SE</strong> and <strong>bootstrap BCa</strong> — so you can measure, on the same population, how often each construction actually delivers its advertised 95%. Link straight to one with <code>?method=t</code>, <code>?method=bootstrap</code>, <code>?method=se</code> or <code>?method=bca</code>. What it shows on a right-skewed population is worth seeing: at <i>n</i> = 8 every method under-covers (t 88.4%, percentile 83.7%, &plusmn;2&middot;SE 85.3%, BCa 85.8%), the gap to 95% is bigger than any gap between methods, and BCa buys a point or two rather than closing it. Pairs with <a href="../conceptual/bootstrap-shift/">Why the Percentile CI Works</a>, which argues why the percentile interval should work at all. <a href="../conceptual/ci-coverage/?method=bca&n=8">Open the tool &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-05<span class="cl-tag tool">New tool</span></div>
+            <h2>Why the Percentile CI Works</h2>
+            <p>A new conceptual demo that answers the question students (and colleagues) actually ask about the bootstrap: <em>why</em> is the middle 95% of the bootstrap distribution a confidence interval? Build the <strong>true sampling distribution</strong> from a visible 200-dot population, then freeze one sample and bootstrap from it — both distributions land on the <strong>same axis</strong>, so you can see that the bootstrap distribution is the sampling distribution <strong>slid over</strong> to sit at x&#772;. A slider sweeps the frozen sample's mean across the sampling distribution while the page reports two verdicts side by side: did x&#772; land in the central 95%, and did the percentile interval capture &mu;? They flip together — that agreement <em>is</em> the justification. Switch the population to <strong>right-skewed</strong> to see where the argument strains, which is exactly what the <a href="../simulate/bootstrap-mean/?expert=true">BCa interval</a> exists to fix. <a href="../conceptual/bootstrap-shift/">Open the tool &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-04<span class="cl-tag tool">Feature</span></div>
+            <h2>BCa bootstrap confidence intervals (expert mode)</h2>
+            <p>Every bootstrap CI page now offers a third method — <strong>BCa</strong> (bias-corrected and accelerated) — alongside Percentile and ±2 SE. BCa shifts the percentile cutoffs to correct for <em>bias</em> and <em>skew</em> in the bootstrap distribution, so it's the more accurate interval when the distribution isn't symmetric (a skewed mean, a proportion near 0 or 1, a slope). It's an <strong>expert-mode</strong> option (turn on "Expert mode" in Settings, or add <code>?ci_method=bca</code>), so the student default stays the plain percentile interval. Available on one-mean, one-proportion, two-means, two-proportions, paired, and slope. The math is validated against R/scipy's BCa.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-04<span class="cl-tag tool">Improved</span></div>
+            <h2>Clearer help on every tool — and keyboard editing in the Scatterplot Editor</h2>
+            <p>A site-wide pass on the in-tool help (the <strong>?</strong> button). The distribution calculators, the traditional-inference tests, and the explore pages now have help that actually describes their controls instead of a generic one-liner. We also corrected the simulation help so it names the right idea: <strong>bootstrap</strong> pages estimate a <em>confidence interval</em>, <strong>randomization</strong> pages compute a <em>p-value</em> — no more mixing the two. The chi-square test help no longer mentions a confidence interval it never had. And the <a href="../explore/scatterplot-editor/">Scatterplot Editor</a> is now fully <strong>keyboard-operable</strong>: Tab to a point, arrow-keys to move it (Shift for bigger steps), Delete to remove it, and a numeric box to add one — no dragging required. The <a href="../data/">dataset catalog</a> gained a help panel too.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-03<span class="cl-tag tool">Feature</span></div>
+            <h2><a href="../data/">Preview &amp; download any dataset — new data-action icons</a></h2>
+            <p>Every tool now shows compact <strong>Explore / Preview / Download</strong> icon buttons in the data summary bar once a dataset is loaded. <strong>Preview</strong> (grid icon) opens the actual data in a scrollable table — variable labels, types, and rows — without leaving the page; <strong>Download</strong> (arrow) generates a CSV of the full dataset on demand; <strong>Explore</strong> (chart) jumps the dataset straight into the right explorer. The same <strong>Explore</strong>, <strong>Preview</strong>, and <strong>Download</strong> icons now sit on every row of the <a href="../data/">Browse All Datasets</a> catalog too, so an instructor can jump a dataset into the right explorer, look inside it, or grab its CSV without hunting. Great for just <em>seeing</em> what's in a bundled dataset before assigning it. <a href="../explore/descriptive/?dataset=county_pop">See it on a dataset</a>.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-08-18<span class="cl-tag activity">New activity</span></div>
+            <h2><a href="../distribution/binomial/?activity=binomial-esp.json">Testing ESP — the Binomial Distribution</a></h2>
+            <p>The <strong>first guided activity on a distribution calculator</strong>. Guess 8 shuffled cards with 4 symbols and no ESP, so <em>X</em> ~ Binomial(8, 0.25). Students predict the expected number correct (np = 2), see the distribution pile up low, then compute the certification bar — <em>P</em>(<em>X</em> ≥ 6) ≈ 0.004. The payoff: because luck almost never clears that bar, passing it is real evidence — the seed of a p-value. (Also shipped: the binomial calculator now reads <code>?n</code>, <code>?p</code>, <code>?k</code>, <code>?type</code> for deep-links.) <a href="../distribution/binomial/?activity=binomial-esp.json">Open the activity</a>.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-08-18<span class="cl-tag activity">New activity</span></div>
+            <h2><a href="../distribution/normal/?activity=normal-area.json">Areas Under the Normal Curve — SAT Scores</a></h2>
+            <p>The empirical rule made exact, on the Normal calculator. SAT math scores follow <em>X</em> ~ <em>N</em>(609, 80); students predict the area within one SD (≈ 68%) and beyond two SDs (≈ 2.5%), then read the tool's exact areas (0.6827 and 0.0228) and see where the 68–95–99.7 shortcut ends and the calculator takes over. <a href="../distribution/normal/?activity=normal-area.json">Open the activity</a>.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-08-16<span class="cl-tag activity">New activity</span></div>
+            <h2><a href="../conceptual/sampling-lab/?activity=cereal-null-proportion.json">Is It a Real Preference? — The Cereal Cartoon Study</a></h2>
+            <p>A gentle first taste of hypothesis-testing logic, built on the Sampling Distribution Lab. 80 children taste two identical cereals; 52 pick the box with cartoons. Students build the "<strong>no preference</strong>" distribution (<em>p</em>=0.5, <em>n</em>=80), see that chance alone keeps <em>p̂</em> between about 0.39 and 0.61, and then find that the real result — <em>p̂</em>=0.65 — sits <strong>far out in the tail</strong>. A result chance almost never produces is evidence something real is going on. Predict → simulate → weigh the evidence, no formulas. <a href="../conceptual/sampling-lab/?activity=cereal-null-proportion.json">Open the activity</a>.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-08-16<span class="cl-tag activity">New activity</span></div>
+            <h2><a href="../conceptual/sampling-lab/?activity=clt-mean-shape.json">Visualizing the CLT — Shape of <em>x̄</em> as <em>n</em> Grows</a></h2>
+            <p>The Central Limit Theorem, made visible. Starting from a strongly <strong>right-skewed</strong> population, students draw the sampling distribution of <em>x̄</em> at <em>n</em>=5 (still skewed), <em>n</em>=30 (nearly bell-shaped), and <em>n</em>=100 (a clean normal) — then switch to a <strong>normal</strong> population and watch it turn out bell-shaped even at <em>n</em>=5. The payoff: a skewed population needs a larger <em>n</em> before <em>x̄</em> looks normal, which is exactly where the <em>n</em>&nbsp;&gt;&nbsp;30 rule of thumb comes from. <a href="../conceptual/sampling-lab/?activity=clt-mean-shape.json">Open the activity</a>.</p>
+        </article>
+
+        <article class="cl-entry activity">
+            <div class="cl-date">2026-08-16<span class="cl-tag activity">New activity</span></div>
+            <h2><a href="../conceptual/sampling-lab/?activity=proportion-sampling-shape.json">Distributional Shape of <em>p̂</em> — When Does the CLT Kick In?</a></h2>
+            <p>A guided activity for the Sampling Distribution Lab that makes the <strong>success–failure condition</strong> tangible. Students predict, then draw, three sampling distributions of <em>p̂</em>: <em>n</em>=10, <em>p</em>=0.4 (skewed &amp; granular — both parts fail); <em>n</em>=100, <em>p</em>=0.6 (a clean normal bell — both pass); and the trap, <em>n</em>=40, <em>p</em>=0.9, where a large <em>np</em>=36 tempts "normal" but <em>n</em>(1−<em>p</em>)=4 keeps it <strong>left-skewed</strong>. The takeaway lands by seeing it: the CLT needs <em>both</em> <em>np</em>&nbsp;≥&nbsp;10 <em>and</em> <em>n</em>(1−<em>p</em>)&nbsp;≥&nbsp;10, not just one. <a href="../conceptual/sampling-lab/?activity=proportion-sampling-shape.json">Open the activity</a>.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-08-04<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../explore/scatterplot-editor/?preset=leverage">Scatterplot Editor</a></h2>
+            <p>The 2-D analog of the Dotplot Editor. <strong>Drag</strong> a data point, <strong>click</strong> empty space to add one, or <strong>click a point</strong> to remove it — the least-squares line, <em>r</em>, <em>R²</em>, slope, and intercept all update live. It's built to make <strong>leverage vs. influence</strong> tangible: pull a point far out in <em>x</em> and the line chases it; pull it far in <em>y</em> near the middle and it barely budges (an outlier). Toggle a residual overlay and a "high-influence point" flag. First version — <a href="../explore/scatterplot-editor/?preset=leverage">try the leverage preset</a>.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-08-04<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../simulate/goodness-of-fit/?dataset=mendel_peas">Chi-Square Goodness-of-Fit Simulation</a></h2>
+            <p>The simulation-first half of goodness-of-fit is here. Give one categorical variable's observed counts and a hypothesized distribution (H<sub>0</sub>), and the tool repeatedly draws a fresh sample <em>from</em> H<sub>0</sub>, computes the &chi;<sup>2</sup> statistic each time, and builds the null distribution — your observed &chi;<sup>2</sup> is marked and the p-value is the tail past it. The mechanism strip shows <strong>observed counts vs. one simulated sample under H<sub>0</sub></strong> with dashed expected-count markers, so students see how sampling variation alone moves the counts. Bundled with <a href="../simulate/goodness-of-fit/?dataset=mendel_peas">Mendel's peas</a> (a famously good fit, p&nbsp;&approx;&nbsp;0.93), <a href="../simulate/goodness-of-fit/?dataset=jury">jury composition</a> (a borderline case, p&nbsp;&approx;&nbsp;0.12), and stock streaks (a geometric-model fit), plus manual entry for any table. Supports the full reasoning-mode embed stack (<code>?plot=only</code>, <code>?readout=false</code>, <code>?cutlines=tail</code>, <code>?observed=off</code>). Its theory-based companion, the <a href="../inference/goodness-of-fit/?dataset=jury">Goodness-of-Fit <em>Test</em></a> (&chi;<sup>2</sup> statistic, df, p-value, expected-count table), completes the Ch. 16 trio — and its Check Conditions panel points back to the simulation when expected counts are small.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-26<span class="cl-tag tool">Reasoning mode</span></div>
+            <h2><a href="../simulate/bootstrap-two-means/?dataset=diamonds_99_1ct&amp;ci=90&amp;plot=only&amp;cutlines=ci">Drag-a-line reasoning figures</a></h2>
+            <p>Every bootstrap and randomization tool now supports a <strong>draggable cutoff-line</strong> overlay for "read it off the histogram" exercises: instead of counting bars, the student drags a vertical line and reads the <strong>tail mass</strong> off a live label. <code>?cutlines=ci</code> gives two lines (drag until each tail hits the confidence level's leftover %, and the line positions are your CI bounds); <code>?cutlines=tail</code> gives one line to drag to the observed statistic for a p-value. Fully keyboard-drivable (arrow keys, Home/End). Same update also <strong>fixes a large-<em>n</em> figure bug</strong> — reasoning-mode distributions now always render as a clean, hoverable binned histogram instead of degrading into an unreadable spike cloud when the sample is big.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-23<span class="cl-tag tool">New tool</span></div>
+            <h2><a href="../inference/mlr/?dataset=possum&amp;predictors=total_l,skull_w">Multiple Linear Regression</a></h2>
+            <p>Fit <em>Y = β₀ + β₁x₁ + … + βₖxₖ</em> on a bundled or uploaded dataset and read the full software-style output: a coefficient table (estimate, SE, <em>t</em>, p-value, 95% CI) matching <code>summary(lm)</code>, the model <strong>ANOVA F-test</strong>, <strong>R² / adjusted R²</strong> and residual standard error, and diagnostics (residuals-vs-fitted, residual distribution, and a Cook's-distance flag for high-influence points). To judge <strong>multicollinearity</strong>, the base view shows a pairwise scatterplot matrix of the predictors; <strong>Expert mode</strong> adds the VIF metric. The <a href="../inference/slope/?dataset=possum_regression&amp;anova=true">single-predictor slope tool</a> also gained an ANOVA-for-regression table (SST = SSR + SSE, and the F = t² equivalence).</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-14<span class="cl-tag">New</span></div>
+            <h2><a href="../inference/estimate/one-mean/?dataset=ames_area">Confidence-interval pages for every parametric procedure</a></h2>
+            <p>Traditional inference now splits estimation from testing, the way the simulation side already does (bootstrap = CI, randomization = test). Six new <strong>Confidence Interval</strong> pages — for a mean, a proportion, a difference in means, paired differences, a difference in proportions, and a regression slope — each let you set the confidence level with a number box or preset pills, <strong>or drag the critical values</strong> right on a t- or z-curve. The plot uses the same interactive markers as the distribution calculators (editable probability pills, editable ±critical-value boxes, snap points at common levels), and the results box shows the interval worked out. The Traditional Inference menu and the home-page grids now list a Confidence Interval and a Hypothesis Test entry for each procedure.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-13<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/bootstrap-mean/?dataset=ames_area">Bootstrap CIs: pick your method and see it on the plot</a></h2>
+            <p>Every bootstrap CI page now has a <strong>Percentile / ±2 SE / Both</strong> toggle next to the confidence level, and it drives the whole page — not just the number in the results box. <strong>±2 SE</strong> draws the interval at estimate ± 2·SE over a fitted normal curve; <strong>Both</strong> overlays the two intervals (dashed dusty-red percentile vs dashed teal normal-approximation) with a legend, so you can see where they agree — and, on a skewed distribution, where they part. The confidence control is now a number box plus 90/95/99 pills accepting any level, the histogram shows symmetric probability pills, and a longstanding bug that drew the theoretical curve wildly out of scale (and the two-group observed statistic in the wrong place) is fixed.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-06<span class="cl-tag">New</span></div>
+            <h2><a href="../explore/regression/?dataset=cats&amp;bands=true">Interactive regression prediction — drag to predict at any x</a></h2>
+            <p>In the Two Quantitative Variables explorer, turning on the bands now gives you a real prediction tool. The two bands are clearly distinct — a <strong>blue solid</strong> confidence band (mean response) inside a wider <strong>orange dashed</strong> prediction band (a new observation), with a legend. And there's a <strong>draggable marker</strong>: drag it along the plot (or type a value of x) to see the fitted ŷ, the CI for the mean response, and the prediction interval at that x, updating live. Also: every inference procedure now links out to explore its dataset, and the slope test's "predict a response" box was tidied up.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-05<span class="cl-tag">New</span></div>
+            <h2><a href="../inference/slope/?dataset=cats">Linked formulas everywhere, prediction at a value of x, and a Multiple Comparisons page</a></h2>
+            <ul>
+                <li><strong>Linked formulas on every test.</strong> The hover-to-highlight linking (value in the formula ↔ its source in the summary/hypothesis) now covers the two-means, paired, one- and two-proportion, and slope tests — not just one-mean.</li>
+                <li><strong>Predict a response.</strong> The regression-slope test now takes a value of x and reports the fitted ŷ, the confidence interval for the <em>mean response</em>, and the wider <em>prediction interval</em> for a new observation (flags extrapolation). Shareable with <code>?x0=</code>.</li>
+                <li><strong>Multiple Comparisons page.</strong> A dedicated <a href="../inference/multiple-comparisons/?dataset=insectsprays">Multiple Comparisons</a> route: after the ANOVA F-test, see every pairwise difference with family-wise CIs and adjusted p-values (Tukey HSD or Bonferroni) and a forest plot of which groups differ.</li>
+            </ul>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-05<span class="cl-tag">New</span></div>
+            <h2><a href="../explore/regression/?dataset=cats">Four teaching upgrades: hand-off links, comparable panels, visible two-group resampling, linked formulas</a></h2>
+            <p>A batch of pedagogy improvements:</p>
+            <ul>
+                <li><strong>Explore → test hand-off.</strong> After exploring a dataset, a contextual link carries it straight into the right test — <em>“Test this relationship”</em> from regression (to the slope test), and <em>“Test the difference / these groups”</em> from grouped comparison (to the two-means test or ANOVA), with your variables already selected.</li>
+                <li><strong>Comparable group panels.</strong> The stacked group histograms now share one y-axis, so a bar of 10 towers over a bar of 4 across groups instead of both filling their panel.</li>
+                <li><strong>Two-group bootstrap you can see.</strong> The two-means bootstrap now shows each group’s resample as a pluck-and-fly dotplot on a shared axis, with the difference updating live.</li>
+                <li><strong>Linked formulas.</strong> On the one-mean test, hover (or tab to) a value in the t / CI formula and it lights up everywhere it appears — the sample summary, the null value, its other uses — connecting the math to the data.</li>
+            </ul>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-07-05<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../simulate/randomization-one-mean/?dataset=dolphins_mercury">Resampling made visible — rebuilt mechanism strips</a></h2>
+            <p>The one-sample mean tools — the bootstrap CI and the randomization test — now share one rebuilt mechanism strip with a <strong>Tiles</strong> view (each value a card, tagged ×N when it's drawn more than once, greyed when it isn't) and a <strong>Dotplots</strong> view where the resample is <em>plucked from the sample and flies into place, dot by dot</em>. For the randomization test, the shift to the null is shown explicitly: every value visibly slides by the same constant, with a caption explaining the subtraction. The one- and two-proportion bootstraps got a matching marble grid / bar mechanism.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-27<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../inference/anova/?dataset=insectsprays&amp;posthoc=tukey">ANOVA: which groups differ? (Tukey HSD &amp; Bonferroni)</a></h2>
+            <p>After a significant F-test, the one-way ANOVA tool now shows <strong>post-hoc pairwise comparisons</strong> — every pair of group means with a family-wise confidence interval and adjusted p-value, plus a forest plot where intervals that miss zero (in red) mark the pairs that truly differ. Toggle between <strong>Tukey HSD</strong> and <strong>Bonferroni</strong>.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-27<span class="cl-tag">Upgraded</span></div>
+            <h2><a href="../explore/regression/?dataset=possum_regression&amp;bands=true">Regression: confidence &amp; prediction bands</a></h2>
+            <p>The regression scatterplot can now shade the <strong>95% confidence band</strong> for the mean response (the classic hourglass, narrowest at the mean of x) and the wider <strong>prediction band</strong> for a single new observation. Flip on "Show CI &amp; prediction bands," or deep-link with <code>?bands=true</code>.</p>
+        </article>
+
+        <article class="cl-entry">
+            <div class="cl-date">2026-06-27<span class="cl-tag">New data</span></div>
+            <h2><a href="../explore/multi/?dataset=county">15 new datasets</a></h2>
+            <p>Fifteen datasets joined the library — including <strong>loan50</strong>, <strong>possum</strong>, <strong>county</strong> (all 3,142 US counties), Florida Lakes (mercury), Insect Sprays, NBA salaries, and several paired and ANOVA examples from the coursepack. Browse any of them in the <a href="../explore/multi/">Data Explorer</a>.</p>
+        </article>
+
         <article class="cl-entry">
             <div class="cl-date">2026-06-20<span class="cl-tag">Upgraded</span></div>
             <h2><a href="../distribution/normal/?tail=between&amp;lo=-1&amp;hi=2">Distribution calculators: Between &amp; Symmetric regions</a></h2>
@@ -152,5 +306,6 @@
             <p>Click to add or remove points and watch the summary statistics update live — a hands-on way to build intuition for center and variability.</p>
         </article>
     </main>
+    <script src="../js/feedback.js"></script>
 </body>
 </html>

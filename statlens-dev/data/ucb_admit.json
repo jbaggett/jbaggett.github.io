@@ -22665,5 +22665,14 @@
     "gender": "Gender of applicant (Male or Female)",
     "dept": "Department applied to (A through F)"
   },
-  "sourceDetail": "Bickel, P.J., Hammel, E.A., and O'Connell, J.W. (1975). \"Sex Bias in Graduate Admissions: Data from Berkeley.\" Science, 187(4175), 398–404. Dataset from OpenIntro (ucb_admit)."
+  "sourceDetail": "Bickel, P.J., Hammel, E.A., and O'Connell, J.W. (1975). \"Sex Bias in Graduate Admissions: Data from Berkeley.\" Science, 187(4175), 398–404. Dataset from OpenIntro (ucb_admit).",
+  "inferenceContexts": [
+    {
+      "test": "chisq",
+      "rowVar": "gender",
+      "colVar": "admit",
+      "parameter": "there is an association between applicant gender and admission decision at UC Berkeley",
+      "claim": "admission decisions are associated with applicant gender"
+    }
+  ]
 }

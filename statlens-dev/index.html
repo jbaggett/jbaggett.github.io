@@ -16,7 +16,7 @@
     <link rel="apple-touch-icon" href="icon-192.png">
     <meta property="og:title" content="StatLens — Statistics Workbench">
     <meta property="og:description" content="Interactive statistics tools for simulation-based inference, distribution calculators, and exploratory data analysis.">
-    <meta property="og:image" content="https://jbaggett.github.io/statlens/hero.png">
+    <meta property="og:image" content="https://learnlens.org/statlens/hero.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <style>
@@ -188,6 +188,21 @@
             color: var(--ims-gray-text);
             margin: 0 0 0.4rem;
         }
+        .section-see-all {
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .see-all {
+            margin: 0.25rem 0 0.75rem;
+            font-size: 0.9rem;
+        }
+        .see-all a {
+            color: var(--accent);
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .see-all a:hover, .see-all a:focus-visible { text-decoration: underline; }
         .section-divider {
             border: none;
             border-top: 1px solid var(--border);
@@ -332,7 +347,7 @@
             line-height: 1.4;
         }
 
-        /* Mini grid for Simulate & Calculate tabs */
+        /* Mini grid for Simulate & Compute tabs */
         .mini-grid {
             width: 100%;
             border-collapse: collapse;
@@ -397,7 +412,61 @@
         @media (max-width: 480px) {
             .course-tab { padding: 0.45rem 0.65rem; font-size: 0.78rem; }
         }
+
+        /* Reviewer feedback callout. Collapsed by default to a single small line so
+           it stays out of a student's way; expands on click (native <details>).
+           Hidden entirely on phones (matches js/feedback.js — the Hypothesis
+           sidebar it references doesn't load there) and once dismissed (flag set
+           in <head> to avoid a flash on return visits). */
+        .reviewer-callout { display: none; }
+        @media (min-width: 768px) {
+            html:not(.review-dismissed) .reviewer-callout { display: block; margin: 0 0 1rem; }
+        }
+        .reviewer-callout > summary {
+            cursor: pointer;
+            list-style: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--accent, #569BBD);
+            padding: 0.35rem 0;
+            user-select: none;
+            width: fit-content;
+        }
+        .reviewer-callout > summary::-webkit-details-marker { display: none; }
+        .reviewer-callout > summary::before { content: "▸ "; }
+        .reviewer-callout[open] > summary::before { content: "▾ "; }
+        .reviewer-callout > summary:hover,
+        .reviewer-callout > summary:focus-visible { text-decoration: underline; }
+        /* The bordered box only appears once expanded. */
+        .reviewer-callout[open] {
+            border: 1px solid var(--accent, #569BBD);
+            border-left: 4px solid var(--accent, #569BBD);
+            border-radius: 6px;
+            background: var(--bg-alt, #f2f8fb);
+            padding: 0.1rem 1rem 0.6rem;
+        }
+        .reviewer-callout-body ol { margin: 0.4rem 0 0.5rem; padding-left: 1.3rem; }
+        .reviewer-callout-body li { margin: 0.3rem 0; }
+        .reviewer-callout-body p { margin: 0.25rem 0; }
+        .reviewer-dismiss {
+            border: none;
+            background: none;
+            color: var(--ims-gray-text, #6B6B6B);
+            cursor: pointer;
+            font-size: inherit;
+            text-decoration: underline;
+            padding: 0;
+        }
+        .reviewer-dismiss:hover, .reviewer-dismiss:focus-visible { color: var(--accent, #569BBD); }
     </style>
+    <script>
+        // Set the dismissed flag before paint so a returning colleague never sees a flash.
+        try {
+            if (localStorage.getItem('statlens-review-callout') === 'dismissed') {
+                document.documentElement.classList.add('review-dismissed');
+            }
+        } catch (e) { /* private mode — just show the callout */ }
+    </script>
 </head>
 <body>
     <nav class="skip-links" aria-label="Skip links">
@@ -405,7 +474,27 @@
     </nav>
     <main id="main-content">
         <h1><svg viewBox="0 0 32 32" aria-hidden="true" style="width:1.3em;height:1.3em;vertical-align:-0.15em"><circle cx="16" cy="16" r="15" fill="#569BBD"/><path d="M4 24 C4 24, 8 23, 10 20 C12 17, 13 8, 16 8 C19 8, 20 17, 22 20 C24 23, 28 24, 28 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M4 24 C4 24, 8 23, 10 20 L10 24 Z" fill="#ffffff60"/></svg> StatLens</h1>
-        <img src="hero.png" alt="Statistical visualizations: bell curve, dotplot, histogram, scatterplot with regression line, and confidence interval" style="width:100%;height:auto;margin:0 0 1rem;border-radius:6px">
+        <img src="hero.png" alt="Statistical visualizations: bell curve, dotplot, histogram, scatterplot with regression line, and confidence interval" style="width:100%;height:auto;margin:0 0 0.6rem;border-radius:6px">
+
+        <p style="text-align:right;margin:0 0 1rem;font-size:0.9rem;">
+            <a href="instructors/" style="color:var(--ims-blue,#569BBD);font-weight:600;text-decoration:none;">Using StatLens in your course?&nbsp; For instructors &rarr;</a>
+        </p>
+
+        <!-- Reviewer feedback callout (desktop/tablet only, dismissible) — mirrors the
+             textbook's welcome-page box. The annotation client itself is loaded by
+             js/feedback.js; this just tells colleagues to pick the private group. -->
+        <details class="reviewer-callout">
+            <summary>📝 Reviewing StatLens? Leave feedback in the margin</summary>
+            <div class="reviewer-callout-body">
+                <p>StatLens is a <strong>work in progress</strong>, and your feedback makes it better. You can comment <strong>right on the page</strong> — nothing to install.</p>
+                <ol>
+                    <li>Click the <strong><code>&lt;</code> tab</strong> on the right edge of any page to open the annotation sidebar (powered by a free tool called <a href="https://web.hypothes.is/" target="_blank" rel="noopener">Hypothesis</a>). The first time, create a free account.</li>
+                    <li><strong>Select any text</strong> on the page, click <strong>Annotate</strong>, and type your comment — it stays pinned to that exact spot.</li>
+                    <li><strong>Reviewers:</strong> if you were invited to the <a href="https://hypothes.is/groups/gG9DRY5i/145-statlens-review" target="_blank" rel="noopener"><strong>145 StatLens Review</strong></a> group, pick it at the top of the sidebar (instead of “Public”) so your notes reach the author.</li>
+                </ol>
+                <p class="hint">Anything helps — confusing controls, notation you'd change, a chart that misleads, or plain bugs. &nbsp;<button type="button" class="reviewer-dismiss">Don't show this again</button></p>
+            </div>
+        </details>
 
         <!-- ═══ View switcher ═══════════════════════════════════════════ -->
         <fieldset class="view-switcher" aria-label="Choose landing page layout">
@@ -422,7 +511,7 @@
             <nav class="course-tabs" role="tablist" aria-label="Course phase">
                 <button class="course-tab active" role="tab" aria-selected="true" aria-controls="tab-explore" id="tab-btn-explore">Explore</button>
                 <button class="course-tab" role="tab" aria-selected="false" aria-controls="tab-simulate" id="tab-btn-simulate">Simulate</button>
-                <button class="course-tab" role="tab" aria-selected="false" aria-controls="tab-calculate" id="tab-btn-calculate">Calculate</button>
+                <button class="course-tab" role="tab" aria-selected="false" aria-controls="tab-compute" id="tab-btn-compute">Compute</button>
                 <button class="course-tab" role="tab" aria-selected="false" aria-controls="tab-apply" id="tab-btn-apply">Apply</button>
                 <button class="course-tab" role="tab" aria-selected="false" aria-controls="tab-foundations" id="tab-btn-foundations">Foundations</button>
             </nav>
@@ -478,6 +567,10 @@
                         <h3>Regression by Eye</h3>
                         <p>Drag a line to fit the data. Toggle between squared and absolute errors, then compare to the optimal fit.</p>
                     </a>
+                    <a class="tool-card" href="explore/scatterplot-editor/">
+                        <h3>Scatterplot Editor</h3>
+                        <p>Drag, add, and remove data points and watch the least-squares line, r, and R² respond — feel leverage vs. influence.</p>
+                    </a>
                     <a class="tool-card" href="explore/psychic/">
                         <h3>Are You Psychic?</h3>
                         <p>Predict coin flips to test your "psychic" powers, then see if your result could be due to chance.</p>
@@ -487,6 +580,8 @@
                         <p>Try to fake a random coin-flip sequence, then compare it to a real one. Can you fool the computer?</p>
                     </a>
                 </div>
+            
+                <p class="see-all"><a href="explore/">See all Explore tools &rarr;</a></p>
             </div>
 
             <!-- ── Simulate tab ───────────────────────────────── -->
@@ -532,6 +627,7 @@
                     </tbody>
                 </table>
                 </div>
+                <p class="see-all"><a href="simulate/">See all Simulation tools &rarr;</a></p>
 
                 <hr class="section-divider">
 
@@ -556,8 +652,8 @@
                 </div>
             </div>
 
-            <!-- ── Calculate tab ──────────────────────────────── -->
-            <div id="tab-calculate" class="course-panel" role="tabpanel" aria-labelledby="tab-btn-calculate">
+            <!-- ── Compute tab ────────────────────────────────── -->
+            <div id="tab-compute" class="course-panel" role="tabpanel" aria-labelledby="tab-btn-compute">
                 <p class="tab-intro">Theory-based tests and confidence intervals using t and z distributions. <span class="tab-chapters">Part III, Chapters 10&ndash;13</span></p>
 
                 <div class="mini-grid-wrap">
@@ -565,32 +661,41 @@
                     <thead>
                         <tr>
                             <th scope="col">Data Type</th>
-                            <th scope="col">Traditional Inference</th>
+                            <th scope="col">Confidence Interval</th>
+                            <th scope="col">Hypothesis Test</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <th scope="row" class="row-header">One Quantitative<span class="hint">one numeric variable</span></th>
-                            <td><a href="inference/one-mean/">One-Sample t</a><span class="hint">t-test and CI for a single mean</span></td>
+                            <td><a href="inference/estimate/one-mean/">CI for a Mean</a></td>
+                            <td><a href="inference/one-mean/">One-Sample t-Test</a></td>
                         </tr>
                         <tr>
                             <th scope="row" class="row-header">One Categorical<span class="hint">one yes/no variable</span></th>
-                            <td><a href="inference/one-prop/">One-Proportion z</a><span class="hint">z-test and CI for a single proportion</span></td>
+                            <td><a href="inference/estimate/one-prop/">CI for a Proportion</a></td>
+                            <td><a href="inference/one-prop/">One-Proportion z-Test</a></td>
                         </tr>
                         <tr>
                             <th scope="row" class="row-header">Compare Two Groups<span class="hint">numeric outcome by group</span></th>
                             <td>
-                                <a href="inference/two-means/">Two-Sample t</a><span class="hint">Welch&rsquo;s t-test for &mu;&#8321; &minus; &mu;&#8322;</span>
-                                <a href="inference/two-props/" style="margin-top:0.25rem">Two-Proportion z</a><span class="hint">z-test for p&#8321; &minus; p&#8322;</span>
+                                <a href="inference/estimate/two-means/">CI: Diff in Means</a>
+                                <a href="inference/estimate/two-props/" style="margin-top:0.25rem">CI: Diff in Props</a>
+                            </td>
+                            <td>
+                                <a href="inference/two-means/">Two-Sample t-Test</a>
+                                <a href="inference/two-props/" style="margin-top:0.25rem">Two-Proportion z-Test</a>
                             </td>
                         </tr>
                         <tr>
                             <th scope="row" class="row-header">Paired Samples<span class="hint">before/after on same subjects</span></th>
-                            <td><a href="inference/paired/">Paired t</a><span class="hint">t-test and CI for mean difference</span></td>
+                            <td><a href="inference/estimate/paired/">CI: Paired Diff</a></td>
+                            <td><a href="inference/paired/">Paired t-Test</a></td>
                         </tr>
                     </tbody>
                 </table>
                 </div>
+                <p class="see-all"><a href="inference/">See all Traditional Inference tools — CIs and tests &rarr;</a></p>
 
                 <hr class="section-divider">
 
@@ -647,10 +752,19 @@
                             <td><a href="inference/chisq/">Chi-Square Test</a></td>
                         </tr>
                         <tr>
+                            <th scope="row" class="row-header">Goodness-of-Fit<span class="hint">one categorical variable vs. a distribution</span></th>
+                            <td><a href="explore/one-cat/">One Category</a></td>
+                            <td><a href="simulate/goodness-of-fit/">&chi;&sup2; Goodness-of-Fit</a></td>
+                            <td><a href="inference/goodness-of-fit/">&chi;&sup2; GOF Test</a></td>
+                        </tr>
+                        <tr>
                             <th scope="row" class="row-header">ANOVA<span class="hint">3+ groups, numeric outcome</span></th>
                             <td><a href="explore/grouped/">Compare Groups</a></td>
                             <td><a href="simulate/randomization-anova/">ANOVA Randomization</a></td>
-                            <td><a href="inference/anova/">ANOVA F-Test</a></td>
+                            <td>
+                                <a href="inference/anova/">ANOVA F-Test</a>
+                                <a href="inference/multiple-comparisons/" style="margin-top:0.25rem">Multiple Comparisons</a>
+                            </td>
                         </tr>
                         <tr>
                             <th scope="row" class="row-header">Correlation &amp; Regression<span class="hint">two quantitative variables</span></th>
@@ -659,11 +773,16 @@
                                 <a href="simulate/bootstrap-slope/">CI for Slope</a>
                                 <a href="simulate/randomization-correlation/" style="margin-top:0.25rem">Test for Correlation</a>
                             </td>
-                            <td><a href="inference/slope/">Regression t</a></td>
+                            <td>
+                                <a href="inference/estimate/slope/">CI for Slope</a>
+                                <a href="inference/slope/" style="margin-top:0.25rem">Regression Slope t-Test</a>
+                                <a href="inference/mlr/" style="margin-top:0.25rem">Multiple Regression</a>
+                            </td>
                         </tr>
                     </tbody>
                 </table>
                 </div>
+                <p class="see-all"><a href="inference/">See all Traditional Inference tools — CIs and tests &rarr;</a></p>
 
                 <hr class="section-divider">
 
@@ -690,6 +809,10 @@
                     <a class="tool-card" href="explore/regression-by-eye/">
                         <h3>Regression by Eye</h3>
                         <p>Drag a line to fit the data. Toggle between squared and absolute errors, then compare to the optimal fit.</p>
+                    </a>
+                    <a class="tool-card" href="explore/scatterplot-editor/">
+                        <h3>Scatterplot Editor</h3>
+                        <p>Drag, add, and remove data points and watch the least-squares line, r, and R² respond — feel leverage vs. influence.</p>
                     </a>
                 </div>
             </div>
@@ -753,7 +876,8 @@
                         <th scope="col">Explore</th>
                         <th scope="col">Bootstrap CI</th>
                         <th scope="col">Randomization Test</th>
-                        <th scope="col">Traditional</th>
+                        <th scope="col">Traditional CI</th>
+                        <th scope="col">Traditional Test</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -762,14 +886,16 @@
                         <td><a href="explore/descriptive/">Descriptive Stats</a></td>
                         <td><a href="simulate/bootstrap-mean/">CI for a Mean</a></td>
                         <td><a href="simulate/randomization-one-mean/">Test for a Mean</a></td>
-                        <td><a href="inference/one-mean/">One-Sample t</a></td>
+                        <td><a href="inference/estimate/one-mean/">CI for a Mean</a></td>
+                        <td><a href="inference/one-mean/">One-Sample t-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">One Categorical<span class="hint">one variable with categories (yes/no, color, party&hellip;)</span></th>
                         <td><a href="explore/one-cat/">Frequency Table</a></td>
                         <td><a href="simulate/bootstrap-prop/">CI for a Proportion</a></td>
                         <td><a href="simulate/randomization-one-prop/">Test for a Proportion</a></td>
-                        <td><a href="inference/one-prop/">One-Prop z</a></td>
+                        <td><a href="inference/estimate/one-prop/">CI for a Proportion</a></td>
+                        <td><a href="inference/one-prop/">One-Proportion z-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Compare Two Groups<span class="hint">numeric outcome split by group (treatment vs. control&hellip;)</span></th>
@@ -783,8 +909,12 @@
                             <a href="simulate/randomization-diff-props/" style="margin-top:0.3rem">Test: Diff in Props</a>
                         </td>
                         <td>
-                            <a href="inference/two-means/">Two-Sample t</a>
-                            <a href="inference/two-props/" style="margin-top:0.3rem">Two-Prop z</a>
+                            <a href="inference/estimate/two-means/">CI: Diff in Means</a>
+                            <a href="inference/estimate/two-props/" style="margin-top:0.3rem">CI: Diff in Props</a>
+                        </td>
+                        <td>
+                            <a href="inference/two-means/">Two-Sample t-Test</a>
+                            <a href="inference/two-props/" style="margin-top:0.3rem">Two-Proportion z-Test</a>
                         </td>
                     </tr>
                     <tr>
@@ -792,20 +922,31 @@
                         <td><a href="explore/descriptive/">Descriptive Stats</a><span class="hint">on the differences</span></td>
                         <td><a href="simulate/bootstrap-paired/">CI: Paired Diff</a></td>
                         <td><a href="simulate/randomization-paired/">Test: Paired Diff</a></td>
-                        <td><a href="inference/paired/">Paired t</a></td>
+                        <td><a href="inference/estimate/paired/">CI: Paired Diff</a></td>
+                        <td><a href="inference/paired/">Paired t-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Two Categorical<span class="hint">two category variables (group &times; outcome&hellip;)</span></th>
                         <td><a href="explore/categorical/">Two-Way Table</a></td>
                         <td class="empty">&mdash;</td>
                         <td><a href="simulate/randomization-chisq/">&chi;&sup2; Randomization</a></td>
+                        <td class="empty">&mdash;</td>
                         <td><a href="inference/chisq/">&chi;&sup2; Test</a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" class="row-header">One Categorical (fit)<span class="hint">one category variable vs. a claimed distribution</span></th>
+                        <td><a href="explore/one-cat/">One Category</a></td>
+                        <td class="empty">&mdash;</td>
+                        <td><a href="simulate/goodness-of-fit/">&chi;&sup2; Goodness-of-Fit</a></td>
+                        <td class="empty">&mdash;</td>
+                        <td><a href="inference/goodness-of-fit/">&chi;&sup2; GOF Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Multiple Groups<span class="hint">3+ groups, numeric outcome (ANOVA)</span></th>
                         <td><a href="explore/grouped/">Compare Groups</a></td>
                         <td class="empty">&mdash;</td>
                         <td><a href="simulate/randomization-anova/">ANOVA Randomization</a></td>
+                        <td><a href="inference/multiple-comparisons/">Pairwise CIs</a><span class="hint">Tukey / Bonferroni</span></td>
                         <td><a href="inference/anova/">ANOVA F-Test</a></td>
                     </tr>
                     <tr>
@@ -813,7 +954,8 @@
                         <td><a href="explore/regression/">Scatterplot</a></td>
                         <td><a href="simulate/bootstrap-slope/">CI for Slope</a></td>
                         <td><a href="simulate/randomization-correlation/">Test for Correlation</a></td>
-                        <td><a href="inference/slope/">Regression t</a></td>
+                        <td><a href="inference/estimate/slope/">CI for Slope</a></td>
+                        <td><a href="inference/slope/">Regression Slope t-Test</a><br><a href="inference/mlr/">Multiple Regression</a></td>
                     </tr>
                 </tbody>
             </table>
@@ -826,15 +968,17 @@
                 <a class="tool-card" href="explore/dotplot-editor/"><h3>Dotplot Editor</h3><p>Click to add and remove points. Watch how mean, median, and spread respond.</p></a>
                 <a class="tool-card" href="practice/correlation/"><h3>Guess the Correlation</h3><p>See a scatterplot, guess <em>r</em>.</p></a>
                 <a class="tool-card" href="explore/regression-by-eye/"><h3>Regression by Eye</h3><p>Drag a line to fit the data, then compare to the optimal fit.</p></a>
+                <a class="tool-card" href="explore/scatterplot-editor/"><h3>Scatterplot Editor</h3><p>Drag, add, and remove points; watch the line, r, and R² respond. Leverage vs. influence.</p></a>
                 <a class="tool-card" href="explore/psychic/"><h3>Are You Psychic?</h3><p>Predict coin flips, then test if your result could be chance.</p></a>
                 <a class="tool-card" href="explore/random-sequence/"><h3>Stump the Chump</h3><p>Fake a random sequence, then compare to a real one.</p></a>
             </div>
 
-            <p class="section-label">Conceptual Demonstrations</p>
+            <p class="section-label">Conceptual Demonstrations <a href="conceptual/" class="section-see-all">see all &rarr;</a></p>
             <div class="tool-grid">
                 <a class="tool-card" href="conceptual/sampling-lab/"><h3>Sampling Distributions</h3><p>Draw samples, see the CLT in action.</p></a>
                 <a class="tool-card" href="conceptual/sampling-bias/"><h3>Sampling Bias Lab</h3><p>Gettysburg words: pick by eye vs. random.</p></a>
                 <a class="tool-card" href="conceptual/ci-coverage/"><h3>CI Coverage</h3><p>What &ldquo;95% confidence&rdquo; really means.</p></a>
+                <a class="tool-card" href="conceptual/bootstrap-shift/"><h3>Why the Percentile CI Works</h3><p>The bootstrap distribution is the sampling distribution, shifted.</p></a>
                 <a class="tool-card" href="conceptual/decision-errors/"><h3>Decision Errors</h3><p>Run many studies; see hits, misses, and false alarms.</p></a>
                 <a class="tool-card" href="conceptual/power-sim/"><h3>Power Lab</h3><p>Empirical power converging to theory; the p-value dance.</p></a>
                 <a class="tool-card" href="simulate/randomization-diff-props/?activity=randomization-test-gated.json"><h3>Randomization Test</h3><p>Shuffle cards, build a null distribution.</p></a>
@@ -850,7 +994,7 @@
                 <a class="tool-card" href="distribution/power/"><h3>Power &amp; Error</h3><p>Visualize &alpha;, &beta;, and power trade-offs.</p></a>
             </div>
 
-            <p class="section-label">Practice &amp; Games</p>
+            <p class="section-label">Practice &amp; Games <a href="practice/" class="section-see-all">see all &rarr;</a></p>
             <div class="tool-grid">
                 <a class="tool-card" href="practice/conclusions/"><h3>Conclusion Practice</h3><p>Practice writing hypothesis test conclusions.</p></a>
                 <a class="tool-card" href="data/" style="border-left: 3px solid var(--ims-gray-text);"><h3>Browse All Datasets</h3><p>Search 100+ datasets by type and variable.</p></a>
@@ -872,7 +1016,8 @@
                         <th scope="col">Explore</th>
                         <th scope="col">Bootstrap CI</th>
                         <th scope="col">Randomization Test</th>
-                        <th scope="col">Traditional</th>
+                        <th scope="col">Traditional CI</th>
+                        <th scope="col">Traditional Test</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -881,48 +1026,63 @@
                         <td><a href="explore/descriptive/">Descriptive Stats</a></td>
                         <td><a href="simulate/bootstrap-mean/">CI for a Mean</a></td>
                         <td><a href="simulate/randomization-one-mean/">Test for a Mean</a></td>
-                        <td><a href="inference/one-mean/">One-Sample t</a></td>
+                        <td><a href="inference/estimate/one-mean/">CI for a Mean</a></td>
+                        <td><a href="inference/one-mean/">One-Sample t-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">One Proportion <span class="hint">p</span></th>
                         <td><a href="explore/one-cat/">Frequency Table</a></td>
                         <td><a href="simulate/bootstrap-prop/">CI for a Proportion</a></td>
                         <td><a href="simulate/randomization-one-prop/">Test for a Proportion</a></td>
-                        <td><a href="inference/one-prop/">One-Prop z</a></td>
+                        <td><a href="inference/estimate/one-prop/">CI for a Proportion</a></td>
+                        <td><a href="inference/one-prop/">One-Proportion z-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Diff in Means <span class="hint">&mu;&#8321; &minus; &mu;&#8322;</span></th>
                         <td><a href="explore/grouped/">Compare Groups</a></td>
                         <td><a href="simulate/bootstrap-two-means/">CI: Diff in Means</a></td>
                         <td><a href="simulate/randomization-diff-means/">Test: Diff in Means</a></td>
-                        <td><a href="inference/two-means/">Two-Sample t</a></td>
+                        <td><a href="inference/estimate/two-means/">CI: Diff in Means</a></td>
+                        <td><a href="inference/two-means/">Two-Sample t-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Paired Mean Diff <span class="hint">&mu;<sub>d</sub></span></th>
                         <td><a href="explore/descriptive/">Descriptive Stats</a><span class="hint">on differences</span></td>
                         <td><a href="simulate/bootstrap-paired/">CI: Paired Diff</a></td>
                         <td><a href="simulate/randomization-paired/">Test: Paired Diff</a></td>
-                        <td><a href="inference/paired/">Paired t</a></td>
+                        <td><a href="inference/estimate/paired/">CI: Paired Diff</a></td>
+                        <td><a href="inference/paired/">Paired t-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Diff in Proportions <span class="hint">p&#8321; &minus; p&#8322;</span></th>
                         <td><a href="explore/categorical/">Two-Way Table</a></td>
                         <td><a href="simulate/bootstrap-two-props/">CI: Diff in Props</a>
                         <td><a href="simulate/randomization-diff-props/">Test: Diff in Props</a></td>
-                        <td><a href="inference/two-props/">Two-Prop z</a></td>
+                        <td><a href="inference/estimate/two-props/">CI: Diff in Props</a></td>
+                        <td><a href="inference/two-props/">Two-Proportion z-Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">Independence <span class="hint">&chi;&sup2;</span></th>
                         <td><a href="explore/categorical/">Two-Way Table</a></td>
                         <td class="empty">&mdash;</td>
                         <td><a href="simulate/randomization-chisq/">&chi;&sup2; Randomization</a></td>
+                        <td class="empty">&mdash;</td>
                         <td><a href="inference/chisq/">&chi;&sup2; Test</a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row" class="row-header">Goodness-of-Fit <span class="hint">&chi;&sup2;</span></th>
+                        <td><a href="explore/one-cat/">One Category</a></td>
+                        <td class="empty">&mdash;</td>
+                        <td><a href="simulate/goodness-of-fit/">&chi;&sup2; Goodness-of-Fit</a></td>
+                        <td class="empty">&mdash;</td>
+                        <td><a href="inference/goodness-of-fit/">&chi;&sup2; GOF Test</a></td>
                     </tr>
                     <tr>
                         <th scope="row" class="row-header">ANOVA <span class="hint">F</span></th>
                         <td><a href="explore/grouped/">Compare Groups</a></td>
                         <td class="empty">&mdash;</td>
                         <td><a href="simulate/randomization-anova/">ANOVA Randomization</a></td>
+                        <td><a href="inference/multiple-comparisons/">Pairwise CIs</a><span class="hint">Tukey / Bonferroni</span></td>
                         <td><a href="inference/anova/">ANOVA F-Test</a></td>
                     </tr>
                     <tr>
@@ -930,7 +1090,8 @@
                         <td><a href="explore/regression/">Scatterplot</a></td>
                         <td><a href="simulate/bootstrap-slope/">CI for Slope</a></td>
                         <td><a href="simulate/randomization-correlation/">Test for Correlation</a></td>
-                        <td><a href="inference/slope/">Regression t</a></td>
+                        <td><a href="inference/estimate/slope/">CI for Slope</a></td>
+                        <td><a href="inference/slope/">Regression Slope t-Test</a><br><a href="inference/mlr/">Multiple Regression</a></td>
                     </tr>
                 </tbody>
             </table>
@@ -943,15 +1104,17 @@
                 <a class="tool-card" href="explore/dotplot-editor/"><h3>Dotplot Editor</h3><p>Click to add and remove points. Watch how mean, median, and spread respond.</p></a>
                 <a class="tool-card" href="practice/correlation/"><h3>Guess the Correlation</h3><p>See a scatterplot, guess <em>r</em>.</p></a>
                 <a class="tool-card" href="explore/regression-by-eye/"><h3>Regression by Eye</h3><p>Drag a line to fit the data, then compare to the optimal fit.</p></a>
+                <a class="tool-card" href="explore/scatterplot-editor/"><h3>Scatterplot Editor</h3><p>Drag, add, and remove points; watch the line, r, and R² respond. Leverage vs. influence.</p></a>
                 <a class="tool-card" href="explore/psychic/"><h3>Are You Psychic?</h3><p>Predict coin flips, then test if your result could be chance.</p></a>
                 <a class="tool-card" href="explore/random-sequence/"><h3>Stump the Chump</h3><p>Fake a random sequence, then compare to a real one.</p></a>
             </div>
 
-            <p class="section-label">Conceptual Demonstrations</p>
+            <p class="section-label">Conceptual Demonstrations <a href="conceptual/" class="section-see-all">see all &rarr;</a></p>
             <div class="tool-grid">
                 <a class="tool-card" href="conceptual/sampling-lab/"><h3>Sampling Distributions</h3><p>Draw samples, see the CLT in action.</p></a>
                 <a class="tool-card" href="conceptual/sampling-bias/"><h3>Sampling Bias Lab</h3><p>Gettysburg words: pick by eye vs. random.</p></a>
                 <a class="tool-card" href="conceptual/ci-coverage/"><h3>CI Coverage</h3><p>What &ldquo;95% confidence&rdquo; really means.</p></a>
+                <a class="tool-card" href="conceptual/bootstrap-shift/"><h3>Why the Percentile CI Works</h3><p>The bootstrap distribution is the sampling distribution, shifted.</p></a>
                 <a class="tool-card" href="conceptual/decision-errors/"><h3>Decision Errors</h3><p>Run many studies; see hits, misses, and false alarms.</p></a>
                 <a class="tool-card" href="conceptual/power-sim/"><h3>Power Lab</h3><p>Empirical power converging to theory; the p-value dance.</p></a>
                 <a class="tool-card" href="simulate/randomization-diff-props/?activity=randomization-test-gated.json"><h3>Randomization Test</h3><p>Shuffle cards, build a null distribution.</p></a>
@@ -967,7 +1130,7 @@
                 <a class="tool-card" href="distribution/power/"><h3>Power &amp; Error</h3><p>Visualize &alpha;, &beta;, and power trade-offs.</p></a>
             </div>
 
-            <p class="section-label">Practice &amp; Games</p>
+            <p class="section-label">Practice &amp; Games <a href="practice/" class="section-see-all">see all &rarr;</a></p>
             <div class="tool-grid">
                 <a class="tool-card" href="practice/conclusions/"><h3>Conclusion Practice</h3><p>Practice writing hypothesis test conclusions.</p></a>
                 <a class="tool-card" href="data/" style="border-left: 3px solid var(--ims-gray-text);"><h3>Browse All Datasets</h3><p>Search 100+ datasets by type and variable.</p></a>
@@ -1070,11 +1233,12 @@
                 </div>
             </details>
         </div>
-        <p><a href="tools/" style="color:var(--ims-gray-text);font-size:0.82rem;">Instructor Tools</a> &middot; <a href="activities/" style="color:var(--ims-gray-text);font-size:0.82rem;">Activities</a> &middot; <a href="whats-new/" style="color:var(--ims-gray-text);font-size:0.82rem;">What's new</a></p>
-        <p>&copy; 2025&ndash;2026 Jeff Baggett. All rights reserved.</p>
+        <p><a href="instructors/" style="color:var(--ims-gray-text);font-size:0.82rem;">For Instructors</a> &middot; <a href="tools/" style="color:var(--ims-gray-text);font-size:0.82rem;">Tool Catalog</a> &middot; <a href="ims/" style="color:var(--ims-gray-text);font-size:0.82rem;">For IMS</a> &middot; <a href="activities/" style="color:var(--ims-gray-text);font-size:0.82rem;">Activities</a> &middot; <a href="whats-new/" style="color:var(--ims-gray-text);font-size:0.82rem;">What's new</a></p>
+        <p>&copy; 2025&ndash;2026 Jeff Baggett. Free &amp; open source under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>.</p>
+        <p>Datasets from <a href="https://www.openintro.org" target="_blank" rel="noopener">OpenIntro</a> (CC BY-SA 3.0).
+        Independent community project, not affiliated with OpenIntro &mdash; <a href="ims/">mapped to <em>Introduction to Modern Statistics</em> (IMS) chapters</a>.</p>
         <p>Inspired by <a href="https://www.lock5stat.com/StatKey/" target="_blank" rel="noopener">StatKey</a> (Lock, Lock, Lock, Lock, &amp; Lock)
         and the <a href="http://www.rossmanchance.com/applets/index2021.html" target="_blank" rel="noopener">Rossman/Chance Applets</a> (Rossman &amp; Chance).
-        Datasets from <a href="https://www.openintro.org" target="_blank" rel="noopener">OpenIntro</a> (CC BY-SA 3.0).
         Built with <a href="https://d3js.org" target="_blank" rel="noopener">D3.js</a>,
         <a href="https://github.com/jstat/jstat" target="_blank" rel="noopener">jStat</a>, and
         <a href="https://katex.org" target="_blank" rel="noopener">KaTeX</a>.</p>
@@ -1095,5 +1259,13 @@
     }
     </script>
     <script src="js/page-number.js"></script>
+    <script src="js/feedback.js"></script>
+    <script>
+    // Dismiss the reviewer callout (remembered per browser).
+    document.querySelector('.reviewer-dismiss')?.addEventListener('click', () => {
+        document.documentElement.classList.add('review-dismissed');
+        try { localStorage.setItem('statlens-review-callout', 'dismissed'); } catch (e) { /* ignore */ }
+    });
+    </script>
 </body>
 </html>

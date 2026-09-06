@@ -81,7 +81,7 @@
     </nav>
 
     <main>
-        <h1>t-Test and CI for Regression Slope<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <h1>t-Test for Regression Slope<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
         <!-- Data Panel -->
         <section id="data-panel" aria-label="Data input">
@@ -160,7 +160,7 @@
             <div class="hypothesis-display">
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H<sub>0</sub>:</span>
-                    <span>&beta;<sub>1</sub> = 0</span>
+                    <span>&beta;<sub>1</sub> = <span class="fx-src" data-fx="beta0">0</span></span>
                 </div>
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H<sub>a</sub>:</span>
@@ -170,14 +170,8 @@
                             data-values="two-sided,less,greater"
                             data-labels="≠,&lt;,&gt;"
                             data-value="two-sided">&ne;</button>
-                    <span>0</span>
+                    <span class="fx-src" data-fx="beta0">0</span>
                 </div>
-            </div>
-            <div class="controls-row">
-                <label for="input-conf">Confidence level
-                    <input type="number" id="input-conf" value="0.95"
-                           step="0.01" min="0.80" max="0.99">
-                </label>
             </div>
         </section>
 
@@ -190,8 +184,14 @@
                     <div id="chart-container"></div>
                 </div>
                 <aside class="app-sidebar" id="results">
+                    <div class="ci-level-control">
+                        <label for="input-conf">Confidence level
+                            <input type="number" id="input-conf" value="0.95"
+                                   step="0.01" min="0.80" max="0.99">
+                        </label>
+                    </div>
                     <div id="results-panel" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </aside>
             </div>
@@ -199,15 +199,28 @@
 
         <div id="sr-announce" role="status" aria-live="polite"
              aria-atomic="true" class="sr-only"></div>
+        <p class="tool-crosslink">Just estimating? <a href="../estimate/slope/">Confidence Interval for a Regression Slope &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>t-Test for Regression Slope</h2>
+        <p class="help-intro">Test whether the slope β<sub>1</sub> of the least-squares regression line differs from 0 — that is, whether x and y are linearly related — using a t-statistic and the t-distribution.</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (two numeric columns, x and y), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the slope, its standard error, and n.</li>
+            <li><strong>X / Y selectors</strong> let you pick the explanatory and response variables when the data has more than two columns.</li>
+            <li><strong>Hypotheses:</strong> H<sub>0</sub> is fixed at β<sub>1</sub> = 0. Click the alternative (H<sub>a</sub>) toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check linearity, constant spread, and the shape of the residuals.</li>
+            <li><strong>Confidence level</strong> sets the matching interval for the slope (default 0.95).</li>
+            <li>Results — t, df, p-value, the confidence interval, and the plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=regression-slope-inference.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -228,5 +241,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

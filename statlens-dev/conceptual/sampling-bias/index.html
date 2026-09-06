@@ -69,7 +69,7 @@
 
         <section id="settings" aria-label="Controls">
             <div class="controls-bar">
-                <label for="sample-size">Sample size (<i>n</i>):
+                <label for="sample-size" style="white-space:nowrap">Sample size (<i>n</i>):
                     <input type="number" id="sample-size" value="10" min="2" max="25" step="1" style="width:4rem">
                 </label>
                 <button type="button" id="add-byeye" class="btn-secondary" disabled>Add my by-eye sample (<span class="pick-count" id="pick-count">0</span>/<span id="pick-target">10</span>)</button>
@@ -116,9 +116,19 @@
         <h2>Sampling Bias Lab</h2>
         <p>This is the classic "Sampling Words from the Gettysburg Address" activity. People asked to pick a <em>representative</em> sample tend to choose longer, memorable words, so their sample mean word-length runs <strong>too high</strong> — a <em>sampling bias</em>. A random sample has no such tendency: its mean centers on the true population mean.</p>
         <p><strong>Try this:</strong> add several by-eye samples and several random samples. The by-eye dots pile up to the <em>right</em> of the true mean; the random dots straddle it. Then increase <i>n</i>: the random distribution narrows on the truth, but the by-eye distribution narrows on the <em>wrong</em> value — <strong>bias doesn't go away with a bigger sample.</strong></p>
+        <h3>How to use it</h3>
+        <ul>
+            <li><strong>Sample size (<i>n</i>)</strong> — how many words each sample contains. It sets both the by-eye target and the random sample size.</li>
+            <li><strong>Build a by-eye sample:</strong> click words in the passage to pick them (the counter shows how many of <i>n</i> you've chosen), then <strong>Add my by-eye sample</strong> to drop its mean onto the left chart.</li>
+            <li><strong>Take a random sample of <i>n</i></strong> — draws a truly random sample and drops its mean onto the right chart, no clicking needed.</li>
+            <li><strong>Simulate many</strong> — <strong>+50 by-eye</strong> adds 50 samples that model the tendency to favor longer, important-looking words, and <strong>+50 random</strong> adds 50 genuinely random samples. Use these to fill in both distributions fast.</li>
+            <li><strong>Reset</strong> — clears both charts to start over.</li>
+        </ul>
+        <p>Compare the two charts: the by-eye distribution centers to the right of μ (biased), while the random distribution centers on μ (unbiased).</p>
         <p>True mean word length ≈ 4.3 letters (marked μ on both charts).</p>
     </dialog>
 
     <script type="module" src="app.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

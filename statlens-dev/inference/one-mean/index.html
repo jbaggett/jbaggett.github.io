@@ -74,7 +74,7 @@
     </nav>
 
     <main>
-        <h1>One-Sample t-Test and Confidence Interval<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <h1>One-Sample t-Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
         <!-- Data Panel -->
         <section id="data-panel" aria-label="Data input">
@@ -150,6 +150,7 @@
                     <span class="hypothesis-label">H<sub>0</sub>:</span>
                     <span>&mu; =</span>
                     <input type="number" id="input-mu0" value="0" step="any"
+                           data-fx="mu0"
                            aria-label="Null hypothesis mean">
                 </div>
                 <div class="hypothesis-row">
@@ -163,12 +164,6 @@
                     <span id="null-display" class="null-value-mirror">0</span>
                 </div>
             </div>
-            <div class="controls-row">
-                <label for="input-conf">Confidence level
-                    <input type="number" id="input-conf" value="0.95"
-                           step="0.01" min="0.80" max="0.99">
-                </label>
-            </div>
         </section>
 
         <div id="conditions-checkpoint" class="conditions-checkpoint" hidden></div>
@@ -180,8 +175,14 @@
                     <div id="chart-container"></div>
                 </div>
                 <aside class="app-sidebar" id="results">
+                    <div class="ci-level-control">
+                        <label for="input-conf">Confidence level
+                            <input type="number" id="input-conf" value="0.95"
+                                   step="0.01" min="0.80" max="0.99">
+                        </label>
+                    </div>
                     <div id="results-panel" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </aside>
             </div>
@@ -189,15 +190,28 @@
 
         <div id="sr-announce" role="status" aria-live="polite"
              aria-atomic="true" class="sr-only"></div>
+        <p class="tool-crosslink">Just estimating? <a href="../estimate/one-mean/">Confidence Interval for a Mean &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>One-Sample t-Test</h2>
+        <p class="help-intro">Test whether a population mean μ differs from a hypothesized value, using a t-statistic and the t-distribution.</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (paste), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the sample mean, SD, and n directly.</li>
+            <li><strong>Null value:</strong> type the hypothesized mean μ<sub>0</sub> in the H<sub>0</sub> row (defaults to 0).</li>
+            <li><strong>Alternative (H<sub>a</sub>):</strong> click the toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check the sample size and shape before trusting the result.</li>
+            <li><strong>Confidence level</strong> sets the matching interval (default 0.95).</li>
+            <li>Results — t, df, p-value, the confidence interval, and the plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=one-mean-t.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -218,5 +232,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

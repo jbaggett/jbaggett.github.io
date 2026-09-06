@@ -1,0 +1,63 @@
+{
+  "title": "Testing ESP — the Binomial Distribution",
+  "tool": "distribution/binomial",
+  "params": {
+    "n": 8,
+    "p": 0.25
+  },
+  "steps": [
+    {
+      "instruction": "To test for ESP, 4 cards with different symbols are shuffled and one is drawn face-down; you guess its symbol. You repeat this **8 times** and you **do not** have ESP — so each guess is a \\(1/4\\) chance. Let \\(X\\) be the number you guess correctly. Then \\(X \\sim \\text{Binomial}(n = 8,\\ p = 0.25)\\) — the calculator is already set to those values.",
+      "observe": "\\(X\\) is binomial: **fixed \\(n = 8\\)** trials, each **independent**, each with the **same** success probability \\(p = 0.25\\), and two outcomes (right / wrong)."
+    },
+    {
+      "phase": "predict",
+      "instruction": "**Before touching the tool, predict.** If you're purely guessing on all 8 cards, how many do you *expect* to get right on average?",
+      "gate": {
+        "question": "About how many of the 8 will a pure guesser get right, on average?",
+        "choices": [
+          { "text": "About 2", "correct": true },
+          { "text": "About 4" },
+          { "text": "About 6" }
+        ],
+        "feedback": "For a binomial, the mean is \\(np = 8 \\times 0.25 = 2\\). Tick **Show mean** on the chart to see it marked.",
+        "retryFeedback": "The expected count of a binomial is \\(np\\). Here \\(n = 8\\) and \\(p = 0.25\\)."
+      }
+    },
+    {
+      "instruction": "Tick **Show mean** on the chart. Look at where the probability piles up across \\(X = 0, 1, 2, \\dots, 8\\).",
+      "observe": "Most of the probability sits at **0–3 correct**, centered on 2. Getting **6, 7, or 8** right is way out in the thin right tail — rare, if you're only guessing."
+    },
+    {
+      "phase": "predict",
+      "instruction": "To be **certified** as having ESP, you must correctly identify **at least 6** of the 8 cards. **Predict first:** how often would a pure guesser clear that bar by luck alone?",
+      "gate": {
+        "question": "Roughly how likely is \\(P(X \\ge 6)\\) for a pure guesser?",
+        "choices": [
+          { "text": "Very unlikely — well under 1%" },
+          { "text": "Around 10%" },
+          { "text": "Around 25%" }
+        ],
+        "feedback": "You've committed — now let the calculator give the exact probability."
+      }
+    },
+    {
+      "instruction": "Set the **probability type** to **P(X ≥ k)** and set **k** to **6**. Read the probability.",
+      "observe": "The tool reports \\(P(X \\ge 6) \\approx 0.0042\\) — under half a percent.",
+      "reveal": "Only about **4 in 1000** pure guessers would get 6 or more right. That's why the certification bar is set so high: clearing it is very hard to do by luck, so anyone who *does* clear it is unlikely to be merely guessing."
+    },
+    {
+      "phase": "explain",
+      "instruction": "You just used a probability model to judge how surprising a result would be under 'no ESP.' Put the reasoning into your own words.",
+      "respond": {
+        "prompts": [
+          { "id": "why_strict", "label": "Why is 'at least 6 of 8' a sensible bar for certification?", "placeholder": "Think about how often luck alone clears it…", "rows": 2 },
+          { "id": "connect", "label": "How is \\(P(X \\ge 6)\\) here like a p-value?", "placeholder": "Your reasoning", "rows": 2 }
+        ],
+        "gateOnNonEmpty": true,
+        "answer": "The bar is strict *because* a pure guesser almost never clears it (\\(P(X \\ge 6) \\approx 0.004\\)) — so passing is strong evidence of real ability, not luck. That probability is exactly a **p-value**: the chance of a result at least this extreme *if* the 'no ESP' model (\\(p = 0.25\\)) were true. A tiny value means the no-ESP explanation fits the outcome poorly."
+      },
+      "reveal": "This is the seed of hypothesis testing. We assumed 'no ESP' (\\(X \\sim \\text{Binomial}(8, 0.25)\\)), then asked how likely an impressive result (\\(\\ge 6\\) correct) would be under that assumption. Because \\(P(X \\ge 6) \\approx 0.004\\) is so small, a person who gets certified gives us strong reason to doubt the 'just guessing' model. Later chapters formalize this into null hypotheses, p-values, and decision rules."
+    }
+  ]
+}

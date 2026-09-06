@@ -704,7 +704,122 @@ input[aria-invalid="true"] {
   outline: 2px solid var(--ims-blue, #569BBD);
   outline-offset: 2px;
 }
+/* ── Confidence-level primary control (CI estimation pages) ───────── */
+.ci-primary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.4rem 0;
+}
+.ci-primary > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  color: var(--ims-dark, #114B5F);
+  margin: 0;
+}
+.ci-primary .conf-input-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  font-weight: 700;
+}
+.ci-primary .conf-input-wrap input[type="number"] {
+  width: 4.5rem;
+  text-align: center;
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  padding: 0.2rem 0.35rem;
+}
+/* Compact inline variant used on the bootstrap control rows (sits beside other
+   controls rather than as a full-width block). */
+.ci-primary-inline {
+  padding: 0;
+  gap: 0.4rem 0.75rem;
+}
+.ci-primary-inline > label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+/* Percentile / ±SE / Both — the CI method drives the whole bootstrap page, so the
+   toggle lives with the confidence level rather than down in the results box. */
+.ci-method-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.ci-method-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.ci-method-row .seg-control { margin: 0; }
+
+/* Legend under the chart in Both mode. */
+.chart-legend {
+  text-align: center;
+  margin: 0.25rem 0 0;
+}
+.chart-legend .key {
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+.chart-legend .key-pct { color: #B5747A; }
+.chart-legend .key-se { color: var(--ims-dark, #114B5F); }
+
+.conf-pills {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+.conf-pills button {
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  font-size: 0.95rem;
+  padding: 0.2rem 0.7rem;
+  background: var(--surface, #f8f9fa);
+  border: 1.5px solid var(--ims-blue, #569BBD);
+  border-radius: 999px;
+  color: var(--ims-dark, #114B5F);
+  cursor: pointer;
+}
+.conf-pills button:hover {
+  background: #e8f4f8;
+}
+.conf-pills button[aria-pressed="true"] {
+  /* Dark IMS teal (not #569BBD) so white text clears WCAG AA 4.5:1 contrast. */
+  background: var(--ims-dark, #114B5F);
+  border-color: var(--ims-dark, #114B5F);
+  color: #fff;
+}
+.conf-pills button:focus-visible {
+  outline: 2px solid var(--ims-blue, #569BBD);
+  outline-offset: 2px;
+}
+.ci-primary .hint {
+  color: var(--muted, #555);
+  font-style: italic;
+}
+
+.ci-result-headline {
+  text-align: center;
+  margin: 0.5rem 0;
+}
+.ci-result-headline .ci-bounds {
+  font-family: var(--font-mono, 'Source Code Pro', monospace);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #2e7d32;
+}
 @media (max-width: 480px) {
+  .conf-pills button {
+    min-height: 44px;
+    padding: 0.3rem 0.9rem;
+  }
+  .ci-primary .conf-input-wrap input[type="number"] {
+    min-height: 44px;
+  }
   .hypothesis-row {
     white-space: normal;
     flex-wrap: wrap;
@@ -828,7 +943,8 @@ input[aria-invalid="true"] {
 #success-selector select,
 .var-selector-row select {
   font-size: 0.9rem;
-  min-width: 12rem;
+  width: auto;
+  min-width: 5.5rem;
   max-width: 100%;
 }
 
@@ -1216,6 +1332,23 @@ input[aria-invalid="true"] {
   background: var(--surface);
 }
 
+/* A method that doesn't apply to the current statistic (e.g. the ±SE / Both
+   normal approximation under a median) is disabled, not hidden — the tooltip
+   explains why. Disabled controls are exempt from WCAG contrast minimums. */
+.seg-control button:disabled,
+.seg-control button:disabled:hover {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--bg);
+}
+
+/* The "Show theoretical curve" toggle is the same normal approximation, so it
+   dims alongside the buttons for non-mean statistics. */
+.theory-toggle.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .mechanism-arrow {
   flex-shrink: 0;
   font-size: 1.4rem;
@@ -1398,6 +1531,17 @@ input[aria-invalid="true"] {
 .mech-two-group {
   font-size: 0.82rem;
   line-height: 1.5;
+}
+
+/* "Shuffled/Resampled Groups" panel before the first draw — muted hint, centered,
+   holding roughly the panel's height so the strip doesn't jump when the first
+   shuffle fills it. */
+.mech-resample-empty {
+  color: var(--ims-gray-text, #6B6B6B);
+  font-style: italic;
+  text-align: center;
+  padding: 2.75rem 0.5rem;
+  margin: 0;
 }
 
 .mech-group-row {
@@ -2032,6 +2176,206 @@ body[data-hide-interpretations="true"] .interpretation { display: none !importan
 .data-panel-expand-btn:hover {
   color: var(--accent);
   border-color: var(--accent);
+}
+
+/* ===== Dataset Action Buttons (Explore / Preview / Download) ===== */
+.dataset-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.dataset-action-btn {
+  font-size: 0.78rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  font-family: inherit;
+  line-height: 1.4;
+}
+.dataset-action-btn:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+  text-decoration: none;
+}
+.dataset-action-btn.primary {
+  background: var(--ims-blue);
+  border-color: var(--ims-blue);
+  color: #fff;
+}
+.dataset-action-btn.primary:hover {
+  background: var(--ims-dark, #114B5F);
+  border-color: var(--ims-dark, #114B5F);
+}
+/* Compact square icon buttons (summary bar + catalog rows) */
+.dataset-action-btn.icon-btn,
+.data-panel-expand-btn.icon-btn {
+  padding: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+.dataset-action-btn.has-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.dataset-action-btn svg,
+.data-panel-expand-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  flex-shrink: 0;
+}
+.dataset-action-btn:focus-visible,
+.data-panel-expand-btn:focus-visible {
+  outline: 2px solid var(--ims-blue);
+  outline-offset: 1px;
+}
+.dataset-action-btn.icon-btn.loading {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ===== Dataset Preview Modal ===== */
+.dataset-preview-dialog {
+  width: min(760px, 94vw);
+  max-height: 88vh;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text, inherit);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+.dataset-preview-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+}
+.dataset-preview-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.9rem 1.1rem 0.4rem;
+}
+.dataset-preview-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  flex: 1;
+}
+.dataset-preview-close {
+  border: none;
+  background: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  color: var(--ims-gray-text);
+  cursor: pointer;
+  padding: 0 0.25rem;
+  border-radius: 4px;
+}
+.dataset-preview-close:hover {
+  color: var(--accent);
+}
+.dataset-preview-close:focus-visible {
+  outline: 2px solid var(--ims-blue);
+  outline-offset: 1px;
+}
+.dataset-preview-meta {
+  margin: 0;
+  padding: 0 1.1rem 0.6rem;
+  font-size: 0.82rem;
+  color: var(--ims-gray-text);
+}
+.dataset-preview-scroll {
+  overflow: auto;
+  max-height: 58vh;
+  margin: 0 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.dataset-preview-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.dataset-preview-table th,
+.dataset-preview-table td {
+  padding: 0.3rem 0.55rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  white-space: nowrap;
+}
+.dataset-preview-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-alt, #f5f5f5);
+  font-weight: 700;
+  z-index: 1;
+}
+.dataset-preview-table td.is-numeric,
+.dataset-preview-table th.is-numeric {
+  text-align: right;
+}
+.dataset-preview-table tbody tr:hover td {
+  background: #f8fbfd;
+}
+.dataset-preview-rownum {
+  color: var(--ims-gray-text);
+  text-align: right !important;
+  font-size: 0.75rem;
+  background: var(--bg-alt, #f5f5f5);
+}
+.dataset-preview-vtype {
+  font-size: 0.65rem;
+  font-weight: 400;
+  color: var(--ims-gray-text);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.dataset-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1.1rem 0.9rem;
+}
+.dataset-preview-note {
+  font-size: 0.78rem;
+  color: var(--ims-gray-text);
+}
+.dataset-preview-footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+@media (max-width: 600px) {
+  .dataset-action-btn.icon-btn,
+  .data-panel-expand-btn.icon-btn {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0.5rem;
+  }
+  .dataset-action-btn svg,
+  .data-panel-expand-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+  .dataset-preview-dialog {
+    width: 96vw;
+    max-height: 92vh;
+  }
+  .dataset-preview-scroll {
+    max-height: 62vh;
+  }
 }
 
 /* ===== Dataset Info Panel (expandable) ===== */
@@ -2793,6 +3137,10 @@ body[data-mode="discover"] .present-only { display: none !important; }
   cursor: pointer; font-size: 0.9rem; font-family: inherit;
   text-align: left;
 }
+/* Choice label is one flex child so inline KaTeX flows as text, not as its own
+   flex item (REQ-047). flex:1 lets it fill the row; the ✓/✗/● ::after marker
+   then sits at the far end. */
+.gate-choice-text { flex: 1 1 auto; min-width: 0; }
 .gate-choice:hover { background: #f0f7ff; }
 .gate-choice:focus-visible { outline: 2px solid var(--ims-blue); outline-offset: 2px; }
 /* Correct/incorrect pair color with a ✓/✗ marker so the result is
@@ -3306,15 +3654,22 @@ body[data-mode="discover"] .present-only { display: none !important; }
   gap: 0.5rem;
 }
 .conditions-histograms {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  /* Grid (not flex) so every group panel is the SAME size — a wrapped last row no
+     longer stretches its few items larger than the rows above. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 0.6rem;
   width: 100%;
 }
 .conditions-group-hist {
-  flex: 1;
-  min-width: 180px;
-  max-width: 350px;
+  min-width: 0;
+}
+.conditions-group-title {
+  margin: 0 0 0.1rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #114B5F;
+  text-align: center;
 }
 .conditions-single-hist {
   flex: 1;
@@ -3411,6 +3766,50 @@ body[data-mode="discover"] .present-only { display: none !important; }
   letter-spacing: 0.04em;
   color: var(--ims-gray-text);
   margin: 0 0 0.35rem;
+}
+/* Don't let the uppercase heading transform mangle the math — it turns the
+   lowercase population symbols μ → Μ (looks like M) and p → P. */
+.formula-display h3 .katex { text-transform: none; letter-spacing: normal; }
+
+/* Confidence-level dropdown inlined into the "95% CI for …" heading, so the
+   percent itself is the control (no separate row above the results). */
+.ci-conf-select {
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+  width: auto;
+  min-height: 0;
+  padding: 0.05rem 1.3rem 0.05rem 0.35rem;
+  margin-right: 0.15rem;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+/* REQ-037: ANOVA-for-regression panel (collapsible <details>). */
+.anova-table > summary {
+  cursor: pointer;
+  list-style-position: outside;
+}
+/* Keep the heading inline with the disclosure triangle, not on its own row. */
+.anova-table > summary h3 {
+  display: inline;
+  vertical-align: middle;
+}
+.anova-table > summary::-webkit-details-marker { vertical-align: middle; }
+/* The 6-column table scrolls horizontally on a narrow results panel rather
+   than forcing the panel to overflow. */
+.anova-results {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-top: 0.5rem;
+}
+.anova-results td, .anova-results th { text-align: right; }
+.anova-results th[scope="col"], .anova-results th[scope="row"] { text-align: left; }
+.anova-results .anova-total th, .anova-results .anova-total td {
+  border-top: 2px solid var(--border);
+  font-weight: 600;
 }
 
 /* KaTeX formula container: center display math, allow overflow scroll */
@@ -3583,6 +3982,61 @@ body[data-static="true"] .app-sidebar {
   display: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════ */
+/* Figure-only embed — ?plot=only → body[data-plot="only"]         */
+/* An interactive plot with nothing around it, for embedding in a  */
+/* problem: the student reads it (and its tooltips), no controls.  */
+/* Generic across tools (explore + simulate); simulate pages also  */
+/* auto-run the distribution (sim-app.js). Overrides the "never    */
+/* hide the mechanism strip" rule for THIS explicit mode only.     */
+/* ═══════════════════════════════════════════════════════════════ */
+body[data-plot="only"] #controls,
+body[data-plot="only"] .control-row,
+body[data-plot="only"] #variable-selector,
+body[data-plot="only"] #var-selectors,
+body[data-plot="only"] .var-selectors,
+body[data-plot="only"] .generate-bar,
+body[data-plot="only"] #mechanism-strip,
+body[data-plot="only"] .chart-selector,
+body[data-plot="only"] .chart-controls-bar,
+body[data-plot="only"] .hypothesis-display,
+body[data-plot="only"] #conditions-checkpoint,
+body[data-plot="only"] .step-progress,
+body[data-plot="only"] .discover-only,
+body[data-plot="only"] .present-only,
+body[data-plot="only"] #page-help,
+body[data-plot="only"] #data-preview,
+body[data-plot="only"] #data-panel,
+body[data-plot="only"] #settings,
+body[data-plot="only"] .coverage-controls,
+body[data-plot="only"] .app-sidebar,
+body[data-plot="only"] .expert-toggle,
+body[data-plot="only"] .theory-toggle,
+body[data-plot="only"] .bin-adjuster,
+body[data-plot="only"] .chart-save-btn,
+body[data-plot="only"] .chart-copy-btn {
+  display: none !important;
+}
+/* Let the chart fill the freed space. */
+body[data-plot="only"] .app-main {
+  width: 100%;
+  max-width: none;
+}
+body[data-plot="only"] main {
+  padding: 0.25rem;
+  max-width: none;
+}
+/* Sampling Distribution Lab: keep only the sampling-distribution panel — drop the
+   population settings, the population + one-sample "draw" side, and the prose. */
+body[data-plot="only"] #population-section,
+body[data-plot="only"] .lab-left,
+body[data-plot="only"] .sampling-controls-row,
+body[data-plot="only"] #results {
+  display: none !important;
+}
+body[data-plot="only"] .lab-layout { display: block; }
+body[data-plot="only"] .lab-right { width: 100%; }
+
 body[data-static="true"] .app-body {
   display: block;
 }
@@ -3621,8 +4075,28 @@ body[data-static="true"] *::after {
 /* Desktop: fixed left side panel. Mobile: bottom sheet + FAB.    */
 /* ═══════════════════════════════════════════════════════════════ */
 
-/* Hide data panel when activity is active (dataset comes from URL params) */
-body[data-activity="true"] #data-panel {
+/* Hide data panel when activity is active (dataset comes from URL params).
+   Exception: activities that ask the student to load their own dataset opt in
+   with "chooseData": true — they need the panel, so it stays visible. */
+body[data-activity="true"]:not([data-activity-choosedata="true"]) #data-panel {
+  display: none !important;
+}
+
+/* ─── Minimal chrome (opt-in per activity via "chrome": "minimal") ───
+   For gentle conceptual intros, strip the host tool's advanced machinery —
+   hypotheses + Swap, success selector, Copy link, More options, seed — down to
+   just the mechanism strip, chart, generate bar, and the activity steps. The
+   generate bar lives in #controls, so hide its clutter siblings, not the row. */
+body[data-chrome="minimal"] #hypothesis-display,
+body[data-chrome="minimal"] #success-selector,
+body[data-chrome="minimal"] #seed-notice,
+body[data-chrome="minimal"] .share-link-btn,
+body[data-chrome="minimal"] .expert-toggle,
+body[data-chrome="minimal"] .mech-view-toggle,
+/* Minimal chrome also strips the stat / confidence-level / tail control row —
+   the piece an activity would otherwise reveal. (Interactive activities keep it;
+   only chrome:minimal intros hide it.) */
+body[data-chrome="minimal"] .control-row {
   display: none !important;
 }
 
@@ -4063,6 +4537,130 @@ body[data-activity="true"] #data-panel {
   color: #569BBD;
 }
 
+/* ── Predict → Do → Explain phase cues (REQ-046) ──────────────────── */
+/* Badge: names the current move. Backgrounds are darkened brand shades so
+   white text clears WCAG AA (the raw #569BBD/#E07020 are too light as text
+   backgrounds — see CLAUDE.md a11y notes); the strip dots below use the exact
+   brand hues since a filled dot is graphical (3:1) not text. */
+.activity-phase-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 2px 9px;
+  border-radius: 10px;
+  color: #fff;
+  margin-bottom: 0.5rem;
+}
+.activity-phase-badge.phase-predict { background: #2A7AAB; }
+.activity-phase-badge.phase-do      { background: #C05E10; }
+.activity-phase-badge.phase-explain { background: #114B5F; }
+
+/* Progress strip: one node per step, colored by phase where it has one
+   (Predict start, Explain end), neutral for the unlabeled middle "Do" steps.
+   Reached nodes are filled; upcoming ones are hollow so the arc reads ahead. */
+.activity-progress {
+  display: flex;
+  align-items: flex-start;
+  gap: 3px;
+  list-style: none;
+  margin: 0.1rem 0 0.6rem;
+  padding: 0;
+}
+.activity-progress .pstep {
+  flex: 1 1 auto;
+  min-width: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.activity-progress .pdot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: #fff;
+  border: 2px solid #C9D3D8;   /* neutral, hollow by default */
+}
+.pstep-label {
+  font-size: 9px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: #6C6C6C;
+  white-space: nowrap;
+}
+/* phase hues on the border (visible even while hollow/upcoming) */
+.pstep.phase-predict .pdot { border-color: #569BBD; }
+.pstep.phase-do      .pdot { border-color: #E07020; }
+.pstep.phase-explain .pdot { border-color: #114B5F; }
+.pstep.phase-predict .pstep-label { color: #2A7AAB; }
+.pstep.phase-explain .pstep-label { color: #114B5F; }
+/* reached (past + current) → fill with the hue */
+.pstep.past.phase-predict .pdot, .pstep.current.phase-predict .pdot { background: #569BBD; }
+.pstep.past.phase-do .pdot,       .pstep.current.phase-do .pdot      { background: #E07020; }
+.pstep.past.phase-explain .pdot,  .pstep.current.phase-explain .pdot { background: #114B5F; }
+.pstep.past.phase-none .pdot,     .pstep.current.phase-none .pdot    { background: #C9D3D8; }
+/* current node emphasized */
+.pstep.current .pdot { transform: scale(1.25); box-shadow: 0 0 0 3px rgba(86, 155, 189, 0.25); }
+.pstep.past .pdot { opacity: 0.7; }
+
+/* ── Free-text response capture (REQ-041) ─────────────────────────── */
+.activity-respond {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.activity-respond-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.activity-respond-label {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #114B5F;
+}
+.activity-respond-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid #9BB7C4;
+  border-radius: 4px;
+  background: #fff;
+  color: #1a1a1a;
+  resize: vertical;
+  min-height: 2.2rem;
+}
+.activity-respond-input:focus {
+  outline: 2px solid #569BBD;
+  outline-offset: 1px;
+  border-color: #569BBD;
+}
+.activity-respond-input::placeholder { color: #7a8a91; }
+
+/* REQ-044: "what to notice" note — appears once every field is filled. */
+.activity-respond-answer {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: #EBF5FB;
+  border-left: 3px solid #569BBD;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+}
+.activity-respond-answer[hidden] { display: none; }
+.activity-respond-answer-label {
+  font-weight: 700;
+  color: #114B5F;
+  margin-right: 0.25rem;
+}
+
 /* Action-gate hint: shown while a `requires` condition is unmet (do the thing). */
 .activity-requires {
   background: #FCF3E7;
@@ -4347,3 +4945,191 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 @media (max-width: 600px) {
   .mech-view-toggle { margin-right: 0; }
 }
+
+/* ===== Post-hoc pairwise comparisons (ANOVA, REQ-026) ===== */
+#posthoc-section { margin: 1rem 0; padding: 1rem 1.1rem; border: 1px solid #D9E4EA;
+  border-radius: 10px; background: #fff; }
+.posthoc-head { display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+.posthoc-head h2 { margin: 0; font-size: 1.1rem; color: #114B5F; }
+.posthoc-sub { font-weight: 400; font-size: 0.82rem; color: #5C7480; }
+.posthoc-note { font-size: 0.9rem; margin: 0 0 10px; line-height: 1.4; }
+.posthoc-note .muted { color: #5C7480; }
+.posthoc-forest { width: 100%; max-width: 560px; height: auto; display: block; margin: 0 auto 12px; }
+.forest-label { font-size: 12px; fill: #1A2B33; }
+.forest-tick { font-size: 10px; fill: #5C7480; text-anchor: middle; }
+.posthoc-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+.posthoc-table th, .posthoc-table td { padding: 5px 8px; text-align: left; border-bottom: 1px solid #eee; }
+.posthoc-table th { color: #114B5F; white-space: nowrap; }
+.posthoc-table tr.sig { background: #FDECEA; font-weight: 600; }
+
+/* Cross-tool handoff link (E1) — "carry this data to another tool". */
+.tool-handoff { margin-top: 0.85rem; }
+.tool-handoff[hidden] { display: none; }
+.handoff-link {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-weight: 600; color: #114B5F; text-decoration: none;
+  padding: 0.45rem 0.7rem; border-radius: 6px;
+  border: 1px solid #569BBD; background: #fff;
+  min-height: 44px; box-sizing: border-box;
+}
+.handoff-link:hover, .handoff-link:focus-visible { background: #eef6fa; text-decoration: underline; }
+
+/* B3: two-means bootstrap dotplot cells (mirror .mech-hist-cell sizing). */
+.mech-dot-cell { min-height: 90px; display: flex; align-items: center; justify-content: center; }
+.mech-dot-cell svg { max-width: 100%; }
+
+/* C3: linked formula values ↔ their source (sample summary / hypothesis). */
+.fx-val { cursor: help; border-radius: 2px; }
+.fx-src { cursor: help; border-radius: 2px; padding: 0 2px; }
+.fx-lit { background: #FFE9C7 !important; outline: 2px solid #E07020; outline-offset: 1px; border-radius: 3px; }
+
+/* REQ-027: predict-at-x₀ section on the slope inference page. */
+.predict-at .x0-label { display: block; white-space: nowrap; margin: 0.3rem 0 0.6rem; font-weight: 600; }
+.predict-at #x0-input { display: inline-block; width: 7em; min-height: 40px; padding: 0.3rem 0.5rem; vertical-align: middle; margin-left: 0.3rem; box-sizing: border-box; }
+#x0-readout p { margin: 0.35rem 0; }
+
+/* Regression explorer: bands legend + interactive x₀ prediction panel. */
+.bands-legend:not([hidden]) { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; margin: 0.4rem 0 0.2rem; font-size: 0.85rem; }
+.bands-legend .legend-item { display: inline-flex; align-items: center; gap: 0.4rem; }
+.legend-swatch { display: inline-block; width: 22px; height: 12px; border-radius: 2px; vertical-align: middle; }
+.legend-ci { background: rgba(86,155,189,0.28); border: 1px solid #569BBD; }
+.legend-pi { background: rgba(224,112,32,0.10); border: 1px dashed #E07020; }
+.predict-panel { margin: 0.5rem 0 0.2rem; padding: 0.6rem 0.75rem; background: #f7fafc; border: 1px solid var(--ims-border, #d9e2e8); border-radius: 8px; }
+.predict-panel .x0-label { display: inline-block; white-space: nowrap; font-weight: 600; }
+.predict-panel #reg-x0-input { display: inline-block; width: 7em; min-height: 40px; padding: 0.3rem 0.5rem; vertical-align: middle; margin-left: 0.3rem; box-sizing: border-box; }
+.predict-drag-hint { margin-left: 0.5rem; }
+#reg-x0-readout p { margin: 0.3rem 0; }
+
+/* Extrapolation warning in the regression prediction readout. */
+.extrap-warn { color: #C43D1A; font-weight: 600; }
+
+/* "Count as success" selector — surfaced in Test parameters (not the collapsing data panel). */
+.success-selector-row { margin: 0 0 0.6rem; font-weight: 600; }
+.success-selector-row select { min-height: 40px; margin-left: 0.4rem; padding: 0.25rem 0.4rem; }
+
+/* Help dialog feature list. */
+.help-list { margin: 0.5rem 0 0.75rem; padding-left: 1.2rem; }
+.help-list li { margin: 0.35rem 0; }
+
+/* Worked prediction equation ŷ = b₀ + b₁x in the readout. */
+.predict-eqn { font-size: 1.02rem; margin: 0.2rem 0 0.4rem; }
+
+
+/* Confidence-level control lives with the CI in the results sidebar (kept clearly
+   apart from the hypothesis test + figure to avoid conflating it with a sig. level). */
+.ci-level-control { margin: 0 0 0.7rem; padding-bottom: 0.55rem; border-bottom: 1px solid var(--ims-border, #e2e8ee); }
+.ci-level-control label { display: inline-flex; flex-direction: row; align-items: baseline; gap: 0.4rem; font-size: 0.9rem; font-weight: 600; }
+.ci-level-control input[type="number"] { width: 4.5rem; display: inline-block; }
+.ci-level-control select { width: auto; }
+
+/* ── Draggable cutoff lines (reasoning-mode ?cutlines= overlay) ──────────────
+   Vertical lines a student drags to read tail mass off the label instead of
+   counting bars. Keyboard-accessible (each line is a role="slider"). */
+.cutline { cursor: ew-resize; }
+.cutline:focus { outline: none; }
+/* Visible focus indicator: thicken + solidify the grip and add a ring, since
+   SVG outline rendering is unreliable across browsers. */
+.cutline:focus-visible .cutline-grip {
+  stroke: #114B5F;
+  stroke-width: 2.5;
+  paint-order: stroke;
+}
+.cutline:focus-visible .cutline-line,
+.cutline:focus-visible line {
+  stroke-width: 3.5;
+  stroke-dasharray: none;
+}
+.cutline-xval { paint-order: stroke; }
+.cutline-hit { touch-action: none; }
+/* −/+ fine-adjust buttons flanking the x-value pill. */
+.cutline-stepbtn { cursor: pointer; }
+.cutline-stepbtn-bg {
+  fill: #ffffff;
+  stroke: #114B5F;
+  stroke-width: 1.5;
+}
+.cutline-stepbtn:hover .cutline-stepbtn-bg { fill: #e8f2f7; stroke: #569BBD; }
+.cutline-stepbtn:focus { outline: none; }
+.cutline-stepbtn:focus-visible .cutline-stepbtn-bg { stroke: #569BBD; stroke-width: 2.75; }
+.cutline-stepbtn-tx {
+  fill: #114B5F;
+  font-size: 17px;
+  font-weight: 700;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cutline, .cutline * { transition: none !important; }
+}
+
+/* ── Variable selector row (proportion inference tools) ──────────────────────
+   Sits between the data panel and the controls so it stays visible after the
+   data panel auto-collapses and on the file/paste tabs — matching the means
+   tools, so a multi-variable CSV can be re-pointed at any categorical column. */
+.var-selector-row { margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; align-items: center; }
+.var-selector-row label { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; margin: 0; }
+.var-selector-row select { width: auto; }
+
+/* Selector bar: grouping / outcome (+ "count as success" on the proportion
+   tools) and the group-swap button flow across one row on desktop and wrap on
+   narrow screens — keeping vertical space tight. */
+.selector-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 1.5rem; margin: 0 0 0.6rem; }
+.selector-bar .var-selector-row,
+.selector-bar .success-selector-row { margin: 0; }
+.selector-bar .group-order { margin-left: auto; }
+
+/* Hypotheses on the left, the group-swap button on the right (desktop); the
+   button wraps beneath the hypotheses on narrow screens. */
+.hypothesis-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.35rem 1.5rem; }
+.hypothesis-bar .hypothesis-display { padding-bottom: 0; }
+.hypothesis-bar .group-order { margin-left: auto; }
+
+/* ── Group ↔ p̂₁/p̂₂ + success legend (two-proportion tools) ──────────────────
+   Names which group is Group 1 (p̂₁) vs Group 2 (p̂₂) and the success level, so
+   the sign of the difference and CI is explicit rather than inferred. */
+.group-legend {
+  display: flex; flex-wrap: wrap; gap: 0.3rem 1.1rem; align-items: baseline;
+  margin: 0.5rem 0 1rem; padding: 0.6rem 0.85rem;
+  background: #f2f8fb; border: 1px solid var(--ims-border, #e2e8ee);
+  border-left: 3px solid var(--ims-blue, #569BBD); border-radius: 6px;
+  font-size: 0.88rem; line-height: 1.45;
+}
+.group-legend strong { color: #114B5F; }
+.group-legend .legend-diff { color: #555; font-style: italic; }
+
+/* ── Test ↔ CI cross-link (inference tools) ─────────────────────────────────
+   Small pointer under the heading so a student who opened the test page when
+   they wanted the interval (or vice versa) can hop to the companion page. */
+.tool-crosslink { margin: 1.2rem 0 0.4rem; padding-top: 0.9rem; border-top: 1px solid var(--border, #e2e8ee); font-size: 0.86rem; color: #555; }
+.tool-crosslink a { color: var(--ims-blue, #569BBD); font-weight: 600; text-decoration: none; }
+.tool-crosslink a:hover { text-decoration: underline; }
+
+/* ── Goodness-of-fit simulation tool (simulate/goodness-of-fit/) ────────────── */
+/* Manual "Enter Counts" table. */
+.gof-input { border-collapse: collapse; margin: 0.4rem 0; width: 100%; max-width: 30rem; }
+.gof-input th, .gof-input td { padding: 0.2rem 0.4rem; text-align: left; }
+.gof-input th { font-size: 0.85rem; color: var(--ims-gray-text); font-weight: 600; }
+.gof-input input[type="text"] { width: 8rem; }
+.gof-input input[type="number"] { width: 5rem; }
+.btn-icon {
+  border: none; background: none; cursor: pointer; font-size: 1.1rem; line-height: 1;
+  color: var(--ims-gray-text); padding: 0.15rem 0.4rem; border-radius: 4px;
+}
+.btn-icon:hover, .btn-icon:focus-visible { color: #c0392b; background: #f6e9e9; }
+
+/* Mechanism-strip mini bars: observed vs one simulated sample under H0. */
+.gof-bars { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.3rem 0; }
+.gof-bar-row { display: grid; grid-template-columns: 6.5rem 1fr 2.2rem; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
+.gof-bar-cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gof-bar-track { position: relative; height: 14px; background: #eef3f6; border-radius: 3px; }
+.gof-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--ims-blue, #569BBD); border-radius: 3px; }
+/* Dashed marker at the expected count (n·p0) so deviation from H0 is visible. */
+.gof-bar-exp { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px dashed #114B5F; }
+.gof-bar-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* Goodness-of-fit hypotheses block (per-category hypothesized proportions). */
+.gof-hypotheses { font-size: 0.95rem; line-height: 1.5; }
+.gof-hypotheses .hypothesis-row { align-items: baseline; }
+.gof-hypotheses sub { font-size: 0.72em; }

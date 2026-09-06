@@ -80,7 +80,8 @@ names, values, and structure are preserved from the original R package.
 
 ---
 
-## Google Fonts (Inter)
+## Source Code Pro Font
 
+- **Designer**: Adobe (Paul D. Hunt)
 - **License**: SIL Open Font License 1.1
-- **URL**: https://fonts.google.com/specimen/Inter
+- **URL**: https://fonts.google.com/specimen/Source+Code+Pro

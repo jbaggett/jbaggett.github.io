@@ -491,6 +491,11 @@ const dataPanel = initDataPanel({
   datasetFilter: (/** @type {any} */ ds) =>
     ds.hasNumeric === true && !ds.hasCategorical &&
     ds.type !== 'regression' && ds.type !== 'paired',
+  // A `?dataset=` deep-link may point at a dataset the curated dropdown hides
+  // (a regression/bootstrap/anova set, or one with a categorical column). Honor
+  // it as long as it has a numeric column to describe — the only capability this
+  // one-variable tool needs. (A categorical-only dataset is still blocked.)
+  deepLinkFilter: (/** @type {any} */ ds) => ds.hasNumeric === true,
   onDataset: (ds, meta) => {
     loadedDataset = ds;
     showCrosslink(meta);

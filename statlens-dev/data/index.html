@@ -115,6 +115,9 @@
             color: #444;
             max-width: 350px;
         }
+        .ds-actions-col { white-space: nowrap; width: 1%; }
+        .ds-actions-col .dataset-action-btn + .dataset-action-btn { margin-left: 0.2rem; }
+        thead .ds-actions-col { font-weight: 700; }
         .ds-hidden { display: none; }
 
         .back-link {
@@ -143,8 +146,8 @@
 <body>
     <main>
         <a class="back-link" href="../">&larr; StatLens Home</a>
-        <h1>Available Datasets</h1>
-        <p class="intro">Browse all bundled datasets. Click a dataset name to explore it in the appropriate tool.</p>
+        <h1>Available Datasets<span class="header-actions"><button class="help-btn" id="cat-help-btn" aria-label="Help" title="Help">?</button></span></h1>
+        <p class="intro">Browse all bundled datasets. Click a dataset name to explore it in the appropriate tool. Have your own data? <a href="builder/">Build a StatLens dataset</a> from a CSV or TSV.</p>
 
         <div class="search-box">
             <input type="search" id="search" placeholder="Filter by name, variable, or description..." aria-label="Search datasets">
@@ -156,7 +159,30 @@
         <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
     </main>
 
+    <dialog id="page-help" class="help-dialog" aria-label="Help">
+        <h2>Available Datasets</h2>
+        <p class="help-intro">Every dataset bundled with StatLens, grouped by structure (one categorical variable, two numeric variables, and so on). Use the search box to filter by name, variable, description, chapter, or source; click a section heading to collapse it.</p>
+        <p>Each row has three quick actions:</p>
+        <dl>
+            <dt>Dataset name</dt><dd>Opens the dataset in the explorer that fits its structure.</dd>
+            <dt>Explore (chart icon)</dt><dd>Same as the name link — opens it in the matching explorer.</dd>
+            <dt>Preview (grid icon)</dt><dd>Shows the actual data rows in a pop-up table without leaving the page.</dd>
+            <dt>Download (arrow icon)</dt><dd>Saves the full dataset as a CSV file.</dd>
+        </dl>
+        <p>Have your own data? Use the <a href="builder/">Dataset Builder</a> to turn a CSV into a StatLens dataset.</p>
+        <button type="button" autofocus>Close</button>
+    </dialog>
+
     <script type="module">
+    import { makeActionButton, fetchFullDataset, openDatasetPreview, downloadDataset } from '../js/dataset-actions.js';
+
+    function announce(msg) {
+      const el = document.getElementById('sr-announce');
+      if (!el) return;
+      el.textContent = '';
+      requestAnimationFrame(() => { el.textContent = msg; });
+    }
+
     // Dataset category definitions — order matters for display
     const CATEGORIES = [
       {
@@ -213,6 +239,38 @@
     function getVarNames(ds) {
       if (!ds.variables) return [];
       return ds.variables.map(v => typeof v === 'object' ? v.name : v);
+    }
+
+    // Append Explore + Preview + Download icon buttons to a catalog row. Explore
+    // links to the same explorer as the dataset name. Preview/Download lazily
+    // fetch the full dataset JSON on first click (the index metadata has no rows).
+    function addRowActions(cell, ds, tool) {
+      if (!cell) return;
+      const lazy = (btn, run) => async () => {
+        if (btn.classList.contains('loading')) return;
+        btn.classList.add('loading');
+        try {
+          const full = await fetchFullDataset(ds.id);
+          run(full, btn);
+        } catch {
+          announce(`Could not load ${ds.name}.`);
+        } finally {
+          btn.classList.remove('loading');
+        }
+      };
+      const exploreBtn = makeActionButton({
+        icon: 'explore', label: `Explore ${ds.name}`, title: 'Open this dataset in the explorer',
+        href: `${tool}?dataset=${ds.id}`,
+      });
+      const previewBtn = makeActionButton({
+        icon: 'table', label: `Preview ${ds.name}`, title: 'Preview the data',
+      });
+      previewBtn.addEventListener('click', lazy(previewBtn, (full, b) => openDatasetPreview(full, b)));
+      const dlBtn = makeActionButton({
+        icon: 'download', label: `Download ${ds.name} as CSV`, title: 'Download CSV',
+      });
+      dlBtn.addEventListener('click', lazy(dlBtn, (full) => downloadDataset(full)));
+      cell.append(exploreBtn, previewBtn, dlBtn);
     }
 
     // Load and render
@@ -278,6 +336,7 @@
       table.innerHTML = `
         <thead><tr>
           <th>Dataset</th>
+          <th class="ds-actions-col">Data</th>
           <th>n</th>
           <th>Variables</th>
           <th>Description</th>
@@ -302,10 +361,12 @@
 
         tr.innerHTML = `
           <td class="ds-name"><a href="${tool}?dataset=${ds.id}" title="Open in ${cat.title.split('(')[0].trim()} explorer">${ds.name}</a></td>
+          <td class="ds-actions-col"></td>
           <td class="ds-n">${ds.n ? ds.n.toLocaleString() : '—'}</td>
           <td class="ds-vars">${vars.join(', ')}</td>
           <td class="ds-desc">${ds.description || ''}</td>
         `;
+        addRowActions(tr.querySelector('.ds-actions-col'), ds, tool);
         tbody.appendChild(tr);
       }
 
@@ -356,6 +417,19 @@
     }
     </script>
 
+    <script>
+    (function () {
+        const dlg = document.getElementById('page-help');
+        const btn = document.getElementById('cat-help-btn');
+        if (!dlg || !btn) return;
+        btn.addEventListener('click', () => dlg.showModal());
+        dlg.querySelector('button[autofocus]')?.addEventListener('click', () => dlg.close());
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '?' && !/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '')) dlg.showModal();
+        });
+    })();
+    </script>
     <script src="../js/page-number.js"></script>
+    <script src="../js/feedback.js"></script>
 </body>
 </html>

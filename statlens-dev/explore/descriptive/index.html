@@ -175,12 +175,23 @@
 
     
     <dialog id="page-help" aria-label="Help">
-        <h2>Help</h2>
-        <p class="help-intro">Load a dataset to explore with histograms, boxplots, dotplots, and summary statistics.</p>
+        <h2>One Quantitative Variable</h2>
+        <p class="help-intro">Explore the distribution of a single quantitative variable. Pick a chart type to see its shape, and read the center and spread from the summary-statistics panel.</p>
+        <ul class="help-list">
+            <li><strong>Variable</strong> — when a dataset has more than one numeric column, choose which one to display.</li>
+            <li><strong>Group</strong> — if the data includes a categorical column, filter to a single group or view <strong>All (combined)</strong>.</li>
+            <li><strong>Chart type</strong> — view the data as a <strong>Histogram</strong>, <strong>Dotplot</strong>, <strong>Boxplot</strong>, or <strong>Density Plot</strong>. Each highlights something different: histograms and dotplots show shape and gaps, boxplots show the five-number summary and outliers, and the density plot draws a smooth version of the distribution.</li>
+            <li><strong>Bins</strong> — when the histogram is selected, a bin-count control lets you change how many bars the range is split into. Fewer, wider bins smooth the picture; more, narrower bins show finer detail.</li>
+        </ul>
+        <p>The <strong>Summary Statistics</strong> panel reports n, mean, standard deviation, and the five-number summary (min, Q1, median, Q3, max) plus IQR and range. Once data loads, a summary bar appears with buttons to Explore, Preview, or Download the data, and a <strong>Change Data</strong> button to load something else.</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=numerical-charts.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -201,5 +212,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

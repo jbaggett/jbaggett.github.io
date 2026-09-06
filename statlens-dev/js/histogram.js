@@ -146,6 +146,7 @@ export function computeBins(values, options = {}) {
  * @param {number} [options.observedStat] - Value for observed statistic vertical line
  * @param {string} [options.observedLabel] - Label for observed line (default: 'observed')
  * @param {[number,number]} [options.ciLines] - CI bound values to draw as vertical lines
+ * @param {string} [options.ciColor] - Colour of the CI bound lines (default: dusty red)
  * @param {boolean} [options.animate] - Whether to animate bars (default: true)
  * @param {{top:number,right:number,bottom:number,left:number}} [options.margin]
  * @param {[number,number]} [options.domain] - Override x-axis domain
@@ -156,6 +157,7 @@ export function computeBins(values, options = {}) {
  * @param {boolean} [options.relativeFrequency] - Show relative frequency (proportion) on y-axis instead of count
  * @param {string} [options.fillColor] - Override default bar fill color (hex, will be used at 50% opacity)
  * @param {number} [options.viewHeight] - Override default viewBox height (for compact stacked charts)
+ * @param {number} [options.yMax] - Lock the y-axis maximum (bin-count units) for a shared scale across panels
  * @param {boolean} [options.showExport] - Show export buttons (default: true)
  * @param {string} [options.filename] - PNG download filename
  * @param {'full'|'names'|'none'} [options.labels] - Label visibility: 'full' (default), 'names' (no numeric tooltips/click labels), 'none' (no tooltips at all)
@@ -172,6 +174,7 @@ export function drawHistogram(container, values, options = {}) {
     observedStat,
     observedLabel = 'observed',
     ciLines,
+    ciColor = '#B5747A',
     animate = true,
     margin,
     numBins,
@@ -186,7 +189,17 @@ export function drawHistogram(container, values, options = {}) {
     showExport,
     filename,
     labels = 'full',
+    showObservedMarker,
   } = options;
+
+  // Reasoning-mode `?observed=off` hides the observed-statistic marker (and its
+  // bar-split seam) so a student must place the cutoff line at the value given in
+  // the problem text. An explicit `showObservedMarker` option overrides the URL.
+  const showObsMarker = showObservedMarker ?? (
+    typeof location === 'undefined' ||
+    new URLSearchParams(location.search).get('observed') !== 'off'
+  );
+  const obsForChart = showObsMarker ? observedStat : null;
   const effectiveYLabel = yLabel ?? (relativeFrequency ? 'Proportion' : 'Frequency');
 
   const frame = createChart(container, { titleText, descText, id, margin, showExport, filename, ...(viewHeight != null && { viewHeight }) });
@@ -201,12 +214,14 @@ export function drawHistogram(container, values, options = {}) {
     .domain(xDomain)
     .range([0, frame.width]);
 
-  const maxCount = d3Array.max(bins, b => b.length) || 1;
+  // yMax lets callers lock a shared y-axis across several histograms (e.g. grouped
+  // panels) so bar heights are directly comparable. When locked, skip .nice() so the
+  // scale is identical across panels.
+  const maxCount = options.yMax ?? (d3Array.max(bins, b => b.length) || 1);
   const totalN = values.length || 1;
-  const yScale = d3Scale.scaleLinear()
-    .domain([0, maxCount])
-    .nice()
-    .range([frame.height, 0]);
+  const yScale = d3Scale.scaleLinear().domain([0, maxCount]);
+  if (options.yMax == null) yScale.nice();
+  yScale.range([frame.height, 0]);
 
   const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
   const yAxis = relativeFrequency
@@ -221,7 +236,7 @@ export function drawHistogram(container, values, options = {}) {
   // drawHorizontalGridlines(frame); // disabled — bars are readable without gridlines (theme_classic style)
 
   const dataGroup = d3Selection.select(frame.inner).select('.data');
-  renderBars(dataGroup, bins, xScale, yScale, frame.height, isTail, animate, frame.inner, observedStat, ciLines, relativeFrequency, totalN, fillColor, labels);
+  renderBars(dataGroup, bins, xScale, yScale, frame.height, isTail, animate, frame.inner, obsForChart, ciLines, relativeFrequency, totalN, fillColor, labels);
 
   // Stacked delta highlight: show new portions of bars in orange
   if (prevBinCounts) {
@@ -235,15 +250,15 @@ export function drawHistogram(container, values, options = {}) {
 
   // Overlay lines
   const overlays = d3Selection.select(frame.inner).select('.overlays');
-  if (observedStat != null) {
-    renderOverlayLine(overlays, observedStat, xScale, frame.height,
+  if (obsForChart != null) {
+    renderOverlayLine(overlays, obsForChart, xScale, frame.height,
       '#7B2D8E', observedLabel, precision, observedLabel);
   }
   if (ciLines) {
     renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
-      '#B5747A', 'CI lower bound', precision, undefined, true);
+      ciColor, 'CI lower bound', precision, undefined, true);
     renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
-      '#B5747A', 'CI upper bound', precision, undefined, true);
+      ciColor, 'CI upper bound', precision, undefined, true);
   }
 
   return {
@@ -255,7 +270,7 @@ export function drawHistogram(container, values, options = {}) {
       const newNumBins = opts.numBins ?? numBins;
       const result = computeBins(newValues, { numBins: newNumBins });
       const newIsTail = opts.isTail ?? isTail;
-      const newObserved = opts.observedStat ?? observedStat;
+      const newObserved = showObsMarker ? (opts.observedStat ?? observedStat) : null;
       const newCiLines = opts.ciLines ?? ciLines;
 
       // Extend to full first/last bin edges
@@ -283,9 +298,9 @@ export function drawHistogram(container, values, options = {}) {
       }
       if (newCiLines) {
         renderOverlayLine(overlays, newCiLines[0], xScale, frame.height,
-          '#B5747A', 'CI lower bound', precision, undefined, true);
+          ciColor, 'CI lower bound', precision, undefined, true);
         renderOverlayLine(overlays, newCiLines[1], xScale, frame.height,
-          '#B5747A', 'CI upper bound', precision, undefined, true);
+          ciColor, 'CI upper bound', precision, undefined, true);
       }
     },
   };

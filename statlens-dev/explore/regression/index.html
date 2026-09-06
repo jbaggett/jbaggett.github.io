@@ -22,7 +22,8 @@
             "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
             "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
             "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
-            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm",
+            "jstat":        "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
         }
     }
     </script>
@@ -172,20 +173,34 @@
                 <!-- Left: Charts -->
                 <div class="app-main">
                     <div class="toggle-row">
-                        <label>
+                        <label title="Regression line">
                             <input type="checkbox" id="show-line" checked>
-                            Show regression line
+                            Reg. line
                         </label>
-                        <label>
+                        <label title="Predict a response — drag the point or enter a value of x">
+                            <input type="checkbox" id="show-predict" checked>
+                            Predict
+                        </label>
+                        <label title="Confidence &amp; prediction bands">
+                            <input type="checkbox" id="show-bands">
+                            CI/PI bands
+                        </label>
+                        <label title="LOESS smoother curve">
                             <input type="checkbox" id="show-loess">
-                            Show LOESS curve
+                            LOESS curve
                         </label>
                         <label>
                             <input type="checkbox" id="show-residuals">
-                            Show residual plot
+                            Residual plot
                         </label>
                     </div>
                     <div id="chart-container"></div>
+                    <div id="bands-legend" class="bands-legend" hidden></div>
+                    <div id="predict-panel" class="predict-panel" hidden>
+                        <label class="x0-label">Predict at x<sub>0</sub> = <input type="number" id="reg-x0-input" step="0.1" aria-label="x value to predict at"></label>
+                        <span class="hint predict-drag-hint">— or drag the marker on the plot</span>
+                        <div id="reg-x0-readout" aria-live="polite"></div>
+                    </div>
                     <div id="residual-container" hidden>
                         <h3 style="font-size:0.9rem;color:var(--ims-gray-text);">Residual Plot</h3>
                         <div id="residual-chart-container"></div>
@@ -207,11 +222,20 @@
     
     <dialog id="page-help" aria-label="Help">
         <h2>Help</h2>
-        <p class="help-intro">Load a dataset to explore the relationship between two quantitative variables with scatterplots and regression lines.</p>
+        <p class="help-intro">Explore the relationship between two quantitative variables. Pick the X (predictor) and Y (response) variables to see the scatterplot and its best-fit regression line.</p>
+        <ul class="help-list">
+            <li><strong>Regression line</strong> — the best-fit line through the points. Its equation (ŷ = a + b·x), the correlation r, and R² appear below the plot.</li>
+            <li><strong>Predict a response</strong> — drag the point along the line, or type a value of x in the "Predict at x₀" box, to read off the predicted y at that x. A purple guide traces it to each axis. Predicting a little beyond the data is allowed, with a note that it's an extrapolation (and less reliable).</li>
+            <li><strong>Other options</strong> — you can also add a LOESS smoother, a residual plot, or (optional) confidence &amp; prediction bands.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=scatterplot-associations.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -232,5 +256,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

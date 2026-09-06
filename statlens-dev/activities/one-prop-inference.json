@@ -1,32 +1,76 @@
 {
   "title": "Inference for One Proportion",
   "tool": "inference/one-prop",
-  "params": { "dataset": "medical_consultant" },
+  "params": {
+    "dataset": "medical_consultant"
+  },
   "steps": [
     {
-      "instruction": "The Medical Consultant dataset records complications among a surgeon's 62 patients. She claims her complication rate is lower than the national 10% rate. State H0 and Ha in your head before continuing.",
-      "observe": "What direction does the alternative point - lower, higher, or just different?",
-      "reveal": "H0: p = 0.10 vs. Ha: p < 0.10. The claim is *lower*, so this is a one-sided test in the left direction."
+      "phase": "predict",
+      "instruction": "A surgeon had **3 complications in 62 surgeries**; the national rate is **10%**. Before the \\(z\\)-test, **predict first.**",
+      "gate": {
+        "question": "Is the success–failure condition (\\(np_0 \\ge 10\\) and \\(n(1-p_0) \\ge 10\\)) satisfied here?",
+        "choices": [
+          {
+            "text": "No — \\(np_0 = 62(0.10) = 6.2\\) is below 10, so the normal approximation is shaky",
+            "correct": true
+          },
+          {
+            "text": "Yes — \\(n = 62\\) is plenty large"
+          },
+          {
+            "text": "The condition doesn't apply to proportions"
+          }
+        ],
+        "feedback": "Right. \\(np_0 = 6.2 < 10\\), so the normal approximation is only rough here and a simulation-based test is safer — exactly the tension this activity explores.",
+        "retryFeedback": "Check \\(np_0\\): \\(62 \\times 0.10 = 6.2\\). Is that at least 10?"
+      }
     },
     {
-      "instruction": "Look at the panel's reported observed count, sample size, and sample proportion p-hat. Also note the expected counts under H0.",
-      "observe": "Are n*p0 and n*(1-p0) both at least 10? What does that mean about the normal-approximation z-test?",
-      "reveal": "n*p0 = 62 * 0.10 = 6.2, below 10 — the success-failure condition FAILS. The normal approximation is unreliable for this dataset; the z-test's p-value should not be trusted. (This is exactly why earlier chapters used a bootstrap CI for this same data.)"
+      "instruction": "The Medical Consultant dataset records complications among a surgeon's 62 patients. She claims her complication rate is lower than the national 10% rate. State H₀ and Hₐ in your head before continuing.",
+      "observe": "What direction does the alternative point — lower, higher, or just different?",
+      "reveal": "H₀: p = 0.10 vs. Hₐ: p < 0.10. The claim is *lower*, so this is a one-sided test in the left direction."
+    },
+    {
+      "instruction": "Look at the panel's reported observed count, sample size, and sample proportion \\(\\hat{p}\\). Also note the expected counts under H₀.",
+      "observe": "Are n·p₀ and n·(1 − p₀) both at least 10? What does that mean about the normal-approximation z-test?",
+      "reveal": "n·p₀ = 62 × 0.10 = 6.2, below 10 — the success-failure condition FAILS. The normal approximation is unreliable for this dataset; the z-test's p-value should not be trusted. (This is exactly why earlier chapters used a bootstrap CI for this same data.)"
     },
     {
       "instruction": "Despite the warning, set the alternative direction to 'less than' and run the test anyway, so you can compare its result to a simulation later. Read off the test statistic z, the p-value, and the 95% CI.",
-      "observe": "Does the 95% CI contain 0.10? Does the p-value reject H0 at alpha = 0.05?",
-      "reveal": "Typically the CI just barely contains 0.10 and the p-value sits in a borderline zone. But trust this lightly - conditions failed, so both numbers are approximate."
+      "observe": "Does the 95% CI contain 0.10? Does the p-value reject H₀ at α = 0.05?",
+      "reveal": "Typically the CI just barely contains 0.10 and the p-value sits in a borderline zone. But trust this lightly — conditions failed, so both numbers are approximate."
     },
     {
-      "instruction": "Write a one-sentence conclusion in context. Try to avoid using the word 'probability' about H0 itself.",
-      "observe": "Compare your sentence to a colleague's - does either of you accidentally say 'the probability that her rate is 10%'?",
-      "reveal": "A correct conclusion: 'We do not have strong evidence that her true complication rate is below the national 10% — but the success-failure condition failed, so this analysis should be re-done with a simulation method.' The p-value is P(data | H0), not P(H0 | data)."
+      "instruction": "Write a one-sentence conclusion in context. Try to avoid using the word 'probability' about H₀ itself.",
+      "observe": "Compare your sentence to a colleague's — does either of you accidentally say 'the probability that her rate is 10%'?",
+      "reveal": "A correct conclusion: 'We do not have strong evidence that her true complication rate is below the national 10% — but the success-failure condition failed, so this analysis should be re-done with a simulation method.' The p-value is P(data | H₀), not P(H₀ | data)."
     },
     {
       "instruction": "Open the bootstrap CI tool for one proportion in a new tab (/simulate/bootstrap-prop/?dataset=medical_consultant) and run 10000 resamples. Compare its 95% percentile interval to the z-interval you just read.",
-      "observe": "How do the two intervals differ - in center, width, or shape?",
-      "reveal": "The bootstrap interval is right-skewed, mirroring the actual sampling distribution of p-hat when p is small. The z-interval is symmetric by construction and gets the shape wrong. When conditions fail, trust the simulation."
+      "observe": "How do the two intervals differ — in center, width, or shape?",
+      "reveal": "The bootstrap interval is right-skewed, mirroring the actual sampling distribution of \\(\\hat{p}\\) when p is small. The z-interval is symmetric by construction and gets the shape wrong. When conditions fail, trust the simulation."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "condition_matters",
+            "label": "Why does the success–failure condition matter, and what does \\(np_0 = 6.2\\) mean for trusting this z-test's p-value?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "no_prove",
+            "label": "Write the conclusion without the word 'prove.' Why can a hypothesis test never prove \\(H_0\\)?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: the \\(z\\)-test approximates the sampling distribution of \\(\\hat{p}\\) with a normal curve, accurate only when \\(np_0\\) and \\(n(1-p_0)\\) are both \\(\\ge\\) about 10; here \\(np_0 = 6.2\\), so the p-value is approximate and a simulation-based test is safer. A test gives evidence against \\(H_0\\) or fails to — 'fail to reject' means the data are consistent with \\(H_0\\), not that it's proven. Absence of evidence isn't proof."
+      }
     }
   ]
 }

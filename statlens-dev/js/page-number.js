@@ -37,6 +37,15 @@
     document.documentElement.setAttribute('data-embed', 'true');
   }
 
+  // ?plot=only: figure-only embed — auto-runs the distribution (sim-app.js) and
+  // hides all UI except the interactive chart. Implies embed (chrome hidden).
+  if (params.get('plot') === 'only') {
+    document.body?.setAttribute('data-plot', 'only');
+    document.documentElement.setAttribute('data-plot', 'only');
+    document.body?.setAttribute('data-embed', 'true');
+    document.documentElement.setAttribute('data-embed', 'true');
+  }
+
   // Share button: inject on all pages (not embed)
   if (!isEmbed && !isStatic) {
     const shareScript = document.createElement('script');

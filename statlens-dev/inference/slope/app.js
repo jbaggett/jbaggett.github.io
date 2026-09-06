@@ -6,7 +6,7 @@
  */
 
 import { setJStat, pdfT } from '../../js/distributions.js';
-import { slopeT, slopeTSummary } from '../../js/inference.js';
+import { slopeT, slopeTSummary, regressionIntervals } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
 import { renderConditionsDiagnostic } from '../../js/conditions.js';
@@ -16,16 +16,20 @@ initHelp();
 import { parseCSV } from '../../js/csv-parser.js';
 import { formatStat, detectPrecision, linreg } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex, escapeTex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
 // ── Initialize jStat before anything else ──────────────────────────
 const jstatMod = await import('jstat');
-setJStat(jstatMod.default || jstatMod);
+const jStat = jstatMod.default || jstatMod;
+setJStat(jStat);
+
+// REQ-037: `?anova=true` opens the ANOVA-table panel by default (chapter links).
+const anovaOpenByDefault = /^(true|1|yes)$/i.test(
+  new URLSearchParams(location.search).get('anova') || '');
 
 // ── DOM references ─────────────────────────────────────────────────
 const controlsSection = /** @type {HTMLElement} */ (document.getElementById('controls'));
@@ -51,6 +55,13 @@ let numericColumns = [];
 
 /** @type {import('../../js/inference.js').SlopeResult|null} */
 let lastSlopeResult = null;
+
+// REQ-027: point interval at x₀ (mean-response CI + prediction interval).
+// x0Value persists across re-renders; ?x0= sets it, ?interval=mean|prediction|both.
+const _p = new URLSearchParams(location.search);
+let x0Value = _p.has('x0') && isFinite(Number(_p.get('x0'))) ? Number(_p.get('x0')) : null;
+const intervalMode = (['mean', 'prediction', 'both'].includes(String(_p.get('interval'))))
+  ? /** @type {'mean'|'prediction'|'both'} */ (_p.get('interval')) : 'both';
 
 // Summary-input state
 let fromSummary = false;
@@ -368,6 +379,55 @@ function renderResidualPlot(container) {
  * @param {string} alternative
  * @param {number} confLevel
  */
+/**
+ * REQ-037: the regression ANOVA decomposition (SST = SSR + SSE) and the model
+ * F-test, computed from the raw data so it matches R's `anova(lm(y ~ x))` exactly.
+ * @param {{x:number[], y:number[]}} xy
+ * @param {{intercept:number, slope:number}} r
+ */
+function computeAnova(xy, r) {
+  const n = xy.x.length;
+  const ybar = xy.y.reduce((s, v) => s + v, 0) / n;
+  const fitted = xy.x.map(xi => r.intercept + r.slope * xi);
+  const ssr = fitted.reduce((s, f) => s + (f - ybar) ** 2, 0);       // regression / model
+  const sse = xy.y.reduce((s, yi, i) => s + (yi - fitted[i]) ** 2, 0); // residual
+  const sst = ssr + sse;                                              // total
+  const dfR = 1, dfE = n - 2, dfT = n - 1;
+  const msr = ssr / dfR, mse = sse / dfE;
+  const F = msr / mse;
+  // Model F-test is inherently two-sided (H0: β1 = 0); its p-value is the upper
+  // F tail, independent of the slope test's chosen alternative.
+  const pValue = 1 - jStat.centralF.cdf(F, dfR, dfE);
+  return { n, ssr, sse, sst, dfR, dfE, dfT, msr, mse, F, pValue };
+}
+
+/**
+ * Render the collapsible ANOVA-table panel + the F = t² equivalence note.
+ * @param {ReturnType<typeof computeAnova>} a
+ * @param {number} tStat
+ * @param {number} d - decimal precision
+ */
+function anovaPanelHtml(a, tStat, d) {
+  const num = (/** @type {number} */ v) => formatStat(v, Math.max(d, 2));
+  const pStr = formatStat(a.pValue, d, 'pvalue');
+  return `
+    <details class="formula-display anova-table"${anovaOpenByDefault ? ' open' : ''}>
+      <summary><h3>ANOVA table for the regression</h3></summary>
+      <table class="results-table anova-results" aria-label="Analysis of variance for the regression">
+        <thead>
+          <tr><th scope="col">Source</th><th scope="col">df</th><th scope="col">SS</th><th scope="col">MS</th><th scope="col">F</th><th scope="col">p-value</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Regression</th><td>${a.dfR}</td><td>${num(a.ssr)}</td><td>${num(a.msr)}</td><td>${num(a.F)}</td><td>${pStr}</td></tr>
+          <tr><th scope="row">Residual</th><td>${a.dfE}</td><td>${num(a.sse)}</td><td>${num(a.mse)}</td><td></td><td></td></tr>
+          <tr class="anova-total"><th scope="row">Total</th><td>${a.dfT}</td><td>${num(a.sst)}</td><td></td><td></td><td></td></tr>
+        </tbody>
+      </table>
+      <p class="formula-detail">${tex(`F = \\frac{\\text{MSR}}{\\text{MSE}} = ${a.F.toFixed(4)} = t^2 = (${tStat.toFixed(4)})^2`)}</p>
+      <p class="hint">For a single predictor the ANOVA <em>F</em>-test and the slope <em>t</em>-test are the same test: <em>F</em> = <em>t</em>², and they share the p-value (${pStr}).</p>
+    </details>`;
+}
+
 function renderResults(r, d, alternative, confLevel) {
   const confPct = (confLevel * 100).toFixed(0);
   const pStr = formatStat(r.pValue, d, 'pvalue');
@@ -393,6 +453,12 @@ function renderResults(r, d, alternative, confLevel) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // Symbolic wrapper: makes the SYMBOL (e.g. SE_{b_1}) hoverable too, without recoloring it.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
   let regressionRows = '';
   if (hasFullRegression) {
@@ -406,28 +472,57 @@ function renderResults(r, d, alternative, confLevel) {
   if (hasFullRegression) {
     const r2Pct = (r.rSquared * 100).toFixed(1);
     regressionInterp = `
-      <p>${tex(`\\hat{y} = ${formatStat(r.intercept, d)} + ${formatStat(r.slope, d)} \\cdot \\text{${xName}}`)}</p>
+      <p>${tex(`\\hat{y} = ${formatStat(r.intercept, d)} + ${formatStat(r.slope, d)} \\cdot \\text{${escapeTex(xName)}}`)}</p>
       <p>${tex(`r = ${formatStat(r.r, d, 'correlation')}`)}, ${tex(`R^2 = ${r2Pct}\\%`)}.</p>`;
   }
 
   const testFormula = tex(`\\begin{aligned}
-    t &= \\frac{b_1 - 0}{SE_{b_1}} \\\\[8pt]
-    &= \\frac{${V}{${formatStat(r.slope, d)}}}{${V}{${formatStat(r.se, d)}}} \\\\[8pt]
+    t &= \\frac{${fxs('b1', 'b_1')} - ${fxs('beta0', '0')}}{${fxs('se', 'SE_{b_1}')}} \\\\[8pt]
+    &= \\frac{${fx('b1', formatStat(r.slope, d))} - ${fx('beta0', 0)}}{${fx('se', formatStat(r.se, d))}} \\\\[8pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &b_1 \\pm t^{\\!*} \\cdot SE_{b_1} \\\\[8pt]
-    &${V}{${formatStat(r.slope, d)}} \\pm ${V}{${tStar}} \\cdot ${V}{${formatStat(r.se, d)}} \\\\[8pt]
+    &${fxs('b1', 'b_1')} \\pm ${fxs('tstar', 't^{\\!*}')} \\cdot ${fxs('se', 'SE_{b_1}')} \\\\[8pt]
+    &${fx('b1', formatStat(r.slope, d))} \\pm ${fx('tstar', tStar)} \\cdot ${fx('se', formatStat(r.se, d))} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
+
+  // REQ-027: mean-response CI + prediction interval at x₀ (needs raw x/y).
+  const xy = fromSummary ? null : extractXY();
+  const ri = xy ? regressionIntervals(xy.x, xy.y, { confLevel }) : null;
+
+  // REQ-037: ANOVA table for the regression (raw data only — the SS decomposition
+  // needs the individual points; summary mode has slope/SE/n but not the SS).
+  const anovaSection = (xy && hasFullRegression)
+    ? anovaPanelHtml(computeAnova(xy, r), r.tStat, d)
+    : '';
+  let predictSection = '';
+  if (ri) {
+    if (x0Value == null) x0Value = Math.round(ri.xbar * 100) / 100;
+    const step = Math.max(0.01, Math.round((ri.xMax - ri.xMin)) / 100) || 0.1;
+    // Link to the interactive explorer (scatterplot + line + bands + draggable x₀),
+    // carrying the dataset and both variables. Needs a bundled dataset to reload.
+    const dsId = dataPanel.currentDatasetId;
+    const explorerLink = dsId
+      ? `<p class="hint" style="margin-top:0.5rem">See it on a plot: <a href="${buildSimLink('explore/regression/', { dataset: dsId, params: { x: xVarSelect.value, y: yVarSelect.value, bands: 'true', x0: x0Value } })}" target="_blank" rel="noopener">open the interactive prediction plot ↗</a> — scatter + line + CI/prediction bands, drag to predict at any x.</p>`
+      : '';
+    predictSection = `
+      <div class="formula-display predict-at">
+        <h3>Predict a response</h3>
+        <label class="x0-label">x<sub>0</sub>&nbsp;=&nbsp;<input type="number" id="x0-input" value="${x0Value}" step="${step}" aria-label="x value to predict at"></label>
+        <div id="x0-readout" aria-live="polite"></div>
+        ${explorerLink}
+      </div>`;
+  }
 
   resultsPanel.innerHTML = `
     <h3>Regression Summary</h3>
     <table class="results-table" aria-label="Regression summary">
       <tbody>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n}</td></tr>
-        <tr><th scope="row">Slope (${tex('b_1')})</th><td>${formatStat(r.slope, d)}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n">${r.n}</td></tr>
+        <tr><th scope="row">Slope (${tex('b_1')})</th><td data-fx="b1">${formatStat(r.slope, d)}</td></tr>
+        <tr><th scope="row">${tex('SE_{b_1}')}</th><td data-fx="se">${formatStat(r.se, d)}</td></tr>
         ${regressionRows}
       </tbody>
     </table>
@@ -444,14 +539,59 @@ function renderResults(r, d, alternative, confLevel) {
       ${ciFormula}
     </div>
 
+    ${anovaSection}
+
+    ${predictSection}
+
     <div class="interpretation" aria-live="polite">
       ${regressionInterp}
-      <p>Slope ${tex('b_1')} = ${formatStat(r.slope, d)} is ${Math.abs(r.tStat).toFixed(2)} SEs from zero.</p>
+      <p>Slope ${tex('b_1')} = ${formatStat(r.slope, d)} is ${Math.abs(r.tStat).toFixed(2)} SEs from the null slope <span class="fx-src" data-fx="beta0">0</span>.</p>
       <p><strong>Formal conclusion:</strong> ${conclusions.formal}</p>
       ${conclusions.practical ? `<p><strong>Practical conclusion:</strong> ${conclusions.practical}</p>` : ''}
       <p>${confPct}% CI for ${tex('\\beta_1')}: (${formatStat(r.ciLower, d)}, ${formatStat(r.ciUpper, d)}).</p>
     </div>
   `;
+
+  // C3: link formula values (b₁, SE, n, β₀) to their sources in the summary / hypothesis.
+  linkFormula(document.querySelector('main') || resultsPanel);
+
+  // REQ-027: wire the x₀ input to the mean-response CI + prediction interval readout.
+  if (ri) {
+    renderX0Readout(ri, x0Value, d);
+    const inp = /** @type {HTMLInputElement|null} */ (document.getElementById('x0-input'));
+    inp?.addEventListener('input', () => {
+      const v = Number(inp.value);
+      if (isFinite(v)) { x0Value = v; renderX0Readout(ri, v, d); }
+    });
+  }
+}
+
+/**
+ * REQ-027 readout: fitted ŷ, the CI for the mean response, and the prediction
+ * interval for a new observation at x₀.
+ * @param {ReturnType<typeof regressionIntervals>} ri
+ * @param {number} x0
+ * @param {number} d - display precision
+ */
+function renderX0Readout(ri, x0, d) {
+  const el = document.getElementById('x0-readout');
+  if (!el || !ri) return;
+  const meanCI = ri.predictAt(x0, 'mean');
+  const predPI = ri.predictAt(x0, 'prediction');
+  const pct = (ri.confLevel * 100).toFixed(0);
+  const rows = [
+    `<p>Fitted ${tex('\\hat{y}')} = <strong>${formatStat(meanCI.fit, d)}</strong> at ${tex('x')} = ${formatStat(x0, d)}.</p>`,
+  ];
+  if (intervalMode === 'mean' || intervalMode === 'both') {
+    rows.push(`<p><strong>${pct}% CI for the mean response</strong> ${tex('E[y \\mid x_0]')}: (${formatStat(meanCI.lower, d)}, ${formatStat(meanCI.upper, d)})</p>`);
+  }
+  if (intervalMode === 'prediction' || intervalMode === 'both') {
+    rows.push(`<p><strong>${pct}% prediction interval</strong> (a new ${tex('y')} at ${tex('x_0')}): (${formatStat(predPI.lower, d)}, ${formatStat(predPI.upper, d)})</p>`);
+  }
+  if (x0 < ri.xMin || x0 > ri.xMax) {
+    rows.push(`<p class="hint">${tex('x_0')} = ${formatStat(x0, d)} is outside the observed range (${formatStat(ri.xMin, d)} to ${formatStat(ri.xMax, d)}) — this is extrapolation.</p>`);
+  }
+  el.innerHTML = rows.join('');
 }
 
 /**
@@ -483,7 +623,7 @@ function drawChart(result) {
   });
 
   addInferenceAnnotations(chart, {
-    statValue: Math.abs(tStat),
+    statValue: tail === 'both' ? Math.abs(tStat) : tStat, // signed for one-sided so the line aligns with the shaded tail
     statLabel: 't',
     pValue: result.pValue,
     pdfFn,

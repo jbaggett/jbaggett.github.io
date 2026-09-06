@@ -61,6 +61,22 @@
     "minGroupN": 2
   },
   {
+    "id": "asian_smoke",
+    "name": "Asian-American Tobacco Use by Ethnicity",
+    "description": "Smoking status by ethnicity for 14,021 Asian-American adults (Asian-Indian, Chinese, Filipino). IMS Ch. 18.",
+    "type": "chisq",
+    "chapter": "IMS Ch. 18",
+    "n": 14021,
+    "variables": [
+      "ethnicity",
+      "outcome"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 4373
+  },
+  {
     "id": "ask",
     "name": "iPod Question Framing",
     "description": "219 participants: does framing an iPod purchase question differently affect the decision? Three question types (control, give up, keep) x two outcomes. IMS Ch. 18.",
@@ -139,6 +155,26 @@
     "minGroupN": null
   },
   {
+    "id": "baumann",
+    "name": "Baumann Reading Methods",
+    "description": "Reading-comprehension scores for 66 students randomized to three instruction methods (Ch. 22 ANOVA).",
+    "type": "anova",
+    "chapter": "IMS Ch. 22",
+    "n": 66,
+    "variables": [
+      "group",
+      "pretest_1",
+      "pretest_2",
+      "posttest_1",
+      "posttest_2",
+      "posttest_3"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 22
+  },
+  {
     "id": "bdims_hgt",
     "name": "Body Dimensions (Height)",
     "description": "Heights (cm) of 507 physically active adults. Use to build a bootstrap CI for mean height.",
@@ -146,6 +182,22 @@
     "chapter": "IMS Ch. 12",
     "n": 507,
     "variables": [
+      "hgt"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "bdims_regression",
+    "name": "Body Dimensions: Shoulder Girth vs Height",
+    "description": "Shoulder girth (cm) vs height (cm) for 507 physically active adults. IMS Ch. 7, 24.",
+    "type": "regression",
+    "chapter": "IMS Ch. 7, 24",
+    "n": 507,
+    "variables": [
+      "sho_gi",
       "hgt"
     ],
     "hasNumeric": true,
@@ -168,6 +220,22 @@
     "hasCategorical": true,
     "groupLevels": 2,
     "minGroupN": 1129
+  },
+  {
+    "id": "births14_fage",
+    "name": "Baby Weight vs Father's Age",
+    "description": "Father's age (years) vs baby birth weight (lbs) for 886 US births, 2014. A weak predictor. IMS Ch. 24.",
+    "type": "regression",
+    "chapter": "IMS Ch. 24",
+    "n": 886,
+    "variables": [
+      "fage",
+      "weight"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "births14_regression",
@@ -276,6 +344,22 @@
     "hasCategorical": true,
     "groupLevels": 5,
     "minGroupN": 60
+  },
+  {
+    "id": "caosexam",
+    "name": "CAOS Pretest/Posttest",
+    "description": "Paired pre/post CAOS statistics-assessment scores for 10 students (Ch. 20 paired data).",
+    "type": "paired",
+    "chapter": "IMS Ch. 20",
+    "n": 10,
+    "variables": [
+      "pretest",
+      "posttest"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "cards",
@@ -418,6 +502,33 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "county",
+    "name": "US Counties",
+    "description": "Demographic and economic measures for all 3,142 US counties (IMS Ch. 1, 8 relationships).",
+    "type": "explore",
+    "chapter": "IMS Ch. 1, 8",
+    "n": 3142,
+    "variables": [
+      "name",
+      "state",
+      "pop2017",
+      "pop_change",
+      "poverty",
+      "homeownership",
+      "multi_unit",
+      "unemployment_rate",
+      "metro",
+      "median_edu",
+      "per_capita_income",
+      "median_hh_income",
+      "smoking_ban"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 1165
   },
   {
     "id": "county_2019",
@@ -643,6 +754,22 @@
     "minGroupN": null
   },
   {
+    "id": "diamonds_99_1ct",
+    "name": "Diamonds: Price per Carat (0.99 vs 1 carat)",
+    "description": "Price per carat (hundreds of $) for 23 diamonds at 0.99 carat vs 23 at 1 carat. IMS Ch. 20.",
+    "type": "randomization",
+    "chapter": "IMS Ch. 20",
+    "n": 46,
+    "variables": [
+      "carat_class",
+      "price_per_carat"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 23
+  },
+  {
     "id": "dolphins_mercury",
     "name": "Dolphins Mercury",
     "description": "Mercury levels (ppm) in muscle tissue of 19 Risso's dolphins. Classic small-sample bootstrap CI example.",
@@ -861,6 +988,28 @@
     "minGroupN": 12933
   },
   {
+    "id": "floridalakes",
+    "name": "Florida Lakes (Mercury)",
+    "description": "Water chemistry and fish mercury for 53 Florida lakes — pH/alkalinity vs mercury (Ch. 7, 24 regression/correlation).",
+    "type": "regression",
+    "chapter": "IMS Ch. 7, 24",
+    "n": 53,
+    "variables": [
+      "lake",
+      "alkalinity",
+      "ph",
+      "calcium",
+      "chlorophyll",
+      "avg_mercury",
+      "std_mercury",
+      "age_data"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "friday_traffic",
     "name": "Friday the 13th Traffic",
     "description": "Traffic volume on Friday the 6th vs. Friday the 13th at the same locations. Is there less traffic on the 13th? IMS Ch. 21.",
@@ -957,6 +1106,26 @@
     "minGroupN": null
   },
   {
+    "id": "hollywoodmovies2023",
+    "name": "Hollywood Movies 2023",
+    "description": "Budget, rating, and opening weekend for a small set of 2023 films (Ch. 4 describing/relationships).",
+    "type": "explore",
+    "chapter": "IMS Ch. 4",
+    "n": 6,
+    "variables": [
+      "title",
+      "lead_studio",
+      "rating",
+      "genre",
+      "budget",
+      "opening"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "homeownership",
     "name": "Homeownership Status",
     "description": "Homeownership status of 10,000 Lending Club loan applicants (IMS Ch. 3)",
@@ -1020,10 +1189,26 @@
     "minGroupN": 175
   },
   {
+    "id": "insectsprays",
+    "name": "Insect Sprays",
+    "description": "Insect counts on plots treated with six sprays, n = 72 (Ch. 22 ANOVA).",
+    "type": "anova",
+    "chapter": "IMS Ch. 22",
+    "n": 72,
+    "variables": [
+      "count",
+      "spray"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 6,
+    "minGroupN": 12
+  },
+  {
     "id": "jury",
     "name": "Jury Racial Composition",
-    "description": "Race of 275 jurors from a county, used to assess if jury composition reflects the community. IMS Ch. 2, 18.",
-    "chapter": "",
+    "description": "Race of 275 jurors vs. the community distribution (72/7/12/9%) — goodness-of-fit. IMS Ch. 16.",
+    "chapter": "IMS Ch. 16",
     "n": 275,
     "variables": [
       "race"
@@ -1031,7 +1216,83 @@
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 4,
-    "minGroupN": 19
+    "minGroupN": 19,
+    "type": "gof"
+  },
+  {
+    "id": "mendel_peas",
+    "name": "Mendel's Peas",
+    "description": "Phenotype counts from Mendel's dihybrid cross (n=556) vs. the 9:3:3:1 ratio — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 556,
+    "variables": [
+      "phenotype"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 32
+  },
+  {
+    "id": "stock_geometric",
+    "name": "Stock Streaks (Geometric Model)",
+    "description": "Days since a stock index last rose over 1,362 trading days vs. a geometric model — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 1362,
+    "variables": [
+      "streak"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 7,
+    "minGroupN": 10
+  },
+  {
+    "id": "barking_deer",
+    "name": "Barking Deer Foraging Sites",
+    "description": "Barking deer forage-site habitats vs. available land proportions — a strong-preference goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 426,
+    "variables": [
+      "habitat"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 4
+  },
+  {
+    "id": "blood_types",
+    "name": "Blood Types (Illustrative)",
+    "description": "Small ABO blood-type sample (n=80) vs. the approximate US distribution — a goodness-of-fit where an expected count is below 5. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 80,
+    "variables": [
+      "blood_type"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 4
+  },
+  {
+    "id": "textbooks_format",
+    "name": "Textbook Format Preference",
+    "description": "Format used by 126 students vs. a predicted 60/25/15% split — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 126,
+    "variables": [
+      "format"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 25
   },
   {
     "id": "lizard_habitat",
@@ -1050,6 +1311,38 @@
     "minGroupN": 106
   },
   {
+    "id": "arthritis",
+    "name": "Rheumatoid Arthritis Treatment",
+    "description": "Improvement outcome by treatment (placebo vs. active) for 84 rheumatoid arthritis patients. IMS Ch. 18 (chi-square).",
+    "type": "chisq",
+    "chapter": "IMS Ch. 18",
+    "n": 84,
+    "variables": [
+      "treatment",
+      "improved"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 41
+  },
+  {
+    "id": "arthritis_male",
+    "name": "Rheumatoid Arthritis Treatment (Male Patients)",
+    "description": "Improvement by treatment for the 25 male patients in the arthritis trial — a borderline association (p ≈ 0.09). IMS Ch. 18 (chi-square).",
+    "type": "chisq",
+    "chapter": "IMS Ch. 18",
+    "n": 25,
+    "variables": [
+      "treatment",
+      "improved"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 11
+  },
+  {
     "id": "lizard_run",
     "name": "Lizard Sprint Speed",
     "description": "Top sprint speed (m/s) for two lizard species: Sagebrush lizard vs. Western fence lizard. IMS Ch. 20.",
@@ -1064,6 +1357,38 @@
     "hasCategorical": true,
     "groupLevels": 2,
     "minGroupN": 22
+  },
+  {
+    "id": "loan50",
+    "name": "Loan50 (Lending Club)",
+    "description": "A 50-loan sample from the Lending Club peer-to-peer platform — borrower, loan, and credit variables (IMS Ch. 1, 8).",
+    "type": "explore",
+    "chapter": "IMS Ch. 1, 8",
+    "n": 50,
+    "variables": [
+      "state",
+      "emp_length",
+      "term",
+      "homeownership",
+      "annual_income",
+      "verified_income",
+      "debt_to_income",
+      "total_credit_limit",
+      "total_credit_utilized",
+      "num_cc_carrying_balance",
+      "loan_purpose",
+      "loan_amount",
+      "grade",
+      "interest_rate",
+      "public_record_bankrupt",
+      "loan_status",
+      "has_second_income",
+      "total_income"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 3
   },
   {
     "id": "loan50_amount",
@@ -1101,6 +1426,21 @@
     "description": "Interest rates (%) on 50 loans from Lending Club. Use to build a bootstrap CI for the mean rate.",
     "type": "bootstrap",
     "chapter": "IMS Ch. 12",
+    "n": 50,
+    "variables": [
+      "interest_rate"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "loan50_interest_rate",
+    "name": "Loan50 Interest Rates",
+    "description": "Interest rates for a 50-loan sample from Lending Club (Ch. 12, 19 bootstrap CI for a mean).",
+    "type": "bootstrap",
+    "chapter": "IMS Ch. 12, 19",
     "n": 50,
     "variables": [
       "interest_rate"
@@ -1208,6 +1548,22 @@
     "minGroupN": null
   },
   {
+    "id": "masterswinners",
+    "name": "Masters Winners (Ages)",
+    "description": "Winning golfer age by year at the Masters Tournament, n = 87 (Ch. 7 relationships / trend).",
+    "type": "regression",
+    "chapter": "IMS Ch. 7",
+    "n": 87,
+    "variables": [
+      "year",
+      "age"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "medical_consultant",
     "name": "Medical Consultant",
     "description": "Complication outcomes for 62 patients of a medical consultant. 3 of 62 had complications (p̂ = 0.048). National complication rate is 10%. IMS Ch. 12, 16.",
@@ -1271,6 +1627,24 @@
     "minGroupN": 6
   },
   {
+    "id": "murders",
+    "name": "Murders vs Poverty (US Metro Areas)",
+    "description": "Annual murders per million vs poverty rate for 20 US metropolitan areas. IMS/OS Ch. 24.",
+    "type": "regression",
+    "chapter": "IMS Ch. 24",
+    "n": 20,
+    "variables": [
+      "perc_pov",
+      "annual_murders_per_mil",
+      "perc_unemp",
+      "population"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "nba_heights",
     "name": "NBA Player Heights",
     "description": "Heights (inches) of NBA players. Approximately normal distribution.",
@@ -1279,6 +1653,21 @@
     "n": 435,
     "variables": [
       "height"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "nbasalaries2022",
+    "name": "NBA Salaries 2022",
+    "description": "Salaries (millions) for 467 NBA players, 2022 — a strongly right-skewed distribution (Ch. 5, 12).",
+    "type": "bootstrap",
+    "chapter": "IMS Ch. 5, 12",
+    "n": 467,
+    "variables": [
+      "salary_millions"
     ],
     "hasNumeric": true,
     "hasCategorical": false,
@@ -1399,6 +1788,28 @@
     "minGroupN": null
   },
   {
+    "id": "possum",
+    "name": "Brushtail Possums",
+    "description": "Body measurements for 104 brushtail possums trapped in Australia (IMS Ch. 7, 8 regression/correlation).",
+    "type": "regression",
+    "chapter": "IMS Ch. 7, 8",
+    "n": 104,
+    "variables": [
+      "site",
+      "pop",
+      "sex",
+      "age",
+      "head_l",
+      "skull_w",
+      "total_l",
+      "tail_l"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 46
+  },
+  {
     "id": "possum_regression",
     "name": "Possum: Head Length vs Skull Width",
     "description": "Head length (mm) vs skull width (mm) for 104 mountain brushtail possums.",
@@ -1447,6 +1858,22 @@
     "minGroupN": null
   },
   {
+    "id": "pulserates",
+    "name": "Pulse: Quiz vs Lecture",
+    "description": "Each student’s pulse during a quiz vs a lecture, n = 10 paired (Ch. 20 paired data).",
+    "type": "paired",
+    "chapter": "IMS Ch. 20",
+    "n": 10,
+    "variables": [
+      "quiz",
+      "lecture"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
     "id": "resume",
     "name": "Resume Callback Study",
     "description": "Job callback rates by perceived race of applicant name. n=4,870. IMS Ch. 9.",
@@ -1476,6 +1903,22 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "salaries",
+    "name": "Sales by Pay Type",
+    "description": "Sales totals for 15 employees across three pay structures — small 3-group comparison (Ch. 22 ANOVA).",
+    "type": "anova",
+    "chapter": "IMS Ch. 22",
+    "n": 15,
+    "variables": [
+      "sales",
+      "pay_type"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 4
   },
   {
     "id": "satgpa",
@@ -1540,6 +1983,32 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "sleepstudy",
+    "name": "College Sleep Study",
+    "description": "Sleep, mood, and academics survey for 253 college students (Ch. 4, 7 EDA). Curated subset of variables.",
+    "type": "explore",
+    "chapter": "IMS Ch. 4, 7",
+    "n": 253,
+    "variables": [
+      "gender",
+      "class_year",
+      "lark_owl",
+      "gpa",
+      "avg_sleep",
+      "poor_sleep",
+      "happiness",
+      "stress",
+      "depression",
+      "anxiety",
+      "drinks",
+      "cognition_z"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 41
   },
   {
     "id": "smallpox",
@@ -1746,6 +2215,46 @@
     "hasCategorical": true,
     "groupLevels": 52,
     "minGroupN": 1
+  },
+  {
+    "id": "us_temperature",
+    "name": "US 90th-Percentile Daily Highs: 1950 vs 2022",
+    "description": "90th-percentile daily high temperature (°F) at 26 NOAA stations in 1950 vs 2022. IMS Ch. 21.",
+    "type": "paired",
+    "chapter": "IMS Ch. 21",
+    "n": 26,
+    "variables": [
+      "y1950",
+      "y2022"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": false,
+    "groupLevels": null,
+    "minGroupN": null
+  },
+  {
+    "id": "usstates",
+    "name": "US States (2010s)",
+    "description": "Demographic, health, and political measures for the 50 US states (Ch. 7 relationships). Curated subset.",
+    "type": "regression",
+    "chapter": "IMS Ch. 7",
+    "n": 50,
+    "variables": [
+      "state",
+      "region",
+      "household_income",
+      "college",
+      "high_school",
+      "smokers",
+      "obese",
+      "physical_activity",
+      "iq",
+      "obama_mccain"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 11
   },
   {
     "id": "yawn",

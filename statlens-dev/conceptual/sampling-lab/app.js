@@ -56,6 +56,10 @@ const popPSlider = /** @type {HTMLInputElement} */ (document.getElementById('pop
 const popPVal = document.getElementById('pop-p-val');
 const popMeanLabel = document.getElementById('pop-mean-label');
 const popSdLabel = document.getElementById('pop-sd-label');
+const popMeanItem = document.getElementById('pop-mean-item');
+const popSdItem = document.getElementById('pop-sd-item');
+const truthBtn = /** @type {HTMLButtonElement|null} */ (document.getElementById('truth-btn'));
+const truthNote = document.getElementById('truth-note');
 const sdLabel = document.getElementById('sd-label');
 const theoryLabel = document.getElementById('theory-label');
 const centerNote = document.getElementById('center-note');
@@ -163,6 +167,40 @@ let rng = null;
 // otherwise a fresh random seed each session.
 const urlSeed = new URLSearchParams(location.search).get('seed');
 let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+// Reasoning mode (?readout=false): hide the computed SD readout so the student
+// reads spread off the distribution. Figure-only (?plot=only): also auto-draw
+// 1000 samples on load and show only the sampling-distribution panel (MOM, 2026-07-25).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+
+/* REQ-056 — the coursepack's sampling chapters frame the population parameter as
+   UNKNOWN ("we do not have access to the population, but we wish to estimate the
+   population mean"), and the app was contradicting that by printing μ on screen.
+   `?truth=hidden` starts with the parameter suppressed; a Reveal button uncovers
+   it for the predict-then-confront moment. The population SHAPE and all three
+   tiers stay visible throughout — only the readouts that give the number away
+   are withheld. */
+// Query key is `parameter`, not `truth`: conceptual/decision-errors/ already uses
+// ?truth=effect|none for "is Ha true", and one name meaning two things across the
+// URL contract is exactly the drift docs/url-api.md exists to prevent.
+const truthParam = (new URLSearchParams(location.search).get('parameter') || '').toLowerCase();
+/** Was the feature requested at all? Controls whether the button exists. */
+const truthFeature = truthParam !== '';
+/**
+ * Two levels, because a Reveal button means opposite things in the two places
+ * this gets used. Projected in class it IS the predict-then-confront control the
+ * instructor wants. In a student's own reading of ch6 it is a one-click spoiler,
+ * and the chapter's "we do not know μ" framing is straight back where it started.
+ * So `locked` withholds the value with no way to uncover it in-app.
+ */
+const truthLocked = /^(locked|lock)$/.test(truthParam);
+let truthHidden = truthLocked || /^(hidden|off|false|0|no)$/.test(truthParam);
+/** Chart options for the parameter marker — omitted entirely while hidden. */
+const truthMarker = () => (truthHidden
+  ? {}
+  : { observedStat: popMu, observedLabel: lab().param });
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
 
 // Cached chart params for checkbox toggle re-render
 /** @type {[number,number]|undefined} */
@@ -211,6 +249,40 @@ let animating = false;
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ─── Initialize ───
+
+/**
+ * Withhold (or restore) every on-screen route to the true parameter.
+ *
+ * In MEAN mode only μ has to go: σ does not give μ away, and σ/√n is the whole
+ * point of the "from simulation to theory" chapter, so both stay. In PROPORTION
+ * mode p is the parameter AND the shape, so σ = √(p(1−p)) and the theory SE both
+ * leak it, and so does the slider's position — those get withheld too.
+ *
+ * Caveat worth knowing: the proportion population is drawn as a shaded square
+ * split at p, so its *approximate* value stays visible by construction. Hiding
+ * that would mean hiding the population tier, which defeats the demo.
+ */
+function applyTruth() {
+  const cat = isCat();
+  if (popMeanItem) popMeanItem.hidden = truthHidden;
+  // σ and σ/√n only leak the parameter in proportion mode.
+  if (popSdItem) popSdItem.hidden = truthHidden && cat;
+  const theoryItem = seTheoryEl?.closest('.stat-item');
+  if (theoryItem) /** @type {HTMLElement} */ (theoryItem).hidden = truthHidden && cat;
+  // The p slider's position is itself a readout.
+  if (pControl) pControl.hidden = cat ? truthHidden : true;
+  if (truthNote) {
+    truthNote.hidden = !truthHidden;
+    truthNote.textContent = truthLocked
+      ? 'The true population value is not shown — estimate it from the samples.'
+      : 'The true population value is hidden — estimate it from the samples, then reveal it.';
+  }
+  if (truthBtn) {
+    truthBtn.hidden = !truthFeature || truthLocked;
+    truthBtn.textContent = truthHidden ? 'Reveal the true value' : 'Hide the true value';
+    truthBtn.setAttribute('aria-pressed', String(!truthHidden));
+  }
+}
 
 /** A key that identifies the current population (shape, or "cat-<p>"). */
 function popKey() {
@@ -286,9 +358,11 @@ function renderPopulation() {
     popContainer.appendChild(sq);
     popHistResult = null;
     if (popLegend) {
-      popLegend.innerHTML =
-        `<span class="leg-swatch cat-success"></span>success = ${popMu.toFixed(2)}`
-        + `<span class="leg-swatch cat-failure"></span>failure = ${(1 - popMu).toFixed(2)}`;
+      popLegend.innerHTML = truthHidden
+        ? '<span class="leg-swatch cat-success"></span>success'
+          + '<span class="leg-swatch cat-failure"></span>failure'
+        : `<span class="leg-swatch cat-success"></span>success = ${popMu.toFixed(2)}`
+          + `<span class="leg-swatch cat-failure"></span>failure = ${(1 - popMu).toFixed(2)}`;
       popLegend.classList.remove('is-hidden');
     }
     return;
@@ -319,8 +393,7 @@ function renderPopulation() {
     xLabel: lab().valueAxis,
     yLabel: '',
     titleText: 'Population Distribution',
-    observedStat: popMu,
-    observedLabel: lab().param,
+    ...truthMarker(),
     animate: false,
     domain: popDomain,
     viewHeight: 150,        // compact so all three tiers fit one view
@@ -806,8 +879,13 @@ function updateStatsAndRender(prevLength, count) {
   // Update stats
   if (samplingStats) {
     const wasHidden = samplingStats.hidden;
-    samplingStats.hidden = false;
-    if (wasHidden && typeof renderMathInElement === 'function') {
+    // Reasoning / figure-only mode hides the computed SD-of-statistics + theory-SE
+    // readout so the student estimates the spread from the distribution itself.
+    // (.stats-row sets display:flex, which overrides [hidden] — so set the inline
+    // display too, not just the attribute.)
+    samplingStats.hidden = !showReadout;
+    samplingStats.style.display = showReadout ? '' : 'none';
+    if (showReadout && wasHidden && typeof renderMathInElement === 'function') {
       renderMathInElement(samplingStats, {
         delimiters: [{ left: '\\(', right: '\\)', display: false }],
       });
@@ -880,8 +958,7 @@ function renderFrozen() {
     id: 'frozen-dist',
     xLabel: lab().statAxis,
     titleText: '',
-    observedStat: popMu,
-    observedLabel: lab().param,
+    ...truthMarker(),
     animate: false,
     domain: unionSamplingDomain(),
     relativeFrequency: true,
@@ -890,7 +967,9 @@ function renderFrozen() {
     showExport: false,
     ...(isCat() && { thresholds: snappedPropThresholds(frozen.n, unionSamplingDomain(), frozen.means.length) }),
   });
-  if (frozenLabel) frozenLabel.textContent = `n = ${frozen.n}, SD of ${lab().stat} = ${sd(frozen.means).toFixed(3)}`;
+  if (frozenLabel) frozenLabel.textContent = showReadout
+    ? `n = ${frozen.n}, SD of ${lab().stat} = ${sd(frozen.means).toFixed(3)}`
+    : `n = ${frozen.n} — estimate the SD of ${lab().stat} from the spread`;
 }
 
 /** Render the live distribution (relative frequency) on the shared axis. */
@@ -903,8 +982,7 @@ function renderComparisonLive() {
     id: 'sampling-dist',
     xLabel: lab().statAxis,
     titleText: '',
-    observedStat: popMu,
-    observedLabel: lab().param,
+    ...truthMarker(),
     animate: false,
     domain: unionSamplingDomain(),
     relativeFrequency: true,
@@ -916,9 +994,11 @@ function renderComparisonLive() {
     }),
   });
   if (liveLabel) {
-    liveLabel.textContent = sampleMeans.length >= 2
-      ? `n = ${n}, SD of ${lab().stat} = ${sd(sampleMeans).toFixed(3)}`
-      : `n = ${n} — draw samples`;
+    liveLabel.textContent = sampleMeans.length < 2
+      ? `n = ${n} — draw samples`
+      : showReadout
+        ? `n = ${n}, SD of ${lab().stat} = ${sd(sampleMeans).toFixed(3)}`
+        : `n = ${n} — estimate the SD of ${lab().stat} from the spread`;
   }
 }
 
@@ -1063,8 +1143,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
         id: 'sampling-dist',
         xLabel: lab().statAxis,
         titleText: lab().samplingTitle,
-        observedStat: popMu,
-        observedLabel: lab().param,
+        ...truthMarker(),
         animate: false,
         domain,
         color: SUCCESS_AMBER, // p̂ is the proportion of successes
@@ -1077,8 +1156,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
         id: 'sampling-dist',
         xLabel: lab().statAxis,
         titleText: lab().samplingTitle,
-        observedStat: popMu,
-        observedLabel: lab().param,
+        ...truthMarker(),
         animate: false,
         highlightIndex,
         highlightIndices,
@@ -1103,8 +1181,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       id: 'sampling-dist',
       xLabel: lab().statAxis,
       titleText: lab().samplingTitle,
-      observedStat: popMu,
-      observedLabel: lab().param,
+      ...truthMarker(),
       animate: false,
       highlightIndex,
       highlightIndices,
@@ -1120,8 +1197,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       id: 'sampling-dist',
       xLabel: lab().statAxis,
       titleText: lab().samplingTitle,
-      observedStat: popMu,
-      observedLabel: lab().param,
+      ...truthMarker(),
       animate: false,
       prevBinCounts,
       domain,
@@ -1169,7 +1245,9 @@ function displayInterpretation() {
     }
   } else {
     html = `<p><strong>Sampling Distribution</strong> — ${k} samples of size \\(n = ${n}\\)</p>`;
-    html += `<p>Population: \\(\\mu = ${popMu.toFixed(2)}\\), &ensp;\\(\\sigma = ${popSigma.toFixed(2)}\\)</p>`;
+    if (!truthHidden) {
+      html += `<p>Population: \\(\\mu = ${popMu.toFixed(2)}\\), &ensp;\\(\\sigma = ${popSigma.toFixed(2)}\\)</p>`;
+    }
     // Honest framing (REQ-030): lead with spread vs theory, not the mean-of-means.
     html += `<p>SD of \\(\\bar{x}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sigma/\\sqrt{n} = ${theorySE.toFixed(4)}\\))</p>`;
     if (k >= 100) {
@@ -1263,7 +1341,25 @@ function applyModeLabels() {
   if (samplingSubtitle) samplingSubtitle.textContent = cat ? "one dot per sample's p̂" : "one dot per sample's x̄";
   if (shapeControl) shapeControl.hidden = cat;
   if (pControl) pControl.hidden = !cat;
+  applyTruth();   // owns the parameter readouts; must win over the line above
 }
+
+truthBtn?.addEventListener('click', () => {
+  // The button stays in the DOM when the feature is off, so guard on both: a
+  // hidden element still fires its handler if something reaches it.
+  if (!truthFeature || truthLocked) return;
+  truthHidden = !truthHidden;
+  applyTruth();
+  // The parameter marker is baked into the charts, so both tiers must redraw.
+  renderPopulation();
+  if (sampleMeans.length > 0) {
+    renderSamplingDist(-1, undefined, undefined, lastDomain, lastThresholds);
+  }
+  displayInterpretation();
+  announce(truthHidden
+    ? 'True population value hidden.'
+    : `True population value revealed: ${popMu.toFixed(isCat() ? 3 : 2)}.`);
+});
 
 if (showNormalCheckbox) {
   showNormalCheckbox.addEventListener('change', () => {
@@ -1402,4 +1498,10 @@ function initFromUrl() {
   applyModeLabels();
   updateSampleSubtitle();
   initPopulation();
+  // Figure-only embed: auto-draw the sampling distribution once, so the embedded
+  // figure is already built with no click (MOM plot=only).
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    requestAnimationFrame(() => drawSamples(1000));
+  }
 })();

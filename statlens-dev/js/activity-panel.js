@@ -27,6 +27,9 @@
   })();
 
   activityPromise
+    // KaTeX must be in place BEFORE the first render — md() is synchronous, so a
+    // late-arriving KaTeX would leave step 1 showing raw-TeX <code> fallbacks.
+    .then(activity => (activity && usesMath(activity) ? ensureKatex().then(() => activity) : activity))
     .then(activity => {
       if (!activity) return; // fetch failed in page-number.js
       // Params already injected by page-number.js; just trigger dataset load and render UI
@@ -100,7 +103,30 @@
    */
   function md(text) {
     if (!text) return '';
-    return text
+    // Math is extracted FIRST and parked behind placeholders. `_`, `*`, `[` and
+    // `{` are meaningful in BOTH TeX and markdown, so the rules below would
+    // otherwise mangle a formula (e.g. $a * b$ would trip the *italic* rule).
+    const math = [];
+    const ESC = '\u0001';   // parks an escaped \$ so it cannot open a math span
+    const MARK = '\u0000';  // brackets a parked math span
+    const park = (tex, display) => {
+      math.push({ tex: tex, display: display });
+      return MARK + 'M' + (math.length - 1) + MARK;
+    };
+    let src = String(text).split('\\$').join(ESC);
+    // Display math first, so $$…$$ is not eaten by the $…$ rule below. \(…\)
+    // and $$…$$ are the delimiters REQ-031 documented; $…$ is the shorthand.
+    src = src.replace(/\$\$([\s\S]+?)\$\$/g, (m, tex) => park(tex, true));
+    src = src.replace(/\\\[([\s\S]+?)\\\]/g, (m, tex) => park(tex, true));
+    src = src.replace(/\\\(([\s\S]+?)\\\)/g, (m, tex) => park(tex, false));
+    src = src.replace(/\$([^$]+)\$(?!\d)/g, (m, tex) => {
+      // Pandoc's delimiter rule, which is what keeps prose currency out of the
+      // math parser: no space just inside either delimiter, and no digit right
+      // after the closing one. It is why '$100,000-$250,000' stays money.
+      if (/^\s|\s$/.test(tex)) return m;
+      return park(tex, false);
+    });
+    return src
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
       .replace(/`(.+?)`/g, '<code>$1</code>')
@@ -115,7 +141,67 @@
         + '<span>Enlarge</span></button>'
         + '<img class="activity-img" src="$2" alt="$1" loading="lazy" title="Enlarge">'
         + '</span>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      // Math last: swap the parked spans for rendered KaTeX, then un-escape \$.
+      .replace(new RegExp(MARK + 'M(\\d+)' + MARK, 'g'), (m, i) => renderTex(math[+i]))
+      .split(ESC).join('$');
+  }
+
+  /**
+   * Render one inline TeX span. KaTeX is loaded lazily (see ensureKatex) and only
+   * when an activity actually contains math — most tool pages never load it. If it
+   * is unavailable or the TeX is malformed, fall back to the raw source in <code>
+   * rather than dropping the formula on the floor.
+   */
+  function renderTex(span) {
+    const tex = span.tex;
+    const katex = /** @type {any} */ (window).katex;
+    if (katex) {
+      try {
+        return katex.renderToString(tex, {
+          throwOnError: false, strict: false, trust: true, displayMode: !!span.display,
+        });
+      } catch (err) {
+        console.warn('Activity panel: bad TeX', tex, err);
+      }
+    }
+    return '<code>' + String(tex).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</code>';
+  }
+
+  /**
+   * Load KaTeX from the CDN on demand. Activities render on top of ANY tool page,
+   * and only the inference pages ship KaTeX themselves — so the panel cannot
+   * assume it exists. Resolves even on failure; renderTex degrades to <code>.
+   */
+  function ensureKatex() {
+    const w = /** @type {any} */ (window);
+    if (w.katex) return Promise.resolve();
+    if (w.__katexReady) return w.__katexReady;
+    w.__katexReady = new Promise((resolve) => {
+      if (!document.querySelector('link[href*="katex"]')) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = 'https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css';
+        document.head.appendChild(css);
+      }
+      const js = document.createElement('script');
+      js.src = 'https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js';
+      js.onload = () => resolve();
+      js.onerror = () => { console.warn('Activity panel: KaTeX failed to load'); resolve(); };
+      document.head.appendChild(js);
+    });
+    return w.__katexReady;
+  }
+
+  /** True if any string anywhere in the activity uses $…$ math. */
+  function usesMath(activity) {
+    // Must match EVERY delimiter md() understands, not just $…$ — an activity
+    // written entirely in \(…\) would otherwise never load KaTeX and would
+    // silently render as <code> on any page that does not ship KaTeX itself.
+    try {
+      const s = JSON.stringify(activity);
+      return /\$[^$]+\$/.test(s) || /\\\\\(/.test(s) || /\\\\\[/.test(s);
+    } catch { return false; }
   }
 
   /**
@@ -214,7 +300,22 @@
    * @property {string} [hint] - Shown while locked ("Draw at least 100 samples")
    * @property {boolean} [autoAdvance] - Advance automatically once satisfied
    *
-   * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, demo?: {type: string, label?: string, options?: object}}> }} activity
+   * @typedef {object} RespondPrompt
+   * @property {string} id - Stable field id (part of the localStorage key + export)
+   * @property {string} [label] - Shown above the textarea
+   * @property {string} [placeholder]
+   * @property {number} [rows] - Textarea height in rows (1–6, default 2)
+   *
+   * @typedef {object} RespondSpec
+   * @property {RespondPrompt[]} prompts - One labeled textarea per prompt
+   * @property {boolean} [gateOnNonEmpty] - Block "Next" until every field has content
+   *   (REQ-041: forces the predict-before-reveal commit; never a correctness check)
+   * @property {string} [answer] - REQ-044: a short "what to notice / expert reasoning"
+   *   note that appears once every field is filled — self-study calibration for the
+   *   student to check their typed prediction against. NOT grading (free text is
+   *   never scored); the same role MC gate `feedback` plays, tied to a text field.
+   *
+   * @param {{ title: string, steps: Array<{instruction: string, observe?: string, reveal?: string, gate?: GateSpec, requires?: StepRequires, respond?: RespondSpec, phase?: string, demo?: {type: string, label?: string, options?: object}}> }} activity
    */
   function renderPanel(activity) {
     const steps = activity.steps || [];
@@ -226,6 +327,150 @@
     /** @type {Map<number, {chosen: number, passed: boolean}>} */
     const gateState = new Map();
     const present = getMode() === 'present';
+
+    // ─── Free-text response capture (REQ-041) ─────────────────────────────────
+    // A step can declare a `respond` block of labeled textareas. The textbook
+    // keeps the Predict/Explain *prompts* (narrative, print, offline); the typed
+    // *answers* live here, so e-book / rental / library students who can't write
+    // in the book still can. Answers persist to localStorage and export.
+    //
+    // Everything routes through ONE response store (load / save / serialize).
+    // localStorage persistence is the whole v1 story: a student who returns to
+    // the same activity on the same machine sees their typed work. There is no
+    // Download button (REQ-045: Jeff — students weren't going to use it), but
+    // `serializeResponses()` is kept as the Gen-2 seam — a future `postMessage`
+    // emit or POST for AI-eval is just a sink over it, no re-plumbing.
+    const escapeAttr = (/** @type {string} */ s) =>
+      String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const escapeTextarea = (/** @type {string} */ s) =>
+      String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+    const activitySlug = String(activityUrl || 'activity').split('/').pop().replace(/\.json$/, '');
+    const RESP_KEY = `statlens-activity-responses:${activitySlug}`;
+    const activityHasRespond = steps.some(s => s && s.respond && Array.isArray(s.respond.prompts));
+
+    // REQ-046: the pedagogical arc (Predict → Do → Explain) made visible in the
+    // tool, so a student who arrived without reading the textbook box still sees
+    // the frame. Only the load-bearing moves are labeled — the anchor Predict at
+    // the start and Explain at the end; middle "Do" steps stay unbadged so the
+    // badges keep their meaning (name the moves, not the plumbing).
+    const PHASES = { predict: 'Predict', do: 'Do', explain: 'Explain' };
+    const phaseOf = (/** @type {any} */ s) => (s && PHASES[s.phase] ? s.phase : null);
+    const activityHasPhase = steps.some(s => phaseOf(s));
+
+    /** @type {Record<string, Record<string, string>>} step-index → field-id → text */
+    const responses = (() => {
+      try { return JSON.parse(localStorage.getItem(RESP_KEY) || '{}') || {}; }
+      catch { return {}; }
+    })();
+    function saveResponses() {
+      try { localStorage.setItem(RESP_KEY, JSON.stringify(responses)); }
+      catch { /* quota / private mode: the in-memory copy still works this session */ }
+    }
+    function respVal(/** @type {number} */ stepIdx, /** @type {string} */ fieldId) {
+      return (responses[stepIdx] && responses[stepIdx][fieldId]) || '';
+    }
+    /** Every prompt on a `respond` step has non-blank content. */
+    function respondComplete(/** @type {number} */ stepIdx) {
+      const r = steps[stepIdx] && steps[stepIdx].respond;
+      if (!r || !Array.isArray(r.prompts)) return true;
+      return r.prompts.every(p => respVal(stepIdx, p.id).trim().length > 0);
+    }
+    /**
+     * Structured snapshot of every typed response — the Gen-2 seam (REQ-041 Q3 /
+     * REQ-045). No sink surfaces it in v1; a future postMessage/POST for AI-eval
+     * reads this. Exposed on the panel root so a host page can pull it if wired.
+     */
+    function serializeResponses() {
+      const out = [];
+      steps.forEach((s, i) => {
+        if (!s.respond || !Array.isArray(s.respond.prompts)) return;
+        out.push({
+          step: i + 1,
+          instruction: typeof s.instruction === 'string' ? s.instruction : '',
+          fields: s.respond.prompts.map(p => ({
+            id: p.id, label: p.label || p.id, response: respVal(i, p.id),
+          })),
+        });
+      });
+      return { activity: activitySlug, title: activity.title || activitySlug, steps: out };
+    }
+
+    /**
+     * Free-text response fields for a step. Values come from the persisted store
+     * so they survive re-render, reload, and tab close. The <textarea> is wrapped
+     * in its <label> (implicit association) so the panel and the mobile sheet —
+     * which render identical markup — don't collide on duplicate `id`s.
+     * @param {number} stepIdx
+     * @param {RespondSpec} respond
+     */
+    function respondHtml(stepIdx, respond) {
+      if (!respond || !Array.isArray(respond.prompts)) return '';
+      const fields = respond.prompts.map(p => {
+        const rows = Math.max(1, Math.min(6, Number(p.rows) || 2));
+        const ph = p.placeholder ? ` placeholder="${escapeAttr(p.placeholder)}"` : '';
+        return `<label class="activity-respond-field">
+          <span class="activity-respond-label">${md(p.label || p.id)}</span>
+          <textarea class="activity-respond-input" rows="${rows}"
+            data-respond-step="${stepIdx}" data-respond-field="${escapeAttr(p.id)}"${ph}>${escapeTextarea(respVal(stepIdx, p.id))}</textarea>
+        </label>`;
+      }).join('');
+      // REQ-044: optional "what to notice" note, revealed once every field is
+      // filled (never in presentation mode). Rendered hidden and toggled live by
+      // updateNextEnabled so it appears without a full re-render (which would
+      // blur the textarea the student just finished typing in).
+      const answer = respond.answer && !present
+        ? `<div class="activity-respond-answer" role="note"${respondComplete(stepIdx) ? '' : ' hidden'}>
+             <span class="activity-respond-answer-label">Compare your prediction:</span> ${md(interp(respond.answer))}
+           </div>`
+        : '';
+      return `<div class="activity-respond" role="group" aria-label="Write your response">${fields}${answer}</div>`;
+    }
+
+    /** Persist one field on input WITHOUT a re-render (which would blur the box). */
+    function onRespondInput(/** @type {HTMLTextAreaElement} */ ta) {
+      const stepIdx = ta.dataset.respondStep;
+      const fieldId = ta.dataset.respondField;
+      if (stepIdx == null || fieldId == null) return;
+      const val = ta.value;
+      if (!responses[stepIdx]) responses[stepIdx] = {};
+      responses[stepIdx][fieldId] = val;
+      saveResponses();
+      // Mirror into the twin textarea in the other root (panel <-> sheet).
+      document.querySelectorAll('.activity-respond-input').forEach(el => {
+        const other = /** @type {HTMLTextAreaElement} */ (el);
+        if (other !== ta && other.dataset.respondStep === stepIdx
+            && other.dataset.respondField === fieldId && other.value !== val) {
+          other.value = val;
+        }
+      });
+      updateNextEnabled();
+    }
+
+    /** Re-evaluate the Next button without a full re-render (keeps textarea focus). */
+    function updateNextEnabled() {
+      const step = steps[currentStep];
+      const isLast = currentStep === steps.length - 1;
+      const gateB = !present && step.gate && !gateState.get(currentStep)?.passed;
+      const requiresB = !present && step.requires && !requiresMet(step);
+      const respondB = !present && step.respond && step.respond.gateOnNonEmpty && !respondComplete(currentStep);
+      const disabled = isLast || gateB || requiresB || respondB;
+      for (const root of [panel, sheet]) {
+        const nb = /** @type {HTMLButtonElement|null} */ (root.querySelector('.activity-next'));
+        if (!nb) continue;
+        nb.disabled = !!disabled;
+        // Keep aria-disabled in sync with the property — the initial render sets
+        // it when a gate blocks, and a stale "true" would report the enabled
+        // button as disabled to assistive tech (and to Playwright's toBeEnabled).
+        if (disabled) nb.setAttribute('aria-disabled', 'true');
+        else nb.removeAttribute('aria-disabled');
+        if (respondB) nb.setAttribute('title', 'Fill in every field above to continue');
+        else nb.removeAttribute('title');
+        // REQ-044: reveal the "what to notice" note once every field is filled.
+        const ans = root.querySelector('.activity-respond-answer');
+        if (ans) ans.toggleAttribute('hidden', !respondComplete(currentStep));
+      }
+    }
 
     // ─── Live tool state (REQ-034: action-gates + result-aware feedback) ──────
     // Tools dispatch `statlens:state` CustomEvents carrying a flat `state` bag of
@@ -283,10 +528,46 @@
     // `statlens:state` should answer `statlens:request-state` with a fresh emit.
     try { window.dispatchEvent(new CustomEvent('statlens:request-state')); } catch { /* no CustomEvent */ }
 
-    // Mark body so CSS can adjust layout
+    // Mark body so CSS can adjust layout. The data panel is hidden via
+    // body[data-activity]; that is all activity mode hides by default.
     document.body.setAttribute('data-activity', 'true');
-    // Also hide data panel and controls row
-    document.body.setAttribute('data-guided', 'true');
+    // Activities that ask the student to load their own dataset (no dataset in
+    // params) must keep the data panel visible — otherwise its variable
+    // selectors never populate and the student is stuck. Opt in per activity
+    // with "chooseData": true (CSS un-hides #data-panel for these).
+    if (activity.chooseData) {
+      document.body.setAttribute('data-activity-choosedata', 'true');
+    }
+    // NOTE: activities deliberately do NOT set data-guided. That flag hides the
+    // .control-row (stat / confidence-level / tail dropdowns) and belongs to the
+    // textbook *embed* path (?embed=true&guided=true, wired in page-number.js),
+    // where parameters are pre-set and the student shouldn't touch them. An
+    // activity is the opposite: its steps walk the student *through* those
+    // controls, so hiding them makes an instruction like "change the confidence
+    // level to 90%" impossible to follow (this broke ci-level.json). Activities
+    // that want a stripped-down surface opt into chrome:minimal below, which now
+    // also hides the control row.
+    // Opt-in "minimal chrome": an activity can strip the host tool's advanced
+    // controls (hypotheses, success selector, Copy link, More options, seed, and
+    // the stat/CI control row) down to just the mechanism + chart + generate bar
+    // — for gentle conceptual intros where that machinery is clutter. CSS keys
+    // off body[data-chrome="minimal"].
+    if (activity.chrome === 'minimal') {
+      document.body.setAttribute('data-chrome', 'minimal');
+    }
+
+    // Optional friendlier page heading (the host tool's h1 can be clunky for an
+    // intro, e.g. "Randomization Test for Difference in Proportions"). Replace the
+    // leading heading text while keeping the header-actions (home/help/settings).
+    if (activity.heading) {
+      const h1 = document.querySelector('main > h1');
+      if (h1) {
+        const actions = h1.querySelector('.header-actions');
+        h1.textContent = activity.heading;
+        if (actions) h1.appendChild(actions);
+        document.title = `${activity.heading} | StatLens`;
+      }
+    }
 
     // ─── Desktop side panel ──────────────────────────────────────
     const panel = document.createElement('aside');
@@ -337,7 +618,13 @@
             cls += ' incorrect';
           }
         }
-        return `<button type="button" class="${cls}" data-choice="${i}" ${disabled}>${md(interp(c.text))}</button>`;
+        // Wrap the label in a span so it is ONE flex child of the flex button.
+        // Without this, KaTeX's inline-block `.katex` becomes its own flex item,
+        // getting the button's `gap` on both sides and vertical centering — inline
+        // math floats into its own column (REQ-047). Inside the span it flows as
+        // normal text. The span takes the row (flex:1), leaving the ✓/✗/● ::after
+        // marker at the far end.
+        return `<button type="button" class="${cls}" data-choice="${i}" ${disabled}><span class="gate-choice-text">${md(interp(c.text))}</span></button>`;
       }).join('');
 
       let feedback = '';
@@ -387,18 +674,31 @@
       const isRevealed = revealed.has(currentStep);
       const gateBlocks = !present && step.gate && !gateState.get(currentStep)?.passed;
       const requiresBlocks = !present && step.requires && !requiresMet(step);
+      const respondBlocks = !present && step.respond && step.respond.gateOnNonEmpty && !respondComplete(currentStep);
 
+      const curPhase = phaseOf(step);
       const html = `
         <div class="activity-header">
           <span class="activity-title">${md(activity.title)}</span>
           <span class="activity-step-count">Step ${currentStep + 1} of ${steps.length}</span>
           <button type="button" class="activity-end-btn" aria-label="End activity and keep the tool open" title="End activity">✕</button>
         </div>
+        ${activityHasPhase ? `<ol class="activity-progress" aria-label="Predict, Do, Explain progress">
+          ${steps.map((s, i) => {
+            const ph = phaseOf(s) || 'none';
+            const state = i < currentStep ? 'past' : i === currentStep ? 'current' : 'future';
+            const lbl = ph !== 'none' ? `<span class="pstep-label">${PHASES[s.phase]}</span>` : '';
+            const aria = `Step ${i + 1}${ph !== 'none' ? ', ' + PHASES[s.phase] : ''}${i === currentStep ? ' (current)' : i < currentStep ? ' (done)' : ''}`;
+            return `<li class="pstep phase-${ph} ${state}" aria-label="${aria}"${i === currentStep ? ' aria-current="step"' : ''}><span class="pdot"></span>${lbl}</li>`;
+          }).join('')}
+        </ol>` : ''}
         <div class="activity-body">
+          ${curPhase ? `<div class="activity-phase-badge phase-${curPhase}">${PHASES[step.phase]}</div>` : ''}
           <div class="activity-instruction">${md(interp(step.instruction))}</div>
           ${step.demo && DEMOS[step.demo.type] ? `<button type="button" class="activity-demo-btn">▶ ${md(step.demo.label || 'Watch a demonstration')}</button>` : ''}
           ${step.observe ? `<div class="activity-observe"><span class="activity-observe-label">Look for:</span> ${md(interp(step.observe))}</div>` : ''}
           ${step.gate ? gateHtml(step.gate) : ''}
+          ${step.respond ? respondHtml(currentStep, step.respond) : ''}
           ${requiresBlocks && step.requires.hint ? `<div class="activity-requires" role="status">${md(interp(step.requires.hint))}</div>` : ''}
           ${step.reveal ? `
             <div class="activity-reveal-section">
@@ -409,8 +709,8 @@
         </div>
         <div class="activity-nav">
           <button type="button" class="activity-prev" ${isFirst ? 'disabled' : ''}>← Back</button>
-          <button type="button" class="activity-next" ${isLast || gateBlocks || requiresBlocks ? 'disabled' : ''}
-            ${gateBlocks ? 'title="Answer the question above to continue" aria-disabled="true"' : requiresBlocks ? 'title="Do the action above to continue" aria-disabled="true"' : ''}>Next →</button>
+          <button type="button" class="activity-next" ${isLast || gateBlocks || requiresBlocks || respondBlocks ? 'disabled' : ''}
+            ${gateBlocks ? 'title="Answer the question above to continue" aria-disabled="true"' : requiresBlocks ? 'title="Do the action above to continue" aria-disabled="true"' : respondBlocks ? 'title="Fill in every field above to continue" aria-disabled="true"' : ''}>Next →</button>
         </div>
       `;
 
@@ -420,16 +720,10 @@
         + `${html}<button type="button" class="activity-sheet-close" aria-label="Hide instructions">✕</button>`;
       fab.textContent = `${currentStep + 1}/${steps.length}`;
 
-      // Typeset any LaTeX in the freshly-injected step text (REQ-031). KaTeX
-      // auto-render only fires once at load, so panel content added later needs
-      // an explicit pass. Guarded — not every tool page loads KaTeX.
-      if (typeof window !== 'undefined' && typeof window.renderMathInElement === 'function') {
-        const opts = { delimiters: [
-          { left: '\\(', right: '\\)', display: false },
-          { left: '$$', right: '$$', display: true },
-        ], throwOnError: false };
-        try { window.renderMathInElement(panel, opts); window.renderMathInElement(sheet, opts); } catch { /* ignore */ }
-      }
+      // No KaTeX pass needed here: md() renders every math span to HTML before
+      // this point (REQ-031 originally relied on KaTeX auto-render, but that only
+      // ever existed on conceptual/sampling-lab, so panel math silently never
+      // typeset anywhere else — which is why activities were authored in ASCII).
 
       // Wire events — identical controls exist in panel and sheet
       for (const root of [panel, sheet]) {
@@ -449,6 +743,11 @@
           btn.addEventListener('click', () => {
             commitGate(parseInt(/** @type {HTMLElement} */ (btn).dataset.choice || '0', 10));
           });
+        }
+        // REQ-041 free-text fields: persist + sync on input, but never re-render
+        // here (that would blur the box mid-keystroke — see onRespondInput).
+        for (const ta of root.querySelectorAll('.activity-respond-input')) {
+          ta.addEventListener('input', () => onRespondInput(/** @type {HTMLTextAreaElement} */ (ta)));
         }
         // Embedded images open full-screen in a lightbox (the panel is too narrow
         // to read a figure like a comic comfortably). A click anywhere in the
@@ -532,6 +831,16 @@
     // Tapping the dimmed area collapses to peek (keeps the step visible) rather
     // than hiding entirely — students rarely want to lose their place.
     sheetBackdrop.addEventListener('click', () => peekSheet());
+
+    // No beforeunload guard: localStorage persists every keystroke, so there is
+    // no un-saved work to warn about (and there is no Download to nag toward).
+
+    // Expose the structured responses on the panel node — the Gen-2 seam a host
+    // page / AI-eval pipeline can read without StatLens surfacing any UI (REQ-045).
+    if (activityHasRespond) {
+      // @ts-ignore — attach a reader for host integrations
+      panel.getResponses = serializeResponses;
+    }
 
     // Insert into DOM
     document.body.appendChild(panel);

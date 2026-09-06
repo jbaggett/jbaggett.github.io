@@ -10,11 +10,10 @@ import { twoPropZ } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
-import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex } from '../../js/tex.js';
 
 // jStat's ESM build exposes the object as the default export; the bare namespace
 // has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.
@@ -32,10 +31,8 @@ const inputN2 = /** @type {HTMLInputElement} */ (document.getElementById('input-
 const inputAlt = initHypToggle('input-alternative', () => {
   if (resultsPanel.querySelector('.results-table')) compute();
 });
-const inputConfLevel = /** @type {HTMLInputElement} */ (document.getElementById('input-conf-level'));
 const computeBtn = /** @type {HTMLButtonElement} */ (document.getElementById('compute-btn'));
 const conditionsCheckpoint = /** @type {HTMLElement} */ (document.getElementById('conditions-checkpoint'));
-const resultBanner = /** @type {HTMLElement} */ (document.getElementById('result-summary'));
 const resultsPanel = /** @type {HTMLElement} */ (document.getElementById('results-panel'));
 const chartContainer = /** @type {HTMLElement} */ (document.getElementById('chart-container'));
 const dataPreview = document.getElementById('data-preview');
@@ -45,6 +42,8 @@ const outcomeVarSelect = /** @type {HTMLSelectElement|null} */ (document.getElem
 const variableSelectors = document.getElementById('variable-selectors');
 const successSelector = document.getElementById('success-selector');
 const successOutcome = /** @type {HTMLSelectElement|null} */ (document.getElementById('success-outcome'));
+const groupOrderEl = document.getElementById('group-order');
+const swapGroupsBtn = document.getElementById('swap-groups');
 const loadSummaryBtn = document.getElementById('load-summary');
 const inputP0 = /** @type {HTMLInputElement} */ (document.getElementById('input-p0'));
 const nullDisplay = document.getElementById('null-display');
@@ -58,7 +57,7 @@ inputP0.addEventListener('input', () => {
   if (resultsPanel.querySelector('.results-table')) compute();
 });
 
-initTabs({ hintTarget: resultsPanel, hintAction: 'click Compute' });
+initTabs({ hintTarget: resultsPanel, hintAction: 'see results' });
 initKeyboardShortcuts();
 
 // ── State ───────────────────────────────────────────────────────────
@@ -86,6 +85,8 @@ let currentX2 = 0;
 let currentN2 = 0;
 /** Whether data was loaded from a dataset/paste/file (vs. summary) */
 let fromRawData = false;
+/** Whether the two groups have been swapped (Group 1 ↔ Group 2) — persists across recomputes. */
+let groupsSwapped = false;
 
 /** @type {import('../../js/conclusions.js').ConclusionContext|null} */
 let currentContext = null;
@@ -149,9 +150,11 @@ const dataPanel = initDataPanel({
     if (dataPreview) dataPreview.hidden = true;
     if (variableSelectors) variableSelectors.hidden = true;
     if (successSelector) successSelector.hidden = true;
+    if (groupLegendEl) { groupLegendEl.hidden = true; groupLegendEl.innerHTML = ''; }
+    groupsSwapped = false;
+    if (groupOrderEl) groupOrderEl.hidden = true;
     chartContainer.innerHTML = '';
-    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;
-    resultBanner.innerHTML = '';
+    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
     announce('Data cleared.');
   },
 });
@@ -163,6 +166,7 @@ const dataPanel = initDataPanel({
  */
 function setupVariableSelectors(varNames, sourceName) {
   if (!groupVarSelect || !outcomeVarSelect || !variableSelectors) return;
+  groupsSwapped = false;  // fresh data starts in natural order
 
   groupVarSelect.innerHTML = '';
   outcomeVarSelect.innerHTML = '';
@@ -183,7 +187,7 @@ function setupVariableSelectors(varNames, sourceName) {
   outcomeVarSelect.value = outcomeVar;
   variableSelectors.hidden = false;
 
-  groupVarSelect.onchange = () => { groupVar = groupVarSelect.value; showSuccessSelector(sourceName); };
+  groupVarSelect.onchange = () => { groupVar = groupVarSelect.value; groupsSwapped = false; showSuccessSelector(sourceName); };
   outcomeVarSelect.onchange = () => { outcomeVar = outcomeVarSelect.value; showSuccessSelector(sourceName); };
 
   showSuccessSelector(sourceName);
@@ -204,10 +208,20 @@ function showSuccessSelector(sourceName) {
     successOutcome.appendChild(opt);
   }
   successSelector.hidden = false;
-  successValue = outcomes[0];
+  // Prefer the dataset's defined success label; fall back to the first outcome.
+  successValue = (currentContext?.successLabel && outcomes.includes(currentContext.successLabel))
+    ? currentContext.successLabel : outcomes[0];
+  // ?success= URL param pins the success level (highest priority) so a graded
+  // embed stays fixed regardless of context/default changes.
+  const urlSuccess = new URLSearchParams(location.search).get('success');
+  if (urlSuccess && outcomes.includes(urlSuccess)) successValue = urlSuccess;
+  successOutcome.value = successValue;
 
-  countFromData(sourceName);
-  successOutcome.onchange = () => { successValue = successOutcome.value; countFromData(sourceName); };
+  if (countFromData(sourceName)) compute(); // auto-compute — dataset defines success
+  successOutcome.onchange = () => {
+    successValue = successOutcome.value;
+    if (countFromData(sourceName)) compute();
+  };
 }
 
 /**
@@ -218,11 +232,14 @@ function countFromData(sourceName) {
   const groups = [...new Set(rawRows.map(r => r[groupVar]))];
   if (groups.length < 2) {
     announce('The grouping variable needs at least 2 groups.');
-    return;
+    return false;
   }
 
-  label1 = groups[0];
-  label2 = groups[1];
+  // Group order (which level is Group 1 = p̂₁) respects the swap toggle so it
+  // persists across recomputes. The student can flip it to control the sign of
+  // the difference (some prefer to label so p̂₁ − p̂₂ comes out positive).
+  label1 = groupsSwapped ? groups[1] : groups[0];
+  label2 = groupsSwapped ? groups[0] : groups[1];
   const g1Rows = rawRows.filter(r => r[groupVar] === label1);
   const g2Rows = rawRows.filter(r => r[groupVar] === label2);
   currentN1 = g1Rows.length;
@@ -238,6 +255,53 @@ function countFromData(sourceName) {
       `${sourceName}: ${label1} ${currentX1}/${currentN1} (p\u0302=${p1}), ${label2} ${currentX2}/${currentN2} (p\u0302=${p2}). Success = "${successValue}"`;
   }
   announce(`${label1}: ${currentX1}/${currentN1}, ${label2}: ${currentX2}/${currentN2}.`);
+  renderGroupLegend();
+  if (groupOrderEl) groupOrderEl.hidden = false;
+  return true;
+}
+
+// Swap Group 1 ↔ Group 2 so the sign of the difference flips. The whole display
+// re-renders from the swapped state, so every "Group 1 − Group 2" reference, the
+// CI, and the interpretation update accordingly.
+if (swapGroupsBtn) {
+  swapGroupsBtn.addEventListener('click', () => {
+    if (fromRawData) {
+      groupsSwapped = !groupsSwapped;
+      if (countFromData(dataPanel.currentSourceName || 'data')) compute();
+    } else {
+      // Summary mode: swap the entered values; the input listeners recompute.
+      [inputX1.value, inputX2.value] = [inputX2.value, inputX1.value];
+      [inputN1.value, inputN2.value] = [inputN2.value, inputN1.value];
+      [inputLabel1.value, inputLabel2.value] = [inputLabel2.value, inputLabel1.value];
+      if (applySummaryInputs()) compute();
+    }
+    announce(`Swapped groups: now ${label1} − ${label2}.`);
+  });
+}
+
+const groupLegendEl = document.getElementById('group-legend');
+
+/**
+ * Render the "which group is p̂₁ vs p̂₂" legend into the top container (next to the
+ * hypotheses), so students can decide the alternative direction without scrolling
+ * to the results. Shown only when the groups have real names (raw data); in
+ * summary mode the input fields are already labelled Group 1 / Group 2.
+ */
+function renderGroupLegend() {
+  if (!groupLegendEl) return;
+  const named = label1 !== 'Group 1' || label2 !== 'Group 2';
+  if (!named || currentN1 <= 0 || currentN2 <= 0) {
+    groupLegendEl.hidden = true;
+    groupLegendEl.innerHTML = '';
+    return;
+  }
+  const p1 = formatStat(currentX1 / currentN1, 0, 'proportion');
+  const p2 = formatStat(currentX2 / currentN2, 0, 'proportion');
+  groupLegendEl.innerHTML = `
+    <span><strong>Group 1</strong> = ${escapeHTML(label1)} &nbsp;(p̂₁ = ${currentX1}/${currentN1} = ${p1})</span>
+    <span><strong>Group 2</strong> = ${escapeHTML(label2)} &nbsp;(p̂₂ = ${currentX2}/${currentN2} = ${p2})</span>
+    <span class="legend-diff">Hypotheses &amp; CI are about <strong>p₁ − p₂</strong></span>`;
+  groupLegendEl.hidden = false;
 }
 
 // ── Summary input ───────────────────────────────────────────────────
@@ -275,6 +339,8 @@ function applySummaryInputs(quiet) {
     dataSummary.textContent =
       `Summary: ${label1} ${currentX1}/${currentN1}, ${label2} ${currentX2}/${currentN2}`;
   }
+  renderGroupLegend();
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
 }
 
@@ -298,12 +364,34 @@ for (const el of [inputX1, inputN1, inputX2, inputN2, inputLabel1, inputLabel2])
 }
 
 // ── Event listeners ─────────────────────────────────────────────────
-computeBtn.addEventListener('click', compute);
+// No Compute button — every input recomputes live. Confidence level recomputes on
+// change (blur / Enter / spinner); the null value, alternative, success outcome, and
+// summary fields already recompute on change/typing.
+computeBtn?.addEventListener('click', compute);
 
-for (const el of [inputConfLevel]) {
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); compute(); }
-  });
+// Confidence level is chosen from a dropdown inlined into the CI heading (rebuilt
+// on each compute). Keep it in state and listen via delegation on the persistent
+// results container so the handler survives the rebuild; restore keyboard focus.
+let confLevelState = 0.95;
+let confFocusPending = false;
+resultsPanel.addEventListener('change', (e) => {
+  const t = /** @type {HTMLElement} */ (e.target);
+  if (t && t.id === 'conf-level') {
+    confLevelState = Number(/** @type {HTMLSelectElement} */ (t).value);
+    if (resultsPanel.querySelector('.results-table')) { confFocusPending = true; compute(); }
+  }
+});
+
+/** Build the inline confidence-level dropdown that lives in the CI heading. */
+function confSelectHTML(confLevel) {
+  const levels = [0.90, 0.95, 0.99];
+  if (!levels.some(l => Math.abs(l - confLevel) < 1e-9)) levels.push(confLevel);
+  levels.sort((a, b) => a - b);
+  const opts = levels.map(l => {
+    const pct = +(l * 100).toFixed(1);
+    return `<option value="${l}"${Math.abs(l - confLevel) < 1e-9 ? ' selected' : ''}>${pct}%</option>`;
+  }).join('');
+  return `<select id="conf-level" class="ci-conf-select" aria-label="Confidence level">${opts}</select>`;
 }
 
 // Note: alternative change handler is wired via initHypToggle callback above
@@ -320,7 +408,7 @@ function compute() {
   }
 
   const alternative = /** @type {'less'|'greater'|'two-sided'} */ (inputAlt.getValue());
-  const confLevel = Number(inputConfLevel.value);
+  const confLevel = confLevelState;
 
   if (!Number.isFinite(confLevel) || confLevel <= 0 || confLevel >= 1) {
     announce('Confidence level must be between 0 and 1 (exclusive).');
@@ -341,11 +429,10 @@ function compute() {
       `n\u2082p\u0302\u2082 = ${formatStat(currentN2 * pHat2, 0, 'stat')}`,
       `n\u2082(1\u2212p\u0302\u2082) = ${formatStat(currentN2 * (1 - pHat2), 0, 'stat')}`,
     ].join(', ');
-    conditionsCheckpoint.innerHTML = `
-      <p><strong>Before interpreting:</strong> Have you checked the conditions for the two-proportion z-test?
-      Verify each group has \u2265 5 successes and \u2265 5 failures: ${counts}.</p>
-      <p>Alternative: <a href="${randLink}">Randomization Test</a> (no conditions required).</p>`;
-    conditionsCheckpoint.hidden = false;
+    renderConditionsCheckpoint(conditionsCheckpoint, {
+      altLabel: 'Randomization Test', altHref: randLink,
+      detailsHTML: `<p>For the two-proportion z-test, each group needs at least 5 successes and 5 failures: ${counts}.</p>`,
+    });
   }
 
   // ── Run test ──
@@ -401,16 +488,22 @@ function displayResults(r, lbl1, lbl2) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // C3: wrap a symbol (symbolic line) so it links to the same source as its plugged-in value.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
   const testFormula = tex(`\\begin{aligned}
-    z &= \\frac{\\hat{p}_1 - \\hat{p}_2}{\\sqrt{\\hat{p}(1-\\hat{p})\\left(\\frac{1}{n_1} + \\frac{1}{n_2}\\right)}} \\\\[10pt]
-    &= \\frac{${V}{${formatStat(r.pHat1, 0, 'proportion')}} - ${V}{${formatStat(r.pHat2, 0, 'proportion')}}}{${V}{${formatStat(r.sePooled, 0, 'proportion')}}} \\\\[10pt]
+    z &= \\frac{${fxs('phat1', '\\hat{p}_1')} - ${fxs('phat2', '\\hat{p}_2')}}{\\sqrt{${fxs('phatpool', '\\hat{p}')}(1-${fxs('phatpool', '\\hat{p}')})\\left(\\frac{1}{${fxs('n1', 'n_1')}} + \\frac{1}{${fxs('n2', 'n_2')}}\\right)}} \\\\[10pt]
+    &= \\frac{${fx('phat1', formatStat(r.pHat1, 0, 'proportion'))} - ${fx('phat2', formatStat(r.pHat2, 0, 'proportion'))}}{\\sqrt{${fx('phatpool', formatStat(r.pooledP, 0, 'proportion'))}(1-${fx('phatpool', formatStat(r.pooledP, 0, 'proportion'))})\\left(\\frac{1}{${fx('n1', r.n1)}} + \\frac{1}{${fx('n2', r.n2)}}\\right)}} \\\\[10pt]
     &= ${S}{${formatStat(r.zStat, 0, 'correlation')}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &(\\hat{p}_1 - \\hat{p}_2) \\pm z^* \\cdot SE \\\\[8pt]
-    &${V}{${formatStat(r.diff, 0, 'proportion')}} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
+    &(${fxs('phat1', '\\hat{p}_1')} - ${fxs('phat2', '\\hat{p}_2')}) \\pm z^* \\cdot SE \\\\[8pt]
+    &(${fx('phat1', formatStat(r.pHat1, 0, 'proportion'))} - ${fx('phat2', formatStat(r.pHat2, 0, 'proportion'))}) \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
 
@@ -418,24 +511,24 @@ function displayResults(r, lbl1, lbl2) {
     <h3>Sample Summary</h3>
     <table class="results-table" aria-label="Sample summary">
       <thead>
-        <tr><th></th><th scope="col">${escapeHTML(lbl1)}</th><th scope="col">${escapeHTML(lbl2)}</th></tr>
+        <tr><th></th><th scope="col">1 &middot; ${escapeHTML(lbl1)}</th><th scope="col">2 &middot; ${escapeHTML(lbl2)}</th></tr>
       </thead>
       <tbody>
         <tr><th scope="row">Successes</th><td>${Math.round(r.pHat1 * r.n1)}</td><td>${Math.round(r.pHat2 * r.n2)}</td></tr>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n1}</td><td>${r.n2}</td></tr>
-        <tr><th scope="row">${tex('\\hat{p}')}</th><td>${formatStat(r.pHat1, 0, 'proportion')}</td><td>${formatStat(r.pHat2, 0, 'proportion')}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n1">${r.n1}</td><td data-fx="n2">${r.n2}</td></tr>
+        <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat1">${formatStat(r.pHat1, 0, 'proportion')}</td><td data-fx="phat2">${formatStat(r.pHat2, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
 
     <div class="formula-display">
       <h3>Test Statistic</h3>
       ${testFormula}
-      <p class="formula-detail">${tex(`\\text{Pooled } \\hat{p} = ${V}{${formatStat(r.pooledP, 0, 'proportion')}}`)}</p>
+      <p class="formula-detail"><span class="fx-src" data-fx="phatpool">${tex(`\\text{Pooled } \\hat{p} = ${V}{${formatStat(r.pooledP, 0, 'proportion')}}`)}</span></p>
       <p class="formula-detail">${tex(`\\text{p-value} = ${P}{${formatStat(r.pValue, 0, 'pvalue')}}`)}</p>
     </div>
 
     <div class="formula-display formula-ci">
-      <h3>${confPct}% CI for ${tex('p_1 - p_2')}</h3>
+      <h3>${confSelectHTML(r.confLevel)} CI for ${tex('p_1 - p_2')}</h3>
       ${ciFormula}
     </div>
 
@@ -455,10 +548,22 @@ function displayResults(r, lbl1, lbl2) {
       })()}
       <p>${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')}).</p>
     </div>
+    ${(() => {
+      const dsId = dataPanel.currentDatasetId;
+      return dsId
+        ? `<p class="hint">Explore this data: <a href="${buildSimLink('explore/categorical/', { dataset: dsId })}" target="_blank" rel="noopener">open in the explorer ↗</a></p>`
+        : '';
+    })()}
   `;
 
-  resultBanner.innerHTML =
-    `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
+  // C3: link formula values (p̂₁, p̂₂, n₁, n₂, pooled p̂) to their sources in the summary.
+  linkFormula(document.querySelector('main') || resultsPanel);
+
+  // Keyboard users stay on the inline confidence dropdown after it rebuilds.
+  if (confFocusPending) {
+    /** @type {HTMLElement|null} */ (resultsPanel.querySelector('#conf-level'))?.focus();
+    confFocusPending = false;
+  }
 }
 
 // ── Chart ───────────────────────────────────────────────────────────
@@ -508,7 +613,7 @@ function drawChart(r) {
 
   if (chart && isFinite(r.zStat)) {
     addInferenceAnnotations(chart, {
-      statValue: Math.abs(r.zStat),
+      statValue: tail === 'both' ? Math.abs(r.zStat) : r.zStat, // signed for one-sided so the line aligns with the shaded tail
       statLabel: 'z',
       pValue: r.pValue,
       pdfFn,

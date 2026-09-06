@@ -98,6 +98,33 @@ export function sampleWithReplacement(arr, n, rng) {
 }
 
 /**
+ * Draw a multinomial sample: n independent categorical draws over categories
+ * with the given probabilities, returned as a count vector (length = probs.length,
+ * summing to n). Deterministic for a given seeded rng — critical for graded
+ * goodness-of-fit simulations.
+ * @param {number} n - number of draws (non-negative integer)
+ * @param {number[]} probs - category probabilities (should sum to ~1)
+ * @param {() => number} rng - PRNG function
+ * @returns {number[]} counts per category
+ */
+export function sampleMultinomial(n, probs, rng) {
+    if (n < 0) throw new RangeError('n must be non-negative');
+    const k = probs.length;
+    const counts = new Array(k).fill(0);
+    for (let d = 0; d < n; d++) {
+        const u = rng();
+        let cum = 0;
+        let idx = k - 1; // fallback to last bucket (guards tiny float shortfall)
+        for (let i = 0; i < k; i++) {
+            cum += probs[i];
+            if (u < cum) { idx = i; break; }
+        }
+        counts[idx]++;
+    }
+    return counts;
+}
+
+/**
  * Random integer in [lo, hi] (inclusive both ends).
  * @param {number} lo - Lower bound (integer)
  * @param {number} hi - Upper bound (integer)

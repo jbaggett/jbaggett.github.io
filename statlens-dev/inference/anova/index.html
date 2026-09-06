@@ -235,6 +235,19 @@
             </div>
         </section>
 
+        <section id="posthoc-section" aria-label="Post-hoc pairwise comparisons" hidden>
+            <div class="posthoc-head">
+                <h2>Which groups differ? <span class="posthoc-sub">Post-hoc pairwise comparisons</span></h2>
+                <span class="seg-control" id="posthoc-method" role="group" aria-label="Adjustment method">
+                    <button type="button" data-method="tukey" aria-pressed="true">Tukey HSD</button>
+                    <button type="button" data-method="bonferroni" aria-pressed="false">Bonferroni</button>
+                </span>
+            </div>
+            <p id="posthoc-note" class="posthoc-note"></p>
+            <div id="posthoc-plot"></div>
+            <div id="posthoc-table"></div>
+        </section>
+
         <div id="sr-announce" role="status" aria-live="polite"
              aria-atomic="true" class="sr-only"></div>
     </main>
@@ -246,6 +259,10 @@
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=anova-omnibus.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -266,5 +283,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

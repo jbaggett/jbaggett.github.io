@@ -1,58 +1,115 @@
 {
-  "title": "Building a Sampling Distribution of p̂",
+  "title": "Building a Sampling Distribution of \\(\\hat{p}\\) — Medical Consultant",
   "tool": "conceptual/sampling-lab",
-  "params": { "type": "prop", "p": "0.6", "n": "40", "seed": "beads60" },
+  "params": {
+    "type": "prop",
+    "p": "0.10",
+    "n": "62",
+    "seed": "medical62"
+  },
   "steps": [
     {
-      "instruction": "A large bowl of beads is **60% red** (a \"success\"). We can't see the whole bowl in real life, but here we can — that's the **Population** panel, with the true proportion marked at **p = 0.60**. We'll scoop out samples of **n = 40** beads at a time and track the proportion red in each scoop.",
-      "observe": "Find **p = 0.60** marked on the Population panel. Each scoop of 40 beads will rarely be exactly 60% red — that sample-to-sample wobble is what we're about to study."
+      "instruction": "Imagine a large bag of marbles: **10% orange** (complication) and **90% blue** (no complication). This bag models the world under **H₀**: the consultant's true complication rate matches the national **10%**. We can't see the whole bag in real life, but here we can — that's the **Population** panel, with the true proportion marked at **p = 0.10**. Each surgery is one draw from the bag; a \"study\" of **n = 62** surgeries is one scoop of 62 marbles, and the proportion of orange marbles in the scoop is one simulated **\\(\\hat{p}^*\\)* from the null distribution.",
+      "observe": "Find **p = 0.10** marked on the Population panel. Each scoop of 62 marbles will rarely be exactly 10% orange — that sample-to-sample wobble is what we're about to study."
     },
     {
-      "instruction": "**Before you draw anything, commit to a prediction.** Imagine taking *hundreds* of scoops of 40 beads and plotting each scoop's proportion red.",
+      "instruction": "**Before you draw anything, commit to a prediction.** Imagine taking *hundreds* of scoops of 62 marbles and plotting each scoop's proportion orange (each one a simulated \\(\\hat{p}\\) under H₀).",
       "gate": {
-        "question": "Where will those sample proportions (p̂) pile up?",
+        "question": "Where will those sample proportions (\\(\\hat{p}\\)) pile up?",
         "choices": [
-          { "text": "Centered around 0.60", "feedback": "You've committed — now draw samples and see whether the pile-up lands where you expected." },
-          { "text": "Centered around 0.50", "feedback": "You've committed — draw samples and check. Watch where the center of the pile actually falls." },
-          { "text": "Spread evenly between 0 and 1", "feedback": "You've committed — draw samples and see whether the proportions really spread out evenly, or cluster somewhere." }
+          {
+            "text": "Centered around 0.10",
+            "feedback": "You've committed — now draw samples and see whether the pile-up lands where you expected."
+          },
+          {
+            "text": "Centered around 0.50",
+            "feedback": "You've committed — draw samples and check. Watch where the center of the pile actually falls."
+          },
+          {
+            "text": "Spread evenly between 0 and 1",
+            "feedback": "You've committed — draw samples and see whether the proportions really spread out evenly, or cluster somewhere."
+          }
         ]
-      }
+      },
+      "phase": "predict"
     },
     {
-      "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 40 beads, collapse to a single proportion **p̂**, and drop that one dot into the **Sampling distribution** panel at the bottom.",
-      "observe": "That bottom panel is a **distribution of statistics** — one dot per sample, not per bead. Click **+1** a few more times to add more dots."
+      "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 62 marbles, collapse to a single proportion **\\(\\hat{p}^*\\)*, and drop that one dot into the **Sampling distribution** panel at the bottom — one simulated study under H₀.",
+      "observe": "That bottom panel is a **distribution of statistics** — one dot per study, not per marble. Click **+1** a few more times to add more studies."
     },
     {
-      "instruction": "Now click **+1000** to take a thousand scoops quickly and let the sampling distribution fill in.",
-      "requires": { "metric": "samples", "atLeast": 500, "hint": "Click **+1000** to draw at least 500 samples, then answer below." },
-      "observe": "Look at the bottom panel and the **SD of p̂'s** readout, then compare it to the theory value **√(p(1−p)/n)**.",
+      "instruction": "Now click **+1000** to run a thousand simulated studies quickly and let the null distribution fill in.",
+      "requires": {
+        "metric": "samples",
+        "atLeast": 500,
+        "hint": "Click **+1000** to draw at least 500 samples, then answer below."
+      },
+      "observe": "Look at the bottom panel and the **SD of \\(\\hat{p}\\)'s** readout, then compare it to the theory value **√(p(1−p)/n)**.",
       "gate": {
-        "question": "Where is the sampling distribution of p̂ centered, and is it bell-shaped?",
+        "question": "Where is the null distribution of \\(\\hat{p}\\) centered, and what is its shape?",
         "choices": [
-          { "text": "Centered near 0.60 and roughly bell-shaped", "correct": true },
-          { "text": "Centered near 0.50" },
-          { "text": "Flat — every proportion equally likely" }
+          {
+            "text": "Centered near 0.10 and roughly bell-shaped (with a mild right skew)",
+            "correct": true
+          },
+          {
+            "text": "Centered near 0.50"
+          },
+          {
+            "text": "Flat — every proportion equally likely"
+          }
         ],
-        "feedback": "It centers at p = 0.60 (the true proportion) and is roughly normal because np = 24 and n(1−p) = 16 are both ≥ 10. Your **{{samples}}** samples gave an SD of p̂'s of **{{statSD}}** — very close to the theory value √(p(1−p)/n) = **{{theorySE}}**.",
-        "retryFeedback": "Look at where the dots pile up relative to the 0.60 line, and whether the shape is mound-shaped or flat."
+        "feedback": "It centers at p = 0.10 (the true rate under H₀). The shape is roughly bell-shaped but with a **mild right skew**: np = 6.2 is below the usual threshold of 10, and p = 0.10 sits close to the floor of 0, so the normal approximation is only approximate here. Your **{{samples}}** studies gave an SD of \\(\\hat{p}\\)'s of **{{statSD}}** — very close to the theory value √(p(1−p)/n) = **{{theorySE}}**.",
+        "retryFeedback": "Look at where the dots pile up relative to the 0.10 line, and whether the shape is mound-shaped or flat."
       }
     },
     {
-      "instruction": "Two different things change this picture in two different ways. First click **+1000 again** (more samples, same n). Then change **sample size n to 100** and draw **+1000** — or click **Freeze this distribution to compare** first, then change n, so you can see both at once.",
+      "instruction": "Two different things change this picture in two different ways. First click **+1000 again** (more studies, same n). Then change **sample size n to 200** and draw **+1000** — or click **Freeze this distribution to compare** first, then change n, so you can see both at once.",
       "gate": {
         "question": "Which change made the distribution narrower?",
         "choices": [
-          { "text": "Drawing more samples (more dots)" },
-          { "text": "Increasing the sample size n", "correct": true },
-          { "text": "Both narrowed it equally" }
+          {
+            "text": "Drawing more studies (more dots)"
+          },
+          {
+            "text": "Increasing the sample size n",
+            "correct": true
+          },
+          {
+            "text": "Both narrowed it equally"
+          }
         ],
-        "feedback": "Only larger n narrows it. More samples just fill in the *same* distribution more smoothly — its spread doesn't change. Larger n produces a *different*, narrower distribution, because √(p(1−p)/n) shrinks as n grows.",
-        "retryFeedback": "Compare the frozen n = 40 distribution to the n = 100 one — same center, different width. Then recall what adding more dots at a fixed n did to the width."
+        "feedback": "Only larger n narrows it. More studies just fill in the *same* distribution more smoothly — its spread doesn't change. A larger n produces a *different*, narrower distribution, because √(p(1−p)/n) shrinks as n grows. (A consultant with more surgeries per study would see less sample-to-sample wobble.)",
+        "retryFeedback": "Compare the frozen n = 62 distribution to the n = 200 one — same center, different width. Then recall what adding more dots at a fixed n did to the width."
       }
     },
     {
-      "instruction": "You've built the sampling distribution of a proportion from scratch.",
-      "reveal": "The sample proportion p̂ varies from sample to sample, but predictably: its distribution is centered at the true p, has standard deviation √(p(1−p)/n), and is approximately normal when np and n(1−p) are both at least about 10. Crucially, **more samples** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This is the engine behind every confidence interval and test for a proportion."
+      "instruction": "You've built the null distribution of a proportion from scratch. Before you read the summary, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "predictions_held",
+            "label": "How well did each of your three predictions (center, spread, shape) hold up?",
+            "placeholder": "Compare to what you saw",
+            "rows": 2
+          },
+          {
+            "id": "samples_vs_n",
+            "label": "Why do more studies fill in the same distribution, while a larger n produces a different (narrower) distribution?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "stable_center_purpose",
+            "label": "Why does the null distribution having a stable center and spread make the p-value calculation possible?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: more studies just **fill in** the same null distribution — its center (0.10) and spread (√(p(1−p)/n)) are fixed by p and n, not by how many scoops you take. A larger n produces a genuinely **different**, narrower distribution. That stable, knowable center-and-spread is exactly what lets us say how surprising the observed \\(\\hat{p}\\) = 0.048 is — i.e. compute a p-value."
+      },
+      "reveal": "The sample proportion \\(\\hat{p}\\) varies from study to study, but predictably: under H₀ its distribution is centered at the true p = 0.10, has standard deviation √(p(1−p)/n), and is approximately normal — here only *roughly*, with a mild right skew, because np = 6.2 falls below about 10. **More studies** sharpen the picture of that distribution, while **a larger n** changes it — shrinking the spread. This null distribution is exactly what we compare the consultant's observed \\(\\hat{p}\\) = 0.048 against to get a p-value.",
+      "phase": "explain"
     }
   ]
 }

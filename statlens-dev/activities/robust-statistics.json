@@ -1,8 +1,31 @@
 {
   "title": "Outliers and Robust Statistics",
   "tool": "explore/descriptive",
-  "params": { "dataset": "county_pop" },
+  "params": {
+    "dataset": "county_pop"
+  },
   "steps": [
+    {
+      "phase": "predict",
+      "instruction": "US county populations are strongly **right-skewed**. Before you look at the summaries, **predict first.**",
+      "gate": {
+        "question": "Which will be larger — the mean or the median?",
+        "choices": [
+          {
+            "text": "The mean — the long right tail pulls it up",
+            "correct": true
+          },
+          {
+            "text": "The median"
+          },
+          {
+            "text": "They'll be about equal"
+          }
+        ],
+        "feedback": "Right. A few huge counties drag the mean upward while the median (the middle value) stays put — so for right-skewed data the mean exceeds the median.",
+        "retryFeedback": "The mean gets pulled toward extreme values; the median does not. Which way does a long right tail pull the mean?"
+      }
+    },
     {
       "instruction": "The 2017 populations of 3,137 US counties are loaded as a **histogram**. Look at the shape — where are most counties? Where does the tail stretch?",
       "observe": "Most counties have small populations, but a few (like Los Angeles County) have populations in the millions. This is an extremely **right-skewed** distribution.",
@@ -22,6 +45,27 @@
       "instruction": "Switch to a **boxplot**. Count the outlier dots beyond the right whisker.",
       "observe": "How many outlier points do you see? The 1.5×IQR rule flags any point more than 1.5 IQRs above Q₃ or below Q₁. With this much skew, many counties qualify as outliers — even though they are legitimate data points, not errors.",
       "reveal": "With extremely skewed data, the 1.5×IQR rule can flag a large number of points as \"outliers.\" These aren't mistakes — they're real counties with large populations. This is a reminder that **outlier ≠ error**. The outlier rule is a screening tool, not a deletion rule. Never remove data points without a substantive reason."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "mean_vs_median",
+            "label": "Why does the mean exceed the median for right-skewed data, and which better represents a 'typical' county?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "sd_vs_iqr",
+            "label": "The SD is huge relative to the IQR here. Why is the IQR a more robust measure of spread?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: the mean is pulled toward extreme values, so a long right tail drags it above the median; the median (the middle value) is unmoved by how far out the extremes lie, so it better represents a typical county. The SD squares deviations, so a few enormous counties inflate it dramatically; the IQR (middle 50%) ignores the tails entirely, making it a robust measure of spread."
+      }
     }
   ]
 }

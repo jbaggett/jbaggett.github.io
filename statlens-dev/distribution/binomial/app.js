@@ -717,6 +717,30 @@ function announce(msg) {
   if (announceDiv) announceDiv.textContent = msg;
 }
 
+// ─── URL params (activity / deep-link support) ───
+// Read ?n= ?p= ?k= ?type= so activities and shareable links can preconfigure the
+// calculator. Values are clamped to the same ranges update() enforces; `type`
+// accepts the select's values (exact/leq/geq/lt/gt) plus the aliases ge/le/eq.
+(function applyUrlParams() {
+  const q = new URLSearchParams(location.search);
+  /** @param {HTMLInputElement} input @param {string|null} raw */
+  const setNum = (input, raw, lo, hi, integer) => {
+    if (raw == null || raw === '') return;
+    let v = integer ? parseInt(raw, 10) : parseFloat(raw);
+    if (!isFinite(v)) return;
+    input.value = String(Math.max(lo, Math.min(hi, v)));
+  };
+  setNum(paramN, q.get('n'), 1, 500, true);
+  setNum(paramP, q.get('p'), 0, 1, false);
+  setNum(paramK, q.get('k'), 0, parseInt(paramN.value, 10) || 20, true);
+  const t = q.get('type');
+  if (t) {
+    const alias = { ge: 'geq', geq: 'geq', le: 'leq', leq: 'leq', eq: 'exact', exact: 'exact', lt: 'lt', gt: 'gt' };
+    const val = alias[t.toLowerCase()];
+    if (val && [...probType.options].some(o => o.value === val)) probType.value = val;
+  }
+})();
+
 // ─── Init ───
 
 update();

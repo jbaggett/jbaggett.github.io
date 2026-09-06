@@ -1,0 +1,1104 @@
+{
+  "id": "possum",
+  "name": "Brushtail Possums",
+  "description": "Body measurements for 104 brushtail possums trapped in Australia (IMS Ch. 7, 8 regression/correlation).",
+  "source": "openintro",
+  "chapter": "IMS Ch. 7, 8",
+  "type": "regression",
+  "studyDescription": "Morphometric measurements on 104 mountain brushtail possums trapped at seven sites across two regions of Australia. An observational study used to relate body measurements (e.g., total length and head length).",
+  "variableDescriptions": {
+    "site": "Trapping site number (1–7).",
+    "pop": "Region: Victoria (Vic) or other (New South Wales / Queensland).",
+    "sex": "Sex of the possum (m / f).",
+    "age": "Age of the possum in years.",
+    "head_l": "Head length.",
+    "skull_w": "Skull width.",
+    "total_l": "Total body length.",
+    "tail_l": "Tail length."
+  },
+  "sourceDetail": "OpenIntro `possum`, from Lindenmayer et al. (1995), via the DAAG R package.",
+  "variables": [
+    {
+      "name": "site",
+      "label": "Trapping Site",
+      "type": "categorical"
+    },
+    {
+      "name": "pop",
+      "label": "Population",
+      "type": "categorical"
+    },
+    {
+      "name": "sex",
+      "label": "Sex",
+      "type": "categorical"
+    },
+    {
+      "name": "age",
+      "label": "Age (yrs)",
+      "type": "numeric"
+    },
+    {
+      "name": "head_l",
+      "label": "Head Length (mm)",
+      "type": "numeric"
+    },
+    {
+      "name": "skull_w",
+      "label": "Skull Width (mm)",
+      "type": "numeric"
+    },
+    {
+      "name": "total_l",
+      "label": "Total Length (cm)",
+      "type": "numeric"
+    },
+    {
+      "name": "tail_l",
+      "label": "Tail Length (cm)",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 8,
+      "head_l": 94.1,
+      "skull_w": 60.4,
+      "total_l": 89,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 6,
+      "head_l": 92.5,
+      "skull_w": 57.6,
+      "total_l": 91.5,
+      "tail_l": 36.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 6,
+      "head_l": 94,
+      "skull_w": 60,
+      "total_l": 95.5,
+      "tail_l": 39
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 6,
+      "head_l": 93.2,
+      "skull_w": 57.1,
+      "total_l": 92,
+      "tail_l": 38
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 2,
+      "head_l": 91.5,
+      "skull_w": 56.3,
+      "total_l": 85.5,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 1,
+      "head_l": 93.1,
+      "skull_w": 54.8,
+      "total_l": 90.5,
+      "tail_l": 35.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 2,
+      "head_l": 95.3,
+      "skull_w": 58.2,
+      "total_l": 89.5,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 6,
+      "head_l": 94.8,
+      "skull_w": 57.6,
+      "total_l": 91,
+      "tail_l": 37
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 9,
+      "head_l": 93.4,
+      "skull_w": 56.3,
+      "total_l": 91.5,
+      "tail_l": 37
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 6,
+      "head_l": 91.8,
+      "skull_w": 58,
+      "total_l": 89.5,
+      "tail_l": 37.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 9,
+      "head_l": 93.3,
+      "skull_w": 57.2,
+      "total_l": 89.5,
+      "tail_l": 39
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 5,
+      "head_l": 94.9,
+      "skull_w": 55.6,
+      "total_l": 92,
+      "tail_l": 35.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 5,
+      "head_l": 95.1,
+      "skull_w": 59.9,
+      "total_l": 89.5,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 95.4,
+      "skull_w": 57.6,
+      "total_l": 91.5,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 5,
+      "head_l": 92.9,
+      "skull_w": 57.6,
+      "total_l": 85.5,
+      "tail_l": 34
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 4,
+      "head_l": 91.6,
+      "skull_w": 56,
+      "total_l": 86,
+      "tail_l": 34.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 1,
+      "head_l": 94.7,
+      "skull_w": 67.7,
+      "total_l": 89.5,
+      "tail_l": 36.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 2,
+      "head_l": 93.5,
+      "skull_w": 55.7,
+      "total_l": 90,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 5,
+      "head_l": 94.4,
+      "skull_w": 55.4,
+      "total_l": 90.5,
+      "tail_l": 35
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 4,
+      "head_l": 94.8,
+      "skull_w": 56.3,
+      "total_l": 89,
+      "tail_l": 38
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 3,
+      "head_l": 95.9,
+      "skull_w": 58.1,
+      "total_l": 96.5,
+      "tail_l": 39.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 96.3,
+      "skull_w": 58.5,
+      "total_l": 91,
+      "tail_l": 39.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 4,
+      "head_l": 92.5,
+      "skull_w": 56.1,
+      "total_l": 89,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 2,
+      "head_l": 94.4,
+      "skull_w": 54.9,
+      "total_l": 84,
+      "tail_l": 34
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 95.8,
+      "skull_w": 58.5,
+      "total_l": 91.5,
+      "tail_l": 35.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 7,
+      "head_l": 96,
+      "skull_w": 59,
+      "total_l": 90,
+      "tail_l": 36
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 2,
+      "head_l": 90.5,
+      "skull_w": 54.5,
+      "total_l": 85,
+      "tail_l": 35
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 4,
+      "head_l": 93.8,
+      "skull_w": 56.8,
+      "total_l": 87,
+      "tail_l": 34.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 3,
+      "head_l": 92.8,
+      "skull_w": 56,
+      "total_l": 88,
+      "tail_l": 35
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 2,
+      "head_l": 92.1,
+      "skull_w": 54.4,
+      "total_l": 84,
+      "tail_l": 33.5
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 92.8,
+      "skull_w": 54.1,
+      "total_l": 93,
+      "tail_l": 37
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 4,
+      "head_l": 94.3,
+      "skull_w": 56.7,
+      "total_l": 94,
+      "tail_l": 39
+    },
+    {
+      "site": "1",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 91.4,
+      "skull_w": 54.6,
+      "total_l": 89,
+      "tail_l": 37
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 2,
+      "head_l": 90.6,
+      "skull_w": 55.7,
+      "total_l": 85.5,
+      "tail_l": 36.5
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 4,
+      "head_l": 94.4,
+      "skull_w": 57.9,
+      "total_l": 85,
+      "tail_l": 35.5
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 7,
+      "head_l": 93.3,
+      "skull_w": 59.3,
+      "total_l": 88,
+      "tail_l": 35
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 2,
+      "head_l": 89.3,
+      "skull_w": 54.8,
+      "total_l": 82.5,
+      "tail_l": 35
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 7,
+      "head_l": 92.4,
+      "skull_w": 56,
+      "total_l": 80.5,
+      "tail_l": 35.5
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 1,
+      "head_l": 84.7,
+      "skull_w": 51.5,
+      "total_l": 75,
+      "tail_l": 34
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 3,
+      "head_l": 91,
+      "skull_w": 55,
+      "total_l": 84.5,
+      "tail_l": 36
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 5,
+      "head_l": 88.4,
+      "skull_w": 57,
+      "total_l": 83,
+      "tail_l": 36.5
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 85.3,
+      "skull_w": 54.1,
+      "total_l": 77,
+      "tail_l": 32
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "f",
+      "age": 2,
+      "head_l": 90,
+      "skull_w": 55.5,
+      "total_l": 81,
+      "tail_l": 32
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": null,
+      "head_l": 85.1,
+      "skull_w": 51.5,
+      "total_l": 76,
+      "tail_l": 35.5
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": 3,
+      "head_l": 90.7,
+      "skull_w": 55.9,
+      "total_l": 81,
+      "tail_l": 34
+    },
+    {
+      "site": "2",
+      "pop": "Vic",
+      "sex": "m",
+      "age": null,
+      "head_l": 91.4,
+      "skull_w": 54.4,
+      "total_l": 84,
+      "tail_l": 35
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "m",
+      "age": 2,
+      "head_l": 90.1,
+      "skull_w": 54.8,
+      "total_l": 89,
+      "tail_l": 37.5
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "m",
+      "age": 5,
+      "head_l": 98.6,
+      "skull_w": 63.2,
+      "total_l": 85,
+      "tail_l": 34
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "m",
+      "age": 4,
+      "head_l": 95.4,
+      "skull_w": 59.2,
+      "total_l": 85,
+      "tail_l": 37
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "f",
+      "age": 5,
+      "head_l": 91.6,
+      "skull_w": 56.4,
+      "total_l": 88,
+      "tail_l": 38
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "f",
+      "age": 5,
+      "head_l": 95.6,
+      "skull_w": 59.6,
+      "total_l": 85,
+      "tail_l": 36
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "m",
+      "age": 6,
+      "head_l": 97.6,
+      "skull_w": 61,
+      "total_l": 93.5,
+      "tail_l": 40
+    },
+    {
+      "site": "3",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 93.1,
+      "skull_w": 58.1,
+      "total_l": 91,
+      "tail_l": 38
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "m",
+      "age": 7,
+      "head_l": 96.9,
+      "skull_w": 63,
+      "total_l": 91.5,
+      "tail_l": 43
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "m",
+      "age": 2,
+      "head_l": 103.1,
+      "skull_w": 63.2,
+      "total_l": 92.5,
+      "tail_l": 38
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 99.9,
+      "skull_w": 61.5,
+      "total_l": 93.7,
+      "tail_l": 38
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "f",
+      "age": 4,
+      "head_l": 95.1,
+      "skull_w": 59.4,
+      "total_l": 93,
+      "tail_l": 41
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 94.5,
+      "skull_w": 64.2,
+      "total_l": 91,
+      "tail_l": 39
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "m",
+      "age": 2,
+      "head_l": 102.5,
+      "skull_w": 62.8,
+      "total_l": 96,
+      "tail_l": 40
+    },
+    {
+      "site": "4",
+      "pop": "other",
+      "sex": "f",
+      "age": 2,
+      "head_l": 91.3,
+      "skull_w": 57.7,
+      "total_l": 88,
+      "tail_l": 39
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 7,
+      "head_l": 95.7,
+      "skull_w": 59,
+      "total_l": 86,
+      "tail_l": 38
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 91.3,
+      "skull_w": 58,
+      "total_l": 90.5,
+      "tail_l": 39
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "f",
+      "age": 6,
+      "head_l": 92,
+      "skull_w": 56.4,
+      "total_l": 88.5,
+      "tail_l": 38
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 96.9,
+      "skull_w": 56.5,
+      "total_l": 89.5,
+      "tail_l": 38.5
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "f",
+      "age": 5,
+      "head_l": 93.5,
+      "skull_w": 57.4,
+      "total_l": 88.5,
+      "tail_l": 38
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 90.4,
+      "skull_w": 55.8,
+      "total_l": 86,
+      "tail_l": 36.5
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 4,
+      "head_l": 93.3,
+      "skull_w": 57.6,
+      "total_l": 85,
+      "tail_l": 36.5
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 5,
+      "head_l": 94.1,
+      "skull_w": 56,
+      "total_l": 88.5,
+      "tail_l": 38
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 5,
+      "head_l": 98,
+      "skull_w": 55.6,
+      "total_l": 88,
+      "tail_l": 37.5
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "f",
+      "age": 7,
+      "head_l": 91.9,
+      "skull_w": 56.4,
+      "total_l": 87,
+      "tail_l": 38
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 6,
+      "head_l": 92.8,
+      "skull_w": 57.6,
+      "total_l": 90,
+      "tail_l": 40
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 85.9,
+      "skull_w": 52.4,
+      "total_l": 80.5,
+      "tail_l": 35
+    },
+    {
+      "site": "5",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 82.5,
+      "skull_w": 52.3,
+      "total_l": 82,
+      "tail_l": 36.5
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "f",
+      "age": 4,
+      "head_l": 88.7,
+      "skull_w": 52,
+      "total_l": 83,
+      "tail_l": 38
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 6,
+      "head_l": 93.8,
+      "skull_w": 58.1,
+      "total_l": 89,
+      "tail_l": 38
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 5,
+      "head_l": 92.4,
+      "skull_w": 56.8,
+      "total_l": 89,
+      "tail_l": 41
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 6,
+      "head_l": 93.6,
+      "skull_w": 56.2,
+      "total_l": 84,
+      "tail_l": 36
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 86.5,
+      "skull_w": 51,
+      "total_l": 81,
+      "tail_l": 36.5
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 85.8,
+      "skull_w": 50,
+      "total_l": 81,
+      "tail_l": 36.5
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 86.7,
+      "skull_w": 52.6,
+      "total_l": 84,
+      "tail_l": 38
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 90.6,
+      "skull_w": 56,
+      "total_l": 85.5,
+      "tail_l": 38
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "f",
+      "age": 4,
+      "head_l": 86,
+      "skull_w": 54,
+      "total_l": 82,
+      "tail_l": 36.5
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 90,
+      "skull_w": 53.8,
+      "total_l": 81.5,
+      "tail_l": 36
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 88.4,
+      "skull_w": 54.6,
+      "total_l": 80.5,
+      "tail_l": 36
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 89.5,
+      "skull_w": 56.2,
+      "total_l": 92,
+      "tail_l": 40.5
+    },
+    {
+      "site": "6",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 88.2,
+      "skull_w": 53.2,
+      "total_l": 86.5,
+      "tail_l": 38.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 2,
+      "head_l": 98.5,
+      "skull_w": 60.7,
+      "total_l": 93,
+      "tail_l": 41.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "f",
+      "age": 2,
+      "head_l": 89.6,
+      "skull_w": 58,
+      "total_l": 87.5,
+      "tail_l": 38
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 6,
+      "head_l": 97.7,
+      "skull_w": 58.4,
+      "total_l": 84.5,
+      "tail_l": 35
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 92.6,
+      "skull_w": 54.6,
+      "total_l": 85,
+      "tail_l": 38.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 97.8,
+      "skull_w": 59.6,
+      "total_l": 89,
+      "tail_l": 38
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 2,
+      "head_l": 90.7,
+      "skull_w": 56.3,
+      "total_l": 85,
+      "tail_l": 37
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 89.2,
+      "skull_w": 54,
+      "total_l": 82,
+      "tail_l": 38
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 7,
+      "head_l": 91.8,
+      "skull_w": 57.6,
+      "total_l": 84,
+      "tail_l": 35.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 4,
+      "head_l": 91.6,
+      "skull_w": 56.6,
+      "total_l": 88.5,
+      "tail_l": 37.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 4,
+      "head_l": 94.8,
+      "skull_w": 55.7,
+      "total_l": 83,
+      "tail_l": 38
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 3,
+      "head_l": 91,
+      "skull_w": 53.1,
+      "total_l": 86,
+      "tail_l": 38
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 5,
+      "head_l": 93.2,
+      "skull_w": 68.6,
+      "total_l": 84,
+      "tail_l": 35
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 93.3,
+      "skull_w": 56.2,
+      "total_l": 86.5,
+      "tail_l": 38.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 89.5,
+      "skull_w": 56,
+      "total_l": 81.5,
+      "tail_l": 36.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 1,
+      "head_l": 88.6,
+      "skull_w": 54.7,
+      "total_l": 82.5,
+      "tail_l": 39
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "f",
+      "age": 6,
+      "head_l": 92.4,
+      "skull_w": 55,
+      "total_l": 89,
+      "tail_l": 38
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "m",
+      "age": 4,
+      "head_l": 91.5,
+      "skull_w": 55.2,
+      "total_l": 82.5,
+      "tail_l": 36.5
+    },
+    {
+      "site": "7",
+      "pop": "other",
+      "sex": "f",
+      "age": 3,
+      "head_l": 93.6,
+      "skull_w": 59.9,
+      "total_l": 89,
+      "tail_l": 40
+    }
+  ]
+}

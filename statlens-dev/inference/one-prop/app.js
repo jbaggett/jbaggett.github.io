@@ -10,12 +10,11 @@ import { onePropZ } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
-import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initKeyboardShortcuts, initHypToggle, getActiveTabId, getTabHintText, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 import { parseCSV } from '../../js/csv-parser.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex } from '../../js/tex.js';
 
 // jStat's ESM build exposes the object as the default export; the bare namespace
 // has no `.normal`/`.cdf`, which silently broke compute(). Use the interop form.
@@ -34,7 +33,6 @@ const inputAlt = initHypToggle('input-alternative', () => {
 const inputConfLevel = /** @type {HTMLInputElement} */ (document.getElementById('input-conf-level'));
 const computeBtn = /** @type {HTMLButtonElement} */ (document.getElementById('compute-btn'));
 const conditionsCheckpoint = /** @type {HTMLElement} */ (document.getElementById('conditions-checkpoint'));
-const resultBanner = /** @type {HTMLElement} */ (document.getElementById('result-summary'));
 const resultsPanel = /** @type {HTMLElement} */ (document.getElementById('results-panel'));
 const chartContainer = /** @type {HTMLElement} */ (document.getElementById('chart-container'));
 const dataPreview = document.getElementById('data-preview');
@@ -45,7 +43,7 @@ const successSelector = document.getElementById('success-selector');
 const successOutcome = /** @type {HTMLSelectElement|null} */ (document.getElementById('success-outcome'));
 const loadSummaryBtn = document.getElementById('load-summary');
 
-initTabs({ hintTarget: resultsPanel, hintAction: 'click Compute' });
+initTabs({ hintTarget: resultsPanel, hintAction: 'see results' });
 initKeyboardShortcuts();
 
 // ── State ───────────────────────────────────────────────────────────
@@ -106,15 +104,31 @@ const dataPanel = initDataPanel({
   },
   onText: (parsed, sourceName) => {
     currentContext = null;
-    // Find first categorical column
-    const catIdx = parsed.types.findIndex(t => t === 'categorical');
-    if (catIdx < 0) {
+    // Offer a selector across ALL categorical columns (mirrors onDataset + the
+    // means tools) so a multi-variable CSV isn't locked to the first one.
+    // (Melissa's request, 2026-07.)
+    const catCols = parsed.headers.filter((h, i) => parsed.types[i] === 'categorical');
+    if (catCols.length === 0) {
       announce('No categorical column found in the data.');
       return;
     }
-    const colName = parsed.headers[catIdx];
-    rawValues = parsed.data.map(row => String(row[colName]));
-    if (variableSelector) variableSelector.hidden = true;
+    if (catCols.length > 1 && varSelect && variableSelector) {
+      varSelect.innerHTML = '';
+      for (const name of catCols) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        varSelect.appendChild(opt);
+      }
+      variableSelector.hidden = false;
+      varSelect.onchange = () => {
+        rawValues = parsed.data.map(row => String(row[varSelect.value]));
+        showSuccessSelector(rawValues, sourceName);
+      };
+    } else if (variableSelector) {
+      variableSelector.hidden = true;
+    }
+    rawValues = parsed.data.map(row => String(row[catCols[0]]));
     showSuccessSelector(rawValues, sourceName);
   },
   onClear: () => {
@@ -127,8 +141,7 @@ const dataPanel = initDataPanel({
     if (successSelector) successSelector.hidden = true;
     if (variableSelector) variableSelector.hidden = true;
     chartContainer.innerHTML = '';
-    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;
-    resultBanner.innerHTML = '';
+    resultsPanel.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'see results')}</p>`;
     announce('Data cleared.');
   },
 });
@@ -152,13 +165,22 @@ function showSuccessSelector(values, sourceName) {
     }
     successSelector.hidden = false;
 
-    // Auto-select and count
-    const selectedSuccess = categories[0];
+    // Prefer the dataset's defined success label; fall back to the first category.
+    let selectedSuccess = (currentContext?.successLabel && categories.includes(currentContext.successLabel))
+      ? currentContext.successLabel : categories[0];
+    // ?success= URL param pins the success level (highest priority) so a graded
+    // embed stays fixed regardless of context/default changes.
+    const urlSuccess = new URLSearchParams(location.search).get('success');
+    if (urlSuccess && categories.includes(urlSuccess)) selectedSuccess = urlSuccess;
+    successOutcome.value = selectedSuccess;
     countAndLoad(values, selectedSuccess, sourceName);
+    compute(); // auto-compute on load — each dataset ships with "success" defined
 
-    successOutcome.addEventListener('change', () => {
+    // .onchange (not addEventListener) so re-loading a dataset doesn't stack listeners.
+    successOutcome.onchange = () => {
       countAndLoad(values, successOutcome.value, sourceName);
-    });
+      compute();
+    };
   }
 }
 
@@ -182,29 +204,40 @@ function countAndLoad(values, successValue, sourceName) {
 
 // ── Summary input ───────────────────────────────────────────────────
 
+/** Is the "Enter Summary" tab active? */
+function summaryActive() {
+  return document.getElementById('tab-summary')?.getAttribute('aria-selected') === 'true';
+}
+
+/** Read + validate the summary fields into the current-sample state.
+ *  @param {boolean} [quiet] - suppress error announcements during live typing
+ *  @returns {boolean} true if the fields form a valid one-proportion summary */
+function applySummaryInputs(quiet) {
+  const successes = Math.round(Number(inputSuccesses.value));
+  const n = Math.round(Number(inputN.value));
+  const fail = (/** @type {string} */ msg) => { if (!quiet) announce(msg); return false; };
+  if (!Number.isFinite(n) || n < 1) return fail('Sample size must be at least 1.');
+  if (!Number.isFinite(successes) || successes < 0 || successes > n) return fail('Successes must be between 0 and n.');
+  currentSuccesses = successes;
+  currentN = n;
+  currentSuccessLabel = inputSuccessLabel.value.trim() || 'successes';
+  fromRawData = false;
+  if (dataSummary) {
+    dataSummary.textContent = `Summary: n = ${currentN}, ${currentSuccessLabel} = ${currentSuccesses} (p\u0302 = ${formatStat(currentSuccesses / currentN, 0, 'proportion')})`;
+  }
+  return true;
+}
+
+// Optional explicit "Load" button (if present) \u2014 same path as typing.
 if (loadSummaryBtn) {
   loadSummaryBtn.addEventListener('click', () => {
-    const successes = Math.round(Number(inputSuccesses.value));
-    const n = Math.round(Number(inputN.value));
-    if (!Number.isFinite(n) || n < 1) {
-      announce('Sample size must be at least 1.');
-      return;
-    }
-    if (!Number.isFinite(successes) || successes < 0 || successes > n) {
-      announce('Successes must be between 0 and n.');
-      return;
-    }
-    currentSuccesses = successes;
-    currentN = n;
-    currentSuccessLabel = inputSuccessLabel.value.trim() || 'successes';
-    fromRawData = false;
-
-    if (dataSummary) {
-      dataSummary.textContent = `Summary: n = ${currentN}, ${currentSuccessLabel} = ${currentSuccesses} (p\u0302 = ${formatStat(currentSuccesses / currentN, 0, 'proportion')})`;
-    }
-    dataPanel.triggerPostLoad();
-    announce(`Loaded summary: n = ${n}, successes = ${successes}.`);
+    if (applySummaryInputs()) { dataPanel.triggerPostLoad(); compute(); }
   });
+}
+
+// Live update: typing valid summary stats recomputes immediately \u2014 no button needed.
+for (const el of [inputSuccesses, inputN, inputSuccessLabel]) {
+  el.addEventListener('input', () => { if (summaryActive() && applySummaryInputs(true)) compute(); });
 }
 
 // ── Null value mirror (auto-fill Hₐ display) ─────────────────────
@@ -216,13 +249,12 @@ inputP0.addEventListener('input', syncNullDisplay);
 syncNullDisplay();
 
 // ── Event listeners ─────────────────────────────────────────────────
-computeBtn.addEventListener('click', compute);
-
-for (const el of [inputP0, inputConfLevel]) {
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); compute(); }
-  });
-}
+// No Compute button — every input recomputes live. Null value, success outcome, and
+// summary fields recompute on change/typing; confidence level recomputes on change.
+computeBtn?.addEventListener('click', compute);
+inputConfLevel.addEventListener('change', () => {
+  if (resultsPanel.querySelector('.results-table')) compute();
+});
 
 // Note: alternative change handler is wired via initHypToggle callback above
 
@@ -261,11 +293,10 @@ function compute() {
       params: { p: p0, direction: alternative },
     });
     const bootLink = buildSimLink('simulate/bootstrap-prop/', linkBase);
-    conditionsCheckpoint.innerHTML = `
-      <p><strong>Before interpreting:</strong> Have you checked the conditions for the one-proportion z-test?
-      Verify: np\u2080 = ${formatStat(np0, 0, 'stat')} and n(1\u2212p\u2080) = ${formatStat(nq0, 0, 'stat')} (both should be \u2265 10).</p>
-      <p>Alternatives: <a href="${randLink}">Randomization Test</a> | <a href="${bootLink}">Bootstrap CI</a> (no conditions required).</p>`;
-    conditionsCheckpoint.hidden = false;
+    renderConditionsCheckpoint(conditionsCheckpoint, {
+      alts: [{ label: 'Randomization Test', href: randLink }, { label: 'Bootstrap CI', href: bootLink }],
+      detailsHTML: `<p>For the one-proportion z-test, verify np₀ = ${formatStat(np0, 0, 'stat')} and n(1−p₀) = ${formatStat(nq0, 0, 'stat')} (both should be ≥ 10).</p>`,
+    });
   }
 
   // ── Run test ──
@@ -317,15 +348,21 @@ function displayResults(r, successLabel) {
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
 
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
+
   const testFormula = tex(`\\begin{aligned}
-    z &= \\frac{\\hat{p} - p_0}{\\sqrt{\\dfrac{p_0(1-p_0)}{n}}} \\\\[10pt]
-    &= \\frac{${V}{${formatStat(r.pHat, 0, 'proportion')}} - ${V}{${formatStat(r.p0, 0, 'proportion')}}}{\\sqrt{\\dfrac{${V}{${formatStat(r.p0, 0, 'proportion')}} \\cdot ${V}{${formatStat(1 - r.p0, 0, 'proportion')}}}{${V}{${r.n}}}}} \\\\[10pt]
+    z &= \\frac{${fxs('phat', '\\hat{p}')} - ${fxs('p0', 'p_0')}}{\\sqrt{\\dfrac{${fxs('p0', 'p_0')}(1-${fxs('p0', 'p_0')})}{${fxs('n', 'n')}}}} \\\\[10pt]
+    &= \\frac{${fx('phat', formatStat(r.pHat, 0, 'proportion'))} - ${fx('p0', formatStat(r.p0, 0, 'proportion'))}}{\\sqrt{\\dfrac{${fx('p0', formatStat(r.p0, 0, 'proportion'))} \\cdot ${V}{${formatStat(1 - r.p0, 0, 'proportion')}}}{${fx('n', r.n)}}}} \\\\[10pt]
     &= ${S}{${formatStat(r.zStat, 0, 'correlation')}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &\\hat{p} \\pm z^* \\cdot \\sqrt{\\frac{\\hat{p}(1-\\hat{p})}{n}} \\\\[8pt]
-    &${V}{${formatStat(r.pHat, 0, 'proportion')}} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
+    &${fxs('phat', '\\hat{p}')} \\pm z^* \\cdot \\sqrt{\\frac{${fxs('phat', '\\hat{p}')}(1-${fxs('phat', '\\hat{p}')})}{${fxs('n', 'n')}}} \\\\[8pt]
+    &${fx('phat', formatStat(r.pHat, 0, 'proportion'))} \\pm ${V}{${zStar}} \\cdot ${V}{${formatStat(r.se, 0, 'proportion')}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, 0, 'proportion')},\\; ${formatStat(r.ciUpper, 0, 'proportion')})}
   \\end{aligned}`, true);
 
@@ -333,11 +370,12 @@ function displayResults(r, successLabel) {
     <h3>Sample Summary</h3>
     <table class="results-table" aria-label="Sample summary">
       <tbody>
-        <tr><th scope="row">${tex('n')}</th><td>${r.n}</td></tr>
-        <tr><th scope="row">${escapeHTML(successLabel)}</th><td>${r.successes}</td></tr>
-        <tr><th scope="row">${tex('\\hat{p}')}</th><td>${formatStat(r.pHat, 0, 'proportion')}</td></tr>
+        <tr><th scope="row">${tex('n')}</th><td data-fx="n">${r.n}</td></tr>
+        <tr><th scope="row">${escapeHTML(successLabel)}</th><td data-fx="x">${r.successes}</td></tr>
+        <tr><th scope="row">${tex('\\hat{p}')}</th><td data-fx="phat">${formatStat(r.pHat, 0, 'proportion')}</td></tr>
       </tbody>
     </table>
+    ${successLabel && successLabel !== 'Successes' ? `<p class="group-legend"><span>Counting <strong>&ldquo;${escapeHTML(successLabel)}&rdquo;</strong> as the success &nbsp;(${'p̂'} = successes ÷ n)</span></p>` : ''}
 
     <div class="formula-display">
       <h3>Test Statistic</h3>
@@ -351,7 +389,7 @@ function displayResults(r, successLabel) {
     </div>
 
     <div class="interpretation">
-      <p>${tex('\\hat{p}')} = ${formatStat(r.pHat, 0, 'proportion')} is ${formatStat(seCount, 0, 'correlation')} SEs ${seDirection} ${tex('p_0')} = ${formatStat(r.p0, 0, 'proportion')}.</p>
+      <p>${tex('\\hat{p}')} = ${formatStat(r.pHat, 0, 'proportion')} is ${formatStat(seCount, 0, 'correlation')} SEs ${seDirection} ${tex('p_0')} = <span class="fx-src" data-fx="p0">${formatStat(r.p0, 0, 'proportion')}</span>.</p>
       <p><strong>Formal conclusion:</strong> ${(() => {
         const alpha = 1 - r.confLevel;
         const c = generateConclusions({
@@ -364,10 +402,16 @@ function displayResults(r, successLabel) {
       })()}</p>
       <p>${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')}).</p>
     </div>
+    ${(() => {
+      const dsId = dataPanel.currentDatasetId;
+      return dsId
+        ? `<p class="hint">Explore this data: <a href="${buildSimLink('explore/one-cat/', { dataset: dsId })}" target="_blank" rel="noopener">open in the explorer ↗</a></p>`
+        : '';
+    })()}
   `;
 
-  resultBanner.innerHTML =
-    `z = ${formatStat(r.zStat, 0, 'correlation')}, ${formatStat(r.pValue, 0, 'pvalue')} &nbsp;|&nbsp; ${confPct}% CI: (${formatStat(r.ciLower, 0, 'proportion')}, ${formatStat(r.ciUpper, 0, 'proportion')})`;
+
+  linkFormula(document.querySelector('main') || resultsPanel);
 }
 
 // ── Chart ───────────────────────────────────────────────────────────
@@ -417,7 +461,7 @@ function drawChart(r) {
 
   if (chart && isFinite(r.zStat)) {
     addInferenceAnnotations(chart, {
-      statValue: Math.abs(r.zStat),
+      statValue: tail === 'both' ? Math.abs(r.zStat) : r.zStat, // signed for one-sided so the line aligns with the shaded tail
       statLabel: 'z',
       pValue: r.pValue,
       pdfFn,

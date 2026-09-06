@@ -11,11 +11,9 @@ import { chisqTest } from '../../js/inference.js';
 import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
-import { announce, initTabs, initDataPanel, initKeyboardShortcuts, buildSimLink, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initDataPanel, initKeyboardShortcuts, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -169,6 +167,12 @@ function setupVariableSelectors(varNames, sourceName) {
 
   rowVar = varNames[0];
   colVar = varNames.length > 1 ? varNames[1] : varNames[0];
+  // Honor an inferenceContext's intended pairing when present (e.g. a dataset
+  // with 3-4 categorical columns needs to know which two to cross-tabulate).
+  if (currentContext) {
+    if (currentContext.rowVar && varNames.includes(currentContext.rowVar)) rowVar = currentContext.rowVar;
+    if (currentContext.colVar && varNames.includes(currentContext.colVar)) colVar = currentContext.colVar;
+  }
   rowVarSelect.value = rowVar;
   colVarSelect.value = colVar;
   variableSelectors.hidden = false;
@@ -218,6 +222,10 @@ function buildFromRawData(sourceName) {
   }
   controlsSection.hidden = false;
   announce(`Contingency table: ${rowCats.length} × ${colCats.length}, n = ${rawRows.length}.`);
+  // Auto-run the test so a loaded dataset / direct ?dataset= link shows the full
+  // result immediately (matching the other analytic tools), and so live variable
+  // changes update the result — not just the contingency table.
+  showResults(currentObserved, currentRowLabels, currentColLabels);
 }
 
 // ── Editable table (Enter Table tab) ────────────────────────────────
@@ -316,6 +324,7 @@ loadTableBtn.addEventListener('click', () => {
   dataPanel.triggerPostLoad();
   controlsSection.hidden = false;
   announce(`Table loaded: ${data.rowLabels.length} × ${data.colLabels.length}, n = ${total}.`);
+  showResults(currentObserved, currentRowLabels, currentColLabels);
 });
 
 // Allow Enter in count inputs to trigger load
@@ -381,11 +390,10 @@ function showResults(observed, rowLabels, colLabels) {
     const condNote = lowExpected
       ? ' Note: one or more expected counts are below 5.'
       : '';
-    conditionsCheckpoint.innerHTML = `
-      <p><strong>Before interpreting:</strong> Have you checked the conditions for the chi-square test?
-      Verify that all expected counts are \u2265 5.${condNote}</p>
-      <p>Alternative: <a href="${randLink}">Simulation-Based Chi-Square Test</a> (no conditions required).</p>`;
-    conditionsCheckpoint.hidden = false;
+    renderConditionsCheckpoint(conditionsCheckpoint, {
+      altLabel: 'Simulation-Based Chi-Square Test', altHref: randLink,
+      detailsHTML: `<p>For the chi-square test, all expected counts should be at least 5.${condNote}</p>`,
+    });
   }
 
   // Render formula display
@@ -417,6 +425,12 @@ function showResults(observed, rowLabels, colLabels) {
 
   drawChart(result);
   writeInterpretation(result);
+
+  const dsId = dataPanel.currentDatasetId;
+  if (dsId) {
+    interpretationDiv.insertAdjacentHTML('beforeend',
+      `<p class="hint">Explore this data: <a href="${buildSimLink('explore/categorical/', { dataset: dsId })}" target="_blank" rel="noopener">open in the explorer ↗</a></p>`);
+  }
 
   announce(
     `Chi-square = ${result.chiSq.toFixed(3)}, df = ${result.df}, ` +

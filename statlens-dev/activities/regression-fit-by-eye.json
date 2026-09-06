@@ -1,8 +1,35 @@
 {
   "title": "Fit a Line by Eye (Lab)",
   "tool": "explore/regression-by-eye",
-  "params": { "seed": "ch20fit", "n": 30, "slope": 0.5, "sigma_error": 1.5, "metric": "squared" },
+  "params": {
+    "seed": "ch20fit",
+    "n": 30,
+    "slope": 0.5,
+    "sigma_error": 1.5,
+    "metric": "squared"
+  },
   "steps": [
+    {
+      "phase": "predict",
+      "instruction": "You'll minimize squared errors, then absolute errors, by dragging a line. **Predict first.**",
+      "gate": {
+        "question": "Which loss is pulled MORE by a single far-off point?",
+        "choices": [
+          {
+            "text": "Squared errors (SSE) — squaring magnifies large residuals",
+            "correct": true
+          },
+          {
+            "text": "Absolute errors (SAE)"
+          },
+          {
+            "text": "Both are affected equally"
+          }
+        ],
+        "feedback": "Right. Squaring a big residual makes it count disproportionately (a residual of 4 contributes 16), so the least-squares line chases outliers more than the absolute-error line does.",
+        "retryFeedback": "Think about what squaring does to a large residual versus just taking its absolute value."
+      }
+    },
     {
       "instruction": "A cloud of points has been generated for you. BEFORE dragging anything, predict by eye: roughly where should the best-fit line go? Mentally draw one.",
       "observe": "Where do you expect the line's slope and intercept to land?",
@@ -24,9 +51,30 @@
       "reveal": "Most beginners get within roughly plus-or-minus 10-20% of OLS on slope and intercept. The fact that the math gets it 'exactly right' isn't because it is smarter - it is because it minimizes a specific loss (SSE) that you cannot optimize by inspection. The line you find depends on the loss you minimize."
     },
     {
-      "instruction": "Reset to a new random seed (or change sigma) to see a noisier dataset. Re-fit by eye. Notice how confidently you can place the line when noise is large vs. small.",
+      "instruction": "Reset to a new random seed (or change σ) to see a noisier dataset. Re-fit by eye. Notice how confidently you can place the line when noise is large vs. small.",
       "observe": "How does the UNCERTAINTY of your fit grow with noise?",
-      "reveal": "Larger sigma (residual SD) makes the by-eye fit more ambiguous - multiple lines look roughly equally good. The standard error of the slope formalizes this: SE(b_1) grows with the residual SD and shrinks with the spread of x. Inference for slope quantifies the uncertainty you just FELT."
+      "reveal": "Larger σ (residual SD) makes the by-eye fit more ambiguous - multiple lines look roughly equally good. The standard error of the slope formalizes this: SE(b₁) grows with the residual SD and shrinks with the spread of x. Inference for slope quantifies the uncertainty you just FELT."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Before you finish, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "loss_difference",
+            "label": "Why does minimizing squared errors chase an outlier more than minimizing absolute errors?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "which_line",
+            "label": "When your by-eye line was close to the OLS line, what did that say about your intuition — and when might the two losses give visibly different lines?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: squaring makes a large residual count disproportionately (4 becomes 16), so the least-squares line tilts toward far-off points to shrink that squared term; absolute error (LAD) counts a residual of 4 as just 4, so it behaves more like a median and barely moves for one outlier. The two lines diverge most when the data have outliers or heavy skew; on clean, symmetric data they nearly coincide."
+      }
     }
   ]
 }

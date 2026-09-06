@@ -81,7 +81,7 @@
         </section>
 
         <section id="controls" aria-label="Simulation controls">
-            <div class="control-row">
+            <div id="stat-selector" class="var-selector-row">
                 <label for="boot-stat">Statistic:
                     <select id="boot-stat">
                         <option value="mean" selected>Mean</option>
@@ -91,13 +91,18 @@
                         <option value="q3">Q3 (75th %ile)</option>
                     </select>
                 </label>
-                <label for="ci-level">Confidence level:
-                    <select id="ci-level">
-                        <option value="90">90%</option>
-                        <option value="95" selected>95%</option>
-                        <option value="99">99%</option>
-                    </select>
-                </label>
+            </div>
+            <div class="control-row">
+                <div class="ci-primary ci-primary-inline">
+                    <label for="ci-level">Confidence level
+                        <span class="conf-input-wrap"><input type="number" id="ci-level" value="95" min="50" max="99.9" step="1" aria-label="Confidence level, percent">%</span>
+                    </label>
+                    <span class="conf-pills" role="group" aria-label="Preset confidence levels">
+                        <button type="button" data-level="90">90%</button>
+                        <button type="button" data-level="95">95%</button>
+                        <button type="button" data-level="99">99%</button>
+                    </span>
+                </div>
                 <p id="seed-notice" class="seed-notice" hidden></p>
             </div>
             <div class="generate-bar" role="group" aria-label="Generate resamples">
@@ -155,9 +160,9 @@
              aria-atomic="true" class="sr-only"></div>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load a dataset, then run resamples or shuffles to build a bootstrap or null distribution. Use the histogram to estimate confidence intervals or p-values.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>Bootstrap CI: One Sample</h2>
+        <p class="help-intro">Resample your data <em>with replacement</em> many times, recording the mean of each resample. The histogram that builds up is the <strong>bootstrap distribution</strong> of the sample mean &mdash; read a <strong>confidence interval</strong> for the population mean off its middle (e.g., the middle 95%). This is an estimation tool: no hypotheses, no p-value.</p>
         <dl>
             <dt><kbd>1</kbd></dt><dd>+1 resample</dd>
             <dt><kbd>2</kbd></dt><dd>+10 resamples</dd>
@@ -168,6 +173,10 @@
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=bootstrap-explore.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -188,5 +197,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

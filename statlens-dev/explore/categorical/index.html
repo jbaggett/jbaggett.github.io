@@ -242,12 +242,22 @@
 
     
     <dialog id="page-help" aria-label="Help">
-        <h2>Help</h2>
-        <p class="help-intro">Load a dataset to explore categorical variables with bar charts and contingency tables.</p>
+        <h2>Two Categorical Variables</h2>
+        <p class="help-intro">Explore the relationship between two categorical variables using a grouped bar chart and a contingency table. Use the <strong>Row variable</strong> and <strong>Column variable</strong> menus to choose which variable goes where.</p>
+        <ul class="help-list">
+            <li><strong>Chart type</strong> — <strong>Side-by-Side</strong> puts each group's bars next to each other for direct count comparison; <strong>Stacked</strong> stacks them into one bar per group; <strong>100% Stacked</strong> scales every bar to the same height so you compare proportions instead of counts.</li>
+            <li><strong>Swap Chart Grouping</strong> — swaps the row and column variables, flipping which variable defines the bars and which defines the colors.</li>
+            <li><strong>Show</strong> (contingency table) — display raw <strong>Counts</strong>, <strong>Row proportions</strong> (each row sums to 1), <strong>Column proportions</strong> (each column sums to 1), or <strong>Cell proportions</strong> (every cell as a share of the grand total). Row vs column proportions answer different questions, so pick the one that matches what you're comparing.</li>
+        </ul>
+        <p>Once data loads, a summary bar appears with buttons to Explore, Preview, or Download the data, and a <strong>Change Data</strong> button to load something else.</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=two-way-tables.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -268,5 +278,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

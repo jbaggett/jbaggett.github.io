@@ -19,10 +19,7 @@ await new Promise((resolve) => {
   }, 50);
 });
 
-/** Render LaTeX to HTML string. */
-function tex(latex, display = false) {
-  return katex.renderToString(latex, { throwOnError: false, displayMode: display });
-}
+import { tex, escapeTex } from '../../js/tex.js';
 
 // Wait for jStat so we can compute test results
 const jstatMod = await import('jstat');
@@ -298,8 +295,8 @@ function buildScenario(ds, ctx) {
       }
     }
     const p = 1 - jStat.chisquare.cdf(chiSq, df);
-    const h0 = tex(`H_0\\text{: ${rVar} and ${cVar} are independent}`);
-    const ha = tex(`H_a\\text{: There is an association between ${rVar} and ${cVar}}`);
+    const h0 = tex(`H_0\\text{: ${escapeTex(rVar)} and ${escapeTex(cVar)} are independent}`);
+    const ha = tex(`H_a\\text{: There is an association between ${escapeTex(rVar)} and ${escapeTex(cVar)}}`);
     return {
       ...base, testType: 'chisq',
       hypotheses: `${h0}<br>${ha}`,
@@ -454,6 +451,59 @@ function extractGroups(ctx) {
   };
 }
 
+// ── Procedure-pool filter (REQ-035) ─────────────────────────────────
+// Lets the textbook scope the scenario pool to procedures students have
+// learned. The six testTypes this tool actually produces are:
+//   one-mean · paired · two-means · one-prop · two-props · chisq
+// (No anova/slope/gof-vs-indep scenarios exist, so those tags are accepted
+// but simply contribute nothing.) Default (no param) = full pool, unchanged.
+
+/** Map textbook procedure tags (and spelling variants) → this tool's testTypes. */
+const PROC_ALIASES = {
+  'one-prop': 'one-prop', 'oneprop': 'one-prop',
+  'two-prop': 'two-props', 'two-props': 'two-props', 'twoprop': 'two-props',
+  'one-mean': 'one-mean', 'onemean': 'one-mean',
+  'two-mean': 'two-means', 'two-means': 'two-means', 'twomean': 'two-means',
+  'paired': 'paired',
+  'chisq': 'chisq', 'chi-square': 'chisq', 'chisq-gof': 'chisq',
+  'chisq-indep': 'chisq', 'chisq-independence': 'chisq',
+  // 'anova', 'slope' — no scenarios in this tool; accepted, contribute nothing.
+};
+
+/**
+ * Named scopes for the two textbook capstones. `null` = full pool.
+ * `compute` is the canonical name for the Part III scope (the textbook unit was
+ * renamed Calculate → Compute); `calculate` stays as a deprecated alias so links
+ * already published against the old name keep resolving (REQ-039).
+ */
+const COMPUTE_SCOPE = ['one-prop', 'two-props', 'one-mean', 'two-means', 'paired']; // Part III: no χ² yet
+const SCOPE_PRESETS = {
+  compute: COMPUTE_SCOPE,
+  calculate: COMPUTE_SCOPE,  // deprecated alias — do not remove
+  apply: null,  // full pool
+  all: null,
+};
+
+/** @returns {Set<string>|null} allowed testTypes, or null for no filter. */
+function getProcedureFilter() {
+  const params = new URLSearchParams(location.search);
+  const scope = (params.get('scope') || '').trim().toLowerCase();
+  if (scope && Object.prototype.hasOwnProperty.call(SCOPE_PRESETS, scope)) {
+    const preset = SCOPE_PRESETS[scope];
+    return preset ? new Set(preset) : null;
+  }
+  const proc = params.get('procedures');
+  if (proc) {
+    const set = new Set();
+    for (const raw of proc.split(',')) {
+      const mapped = PROC_ALIASES[raw.trim().toLowerCase()];
+      if (mapped) set.add(mapped);
+    }
+    return set.size ? set : null; // all-unrecognized → treat as no filter
+  }
+  return null;
+}
+
 // ── Load all datasets with contexts ─────────────────────────────────
 
 async function loadScenarios() {
@@ -461,6 +511,7 @@ async function loadScenarios() {
     const resp = await fetch('../../data/datasets.json');
     const index = await resp.json();
 
+    const filter = getProcedureFilter();
     const built = [];
     for (const meta of index) {
       try {
@@ -469,14 +520,18 @@ async function loadScenarios() {
         if (!ds.inferenceContexts) continue;
         for (const ctx of ds.inferenceContexts) {
           const scenario = buildScenario(ds, ctx);
-          if (scenario && scenario.claim) built.push(scenario);
+          if (scenario && scenario.claim && (!filter || filter.has(scenario.testType))) {
+            built.push(scenario);
+          }
         }
       } catch { /* skip failed loads */ }
     }
 
     scenarios = shuffle(built);
     if (scenarios.length === 0) {
-      scenarioCard.innerHTML = '<p>No scenarios available. Check that datasets have inferenceContexts with claims.</p>';
+      scenarioCard.innerHTML = filter
+        ? '<p>No scenarios match the requested procedures. Check the <code>scope</code>/<code>procedures</code> parameter.</p>'
+        : '<p>No scenarios available. Check that datasets have inferenceContexts with claims.</p>';
       return;
     }
     showScenario(0);

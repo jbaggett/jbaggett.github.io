@@ -11,7 +11,7 @@
 import { createRng, sampleWithReplacement } from './prng.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
-import { drawDotplot, computeDotRadius, computeDots } from './dotplot.js';
+import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
@@ -19,7 +19,7 @@ import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersR
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
 import { parseParams } from './url-params.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
-import { resolveChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
+import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
 
 
 /**
@@ -184,6 +184,16 @@ export function initOneSamplePage(config) {
   // otherwise random each session.
   const urlSeed = parseParams().seed;
   let seed = urlSeed ?? Math.random().toString(36).slice(2, 10);
+
+  // Reasoning mode (?readout=false) / figure-only embed (?plot=only): hide the
+  // p-value + tail shading + pills so students read the result off the null
+  // distribution; plot=only also auto-runs once and shows only the chart.
+  // (parseParams only surfaces known typed params — read these straight.)
+  const _usp = new URLSearchParams(location.search);
+  const plotOnly = _usp.get('plot') === 'only';
+  let plotOnlyRan = false;
+  const showReadout = !plotOnly
+    && !/^(false|0|no)$/i.test(_usp.get('readout') || '');
 
   let sampleN = 0;
   let observedStat = 0;
@@ -353,6 +363,12 @@ export function initOneSamplePage(config) {
   }
 
   function getActiveChartType() {
+    // Reasoning-mode figures (plot=only / readout=false) hide the chart toggle:
+    // discrete spike bars for a small/moderate-n proportion, binning to a
+    // histogram only once the k/n values would crowd (see sim-app.js note).
+    if ((plotOnly || !showReadout) && chartType === 'auto') {
+      return reasoningChartType(allStats, { proportion: isProp });
+    }
     return resolveChartType(allStats.length, chartType);
   }
 
@@ -381,6 +397,15 @@ export function initOneSamplePage(config) {
     if (hypothesisDisplay) hypothesisDisplay.hidden = false;
     for (const btn of genBtns) btn.disabled = false;
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
+
+    // Figure-only embed: auto-run the largest batch once so the finished,
+    // hoverable null distribution appears with no click (the generate bar is
+    // hidden under plot=only, so there is no other way to run it).
+    if (plotOnly && !plotOnlyRan) {
+      plotOnlyRan = true;
+      const bigBtn = genBtns[genBtns.length - 1];
+      if (bigBtn) requestAnimationFrame(() => bigBtn.click());
+    }
   }
 
   /**
@@ -500,10 +525,28 @@ export function initOneSamplePage(config) {
         announce(`${ds.name}.`);
       },
       onText: (/** @type {any} */ parsed) => {
-        const catIdx = parsed.types.indexOf('categorical');
+        let catIdx = parsed.types.indexOf('categorical');
+        // Inline 0/1 samples (e.g. ?data=1,1,0,1) type as a single NUMERIC
+        // column, but for a one-proportion test a binary 0/1 column IS the
+        // outcome. Accept it as a proportion (successes = count of 1s) instead
+        // of rejecting — mirroring sim-app.js's numeric fallback for
+        // bootstrap-prop, so ?data=…&success=1 loads here too.
         if (catIdx < 0) {
-          announce('Need at least one categorical column.');
-          return;
+          const numIdx = parsed.types.indexOf('numeric');
+          const numName = numIdx >= 0 ? parsed.headers[numIdx] : null;
+          const vals = numName ? parsed.data.map(/** @param {any} r */ r => r[numName]) : [];
+          // parseCSV keeps cell values as strings even for a numeric column, so
+          // test against "0"/"1" (or numeric 0/1) after trimming.
+          const isBinary = vals.length > 0 && vals.every(/** @param {any} v */ v => {
+            const s = String(v).trim();
+            return s === '0' || s === '1';
+          });
+          if (isBinary) {
+            catIdx = numIdx;
+          } else {
+            announce('Need at least one categorical column, or a single 0/1 outcome column.');
+            return;
+          }
         }
         const colName = parsed.headers[catIdx];
         rawOutcomes = parsed.data.map(/** @param {any} r */ r => String(r[colName]));
@@ -1179,7 +1222,10 @@ export function initOneSamplePage(config) {
       binWidth: isProp ? 1 / sampleN : undefined,
       binOrigin: isProp ? 0 : undefined,
       precision,
-      pillMode: n > 0 ? 'randomization' : undefined,
+      // Reasoning / figure-only mode: no tail shading or p-value pills — the
+      // student reads the p-value off the histogram. Observed marker stays.
+      regionPredicate: showReadout ? undefined : () => false,
+      pillMode: (showReadout && n > 0) ? 'randomization' : undefined,
       pValue,
     });
 
@@ -1187,7 +1233,13 @@ export function initOneSamplePage(config) {
       lastHistResult = { xScale: result.xScale, yScale: result.yScale, bins: result.bins, domain };
     } else if (activeChart === 'dotplot' && result.maxStack > 0) {
       const effectiveBins = isProp ? sampleN : (userBinCount ?? DEFAULT_BINS);
-      lastDotResult = { xScale: result.xScale, frame: result.frame, domain, maxStack: result.maxStack, numBins: effectiveBins };
+      lastDotResult = {
+        xScale: result.xScale, frame: result.frame, domain, maxStack: result.maxStack,
+        numBins: effectiveBins,
+        // The dotplot's own count → pixel-y mapping, so a theory curve lines up in
+        // both stacked-dot and filled-column modes.
+        countToY: result.countToY, binWidth: result.binWidth,
+      };
     }
 
     // Theory overlay (histogram or dotplot)
@@ -1232,6 +1284,20 @@ export function initOneSamplePage(config) {
   function displayResults(stats, observed, pValue, extremeCount, direction) {
     const dirLabel = direction === 'both' ? 'two-sided'
       : direction === 'right' ? 'right-tail' : 'left-tail';
+
+    if (!showReadout) {
+      // Reasoning mode: keep the count + observed marker, hide the p-value — the
+      // student estimates it from the tail of the null distribution.
+      const nv = getNullValue();
+      const np = isProp ? 'p₀' : 'μ₀';
+      resultDiv.innerHTML = `
+        <p><strong>Null Distribution</strong> (${stats.length} simulations, ${np} = ${nv})</p>
+        <p>Observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span></p>
+        <p class="hint">Estimate the ${dirLabel} p-value by reading the fraction of the null distribution at least as extreme as the observed statistic off the histogram.</p>
+      `;
+      return;
+    }
+
     let strength;
     if (pValue < 0.01) strength = 'very strong';
     else if (pValue < 0.05) strength = 'strong';
@@ -1317,23 +1383,20 @@ export function initOneSamplePage(config) {
         label,
       });
     } else if (lastDotResult) {
-      const { xScale: dxScale, frame, domain: dom, maxStack, numBins } = lastDotResult;
-      const peakPdf = normalPdf(nullVal, nullVal, se);
-      if (peakPdf <= 0 || maxStack <= 0) return;
-
-      const dotRadius = computeDotRadius(frame.width, frame.height, maxStack, numBins);
-      const stackHeightPx = maxStack * dotRadius * 2;
-      const scaleFactor = stackHeightPx / peakPdf;
-      const yScale = (/** @type {number} */ freqY) => frame.height - freqY;
+      // Same frequency scaling as the histogram (expected count = n · binWidth · pdf),
+      // mapped through the dotplot's OWN count → pixel-y function: stacked dots at
+      // small n, a y-axis scale once the stacks overflow into filled columns.
+      const { xScale: dxScale, maxStack, countToY, binWidth: dotBinWidth, domain: dom } = lastDotResult;
+      if (!countToY || !dotBinWidth || maxStack <= 0) return;
 
       overlayTheoryCurve({
         container: chartContainer,
         pdf: (x) => normalPdf(x, nullVal, se),
         xDomain: dom,
-        totalN: 1,
-        binWidth: scaleFactor,
+        totalN: allStats.length,
+        binWidth: dotBinWidth,
         xScale: dxScale,
-        yScale,
+        yScale: countToY,
         label,
       });
     }

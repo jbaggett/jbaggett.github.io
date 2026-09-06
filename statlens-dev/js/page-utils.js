@@ -6,6 +6,7 @@
  */
 
 import { parseCSV, rowsToCSV, downloadCSV } from './csv-parser.js';
+import { renderDatasetActions, icon } from './dataset-actions.js';
 import { getSettings, setSettings, resetSettings, applySettings, getActivityMode, getExpertMode, prefersReducedMotion } from './settings.js';
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
@@ -728,7 +729,7 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
  * State is persisted in sessionStorage so it survives within a session.
  * @param {HTMLElement|null} mechanismStrip - The #mechanism-strip element
  */
-export function initMechanismCollapse(mechanismStrip) {
+export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } = {}) {
   if (!mechanismStrip || mechanismStrip.querySelector('.mechanism-collapse-bar')) return;
 
   const bar = document.createElement('div');
@@ -832,9 +833,11 @@ export function initMechanismCollapse(mechanismStrip) {
     attrObserver.observe(mechResampleContent, { attributes: true, attributeFilter: ['class'], subtree: true });
   }
 
-  // Restore persisted state
+  // Restore the persisted collapsed state — UNLESS the caller needs the strip open
+  // (e.g. a card-mechanism activity whose instructions point at the cards it shows;
+  // a stale "collapsed" carried over from another sim page would hide them).
   const collapsed = sessionStorage.getItem('mechanism-collapsed') === 'true';
-  if (collapsed) {
+  if (collapsed && !forceExpanded) {
     strip.classList.add('collapsed');
     btn.textContent = 'Show sampling detail';
     btn.setAttribute('aria-expanded', 'false');
@@ -866,8 +869,10 @@ export function collapseDataPanel(dataPanel, dataset) {
   if (!dataPanel.querySelector('.data-panel-expand-btn')) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'data-panel-expand-btn';
-    btn.textContent = 'Change Data';
+    btn.className = 'data-panel-expand-btn icon-btn';
+    btn.setAttribute('aria-label', 'Change data');
+    btn.title = 'Change data';
+    btn.innerHTML = icon('swap');
     btn.addEventListener('click', () => {
       dataPanel.classList.remove('collapsed');
       // Remove info panel when expanding (will be re-added on next collapse)
@@ -876,6 +881,9 @@ export function collapseDataPanel(dataPanel, dataset) {
     });
     dataPanel.appendChild(btn);
   }
+
+  // Explore / Preview / Download buttons (bundled datasets with row data only)
+  renderDatasetActions(dataPanel, dataset);
 
   // Render "About this data" if enriched metadata is available
   renderDatasetInfo(dataPanel, dataset);
@@ -1316,6 +1324,7 @@ function fetchExternalCSV(url, handleText, populateEditor, resolve) {
  *
  * @param {object} config
  * @param {(ds: {id:string, type:string}) => boolean} config.datasetFilter - Filter for dataset dropdown
+ * @param {(ds: any) => boolean} [config.deepLinkFilter] - Capability guard for `?dataset=` deep-links that are filtered out of the dropdown. When set, a `?dataset=NAME` whose id isn't in the curated dropdown still loads if it exists in the full index and passes this (more permissive, structural) filter. Omit to keep deep-links gated by `datasetFilter` (the default).
  * @param {(ds: any, meta: {id:string,name:string,description:string,type:string,n:number}) => void} config.onDataset - Called with fetched dataset JSON + metadata
  * @param {(parsed: {headers:string[], types:string[], data:Array<Record<string,any>>}, sourceName: string) => void} [config.onText] - Called with parseCSV result for paste/file
  * @param {(text: string, sourceName: string) => void} [config.onRawText] - Receive raw text instead (overrides onText)
@@ -1327,7 +1336,7 @@ function fetchExternalCSV(url, handleText, populateEditor, resolve) {
  * @returns {{ getDatasetIndex: () => Array<{id:string,name:string,description:string,type:string,n:number}>, populateEditor: (csvText:string, sourceName:string) => void, refilterDatasets: (filterFn: (ds: any) => boolean, groupFn?: (ds: any) => string) => void, ready: Promise<void>, currentDatasetId: string|null, currentSourceName: string, triggerPostLoad: () => void }}
  */
 export function initDataPanel(config) {
-  const { datasetFilter, onDataset, onText, onRawText, onClear,
+  const { datasetFilter, deepLinkFilter, onDataset, onText, onRawText, onClear,
     autoCollapse = false, stickyControls = false, showPreview = false,
     datasetGroupFn } = config;
 
@@ -1383,6 +1392,55 @@ export function initDataPanel(config) {
     }
   }
 
+  /**
+   * Load a dataset by id: fetch, apply the generator (when gen_seed is present),
+   * invoke onDataset, sync the editor, and resolve `ready`. Shared by the dropdown
+   * change handler and the `?dataset=` deep-link bypass.
+   * @param {string} id
+   * @param {any} [meta] - index metadata for this id (may be undefined)
+   * @returns {Promise<void>}
+   */
+  function loadDatasetById(id, meta) {
+    if (meta && datasetDesc) datasetDesc.textContent = meta.description;
+    return fetchDataset(id)
+      .then(ds => {
+        currentDatasetId = id;
+        currentSourceName = meta?.name || ds.name || id;
+
+        // Generator block: if the dataset has a generator and gen_seed is present,
+        // generate fresh data instead of using stored rows (REQ-023 mode 2).
+        const curParams = parseParams();
+        if (ds.generator && curParams.gen_seed) {
+          const genConfig = configFromGenerator(ds.generator, curParams);
+          const overrides = /** @type {Object<string,number>} */ ({});
+          for (const k of ['mu', 'sigma', 'shape', 'scale', 'lambda', 'prob', 'trials', 'a', 'b', 'df']) {
+            const v = /** @type {any} */ (curParams)[k];
+            if (v != null && typeof v === 'number') overrides[k] = v;
+          }
+          if (curParams.n) overrides.n = curParams.n;
+          const result = generateFromConfig(genConfig, curParams.gen_seed, overrides);
+          const varName = genConfig.var || 'value';
+          ds.rows = result.values.map(/** @param {any} v */ v => ({ [varName]: v }));
+          if (!ds.variables) ds.variables = [];
+          if (!ds.variables.some(/** @param {any} v */ v => v.name === varName)) {
+            const vType = typeof result.values[0] === 'string' ? 'categorical' : 'numeric';
+            ds.variables = [{ name: varName, label: genConfig.label || varName, type: vType }];
+          }
+        }
+
+        lastLoadedDataset = ds;
+        onDataset(ds, meta);
+        // Populate editor with dataset as CSV
+        if (ds.rows && ds.variables) {
+          const cols = ds.variables.map(/** @param {any} v */ v => v.name);
+          populateEditor(rowsToCSV(ds.rows, cols), meta?.name ?? id);
+        }
+        postLoadUI();
+        resolveReady();
+      })
+      .catch(() => announce('Failed to load dataset.'));
+  }
+
   /** Full unfiltered dataset index (loaded once). @type {Array<{id:string,name:string,description:string,type:string,n:number}>} */
   let fullIndex = [];
 
@@ -1422,6 +1480,20 @@ export function initDataPanel(config) {
         if (effectiveParams.dataset && index.some(ds => ds.id === effectiveParams.dataset)) {
           datasetSelect.value = effectiveParams.dataset;
           datasetSelect.dispatchEvent(new Event('change'));
+        } else if (effectiveParams.dataset && deepLinkFilter) {
+          // Deep-link bypass: a `?dataset=` link is an explicit request, so honor it
+          // even when the dataset is filtered out of the curated dropdown — provided
+          // it exists in the full index AND passes deepLinkFilter, a capability guard
+          // that keeps e.g. a categorical-only dataset out of a numeric-only tool.
+          const wanted = effectiveParams.dataset;
+          fetch(dataPath('datasets.json'))
+            .then(r => r.ok ? r.json() : [])
+            .then(full => {
+              const meta = full.find(/** @param {any} d */ d => d.id === wanted);
+              if (meta && deepLinkFilter(meta)) loadDatasetById(wanted, meta);
+              else resolveReady();
+            })
+            .catch(() => resolveReady());
         } else if (effectiveParams.dist) {
           // Inline parametric data generation (?dist=normal&mu=100&sigma=15&n=50&gen_seed=abc)
           const distConfig = configFromUrlParams(effectiveParams);
@@ -1515,48 +1587,7 @@ export function initDataPanel(config) {
         if (datasetDesc) datasetDesc.textContent = '';
         return;
       }
-      const meta = datasetIndex.find(d => d.id === id);
-      if (meta && datasetDesc) datasetDesc.textContent = meta.description;
-
-      fetchDataset(id)
-        .then(ds => {
-          currentDatasetId = id;
-          currentSourceName = meta?.name || ds.name || id;
-
-          // Generator block: if dataset has a generator and gen_seed is present,
-          // generate fresh data instead of using stored rows (REQ-023 mode 2)
-          const curParams = parseParams();
-          if (ds.generator && curParams.gen_seed) {
-            const genConfig = configFromGenerator(ds.generator, curParams);
-            const overrides = /** @type {Object<string,number>} */ ({});
-            for (const k of ['mu', 'sigma', 'shape', 'scale', 'lambda', 'prob', 'trials', 'a', 'b', 'df']) {
-              const v = /** @type {any} */ (curParams)[k];
-              if (v != null && typeof v === 'number') overrides[k] = v;
-            }
-            if (curParams.n) overrides.n = curParams.n;
-            const result = generateFromConfig(genConfig, curParams.gen_seed, overrides);
-            // Replace rows with generated data
-            const varName = genConfig.var || 'value';
-            ds.rows = result.values.map(v => ({ [varName]: v }));
-            // Ensure variables array includes the generated variable
-            if (!ds.variables) ds.variables = [];
-            if (!ds.variables.some(/** @param {any} v */ v => v.name === varName)) {
-              const vType = typeof result.values[0] === 'string' ? 'categorical' : 'numeric';
-              ds.variables = [{ name: varName, label: genConfig.label || varName, type: vType }];
-            }
-          }
-
-          lastLoadedDataset = ds;
-          onDataset(ds, meta);
-          // Populate editor with dataset as CSV
-          if (ds.rows && ds.variables) {
-            const cols = ds.variables.map(/** @param {any} v */ v => v.name);
-            populateEditor(rowsToCSV(ds.rows, cols), meta?.name ?? id);
-          }
-          postLoadUI();
-          resolveReady();
-        })
-        .catch(() => announce('Failed to load dataset.'));
+      loadDatasetById(id, datasetIndex.find(d => d.id === id));
     });
   } else {
     resolveReady();
@@ -1876,6 +1907,41 @@ export function consumeTransferData() {
   } catch { return null; }
 }
 
+/**
+ * Mount a contextual "carry this data to another tool" link (E1). The page supplies
+ * a getHandoff() callback returning the current handoff target (or null to hide the
+ * link — e.g. before data/variables are chosen). Bundled datasets travel via
+ * `?dataset=` + params; custom (pasted/file) data travels via the sessionStorage
+ * transfer that initDataPanel already consumes. Call the returned refresh() whenever
+ * the dataset or variable selection changes.
+ *
+ * @param {Element|null} mountEl
+ * @param {() => ({ label: string, target: string, dataset?: string|null,
+ *   csvText?: string|null, sourceName?: string, params?: Record<string, any> }|null)} getHandoff
+ * @returns {{ refresh: () => void }}
+ */
+export function initToolHandoff(mountEl, getHandoff) {
+  if (!mountEl) return { refresh: () => {} };
+  const wrap = document.createElement('div');
+  wrap.className = 'tool-handoff';
+  mountEl.appendChild(wrap);
+
+  function refresh() {
+    const h = getHandoff();
+    if (!h || !h.target) { wrap.innerHTML = ''; wrap.hidden = true; return; }
+    wrap.hidden = false;
+    const href = buildSimLink(h.target, { dataset: h.dataset || undefined, params: h.params });
+    wrap.innerHTML = `<a class="handoff-link" href="${href}">${h.label} <span aria-hidden="true">→</span></a>`;
+    const a = /** @type {HTMLAnchorElement|null} */ (wrap.querySelector('a'));
+    a?.addEventListener('click', () => {
+      // Custom (non-bundled) data can't ride in the URL — hand it off via sessionStorage.
+      if (!h.dataset && h.csvText) storeTransferData({ csvText: h.csvText, sourceName: h.sourceName });
+    });
+  }
+  refresh();
+  return { refresh };
+}
+
 // ─── Summary URL parsing ────────────────────────────────────────────
 
 /**
@@ -1982,4 +2048,44 @@ export function setPageTitle(pageLabel, datasetName, opts) {
   if (opts?.extra) title += ` \u2014 ${opts.extra}`;
   title += ' | StatLens';
   document.title = title;
+}
+
+/**
+ * Render a standardized, collapsed "Check Conditions" checkpoint: a compact
+ * toggle button plus the assumption-free alternative link, with the actual
+ * conditions (rule text and/or a diagnostic plot) tucked inside a collapsed
+ * panel. Unifies the conditions UI across every inference tool and keeps
+ * vertical space at a premium — the details only appear on demand.
+ *
+ * @param {HTMLElement} el - the #conditions-checkpoint container
+ * @param {object} o
+ * @param {{label:string,href:string}[]} [o.alts] - assumption-free alternative link(s); rendered as "Alternative(s): a | b (no conditions required)."
+ * @param {string} [o.altLabel] - convenience for a single alternative (with altHref)
+ * @param {string} [o.altHref] - href for the single alternative
+ * @param {string} o.detailsHTML - HTML shown inside the collapsed panel (the rule text and/or a chart mount point)
+ * @param {(panel: HTMLElement) => void} [o.onFirstExpand] - called once, the first time the panel opens (for lazy chart drawing)
+ */
+export function renderConditionsCheckpoint(el, o) {
+  if (!el) return;
+  const alts = o.alts || (o.altHref ? [{ label: o.altLabel || 'alternative', href: o.altHref }] : []);
+  const altLinks = alts.map(a => `<a href="${a.href}">${a.label}</a>`).join(' | ');
+  const altPart = altLinks
+    ? `&nbsp;|&nbsp; ${alts.length > 1 ? 'Alternatives' : 'Alternative'}: ${altLinks} (no conditions required).`
+    : '';
+  el.innerHTML = `
+    <p><button type="button" class="conditions-toggle" aria-expanded="false" aria-controls="conditions-panel">Check Conditions</button>${altPart}</p>
+    <div id="conditions-panel" class="conditions-panel" hidden>${o.detailsHTML}</div>`;
+  el.hidden = false;
+
+  const toggle = el.querySelector('.conditions-toggle');
+  const panel = /** @type {HTMLElement|null} */ (el.querySelector('#conditions-panel'));
+  let firstOpen = true;
+  if (toggle && panel) {
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      panel.hidden = expanded;
+      if (!expanded && firstOpen) { firstOpen = false; o.onFirstExpand?.(panel); }
+    });
+  }
 }

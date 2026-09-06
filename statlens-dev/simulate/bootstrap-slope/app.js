@@ -6,13 +6,19 @@
  */
 
 import { createRng } from '../../js/prng.js';
-import { linreg, mean, detectPrecision, formatStat } from '../../js/stats.js';
+import { linreg, mean, sd, detectPrecision, formatStat } from '../../js/stats.js';
 import { bootstrapCI } from '../../js/sim-engine.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
 import { computeBins } from '../../js/histogram.js';
 import { parseCSV } from '../../js/csv-parser.js';
 import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType, createChartToggle, computeDomain } from '../../js/chart-defaults.js';
+import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
+import {
+  ciMethodFromUrl, createCiMethodControl, normalApproxCI, zLabelFor, bcaCI,
+  drawCiPills, drawCompareBounds, appendCiLegend,
+  PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
+} from '../../js/ci-method.js';
 
 // ─── DOM ───
 
@@ -20,7 +26,8 @@ const scatterContainer = document.getElementById('scatter-container');
 const histContainer = document.getElementById('hist-container');
 const resultDiv = document.getElementById('result-summary');
 const resetBtn = /** @type {HTMLButtonElement} */ (document.getElementById('reset-btn'));
-const ciSelect = /** @type {HTMLSelectElement} */ (document.getElementById('ci-level'));
+const ciSelect = /** @type {HTMLInputElement} */ (document.getElementById('ci-level'));
+const ciPills = /** @type {HTMLElement|null} */ (ciSelect?.closest('.ci-primary')?.querySelector('.conf-pills') ?? null);
 const dataSummary = document.getElementById('data-summary');
 const dataPreview = document.getElementById('data-preview');
 
@@ -39,9 +46,8 @@ const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
 // Controls section (for expert toggle)
 const controlsSection = document.getElementById('controls');
 
-// Mark CI selector row as expert-only
-const controlRow = controlsSection?.querySelector('.control-row');
-if (controlRow) controlRow.classList.add('expert-only');
+// The confidence level is the CORE control of a CI tool — it stays visible, as on
+// the other bootstrap pages. (It used to be hidden behind "More options" here.)
 
 // Add expert toggle link next to generate bar
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
@@ -70,11 +76,31 @@ let allSlopes = [];
 let bootLines = [];
 /** @type {(() => number)|null} */
 let rng = null;
-let seed = Math.random().toString(36).slice(2, 10);
+// Use the URL seed when present so ?seed= gives Oracle-verifiable reproducibility
+// (matches the other sim tools); random otherwise. (REQ-049)
+const urlSeed = new URLSearchParams(location.search).get('seed');
+let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+if (urlSeed) {
+  const sn = document.getElementById('seed-notice');
+  if (sn) { sn.hidden = false; sn.textContent = `Seed: ${urlSeed}`; }
+}
+// Reasoning mode (?readout=false) / figure-only embed (?plot=only): hide the
+// computed CI + shading + pills so students read the interval off the histogram;
+// plot=only also auto-runs and shows only the chart (REQ-049).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
 let mechanismInitialized = false;
 
 let observedSlope = 0;
 let observedIntercept = 0;
+
+/** Chart grid from the last run, so a level/method change can redraw without one. */
+/** @type {[number,number]|undefined} */
+let lastHlDomain;
+/** @type {number[]|undefined} */
+let lastHlThresholds;
 
 /** Decimal places in source data (for formatStat). */
 let dataPrecision = 0;
@@ -159,6 +185,14 @@ function showDataLoaded() {
   for (const btn of genBtns) btn.disabled = false;
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
+  // Figure-only embed: auto-run the largest batch once so the finished, hoverable
+  // bootstrap distribution appears with no click. (REQ-049)
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    const bigBtn = genBtns[genBtns.length - 1];
+    if (bigBtn) requestAnimationFrame(() => bigBtn.click());
+  }
+
   // Populate mechanism strip observed scatterplot (stays hidden until first generate)
   const mechMargin = { top: 8, right: 8, bottom: 28, left: 22 };
   if (mechObservedPlot) {
@@ -186,16 +220,70 @@ function showDataLoaded() {
   }, 100);
 }
 
-// ─── CI level change ───
+// ─── Confidence level + CI method ───
+// This page has its own engine (it draws bootstrap lines on a scatterplot), but the
+// confidence control and the percentile / ±z·SE choice must behave exactly as they
+// do on the sim-app bootstrap pages — hence the shared js/ci-method.js.
+
+/** Current confidence level as a percent in [50, 99.9]. */
+const getCiLevel = () => Math.min(99.9, Math.max(50, parseFloat(ciSelect?.value ?? '95') || 95));
+
+// Honor a ?ci= confidence level from the URL (e.g. MOM homework links). Only the
+// level is URL-driven here; the ±z·SE / percentile choice stays on ci_method. (REQ-049)
+const urlCi = parseFloat(new URLSearchParams(location.search).get('ci') || '');
+if (ciSelect && urlCi >= 50 && urlCi <= 99.9) ciSelect.value = String(urlCi);
+
+let ciMethod = ciMethodFromUrl();
+/** @type {{syncPressed: (m: string) => void, syncLabel: (l: number) => void}|null} */
+let methodControl = null;
+
+function syncCiPills() {
+  if (!ciPills) return;
+  const lvl = +getCiLevel().toFixed(1);
+  for (const b of ciPills.querySelectorAll('button[data-level]')) {
+    b.setAttribute('aria-pressed', String(Number(b.getAttribute('data-level')) === lvl));
+  }
+}
+
+/** Recompute + redraw at the current level and method (needs a run to show). */
+function refreshCi() {
+  syncCiPills();
+  methodControl?.syncLabel(getCiLevel());
+  if (allSlopes.length < 20) return;
+  const ciLevel = getCiLevel();
+  const result = bootstrapCI([...allSlopes], ciLevel);
+  displayResults(allSlopes, result.ci, result.se, ciLevel);
+  renderHist(allSlopes, -1, undefined, undefined, result.ci, lastHlDomain, lastHlThresholds);
+}
 
 if (ciSelect) {
-  ciSelect.addEventListener('change', () => {
-    if (allSlopes.length >= 10) {
-      const ciLevel = parseInt(ciSelect.value, 10);
-      const result = bootstrapCI([...allSlopes], ciLevel);
-      displayResults(allSlopes, result.ci, result.se, ciLevel);
-    }
+  ciSelect.addEventListener('input', refreshCi);
+  ciSelect.addEventListener('change', refreshCi);
+  const ciPrimary = /** @type {HTMLElement|null} */ (ciSelect.closest('.ci-primary'));
+  if (ciPrimary) {
+    methodControl = createCiMethodControl(ciPrimary, {
+      method: ciMethod,
+      onChange: (m) => {
+        ciMethod = m;
+        methodControl?.syncPressed(m);
+        refreshCi();
+        announce(m === 'percentile' ? 'Percentile method.'
+          : m === 'se' ? 'Normal-approximation method: slope ± z · SE.'
+          : m === 'bca' ? 'BCa method: the percentile interval corrected for bias and skew.'
+          : 'Showing both the percentile and the normal-approximation interval.');
+      },
+    });
+    methodControl.syncLabel(getCiLevel());
+  }
+}
+if (ciPills) {
+  ciPills.addEventListener('click', (e) => {
+    const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-level]');
+    if (!btn || !ciSelect) return;
+    ciSelect.value = btn.getAttribute('data-level') || '95';
+    refreshCi();
   });
+  syncCiPills();
 }
 
 // ─── Generate ───
@@ -284,7 +372,7 @@ function generateResamples(count) {
     mechanismDescEl.hidden = false;
   }
 
-  const ciLevel = parseInt(ciSelect?.value ?? '95', 10);
+  const ciLevel = getCiLevel();
   /** @type {[number,number]|null} */
   let currentCI = null;
   const CI_MIN = 20;
@@ -312,6 +400,10 @@ function generateResamples(count) {
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
     allSlopes, prevLength, count, computeBins,
     { domain: hlDomain, thresholds: lockedThresholds });
+
+  // Remember the grid so a level/method change can redraw without a new run.
+  lastHlDomain = hlDomain;
+  lastHlThresholds = lockedThresholds;
 
   renderScatter();
 
@@ -359,28 +451,81 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
   const n = slopes.length;
   if (n === 0) { histContainer.innerHTML = ''; return; }
 
-  const regionPred = ci ? (/** @type {number} */ v) => v >= ci[0] && v <= ci[1] : undefined;
-  const activeChart = resolveChartType(n, 'auto');
+  // The CI method drives the picture, not just the results box (see js/ci-method.js).
+  const normalCI = (ci && n > 1) ? normalApproxCI(slopes, getCiLevel()) : null;
+  const bcaRes = (ci && ciMethod === 'bca') ? bcaSlopeCI(slopes, getCiLevel()) : null;
+  let shownCI = (bcaRes && ciMethod === 'bca') ? bcaRes.ci
+    : (normalCI && ciMethod === 'se') ? normalCI : ci;
+  let compareCI = (normalCI && ciMethod === 'both') ? normalCI : null;
+  // Reasoning / figure-only mode: no CI shading, bound lines, or pills — the
+  // student reads the interval off the histogram. Nulling shownCI cascades
+  // through regionPred, ciLines, baseFill, and the pill block below. (REQ-049)
+  if (!showReadout) { shownCI = null; compareCI = null; }
 
-  renderSimChart(histContainer, slopes, {
+  const regionPred = shownCI ? (/** @type {number} */ v) => v >= shownCI[0] && v <= shownCI[1] : undefined;
+  // Reasoning-mode figures force a binned, hoverable histogram (the dotplot
+  // auto-choice degrades into a spike cloud at 1000 resamples, and the
+  // draggable cutoff lines need a binned shape to read mass off of). (REQ-049)
+  const activeChart = !showReadout ? 'histogram' : resolveChartType(n, 'auto');
+
+  // A ±z·SE bound can sit outside the range of the resamples — keep it on screen.
+  /** @type {[number,number]|undefined} */
+  let domain = hlDomain;
+  if (domain && (shownCI || compareCI)) {
+    const extra = [...(shownCI ?? []), ...(compareCI ?? [])];
+    domain = [Math.min(domain[0], ...extra), Math.max(domain[1], ...extra)];
+  }
+
+  const result = renderSimChart(histContainer, slopes, {
     chartType: activeChart,
     id: 'slope-dist',
     xLabel: 'Bootstrap Slope',
     titleText: 'Bootstrap Distribution of Slope',
     regionPredicate: regionPred,
     observedStat: observedSlope,
-    ciLines: ci ?? undefined,
-    domain: hlDomain,
+    ciLines: shownCI ?? undefined,
+    ciColor: ciMethod === 'se' ? NORMAL_CI_COLOR : PERCENTILE_CI_COLOR,
+    domain,
     highlightIndex,
     highlightIndices,
     prevBinCounts,
     thresholds: hlThresholds,
-    pillMode: ci ? 'bootstrap' : undefined,
     precision: dataPrecision + 1,
-    baseFill: ci ? '#a0a0a0' : undefined,
-    extremeFill: ci ? '#569BBD' : undefined,
+    baseFill: shownCI ? '#a0a0a0' : undefined,
+    extremeFill: shownCI ? '#569BBD' : undefined,
   });
 
+  // Three symmetric pills (tails + the fraction actually inside), matching the
+  // other bootstrap pages — renderSimChart's own pillMode draws only a single one.
+  if (shownCI && result?.frame && result.xScale) {
+    drawCiPills(result.frame, result.xScale, slopes, shownCI);
+    if (compareCI) {
+      drawCompareBounds(result.frame, result.xScale, compareCI, dataPrecision + 1);
+      appendCiLegend(histContainer, getCiLevel());
+    }
+  }
+
+  // The ±z·SE interval is read off a normal curve — so show the curve it's read off.
+  if (ciMethod !== 'percentile' && slopes.length > 1 && result?.xScale && domain) {
+    const centre = mean(slopes);
+    const spread = sd(slopes);
+    const binWidth = activeChart === 'histogram'
+      ? (result.bins?.length ? result.bins[0].x1 - result.bins[0].x0 : null)
+      : result.binWidth;
+    const yScale = activeChart === 'histogram' ? result.yScale : result.countToY;
+    if (spread > 0 && binWidth && yScale) {
+      overlayTheoryCurve({
+        container: histContainer,
+        pdf: (x) => normalPdf(x, centre, spread),
+        xDomain: domain,
+        totalN: slopes.length,
+        binWidth,
+        xScale: result.xScale,
+        yScale,
+        label: 'N(b₁, SE)',
+      });
+    }
+  }
 }
 
 /**
@@ -389,19 +534,83 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
  * @param {number} se
  * @param {number} ciLevel
  */
+/**
+ * BCa interval for the regression slope (expert-only method).
+ * Jackknife = leave-one-out OLS slope over the (x, y) pairs.
+ * @param {number[]} slopes - bootstrap replicate slopes
+ * @param {number} ciLevel
+ * @returns {{ci:[number,number],z0:number,a:number,fellBack:boolean}|null}
+ */
+function bcaSlopeCI(slopes, ciLevel) {
+  const n = xData.length;
+  if (n < 3 || !slopes || slopes.length < 20) return null;
+  const jack = [];
+  for (let i = 0; i < n; i++) {
+    const xs = [], ys = [];
+    for (let j = 0; j < n; j++) if (j !== i) { xs.push(xData[j]); ys.push(yData[j]); }
+    jack.push(linreg(xs, ys).slope);
+  }
+  return bcaCI([...slopes], observedSlope, jack, ciLevel);
+}
+
 function displayResults(slopes, ci, se, ciLevel) {
   if (!resultDiv) return;
   const d = dataPrecision;
   const fmt = (v) => formatStat(v, d);
   const ciLo = `<span class="ci-value">${fmt(ci[0])}</span>`;
   const ciHi = `<span class="ci-value">${fmt(ci[1])}</span>`;
+
+  const m = mean(slopes);
+  const zLabel = zLabelFor(ciLevel);
+  const seBounds = normalApproxCI(slopes, ciLevel);
+  const seLo = `<span class="ci-value">${fmt(seBounds[0])}</span>`;
+  const seHi = `<span class="ci-value">${fmt(seBounds[1])}</span>`;
+  const ciPct = Number.isInteger(ciLevel) ? String(ciLevel) : ciLevel.toFixed(1);
+
+  const pctLine = `<p><strong>${ciPct}% CI (percentile):</strong> (${ciLo}, ${ciHi})</p>`;
+  const seLine = `<p><strong>${ciPct}% CI (±${zLabel}·SE):</strong> <span class="ci-formula">b&#8321; &plusmn; ${zLabel}&middot;SE = ${fmt(m)} &plusmn; ${zLabel} &times; ${fmt(se)} = (${seLo}, ${seHi})</span></p>`;
+  // BCa (expert-only): bias-corrected & accelerated slope interval.
+  let bcaLine = '', bcaLo = ciLo, bcaHi = ciHi;
+  if (ciMethod === 'bca') {
+    const r = bcaSlopeCI(slopes, ciLevel);
+    if (r) {
+      bcaLo = `<span class="ci-value">${fmt(r.ci[0])}</span>`;
+      bcaHi = `<span class="ci-value">${fmt(r.ci[1])}</span>`;
+      const fell = r.fellBack
+        ? ' (bootstrap distribution too degenerate for the adjustment; showing the plain percentile interval)'
+        : ` The cutoffs are shifted for bias (z&#8320; = ${r.z0.toFixed(3)}) and skew (a = ${r.a.toFixed(3)}).`;
+      bcaLine = `<p><strong>${ciPct}% CI (BCa):</strong> (${bcaLo}, ${bcaHi})<span class="hint" style="display:block">Bias-corrected and accelerated.${fell}</span></p>`;
+    }
+  }
+  const ciBlock = ciMethod === 'se' ? seLine
+    : ciMethod === 'both' ? pctLine + seLine
+    : ciMethod === 'bca' ? (bcaLine || pctLine)
+    : pctLine;
+  const bothNote = ciMethod === 'both'
+    ? '<p class="hint">The two methods agree closely when the bootstrap distribution is symmetric; they diverge when it’s skewed (where the percentile CI is the more honest one).</p>'
+    : '';
+  // The interval the student reads is the one the chart draws.
+  const interpLo = ciMethod === 'se' ? seLo : ciMethod === 'bca' ? bcaLo : ciLo;
+  const interpHi = ciMethod === 'se' ? seHi : ciMethod === 'bca' ? bcaHi : ciHi;
+
+  if (!showReadout) {
+    // Reasoning mode: keep the count, hide the computed interval — the student
+    // estimates it off the bootstrap histogram. (REQ-049)
+    resultDiv.innerHTML = `
+      <p><strong>Bootstrap Distribution</strong> (${slopes.length} resamples)</p>
+      <p class="hint">Estimate the ${getCiLevel()}% confidence interval for the slope by reading the middle of the bootstrap distribution off the histogram.</p>
+    `;
+    return;
+  }
+
   resultDiv.innerHTML = `
     <p><strong>Bootstrap Distribution</strong> (${slopes.length} resamples)</p>
     <p>Observed slope: ${fmt(observedSlope)}</p>
-    <p>Bootstrap mean slope: ${fmt(mean(slopes))}</p>
+    <p>Bootstrap mean slope: ${fmt(m)}</p>
     <p>SE: ${fmt(se)}</p>
-    <p><strong>${ciLevel}% Confidence Interval:</strong> (${ciLo}, ${ciHi})</p>
-    <p class="interpretation">We are ${ciLevel}% confident that the ${datasetContext.parameter || 'true population slope'}${datasetContext.population ? ' for ' + datasetContext.population : ''} is between ${ciLo} and ${ciHi}. The ${bootLines.length} semi-transparent lines on the scatterplot show the variability in the fitted regression across bootstrap resamples.</p>
+    ${ciBlock}
+    ${bothNote}
+    <p class="interpretation">We are ${ciPct}% confident that the ${datasetContext.parameter || 'true population slope'}${datasetContext.population ? ' for ' + datasetContext.population : ''} is between ${interpLo} and ${interpHi}. The ${bootLines.length} semi-transparent lines on the scatterplot show the variability in the fitted regression across bootstrap resamples.</p>
     ${slopes.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}
   `;
 }
@@ -421,7 +630,9 @@ function resetSimulation() {
   bootLines = [];
   rng = null;
   mechanismInitialized = false;
-  seed = Math.random().toString(36).slice(2, 10);
+  // Preserve a URL-provided seed across resets/data-loads so ?seed= stays
+  // reproducible; only re-randomize when no seed was pinned. (REQ-049)
+  seed = urlSeed || Math.random().toString(36).slice(2, 10);
   if (histContainer) histContainer.innerHTML = '';
   if (resultDiv) resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'run a simulation to see results')}</p>`;
   if (resetBtn) resetBtn.hidden = true;

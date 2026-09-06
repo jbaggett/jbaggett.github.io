@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Chi-Square Goodness-of-Fit Test | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm",
+            "jstat":        "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
+        }
+    }
+    </script>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#data-panel">Skip to Data</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Chart</a>
+        <a href="#results">Skip to Results</a>
+    </nav>
+
+    <main>
+        <h1>Chi-Square Goodness-of-Fit Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+
+        <section id="data-panel" aria-label="Data input">
+            <div role="tablist" aria-label="Data source">
+                <button role="tab" id="tab-dataset" aria-selected="true"
+                        aria-controls="panel-dataset">Datasets</button>
+                <button role="tab" id="tab-counts" aria-selected="false"
+                        aria-controls="panel-counts">Enter Counts</button>
+            </div>
+
+            <div role="tabpanel" id="panel-dataset" aria-labelledby="tab-dataset">
+                <label for="dataset-select">Choose a dataset:
+                    <select id="dataset-select">
+                        <option value="">-- Select --</option>
+                    </select>
+                </label>
+                <p id="dataset-desc" class="hint"></p>
+            </div>
+
+            <div role="tabpanel" id="panel-counts" aria-labelledby="tab-counts" hidden>
+                <p class="hint">Give each category an observed count and its hypothesized proportion under H<sub>0</sub>.</p>
+                <table id="gof-input" class="gof-input">
+                    <thead>
+                        <tr><th scope="col">Category</th><th scope="col">Observed</th><th scope="col">H<sub>0</sub> proportion</th><th><span class="sr-only">Remove</span></th></tr>
+                    </thead>
+                    <tbody id="gof-input-rows"></tbody>
+                </table>
+                <p class="hint">H<sub>0</sub> proportions sum to <strong><span id="p0-sum">&mdash;</span></strong> (should be 1).</p>
+                <div class="btn-row">
+                    <button type="button" id="gof-add-row" class="btn-secondary">+ Category</button>
+                    <button type="button" id="gof-load" class="btn-primary">Load</button>
+                    <button type="button" id="gof-clear" class="btn-secondary">Clear</button>
+                </div>
+            </div>
+
+            <div id="data-preview" hidden>
+                <output id="data-summary"></output>
+            </div>
+        </section>
+
+        <section id="controls" aria-label="Test" hidden>
+            <div class="hypothesis-display gof-hypotheses">
+                <div class="hypothesis-row">
+                    <span class="hypothesis-label">H<sub>0</sub>:</span>
+                    <span id="gof-h0">the category proportions equal the hypothesized distribution</span>
+                </div>
+                <div class="hypothesis-row">
+                    <span class="hypothesis-label">H<sub>a</sub>:</span>
+                    <span id="gof-ha">at least one proportion differs from its hypothesized value</span>
+                </div>
+            </div>
+        </section>
+
+        <div id="conditions-checkpoint" class="conditions-checkpoint" hidden></div>
+
+        <section id="chart" aria-label="Chi-square distribution chart" hidden>
+            <figure>
+                <div id="chart-container"></div>
+            </figure>
+        </section>
+
+        <section id="results" aria-label="Test results" hidden>
+            <div class="results-grid">
+                <div class="result-card">
+                    <h3>Test Results</h3>
+                    <table class="stat-table" aria-label="Chi-square goodness-of-fit results">
+                        <tbody>
+                            <tr><th scope="row">&chi;&sup2;</th><td id="res-chisq">&mdash;</td></tr>
+                            <tr><th scope="row">df</th><td id="res-df">&mdash;</td></tr>
+                            <tr><th scope="row">p-value</th><td id="res-p">&mdash;</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="formula-container" hidden></div>
+            </div>
+
+            <div class="result-card">
+                <h3>Observed vs. Expected</h3>
+                <div id="gof-table-container"></div>
+            </div>
+
+            <div id="interpretation" class="interpretation" aria-live="polite" hidden></div>
+        </section>
+
+        <div id="sr-announce" role="status" aria-live="polite"
+             aria-atomic="true" class="sr-only"></div>
+        <p class="tool-crosslink">Simulate the null instead? <a href="../../simulate/goodness-of-fit/">Goodness-of-Fit Simulation &rarr;</a></p>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Chi-Square Goodness-of-Fit Test</h2>
+        <p class="help-intro">Compare one categorical variable's observed counts to a hypothesized distribution using the chi-square distribution. The test statistic is χ² = Σ(O−E)²/E with df = (number of categories − 1); the p-value is the right tail. All expected counts should be at least 5 for the approximation to hold — otherwise use the <a href="../../simulate/goodness-of-fit/">simulation</a>.</p>
+        <dl>
+            <dt><kbd>?</kbd></dt><dd>Show this help</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
+        </dl>
+        <button type="button" autofocus>Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

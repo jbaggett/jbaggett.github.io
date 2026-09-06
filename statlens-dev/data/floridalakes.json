@@ -1,0 +1,594 @@
+{
+  "id": "floridalakes",
+  "name": "Florida Lakes (Mercury)",
+  "description": "Water chemistry and fish mercury for 53 Florida lakes — pH/alkalinity vs mercury (Ch. 7, 24 regression/correlation).",
+  "source": "coursepack",
+  "chapter": "IMS Ch. 7, 24",
+  "type": "regression",
+  "studyDescription": "For 53 Florida lakes, researchers recorded water-chemistry measures (pH, alkalinity, calcium, chlorophyll) and the average mercury concentration measured in fish tissue. An observational study used to relate acidity to fish mercury.",
+  "variableDescriptions": {
+    "lake": "Name of the lake.",
+    "alkalinity": "Water alkalinity (acid-neutralizing capacity).",
+    "ph": "Water acidity/alkalinity on the pH scale.",
+    "calcium": "Dissolved calcium concentration.",
+    "chlorophyll": "Chlorophyll concentration (algae/productivity).",
+    "avg_mercury": "Mean mercury concentration in fish tissue.",
+    "std_mercury": "Mercury standardized to a 3-year-old fish.",
+    "age_data": "Whether fish-age data were available (1 = yes, 0 = no)."
+  },
+  "sourceDetail": "Lange, Royals & Connor (1993), via Mendenhall & Sincich and the coursepack.",
+  "variables": [
+    {
+      "name": "lake",
+      "label": "Lake",
+      "type": "categorical"
+    },
+    {
+      "name": "alkalinity",
+      "label": "Alkalinity (mg/L CaCO₃)",
+      "type": "numeric"
+    },
+    {
+      "name": "ph",
+      "label": "pH",
+      "type": "numeric"
+    },
+    {
+      "name": "calcium",
+      "label": "Calcium (mg/L)",
+      "type": "numeric"
+    },
+    {
+      "name": "chlorophyll",
+      "label": "Chlorophyll (mg/L)",
+      "type": "numeric"
+    },
+    {
+      "name": "avg_mercury",
+      "label": "Average Mercury (ppm)",
+      "type": "numeric"
+    },
+    {
+      "name": "std_mercury",
+      "label": "Standardized Mercury (3-yr, ppm)",
+      "type": "numeric"
+    },
+    {
+      "name": "age_data",
+      "label": "Age Data Available",
+      "type": "categorical"
+    }
+  ],
+  "rows": [
+    {
+      "lake": "Alligator",
+      "alkalinity": 5.9,
+      "ph": 6.1,
+      "calcium": 3,
+      "chlorophyll": 0.7,
+      "avg_mercury": 1.23,
+      "std_mercury": 1.53,
+      "age_data": "1"
+    },
+    {
+      "lake": "Annie",
+      "alkalinity": 3.5,
+      "ph": 5.1,
+      "calcium": 1.9,
+      "chlorophyll": 3.2,
+      "avg_mercury": 1.33,
+      "std_mercury": 1.33,
+      "age_data": "0"
+    },
+    {
+      "lake": "Apopka",
+      "alkalinity": 116,
+      "ph": 9.1,
+      "calcium": 44.1,
+      "chlorophyll": 128.3,
+      "avg_mercury": 0.04,
+      "std_mercury": 0.04,
+      "age_data": "0"
+    },
+    {
+      "lake": "Blue Cypress",
+      "alkalinity": 39.4,
+      "ph": 6.9,
+      "calcium": 16.4,
+      "chlorophyll": 3.5,
+      "avg_mercury": 0.44,
+      "std_mercury": 0.44,
+      "age_data": "0"
+    },
+    {
+      "lake": "Brick",
+      "alkalinity": 2.5,
+      "ph": 4.6,
+      "calcium": 2.9,
+      "chlorophyll": 1.8,
+      "avg_mercury": 1.2,
+      "std_mercury": 1.33,
+      "age_data": "1"
+    },
+    {
+      "lake": "Bryant",
+      "alkalinity": 19.6,
+      "ph": 7.3,
+      "calcium": 4.5,
+      "chlorophyll": 44.1,
+      "avg_mercury": 0.27,
+      "std_mercury": 0.25,
+      "age_data": "1"
+    },
+    {
+      "lake": "Cherry",
+      "alkalinity": 5.2,
+      "ph": 5.4,
+      "calcium": 2.8,
+      "chlorophyll": 3.4,
+      "avg_mercury": 0.48,
+      "std_mercury": 0.45,
+      "age_data": "1"
+    },
+    {
+      "lake": "Crescent",
+      "alkalinity": 71.4,
+      "ph": 8.1,
+      "calcium": 55.2,
+      "chlorophyll": 33.7,
+      "avg_mercury": 0.19,
+      "std_mercury": 0.16,
+      "age_data": "1"
+    },
+    {
+      "lake": "Deer Point",
+      "alkalinity": 26.4,
+      "ph": 5.8,
+      "calcium": 9.2,
+      "chlorophyll": 1.6,
+      "avg_mercury": 0.83,
+      "std_mercury": 0.72,
+      "age_data": "1"
+    },
+    {
+      "lake": "Dias",
+      "alkalinity": 4.8,
+      "ph": 6.4,
+      "calcium": 4.6,
+      "chlorophyll": 22.5,
+      "avg_mercury": 0.81,
+      "std_mercury": 0.81,
+      "age_data": "1"
+    },
+    {
+      "lake": "Dorr",
+      "alkalinity": 6.6,
+      "ph": 5.4,
+      "calcium": 2.7,
+      "chlorophyll": 14.9,
+      "avg_mercury": 0.71,
+      "std_mercury": 0.71,
+      "age_data": "1"
+    },
+    {
+      "lake": "Down",
+      "alkalinity": 16.5,
+      "ph": 7.2,
+      "calcium": 13.8,
+      "chlorophyll": 4,
+      "avg_mercury": 0.5,
+      "std_mercury": 0.51,
+      "age_data": "1"
+    },
+    {
+      "lake": "Eaton",
+      "alkalinity": 25.4,
+      "ph": 7.2,
+      "calcium": 25.2,
+      "chlorophyll": 11.6,
+      "avg_mercury": 0.49,
+      "std_mercury": 0.54,
+      "age_data": "1"
+    },
+    {
+      "lake": "East Tohopekaliga",
+      "alkalinity": 7.1,
+      "ph": 5.8,
+      "calcium": 5.2,
+      "chlorophyll": 5.8,
+      "avg_mercury": 1.16,
+      "std_mercury": 1,
+      "age_data": "1"
+    },
+    {
+      "lake": "Farm-13",
+      "alkalinity": 128,
+      "ph": 7.6,
+      "calcium": 86.5,
+      "chlorophyll": 71.1,
+      "avg_mercury": 0.05,
+      "std_mercury": 0.05,
+      "age_data": "0"
+    },
+    {
+      "lake": "George",
+      "alkalinity": 83.7,
+      "ph": 8.2,
+      "calcium": 66.5,
+      "chlorophyll": 78.6,
+      "avg_mercury": 0.15,
+      "std_mercury": 0.15,
+      "age_data": "1"
+    },
+    {
+      "lake": "Griffin",
+      "alkalinity": 108.5,
+      "ph": 8.7,
+      "calcium": 35.6,
+      "chlorophyll": 80.1,
+      "avg_mercury": 0.19,
+      "std_mercury": 0.19,
+      "age_data": "1"
+    },
+    {
+      "lake": "Harney",
+      "alkalinity": 61.3,
+      "ph": 7.8,
+      "calcium": 57.4,
+      "chlorophyll": 13.9,
+      "avg_mercury": 0.77,
+      "std_mercury": 0.49,
+      "age_data": "1"
+    },
+    {
+      "lake": "Hart",
+      "alkalinity": 6.4,
+      "ph": 5.8,
+      "calcium": 4,
+      "chlorophyll": 4.6,
+      "avg_mercury": 1.08,
+      "std_mercury": 1.02,
+      "age_data": "1"
+    },
+    {
+      "lake": "Hatchineha",
+      "alkalinity": 31,
+      "ph": 6.7,
+      "calcium": 15,
+      "chlorophyll": 17,
+      "avg_mercury": 0.98,
+      "std_mercury": 0.7,
+      "age_data": "1"
+    },
+    {
+      "lake": "Iamonia",
+      "alkalinity": 7.5,
+      "ph": 4.4,
+      "calcium": 2,
+      "chlorophyll": 9.6,
+      "avg_mercury": 0.63,
+      "std_mercury": 0.45,
+      "age_data": "1"
+    },
+    {
+      "lake": "Istokpoga",
+      "alkalinity": 17.3,
+      "ph": 6.7,
+      "calcium": 10.7,
+      "chlorophyll": 9.5,
+      "avg_mercury": 0.56,
+      "std_mercury": 0.59,
+      "age_data": "1"
+    },
+    {
+      "lake": "Jackson",
+      "alkalinity": 12.6,
+      "ph": 6.1,
+      "calcium": 3.7,
+      "chlorophyll": 21,
+      "avg_mercury": 0.41,
+      "std_mercury": 0.41,
+      "age_data": "0"
+    },
+    {
+      "lake": "Josephine",
+      "alkalinity": 7,
+      "ph": 6.9,
+      "calcium": 6.3,
+      "chlorophyll": 32.1,
+      "avg_mercury": 0.73,
+      "std_mercury": 0.81,
+      "age_data": "1"
+    },
+    {
+      "lake": "Kingsley",
+      "alkalinity": 10.5,
+      "ph": 5.5,
+      "calcium": 6.3,
+      "chlorophyll": 1.6,
+      "avg_mercury": 0.34,
+      "std_mercury": 0.42,
+      "age_data": "1"
+    },
+    {
+      "lake": "Kissimmee",
+      "alkalinity": 30,
+      "ph": 6.9,
+      "calcium": 13.9,
+      "chlorophyll": 21.5,
+      "avg_mercury": 0.59,
+      "std_mercury": 0.53,
+      "age_data": "1"
+    },
+    {
+      "lake": "Lochloosa",
+      "alkalinity": 55.4,
+      "ph": 7.3,
+      "calcium": 15.9,
+      "chlorophyll": 24.7,
+      "avg_mercury": 0.34,
+      "std_mercury": 0.31,
+      "age_data": "1"
+    },
+    {
+      "lake": "Louisa",
+      "alkalinity": 3.9,
+      "ph": 4.5,
+      "calcium": 3.3,
+      "chlorophyll": 7,
+      "avg_mercury": 0.84,
+      "std_mercury": 0.87,
+      "age_data": "1"
+    },
+    {
+      "lake": "Miccasukee",
+      "alkalinity": 5.5,
+      "ph": 4.8,
+      "calcium": 1.7,
+      "chlorophyll": 14.8,
+      "avg_mercury": 0.5,
+      "std_mercury": 0.5,
+      "age_data": "0"
+    },
+    {
+      "lake": "Minneola",
+      "alkalinity": 6.3,
+      "ph": 5.8,
+      "calcium": 3.3,
+      "chlorophyll": 0.7,
+      "avg_mercury": 0.34,
+      "std_mercury": 0.47,
+      "age_data": "1"
+    },
+    {
+      "lake": "Monroe",
+      "alkalinity": 67,
+      "ph": 7.8,
+      "calcium": 58.6,
+      "chlorophyll": 43.8,
+      "avg_mercury": 0.28,
+      "std_mercury": 0.25,
+      "age_data": "1"
+    },
+    {
+      "lake": "Newmans",
+      "alkalinity": 28.8,
+      "ph": 7.4,
+      "calcium": 10.2,
+      "chlorophyll": 32.7,
+      "avg_mercury": 0.34,
+      "std_mercury": 0.41,
+      "age_data": "1"
+    },
+    {
+      "lake": "Ocean Pond",
+      "alkalinity": 5.8,
+      "ph": 3.6,
+      "calcium": 1.6,
+      "chlorophyll": 3.2,
+      "avg_mercury": 0.87,
+      "std_mercury": 0.87,
+      "age_data": "0"
+    },
+    {
+      "lake": "Ocheese Pond",
+      "alkalinity": 4.5,
+      "ph": 4.4,
+      "calcium": 1.1,
+      "chlorophyll": 3.2,
+      "avg_mercury": 0.56,
+      "std_mercury": 0.56,
+      "age_data": "0"
+    },
+    {
+      "lake": "Okeechobee",
+      "alkalinity": 119.1,
+      "ph": 7.9,
+      "calcium": 38.4,
+      "chlorophyll": 16.1,
+      "avg_mercury": 0.17,
+      "std_mercury": 0.16,
+      "age_data": "1"
+    },
+    {
+      "lake": "Orange",
+      "alkalinity": 25.4,
+      "ph": 7.1,
+      "calcium": 8.8,
+      "chlorophyll": 45.2,
+      "avg_mercury": 0.18,
+      "std_mercury": 0.16,
+      "age_data": "1"
+    },
+    {
+      "lake": "Panasoffkee",
+      "alkalinity": 106.5,
+      "ph": 6.8,
+      "calcium": 90.7,
+      "chlorophyll": 16.5,
+      "avg_mercury": 0.19,
+      "std_mercury": 0.23,
+      "age_data": "1"
+    },
+    {
+      "lake": "Parker",
+      "alkalinity": 53,
+      "ph": 8.4,
+      "calcium": 45.6,
+      "chlorophyll": 152.4,
+      "avg_mercury": 0.04,
+      "std_mercury": 0.04,
+      "age_data": "0"
+    },
+    {
+      "lake": "Placid",
+      "alkalinity": 8.5,
+      "ph": 7,
+      "calcium": 2.5,
+      "chlorophyll": 12.8,
+      "avg_mercury": 0.49,
+      "std_mercury": 0.56,
+      "age_data": "1"
+    },
+    {
+      "lake": "Puzzle",
+      "alkalinity": 87.6,
+      "ph": 7.5,
+      "calcium": 85.5,
+      "chlorophyll": 20.1,
+      "avg_mercury": 1.1,
+      "std_mercury": 0.89,
+      "age_data": "1"
+    },
+    {
+      "lake": "Rodman",
+      "alkalinity": 114,
+      "ph": 7,
+      "calcium": 72.6,
+      "chlorophyll": 6.4,
+      "avg_mercury": 0.16,
+      "std_mercury": 0.18,
+      "age_data": "1"
+    },
+    {
+      "lake": "Rousseau",
+      "alkalinity": 97.5,
+      "ph": 6.8,
+      "calcium": 45.5,
+      "chlorophyll": 6.2,
+      "avg_mercury": 0.1,
+      "std_mercury": 0.19,
+      "age_data": "1"
+    },
+    {
+      "lake": "Sampson",
+      "alkalinity": 11.8,
+      "ph": 5.9,
+      "calcium": 24.2,
+      "chlorophyll": 1.6,
+      "avg_mercury": 0.48,
+      "std_mercury": 0.44,
+      "age_data": "1"
+    },
+    {
+      "lake": "Shipp",
+      "alkalinity": 66.5,
+      "ph": 8.3,
+      "calcium": 26,
+      "chlorophyll": 68.2,
+      "avg_mercury": 0.21,
+      "std_mercury": 0.16,
+      "age_data": "1"
+    },
+    {
+      "lake": "Talquin",
+      "alkalinity": 16,
+      "ph": 6.7,
+      "calcium": 41.2,
+      "chlorophyll": 24.1,
+      "avg_mercury": 0.86,
+      "std_mercury": 0.67,
+      "age_data": "1"
+    },
+    {
+      "lake": "Tarpon",
+      "alkalinity": 5,
+      "ph": 6.2,
+      "calcium": 23.6,
+      "chlorophyll": 9.6,
+      "avg_mercury": 0.52,
+      "std_mercury": 0.55,
+      "age_data": "1"
+    },
+    {
+      "lake": "Tohopekaliga",
+      "alkalinity": 25.6,
+      "ph": 6.2,
+      "calcium": 12.6,
+      "chlorophyll": 27.7,
+      "avg_mercury": 0.65,
+      "std_mercury": 0.58,
+      "age_data": "1"
+    },
+    {
+      "lake": "Trafford",
+      "alkalinity": 81.5,
+      "ph": 8.9,
+      "calcium": 20.5,
+      "chlorophyll": 9.6,
+      "avg_mercury": 0.27,
+      "std_mercury": 0.27,
+      "age_data": "0"
+    },
+    {
+      "lake": "Trout",
+      "alkalinity": 1.2,
+      "ph": 4.3,
+      "calcium": 2.1,
+      "chlorophyll": 6.4,
+      "avg_mercury": 0.94,
+      "std_mercury": 0.98,
+      "age_data": "1"
+    },
+    {
+      "lake": "Tsala Apopka",
+      "alkalinity": 34,
+      "ph": 7,
+      "calcium": 13.1,
+      "chlorophyll": 4.6,
+      "avg_mercury": 0.4,
+      "std_mercury": 0.31,
+      "age_data": "1"
+    },
+    {
+      "lake": "Weir",
+      "alkalinity": 15.5,
+      "ph": 6.9,
+      "calcium": 5.2,
+      "chlorophyll": 16.5,
+      "avg_mercury": 0.43,
+      "std_mercury": 0.43,
+      "age_data": "1"
+    },
+    {
+      "lake": "Wildcat",
+      "alkalinity": 17.3,
+      "ph": 5.2,
+      "calcium": 3,
+      "chlorophyll": 2.6,
+      "avg_mercury": 0.25,
+      "std_mercury": 0.28,
+      "age_data": "1"
+    },
+    {
+      "lake": "Yale",
+      "alkalinity": 71.8,
+      "ph": 7.9,
+      "calcium": 20.5,
+      "chlorophyll": 8.8,
+      "avg_mercury": 0.27,
+      "std_mercury": 0.25,
+      "age_data": "1"
+    }
+  ]
+}

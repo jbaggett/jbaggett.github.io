@@ -54,7 +54,21 @@ let datasetContext = {};
 let allStats = [];
 /** @type {(() => number)|null} */
 let rng = null;
-let seed = Math.random().toString(36).slice(2, 10);
+// Use the URL seed when present, so ?seed= gives Oracle-verifiable reproducibility
+// for graded/homework use (matches the sim-app.js tools); random otherwise.
+const urlSeed = new URLSearchParams(location.search).get('seed');
+let seed = urlSeed || Math.random().toString(36).slice(2, 10);
+// Reasoning mode (?readout=false) / figure-only embed (?plot=only): hide the
+// computed answer (p-value + tail shading + pills) so students read it off the
+// distribution. plot=only also auto-runs and shows only the chart (MOM, 2026-07-25).
+const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
+let plotOnlyRan = false;
+const showReadout = !plotOnly
+  && !/^(false|0|no)$/i.test(new URLSearchParams(location.search).get('readout') || '');
+if (urlSeed) {
+  const sn = document.getElementById('seed-notice');
+  if (sn) { sn.hidden = false; sn.textContent = `Seed: ${urlSeed}`; }
+}
 /** Whether the mechanism strip has been initialized (deferred to first generate). */
 let mechanismInitialized = false;
 
@@ -186,7 +200,11 @@ const dataApi = initDataPanel({
   autoCollapse: true,
   stickyControls: true,
   showPreview: true,
-  datasetFilter: ds => ds.type === 'chisq',
+  // Accept both chi-square tables and two-proportion (randomization_prop) datasets:
+  // a 2-group × 2-outcome experiment is a 2×2 table, so it's a valid test of
+  // independence here. Matches the analytic inference/chisq filter, and makes
+  // datasets like `yawn` (the clean not-significant case) loadable.
+  datasetFilter: ds => ds.type === 'chisq' || ds.type === 'randomization_prop',
   onDataset: (ds) => {
     resetSimulation();
     datasetContext = ds.context || {};
@@ -229,6 +247,11 @@ function showDataLoaded() {
     dataSummary.textContent = `${namePrefix}${dims} table, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  if (plotOnly && !plotOnlyRan) {
+    plotOnlyRan = true;
+    const bigBtn = genBtns[genBtns.length - 1];
+    requestAnimationFrame(() => bigBtn && bigBtn.click());
+  }
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
   // Populate mechanism strip content (stays hidden until first generate)
@@ -405,7 +428,8 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     highlightIndices,
     prevBinCounts,
     thresholds: hlThresholds,
-    pillMode: stats.length > 0 ? 'randomization' : undefined,
+    regionPredicate: showReadout ? undefined : () => false,
+    pillMode: (showReadout && stats.length > 0) ? 'randomization' : undefined,
     pValue,
   });
 
@@ -440,9 +464,11 @@ function displayResults(stats, observed, pValue, extremeCount) {
     resultDiv.innerHTML = `
       <p><strong>Null Distribution</strong> (${stats.length} simulations)</p>
       <p>Observed χ² = ${formatStat(observed, 2)}</p>
+      ${showReadout ? `
       <p>Extreme count: ${extremeCount} of ${stats.length} (right-tail)</p>
       <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}</p>
-      <p class="interpretation">${extremeCount} of ${stats.length} shuffled tables had χ² ≥ ${formatStat(observed, 2)}. This provides ${strength} evidence against H₀: ${datasetContext.nullClaim || 'the row and column variables are independent'}.</p>
+      <p class="interpretation">${extremeCount} of ${stats.length} shuffled tables had χ² ≥ ${formatStat(observed, 2)}. This provides ${strength} evidence against H₀: ${datasetContext.nullClaim || 'the row and column variables are independent'}.</p>` : `
+      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed χ² is marked on the distribution — hover the bars to count how many of the ${stats.length} shuffles have χ² at least as large.</p>`}
     `;
   }
 }
@@ -460,7 +486,9 @@ function resetSimulation() {
   allStats = [];
   rng = null;
   mechanismInitialized = false;
-  seed = Math.random().toString(36).slice(2, 10);
+  // Preserve the URL seed across resets (incl. the reset fired on data load) so
+  // ?seed= stays reproducible; only re-randomize when no seed was pinned.
+  seed = urlSeed || Math.random().toString(36).slice(2, 10);
   if (chartContainer) chartContainer.innerHTML = '';
   if (resultDiv) resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'run a simulation to see results')}</p>`;
   if (resetBtn) resetBtn.hidden = true;

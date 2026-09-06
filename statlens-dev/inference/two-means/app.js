@@ -16,10 +16,9 @@ import { initTabs, initDataPanel, announce, initHelp, initHypToggle, getActiveTa
 initHelp();
 import { mean, detectPrecision, formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
+import { linkFormula } from '../../js/formula-link.js';
 
-/** Render LaTeX to HTML string via KaTeX. */
-const tex = (/** @type {string} */ latex, display = false) =>
-  katex.renderToString(latex, { throwOnError: false, displayMode: display });
+import { tex, escapeTex } from '../../js/tex.js';
 
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
 
@@ -36,6 +35,9 @@ const dataPreview = document.getElementById('data-preview');
 const varSelectorsDiv = document.getElementById('var-selectors');
 const groupVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('group-var-select'));
 const responseVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('response-var-select'));
+const groupOrderEl = document.getElementById('group-order');
+const swapGroupsBtn = document.getElementById('swap-groups');
+const groupLegendEl = document.getElementById('group-legend');
 
 // ── State ───────────────────────────────────────────────────────────
 /** @type {number[]} */
@@ -44,6 +46,8 @@ let group1 = [];
 let group2 = [];
 let group1Name = 'Group 1';
 let group2Name = 'Group 2';
+/** Whether the two groups have been swapped (persists across recomputes). */
+let groupsSwapped = false;
 let dataPrecision = 1;
 
 /** Cached parsed data for variable re-selection. @type {{ headers: string[], types: string[], data: Array<Record<string,any>> } | null} */
@@ -75,8 +79,20 @@ const dataPanel = initDataPanel({
 
 // Listen for parameter changes
 const altSelect = initHypToggle('input-alt', runAnalysis);
-const confSelect = /** @type {HTMLSelectElement} */ (document.getElementById('conf-level'));
-confSelect?.addEventListener('change', runAnalysis);
+// Confidence level is chosen from a dropdown inlined into the CI heading (built
+// fresh on each render). Keep the chosen level in state and listen via
+// delegation on the (persistent) results container so the handler survives the
+// innerHTML rebuild; restore focus to the recreated select for keyboard users.
+let confLevelState = 0.95;
+let confFocusPending = false;
+resultDiv?.addEventListener('change', (e) => {
+  const t = /** @type {HTMLElement} */ (e.target);
+  if (t && t.id === 'conf-level') {
+    confLevelState = Number(/** @type {HTMLSelectElement} */ (t).value);
+    confFocusPending = true;
+    runAnalysis();
+  }
+});
 
 const inputMu0 = /** @type {HTMLInputElement} */ (document.getElementById('input-mu0'));
 const nullDisplay = document.getElementById('null-display');
@@ -141,6 +157,7 @@ function applySummaryInputs(quiet) {
   );
 
   summaryResult = { xbar1, s1, n1, xbar2, s2, n2 };
+  if (groupOrderEl) groupOrderEl.hidden = false;
   return true;
 }
 
@@ -148,6 +165,25 @@ function applySummaryInputs(quiet) {
 for (const id of ['input-xbar1', 'input-s1', 'input-n1', 'input-xbar2', 'input-s2', 'input-n2', 'input-label1', 'input-label2']) {
   document.getElementById(id)?.addEventListener('input', () => {
     if (summaryActive() && applySummaryInputs(true)) runAnalysis();
+  });
+}
+
+// Swap Group 1 ↔ Group 2 — flips the sign of the difference; the whole display
+// re-renders from the swapped state.
+if (swapGroupsBtn) {
+  swapGroupsBtn.addEventListener('click', () => {
+    if (summaryActive()) {
+      for (const [a, c] of [['input-xbar1', 'input-xbar2'], ['input-s1', 'input-s2'], ['input-n1', 'input-n2'], ['input-label1', 'input-label2']]) {
+        const ea = /** @type {HTMLInputElement} */ (document.getElementById(a));
+        const ec = /** @type {HTMLInputElement} */ (document.getElementById(c));
+        if (ea && ec) { const t = ea.value; ea.value = ec.value; ec.value = t; }
+      }
+      if (applySummaryInputs()) runAnalysis();
+    } else {
+      groupsSwapped = !groupsSwapped;
+      extractGroups();
+    }
+    announce(`Swapped groups: now ${group1Name} − ${group2Name}.`);
   });
 }
 
@@ -228,6 +264,7 @@ function loadFromParsed(parsed, _sourceName) {
  */
 function showVarSelectors(catCols, numCols) {
   if (!varSelectorsDiv || !groupVarSelect || !responseVarSelect) return;
+  groupsSwapped = false;  // fresh data starts in natural order
 
   // Only show selectors if there are multiple options
   const needSelector = catCols.length > 1 || numCols.length > 1;
@@ -271,16 +308,19 @@ function extractGroups() {
     return;
   }
 
-  group1Name = String(groups[0]);
-  group2Name = String(groups[1]);
+  // Group order (which level is Group 1) respects the swap toggle so it persists
+  // across recomputes; flipping it flips the sign of the difference.
+  const gi1 = groupsSwapped ? 1 : 0, gi2 = groupsSwapped ? 0 : 1;
+  group1Name = String(groups[gi1]);
+  group2Name = String(groups[gi2]);
 
   group1 = parsedCache.data
-    .filter(r => r[groupCol] === groups[0])
+    .filter(r => r[groupCol] === groups[gi1])
     .map(r => parseFloat(r[valCol]))
     .filter(v => isFinite(v));
 
   group2 = parsedCache.data
-    .filter(r => r[groupCol] === groups[1])
+    .filter(r => r[groupCol] === groups[gi2])
     .map(r => parseFloat(r[valCol]))
     .filter(v => isFinite(v));
 
@@ -290,6 +330,7 @@ function extractGroups() {
   }
 
   dataPrecision = Math.max(detectPrecision(group1), detectPrecision(group2));
+  if (groupOrderEl) groupOrderEl.hidden = false;
   showDataSummary();
   runAnalysis();
 }
@@ -315,8 +356,11 @@ function clearData() {
   summaryResult = null;
   currentContext = null;
   currentSourceName = '';
+  groupsSwapped = false;
   if (dataPreview) dataPreview.hidden = true;
   if (varSelectorsDiv) varSelectorsDiv.hidden = true;
+  if (groupOrderEl) groupOrderEl.hidden = true;
+  if (groupLegendEl) { groupLegendEl.hidden = true; groupLegendEl.innerHTML = ''; }
   if (chartContainer) chartContainer.innerHTML = '';
   if (resultDiv) {
     resultDiv.innerHTML = `<p class="placeholder">${getTabHintText(getActiveTabId(), 'click Compute')}</p>`;
@@ -332,7 +376,19 @@ function getAlternative() {
 
 /** Get current confidence level. */
 function getConfLevel() {
-  return parseFloat(confSelect?.value ?? '0.95');
+  return confLevelState;
+}
+
+/** Build the inline confidence-level dropdown that lives in the CI heading. */
+function confSelectHTML(confLevel) {
+  const levels = [0.90, 0.95, 0.99];
+  if (!levels.some(l => Math.abs(l - confLevel) < 1e-9)) levels.push(confLevel);
+  levels.sort((a, b) => a - b);
+  const opts = levels.map(l => {
+    const pct = +(l * 100).toFixed(1);
+    return `<option value="${l}"${Math.abs(l - confLevel) < 1e-9 ? ' selected' : ''}>${pct}%</option>`;
+  }).join('');
+  return `<select id="conf-level" class="ci-conf-select" aria-label="Confidence level">${opts}</select>`;
 }
 
 /** Run the two-sample t-test and update chart + results. */
@@ -449,7 +505,7 @@ function renderChart(r) {
   });
 
   addInferenceAnnotations(chart, {
-    statValue: Math.abs(r.tStat),
+    statValue: tail === 'both' ? Math.abs(r.tStat) : r.tStat, // signed for one-sided so the line aligns with the shaded tail
     statLabel: 't',
     pValue: r.pValue,
     pdfFn,
@@ -465,9 +521,33 @@ function renderChart(r) {
  * Render the results panel.
  * @param {import('../../js/inference.js').TwoMeanResult} r
  */
+/**
+ * Render the "which group is x̄₁ vs x̄₂" legend above the hypotheses, so students
+ * can decide the alternative direction (and read the sign of the difference)
+ * without scrolling to the results. Shown only when the groups have real names;
+ * in summary mode with default labels the input fields already say Group 1 / 2.
+ * @param {{xbar1:number,n1:number,xbar2:number,n2:number}} r
+ */
+function renderGroupLegend(r) {
+  if (!groupLegendEl) return;
+  const named = group1Name !== 'Group 1' || group2Name !== 'Group 2';
+  if (!named || !isFinite(r.xbar1) || !isFinite(r.xbar2)) {
+    groupLegendEl.hidden = true;
+    groupLegendEl.innerHTML = '';
+    return;
+  }
+  const d = dataPrecision;
+  groupLegendEl.innerHTML = `
+    <span><strong>Group 1</strong> = ${esc(group1Name)} &nbsp;(x̄₁ = ${formatStat(r.xbar1, d)}, n₁ = ${r.n1})</span>
+    <span><strong>Group 2</strong> = ${esc(group2Name)} &nbsp;(x̄₂ = ${formatStat(r.xbar2, d)}, n₂ = ${r.n2})</span>
+    <span class="legend-diff">Hypotheses &amp; CI are about <strong>μ₁ − μ₂</strong></span>`;
+  groupLegendEl.hidden = false;
+}
+
 function renderResults(r) {
   if (!resultDiv) return;
   setPageTitle(baseTitle, dataPanel.currentSourceName, { n: group1.length + group2.length });
+  renderGroupLegend(r);
 
   const d = dataPrecision;
   const altSymbol = r.alternative === 'less' ? '&lt;' :
@@ -483,7 +563,8 @@ function renderResults(r) {
 
   // CI interpretation
   const ciContainsNull = r.ciLower <= nullDiff && r.ciUpper >= nullDiff;
-  const nullStr = nullDiff === 0 ? '0' : formatStat(nullDiff, d);
+  const nullStrRaw = nullDiff === 0 ? '0' : formatStat(nullDiff, d);
+  const nullStr = `<span class="fx-src" data-fx="delta0">${nullStrRaw}</span>`;
   const ciInterpretation = ciContainsNull
     ? `The confidence interval contains ${nullStr}, consistent with H\u2080.`
     : `The confidence interval does not contain ${nullStr}, suggesting the true difference differs from ${nullStr}.`;
@@ -505,18 +586,24 @@ function renderResults(r) {
   const V = '\\textcolor{#569BBD}';
   const S = '\\textcolor{#7B2D8E}';
   const P = '\\textcolor{#2e7d32}';
+  // C3: wrap a plugged-in value so it links to its source on hover/focus.
+  const fx = (/** @type {string} */ key, /** @type {string|number} */ val) =>
+    `\\htmlClass{fx-val fx-${key}}{${V}{${val}}}`;
+  // C3: wrap a symbolic symbol so it links to the same source as its value.
+  const fxs = (/** @type {string} */ key, /** @type {string} */ latex) =>
+    `\\htmlClass{fx-val fx-${key}}{${latex}}`;
 
-  const nullTerm = nullDiff !== 0 ? ` - ${nullDiff < 0 ? `(${nullDiff})` : nullDiff}` : '';
-  const nullTermGeneric = nullDiff !== 0 ? ' - \\delta_0' : '';
+  const nullTerm = nullDiff !== 0 ? ` - ${fx('delta0', nullDiff < 0 ? `(${nullDiff})` : nullDiff)}` : '';
+  const nullTermGeneric = nullDiff !== 0 ? ` - ${fxs('delta0', '\\delta_0')}` : '';
   const testFormula = tex(`\\begin{aligned}
-    t &= \\frac{(\\bar{x}_1 - \\bar{x}_2)${nullTermGeneric}}{\\sqrt{\\dfrac{s_1^2}{n_1} + \\dfrac{s_2^2}{n_2}}} \\\\[10pt]
-    &= \\frac{(${V}{${formatStat(r.xbar1, d)}} - ${V}{${formatStat(r.xbar2, d)}})${nullTerm}}{\\sqrt{\\dfrac{${V}{${formatStat(r.s1, d)}}^2}{${V}{${r.n1}}} + \\dfrac{${V}{${formatStat(r.s2, d)}}^2}{${V}{${r.n2}}}}} \\\\[10pt]
+    t &= \\frac{(${fxs('xbar1', '\\bar{x}_1')} - ${fxs('xbar2', '\\bar{x}_2')})${nullTermGeneric}}{\\sqrt{\\dfrac{${fxs('s1', 's_1')}^2}{${fxs('n1', 'n_1')}} + \\dfrac{${fxs('s2', 's_2')}^2}{${fxs('n2', 'n_2')}}}} \\\\[10pt]
+    &= \\frac{(${fx('xbar1', formatStat(r.xbar1, d))} - ${fx('xbar2', formatStat(r.xbar2, d))})${nullTerm}}{\\sqrt{\\dfrac{${fx('s1', formatStat(r.s1, d))}^2}{${fx('n1', r.n1)}} + \\dfrac{${fx('s2', formatStat(r.s2, d))}^2}{${fx('n2', r.n2)}}}} \\\\[10pt]
     &= ${S}{${r.tStat.toFixed(4)}}
   \\end{aligned}`, true);
 
   const ciFormula = tex(`\\begin{aligned}
-    &(\\bar{x}_1 - \\bar{x}_2) \\pm t^{\\!*} \\cdot SE \\\\[8pt]
-    &${V}{${formatStat(r.diff, d)}} \\pm ${V}{${tStar}} \\cdot ${V}{${formatStat(r.se, d)}} \\\\[8pt]
+    &(${fxs('xbar1', '\\bar{x}_1')} - ${fxs('xbar2', '\\bar{x}_2')}) \\pm t^{\\!*} \\cdot SE \\\\[8pt]
+    &(${fx('xbar1', formatStat(r.xbar1, d))} - ${fx('xbar2', formatStat(r.xbar2, d))}) \\pm ${V}{${tStar}} \\cdot ${V}{${formatStat(r.se, d)}} \\\\[8pt]
     &= ${P}{(${formatStat(r.ciLower, d)},\\; ${formatStat(r.ciUpper, d)})}
   \\end{aligned}`, true);
 
@@ -528,16 +615,16 @@ function renderResults(r) {
       </thead>
       <tbody>
         <tr>
-          <td>${esc(group1Name)}</td>
-          <td>${r.n1}</td>
-          <td>${formatStat(r.xbar1, d)}</td>
-          <td>${formatStat(r.s1, d)}</td>
+          <td>1 &middot; ${esc(group1Name)}</td>
+          <td data-fx="n1">${r.n1}</td>
+          <td data-fx="xbar1">${formatStat(r.xbar1, d)}</td>
+          <td data-fx="s1">${formatStat(r.s1, d)}</td>
         </tr>
         <tr>
-          <td>${esc(group2Name)}</td>
-          <td>${r.n2}</td>
-          <td>${formatStat(r.xbar2, d)}</td>
-          <td>${formatStat(r.s2, d)}</td>
+          <td>2 &middot; ${esc(group2Name)}</td>
+          <td data-fx="n2">${r.n2}</td>
+          <td data-fx="xbar2">${formatStat(r.xbar2, d)}</td>
+          <td data-fx="s2">${formatStat(r.s2, d)}</td>
         </tr>
       </tbody>
     </table>
@@ -550,17 +637,26 @@ function renderResults(r) {
     </div>
 
     <div class="formula-display formula-ci">
-      <h3>${confPct}% CI for ${tex('\\mu_1 - \\mu_2')}</h3>
+      <h3>${confSelectHTML(r.confLevel)} CI for ${tex('\\mu_1 - \\mu_2')}</h3>
       ${ciFormula}
     </div>
 
     <div class="interpretation">
-      <p>${tex(`\\bar{x}_{\\text{${esc(group1Name)}}} - \\bar{x}_{\\text{${esc(group2Name)}}}`)} = ${formatStat(r.diff, d)}, Welch df = ${r.df.toFixed(1)}.</p>
+      <p>${tex(`\\bar{x}_{\\text{${escapeTex(group1Name)}}} - \\bar{x}_{\\text{${escapeTex(group2Name)}}}`)} = ${formatStat(r.diff, d)}, Welch df = ${r.df.toFixed(1)}.</p>
       <p><strong>Formal conclusion:</strong> ${conclusions.formal}</p>
       ${conclusions.practical ? `<p><strong>Practical conclusion:</strong> ${conclusions.practical}</p>` : ''}
       <p>${confPct}% CI: (${formatStat(r.ciLower, d)}, ${formatStat(r.ciUpper, d)}). ${ciInterpretation}</p>
     </div>
   `;
+
+  // C3: link formula values (x̄₁, x̄₂, s₁, s₂, n₁, n₂, δ₀) to their sources in the summary / interpretation.
+  linkFormula(document.querySelector('main') || resultDiv);
+
+  // Keyboard users stay on the inline confidence dropdown after it rebuilds.
+  if (confFocusPending) {
+    /** @type {HTMLElement|null} */ (resultDiv.querySelector('#conf-level'))?.focus();
+    confFocusPending = false;
+  }
 }
 
 /**

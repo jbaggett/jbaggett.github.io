@@ -1,0 +1,580 @@
+{
+  "id": "baumann",
+  "name": "Baumann Reading Methods",
+  "description": "Reading-comprehension scores for 66 students randomized to three instruction methods (Ch. 22 ANOVA).",
+  "source": "carData",
+  "chapter": "IMS Ch. 22",
+  "type": "anova",
+  "studyDescription": "A randomized experiment on 66 elementary students assigned to one of three reading-instruction methods (Basal, DRTA, or Strategies). Each student was measured on comprehension tests before and after instruction.",
+  "variableDescriptions": {
+    "group": "Reading-instruction method the student was randomly assigned to (Basal, DRTA, or Strat).",
+    "pretest_1": "Score on the first comprehension pretest (before instruction).",
+    "pretest_2": "Score on the second comprehension pretest (before instruction).",
+    "posttest_1": "Score on the first comprehension posttest (after instruction).",
+    "posttest_2": "Score on the second comprehension posttest (after instruction).",
+    "posttest_3": "Score on the third posttest measure."
+  },
+  "sourceDetail": "Baumann & Jones, via R package carData (Fox & Weisberg). Education experiment on reading strategies.",
+  "variables": [
+    {
+      "name": "group",
+      "label": "Instruction Method",
+      "type": "categorical"
+    },
+    {
+      "name": "pretest_1",
+      "label": "Pretest 1",
+      "type": "numeric"
+    },
+    {
+      "name": "pretest_2",
+      "label": "Pretest 2",
+      "type": "numeric"
+    },
+    {
+      "name": "posttest_1",
+      "label": "Posttest 1",
+      "type": "numeric"
+    },
+    {
+      "name": "posttest_2",
+      "label": "Posttest 2",
+      "type": "numeric"
+    },
+    {
+      "name": "posttest_3",
+      "label": "Posttest 3 (Degrees of Reading Power)",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "group": "Basal",
+      "pretest_1": 4,
+      "pretest_2": 3,
+      "posttest_1": 5,
+      "posttest_2": 4,
+      "posttest_3": 41
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 6,
+      "pretest_2": 5,
+      "posttest_1": 9,
+      "posttest_2": 5,
+      "posttest_3": 41
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 9,
+      "pretest_2": 4,
+      "posttest_1": 5,
+      "posttest_2": 3,
+      "posttest_3": 43
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 6,
+      "posttest_1": 8,
+      "posttest_2": 5,
+      "posttest_3": 46
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 16,
+      "pretest_2": 5,
+      "posttest_1": 10,
+      "posttest_2": 9,
+      "posttest_3": 46
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 15,
+      "pretest_2": 13,
+      "posttest_1": 9,
+      "posttest_2": 8,
+      "posttest_3": 45
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 14,
+      "pretest_2": 8,
+      "posttest_1": 12,
+      "posttest_2": 5,
+      "posttest_3": 45
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 7,
+      "posttest_1": 5,
+      "posttest_2": 5,
+      "posttest_3": 32
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 3,
+      "posttest_1": 8,
+      "posttest_2": 7,
+      "posttest_3": 33
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 8,
+      "pretest_2": 8,
+      "posttest_1": 7,
+      "posttest_2": 7,
+      "posttest_3": 39
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 13,
+      "pretest_2": 7,
+      "posttest_1": 12,
+      "posttest_2": 4,
+      "posttest_3": 42
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 9,
+      "pretest_2": 2,
+      "posttest_1": 4,
+      "posttest_2": 4,
+      "posttest_3": 45
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 5,
+      "posttest_1": 4,
+      "posttest_2": 6,
+      "posttest_3": 39
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 2,
+      "posttest_1": 8,
+      "posttest_2": 8,
+      "posttest_3": 44
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 2,
+      "posttest_1": 6,
+      "posttest_2": 4,
+      "posttest_3": 36
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 10,
+      "pretest_2": 10,
+      "posttest_1": 9,
+      "posttest_2": 10,
+      "posttest_3": 49
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 8,
+      "pretest_2": 5,
+      "posttest_1": 3,
+      "posttest_2": 3,
+      "posttest_3": 40
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 12,
+      "pretest_2": 5,
+      "posttest_1": 5,
+      "posttest_2": 5,
+      "posttest_3": 35
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 11,
+      "pretest_2": 3,
+      "posttest_1": 4,
+      "posttest_2": 5,
+      "posttest_3": 36
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 8,
+      "pretest_2": 4,
+      "posttest_1": 2,
+      "posttest_2": 3,
+      "posttest_3": 40
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 7,
+      "pretest_2": 3,
+      "posttest_1": 5,
+      "posttest_2": 4,
+      "posttest_3": 54
+    },
+    {
+      "group": "Basal",
+      "pretest_1": 9,
+      "pretest_2": 6,
+      "posttest_1": 7,
+      "posttest_2": 8,
+      "posttest_3": 32
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 7,
+      "pretest_2": 2,
+      "posttest_1": 7,
+      "posttest_2": 6,
+      "posttest_3": 31
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 7,
+      "pretest_2": 6,
+      "posttest_1": 5,
+      "posttest_2": 6,
+      "posttest_3": 40
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 12,
+      "pretest_2": 4,
+      "posttest_1": 13,
+      "posttest_2": 3,
+      "posttest_3": 48
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 10,
+      "pretest_2": 1,
+      "posttest_1": 5,
+      "posttest_2": 7,
+      "posttest_3": 30
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 16,
+      "pretest_2": 8,
+      "posttest_1": 14,
+      "posttest_2": 7,
+      "posttest_3": 42
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 15,
+      "pretest_2": 7,
+      "posttest_1": 14,
+      "posttest_2": 6,
+      "posttest_3": 48
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 9,
+      "pretest_2": 6,
+      "posttest_1": 10,
+      "posttest_2": 9,
+      "posttest_3": 49
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 8,
+      "pretest_2": 7,
+      "posttest_1": 13,
+      "posttest_2": 5,
+      "posttest_3": 53
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 13,
+      "pretest_2": 7,
+      "posttest_1": 12,
+      "posttest_2": 7,
+      "posttest_3": 48
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 12,
+      "pretest_2": 8,
+      "posttest_1": 11,
+      "posttest_2": 6,
+      "posttest_3": 43
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 7,
+      "pretest_2": 6,
+      "posttest_1": 8,
+      "posttest_2": 5,
+      "posttest_3": 55
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 6,
+      "pretest_2": 2,
+      "posttest_1": 7,
+      "posttest_2": 0,
+      "posttest_3": 55
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 8,
+      "pretest_2": 4,
+      "posttest_1": 10,
+      "posttest_2": 6,
+      "posttest_3": 57
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 9,
+      "pretest_2": 6,
+      "posttest_1": 8,
+      "posttest_2": 6,
+      "posttest_3": 53
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 9,
+      "pretest_2": 4,
+      "posttest_1": 8,
+      "posttest_2": 7,
+      "posttest_3": 37
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 8,
+      "pretest_2": 4,
+      "posttest_1": 10,
+      "posttest_2": 11,
+      "posttest_3": 50
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 9,
+      "pretest_2": 5,
+      "posttest_1": 12,
+      "posttest_2": 6,
+      "posttest_3": 54
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 13,
+      "pretest_2": 6,
+      "posttest_1": 10,
+      "posttest_2": 6,
+      "posttest_3": 41
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 10,
+      "pretest_2": 2,
+      "posttest_1": 11,
+      "posttest_2": 6,
+      "posttest_3": 49
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 8,
+      "pretest_2": 6,
+      "posttest_1": 7,
+      "posttest_2": 8,
+      "posttest_3": 47
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 8,
+      "pretest_2": 5,
+      "posttest_1": 8,
+      "posttest_2": 8,
+      "posttest_3": 49
+    },
+    {
+      "group": "DRTA",
+      "pretest_1": 10,
+      "pretest_2": 6,
+      "posttest_1": 12,
+      "posttest_2": 6,
+      "posttest_3": 49
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 11,
+      "pretest_2": 7,
+      "posttest_1": 11,
+      "posttest_2": 12,
+      "posttest_3": 53
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 7,
+      "pretest_2": 6,
+      "posttest_1": 4,
+      "posttest_2": 8,
+      "posttest_3": 47
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 4,
+      "pretest_2": 6,
+      "posttest_1": 4,
+      "posttest_2": 10,
+      "posttest_3": 41
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 7,
+      "pretest_2": 2,
+      "posttest_1": 4,
+      "posttest_2": 4,
+      "posttest_3": 49
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 7,
+      "pretest_2": 6,
+      "posttest_1": 3,
+      "posttest_2": 9,
+      "posttest_3": 43
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 6,
+      "pretest_2": 5,
+      "posttest_1": 8,
+      "posttest_2": 5,
+      "posttest_3": 45
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 11,
+      "pretest_2": 5,
+      "posttest_1": 12,
+      "posttest_2": 8,
+      "posttest_3": 50
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 14,
+      "pretest_2": 6,
+      "posttest_1": 14,
+      "posttest_2": 12,
+      "posttest_3": 48
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 13,
+      "pretest_2": 6,
+      "posttest_1": 12,
+      "posttest_2": 11,
+      "posttest_3": 49
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 9,
+      "pretest_2": 5,
+      "posttest_1": 7,
+      "posttest_2": 11,
+      "posttest_3": 42
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 12,
+      "pretest_2": 3,
+      "posttest_1": 5,
+      "posttest_2": 10,
+      "posttest_3": 38
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 13,
+      "pretest_2": 9,
+      "posttest_1": 9,
+      "posttest_2": 9,
+      "posttest_3": 42
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 4,
+      "pretest_2": 6,
+      "posttest_1": 1,
+      "posttest_2": 10,
+      "posttest_3": 34
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 13,
+      "pretest_2": 8,
+      "posttest_1": 13,
+      "posttest_2": 1,
+      "posttest_3": 48
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 6,
+      "pretest_2": 4,
+      "posttest_1": 7,
+      "posttest_2": 9,
+      "posttest_3": 51
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 12,
+      "pretest_2": 3,
+      "posttest_1": 5,
+      "posttest_2": 13,
+      "posttest_3": 33
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 6,
+      "pretest_2": 6,
+      "posttest_1": 7,
+      "posttest_2": 9,
+      "posttest_3": 44
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 11,
+      "pretest_2": 4,
+      "posttest_1": 11,
+      "posttest_2": 7,
+      "posttest_3": 48
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 14,
+      "pretest_2": 4,
+      "posttest_1": 15,
+      "posttest_2": 7,
+      "posttest_3": 49
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 8,
+      "pretest_2": 2,
+      "posttest_1": 9,
+      "posttest_2": 5,
+      "posttest_3": 33
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 5,
+      "pretest_2": 3,
+      "posttest_1": 6,
+      "posttest_2": 8,
+      "posttest_3": 45
+    },
+    {
+      "group": "Strat",
+      "pretest_1": 8,
+      "pretest_2": 3,
+      "posttest_1": 4,
+      "posttest_2": 6,
+      "posttest_3": 42
+    }
+  ]
+}

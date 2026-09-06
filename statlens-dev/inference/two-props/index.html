@@ -40,7 +40,7 @@
     </nav>
 
     <main>
-        <h1>Two-Proportion z-Test and Confidence Interval<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <h1>Two-Proportion z-Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
         <section id="data-panel" aria-label="Data input">
             <div role="tablist" aria-label="Data source">
@@ -61,19 +61,6 @@
                     </select>
                 </label>
                 <p id="dataset-desc" class="hint"></p>
-                <div id="variable-selectors" hidden>
-                    <label for="group-var-select">Grouping variable:
-                        <select id="group-var-select"></select>
-                    </label>
-                    <label for="outcome-var-select">Outcome variable:
-                        <select id="outcome-var-select"></select>
-                    </label>
-                </div>
-                <div id="success-selector" hidden>
-                    <label for="success-outcome">Count as success:
-                        <select id="success-outcome"></select>
-                    </label>
-                </div>
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
@@ -125,8 +112,30 @@
             </div>
         </section>
 
+        <!-- Group + outcome selectors + "count as success" on one row (outside
+             the data panel so they stay visible after the panel collapses). -->
+        <div class="selector-bar">
+            <div id="variable-selectors" class="var-selector-row" hidden>
+                <label for="group-var-select">Grouping variable:
+                    <select id="group-var-select"></select>
+                </label>
+                <label for="outcome-var-select">Outcome variable:
+                    <select id="outcome-var-select"></select>
+                </label>
+            </div>
+            <div id="success-selector" class="success-selector-row" hidden>
+                <label for="success-outcome">Count as success:
+                    <select id="success-outcome"></select>
+                </label>
+            </div>
+        </div>
+
         <section id="controls" aria-label="Test parameters">
             <h2 class="sr-only">Parameters</h2>
+            <!-- Which group is p̂₁ vs p̂₂ — shown here (by the hypotheses) so students
+                 can decide the alternative direction without scrolling to results. -->
+            <div id="group-legend" class="group-legend" hidden></div>
+            <div class="hypothesis-bar">
             <div class="hypothesis-display">
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">H<sub>0</sub>:</span>
@@ -150,12 +159,9 @@
                     <span id="null-display" class="null-value-mirror expert-only">0</span>
                 </div>
             </div>
-            <div class="controls-row">
-                <label for="input-conf-level">Confidence level
-                    <input type="number" id="input-conf-level" min="0.01" max="0.99"
-                           step="0.01" value="0.95" class="input-narrow">
-                </label>
-                <button type="button" id="compute-btn" class="btn-primary">Compute</button>
+            <div id="group-order" class="group-order" hidden>
+                <button type="button" id="swap-groups" class="btn-secondary btn-sm">&#8646; Swap Group 1 &harr; Group 2</button>
+            </div>
             </div>
         </section>
 
@@ -164,14 +170,13 @@
         <section id="chart-and-results" aria-label="Chart and results">
             <div class="app-body">
                 <div class="app-main" id="chart" aria-label="Standard normal distribution">
-                    <div id="result-summary" class="result-banner" tabindex="-1"></div>
                     <figure>
                         <div id="chart-container"></div>
                     </figure>
                 </div>
                 <aside class="app-sidebar" id="results">
                     <div id="results-panel" tabindex="-1">
-                        <p class="placeholder">Select a dataset, then click Compute.</p>
+                        <p class="placeholder">Select a dataset or enter summary statistics — results appear automatically.</p>
                     </div>
                 </aside>
             </div>
@@ -179,15 +184,28 @@
 
         <div id="sr-announce" role="status" aria-live="polite"
              aria-atomic="true" class="sr-only"></div>
+        <p class="tool-crosslink">Just estimating? <a href="../estimate/two-props/">Confidence Interval for a Difference in Proportions &rarr;</a></p>
     </main>
 
-    <dialog id="page-help" aria-label="Keyboard shortcuts">
-        <h2>Keyboard Shortcuts</h2>
-        <p class="help-intro">Load data or enter summary statistics, set hypotheses, and compute test results with a confidence interval.</p>
+    <dialog id="page-help" aria-label="Help">
+        <h2>Two-Proportion z-Test</h2>
+        <p class="help-intro">Compare the proportions of two independent groups (p<sub>1</sub> − p<sub>2</sub>), using a z-statistic and the standard normal distribution.</p>
+        <ul>
+            <li><strong>Load data</strong> from the <em>Datasets</em>, <em>Edit Data</em> (a group column and an outcome column), or <em>Open File</em> tab, or use <em>Enter Summary</em> to type the successes and n for each group.</li>
+            <li><strong>Grouping / outcome selectors</strong> and <strong>Count as success</strong> let you choose the columns and the success category when loading raw data. <strong>Swap Group 1 ↔ Group 2</strong> flips which group is subtracted.</li>
+            <li><strong>Alternative (H<sub>a</sub>):</strong> click the toggle to cycle ≠, &lt;, &gt; for a two-sided or one-sided test.</li>
+            <li><strong>Null value:</strong> standard mode tests p<sub>1</sub> − p<sub>2</sub> = 0. Turn on <strong>Expert mode</strong> (settings gear) to make the null difference editable.</li>
+            <li><strong>Conditions checkpoint</strong> reminds you to check the success/failure counts in each group.</li>
+            <li>Results — the z-statistic, p-value, confidence interval, and plot — <strong>appear automatically</strong> as you change inputs. There is no Compute button.</li>
+        </ul>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
+        <div class="help-guided">
+            <p><strong>New to this tool?</strong> Walk through it step by step.</p>
+            <a class="help-guided-link" href="?activity=two-prop-inference.json" target="_blank" rel="noopener">Open guided walkthrough ↗</a>
+        </div>
         <button type="button" autofocus>Close</button>
     </dialog>
 
@@ -208,5 +226,6 @@
     }
     </script>
     <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
 </body>
 </html>

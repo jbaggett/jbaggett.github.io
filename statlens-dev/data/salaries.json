@@ -1,0 +1,88 @@
+{
+  "id": "salaries",
+  "name": "Sales by Pay Type",
+  "description": "Sales totals for 15 employees across three pay structures — small 3-group comparison (Ch. 22 ANOVA).",
+  "source": "coursepack",
+  "chapter": "IMS Ch. 22",
+  "type": "anova",
+  "studyDescription": "Total sales for 15 employees, each paid under one of three structures: commission only, fixed salary, or commission plus salary. A small observational comparison of sales across pay structures.",
+  "variableDescriptions": {
+    "sales": "Total sales recorded for the employee.",
+    "pay_type": "Pay structure: Commission, Fixed Salary, or Commission Plus Salary."
+  },
+  "sourceDetail": "Coursepack (Stat 145). NOTE: a small sales-by-pay-structure dataset with THREE groups, NOT carData::Salaries (faculty).",
+  "variables": [
+    {
+      "name": "sales",
+      "label": "Sales",
+      "type": "numeric"
+    },
+    {
+      "name": "pay_type",
+      "label": "Pay Type",
+      "type": "categorical"
+    }
+  ],
+  "rows": [
+    {
+      "sales": 428,
+      "pay_type": "Commission"
+    },
+    {
+      "sales": 510,
+      "pay_type": "Commission"
+    },
+    {
+      "sales": 453,
+      "pay_type": "Commission"
+    },
+    {
+      "sales": 486,
+      "pay_type": "Commission"
+    },
+    {
+      "sales": 469,
+      "pay_type": "Commission"
+    },
+    {
+      "sales": 495,
+      "pay_type": "Commission"
+    },
+    {
+      "sales": 423,
+      "pay_type": "Fixed Salary"
+    },
+    {
+      "sales": 411,
+      "pay_type": "Fixed Salary"
+    },
+    {
+      "sales": 440,
+      "pay_type": "Fixed Salary"
+    },
+    {
+      "sales": 435,
+      "pay_type": "Fixed Salary"
+    },
+    {
+      "sales": 407,
+      "pay_type": "Fixed Salary"
+    },
+    {
+      "sales": 433,
+      "pay_type": "Commission Plus Salary"
+    },
+    {
+      "sales": 495,
+      "pay_type": "Commission Plus Salary"
+    },
+    {
+      "sales": 473,
+      "pay_type": "Commission Plus Salary"
+    },
+    {
+      "sales": 504,
+      "pay_type": "Commission Plus Salary"
+    }
+  ]
+}

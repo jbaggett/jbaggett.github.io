@@ -431,6 +431,9 @@ export function createChart(container, options = {}) {
   inner.append('g').attr('class', 'overlays');
   inner.append('g').attr('class', 'annotations');
   inner.append('g').attr('class', 'chart-tooltip')
+    // Stash the inner width so showTooltip can clamp a tooltip that would
+    // otherwise overflow (and get clipped at) the chart's left/right edge.
+    .attr('data-inner-width', innerWidth)
     .style('pointer-events', 'none')
     .attr('visibility', 'hidden');
 
@@ -879,6 +882,301 @@ export function renderSimPills(frame, xScale, opts) {
 }
 
 /**
+ * Overlay draggable vertical cutoff line(s) on a simulation distribution, each
+ * with a live label reporting the tail mass beyond it. Opt-in reasoning-mode
+ * feature: the student positions the line(s) instead of counting bars.
+ *
+ *  - mode 'ci'   → two lines; labels show % below the left line, % above the
+ *                  right line, and the central % between them. Lines start at
+ *                  the distribution's extremes (tails ≈ empty) so the answer is
+ *                  never pre-placed — the student drags inward until each tail
+ *                  reads (100−CL)/2%.
+ *  - mode 'tail' → one line; label shows the tail proportion beyond it in the
+ *                  alternative's direction. Starts at centre; the student drags
+ *                  it to the observed-stat marker.
+ *
+ * Fully keyboard-accessible (each line is a role="slider": ←/→ nudge, Home/End
+ * jump to extremes, aria-valuetext announces position + mass) so the drag has a
+ * non-pointer alternative.
+ *
+ * @param {ChartFrame} frame
+ * @param {(v:number)=>number} xScale - d3 linear scale (needs .invert)
+ * @param {number[]} stats - the simulated statistics (for mass counts)
+ * @param {{ mode:'ci'|'tail', direction?:'left'|'right'|'both', precision?:number }} opts
+ */
+export function renderCutlines(frame, xScale, stats, opts) {
+  if (!frame || !xScale || !stats || stats.length === 0) return;
+  const inner = d3Selection.select(frame.inner);
+  inner.selectAll('.sim-cutlines').remove();
+  const layer = inner.append('g').attr('class', 'sim-cutlines');
+
+  const w = frame.width;
+  const h = frame.height;
+  const [dMin, dMax] = /** @type {[number,number]} */ (xScale.domain());
+  const range = dMax - dMin || 1;
+  const step = range / 100; // one arrow-key nudge ≈ 1% of the axis
+  const prec = opts.precision ?? 2;
+  const n = stats.length;
+  const fmtPct = (/** @type {number} */ p) => `${(p * 100).toFixed(1)}%`;
+  const fmtX = (/** @type {number} */ v) => v.toFixed(prec);
+
+  // Persist line positions (data units) across re-renders on the wrapper, so a
+  // student's placement survives a redraw (e.g. another +1000 in readout=false).
+  const store = /** @type {any} */ (frame.wrapper);
+  const saved = store.__cutlineState && store.__cutlineState.mode === opts.mode
+    ? store.__cutlineState : null;
+
+  /** Convert a pointer clientX to a data value in the chart's x-domain. */
+  function clientXToData(clientX) {
+    const ctm = /** @type {SVGGElement} */ (frame.inner).getScreenCTM();
+    if (!ctm) return dMin;
+    const pt = frame.svg.createSVGPoint();
+    pt.x = clientX; pt.y = 0;
+    const local = pt.matrixTransform(ctm.inverse());
+    return Math.max(dMin, Math.min(dMax, xScale.invert(local.x)));
+  }
+
+  const massBelow = (/** @type {number} */ x) => stats.filter(v => v <= x).length / n;
+  const massAbove = (/** @type {number} */ x) => stats.filter(v => v >= x).length / n;
+
+  /**
+   * Create one draggable line. `role` is 'left' | 'right' | 'tail'.
+   * @returns {{ getX:()=>number, setX:(v:number)=>void, el:SVGGElement }}
+   */
+  function makeLine(role, initialX, color, ariaName) {
+    let dataX = initialX;
+    const g = layer.append('g')
+      .attr('class', `cutline cutline-${role}`)
+      .attr('tabindex', 0)
+      .attr('role', 'slider')
+      .attr('aria-label', ariaName)
+      .attr('aria-valuemin', fmtX(dMin))
+      .attr('aria-valuemax', fmtX(dMax));
+
+    // Wide transparent hit area (≥24px) for easy grabbing on touch.
+    const hit = g.append('rect')
+      .attr('class', 'cutline-hit')
+      .attr('y', 0).attr('width', 24).attr('height', h)
+      .attr('fill', 'transparent')
+      .style('cursor', 'ew-resize')
+      .style('touch-action', 'none');
+    const line = g.append('line')
+      .attr('y1', 0).attr('y2', h)
+      .attr('stroke', color).attr('stroke-width', 2.5)
+      .attr('stroke-dasharray', '5,3')
+      .style('pointer-events', 'none');
+    // Grip handle at the top so it reads as draggable.
+    const grip = g.append('rect')
+      .attr('class', 'cutline-grip')
+      .attr('y', -4).attr('width', 10).attr('height', 8).attr('rx', 2)
+      .attr('fill', color).style('pointer-events', 'none');
+    // The line's current x-value, shown in a prominent pill at the foot of the
+    // line — this is the number the student reports (a CI bound / cutoff value),
+    // so it's a solid coloured pill (bigger + higher-contrast than the count
+    // pills) that also masks the axis ticks it sits over. Rect first, text on top.
+    const xValBg = g.append('rect')
+      .attr('class', 'cutline-xval-bg')
+      .attr('rx', 5)
+      .attr('fill', color)
+      .style('pointer-events', 'none');
+    const xValLabel = g.append('text')
+      .attr('class', 'cutline-xval')
+      .attr('text-anchor', 'middle')
+      .attr('dominant-baseline', 'central')
+      .attr('y', h + 17)
+      .attr('font-size', 13).attr('font-weight', 700)
+      .attr('fill', '#ffffff')
+      .style('pointer-events', 'none');
+
+    // −/+ fine-adjust buttons flanking the x-value pill: a mouse path to the exact
+    // value a problem quotes (drag gets close, click nails it), mirroring the
+    // keyboard arrow-nudge. One step = the smallest displayed unit (10^-precision),
+    // so any value the pill can show is reachable and clicks land on a clean grid.
+    const fineStep = Math.pow(10, -prec);
+    const snap = (/** @type {number} */ v) => Math.round(v / fineStep) * fineStep;
+    function nudge(/** @type {number} */ sign) {
+      dataX = Math.max(dMin, Math.min(dMax, snap(dataX) + sign * fineStep));
+      render(); persist();
+    }
+    const BTN = 20;
+    /** @param {string} glyph @param {number} sign @param {string} name */
+    function stepBtn(glyph, sign, name) {
+      const b = g.append('g')
+        .attr('class', 'cutline-stepbtn')
+        .attr('role', 'button').attr('tabindex', 0)
+        .attr('aria-label', `${name} the cutoff value by ${fmtX(fineStep)}`);
+      b.append('rect').attr('class', 'cutline-stepbtn-bg')
+        .attr('y', h + 7).attr('width', BTN).attr('height', BTN).attr('rx', 4);
+      b.append('text').attr('class', 'cutline-stepbtn-tx')
+        .attr('y', h + 17 + 1).attr('text-anchor', 'middle').attr('dominant-baseline', 'central')
+        .text(glyph);
+      const act = (/** @type {Event} */ ev) => { ev.preventDefault(); ev.stopPropagation(); nudge(sign); };
+      b.on('pointerdown', act);
+      b.on('keydown', (/** @type {KeyboardEvent} */ ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') act(ev);
+      });
+      return b;
+    }
+    const minusBtn = stepBtn('−', -1, 'decrease');
+    const plusBtn = stepBtn('+', 1, 'increase');
+
+    function render() {
+      const px = xScale(dataX);
+      hit.attr('x', px - 12);
+      line.attr('x1', px).attr('x2', px);
+      grip.attr('x', px - 5);
+      const clampedLabelX = Math.max(28, Math.min(w - 28, px));
+      xValLabel.attr('x', clampedLabelX).text(fmtX(dataX));
+      try {
+        const bb = /** @type {SVGTextElement} */ (xValLabel.node()).getBBox();
+        const padX = 8, padY = 4;
+        const pillLeft = bb.x - padX;
+        const pillRight = bb.x + bb.width + padX;
+        xValBg.attr('x', pillLeft).attr('y', bb.y - padY)
+          .attr('width', bb.width + padX * 2).attr('height', bb.height + padY * 2);
+        // Flank the pill: −  [ 8.16 ]  +  (clamped inside the plot width).
+        const gap = 5;
+        const minusX = Math.max(0, pillLeft - gap - BTN);
+        const plusX = Math.min(w - BTN, pillRight + gap);
+        minusBtn.select('rect').attr('x', minusX);
+        minusBtn.select('text').attr('x', minusX + BTN / 2);
+        plusBtn.select('rect').attr('x', plusX);
+        plusBtn.select('text').attr('x', plusX + BTN / 2);
+      } catch { /* getBBox throws if not yet laid out; skip pill this frame */ }
+      g.attr('aria-valuenow', fmtX(dataX))
+        .attr('aria-valuetext', ariaValueText(role, dataX));
+      // Region counts depend on line position(s) — redraw the pills.
+      if (onChange) onChange();
+    }
+
+    // Pointer drag.
+    hit.on('pointerdown', function (/** @type {PointerEvent} */ ev) {
+      ev.preventDefault();
+      /** @type {Element} */ (ev.target).setPointerCapture?.(ev.pointerId);
+      const move = (/** @type {PointerEvent} */ e) => { dataX = clientXToData(e.clientX); render(); persist(); };
+      const up = (/** @type {PointerEvent} */ e) => {
+        /** @type {Element} */ (ev.target).releasePointerCapture?.(e.pointerId);
+        hit.on('pointermove', null).on('pointerup', null).on('pointercancel', null);
+      };
+      hit.on('pointermove', move).on('pointerup', up).on('pointercancel', up);
+    });
+
+    // Keyboard.
+    g.on('keydown', function (/** @type {KeyboardEvent} */ ev) {
+      let handled = true;
+      const big = ev.shiftKey ? 5 : 1;
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') dataX = Math.max(dMin, dataX - step * big);
+      else if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') dataX = Math.min(dMax, dataX + step * big);
+      else if (ev.key === 'Home') dataX = dMin;
+      else if (ev.key === 'End') dataX = dMax;
+      else handled = false;
+      if (handled) { ev.preventDefault(); render(); persist(); }
+    });
+
+    return {
+      getX: () => dataX,
+      setX: (v) => { dataX = Math.max(dMin, Math.min(dMax, v)); render(); },
+      el: /** @type {SVGGElement} */ (g.node()),
+      _render: render,
+    };
+  }
+
+  /** @type {null | (()=>void)} */
+  let onChange = null;
+  /** @type {any} */
+  let left = null, right = null, tail = null;
+
+  function persist() {
+    store.__cutlineState = {
+      mode: opts.mode,
+      left: left ? left.getX() : undefined,
+      right: right ? right.getX() : undefined,
+      tail: tail ? tail.getX() : undefined,
+    };
+  }
+
+  function ariaValueText(role, x) {
+    const below = stats.filter(v => v <= x).length;
+    const above = n - below;
+    if (role === 'left') return `left cutoff at ${fmtX(x)}: ${below} of ${n} (${fmtPct(below / n)}) below it`;
+    if (role === 'right') return `right cutoff at ${fmtX(x)}: ${above} of ${n} (${fmtPct(above / n)}) above it`;
+    return `cutoff at ${fmtX(x)}: ${above} of ${n} (${fmtPct(above / n)}) above it, ${below} of ${n} (${fmtPct(below / n)}) below it`;
+  }
+  function tailMass(x) {
+    const dir = opts.direction;
+    if (dir === 'left') return massBelow(x);
+    if (dir === 'right') return massAbove(x);
+    // two-sided: the smaller tail, doubled (mass at least as far from centre)
+    return Math.min(massBelow(x), massAbove(x)) * 2;
+  }
+
+  // ── Region pills (count · %) — the reasoning-mode readout, mirroring the
+  // three-region probability pills on the distribution calculators. Redrawn
+  // whenever a line moves; the x-values live on the lines themselves. ──
+  const pillsLayer = layer.append('g').attr('class', 'cutline-pills');
+  const pillY = h * 0.3;
+  const clampX = (/** @type {number} */ cx) => Math.max(38, Math.min(w - 38, cx));
+  function pill(/** @type {number} */ cx, /** @type {number} */ count, /** @type {boolean} */ primary) {
+    // Count leads with the denominator explicit, then the proportion it yields:
+    // simulation-based inference IS counting outcomes, and "count / N = %" is the
+    // count→proportion bridge these tools exist to build. The % is the reported
+    // p-value / the CI's confidence-level target.
+    _addSimPill(pillsLayer, `${count}/${n} = ${fmtPct(count / n)}`, clampX(cx), pillY, !primary);
+  }
+  function updateReadout() {
+    pillsLayer.selectAll('*').remove();
+    if (opts.mode === 'ci') {
+      if (!left || !right) return;
+      const lo = Math.min(left.getX(), right.getX());
+      const hi = Math.max(left.getX(), right.getX());
+      const lpx = xScale(lo), hpx = xScale(hi);
+      const cLeft = stats.filter(v => v < lo).length;
+      const cMid = stats.filter(v => v >= lo && v <= hi).length;
+      const cRight = stats.filter(v => v > hi).length;
+      pill((xScale(dMin) + lpx) / 2, cLeft, false);
+      pill((lpx + hpx) / 2, cMid, true);   // central mass = the confidence level
+      pill((hpx + xScale(dMax)) / 2, cRight, false);
+    } else {
+      if (!tail) return;
+      const x = tail.getX(), px = xScale(x);
+      const below = stats.filter(v => v <= x).length, above = n - below;
+      const leftCenter = (xScale(dMin) + px) / 2;
+      const rightCenter = (px + xScale(dMax)) / 2;
+      // Label BOTH regions the line splits the distribution into, so the reader
+      // sees the tail AND its complement (they sum to 100%). Highlight the tail
+      // (the p-value side) as primary; the body region is secondary.
+      let tailOnLeft;
+      if (opts.direction === 'left') tailOnLeft = true;
+      else if (opts.direction === 'right') tailOnLeft = false;
+      else tailOnLeft = below <= above; // two-sided: the smaller side is the tail
+      pill(leftCenter, below, tailOnLeft);
+      pill(rightCenter, above, !tailOnLeft);
+    }
+  }
+  onChange = updateReadout;
+
+  if (opts.mode === 'ci') {
+    // Start near the extremes (tails empty) unless a saved position exists.
+    const startL = saved?.left ?? dMin + range * 0.02;
+    const startR = saved?.right ?? dMax - range * 0.02;
+    left = makeLine('left', startL, '#569BBD', 'Lower cutoff line');
+    right = makeLine('right', startR, '#569BBD', 'Upper cutoff line');
+    left._render(); right._render();
+  } else {
+    // Single line: start at centre unless saved.
+    const start = saved?.tail ?? (dMin + dMax) / 2;
+    tail = makeLine('tail', start, '#F05133', 'Cutoff line');
+    tail._render();
+  }
+  // Keep the pills on top of the full-height cutoff lines so the line never
+  // strikes through the pill text. (The pills layer is created before the lines
+  // because updateReadout runs during their first render, so raise it now.)
+  pillsLayer.raise();
+  updateReadout();
+  persist();
+}
+
+/**
  * Render a single pill (rounded rect + text) on a chart annotation layer.
  * @param {d3Selection.Selection} group
  * @param {string} text
@@ -960,7 +1258,20 @@ export function showTooltip(innerNode, lines, x, y) {
     if (tooltipY + bbox.y - pad < -20) {
       tooltipY = y + 20; // flip below instead
     }
-    g.attr('transform', `translate(${x}, ${tooltipY})`);
+
+    // Clamp horizontally so a tooltip near an edge isn't clipped by the chart
+    // bounds — e.g. the largest outlier's wide value at the far right of a
+    // boxplot. Text is centre-anchored (bbox.x ≈ -width/2), so the box spans
+    // [x + bbox.x - pad, x + bbox.x + bbox.width + pad]; shift x to fit [0, W].
+    let tooltipX = x;
+    const innerW = parseFloat(g.attr('data-inner-width'));
+    if (isFinite(innerW)) {
+      const overflowRight = (tooltipX + bbox.x + bbox.width + pad) - innerW;
+      if (overflowRight > 0) tooltipX -= overflowRight;
+      const overflowLeft = tooltipX + bbox.x - pad;
+      if (overflowLeft < 0) tooltipX -= overflowLeft; // keep the left edge visible
+    }
+    g.attr('transform', `translate(${tooltipX}, ${tooltipY})`);
   } catch {
     // getBBox fails in JSDOM — position without measurement
     g.attr('transform', `translate(${x}, ${y - 20})`);

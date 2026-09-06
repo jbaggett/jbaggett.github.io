@@ -1,0 +1,64 @@
+{
+  "title": "Is It a Real Preference? — The Cereal Cartoon Study",
+  "tool": "conceptual/sampling-lab",
+  "params": {
+    "type": "prop",
+    "p": "0.50",
+    "n": "80",
+    "seed": "cereal7"
+  },
+  "steps": [
+    {
+      "instruction": "80 children each taste two **identical** cereals; one box has cartoon penguins, the other doesn't. If the cartoons make **no difference**, each child is essentially a coin flip between the boxes — so the true proportion picking the cartoon box would be \\(p = 0.5\\). The tool models exactly that: **population \\(p = 0.5\\)**, samples of **\\(n = 80\\)** children.",
+      "observe": "Under *no preference*, how many of 80 children would you expect to pick the cartoon box? \\(0.5 \\times 80 = 40\\), i.e. \\(\\hat{p} = 0.5\\). But every group of 80 wobbles away from exactly 40 by chance."
+    },
+    {
+      "instruction": "**Before drawing, commit to a prediction.** Imagine running this 'no-preference' study over and over — many groups of 80 children, each time recording the proportion \\(\\hat{p}\\) who pick the cartoon box.",
+      "phase": "predict",
+      "gate": {
+        "question": "If there's truly no preference, where will those sample proportions \\(\\hat{p}\\) pile up?",
+        "choices": [
+          { "text": "Around 0.5" },
+          { "text": "Around 0.65" },
+          { "text": "Spread evenly from 0 to 1" }
+        ],
+        "feedback": "You've committed — now draw the 'no-preference' distribution and see where chance alone actually lands."
+      }
+    },
+    {
+      "instruction": "Click **+1000** three times to simulate about 3000 'no-preference' studies of 80 children each.",
+      "requires": {
+        "metric": "samples",
+        "atLeast": 1000,
+        "hint": "Click **+1000** to run at least 1000 simulated studies, then continue."
+      },
+      "observe": "The proportions center at **0.5** and almost all land between about **0.39 and 0.61** — that's the range of \\(\\hat{p}\\) chance alone produces when there's no preference."
+    },
+    {
+      "instruction": "In the real study, **52 of the 80** children chose the cartoon box — a sample proportion of \\(\\hat{p} = 52/80 = 0.65\\). Find **0.65** on the horizontal axis of your simulated distribution.",
+      "gate": {
+        "question": "How often did chance alone (no preference) produce a proportion as high as **0.65**?",
+        "choices": [
+          { "text": "Almost never — 0.65 sits out in the far right tail, past nearly all the dots", "correct": true },
+          { "text": "Often — 0.65 is right in the middle of the pile" },
+          { "text": "About half the time" }
+        ],
+        "feedback": "Only a handful of your ~3000 no-preference studies reached 0.65 — it's about 2.7 standard errors above 0.5, way out in the tail. A result that chance alone almost never produces is evidence that something real is going on: the children **do** seem to prefer the cartoon box.",
+        "retryFeedback": "Look at the far right of your distribution, near 0.65 — are there many dots out there, or almost none?"
+      }
+    },
+    {
+      "instruction": "You've just used a sampling distribution to weigh evidence. Put the logic into your own words.",
+      "phase": "explain",
+      "respond": {
+        "prompts": [
+          { "id": "likely_range", "label": "What range of \\(\\hat{p}\\) is 'business as usual' under no preference?", "placeholder": "e.g. about 0.39 to 0.61", "rows": 1 },
+          { "id": "verdict", "label": "Why does \\(\\hat{p} = 0.65\\) count as evidence *against* 'no preference'?", "placeholder": "Your reasoning", "rows": 2 }
+        ],
+        "gateOnNonEmpty": true,
+        "answer": "Under no preference, \\(\\hat{p}\\) almost always lands between about 0.39 and 0.61 — chance alone rarely reaches 0.65. Because 0.65 is so unlikely when there's no preference, the fact that it actually happened is evidence that children really do favor the cartoon box. This is the core logic of a **hypothesis test**, which the next section makes formal."
+      },
+      "reveal": "This is the whole idea behind hypothesis testing. We built the distribution of \\(\\hat{p}\\) *assuming no preference* (\\(p = 0.5\\)), then asked how surprising the real result (0.65) would be under that assumption. Because 0.65 sits far out in the tail — a value chance produces only rarely — we take it as evidence *against* 'no preference.' In the next section you'll attach a number to 'how surprising' (the **p-value**) and a formal decision rule."
+    }
+  ]
+}

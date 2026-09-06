@@ -57,6 +57,7 @@ export function pointRadius(n) {
  * @param {boolean} [options.minimal] - If true, hide axis labels and tick labels (show only dots + regression line)
  * @param {number} [options.yTicks] - Number of y-axis ticks (default: auto)
  * @param {number} [options.xTicks] - Number of x-axis ticks (default: auto)
+ * @param {[number,number]} [options.xDomain] - Override the x-axis domain (e.g. to show an extrapolation zone)
  * @param {boolean} [options.showExport] - Show export buttons (default: true)
  * @param {string} [options.filename] - PNG download filename
  * @returns {{ frame: ChartFrame, xScale: d3Scale.ScaleLinear<number,number>, yScale: d3Scale.ScaleLinear<number,number> }}
@@ -71,6 +72,8 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
     regression,
     bootstrapLines,
     loessCurve,
+    confidenceBand,
+    predictionBand,
     margin,
     minimal = false,
     yTicks,
@@ -88,8 +91,10 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
   const xPad = isFinite(xExtent[1] - xExtent[0]) ? (xExtent[1] - xExtent[0]) * 0.05 || 0.5 : 0.5;
   const yPad = isFinite(yExtent[1] - yExtent[0]) ? (yExtent[1] - yExtent[0]) * 0.05 || 0.5 : 0.5;
 
+  // Callers can widen the x-axis (e.g. to show a slight-extrapolation zone for
+  // prediction) via options.xDomain; otherwise use the data extent + 5% padding.
   const xScale = d3Scale.scaleLinear()
-    .domain([xExtent[0] - xPad, xExtent[1] + xPad])
+    .domain(options.xDomain ?? [xExtent[0] - xPad, xExtent[1] + xPad])
     .range([0, frame.width]);
 
   const yScale = d3Scale.scaleLinear()
@@ -108,6 +113,36 @@ export function drawScatterplot(container, xValues, yValues, options = {}) {
   addAxes(frame, xAxis, yAxis, xLabel, yLabel);
 
   const overlays = d3Selection.select(frame.inner).select('.overlays');
+
+  // Confidence (mean-response) / prediction bands (REQ-027). Drawn into the data
+  // group BEFORE the points are joined, so the points render on top of the bands.
+  if ((predictionBand && predictionBand.length > 1) || (confidenceBand && confidenceBand.length > 1)) {
+    const bandG = d3Selection.select(frame.inner).select('.data');
+    /** @param {Array<{x:number,lower:number,upper:number}>} pts */
+    const bandPath = (pts) => {
+      const top = pts.map(p => `${xScale(p.x).toFixed(1)},${yScale(p.upper).toFixed(1)}`);
+      const bot = [...pts].reverse().map(p => `${xScale(p.x).toFixed(1)},${yScale(p.lower).toFixed(1)}`);
+      return `M${top.join('L')}L${bot.join('L')}Z`;
+    };
+    // Distinguish the two bands by BOTH hue and edge style (CVD-safe, not color-alone):
+    // the wider PREDICTION band is warm-orange with a DASHED border; the narrower
+    // mean-response CI band is IMS-blue with a solid border, drawn on top.
+    if (predictionBand && predictionBand.length > 1) {
+      bandG.append('path').attr('class', 'prediction-band')
+        .attr('d', bandPath(predictionBand))
+        .attr('fill', '#E07020').attr('fill-opacity', 0.08)
+        .attr('stroke', '#E07020').attr('stroke-opacity', 0.75).attr('stroke-width', 1.2)
+        .attr('stroke-dasharray', '5,3')
+        .attr('aria-hidden', 'true');
+    }
+    if (confidenceBand && confidenceBand.length > 1) {
+      bandG.append('path').attr('class', 'confidence-band')
+        .attr('d', bandPath(confidenceBand))
+        .attr('fill', IMS_BLUE).attr('fill-opacity', 0.28)
+        .attr('stroke', IMS_BLUE).attr('stroke-opacity', 0.7).attr('stroke-width', 1)
+        .attr('aria-hidden', 'true');
+    }
+  }
 
   // Bootstrap regression lines (draw first, behind everything)
   if (bootstrapLines && bootstrapLines.length > 0) {

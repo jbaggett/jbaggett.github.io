@@ -1,0 +1,85 @@
+{
+  "title": "Visualizing the CLT — Shape of \\(\\bar{x}\\) as \\(n\\) Grows",
+  "tool": "conceptual/sampling-lab",
+  "params": {
+    "type": "quant",
+    "shape": "right-skewed",
+    "n": "5",
+    "seed": "clt9"
+  },
+  "steps": [
+    {
+      "instruction": "The **Population** panel shows a strongly **right-skewed** population. In Class Example 6.2 you saw that \\(\\bar{x}\\) is always centered at \\(\\mu\\) — now we watch its **shape**. The **Central Limit Theorem** claims that as the sample size \\(n\\) grows, the sampling distribution of \\(\\bar{x}\\) becomes **normal (bell-shaped)** *even when the population is skewed*. The tool is set to \\(n = 5\\).",
+      "observe": "Right now \\(n = 5\\) is tiny. Keep your eye on the **shape** of the bottom panel as we push \\(n\\) up."
+    },
+    {
+      "instruction": "**Before drawing, commit to a prediction.** You'll build the sampling distribution at \\(n=5\\), then \\(n=30\\), then \\(n=100\\), all drawn from this same skewed population.",
+      "phase": "predict",
+      "gate": {
+        "question": "As \\(n\\) increases from 5 to 100, what happens to the **shape** of the sampling distribution of \\(\\bar{x}\\)?",
+        "choices": [
+          { "text": "It gradually becomes symmetric and bell-shaped" },
+          { "text": "It stays just as right-skewed as the population — the skew never leaves" },
+          { "text": "It flattens out — every mean becomes equally likely" }
+        ],
+        "feedback": "You've committed — now draw all three sample sizes and watch whether the shape changes."
+      }
+    },
+    {
+      "instruction": "Tick **Show normal curve**, then click **+1000** to draw about a thousand sample means at \\(n = 5\\).",
+      "requires": {
+        "metric": "samples",
+        "atLeast": 500,
+        "hint": "Click **+1000** to draw at least 500 sample means at \\(n=5\\), then continue."
+      },
+      "observe": "At \\(n=5\\), the sampling distribution is still noticeably **right-skewed** — it doesn't hug the normal curve.",
+      "reveal": "Averaging just **5** values isn't enough to wash out a strong skew, so the population's shape still shows through. Small \\(n\\) — the CLT hasn't kicked in yet."
+    },
+    {
+      "instruction": "Now set **Sample size \\(n\\)** to **30** (this clears the plot) and click **+1000**.",
+      "requires": {
+        "metric": "n",
+        "equals": 30,
+        "hint": "Set **\\(n = 30\\)**, then click **+1000** to fill the new distribution."
+      },
+      "observe": "The skew has largely straightened out — the pile is much more symmetric and now tracks the normal curve fairly well."
+    },
+    {
+      "instruction": "Set **\\(n\\)** to **100** (clears the plot) and click **+1000** once more.",
+      "requires": {
+        "metric": "n",
+        "equals": 100,
+        "hint": "Set **\\(n = 100\\)**, then click **+1000**."
+      },
+      "observe": "Now it's a clean, symmetric **bell** sitting right on the normal curve.",
+      "gate": {
+        "question": "Which sample size would you trust to give a bell-shaped sampling distribution for this skewed population?",
+        "choices": [
+          { "text": "\\(n = 30\\) or larger", "correct": true },
+          { "text": "\\(n = 5\\) is already fine" },
+          { "text": "No \\(n\\) works — a skewed population never gives a normal \\(\\bar{x}\\)" }
+        ],
+        "feedback": "By \\(n=30\\) the skew is mostly gone, and by \\(n=100\\) it's a clean bell — that's the CLT at work. This is exactly where the **\\(n > 30\\)** rule of thumb for means comes from.",
+        "retryFeedback": "Compare the three shapes you drew: \\(n=5\\) was skewed, but from \\(n=30\\) on it looked bell-shaped."
+      }
+    },
+    {
+      "instruction": "One more comparison. Switch the **Population shape** to **Normal**, set **\\(n\\)** back to **5**, and click **+1000**.",
+      "phase": "explain",
+      "requires": {
+        "metric": "n",
+        "equals": 5,
+        "hint": "Choose the **Normal** population shape, set **\\(n = 5\\)**, then click **+1000**."
+      },
+      "observe": "With a **normal** population, even \\(n=5\\) gives a clean bell — no large sample needed.",
+      "respond": {
+        "prompts": [
+          { "id": "why_n", "label": "Why did the skewed population need a large \\(n\\) before \\(\\bar{x}\\) looked normal, while the normal population didn't?", "placeholder": "Your reasoning", "rows": 2 }
+        ],
+        "gateOnNonEmpty": true,
+        "answer": "For a **skewed** population, small samples inherit the skew — it takes a larger \\(n\\) (here about 30) for averaging to smooth the sampling distribution into a bell. For a population that's **already normal**, the sampling distribution of \\(\\bar{x}\\) is normal at *every* \\(n\\), even \\(n=5\\). The \\(n>30\\) rule of thumb is insurance against skew — you need it only when the population isn't already bell-shaped."
+      },
+      "reveal": "The **Central Limit Theorem**: whatever the population's shape, the sampling distribution of \\(\\bar{x}\\) becomes approximately **normal** once \\(n\\) is large enough — and the more skewed the population, the larger the \\(n\\) you need. A roughly normal population is normal at any \\(n\\); a strongly skewed one needs \\(n\\) around 30 or more. This is why we can use normal-based inference for means once the sample is large enough, even without a normal population."
+    }
+  ]
+}

@@ -9,6 +9,7 @@
 
 import { normalCDF, normalInv, tCDF, tInv, chisqCDF, fCDF, pdfT, pdfNormal, pdfChisq } from './distributions.js';
 import { mean, sd } from './stats.js';
+import { ptukey, qtukey } from './tukey.js';
 
 // ── One-sample t ─────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ import { mean, sd } from './stats.js';
  * @param {number} [options.mu0=0] - Null hypothesis mean
  * @param {'less'|'greater'|'two-sided'} [options.alternative='two-sided']
  * @param {number} [options.confLevel=0.95] - Confidence level
+ * @param {number} [options.bandExtendFrac=0] - Extend the returned bands past [xMin,xMax] by this fraction of the x-range (for a slight-extrapolation view)
  * @returns {OneMeanResult}
  */
 export function oneMeanT(data, options = {}) {
@@ -507,6 +509,126 @@ export function slopeT(x, y, options = {}) {
   const rSquared = r * r;
 
   return { slope, intercept, se, tStat, df, pValue, ciLower, ciUpper, r, rSquared, n, alternative, confLevel };
+}
+
+/**
+ * Confidence interval for the MEAN response and prediction interval for a NEW
+ * observation in simple linear regression (REQ-027). Matches R's `predict.lm`
+ * with `interval = "confidence"` / `"prediction"`.
+ *
+ * For a point x₀:  ŷ = b₀ + b₁·x₀,  SE_mean = s·√(1/n + (x₀−x̄)²/Sxx),
+ * SE_pred = s·√(1 + 1/n + (x₀−x̄)²/Sxx),  interval = ŷ ± t* · SE,
+ * where s = residual standard error and t* uses df = n−2.
+ *
+ * @param {number[]} x
+ * @param {number[]} y
+ * @param {{ confLevel?: number, bandPoints?: number }} [options]
+ * @returns {{
+ *   slope: number, intercept: number, s: number, df: number, n: number,
+ *   xbar: number, sxx: number, tCrit: number, confLevel: number,
+ *   xMin: number, xMax: number,
+ *   predictAt: (x0: number, kind?: 'mean'|'prediction') => {x:number, fit:number, lower:number, upper:number, se:number},
+ *   meanBand: Array<{x:number, fit:number, lower:number, upper:number}>,
+ *   predictionBand: Array<{x:number, fit:number, lower:number, upper:number}>,
+ * }}
+ */
+export function regressionIntervals(x, y, options = {}) {
+  const confLevel = options.confLevel ?? 0.95;
+  const m = Math.max(2, options.bandPoints ?? 60);
+  const n = x.length;
+  const xbar = mean(x), ybar = mean(y);
+  const sxx = x.reduce((s, xi) => s + (xi - xbar) ** 2, 0);
+  const sxy = x.reduce((s, xi, i) => s + (xi - xbar) * (y[i] - ybar), 0);
+  const syy = y.reduce((s, yi) => s + (yi - ybar) ** 2, 0);
+  const slope = sxy / sxx;
+  const intercept = ybar - slope * xbar;
+  const df = n - 2;
+  const sse = syy - slope * sxy;
+  const s = Math.sqrt(sse / df); // residual standard error
+  const tCrit = tInv(1 - (1 - confLevel) / 2, df);
+  const xMin = Math.min(...x), xMax = Math.max(...x);
+
+  /** @param {number} x0 @param {'mean'|'prediction'} [kind] */
+  const predictAt = (x0, kind = 'mean') => {
+    const fit = intercept + slope * x0;
+    const core = 1 / n + (x0 - xbar) ** 2 / sxx;
+    const seFit = s * Math.sqrt(kind === 'prediction' ? 1 + core : core);
+    const margin = tCrit * seFit;
+    return { x: x0, fit, lower: fit - margin, upper: fit + margin, se: seFit };
+  };
+
+  // Bands normally span the data [xMin, xMax]; options.bandExtendFrac widens them a
+  // little past each end so a slight-extrapolation prediction shows the bands fanning.
+  const ext = (xMax - xMin) * (options.bandExtendFrac ?? 0);
+  const bandLo = xMin - ext, bandHi = xMax + ext;
+  const band = (/** @type {'mean'|'prediction'} */ kind) => {
+    const pts = [];
+    for (let i = 0; i <= m; i++) pts.push(predictAt(bandLo + (bandHi - bandLo) * (i / m), kind));
+    return pts;
+  };
+
+  return {
+    slope, intercept, s, df, n, xbar, sxx, tCrit, confLevel, xMin, xMax,
+    predictAt, meanBand: band('mean'), predictionBand: band('prediction'),
+  };
+}
+
+/**
+ * Post-hoc all-pairwise comparisons after a one-way ANOVA (REQ-026).
+ * `tukey` = Tukey HSD (studentized range; controls family-wise error exactly for
+ * equal n, Tukey–Kramer for unequal). `bonferroni` = pairwise t with p×(#pairs).
+ *
+ * @param {number[][]} groups
+ * @param {string[]} groupNames
+ * @param {{ method?: 'tukey'|'bonferroni', confLevel?: number }} [options]
+ * @returns {{
+ *   method: string, confLevel: number, k: number, dfWithin: number, mse: number, nPairs: number,
+ *   pairs: Array<{a:string, b:string, diff:number, lower:number, upper:number, stat:number, pAdj:number, significant:boolean}>,
+ * }}
+ */
+export function pairwiseComparisons(groups, groupNames, options = {}) {
+  const method = options.method === 'bonferroni' ? 'bonferroni' : 'tukey';
+  const confLevel = options.confLevel ?? 0.95;
+  const alpha = 1 - confLevel;
+  const k = groups.length;
+  const ns = groups.map(g => g.length);
+  const means = groups.map(g => mean(g));
+  const N = ns.reduce((a, b) => a + b, 0);
+  let ssW = 0;
+  for (let i = 0; i < k; i++) for (const v of groups[i]) ssW += (v - means[i]) ** 2;
+  const dfWithin = N - k;
+  const mse = ssW / dfWithin;
+  const nPairs = (k * (k - 1)) / 2;
+  const clamp01 = (/** @type {number} */ p) => Math.min(1, Math.max(0, p));
+
+  const qCrit = method === 'tukey' ? qtukey(confLevel, k, dfWithin) : 0;
+  const tCritB = method === 'bonferroni' ? tInv(1 - alpha / (2 * nPairs), dfWithin) : 0;
+
+  const pairs = [];
+  for (let i = 0; i < k; i++) {
+    for (let j = i + 1; j < k; j++) {
+      const diff = means[i] - means[j];
+      if (method === 'tukey') {
+        const se = Math.sqrt((mse / 2) * (1 / ns[i] + 1 / ns[j]));
+        const stat = Math.abs(diff) / se;            // studentized range statistic
+        const margin = qCrit * se;
+        pairs.push({
+          a: groupNames[i], b: groupNames[j], diff, lower: diff - margin, upper: diff + margin,
+          stat, pAdj: clamp01(1 - ptukey(stat, k, dfWithin)), significant: Math.abs(diff) > margin,
+        });
+      } else {
+        const se = Math.sqrt(mse * (1 / ns[i] + 1 / ns[j]));
+        const stat = diff / se;
+        const margin = tCritB * se;
+        const pAdj = clamp01(2 * (1 - tCDF(Math.abs(stat), dfWithin)) * nPairs);
+        pairs.push({
+          a: groupNames[i], b: groupNames[j], diff, lower: diff - margin, upper: diff + margin,
+          stat, pAdj, significant: pAdj < alpha,
+        });
+      }
+    }
+  }
+  return { method, confLevel, k, dfWithin, mse, nPairs, pairs };
 }
 
 /**

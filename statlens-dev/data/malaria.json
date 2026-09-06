@@ -115,11 +115,11 @@
       "test": "two-props",
       "groupVar": "group",
       "responseVar": "outcome",
-      "successLabel": "no infection",
+      "successLabel": "Infected",
       "group1": "vaccine",
       "group2": "placebo",
       "alternative": "greater",
-      "parameter": "the difference in infection-free rates between vaccine and placebo groups",
+      "parameter": "the difference in infection rates between the vaccine and placebo groups",
       "claim": "the malaria vaccine reduces infection rates compared to placebo"
     }
   ]
