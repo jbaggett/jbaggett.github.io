@@ -33,6 +33,17 @@ export const PHONE_MARGIN = { top: 12, right: 12, bottom: 26, left: 34 };
 export const NARROW_QUERY = '(max-width: 599px)';
 
 /**
+ * How large chart text should actually appear, in CSS pixels.
+ *
+ * Font sizes inside a viewBox are units, not pixels, so the same number renders
+ * at a different size on every screen. Rather than guessing per breakpoint —
+ * which got a landscape phone wrong, treating 664x390 as a desktop and shrinking
+ * its labels to 11px at the exact moment the reader turned the phone to see
+ * better — the scale is MEASURED after layout and the unit size solved for.
+ */
+const TARGET_TEXT_PX = 13;
+
+/**
  * Build the responsive SVG frame every CalcLens chart sits in.
  *
  * Deliberately NO role="img": these charts carry keyboard-focusable children
@@ -73,9 +84,32 @@ export function createChart(container, opts) {
     .attr('width', width - margin.left - margin.right)
     .attr('height', height - margin.top - margin.bottom);
 
+  // Solve for the font unit that lands at TARGET_TEXT_PX once the browser has
+  // scaled the viewBox to its actual display width. Clamped, so a chart in a
+  // very narrow or very wide box still gets a sane size.
+  let unit = 12;
+  function applyTextScale() {
+    const shown = /** @type {SVGSVGElement} */ (svg.node()).getBoundingClientRect().width;
+    if (!shown) return;                       // not laid out yet (hidden tab, say)
+    const scale = shown / width;
+    unit = Math.max(9, Math.min(24, TARGET_TEXT_PX / scale));
+    // A custom property, not `font-size`: d3-axis puts font-size="10" on the
+    // axis group it builds, so `1em` on a tick would resolve against THAT
+    // rather than against this element. Custom properties inherit past it.
+    svg.style('--chart-text', `${unit.toFixed(2)}px`);
+  }
+
   const gAxes = svg.append('g').attr('class', 'axes');
   const plot = svg.append('g').attr('class', 'plot').attr('clip-path', `url(#${clipId})`);
   const gOver = svg.append('g').attr('class', 'overlay');
+
+  applyTextScale();
+  // Re-solve whenever the box changes size — rotation, a resized window, a
+  // sidebar opening. Cheaper than re-rendering, and the axis text picks it up
+  // immediately because it is sized in em.
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(applyTextScale).observe(/** @type {Element} */ (root));
+  }
 
   return {
     svg, plot, gAxes, gOver, width, height, margin,
@@ -83,14 +117,12 @@ export function createChart(container, opts) {
     innerHeight: height - margin.top - margin.bottom,
     narrow,
     /**
-     * Scale a font size given in desktop units.
+     * Scale a font size given in desktop units (where 12 is body-ish).
      *
-     * Text drawn by a tool sets its size numerically, and those numbers are
-     * viewBox units. On the narrower phone viewBox the same number is already
-     * proportionally bigger, but not by enough for annotations that have to be
-     * read across a room, so they get a further nudge.
+     * Text a tool sets numerically is in viewBox units, so it needs the same
+     * solved scale the axis text gets from `em`.
      */
-    fs: (/** @type {number} */ n) => (narrow ? Math.round(n * 1.15) : n),
+    fs: (/** @type {number} */ n) => Number(((n * unit) / 12).toFixed(2)),
     setLabel: (/** @type {string} */ text) => svg.attr('aria-label', text),
   };
 }
