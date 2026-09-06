@@ -64,6 +64,11 @@
             font-size: 0.75rem; margin: 0 0 0.1rem; color: #C0341C;
             text-transform: uppercase; letter-spacing: 0.04em;
         }
+        /* Stage 1's box is a draw from the population, so it takes the blue of
+           the sampling distribution it feeds; Stage 2's stays red. */
+        .inset.box-blue { border-color: #9dc2d8; }
+        .inset.box-blue h3 { color: #0072B2; }
+        .inset.box-blue .tally { color: #2a5a75; }
         @media (min-width: 900px) {
             .inset { position: absolute; top: 30px; right: 12px; width: 320px; margin: 0; }
         }
@@ -268,6 +273,7 @@
 
         <h3>Stage 1 &mdash; the true sampling distribution</h3>
         <p>The top panel is a population of about 200 values, one circle each. Each draw takes a sample of <i>n</i>, highlights the circles it drew (darker where a circle was drawn more than once), and drops that sample's <i class="xb">x</i> into the blue distribution below. Use <strong>+1</strong> to watch one at a time, then <strong>+1000</strong> to fill it in.</p>
+        <p>The 200 circles show the population's <strong>shape</strong> &mdash; they aren't a roster of 200 individuals. Samples are drawn as if from a much larger population, which is why a circle occasionally comes up twice even here (about one sample in five at <i>n</i>&nbsp;=&nbsp;10). Keeping it that way means the sampling distribution's spread is exactly &sigma;/&radic;<i>n</i>, with no finite-population correction to explain away &mdash; and it keeps the comparison with the bootstrap honest at every <i>n</i>. In Stage&nbsp;2 repeats stop being occasional and become constant, because there the resample is drawing <i>n</i> values from only <i>n</i>.</p>
 
         <h3>Stage 2 &mdash; the bootstrap</h3>
         <p>One sample is frozen, highlighted in red inside the population and blown up in the <strong>Original sample</strong> inset. Every resample now comes from <em>those <i>n</i> values only</em>, drawn with replacement &mdash; which is why circles go dark: at <i>n</i> = 10 a resample typically uses some values three or four times and skips others entirely. Each <i class="xb">x</i>* lands in the red distribution, overlaid on the blue one.</p>

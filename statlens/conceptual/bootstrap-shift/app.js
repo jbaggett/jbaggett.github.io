@@ -541,7 +541,16 @@ function axisGroup(y, height, opts = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * The inset box. Before a resample it holds the ORIGINAL sample — the bag the
+ * The inset box, shared by both stages — Todd Will's second round: Stage 1's
+ * samples fly up into a box of their own so the two stages read as the same
+ * mechanism with one difference, WHERE the dots come from. Stage 1 draws from
+ * the whole population; Stage 2 draws only from the ringed frozen sample. With
+ * both staged identically, that difference is the only thing left to notice.
+ *
+ * `kind` is 'sample' (Stage 1 draw, blue), 'bag' (the frozen original sample,
+ * outlined) or 'bootstrap' (a resample, filled red).
+ *
+ * Before a resample it holds the ORIGINAL sample — the bag the
  * bootstrap draws from. Once a resample exists it holds the BOOTSTRAP SAMPLE:
  * one dot per draw, so a value taken four times shows four dots rather than one
  * dark one. Todd Will's staging — the dots fly up into this box from the
@@ -553,13 +562,18 @@ function axisGroup(y, height, opts = {}) {
  * flight can pair each one with the population dot it came from. Two draws of
  * the same dot correctly share one source and get two targets.
  *
- * @param {number[]|null} resample - dot indices of the current resample, or null
+ * @param {number[]|null} dots - dot indices to show
+ * @param {'sample'|'bag'|'bootstrap'} kind
  * @returns {{ circles: SVGCircleElement[], statX: number, statY: number }|null}
  */
-function renderInset(resample) {
-  if (!insetContainer || !insetTally) return null;
-  const shown = resample ?? pool[origIndex];
-  const isBoot = !!resample;
+function renderInset(dots, kind) {
+  if (!insetContainer || !insetTally || !dots) return null;
+  const shown = dots;
+  const isBoot = kind === 'bootstrap';
+  const isBag = kind === 'bag';
+  const tone = isBoot || isBag ? RED_FILL : BLUE;
+  const edge = isBoot || isBag ? RED : BLUE;
+  const filled = kind !== 'bag';    // the bag is an outline; a drawn sample is filled
 
   // Sort by value so the box reads left-to-right like a dotplot; keep the draw
   // index so the caller can pair circle -> source.
@@ -586,8 +600,11 @@ function renderInset(resample) {
     viewBox: `0 0 ${IW} ${height}`, preserveAspectRatio: 'xMidYMid meet',
     'aria-label': isBoot
       ? `Bootstrap sample: ${tallyText(shown)}. Its mean is ${fmt(stat)}.`
-      : `The original sample, the values the bootstrap resamples from: `
-        + `${tallyText(shown)}. Sample mean ${fmt(stat)}.`,
+      : isBag
+        ? `The original sample, the values the bootstrap resamples from: `
+          + `${tallyText(shown)}. Sample mean ${fmt(stat)}.`
+        : `Random sample of ${shown.length} from the population: ${tallyText(shown)}. `
+          + `Sample mean ${fmt(stat)}.`,
   });
   svg.style.width = '100%';
   svg.style.height = 'auto';
@@ -600,8 +617,8 @@ function renderInset(resample) {
     const cx = ix(d.value), cy = baseY - (j * 2 * r) - r;
     const c = el('circle', {
       cx: fmt(cx, 1), cy: fmt(cy, 1), r: fmt(Math.max(2, r - 1.4), 2),
-      fill: RED_FILL, 'fill-opacity': isBoot ? 0.62 : 0.12,
-      stroke: RED, 'stroke-width': isBoot ? 1.6 : 1.2,
+      fill: tone, 'fill-opacity': filled ? 0.62 : 0.12,
+      stroke: edge, 'stroke-width': filled ? 1.6 : 1.2,
     });
     svg.appendChild(c);
     circles[d.i] = /** @type {SVGCircleElement} */ (c);
@@ -609,8 +626,8 @@ function renderInset(resample) {
     if (r >= 7) {
       svg.appendChild(el('text', {
         x: fmt(cx, 1), y: fmt(cy + r * 0.33, 1), 'text-anchor': 'middle',
-        'font-size': fmt(r * 0.86, 1), 'font-weight': isBoot ? 700 : 400,
-        fill: isBoot ? '#fff' : '#444', 'pointer-events': 'none',
+        'font-size': fmt(r * 0.86, 1), 'font-weight': filled ? 700 : 400,
+        fill: filled ? '#fff' : '#444', 'pointer-events': 'none',
       }, String(d.value)));
     }
   }
@@ -627,19 +644,25 @@ function renderInset(resample) {
   const statX = ix(stat);
   svg.appendChild(el('line', {
     x1: fmt(statX, 1), y1: topPad, x2: fmt(statX, 1), y2: baseY + 7,
-    stroke: RED, 'stroke-width': 2, 'stroke-dasharray': '5 3',
+    stroke: edge, 'stroke-width': 2, 'stroke-dasharray': '5 3',
   }));
   svg.appendChild(xbarText({
     x: fmt(statX, 1), y: baseY + 22, 'text-anchor': 'middle',
-    'font-size': 12, 'font-weight': 700, fill: RED,
+    'font-size': 12, 'font-weight': 700, fill: edge,
   }, ` = ${fmt(stat)}`, isBoot));
 
   insetContainer.innerHTML = '';
   insetContainer.appendChild(svg);
-  if (insetTitle) insetTitle.textContent = isBoot ? 'Bootstrap sample' : 'Original sample';
+  if (insetTitle) {
+    insetTitle.textContent = isBoot ? 'Bootstrap sample'
+      : isBag ? 'Original sample' : 'Random sample';
+  }
+  if (insetWrap) insetWrap.classList.toggle('box-blue', kind === 'sample');
   insetTally.innerHTML = isBoot
     ? `${tallyText(shown)} \u2192 <i class="xb">x</i>* = ${fmt(stat)}`
-    : `The bag \u2014 the bootstrap draws only from these ${shown.length} values.`;
+    : isBag
+      ? `The bag \u2014 the bootstrap draws only from these ${shown.length} values.`
+      : `${tallyText(shown)} \u2192 <i class="xb">x</i> = ${fmt(stat)}`;
 
   return { circles, statX, statY: baseY };
 }
@@ -1029,8 +1052,9 @@ function landingPoint(/** @type {Element|null} */ newest, /** @type {number} */ 
  *
  * @param {number[]} resample - population dot indices
  * @param {number} statValue
+ * @param {string} [color]
  */
-function animateBootstrapDraw(resample, statValue) {
+function animateBootstrapDraw(resample, statValue, color = RED_FILL) {
   const newest = distContainer?.querySelector('[data-newest]');
   const reveal = () => {
     if (newest) /** @type {SVGElement} */ (newest).style.removeProperty('opacity');
@@ -1045,7 +1069,7 @@ function animateBootstrapDraw(resample, statValue) {
     const from = { x: ir.left + lastInset.statX * k, y: ir.top + lastInset.statY * k };
     const to = landingPoint(newest, statValue);
     if (!to) { reveal(); return; }
-    dropDot(from, to, RED_FILL, reveal);
+    dropDot(from, to, color, reveal);
   };
 
   // Above ~30 draws the flight is a swarm rather than a mechanism, so skip it —
@@ -1071,100 +1095,10 @@ function animateBootstrapDraw(resample, statValue) {
   // No footprints: the population already marks every drawn dot by filling it,
   // so a second mark on the same circle would just be noise.
   const ran = flyOntoTargets(pairs, {
-    color: RED_FILL, footprints: false,
+    color, footprints: false,
     onDone: () => setTimeout(dropFromBox, 260),
   });
   if (!ran) reveal();
-}
-
-/**
- * The +1 flight, in three phases — the mechanism the whole page is about, so it
- * is shown rather than asserted:
- *
- *   PLUCK     a flyer lifts off each population circle the sample drew (a circle
- *             drawn twice launches two flyers, which is what "with replacement"
- *             looks like);
- *   COALESCE  the flyers converge on the sample's x̄ and merge into one dot —
- *             n values become one statistic;
- *   DROP      that dot falls into the distribution below and becomes the newest
- *             dot in the stack.
- *
- * Skipped entirely under prefers-reduced-motion, and for the batch buttons,
- * where n flyers × 1000 samples would be absurd.
- *
- * @param {number[]} dotIndices - population dot ids making up the sample
- * @param {number} meanValue
- * @param {string} color
- */
-function animateSampleFly(dotIndices, meanValue, color) {
-  const newest = distContainer?.querySelector('[data-newest]');
-  const reveal = () => { if (newest) /** @type {SVGElement} */ (newest).style.removeProperty('opacity'); };
-  if (reduceMotion || !popContainer || !distContainer) return;
-  const popSvg = popContainer.querySelector('svg');
-  const distSvg = distContainer.querySelector('svg');
-  if (!popSvg || !distSvg) return;
-
-  const sources = dotIndices
-    .map(i => popSvg.querySelector(`[data-dot="${i}"]`))
-    .filter(Boolean)
-    .map(c => {
-      const b = /** @type {SVGCircleElement} */ (c).getBoundingClientRect();
-      return { x: b.left + b.width / 2, y: b.top + b.height / 2, size: Math.max(7, b.width * 0.8) };
-    });
-  if (!sources.length) return;
-
-  // Where the flyers merge: the sample's x̄ on the population panel's axis.
-  const pr = popSvg.getBoundingClientRect();
-  const scaleP = pr.width / VW;
-  const mergeX = pr.left + sx(meanValue) * scaleP;
-  const mergeY = sources.reduce((t, p) => t + p.y, 0) / sources.length;
-
-  // Where it lands: the newest dot in the plot below, or the axis if binned.
-  const dr = distSvg.getBoundingClientRect();
-  const scaleD = dr.width / VW;
-  let landX = dr.left + sx(meanValue) * scaleD;
-  let landY = dr.top + distGeom.baseY * scaleD;
-  if (newest) {
-    const nb = newest.getBoundingClientRect();
-    landX = nb.left + nb.width / 2;
-    landY = nb.top + nb.height / 2;
-    /** @type {SVGElement} */ (newest).style.opacity = '0';
-  }
-
-  const flyers = sources.map((p) => {
-    const d = document.createElement('div');
-    d.style.cssText = `position:fixed;left:${p.x - p.size / 2}px;top:${p.y - p.size / 2}px;`
-      + `width:${p.size}px;height:${p.size}px;border-radius:50%;background:${color};`
-      + `box-shadow:0 0 0 1.5px #fff, 0 1px 3px rgba(0,0,0,.4);z-index:1000;`
-      + `pointer-events:none;opacity:0;transition:opacity .12s ease-in;`;
-    document.body.appendChild(d);
-    return { d, ...p };
-  });
-  requestAnimationFrame(() => flyers.forEach(f => { f.d.style.opacity = '1'; }));
-
-  const PLUCK = 260, COALESCE = 560, DROP = 480;
-  const easeInOut = (/** @type {number} */ t) =>
-    (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-
-  const t0 = performance.now();
-  function frame(now) {
-    const el0 = now - t0;
-    if (el0 < PLUCK) { requestAnimationFrame(frame); return; }
-
-    const tc = Math.min((el0 - PLUCK) / COALESCE, 1);
-    const e = easeInOut(tc);
-    for (const f of flyers) {
-      f.d.style.left = `${f.x + (mergeX - f.x) * e - f.size / 2}px`;
-      f.d.style.top = `${f.y + (mergeY - f.y) * e - f.size / 2}px`;
-      if (tc > 0.75) f.d.style.opacity = String(Math.max(0, 1 - (tc - 0.75) / 0.25));
-    }
-    if (tc < 1) { requestAnimationFrame(frame); return; }
-
-    // Merged: one dot carrying the statistic, dropping into the plot below.
-    for (const f of flyers) f.d.remove();
-    dropDot({ x: mergeX, y: mergeY }, { x: landX, y: landY }, color, reveal);
-  }
-  requestAnimationFrame(frame);
 }
 
 // ---------------------------------------------------------------------------
@@ -1192,6 +1126,7 @@ function render() {
     const cur = shown > 0 ? pool[shown - 1] : null;
     renderPopulation(null, cur, BLUE);
     if (popSub) popSub.textContent = 'each sample highlights the dots it drew';
+    lastInset = cur ? renderInset(cur, 'sample') : null;
     if (sampleTally) {
       sampleTally.innerHTML = cur
         ? `Latest sample (n = ${n()}): ${tallyText(cur)}  \u2192  `
@@ -1213,9 +1148,9 @@ function render() {
         : `Frozen sample (n = ${n()}): ${tallyText(pool[origIndex])}  \u2192  `
           + `<i class="xb">x</i> = ${fmt(poolMeans[origIndex])}`;
     }
-    lastInset = renderInset(cur);
+    lastInset = renderInset(cur ?? pool[origIndex], cur ? 'bootstrap' : 'bag');
   }
-  if (insetWrap) insetWrap.hidden = stage !== 2;
+  if (insetWrap) insetWrap.hidden = stage === 1 && shown === 0;
   if (xbarRow) xbarRow.hidden = stage !== 2;
   if (seOption) seOption.hidden = stage !== 2 || !params.has('se');
   if (distSub) {
@@ -1244,7 +1179,7 @@ function draw(count) {
     shown = Math.min(POOL, shown + count);
     render();
     if (count === 1 && shown > before) {
-      animateSampleFly(pool[shown - 1], poolMeans[shown - 1], BLUE);
+      animateBootstrapDraw(pool[shown - 1], poolMeans[shown - 1], BLUE);
     }
     announce(`${shown} samples drawn. Sampling distribution SE ${fmt(trueSe)}.`);
   } else {
