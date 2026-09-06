@@ -20,7 +20,7 @@ import { createChart, makeScales, drawAxes } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
-import { tex, setTex } from 'kit/tex.js';
+import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import { tryParse, compile, derivative, toLatex } from '../../js/expr.js';
@@ -272,12 +272,21 @@ initPage({
     setTex($('#help-tex1'), '(x,\\,f(x))\\ \\text{and}\\ (x+h,\\,f(x+h))');
     setTex($('#help-tex2'), '\\frac{f(x+h)-f(x)}{h}');
 
+
+    // Preset labels are typeset from the very expression they insert, so the
+    // notation can never disagree with the maths — a literal "√x" in HTML shows
+    // a radical that does not extend over its argument.
+    renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
+
     setWindow($('#window-select').value);
 
     initExpressionInput({
       input: $('#fn-input'),
       error: $('#fn-error'),
       parse: tryParse,
+      preview: $('#fn-preview'),
+      format: toLatex,
+      palette: $('#fn-palette'),
       onChange(node, src) {
         state.node = node;
         state.dNode = derivative(node);

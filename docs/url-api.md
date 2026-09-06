@@ -23,6 +23,21 @@ so a plus sign inside a function must be written `%2B`:
 | `f` | expression | The function under study, written as a student would type it. |
 | `a`, `b` | number | The page's two principal numeric inputs — a lens says below what they mean for it. |
 
+### Reading what you typed
+
+Every expression field shows a **live preview** of what the parser actually read,
+typeset. This catches the class of mistake no error message can: nothing is
+*wrong* with `x^2sin1/x`, it simply parses as x²·sin(1)/x, which is not what the
+writer meant. The preview is deliberately **not** a live region — it changes on
+every keystroke — but each field points at it with `aria-describedby`, so a
+screen reader reads it on focus and KaTeX's MathML makes it speakable.
+
+A small **symbol palette** sits under the main field on tools with one. It is a
+shortcut for forms whose ASCII spelling is not guessable, not a replacement for
+learning the syntax: MyOpenMath, WeBWorK and Desmos all take the same ASCII, so
+the typing transfers and hiding it behind buttons would work against the
+homework.
+
 An embedded page also posts its height to the framing window
 (`{type: 'learnlens:height', height, url}`) so a deck can size the iframe. See
 `kit/js/embed.js` for the parent-side listener.
@@ -42,6 +57,14 @@ An embedded page also posts its height to the framing window
 | `tangent` | `true` | off | Reveal the tangent line. **Off by default on purpose** — students should predict the limit first. |
 | `controls` | list | all | Which control groups to show: `f`, `a`, `window`, `h`, `tangent`, `table`. Anything omitted is hidden, and a panel left with no visible control is hidden too. |
 | `var` | letter | inferred | Only used when the expression has no variable to infer from. The expression always wins. |
+
+Both points are **draggable on the graph** and reachable by keyboard: each is a
+`role="slider"` handle with a 44px hit area, so Tab reaches it and the arrow keys
+move it. *P* is drawn as a dark dot inside a ring (anchored); *Q* is coloured
+with a halo and a grab cursor (movable) — shape, colour and cursor, since any
+one of the three alone excludes somebody. Dragging *Q* through *P* flips `side`
+automatically. When *Q* is very close to *P* their hit areas overlap and *Q*
+wins; move *P* with its number field or by keyboard in that case.
 
 **The lecture-figure form** — figure, one slider, the table, nothing else:
 

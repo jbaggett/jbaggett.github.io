@@ -55,7 +55,7 @@
       <label for="fn-input" style="flex:1 1 260px;">
         <span><i>f</i>(<i>x</i>) =</span>
         <input type="text" id="fn-input" value="x^3 - 3x" autocomplete="off"
-               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-preview fn-syntax">
       </label>
       <label for="window-select">
         <span>Window</span>
@@ -67,16 +67,18 @@
       </label>
     </div>
     <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
     <p class="ll-hint" id="fn-syntax">
       Try <code>x^3-3x</code>, <code>sin(x)</code>, <code>x^2</code>,
       <code>abs(x)</code>, <code>e^x</code>, <code>ln(x)</code>.
     </p>
     <div class="ll-segmented" role="group" aria-label="Example functions">
-      <button type="button" class="preset" data-f="x^2">x²</button>
-      <button type="button" class="preset" data-f="x^3 - 3x">x³ − 3x</button>
-      <button type="button" class="preset" data-f="sin(x)">sin x</button>
-      <button type="button" class="preset" data-f="e^x">eˣ</button>
-      <button type="button" class="preset" data-f="abs(x)">|x|</button>
+      <button type="button" class="preset" data-math="x^2" data-f="x^2">x^2</button>
+      <button type="button" class="preset" data-math="x^3 - 3x" data-f="x^3 - 3x">x^3 - 3x</button>
+      <button type="button" class="preset" data-math="sin(x)" data-f="sin(x)">sin(x)</button>
+      <button type="button" class="preset" data-math="e^x" data-f="e^x">e^x</button>
+      <button type="button" class="preset" data-math="abs(x)" data-f="abs(x)">abs(x)</button>
     </div>
   </section>
 

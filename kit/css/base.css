@@ -169,6 +169,48 @@ button.ll-primary:hover { background: #2F6A8F; }
   padding: 0.05rem 0.5rem; margin-left: 0.4rem; color: var(--ims-gray-text); vertical-align: middle;
 }
 
+/* ── Expression input: preview and palette ───────────────────────────────── */
+
+.ll-preview {
+  min-height: 1.9em; margin: 0.35rem 0 0; padding: 0.15rem 0.4rem;
+  border-left: 3px solid var(--ims-blue); background: var(--surface); border-radius: 0 4px 4px 0;
+  font-size: 1.02rem;
+}
+.ll-preview:empty { display: none; }
+.ll-preview::before {
+  content: "reading: "; font-size: 0.8rem; color: var(--ims-gray-text);
+  font-family: var(--font-body);
+}
+/* A failed parse leaves the last good reading visible but visibly out of date,
+   rather than blanking — the reader is usually mid-edit, and a field that
+   empties itself as you type is worse than one that lags. */
+.ll-preview-stale { opacity: 0.4; border-left-color: var(--ims-lgray); }
+
+.ll-palette { display: flex; flex-wrap: wrap; gap: 0.3rem; margin: 0.4rem 0 0; }
+.ll-palette-btn {
+  min-height: 34px; min-width: 38px; padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border); border-radius: 5px; background: var(--bg);
+  color: var(--fg); line-height: 1.1;
+}
+.ll-palette-btn:hover { background: #EAF3F8; border-color: var(--ims-blue-text); }
+.ll-palette-btn .katex { font-size: 0.95em; }
+
+/* ── Draggable points ────────────────────────────────────────────────────── */
+
+/* A point the reader can move, and one they cannot, must be told apart before
+   they try — so the movable one carries a halo and a grab cursor, and the
+   anchored one is a plain filled dot with a ring. Shape and cursor, not colour
+   alone. */
+.ll-grab { cursor: grab; touch-action: none; }
+.ll-grab:active { cursor: grabbing; }
+.ll-grab-hit { fill: transparent; }
+.ll-point-halo { fill: var(--tangent); opacity: 0.18; pointer-events: none; }
+.ll-grab:focus-visible .ll-point-halo { opacity: 0.4; }
+.ll-grab:focus-visible .ll-point-move { stroke: var(--highlight-orange-dark); stroke-width: 3.5; }
+.ll-point-move { fill: var(--tangent); stroke: #fff; stroke-width: 2; }
+.ll-point-anchor { fill: #222; stroke: #fff; stroke-width: 2; }
+.ll-point-anchor-ring { fill: none; stroke: #222; stroke-width: 1.5; opacity: 0.55; }
+
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 
 .ll-table { border-collapse: collapse; width: 100%; max-width: 32rem;

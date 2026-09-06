@@ -22,10 +22,10 @@ import { createChart, makeScales, drawAxes } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
-import { tex, setTex } from 'kit/tex.js';
+import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
-import { tryParse, compile, derivative, freeVariables } from '../../js/expr.js';
+import { tryParse, compile, derivative, freeVariables, toLatex } from '../../js/expr.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -93,23 +93,48 @@ function render() {
       .attr('fill', 'none').attr('stroke', 'var(--tangent)')
       .attr('stroke-width', 1).attr('stroke-dasharray', '3 3').attr('opacity', 0.8);
     if (Math.abs(xs(q) - xs(a)) > 26) {
+      // The run line sits at f(a). When that is near y = 0 the label would land
+      // on the x-axis tick numbers, and a white halo is not enough to make two
+      // overlapping strings readable — so move it to the other side instead.
+      const runY = ys(fa);
+      const clash = Math.abs(runY - ys(0)) < 18;
       chart.gOver.append('text')
-        .attr('x', (xs(a) + xs(q)) / 2).attr('y', ys(fa) + (h > 0 ? 15 : 15))
+        .attr('x', (xs(a) + xs(q)) / 2)
+        .attr('y', runY + (clash ? -9 : 16))
         .attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', 'var(--tangent)')
         .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
         .text(`h = ${fmt(h, Math.abs(h) < 0.01 ? 4 : 3)}`);
     }
   }
 
-  for (const [x, y, label, cls] of [[a, fa, 'P', 'll-point'], [q, fq, 'Q', 'll-point']]) {
-    if (!Number.isFinite(y) || !inView(x)) continue;
-    chart.gOver.append('circle').attr('class', cls)
-      .attr('cx', xs(x)).attr('cy', ys(y)).attr('r', label === 'P' ? 6.5 : 5)
-      .attr('fill', label === 'P' ? '#000' : 'var(--tangent)');
-    chart.gOver.append('text')
-      .attr('x', xs(x) + 9).attr('y', ys(y) - 8).attr('font-size', 13).attr('font-style', 'italic')
-      .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
-      .text(label);
+  // P is the anchor and Q is the one that moves, and that has to be legible
+  // BEFORE the reader tries to drag: P is a plain dark dot inside a thin ring,
+  // Q is a coloured dot inside a soft halo with a grab cursor. Shape, colour
+  // and cursor all three, because any one of them alone excludes somebody.
+  if (Number.isFinite(fa) && inView(a)) {
+    drawHandle({
+      key: 'P', x: a, y: fa, xs, anchor: true,
+      label: 'Point P, the fixed point',
+      valuetext: `P at ${state.v} = ${fmt(a, 3)}`,
+      min: x0, max: x1, now: a,
+      cx: xs(a), cy: ys(fa),
+      onMove: nx => setA(nx),
+      onKey: dir => setA(a + (dir * (x1 - x0)) / 50),
+    });
+  }
+  if (Number.isFinite(fq) && inView(q)) {
+    drawHandle({
+      key: 'Q', x: q, y: fq, xs, anchor: false,
+      label: 'Point Q, drag toward P',
+      valuetext: `Q at ${state.v} = ${fmt(q, 4)}, gap h = ${fmt(h, 4)}`,
+      min: -4, max: 0.3, now: state.h,
+      cx: xs(q), cy: ys(fq),
+      onMove: nx => setQ(nx),
+      // Arrows step in the SAME logarithmic space as the slider, so a keyboard
+      // user closes the gap at the rate a dragging one does — and can always
+      // get closer, which linear steps would not allow.
+      onKey: dir => { stopAnim(); setH(state.h + dir * 0.1); },
+    });
   }
 
   chart.setLabel(
@@ -184,6 +209,111 @@ function updateTable() {
 }
 
 /* ──────────────────────────────── controls ─────────────────────────────── */
+
+/**
+ * Dragging is tracked on the WINDOW, not on the handle.
+ *
+ * The handle cannot own its own drag: every move re-renders the chart, which
+ * destroys and recreates the very element holding the pointer capture, so the
+ * second `pointermove` lands on a node that is no longer in the document and
+ * the drag dies after one pixel. Listening on the window survives the redraw.
+ *
+ * @type {{xs:any, onMove:(x:number)=>void}|null}
+ */
+let dragging = null;
+
+function onWindowDrag(/** @type {PointerEvent} */ ev) {
+  if (!dragging) return;
+  ev.preventDefault();
+  const box = chart.svg.node().getBoundingClientRect();
+  dragging.onMove(dragging.xs.invert(((ev.clientX - box.left) / box.width) * chart.width));
+}
+
+function endDrag() {
+  dragging = null;
+  window.removeEventListener('pointermove', onWindowDrag);
+  window.removeEventListener('pointerup', endDrag);
+  window.removeEventListener('pointercancel', endDrag);
+}
+
+function beginDrag(xs, onMove) {
+  dragging = { xs, onMove };
+  window.addEventListener('pointermove', onWindowDrag, { passive: false });
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+}
+
+/**
+ * A draggable, focusable point on the curve.
+ *
+ * The visible dot stays small so it does not hide the curve beneath it, but the
+ * hit area is 44px — the touch-target minimum, and also what makes it grabbable
+ * with a mouse. `role="slider"` is the correct ARIA for a handle that moves
+ * along one axis: it gives screen-reader users arrow keys and a spoken value,
+ * which a bare draggable circle does not.
+ */
+function drawHandle(o) {
+  const g = chart.gOver.append('g')
+    .attr('class', 'll-grab')
+    .attr('tabindex', 0)
+    .attr('role', 'slider')
+    .attr('aria-label', o.label)
+    .attr('aria-valuemin', o.min)
+    .attr('aria-valuemax', o.max)
+    .attr('aria-valuenow', o.now)
+    .attr('aria-valuetext', o.valuetext);
+
+  const { cx, cy } = o;
+  g.append('circle').attr('class', 'll-grab-hit').attr('cx', cx).attr('cy', cy).attr('r', 22);
+  if (o.anchor) {
+    g.append('circle').attr('class', 'll-point-anchor-ring').attr('cx', cx).attr('cy', cy).attr('r', 11);
+    g.append('circle').attr('class', 'll-point-anchor').attr('cx', cx).attr('cy', cy).attr('r', 6.5);
+  } else {
+    g.append('circle').attr('class', 'll-point-halo').attr('cx', cx).attr('cy', cy).attr('r', 12);
+    g.append('circle').attr('class', 'll-point-move').attr('cx', cx).attr('cy', cy).attr('r', 6);
+  }
+  g.append('text')
+    .attr('x', cx + 13).attr('y', cy - 11).attr('font-size', 13).attr('font-style', 'italic')
+    .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
+    .attr('fill', o.anchor ? '#222' : 'var(--tangent)')
+    .text(o.key);
+
+  const node = g.node();
+  node.addEventListener('pointerdown', ev => {
+    ev.preventDefault(); ev.stopPropagation(); stopAnim();
+    beginDrag(o.xs, o.onMove);
+    node.focus?.();
+  });
+  node.addEventListener('keydown', ev => {
+    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { ev.preventDefault(); o.onKey(-1); }
+    else if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { ev.preventDefault(); o.onKey(1); }
+  });
+  return g;
+}
+
+/** Move P. The gap keeps its size, so the picture re-anchors rather than jumping. */
+function setA(nx) {
+  state.a = Math.min(state.x1, Math.max(state.x0, nx));
+  $('#a-input').value = String(Number(state.a.toFixed(4)));
+  updateUrl({ a: Number(state.a.toFixed(4)) });
+  render();
+  announce(`P moved to ${state.v} = ${fmt(state.a, 3)}.`);
+}
+
+/**
+ * Move Q by dragging it. Dragging THROUGH P flips which side the approach comes
+ * from — the cheapest way to discover that a two-sided limit has two sides.
+ */
+function setQ(qx) {
+  const raw = qx - state.a;
+  const side = raw < 0 ? -1 : 1;
+  // |h| is clamped to the slider's own range. The lower clamp is not cosmetic:
+  // h = 0 is where the quotient is 0/0, and Q must never land on P.
+  const mag = Math.min(Math.pow(10, 0.3), Math.max(1e-4, Math.abs(raw)));
+  if (side !== state.side) setSide(side);
+  state.side = side;
+  setH(Math.log10(mag));
+}
 
 /** The slider is log10|h|: every arrow key is a proportional step, and 0 is unreachable. */
 function signedH() {
@@ -317,6 +447,9 @@ initPage({
       input: $('#fn-input'),
       error: $('#fn-error'),
       parse: (src) => tryParse(src),
+      preview: $('#fn-preview'),
+      format: toLatex,
+      palette: $('#fn-palette'),
       onChange(node, src) {
         adopt(node);
         updateUrl({ f: src, var: state.v === 'x' ? null : state.v });
@@ -357,6 +490,12 @@ initPage({
       if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
       if (e.key === ' ') { e.preventDefault(); anim === null ? startAnim() : stopAnim(); }
     });
+
+
+    // Preset labels are typeset from the very expression they insert, so the
+    // notation can never disagree with the maths — a literal "√x" in HTML shows
+    // a radical that does not extend over its argument.
+    renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
 
     applyControls(q.get('controls'));
     reparse();

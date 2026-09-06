@@ -51,3 +51,34 @@ export function tex(latex, opts = {}) {
 export function setTex(/** @type {Element|null} */ el, /** @type {string} */ latex, opts = {}) {
   if (el) el.innerHTML = tex(latex, opts);
 }
+
+/**
+ * Typeset every `[data-math]` element from the expression it carries.
+ *
+ * This exists because hand-written labels drift from the notation. A preset
+ * button spelled `√x` in HTML shows a radical that does NOT extend over its
+ * argument — the glyph is a character, not a construction — so `√x+1` reads as
+ * "root x, plus one" when the expression means the opposite. Superscripts hit
+ * the same wall: `e<sup>−x²</sup>` is four separate typographic guesses.
+ *
+ * Generating the label from the source string removes the possibility: the
+ * button shows exactly the expression it inserts, typeset properly.
+ *
+ * No `aria-label` is set, deliberately. KaTeX emits MathML for screen readers
+ * alongside the visual output, so a button containing it already has a correct
+ * accessible name; an `aria-label` would override that with something worse.
+ *
+ * @param {(src:string)=>string|null} toTex  source → LaTeX, or null if unreadable
+ * @param {{root?:ParentNode, attr?:string}} [opts]
+ */
+export function renderMathLabels(toTex, opts = {}) {
+  const { root = document, attr = 'data-math' } = opts;
+  for (const el of root.querySelectorAll(`[${attr}]`)) {
+    const src = el.getAttribute(attr);
+    if (!src) continue;
+    const latex = toTex(src);
+    // Unreadable source keeps whatever the HTML said — better a plain label
+    // than an empty button.
+    if (latex) el.innerHTML = tex(latex);
+  }
+}

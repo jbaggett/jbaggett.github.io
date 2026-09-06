@@ -19,7 +19,7 @@ import { createChart, makeScales, drawAxes } from 'kit/chart.js';
 import { drawCurve, autoYDomain, linePath } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
-import { tex, setTex } from 'kit/tex.js';
+import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import { tryParse, compile, antiderivative, toLatex, evaluate } from '../../js/expr.js';
@@ -348,6 +348,12 @@ initPage({
     setTex($('#lede-tex'), 'A(x) = \\int_a^x f(t)\\,dt');
     setTex($('#help-tex1'), 'A(x) = \\int_a^x f(t)\\,dt');
 
+
+    // Preset labels are typeset from the very expression they insert, so the
+    // notation can never disagree with the maths — a literal "√x" in HTML shows
+    // a radical that does not extend over its argument.
+    renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
+
     setWindow($('#window-select').value);
     state.a = Number($('#a-input').value) || 0;
     // Arrive with area already on screen: a blank first frame (x = a, nothing
@@ -358,6 +364,9 @@ initPage({
       input: $('#fn-input'),
       error: $('#fn-error'),
       parse: tryParse,
+      preview: $('#fn-preview'),
+      format: toLatex,
+      palette: $('#fn-palette'),
       onChange(node, src) {
         state.node = node;
         state.f = compile(node);

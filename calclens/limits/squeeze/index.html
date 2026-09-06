@@ -55,18 +55,21 @@
       <label for="upper-input" style="flex:1 1 100%;">
         <span>Upper bound <i>h</i>(<i>x</i>) =</span>
         <input type="text" id="upper-input" value="x^2" autocomplete="off"
-               autocapitalize="off" spellcheck="false" aria-describedby="err">
+               autocapitalize="off" spellcheck="false" aria-describedby="err upper-preview">
       </label>
+      <div class="ll-preview" id="upper-preview" style="flex:1 1 100%"></div>
       <label for="g-input" style="flex:1 1 100%;">
         <span>Squeezed function <i>g</i>(<i>x</i>) =</span>
         <input type="text" id="g-input" value="x^2 sin(1/x)" autocomplete="off"
-               autocapitalize="off" spellcheck="false" aria-describedby="err">
+               autocapitalize="off" spellcheck="false" aria-describedby="err g-preview">
       </label>
+      <div class="ll-preview" id="g-preview" style="flex:1 1 100%"></div>
       <label for="lower-input" style="flex:1 1 100%;">
         <span>Lower bound <i>f</i>(<i>x</i>) =</span>
         <input type="text" id="lower-input" value="-x^2" autocomplete="off"
-               autocapitalize="off" spellcheck="false" aria-describedby="err">
+               autocapitalize="off" spellcheck="false" aria-describedby="err lower-preview">
       </label>
+      <div class="ll-preview" id="lower-preview" style="flex:1 1 100%"></div>
       <label for="a-input" data-control="a">
         <span>Approaching <i>x</i> =</span>
         <input type="number" id="a-input" value="0" step="0.25" style="width:6rem">
@@ -75,11 +78,11 @@
     <p class="ll-error" id="err" role="alert" hidden></p>
     <div class="ll-segmented" role="group" aria-label="Examples" data-control="f">
       <button type="button" class="preset"
-              data-g="x^2 sin(1/x)" data-lo="-x^2" data-hi="x^2" data-a="0">x² sin(1/x)</button>
+              data-math="x^2 sin(1/x)" data-g="x^2 sin(1/x)" data-lo="-x^2" data-hi="x^2" data-a="0">x^2 sin(1/x)</button>
       <button type="button" class="preset"
-              data-g="x sin(1/x)" data-lo="-abs(x)" data-hi="abs(x)" data-a="0">x sin(1/x)</button>
+              data-math="x sin(1/x)" data-g="x sin(1/x)" data-lo="-abs(x)" data-hi="abs(x)" data-a="0">x sin(1/x)</button>
       <button type="button" class="preset"
-              data-g="x^2 cos(5/x)" data-lo="-x^2" data-hi="x^2" data-a="0">x² cos(5/x)</button>
+              data-math="x^2 cos(5/x)" data-g="x^2 cos(5/x)" data-lo="-x^2" data-hi="x^2" data-a="0">x^2 cos(5/x)</button>
       <button type="button" class="preset"
               data-g="sin(1/x)" data-lo="-1" data-hi="1" data-a="0">sin(1/x) — no squeeze</button>
     </div>

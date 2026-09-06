@@ -56,7 +56,7 @@
         <span><i>f</i>(<i>x</i>) =</span>
         <input type="text" id="fn-input" value="2x - 2" autocomplete="off"
                autocapitalize="off" spellcheck="false"
-               aria-describedby="fn-error fn-syntax">
+               aria-describedby="fn-error fn-preview fn-syntax">
       </label>
       <label for="a-input">
         <span>Start at <i>a</i> =</span>
@@ -73,17 +73,19 @@
       </label>
     </div>
     <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
     <p class="ll-hint" id="fn-syntax">
       Type it the way you write it: <code>2x-2</code>, <code>sin(x)</code>,
       <code>x^2</code>, <code>e^(-x^2)</code>, <code>1/x</code>, <code>sqrt(x)</code>.
     </p>
     <div class="ll-segmented" role="group" aria-label="Example functions">
-      <button type="button" class="preset" data-f="x">x</button>
-      <button type="button" class="preset" data-f="2x - 2">2x − 2</button>
-      <button type="button" class="preset" data-f="x^2">x²</button>
-      <button type="button" class="preset" data-f="sin(x)">sin x</button>
-      <button type="button" class="preset" data-f="1/x">1/x</button>
-      <button type="button" class="preset" data-f="e^(-x^2)">e<sup>−x²</sup></button>
+      <button type="button" class="preset" data-math="x" data-f="x">x</button>
+      <button type="button" class="preset" data-math="2x - 2" data-f="2x - 2">2x - 2</button>
+      <button type="button" class="preset" data-math="x^2" data-f="x^2">x^2</button>
+      <button type="button" class="preset" data-math="sin(x)" data-f="sin(x)">sin(x)</button>
+      <button type="button" class="preset" data-math="1/x" data-f="1/x">1/x</button>
+      <button type="button" class="preset" data-math="e^(-x^2)" data-f="e^(-x^2)">e^(-x^2)</button>
     </div>
   </section>
 

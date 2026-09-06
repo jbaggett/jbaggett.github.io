@@ -59,16 +59,19 @@
       <label for="f-input" style="flex:1 1 100%;">
         <span id="f-label">The problem: <span class="ll-math" id="f-prompt"></span></span>
         <input type="text" id="f-input" value="x^2" autocomplete="off"
-               autocapitalize="off" spellcheck="false" aria-describedby="f-error">
+               autocapitalize="off" spellcheck="false" aria-describedby="f-error f-preview">
       </label>
       <p class="ll-error" id="f-error" role="alert" hidden style="flex:1 1 100%"></p>
+      <div class="ll-preview" id="f-preview" style="flex:1 1 100%"></div>
 
       <label for="ans-input" style="flex:1 1 100%;">
         <span id="ans-label">Your answer:</span>
         <input type="text" id="ans-input" value="x^3/3" autocomplete="off"
-               autocapitalize="off" spellcheck="false" aria-describedby="ans-error">
+               autocapitalize="off" spellcheck="false" aria-describedby="ans-error ans-preview">
       </label>
       <p class="ll-error" id="ans-error" role="alert" hidden style="flex:1 1 100%"></p>
+      <div class="ll-preview" id="ans-preview" style="flex:1 1 100%"></div>
+      <div class="ll-palette" id="ans-palette" style="flex:1 1 100%"></div>
     </div>
 
     <p class="ll-hint" id="c-note">

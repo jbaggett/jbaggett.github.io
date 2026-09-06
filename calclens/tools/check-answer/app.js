@@ -21,7 +21,8 @@ import { createChart, makeScales, drawAxes } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
-import { tex, setTex } from 'kit/tex.js';
+import { tex, setTex, renderMathLabels } from 'kit/tex.js';
+import { initPalette } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import {
   tryParse, compile, derivative, antiderivative, toLatex, numericallyEqual,
@@ -139,6 +140,14 @@ function run() {
 
 function showError(errSel, inputSel, res) {
   const el = $(errSel);
+  // The preview echoes what the parser READ, which catches the mistakes an
+  // error message cannot: nothing is wrong with `x^2sin1/x`, it just is not
+  // what the student meant.
+  const prev = $(errSel.replace('-error', '-preview'));
+  if (prev) {
+    if (res.node) { prev.classList.remove('ll-preview-stale'); prev.innerHTML = tex(toLatex(res.node)); }
+    else { prev.classList.add('ll-preview-stale'); }
+  }
   if (res.node) {
     el.hidden = true; el.textContent = '';
     $(inputSel).setAttribute('aria-invalid', 'false');
@@ -216,6 +225,7 @@ initPage({
     setTex($('#plusc'), '+\\,C');
     setTex($('#help-tex1'), '\\tfrac{1}{2}\\sin^2 x');
     setTex($('#help-tex2'), '-\\tfrac{1}{2}\\cos^2 x');
+    initPalette($('#ans-palette'), $('#ans-input'), run);
     setMode(mode);
 
     $('#mode-anti').addEventListener('click', () => setMode('anti'));
@@ -223,10 +233,27 @@ initPage({
     $('#check-btn').addEventListener('click', run);
     $('#show-btn').addEventListener('click', showOne);
 
-    for (const sel of ['#f-input', '#ans-input']) {
+    // The preview updates while typing; the CHECK waits for a deliberate
+    // submit. Grading on every keystroke would tell a student their half-typed
+    // answer is wrong, which is both true and useless.
+    let previewTimer = null;
+    for (const [sel, errSel] of [['#f-input', '#f-error'], ['#ans-input', '#ans-error']]) {
+      $(sel).addEventListener('input', () => {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(() => {
+          const res = tryParse($(sel).value);
+          const prev = $(errSel.replace('-error', '-preview'));
+          if (!prev) return;
+          if (res.node) { prev.classList.remove('ll-preview-stale'); prev.innerHTML = tex(toLatex(res.node)); }
+          else prev.classList.add('ll-preview-stale');
+        }, 220);
+      });
       $(sel).addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
         if (e.key === 'Enter') { e.preventDefault(); run(); }
       });
     }
+    // Show both previews on load without passing judgement on the answer.
+    showError('#f-error', '#f-input', tryParse($('#f-input').value));
+    showError('#ans-error', '#ans-input', tryParse($('#ans-input').value));
   },
 });

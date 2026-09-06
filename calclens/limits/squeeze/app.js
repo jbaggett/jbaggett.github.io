@@ -22,9 +22,9 @@ import { createChart, makeScales, drawAxes } from 'kit/chart.js';
 import { drawCurve, autoYDomain, sampleCurve, linePath } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
-import { tex, setTex } from 'kit/tex.js';
+import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { fmt } from 'kit/format.js';
-import { tryParse, compile } from '../../js/expr.js';
+import { tryParse, compile, toLatex } from '../../js/expr.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -288,6 +288,8 @@ function reparse() {
     const res = tryParse($(sel).value);
     if (!res.node) {
       $(sel).setAttribute('aria-invalid', 'true');
+      const stale = $(sel.replace('-input', '-preview'));
+      if (stale) stale.classList.add('ll-preview-stale');
       const src = $(sel).value;
       const caret = typeof res.pos === 'number' && res.pos < src.length
         ? ` (at "${src[res.pos]}", character ${res.pos + 1})` : '';
@@ -296,6 +298,8 @@ function reparse() {
       return false;
     }
     $(sel).setAttribute('aria-invalid', 'false');
+    const prev = $(sel.replace('-input', '-preview'));
+    if (prev) { prev.classList.remove('ll-preview-stale'); prev.innerHTML = tex(toLatex(res.node)); }
     state[key] = compile(res.node);
   }
   err.hidden = true;
@@ -360,6 +364,7 @@ initPage({
       if (e.key === ' ') { e.preventDefault(); anim === null ? startAnim() : stopAnim(); }
     });
 
+    renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
     applyControls(q.get('controls'));
     refresh();
     setD(state.d, { quiet: true });
