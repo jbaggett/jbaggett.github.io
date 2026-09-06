@@ -18,7 +18,7 @@
  * two bounds do not agree in the limit (the sin(1/x) preset).
  */
 
-import { createChart, makeScales, drawAxes } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
 import { drawCurve, autoYDomain, sampleCurve, linePath } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -100,7 +100,7 @@ function render() {
     .attr('y1', chart.margin.top).attr('y2', chart.height - chart.margin.bottom);
   chart.gOver.append('text')
     .attr('x', xs(a)).attr('y', chart.height - chart.margin.bottom - 5)
-    .attr('text-anchor', 'middle').attr('font-style', 'italic').attr('font-size', 13)
+    .attr('text-anchor', 'middle').attr('font-style', 'italic').attr('font-size', chart.fs(13))
     .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
     .text('a');
 
@@ -392,6 +392,10 @@ initPage({
       prompt: 'What number do the bounds agree on?',
       onChange(shown) { state.revealLimit = shown; render(); },
     });
+    // A chart's geometry is frozen at build time, so rotating a phone (or
+    // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
+    // squeezed into a phone-sized box with six-pixel labels.
+    onBreakpointChange(() => { chart = null; render(); });
     applyControls(q.get('controls'));
     refresh();
     setD(state.d, { quiet: true });

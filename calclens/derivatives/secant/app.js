@@ -18,7 +18,7 @@
  *   turns it on for the second pass.
  */
 
-import { createChart, makeScales, drawAxes } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -118,7 +118,7 @@ function render() {
       chart.gOver.append('text')
         .attr('x', (xs(a) + xs(q)) / 2)
         .attr('y', runY + (clash ? -9 : 16))
-        .attr('text-anchor', 'middle').attr('font-size', 12).attr('fill', 'var(--tangent)')
+        .attr('text-anchor', 'middle').attr('font-size', chart.fs(12)).attr('fill', 'var(--tangent)')
         .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
         .text(`h = ${fmt(h, Math.abs(h) < 0.01 ? 4 : 3)}`);
     }
@@ -290,7 +290,7 @@ function drawHandle(o) {
     g.append('circle').attr('class', 'll-point-move').attr('cx', cx).attr('cy', cy).attr('r', 6);
   }
   g.append('text')
-    .attr('x', cx + 13).attr('y', cy - 11).attr('font-size', 13).attr('font-style', 'italic')
+    .attr('x', cx + 13).attr('y', cy - 11).attr('font-size', chart.fs(13)).attr('font-style', 'italic')
     .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
     .attr('fill', o.anchor ? '#222' : 'var(--tangent)')
     .text(o.key);
@@ -313,6 +313,7 @@ function setA(nx) {
   state.a = Math.min(state.x1, Math.max(state.x0, nx));
   $('#a-input').value = String(Number(state.a.toFixed(4)));
   updateUrl({ a: Number(state.a.toFixed(4)) });
+  syncRange();
   render();
   announce(`P moved to ${state.v} = ${fmt(state.a, 3)}.`);
 }
@@ -324,11 +325,11 @@ function setA(nx) {
 function setQ(qx) {
   const raw = qx - state.a;
   const side = raw < 0 ? -1 : 1;
-  // |h| is clamped to the slider's own range. The lower clamp is not cosmetic:
-  // h = 0 is where the quotient is 0/0, and Q must never land on P.
-  const mag = Math.min(Math.pow(10, 0.3), Math.max(1e-4, Math.abs(raw)));
-  if (side !== state.side) setSide(side);
-  state.side = side;
+  // Q may be dragged anywhere in the window; the only clamps are the window
+  // edge and a floor on |h|. The floor is not cosmetic: h = 0 is where the
+  // quotient is 0/0, so Q must never land exactly on P.
+  if (side !== state.side) { state.side = side; setSide(side); }
+  const mag = Math.min(Math.pow(10, maxLogH()), Math.max(1e-4, Math.abs(raw)));
   setH(Math.log10(mag));
 }
 
@@ -337,8 +338,30 @@ function signedH() {
   return state.side * Math.pow(10, state.h);
 }
 
+/**
+ * The largest gap Q can take, in log10 — however much room there is between P
+ * and the edge of the window on the side Q is approaching from.
+ *
+ * This used to be the constant 0.3 (|h| = 2), which was wrong in both
+ * directions: on a window of [0,10] Q could not be dragged past 2, and on the
+ * falling-ball window of [0,2] with P at 0.5 it could be dragged to 2.5, off
+ * the visible graph, where the point simply vanished.
+ */
+function maxLogH() {
+  const room = state.side > 0 ? state.x1 - state.a : state.a - state.x0;
+  return Math.log10(Math.max(1e-3, room));
+}
+
+/** Keep the slider's range, and h itself, inside the room actually available. */
+function syncRange() {
+  const hi = maxLogH();
+  const slider = $('#h-slider');
+  slider.max = String(Number(hi.toFixed(4)));
+  if (state.h > hi) { state.h = hi; slider.value = String(state.h); }
+}
+
 function setH(logH, opts = {}) {
-  state.h = Math.min(0.3, Math.max(-4, logH));
+  state.h = Math.min(maxLogH(), Math.max(-4, logH));
   $('#h-slider').value = String(state.h);
   render();
   if (!opts.quiet) {
@@ -352,6 +375,8 @@ function setSide(side) {
   $('#side-right').setAttribute('aria-pressed', String(side > 0));
   $('#side-left').setAttribute('aria-pressed', String(side < 0));
   updateUrl({ side: side > 0 ? null : 'left' });
+  // The room available differs per side, so the slider's range changes with it.
+  syncRange();
   render();
 }
 
@@ -366,7 +391,7 @@ function startAnim() {
   stopAnim();
   $('#close-btn').textContent = '❚❚ Stop';
   $('#close-btn').setAttribute('aria-pressed', 'true');
-  const from = 0.3, to = -4;
+  const from = maxLogH(), to = -4;
   if (prefersReducedMotion()) {
     let i = 0;
     anim = setInterval(() => {
@@ -490,6 +515,7 @@ initPage({
       $('#win-input').value = d.win;
       state.a = Number(d.a);
       readWindow();
+      syncRange();
       updateUrl({ a: d.a, window: d.win, var: d.var || null });
       $('#fn-input').value = d.f;
       $('#fn-input').dispatchEvent(new Event('change'));
@@ -498,9 +524,12 @@ initPage({
     $('#a-input').addEventListener('input', () => {
       state.a = Number($('#a-input').value) || 0;
       updateUrl({ a: state.a });
+      syncRange();
       render();
     });
-    $('#win-input').addEventListener('change', () => { readWindow(); updateUrl({ window: $('#win-input').value }); render(); });
+    $('#win-input').addEventListener('change', () => {
+      readWindow(); updateUrl({ window: $('#win-input').value }); syncRange(); render();
+    });
     $('#h-slider').addEventListener('input', e => { stopAnim(); setH(Number(e.target.value)); });
     $('#side-right').addEventListener('click', () => setSide(1));
     $('#side-left').addEventListener('click', () => setSide(-1));
@@ -518,8 +547,13 @@ initPage({
     // a radical that does not extend over its argument.
     renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
 
+    // A chart's geometry is frozen at build time, so rotating a phone (or
+    // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
+    // squeezed into a phone-sized box with six-pixel labels.
+    onBreakpointChange(() => { chart = null; render(); });
     applyControls(q.get('controls'));
     reparse();
+    syncRange();
     $('#h-slider').value = String(state.h);
     setSide(state.side);
     setH(state.h, { quiet: true });

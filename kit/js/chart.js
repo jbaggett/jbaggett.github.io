@@ -13,8 +13,24 @@ import { axisBottom, axisLeft } from 'd3-axis';
 export const VIEW_WIDTH = 640;
 export const VIEW_HEIGHT = 400;
 export const MARGIN = { top: 16, right: 18, bottom: 30, left: 40 };
-export const PHONE_WIDTH = 420;
-export const PHONE_MARGIN = { top: 14, right: 14, bottom: 28, left: 36 };
+/**
+ * Phone geometry.
+ *
+ * The viewBox is what sets the apparent text size, and this is the part that is
+ * easy to get wrong twice. An SVG with a 640-unit viewBox displayed at 330 CSS
+ * pixels renders its 12-unit tick labels at **6 pixels** — unreadable, and no
+ * amount of CSS fixes it, because the units are being scaled down by the
+ * viewBox. So the phone viewBox is made NARROW, close to 1:1 with the display
+ * width, and everything inside it comes back up to size.
+ *
+ * 360 against a typical ~330px of usable phone width is a scale of about 0.92,
+ * so a 14-unit label lands at roughly 13 real pixels.
+ */
+export const PHONE_WIDTH = 360;
+export const PHONE_MARGIN = { top: 12, right: 12, bottom: 26, left: 34 };
+
+/** Below this viewport width a chart is built with the phone geometry. */
+export const NARROW_QUERY = '(max-width: 599px)';
 
 /**
  * Build the responsive SVG frame every CalcLens chart sits in.
@@ -31,7 +47,8 @@ export function createChart(container, opts) {
   // On a phone the SVG is scaled to the screen width, so a wide viewBox becomes
   // a short, unreadable strip. A narrower viewBox buys back vertical space and
   // enlarges every label proportionally, without a single px of CSS override.
-  const narrow = typeof window !== 'undefined' && window.innerWidth < 600;
+  const narrow = typeof window !== 'undefined'
+    && window.matchMedia && window.matchMedia(NARROW_QUERY).matches;
   const {
     width = narrow ? PHONE_WIDTH : VIEW_WIDTH,
     height = VIEW_HEIGHT,
@@ -64,6 +81,16 @@ export function createChart(container, opts) {
     svg, plot, gAxes, gOver, width, height, margin,
     innerWidth: width - margin.left - margin.right,
     innerHeight: height - margin.top - margin.bottom,
+    narrow,
+    /**
+     * Scale a font size given in desktop units.
+     *
+     * Text drawn by a tool sets its size numerically, and those numbers are
+     * viewBox units. On the narrower phone viewBox the same number is already
+     * proportionally bigger, but not by enough for annotations that have to be
+     * read across a room, so they get a further nudge.
+     */
+    fs: (/** @type {number} */ n) => (narrow ? Math.round(n * 1.15) : n),
     setLabel: (/** @type {string} */ text) => svg.attr('aria-label', text),
   };
 }
@@ -123,4 +150,19 @@ export function drawAxes(chart, opts) {
     .attr('x', width - margin.right + 4).attr('y', y0 + 4).text(xLabel);
   gAxes.append('text').attr('class', 'll-axis-label')
     .attr('x', x0 + 6).attr('y', margin.top - 4).text(yLabel);
+}
+
+/**
+ * Run `cb` when the viewport crosses the phone/desktop boundary.
+ *
+ * A chart is built once, so its geometry is frozen at whatever the viewport was
+ * on load. Rotating a phone, or flipping Chrome's device toolbar, then leaves a
+ * desktop-sized viewBox squeezed into a phone-sized box with six-pixel labels.
+ * Tools call this, drop their cached chart, and re-render.
+ *
+ * @param {() => void} cb
+ */
+export function onBreakpointChange(cb) {
+  if (typeof window === 'undefined' || !window.matchMedia) return;
+  window.matchMedia(NARROW_QUERY).addEventListener('change', cb);
 }

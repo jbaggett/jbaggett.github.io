@@ -15,7 +15,7 @@
 
 import { select } from 'd3-selection';
 import { area as d3area } from 'd3-shape';
-import { createChart, makeScales, drawAxes } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
 import { drawCurve, autoYDomain, linePath } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -44,8 +44,8 @@ const state = {
   /** @type {{x:number,y:number}[]} */ accum: [],
 };
 
-const chartF = createChart('#chart-f', { height: 300, label: 'Graph of f with the area from a to x shaded' });
-const chartA = createChart('#chart-a', { height: 300, label: 'Graph of the accumulation function A' });
+let chartF = createChart('#chart-f', { height: 300, label: 'Graph of f with the area from a to x shaded' });
+let chartA = createChart('#chart-a', { height: 300, label: 'Graph of the accumulation function A' });
 
 // Hatching for negative contributions: signed area must not be carried by
 // colour alone (accessibility checklist), and a hatch also reads as "this is
@@ -142,7 +142,7 @@ function render() {
     chartF.gOver.append('text')
       .attr('x', xs(pos)).attr('y', labelY)
       .attr('text-anchor', 'middle').attr('font-style', 'italic')
-      .attr('font-size', 13).attr('fill', '#333')
+      .attr('font-size', chartF.fs(13)).attr('fill', '#333')
       .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
       .text(label);
   }
@@ -155,7 +155,7 @@ function render() {
       .attr('cx', xs(x)).attr('cy', ys(fx)).attr('r', 5);
     chartF.gOver.append('text')
       .attr('x', xs(x) + 32).attr('y', ys(fx) + 4)
-      .attr('font-size', 12).attr('fill', 'var(--tangent)')
+      .attr('font-size', chartF.fs(12)).attr('fill', 'var(--tangent)')
       .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
       .text(`height ${fmt(fx, 2)}`);
   }
@@ -199,7 +199,7 @@ function render() {
         .attr('x2', scalesA.xs(x + dx)).attr('y2', scalesA.ys(Ax + fx * dx));
       chartA.gOver.append('text')
         .attr('x', scalesA.xs(x) + 10).attr('y', scalesA.ys(Ax) - 12)
-        .attr('font-size', 12).attr('fill', 'var(--tangent)')
+        .attr('font-size', chartA.fs(12)).attr('fill', 'var(--tangent)')
         .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
         .text(`slope ${fmt(fx, 2)}`);
     }
@@ -371,6 +371,11 @@ initPage({
       prompt: 'Where does A rise, fall and turn around?',
       onChange(shown) { state.revealA = shown; render(); },
     });
+    // A chart's geometry is frozen at build time, so rotating a phone (or
+    // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
+    // squeezed into a phone-sized box with six-pixel labels.
+    onBreakpointChange(() => { chartF = createChart('#chart-f', { height: 300, label: 'Graph of f' });
+      chartA = createChart('#chart-a', { height: 300, label: 'Accumulation function A' }); render(); });
     setWindow($('#window-select').value);
     state.a = Number($('#a-input').value) || 0;
     // Arrive with area already on screen: a blank first frame (x = a, nothing

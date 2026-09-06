@@ -287,6 +287,11 @@ body.ll-embed h1 { font-size: 1.1rem; }
   /* A checkbox label next to buttons wraps mid-phrase at this width. */
   .ll-row > label { flex: 1 1 100%; }
   .ll-readout { font-size: 0.88rem; gap: 0.3rem 1rem; }
+  /* These are viewBox units, not CSS pixels: the phone chart uses a narrower
+     viewBox (kit/js/chart.js PHONE_WIDTH), so a larger number here is what
+     brings tick labels back to a readable size once the SVG is scaled down. */
+  .ll-axis text { font-size: 14px; }
+  .ll-axis-label { font-size: 15px; }
 }
 
 /* ── Motion ──────────────────────────────────────────────────────────────── */

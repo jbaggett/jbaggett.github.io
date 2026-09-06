@@ -16,7 +16,7 @@
  * so |x| at 0 reports a genuine break rather than a plausible-looking 0.
  */
 
-import { createChart, makeScales, drawAxes } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -48,8 +48,8 @@ const state = {
   trace: new Map(),
 };
 
-const chartF = createChart('#chart-f', { height: 290, label: 'Graph of f with a tangent line at the moving point' });
-const chartD = createChart('#chart-d', { height: 290, label: 'Slopes traced so far, forming the graph of f prime' });
+let chartF = createChart('#chart-f', { height: 290, label: 'Graph of f with a tangent line at the moving point' });
+let chartD = createChart('#chart-d', { height: 290, label: 'Slopes traced so far, forming the graph of f prime' });
 
 function render() {
   const { f, df, xMin, xMax } = state;
@@ -286,6 +286,11 @@ initPage({
     // a radical that does not extend over its argument.
     renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
 
+    // A chart's geometry is frozen at build time, so rotating a phone (or
+    // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
+    // squeezed into a phone-sized box with six-pixel labels.
+    onBreakpointChange(() => { chartF = createChart('#chart-f', { height: 290, label: 'Graph of f' });
+      chartD = createChart('#chart-d', { height: 290, label: 'Slopes traced so far' }); render(); });
     setWindow($('#window-select').value);
 
     initExpressionInput({
