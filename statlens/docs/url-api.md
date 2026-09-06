@@ -772,6 +772,7 @@ proportions. Read with `URLSearchParams`; activity-ready (waits for
 | `shape` | string | `right-skewed` | Population shape (quantitative mode): `normal`, `right-skewed`, `left-skewed`, `uniform`, `bimodal`. | `?shape=normal` |
 | `n` | integer | `30` | Sample size, 1–500. | `?n=40` |
 | `seed` | string | _(random)_ | PRNG seed for reproducible draws (required for graded/activity use). | `?seed=beads60` |
+| `parameter` | string | `shown` | **Hide the true population parameter** (REQ-056). Three levels. `hidden` withholds the value **and shows a Reveal / Hide the true value button** — the instructor-driven predict-then-confront control, for a projected demo. `locked` withholds it with **no button and no way to uncover it in-app** — for a student's own reading or graded work, where a one-click reveal is just a spoiler. Omitting it (or `shown`) leaves the page exactly as before, with no button. Which one a link uses is a pedagogical choice: use `locked` in the chapter text students read alone, `hidden` in the instructor's copy. The population *shape* and all three tiers stay visible in every case. In **mean** mode only μ is withheld — the μ readout, the μ marker on both charts, and the "Population: μ = …, σ = …" results line; σ and σ/√n stay, since they don't give μ away and the theory line is the point of the CLT chapters. In **proportion** mode p is both the parameter and the shape, so σ = √(p(1−p)), the √(p(1−p)/n) theory readout, the p slider (its position is a readout) and the legend's numbers are withheld too. Named `parameter` rather than `truth` because `conceptual/decision-errors/` already uses `?truth=effect\|none` for a different thing. | `?type=quant&parameter=locked` |
 
 Guided activity: `?activity=sampling-distribution-proportion.json` overlays a
 predict-then-reveal walkthrough that builds the sampling distribution of p̂ and
@@ -871,7 +872,7 @@ produces six procedure types: `one-mean`, `paired`, `two-means`, `one-prop`,
 | `inference/estimate/paired/` | Confidence interval for a mean difference (paired) | dataset, csv, json |
 | `inference/estimate/two-props/` | Confidence interval for a difference in proportions | dataset, csv, json |
 | `inference/estimate/slope/` | Confidence interval for a regression slope | dataset, csv, json |
-| `conceptual/sampling-lab/` | Sampling Distribution Lab (means + proportions, 3-tier, freeze/compare) | type, p, shape, n, seed |
+| `conceptual/sampling-lab/` | Sampling Distribution Lab (means + proportions, 3-tier, freeze/compare) | type, p, shape, n, seed, parameter |
 | `conceptual/ci-coverage/` | CI coverage demo (t / percentile / ±z·SE / BCa) | mode, dataset, mu, sigma, n, ci, method, catseye |
 | `conceptual/bootstrap-shift/` | Why the Percentile CI Works (sampling vs bootstrap distribution on one axis) | shape, n, stage, xbar, seed |
 | `conceptual/randomization-test/` | Randomization test walkthrough — **redirects** to `simulate/randomization-diff-props/?activity=randomization-test-gated.json` (legacy URL, still honored) | mode, dataset |

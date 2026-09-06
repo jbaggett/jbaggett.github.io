@@ -39,6 +39,12 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-09-06<span class="cl-tag tool">Improved</span></div>
+            <h2>Sampling Distribution Lab can hide the true parameter</h2>
+            <p>The sampling chapters ask students to estimate a population mean they're told is <em>unknown</em> &mdash; while the app printed &mu; on screen the whole time. Add <code>?parameter=locked</code> and the true value is withheld: the &mu; readout, the marker on both charts, and the population line in the results. Use <code>?parameter=hidden</code> instead and you also get a <strong>Reveal the true value</strong> button, for driving a demo live &mdash; uncover it once the class has committed to an estimate, then hide it again for the next group. The population shape and all three tiers stay visible throughout, and &sigma;/&radic;<i>n</i> stays too, so the theory story is intact. Works in proportion mode as well. <a href="../conceptual/sampling-lab/?type=quant&amp;parameter=locked">Try it &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-09-05<span class="cl-tag tool">Improved</span></div>
             <h2>CI Coverage now compares four interval methods</h2>
             <p>The coverage demo already let you switch between the <strong>t-interval</strong> and the <strong>bootstrap percentile</strong> interval. It now offers two more — <strong>bootstrap &plusmn;<i>z</i>&middot;SE</strong> and <strong>bootstrap BCa</strong> — so you can measure, on the same population, how often each construction actually delivers its advertised 95%. Link straight to one with <code>?method=t</code>, <code>?method=bootstrap</code>, <code>?method=se</code> or <code>?method=bca</code>. What it shows on a right-skewed population is worth seeing: at <i>n</i> = 8 every method under-covers (t 88.4%, percentile 83.7%, &plusmn;2&middot;SE 85.3%, BCa 85.8%), the gap to 95% is bigger than any gap between methods, and BCa buys a point or two rather than closing it. Pairs with <a href="../conceptual/bootstrap-shift/">Why the Percentile CI Works</a>, which argues why the percentile interval should work at all. <a href="../conceptual/ci-coverage/?method=bca&n=8">Open the tool &rarr;</a></p>

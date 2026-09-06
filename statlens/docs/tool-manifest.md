@@ -1068,6 +1068,7 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 | `shape` | string | Population shape (quant mode): `normal`, `right-skewed`, `left-skewed`, `uniform`, `bimodal` | `shape=normal` |
 | `n` | integer | Sample size, 1–500 | `n=40` |
 | `seed` | string | PRNG seed (required for graded/activity use) | `seed=beads60` |
+| `parameter` | string | `hidden` withholds the true parameter **with** a Reveal button (instructor demo); `locked` withholds it with **no** button (student reading / graded work) (REQ-056) | `?parameter=locked` |
 
 **Compatible Datasets:** N/A (built-in population shapes / proportion slider)
 

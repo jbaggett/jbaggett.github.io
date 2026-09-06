@@ -91,6 +91,15 @@
         .stats-row .stat-item { display: flex; gap: 0.3rem; }
         .stats-row .stat-label { color: var(--ims-gray-text); }
         .stats-row .stat-value { font-family: var(--font-mono); font-weight: 600; }
+        .stats-row .stat-item[hidden] { display: none; }
+        /* REQ-056 reveal control — small, sits inline with the parameter row. */
+        #truth-btn { font-size: 0.8rem; padding: 0.15rem 0.55rem; }
+        #truth-btn[hidden] { display: none; }
+        .truth-note {
+            font-size: 0.82rem; color: var(--ims-gray-text);
+            font-style: italic; margin: 0.15rem 0 0;
+        }
+        .truth-note[hidden] { display: none; }
         .chart-option { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; }
         .center-note {
             font-size: 0.82rem; color: var(--ims-gray-text); margin: 0.1rem 0 0;
@@ -190,9 +199,11 @@
                            value="30" min="1" max="500" step="1">
                 </label>
             </div>
+            <p class="truth-note" id="truth-note" hidden>The true population value is hidden &mdash; estimate it from the samples, then reveal it.</p>
             <div class="stats-row" id="pop-stats">
-                <span class="stat-item"><span class="stat-label" id="pop-mean-label">Population \(\mu\):</span> <span class="stat-value" id="pop-mean">&mdash;</span></span>
-                <span class="stat-item"><span class="stat-label" id="pop-sd-label">Population \(\sigma\):</span> <span class="stat-value" id="pop-sd">&mdash;</span></span>
+                <span class="stat-item" id="pop-mean-item"><span class="stat-label" id="pop-mean-label">Population \(\mu\):</span> <span class="stat-value" id="pop-mean">&mdash;</span></span>
+                <span class="stat-item" id="pop-sd-item"><span class="stat-label" id="pop-sd-label">Population \(\sigma\):</span> <span class="stat-value" id="pop-sd">&mdash;</span></span>
+                <button type="button" id="truth-btn" class="btn-secondary" hidden>Reveal the true value</button>
             </div>
         </section>
 
