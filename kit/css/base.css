@@ -107,6 +107,9 @@ button.ll-primary:hover { background: #2F6A8F; }
 .ll-curve-df   { stroke: var(--curve-df);    stroke-width: 2.5; fill: none; stroke-dasharray: 7 4; }
 .ll-curve-acc  { stroke: var(--curve-accum); stroke-width: 2.5; fill: none; }
 .ll-curve-ghost{ stroke: #B0B0B0;            stroke-width: 1.5; fill: none; stroke-dasharray: 2 3; }
+/* Two bounding curves that must both be visible. drawCurve joins on the class
+   name, so they cannot share one. */
+.ll-bound-lo, .ll-bound-hi { stroke: var(--curve-df); stroke-width: 2; fill: none; stroke-dasharray: 7 4; }
 .ll-tangent    { stroke: var(--tangent);     stroke-width: 2;   fill: none; }
 .ll-secant     { stroke: var(--tangent);     stroke-width: 2;   fill: none; stroke-dasharray: 6 3; }
 

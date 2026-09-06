@@ -50,6 +50,32 @@ calclens/derivatives/secant/?f=-16t%5E2%2B32t%2B48&a=0.5&window=0,2
   &embed=true&controls=h,table&tangent=false
 ```
 
+## CalcLens — Squeeze Theorem
+
+`calclens/limits/squeeze/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `g` | expression | `x^2 sin(1/x)` | The squeezed function. Never evaluated at `a`. |
+| `lower` | expression | `-x^2` | The lower bound *f*. |
+| `upper` | expression | `x^2` | The upper bound *h*. |
+| `a` | number | `0` | The point being approached. |
+| `delta` | number | `1` | Starting window half-width. The slider is logarithmic. |
+| `rescale` | `true` | off | Rescale the vertical axis while zooming. **Off by default**: with it off the trap visibly closes, which is the point; with it on, *g* keeps oscillating just as violently all the way down. Both pictures are true and students should see both. |
+| `controls` | list | all | `f`, `a`, `delta`, `rescale`, `table`. |
+
+Bounds the reader types are **checked**: if *g* leaves the band anywhere in the
+window, the page says so and refuses to pretend the theorem applies. If the two
+bounds do not agree in the limit, the verdict is "no conclusion" rather than a
+made-up limit — that is what the `sin(1/x)` preset demonstrates.
+
+**Lecture-figure form:**
+
+```
+calclens/limits/squeeze/?g=x%5E2+sin(1%2Fx)&lower=-x%5E2&upper=x%5E2&a=0
+  &embed=true&controls=delta,table
+```
+
 ## CalcLens — Accumulation Function
 
 `calclens/integrals/accumulation/`

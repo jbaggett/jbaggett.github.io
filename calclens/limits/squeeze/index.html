@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Squeeze Theorem | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#chart">Skip to the graph</a>
+  <a href="#table">Skip to the table</a>
+</nav>
+
+<main>
+  <h1>Squeeze Theorem
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    A function too wild to evaluate directly can still be pinned down, if it is
+    trapped between two functions that agree in the limit. Zoom in and watch the
+    trap close.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The three functions">
+    <div class="ll-controls" data-control="f">
+      <label for="upper-input" style="flex:1 1 100%;">
+        <span>Upper bound <i>h</i>(<i>x</i>) =</span>
+        <input type="text" id="upper-input" value="x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="err">
+      </label>
+      <label for="g-input" style="flex:1 1 100%;">
+        <span>Squeezed function <i>g</i>(<i>x</i>) =</span>
+        <input type="text" id="g-input" value="x^2 sin(1/x)" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="err">
+      </label>
+      <label for="lower-input" style="flex:1 1 100%;">
+        <span>Lower bound <i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="lower-input" value="-x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="err">
+      </label>
+      <label for="a-input" data-control="a">
+        <span>Approaching <i>x</i> =</span>
+        <input type="number" id="a-input" value="0" step="0.25" style="width:6rem">
+      </label>
+    </div>
+    <p class="ll-error" id="err" role="alert" hidden></p>
+    <div class="ll-segmented" role="group" aria-label="Examples" data-control="f">
+      <button type="button" class="preset"
+              data-g="x^2 sin(1/x)" data-lo="-x^2" data-hi="x^2" data-a="0">x² sin(1/x)</button>
+      <button type="button" class="preset"
+              data-g="x sin(1/x)" data-lo="-abs(x)" data-hi="abs(x)" data-a="0">x sin(1/x)</button>
+      <button type="button" class="preset"
+              data-g="x^2 cos(5/x)" data-lo="-x^2" data-hi="x^2" data-a="0">x² cos(5/x)</button>
+      <button type="button" class="preset"
+              data-g="sin(1/x)" data-lo="-1" data-hi="1" data-a="0">sin(1/x) — no squeeze</button>
+    </div>
+  </section>
+
+  <section class="ll-panel" aria-label="Zoom">
+    <label for="d-slider" data-control="delta" style="display:block;">
+      <span>Window half-width <i>δ</i> = <output id="d-out" for="d-slider">1</output></span>
+      <input type="range" id="d-slider" min="-3" max="0.3" step="0.02" value="0">
+    </label>
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.6rem;">
+      <button type="button" id="zoom-btn" data-control="delta" class="ll-primary">▶ Close the trap</button>
+      <label class="ll-row" style="font-size:0.9rem;" data-control="rescale">
+        <input type="checkbox" id="rescale"> Rescale the vertical axis too
+      </label>
+    </div>
+    <p class="ll-hint" data-control="delta" style="margin:0.4rem 0 0;">
+      Only the horizontal axis zooms, so the trap visibly narrows. Tick the box
+      to rescale both and watch <i>g</i> keep oscillating all the way down.
+    </p>
+  </section>
+
+  <section id="chart" aria-label="Graph">
+    <div class="ll-chart"><div id="chart-main"></div></div>
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><rect x="1" y="1" width="24" height="8" fill="rgba(86,155,189,0.30)"/></svg> the trap, between <i>f</i> and <i>h</i></span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> <i>g</i>, trapped</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2" stroke-dasharray="7 4"/></svg> the bounds</span>
+    </div>
+    <div class="ll-readout" id="readout"></div>
+    <p class="ll-error" id="hyp-warn" role="alert" hidden></p>
+  </section>
+
+  <section id="table" aria-label="The trap closing" data-control="table">
+    <h2>The trap closing</h2>
+    <table class="ll-table">
+      <caption>Bounds at <span id="cap-x">x = δ</span>, and the gap between them</caption>
+      <thead>
+        <tr><th scope="col"><i>δ</i></th><th scope="col">lower <i>f</i></th>
+            <th scope="col">upper <i>h</i></th><th scope="col">gap</th></tr>
+      </thead>
+      <tbody id="table-body"></tbody>
+    </table>
+    <p id="verdict" class="ll-result"></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Squeeze Theorem</h2>
+  <p>Three functions. If <span class="ll-math" id="t1"></span> everywhere near
+     <i>a</i>, and the two outer ones have the <em>same</em> limit <i>L</i> at
+     <i>a</i>, then <i>g</i> has nowhere else to go: its limit is <i>L</i> too.</p>
+  <p>The shaded region is the trap. Drag <i>δ</i> down and watch it close.</p>
+
+  <h3>What to watch for</h3>
+  <ul>
+    <li><b>The wild function is never evaluated at <i>a</i>.</b>
+        <span class="ll-math" id="t2"></span> is undefined at 0 — sin(1/0) means
+        nothing. The theorem never asks for it. It concludes from the
+        neighbours.</li>
+    <li><b>The oscillation does not stop; the room for it does.</b> Tick
+        "Rescale the vertical axis" and <i>g</i> wobbles just as violently at
+        <i>δ</i> = 0.001 as at <i>δ</i> = 1. Untick it and the wobbling is
+        crushed flat. Both pictures are true, and students who have only seen
+        the second think the function calms down. It does not.</li>
+    <li><b>The hypothesis has to hold.</b> Try the <b>sin(1/x)</b> preset: it is
+        genuinely trapped between −1 and 1, but those bounds never meet, so the
+        gap stays 2 and the theorem concludes nothing. Bounds are not enough —
+        they must <em>agree in the limit</em>.</li>
+  </ul>
+
+  <h3>Putting this in a slide</h3>
+  <pre class="ll-code">?g=x%5E2+sin(1%2Fx)&amp;lower=-x%5E2&amp;upper=x%5E2&amp;a=0
+   &amp;embed=true&amp;controls=delta,table</pre>
+  <p>Note that a plus sign inside a function must be written <code>%2B</code>,
+     and a slash <code>%2F</code>. Every parameter is in
+     <code>docs/url-api.md</code>.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Change <i>δ</i> (focus the slider first)</dd>
+    <dt><kbd>Space</kbd></dt><dd>Run or stop the zoom</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
