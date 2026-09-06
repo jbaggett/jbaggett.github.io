@@ -200,7 +200,12 @@ function loadFromDataset(ds) {
   const numVars = ds.variables.filter(/** @param {any} v */ v => v.type === 'numeric');
 
   if (catVars.length === 0 || numVars.length === 0) {
+    // announce() alone writes to the .sr-only aria-live region, so a sighted
+    // user got NOTHING — the results panel kept saying "Select a dataset",
+    // which reads as "your click didn't register" (REQ-057 item 1, Todd Will).
     announce('This dataset needs at least one categorical and one numeric variable.');
+    if (varSelectorsDiv) varSelectorsDiv.hidden = true;
+    showNoGroupingMessage(numVars.map(/** @param {any} v */ v => v.name));
     return;
   }
 
@@ -233,6 +238,8 @@ function loadFromParsed(parsed, _sourceName) {
 
   if (catCols.length === 0 || numCols.length === 0) {
     announce('Data needs at least one categorical column (groups) and one numeric column (values).');
+    if (varSelectorsDiv) varSelectorsDiv.hidden = true;
+    showNoGroupingMessage(numCols);
     return;
   }
 
@@ -242,11 +249,42 @@ function loadFromParsed(parsed, _sourceName) {
 }
 
 /**
+ * Explain why a loaded dataset can't be used here, instead of leaving an empty
+ * dropdown and a "select a dataset" placeholder that both suggest nothing is
+ * loaded. Names a couple of datasets that do work, so the next click succeeds.
+ * @param {string[]} [numCols]
+ */
+function showNoGroupingMessage(numCols) {
+  if (!resultDiv) return;
+  const cols = numCols?.length ? ` Its columns are all quantitative (${numCols.join(', ')}).` : '';
+  resultDiv.innerHTML =
+    '<p class="placeholder"><strong>This dataset has no categorical variable, '
+    + 'so there are no groups to compare.</strong>' + cols + '</p>'
+    + '<p class="placeholder">ANOVA needs one <em>categorical</em> grouping variable '
+    + 'and one <em>quantitative</em> response &mdash; try a dataset like '
+    + '<strong>chickwts</strong>, <strong>iris</strong> or <strong>penguins</strong>, '
+    + 'or enter summary statistics directly.</p>';
+}
+
+/**
  * @param {string[]} catCols
  * @param {string[]} numCols
  */
 function showVarSelectors(catCols, numCols) {
   if (!varSelectorsDiv || !groupVarSelect || !responseVarSelect) return;
+
+  // A dataset with no categorical column cannot do ANOVA at all, and 47 of the
+  // bundled datasets are that shape (regression pairs: two numeric columns).
+  // The old condition was `catCols.length > 1 || numCols.length > 1`, so those
+  // datasets showed the block with an EMPTY "Grouping variable" dropdown while
+  // the results panel still read "Select a dataset…" — a dead end with no
+  // explanation. Reported by Todd Will (REQ-057 item 1) via the anova-omnibus
+  // activity, whose step 2 invites the student to pick any dataset.
+  if (!catCols.length) {
+    varSelectorsDiv.hidden = true;
+    showNoGroupingMessage(numCols);
+    return;
+  }
 
   const needSelector = catCols.length > 1 || numCols.length > 1;
 
@@ -278,7 +316,11 @@ function extractGroups() {
 
   const groupCol = groupVarSelect.value;
   const valCol = responseVarSelect.value;
-  if (!groupCol || !valCol) return;
+  // Bail loudly, not silently: without a grouping column there are no groups to
+  // compare, and leaving the "Select a dataset" placeholder up made a loaded
+  // dataset look like no dataset.
+  if (!groupCol) { showNoGroupingMessage(); return; }
+  if (!valCol) return;
 
   /** @type {Record<string, number[]>} */
   const groups = {};
