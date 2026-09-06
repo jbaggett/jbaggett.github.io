@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Function Evaluator | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#results">Skip to the table</a>
+</nav>
+
+<main>
+  <h1>Function Evaluator
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Type a function and the values you want it at. Faster than a calculator, and
+    it never forgets to tell you when the function has no value somewhere.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Function and values">
+    <div class="ll-controls">
+      <label for="fn-input" style="flex:1 1 100%;">
+        <span><i>f</i>(<i class="varname">x</i>) =</span>
+        <input type="text" id="fn-input" value="(x^2 - 1)/(x - 1)" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-preview fn-syntax">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+    <p class="ll-hint" id="fn-syntax">
+      Any letter works as the variable — write <code>-16t^2+32t+48</code> and the
+      table labels itself <i>t</i>.
+    </p>
+  </section>
+
+  <section class="ll-panel" aria-label="Which values">
+    <div class="ll-segmented" role="group" aria-label="How to choose the values">
+      <button type="button" class="mode-btn" data-mode="approach" aria-pressed="true">Approach a value</button>
+      <button type="button" class="mode-btn" data-mode="list" aria-pressed="false">List</button>
+      <button type="button" class="mode-btn" data-mode="range" aria-pressed="false">Range</button>
+      <button type="button" class="mode-btn" data-mode="single" aria-pressed="false">One value</button>
+    </div>
+
+    <div class="ll-controls" id="mode-approach" style="margin-top:0.7rem;">
+      <label for="ap-a">
+        <span>Close in on <i class="varname">x</i> =</span>
+        <input type="text" id="ap-a" value="1" inputmode="decimal" style="width:7rem">
+      </label>
+      <label for="ap-steps">
+        <span>How close</span>
+        <select id="ap-steps">
+          <option value="3" selected>3 steps (to 0.001)</option>
+          <option value="4">4 steps (to 0.0001)</option>
+          <option value="5">5 steps (to 0.00001)</option>
+          <option value="6">6 steps (to 0.000001)</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="ll-controls" id="mode-list" style="margin-top:0.7rem;" hidden>
+      <label for="li-vals" style="flex:1 1 100%;">
+        <span>Values, separated by commas</span>
+        <input type="text" id="li-vals" value="0.9, 0.99, 0.999, 1.001, 1.01, 1.1"
+               inputmode="decimal" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="ll-controls" id="mode-range" style="margin-top:0.7rem;" hidden>
+      <label for="rg-from"><span>From</span>
+        <input type="text" id="rg-from" value="0" inputmode="decimal" style="width:6rem"></label>
+      <label for="rg-to"><span>To</span>
+        <input type="text" id="rg-to" value="2" inputmode="decimal" style="width:6rem"></label>
+      <label for="rg-step"><span>Step</span>
+        <input type="text" id="rg-step" value="0.25" inputmode="decimal" style="width:6rem"></label>
+    </div>
+
+    <div class="ll-controls" id="mode-single" style="margin-top:0.7rem;" hidden>
+      <label for="sg-val"><span>At <i class="varname">x</i> =</span>
+        <input type="text" id="sg-val" value="2" inputmode="decimal" style="width:8rem"></label>
+    </div>
+
+    <div class="ll-controls" style="margin-top:0.7rem;">
+      <label for="dp-input">
+        <span>Decimal places</span>
+        <input type="number" id="dp-input" value="4" min="0" max="10" step="1"
+               inputmode="numeric" style="width:5.5rem">
+      </label>
+    </div>
+    <p class="ll-error" id="vals-error" role="alert" hidden></p>
+  </section>
+
+  <section id="results" aria-label="Values">
+    <table class="ll-table ll-table-values">
+      <caption id="tbl-caption"></caption>
+      <thead>
+        <tr><th scope="col" id="col-x"><i>x</i></th>
+            <th scope="col" id="col-fx"><i>f</i>(<i>x</i>)</th></tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+    <p class="ll-hint" id="undef-note" hidden>
+      <b>undefined</b> means the function has no value there — division by zero,
+      or a point outside its domain. That is a fact about the function, not a
+      failure of the arithmetic.
+    </p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Function Evaluator</h2>
+  <p>A calculator for one function at many values. Type the function, choose the
+     values, read the table.</p>
+
+  <h3>The four ways to choose values</h3>
+  <dl>
+    <dt>Approach</dt><dd>Closes in on a number from <em>both</em> sides —
+      0.9, 0.99, 0.999 then 1.001, 1.01, 1.1 — with the number itself in the
+      middle. This is the shape a limit table wants, and typing it by hand is
+      exactly the drudgery worth skipping.</dd>
+    <dt>List</dt><dd>Whatever values you name, separated by commas.</dd>
+    <dt>Range</dt><dd>From, to, and a step — an evenly spaced grid.</dd>
+    <dt>One value</dt><dd>A single evaluation.</dd>
+  </dl>
+
+  <h3>Undefined is an answer</h3>
+  <p>Where a function has no value, the table says <b>undefined</b> and keeps the
+     row. It is not skipped and not shown as an error, because in a limit table
+     that row is the whole point: <span class="ll-math" id="t1"></span> has no
+     value at <i>x</i> = 1, and the table exists to show what happens
+     <em>near</em> 1 anyway.</p>
+
+  <h3>The variable follows the function</h3>
+  <p>Write <span class="ll-math" id="t2"></span> and the columns label themselves
+     <i>t</i>. You never have to tell it which letter you meant.</p>
+
+  <h3>On a phone</h3>
+  <p>This page is built to be opened from a QR code and used instead of a
+     calculator. Everything is reachable one-handed and the table stays readable
+     at phone width.</p>
+
+  <h3>Putting it in a slide or a link</h3>
+  <pre class="ll-code">?f=(x%5E2-1)%2F(x-1)&amp;x=~1
+?f=1%2Fx&amp;x=10,100,1000
+?f=x%5E2&amp;x=0:2:0.25</pre>
+  <p>The <code>x</code> parameter carries the values in every mode: a number, a
+     comma list, <code>from:to:step</code>, or <code>~a</code> to approach
+     <i>a</i>. See <code>docs/url-api.md</code>.</p>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

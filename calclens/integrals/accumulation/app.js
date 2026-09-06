@@ -22,6 +22,9 @@ import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
+import { initShare } from 'kit/share.js';
+import { MARK } from '../../js/mark.js';
+
 import { tryParse, compile, antiderivative, toLatex, evaluate } from '../../js/expr.js';
 import { accumulationCurve, simpson } from '../../js/numeric.js';
 
@@ -341,6 +344,7 @@ function setWindow(/** @type {string} */ value) {
 
 initPage({
   onReady() {
+    initShare({ mark: MARK });
     const params = getParams();
     if (params.f) $('#fn-input').value = params.f;
     if (params.a !== null) $('#a-input').value = String(params.a);

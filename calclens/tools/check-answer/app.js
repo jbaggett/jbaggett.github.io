@@ -24,6 +24,9 @@ import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initPalette } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
+import { initShare } from 'kit/share.js';
+import { MARK } from '../../js/mark.js';
+
 import {
   tryParse, compile, derivative, antiderivative, toLatex, numericallyEqual,
 } from '../../js/expr.js';
@@ -218,6 +221,7 @@ function showOne() {
 
 initPage({
   onReady() {
+    initShare({ mark: MARK });
     const params = getParams();
     if (params.f) $('#f-input').value = params.f;
     if (params.mode === 'deriv' || params.mode === 'anti') mode = params.mode;

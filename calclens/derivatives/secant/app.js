@@ -25,7 +25,23 @@ import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
+import { initShare } from 'kit/share.js';
+import { MARK } from '../../js/mark.js';
+
 import { tryParse, compile, derivative, freeVariables, toLatex } from '../../js/expr.js';
+
+
+/**
+ * Named starting states, for short links. Content only — a slide adds
+ * `&embed=true&controls=...` itself, so one preset serves both the projected
+ * figure and the phone a student opens from a QR code.
+ */
+const PRESETS = {
+  ball: { f: '-16t^2 + 32t + 48', a: '0.5', window: '0,2' },
+  sq: { f: 'x^2', a: '1', window: '-1,3' },
+  corner: { f: 'abs(x)', a: '0', window: '-2,2' },
+  root: { f: 'sqrt(x)', a: '1', window: '0,4' },
+};
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -416,7 +432,8 @@ function reparse() {
 
 initPage({
   onReady() {
-    const p = getParams();
+    initShare({ mark: MARK });
+    const p = getParams(PRESETS);
     const q = p.raw;
 
     if (q.get('var')) state.v = q.get('var').slice(0, 1);
@@ -452,7 +469,7 @@ initPage({
       palette: $('#fn-palette'),
       onChange(node, src) {
         adopt(node);
-        updateUrl({ f: src, var: state.v === 'x' ? null : state.v });
+        updateUrl({ f: src });
         render();
       },
     });

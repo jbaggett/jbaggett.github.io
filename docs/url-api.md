@@ -22,6 +22,38 @@ so a plus sign inside a function must be written `%2B`:
 | `seed` | string | Seed for any randomness on the page, so a graded link is reproducible. |
 | `f` | expression | The function under study, written as a student would type it. |
 | `a`, `b` | number | The page's two principal numeric inputs — a lens says below what they mean for it. |
+| `p` | preset key | Expands a named starting state into the parameters it stands for. See below. |
+
+### `p` — named presets, for QR codes
+
+A fully spelled-out lecture link runs to ~126 characters, and percent-encoding
+makes it worse than it reads. `?p=<key>` names the same state in a fraction of
+the length, which matters when the link is a QR code scanned from the back of a
+room. Measured, at error-correction level H (what a centre mark needs):
+
+| | chars | modules |
+|---|---:|---:|
+| `…/secant/?f=-16t%5E2%2B32t%2B48&a=0.5&window=0,2` | 91 | 53 × 53 |
+| `…/secant/?p=ball` | 57 | **41 × 41** |
+
+About 1.7× less area for the same module size. Two rules:
+
+- **Presets carry content only** — the function, the point, the window — never
+  presentation. A slide adds `&embed=true&controls=…` itself, so one preset
+  serves both the projected figure and the phone a student opens.
+- **An explicit parameter always wins**, and a parameter whose value still
+  matches the preset is dropped from the address bar rather than written back —
+  otherwise the first render would re-expand `?p=ball` and undo the saving.
+
+Preset keys are defined per tool and listed with it below. Ask for a new key
+rather than inventing one; like every other name here, they are frozen once used.
+
+### Sharing
+
+Every tool page has a **share button** (the QR glyph beside Help). It shows the
+current URL — carrying everything on screen — and a QR code for it with the
+CalcLens mark in the centre, downloadable as SVG for a slide or a handout. The
+QR library is vendored, not fetched, so it works in a room with no network.
 
 ### Reading what you typed
 
@@ -73,6 +105,33 @@ calclens/derivatives/secant/?f=-16t%5E2%2B32t%2B48&a=0.5&window=0,2
   &embed=true&controls=h,table&tangent=false
 ```
 
+## CalcLens — Function Evaluator
+
+`calclens/tools/evaluate/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `(x^2 - 1)/(x - 1)` | The function. Any letter is the variable; the table labels itself from the expression. |
+| `x` | values spec | `~1` | **One parameter, four modes** — see below. |
+| `dp` | 0–10 | `4` | Decimal places in the *output* column. The input column always shows the values as chosen. |
+
+The `x` parameter carries every input mode, which keeps links short enough to
+encode well:
+
+| form | meaning | example |
+|---|---|---|
+| `2` | one value | `?x=2` |
+| `0.9,0.99,1.01` | a list | `?x=10,100,1000` |
+| `from:to:step` | an even grid | `?x=0:2:0.25` |
+| `~a` | **close in on `a` from both sides** | `?x=~1` |
+
+`~a` produces `a−0.1, a−0.01, a−0.001, a, a+0.001, a+0.01, a+0.1` — the shape a
+limit table wants, which an even grid never gives. The row at `a` itself is kept
+and marked, and reads **undefined** when the function has no value there. That
+row is not noise: for `(x²−1)/(x−1)` at `x = 1` it is the entire point.
+
+Presets: `limit`, `ball`, `endbehaviour`.
+
 ## CalcLens — Squeeze Theorem
 
 `calclens/limits/squeeze/`
@@ -86,6 +145,7 @@ calclens/derivatives/secant/?f=-16t%5E2%2B32t%2B48&a=0.5&window=0,2
 | `delta` | number | `1` | Starting window half-width. The slider is logarithmic. |
 | `rescale` | `true` | off | Rescale the vertical axis while zooming. **Off by default**: with it off the trap visibly closes, which is the point; with it on, *g* keeps oscillating just as violently all the way down. Both pictures are true and students should see both. |
 | `controls` | list | all | `f`, `a`, `delta`, `rescale`, `table`. |
+| `p` | preset | — | `classic`, `linear`, `nosqueeze`. |
 
 Bounds the reader types are **checked**: if *g* leaves the band anywhere in the
 window, the page says so and refuses to pretend the theorem applies. If the two

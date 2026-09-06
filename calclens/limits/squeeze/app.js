@@ -24,7 +24,18 @@ import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { fmt } from 'kit/format.js';
+import { initShare } from 'kit/share.js';
+import { MARK } from '../../js/mark.js';
+
 import { tryParse, compile, toLatex } from '../../js/expr.js';
+
+
+/** Named starting states, for short links. Content only — see docs/url-api.md. */
+const PRESETS = {
+  classic: { g: 'x^2 sin(1/x)', lower: '-x^2', upper: 'x^2', a: '0' },
+  linear: { g: 'x sin(1/x)', lower: '-abs(x)', upper: 'abs(x)', a: '0' },
+  nosqueeze: { g: 'sin(1/x)', lower: '-1', upper: '1', a: '0' },
+};
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -310,7 +321,8 @@ function reparse() {
 
 initPage({
   onReady() {
-    const q = getParams().raw;
+    initShare({ mark: MARK });
+    const q = getParams(PRESETS).raw;
     if (q.get('g')) $('#g-input').value = q.get('g');
     if (q.get('lower')) $('#lower-input').value = q.get('lower');
     if (q.get('upper')) $('#upper-input').value = q.get('upper');

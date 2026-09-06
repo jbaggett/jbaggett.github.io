@@ -4,6 +4,13 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* The browser's own `[hidden] { display: none }` is a bare element rule, so ANY
+   class selector setting display beats it — and this kit sets `display: flex`
+   on .ll-controls, .ll-row and .ll-segmented, every one of which is something
+   a tool hides. Without this, `el.hidden = true` silently does nothing and
+   ?controls= filtering half-works. */
+[hidden] { display: none !important; }
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -297,3 +304,20 @@ body.ll-embed h1 { font-size: 1.1rem; }
   main { max-width: none; }
   .ll-step { break-inside: avoid; }
 }
+
+/* ── Share dialog ────────────────────────────────────────────────────────── */
+
+.share-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 34px; min-width: 34px; padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--accent); cursor: pointer;
+}
+.share-btn:hover { background: var(--surface); }
+@media (max-width: 600px) { .share-btn { min-height: 44px; min-width: 44px; } }
+
+.ll-share-dialog input[type="text"] {
+  width: 100%; font-family: var(--font-mono); font-size: 0.85rem;
+}
+.ll-qr { display: flex; justify-content: center; margin: 0.6rem 0; }
+.ll-qr svg { width: 100%; max-width: 260px; height: auto; }
