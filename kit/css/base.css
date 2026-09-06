@@ -321,3 +321,20 @@ body.ll-embed h1 { font-size: 1.1rem; }
 }
 .ll-qr { display: flex; justify-content: center; margin: 0.6rem 0; }
 .ll-qr svg { width: 100%; max-width: 260px; height: auto; }
+
+/* ── Reveal ──────────────────────────────────────────────────────────────── */
+
+.ll-reveal-slot { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin: 0.7rem 0; }
+.ll-reveal-btn {
+  font-size: 1rem; font-weight: bold; min-height: 42px; padding: 0.45rem 1.1rem;
+  border: 2px solid var(--accent); border-radius: 8px; background: var(--bg); color: var(--accent);
+}
+.ll-reveal-btn:hover { background: #EAF3F8; }
+/* While the answer is withheld the button is the loudest thing on the page —
+   it is what the instructor is reaching for in front of the class. */
+.ll-reveal-btn.ll-reveal-armed {
+  background: var(--highlight-orange-dark); border-color: var(--highlight-orange-dark); color: #fff;
+}
+.ll-reveal-btn.ll-reveal-armed:hover { background: #A34F0C; }
+.ll-reveal-hint:empty { display: none; }
+@media (max-width: 600px) { .ll-reveal-btn { min-height: 48px; width: 100%; } }

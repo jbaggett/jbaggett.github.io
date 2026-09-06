@@ -104,13 +104,12 @@
         <button type="button" id="side-left" class="side-btn" aria-pressed="false">From the left</button>
       </div>
       <button type="button" id="close-btn" data-control="h" class="ll-primary">▶ Close the gap</button>
-      <label class="ll-row" style="font-size:0.9rem;" data-control="tangent">
-        <input type="checkbox" id="show-tangent"> Show the tangent
-      </label>
+
     </div>
   </section>
 
   <section id="chart" aria-label="Graph">
+    <div id="reveal-slot" data-control="tangent"></div>
     <div class="ll-chart"><div id="chart-f"></div></div>
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> the function</span>

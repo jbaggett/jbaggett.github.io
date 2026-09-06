@@ -23,6 +23,31 @@ so a plus sign inside a function must be written `%2B`:
 | `f` | expression | The function under study, written as a student would type it. |
 | `a`, `b` | number | The page's two principal numeric inputs — a lens says below what they mean for it. |
 | `p` | preset key | Expands a named starting state into the parameters it stands for. See below. |
+| `reveal` | `true` / `false` | Show or withhold the tool's payoff. Per-tool default; see each tool. |
+
+### `reveal` — withholding the answer
+
+This course does not lecture: its slides carry "your turn" far more often than
+"my turn", and the shape is prompt → silence → answer. So a tool's highest-value
+use is being **the reveal at the end of the silence**, after students have
+committed to an answer on paper. Every tool that has a payoff can therefore
+withhold it.
+
+`reveal=false` starts it hidden. `reveal=true` starts it shown. **The default is
+per tool**, because whether to start hidden is a judgement about that tool, not
+a rule the kit can impose — the secant tool's tangent is the answer to the
+question the tool asks, so it starts hidden; the accumulation curve is the whole
+picture, so it starts shown and a lecture link hides it.
+
+While the payoff is hidden the tool shows the *question* in its place, rather
+than a blank: the squeeze verdict says "both bounds are heading for the same
+place — **what number?**" instead of naming it.
+
+**It is always revealable without a page reload.** There is a prominent button —
+it turns orange while the answer is withheld, because it is what the instructor
+reaches for in front of the class — and the **`R` key** toggles it from
+anywhere on the page (except while typing in a field). Reloading mid-discussion
+would lose the state the discussion is about.
 
 ### `p` — named presets, for QR codes
 
@@ -86,7 +111,8 @@ An embedded page also posts its height to the framing window
 | `side` | `left` | right | Which side *Q* approaches from. |
 | `window` | `lo,hi` | `-1,3` | Horizontal window. |
 | `y` | `lo,hi` | auto | Vertical window. Give this when the automatic frame is not the one you drew. |
-| `tangent` | `true` | off | Reveal the tangent line. **Off by default on purpose** — students should predict the limit first. |
+| `tangent` | `true`/`false` | off | Frozen older spelling of `reveal` for this tool. Still honoured; prefer `reveal`. |
+| `reveal` | `true`/`false` | **off** | The tangent line. Off by default: it is the answer to the question the tool asks. |
 | `controls` | list | all | Which control groups to show: `f`, `a`, `window`, `h`, `tangent`, `table`. Anything omitted is hidden, and a panel left with no visible control is hidden too. |
 | `var` | letter | inferred | Only used when the expression has no variable to infer from. The expression always wins. |
 
@@ -143,6 +169,7 @@ Presets: `limit`, `ball`, `endbehaviour`.
 | `upper` | expression | `x^2` | The upper bound *h*. |
 | `a` | number | `0` | The point being approached. |
 | `delta` | number | `1` | Starting window half-width. The slider is logarithmic. |
+| `reveal` | `true`/`false` | **on** | The named limit in the verdict. `reveal=false` swaps it for "what number?". |
 | `rescale` | `true` | off | Rescale the vertical axis while zooming. **Off by default**: with it off the trap visibly closes, which is the point; with it on, *g* keeps oscillating just as violently all the way down. Both pictures are true and students should see both. |
 | `controls` | list | all | `f`, `a`, `delta`, `rescale`, `table`. |
 | `p` | preset | — | `classic`, `linear`, `nosqueeze`. |
@@ -168,6 +195,7 @@ calclens/limits/squeeze/?g=x%5E2+sin(1%2Fx)&lower=-x%5E2&upper=x%5E2&a=0
 | `f` | expression | `2x - 2` | The integrand. |
 | `a` | number | `0` | Lower limit — where *A* is pinned to 0. |
 | `b` | number | `a + 1.2` | Starting position of the upper limit *x*. |
+| `reveal` | `true`/`false` | **on** | The *A*(*x*) curve. `reveal=false` keeps the axes and the marker so the shape can be predicted first. |
 
 ## CalcLens — Derivative Builder
 
@@ -176,6 +204,7 @@ calclens/limits/squeeze/?g=x%5E2+sin(1%2Fx)&lower=-x%5E2&upper=x%5E2&a=0
 | Parameter | Type | Default | Meaning |
 |---|---|---|---|
 | `f` | expression | `x^3 - 3x` | The function. |
+| `reveal` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
 
 ## CalcLens — Check My Answer
 

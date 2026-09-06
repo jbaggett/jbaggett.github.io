@@ -26,6 +26,7 @@ import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import { initShare } from 'kit/share.js';
+import { initReveal, revealHidden } from 'kit/reveal.js';
 import { MARK } from '../../js/mark.js';
 
 import { tryParse, compile, derivative, freeVariables, toLatex } from '../../js/expr.js';
@@ -446,8 +447,16 @@ initPage({
       const yp = q.get('y').split(',').map(Number);
       if (yp.length === 2 && yp.every(Number.isFinite) && yp[1] > yp[0]) state.yWin = [yp[0], yp[1]];
     }
-    state.showTangent = q.get('tangent') === 'true';
-    $('#show-tangent').checked = state.showTangent;
+    // The tangent is what the reader is being asked to predict, so it starts
+    // hidden. `tangent=true` is the older spelling and stays frozen.
+    const rev = initReveal({
+      mount: $('#reveal-slot'),
+      label: 'the tangent',
+      hidden: revealHidden(q, false, 'tangent'),
+      prompt: 'What number are the slopes heading for?',
+      onChange(shown) { state.showTangent = shown; render(); },
+    });
+    state.showTangent = rev.shown;
 
     setTex($('#help-tex1'), `\\frac{f(${state.v}_0+h)-f(${state.v}_0)}{h}`);
     setTex($('#help-tex2'), `f'(${state.v}_0)`);
@@ -496,11 +505,6 @@ initPage({
     $('#side-right').addEventListener('click', () => setSide(1));
     $('#side-left').addEventListener('click', () => setSide(-1));
     $('#close-btn').addEventListener('click', () => (anim === null ? startAnim() : stopAnim()));
-    $('#show-tangent').addEventListener('change', e => {
-      state.showTangent = e.target.checked;
-      updateUrl({ tangent: state.showTangent ? 'true' : null });
-      render();
-    });
 
     document.addEventListener('keydown', e => {
       const t = /** @type {HTMLElement} */ (e.target);

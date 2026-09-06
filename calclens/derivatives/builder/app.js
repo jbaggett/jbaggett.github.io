@@ -24,6 +24,7 @@ import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import { initShare } from 'kit/share.js';
+import { initReveal, revealHidden } from 'kit/reveal.js';
 import { MARK } from '../../js/mark.js';
 
 import { tryParse, compile, derivative, toLatex } from '../../js/expr.js';
@@ -205,7 +206,9 @@ function updateText(x, fx, slope, secantSlope) {
           + `quotient has reached its limit.`);
   }
 
-  $('#symbolic').innerHTML = state.dNode
+  // The formula is part of the payoff: printing it while the curve is hidden
+  // gives the answer away in words instead of in ink.
+  $('#symbolic').innerHTML = (state.reveal && state.dNode)
     ? `Worked out symbolically: ${tex(`\\frac{d}{dx}\\left[${toLatex(state.node)}\\right] = ${toLatex(state.dNode)}`)}`
       + ` — tick <b>Reveal the true f ′</b> to lay that curve over your dots.`
     : '';
@@ -270,6 +273,7 @@ function setWindow(/** @type {string} */ value) {
 initPage({
   onReady() {
     initShare({ mark: MARK });
+    const q = getParams().raw;
     const params = getParams();
     if (params.f) $('#fn-input').value = params.f;
 
@@ -319,7 +323,13 @@ initPage({
       state.trace.clear(); render();
       announce('Trace cleared.', 100);
     });
-    $('#reveal').addEventListener('change', e => { state.reveal = e.target.checked; render(); });
+    initReveal({
+      mount: $('#reveal-slot'),
+      label: "the true f ′",
+      hidden: revealHidden(q, false),
+      prompt: 'Sketch what you think f ′ looks like first',
+      onChange(shown) { state.reveal = shown; render(); },
+    });
     $('#play-btn').addEventListener('click', () => (sweepHandle === null ? startSweep() : stopSweep()));
 
     document.addEventListener('keydown', e => {

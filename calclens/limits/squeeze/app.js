@@ -24,6 +24,7 @@ import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { fmt } from 'kit/format.js';
+import { initReveal, revealHidden } from 'kit/reveal.js';
 import { initShare } from 'kit/share.js';
 import { MARK } from '../../js/mark.js';
 
@@ -48,6 +49,7 @@ const state = {
   a: 0,
   d: 0,              // log10 of the window half-width
   rescale: false,
+  revealLimit: true,
   /** @type {[number,number]|null} the y window fixed at the opening view */
   yLock: null,
 };
@@ -194,7 +196,13 @@ function updateTable() {
 
   const L = limitOfBounds();
   const lastGap = rows[rows.length - 1].gap;
-  if (L !== null) {
+  if (L !== null && !state.revealLimit) {
+    // Withheld: describe what the numbers are DOING without naming where they
+    // land, so the question survives being looked at.
+    $('#verdict').innerHTML =
+      `The gap has closed to ${fmt(lastGap, 6)}, so both bounds are heading for `
+      + `the same place. <b>What number?</b>`;
+  } else if (L !== null) {
     $('#verdict').innerHTML =
       `The gap closes to ${fmt(lastGap, 6)}. Both bounds head for `
       + `<b>${fmt(L, 4)}</b>, so ${tex(`\\lim_{x \\to ${fmt(state.a, 2)}} g(x) = ${fmt(L, 4)}`)} `
@@ -377,6 +385,13 @@ initPage({
     });
 
     renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
+    initReveal({
+      mount: $('#reveal-slot'),
+      label: 'the limit',
+      hidden: revealHidden(q, true),
+      prompt: 'What number do the bounds agree on?',
+      onChange(shown) { state.revealLimit = shown; render(); },
+    });
     applyControls(q.get('controls'));
     refresh();
     setD(state.d, { quiet: true });

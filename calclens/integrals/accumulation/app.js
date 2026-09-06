@@ -23,6 +23,7 @@ import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import { initShare } from 'kit/share.js';
+import { initReveal, revealHidden } from 'kit/reveal.js';
 import { MARK } from '../../js/mark.js';
 
 import { tryParse, compile, antiderivative, toLatex, evaluate } from '../../js/expr.js';
@@ -39,6 +40,7 @@ const state = {
   xMin: -4,
   xMax: 4,
   slopeLink: true,
+  revealA: true,
   /** @type {{x:number,y:number}[]} */ accum: [],
 };
 
@@ -172,9 +174,13 @@ function render() {
   // visual claim is "this much has been collected so far".
   const swept = finite.filter(p => (p.x >= Math.min(a, x) && p.x <= Math.max(a, x)));
   chartA.plot.selectAll('path').remove();
-  chartA.plot.append('path').attr('class', 'll-curve-ghost')
-    .attr('d', linePath(finite, scalesA.xs, scalesA.ys));
-  if (swept.length > 1) {
+  // Withheld: the axes and the swept marker stay, so the reader can predict the
+  // SHAPE before seeing it — which is the question worth asking here.
+  if (state.revealA) {
+    chartA.plot.append('path').attr('class', 'll-curve-ghost')
+      .attr('d', linePath(finite, scalesA.xs, scalesA.ys));
+  }
+  if (state.revealA && swept.length > 1) {
     chartA.plot.append('path').attr('class', 'll-curve-acc')
       .attr('d', linePath(swept, scalesA.xs, scalesA.ys));
   }
@@ -358,6 +364,13 @@ initPage({
     // a radical that does not extend over its argument.
     renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
 
+    initReveal({
+      mount: $('#reveal-slot'),
+      label: 'the accumulation curve',
+      hidden: revealHidden(params.raw, true),
+      prompt: 'Where does A rise, fall and turn around?',
+      onChange(shown) { state.revealA = shown; render(); },
+    });
     setWindow($('#window-select').value);
     state.a = Number($('#a-input').value) || 0;
     // Arrive with area already on screen: a blank first frame (x = a, nothing
