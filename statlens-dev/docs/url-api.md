@@ -34,6 +34,13 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 | `json` | string (URL) | _(none)_ | URL of a remote JSON dataset to fetch. Must be an **HTTPS** URL (or `http://localhost` for local development). Maximum 2,000 characters. Must conform to the StatLens dataset JSON schema (with `variables` and `rows` arrays). | `?json=https://example.com/ds.json` |
 | `seed` | string | _(random)_ | PRNG seed for deterministic simulation output. When provided, a "Seed: ..." notice is displayed. Maximum 100 characters. Critical for graded assessments where reproducibility is required. | `?seed=abc123` |
 
+**`csv` / `json` can now be written by the tool, not just read.** Every data page's
+**Open File/URL** tab takes a link to a hosted file; a successful load calls
+`history.replaceState` to put that link in the address bar as `?csv=` (or `?json=`
+when the URL ends in `.json`), and clears `dataset` and `data`, which outrank it on
+reload. This is what makes the Share dialog's QR code carry an instructor's own data.
+The parameters themselves are unchanged — same names, same meaning, same guarantees.
+
 **Data loading priority** (in `initDataPanel`):
 1. `?dataset=` — auto-selects from the dataset dropdown
 2. `?dataset=` **deep-link bypass** — if the id isn't in the (curated) dropdown but the tool opts in (a `deepLinkFilter`), it still loads when the dataset exists in the full index and passes that tool's capability guard. Lets a deep-link open a dataset the browse-dropdown deliberately hides. Enabled on `explore/descriptive` (any dataset with a numeric column) and `explore/grouped` (numeric + a grouping factor with ≥ 2 levels); a dataset that fails the guard (e.g. categorical-only into `explore/descriptive`) silently does nothing, as before. A `?dataset=` naming an id that isn't in the full index still no-ops.

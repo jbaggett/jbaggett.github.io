@@ -44,7 +44,7 @@ export function announce(msg, el) {
 const TAB_HINTS = {
   'tab-dataset': 'Select a dataset',
   'tab-paste':   'Enter or paste your data and click Apply',
-  'tab-file':    'Open a CSV or TSV file',
+  'tab-file':    'Open a data file, or a link to one',
   'tab-summary': 'Enter summary statistics',
   'tab-table':   'Enter a contingency table',
   'tab-edit':    'Enter or paste your data and click Apply',
@@ -89,6 +89,55 @@ export function getActiveTabId() {
 }
 
 /**
+ * Options captured by the last `initTabs()` call, so a tab added to the DOM
+ * later (the injected "Open URL" tab) behaves exactly like the ones in the
+ * page template.
+ * @type {{hintTarget?: HTMLElement|null, hintAction?: string}|null}
+ */
+let tabOpts = null;
+
+const tabEls = () => /** @type {HTMLElement[]} */ (
+  Array.from(document.querySelectorAll('[role="tab"]')));
+const tabPanelEls = () => /** @type {HTMLElement[]} */ (
+  Array.from(document.querySelectorAll('[role="tabpanel"]')));
+
+/**
+ * Wire one tab. Handlers re-read the DOM at event time rather than closing over
+ * a snapshot taken at init, so tabs injected after `initTabs()` ran still get
+ * deselected when a sibling is clicked, and arrow-key navigation reaches them.
+ *
+ * @param {HTMLElement} tab
+ */
+export function attachTabBehavior(tab) {
+  tab.addEventListener('click', () => {
+    const tabs = tabEls();
+    for (const t of tabs) t.setAttribute('aria-selected', 'false');
+    for (const p of tabPanelEls()) p.hidden = true;
+    tab.setAttribute('aria-selected', 'true');
+    const panelId = tab.getAttribute('aria-controls');
+    const panel = document.getElementById(panelId ?? '');
+    if (panel) panel.hidden = false;
+    if (tabOpts?.hintTarget) {
+      updateTabHint(tab.id, tabOpts.hintTarget, tabOpts.hintAction);
+    }
+  });
+
+  tab.addEventListener('keydown', (e) => {
+    const tabs = tabEls();
+    const i = tabs.indexOf(tab);
+    if (i < 0) return;
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+    if (next >= 0) {
+      e.preventDefault();
+      tabs[next].focus();
+      tabs[next].click();
+    }
+  });
+}
+
+/**
  * Initialize accessible tab switching on all [role="tab"] elements in the page.
  * Handles click, ArrowLeft/ArrowRight keyboard navigation.
  *
@@ -97,37 +146,8 @@ export function getActiveTabId() {
  * @param {string} [opts.hintAction] - Action phrase for placeholder (e.g., 'run a simulation to see results')
  */
 export function initTabs(opts) {
-  const tabs = /** @type {HTMLElement[]} */ (
-    Array.from(document.querySelectorAll('[role="tab"]')));
-  const panels = /** @type {HTMLElement[]} */ (
-    Array.from(document.querySelectorAll('[role="tabpanel"]')));
-
-  for (let i = 0; i < tabs.length; i++) {
-    const tab = tabs[i];
-
-    tab.addEventListener('click', () => {
-      for (const t of tabs) t.setAttribute('aria-selected', 'false');
-      for (const p of panels) p.hidden = true;
-      tab.setAttribute('aria-selected', 'true');
-      const panelId = tab.getAttribute('aria-controls');
-      const panel = document.getElementById(panelId ?? '');
-      if (panel) panel.hidden = false;
-      if (opts?.hintTarget) {
-        updateTabHint(tab.id, opts.hintTarget, opts.hintAction);
-      }
-    });
-
-    tab.addEventListener('keydown', (e) => {
-      let next = -1;
-      if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
-      else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
-      if (next >= 0) {
-        e.preventDefault();
-        tabs[next].focus();
-        tabs[next].click();
-      }
-    });
-  }
+  tabOpts = opts ?? null;
+  for (const tab of tabEls()) attachTabBehavior(tab);
 }
 
 /**
@@ -1356,6 +1376,45 @@ export function initDataPanel(config) {
   const saveBtn = document.getElementById('save-btn');
   const fileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('file-input'));
 
+  // ── "Open File/URL" — the URL half (Todd Will's request, Sept 2026) ─────
+  // `?csv=` has worked since the beginning, but only by hand-editing a query
+  // string, which is not something an instructor does in front of a class. This
+  // lives inside the existing Open File panel rather than in a fourth tab
+  // (Jeff's call): opening a local file and opening a hosted one are the same
+  // intent, and a fourth tab overflowed a 375px phone. Injecting it here rather
+  // than into 37 page templates gives every data page the same control at once.
+  //
+  // The point of the rewrite-the-address-bar step below: a successful load puts
+  // the link in the page URL, so the existing Share button's QR code opens the
+  // tool with the data already in it. That is the actual ask — post the file
+  // once, show the class a QR code, skip 30 uploads.
+  /** @type {HTMLInputElement|null} */
+  let urlInput = null;
+  /** @type {HTMLElement|null} */
+  let loadUrlBtn = null;
+  /** @type {HTMLElement|null} */
+  let urlNote = null;
+  {
+    const filePanel = document.getElementById('panel-file');
+    if (filePanel && !filePanel.querySelector('.url-open')) {
+      const row = document.createElement('div');
+      row.className = 'url-open';
+      row.innerHTML =
+        '<label for="data-url-input">&hellip;or open one from a link (must start with https://):'
+        + '<input type="url" id="data-url-input" class="data-url-input" spellcheck="false"'
+        + ' placeholder="https://gist.githubusercontent.com/.../data.csv"></label>'
+        + '<div class="btn-row"><button type="button" id="load-url" class="btn-secondary">Load</button></div>'
+        + '<p class="hint" id="data-url-note">Data opened from a link becomes part of the page link, so'
+        + ' <strong>Share</strong> will give you a QR code that opens this tool with this data'
+        + ' already in it.</p>';
+      filePanel.appendChild(row);
+
+      urlInput = /** @type {HTMLInputElement} */ (row.querySelector('#data-url-input'));
+      loadUrlBtn = /** @type {HTMLElement} */ (row.querySelector('#load-url'));
+      urlNote = /** @type {HTMLElement} */ (row.querySelector('#data-url-note'));
+    }
+  }
+
   // ── "My data has headers" (REQ-063, Jeff's proposal) ────────────────────
   // parseCSV always treats line 1 as column names, so a pasted bare column of
   // numbers silently lost its first value (5 in → n = 4). We tried a hint
@@ -1659,7 +1718,12 @@ export function initDataPanel(config) {
             fetchExternalJSON(effectiveParams.json, onDataset, populateEditor, () => { postLoadUI(); resolveReady(); });
           } else if (effectiveParams.csv) {
             // Fetch external CSV (?csv=URL)
-            fetchExternalCSV(effectiveParams.csv, handleText, populateEditor, () => { postLoadUI(); resolveReady(); });
+            // `ingestText`, not `handleText`: a headerless CSV loaded through the
+            // panel gets a synthesised header row, and one loaded from `?csv=`
+            // has to get the same treatment or the two disagree about n. They
+            // did — an instructor loading a bare column of 10 numbers saw
+            // n = 10, and every student who opened the resulting link saw n = 9.
+            fetchExternalCSV(effectiveParams.csv, ingestText, populateEditor, () => { postLoadUI(); resolveReady(); });
           } else {
             resolveReady();
           }
@@ -1756,6 +1820,76 @@ export function initDataPanel(config) {
       ingestText(text, filename);
       populateEditor(text, filename);
       postLoadUI();
+    });
+  }
+
+  // ── Open URL ──
+  if (urlInput && loadUrlBtn) {
+    const defaultNote = urlNote?.innerHTML ?? '';
+    const setNote = (/** @type {string} */ html) => { if (urlNote) urlNote.innerHTML = html; };
+
+    /**
+     * Put the link in the address bar. This is the point of the tab: the page's
+     * own URL now carries the data, so Share (and its QR code) encodes a short
+     * link rather than the rows. `dataset` and `data` are cleared because both
+     * outrank `csv`/`json` on reload and would otherwise win.
+     * @param {string} url
+     * @param {boolean} isJson
+     */
+    const rememberDataUrl = (url, isJson) => {
+      try {
+        const qp = new URLSearchParams(location.search);
+        qp.delete('dataset');
+        qp.delete('data');
+        qp.delete(isJson ? 'csv' : 'json');
+        qp.set(isJson ? 'json' : 'csv', url);
+        history.replaceState(null, '', location.pathname + '?' + qp.toString() + location.hash);
+      } catch { /* blocked in some embeds — the data still loaded */ }
+    };
+
+    const loadFromUrl = () => {
+      const url = (urlInput?.value ?? '').trim();
+      if (!url) return;
+      if (!isAllowedExternalUrl(url)) {
+        setNote('The link must start with <code>https://</code>. On GitHub, Dropbox, or Google Drive '
+          + 'use the <strong>raw</strong> (direct-to-file) link, not the page you read the file on.');
+        announce('The link must start with https://');
+        return;
+      }
+      setNote('Loading…');
+      lastLoadedDataset = undefined;
+      currentDatasetId = null;
+      const isJson = /\.json(\?|#|$)/i.test(url);
+      let loaded = false;
+      // Both fetch helpers call `resolve` on failure too, so track success
+      // explicitly — otherwise a 404 would still rewrite the address bar.
+      const finish = () => {
+        if (!loaded) {
+          setNote('Could not load that link. Check that it points straight at the file '
+            + '(a &ldquo;raw&rdquo; link) and that the site allows other sites to read it.');
+          return;
+        }
+        postLoadUI();
+        rememberDataUrl(url, isJson);
+        setNote(defaultNote);
+        announce('Data loaded from link.');
+      };
+      if (isJson) {
+        fetchExternalJSON(url, (/** @type {any} */ ds, /** @type {any} */ meta) => {
+          loaded = true;
+          onDataset(ds, meta);
+        }, populateEditor, finish);
+      } else {
+        fetchExternalCSV(url, (/** @type {string} */ text, /** @type {string} */ name) => {
+          loaded = true;
+          ingestText(text, name);
+        }, populateEditor, finish);
+      }
+    };
+
+    loadUrlBtn.addEventListener('click', loadFromUrl);
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); loadFromUrl(); }
     });
   }
 

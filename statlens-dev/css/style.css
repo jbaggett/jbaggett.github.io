@@ -982,6 +982,10 @@ input[aria-invalid="true"] {
 
 [role="tablist"] {
   display: flex;
+  /* Four data-source tabs no longer fit a 375px phone on one line (the fourth
+     is "Open URL"), and a tab that overflows the viewport is a tab students
+     cannot reach — so wrap rather than scroll. */
+  flex-wrap: wrap;
   gap: 0;
   border-bottom: 2px solid var(--border);
   margin-bottom: 0.75rem;
@@ -5160,6 +5164,13 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .inline-label > span { white-space: nowrap; }
 
 /* The header toggle sits under its panel's control, with its own quiet note. */
+/* The URL half of the "Open File/URL" panel — injected by initDataPanel, so it
+   has no page-template CSS of its own. */
+.url-open { margin-top: 0.85rem; padding-top: 0.7rem; border-top: 1px solid var(--border); }
+.url-open .data-url-input { display: block; width: 100%; max-width: 42rem; margin-top: 0.35rem; }
+.url-open .btn-row { margin-top: 0.5rem; }
+#data-url-note { margin-top: 0.5rem; }
+
 .header-toggle-row { margin-top: 0.5rem; }
 .header-toggle-note { margin: 0.2rem 0 0; }
 .header-toggle-note[hidden] { display: none; }
