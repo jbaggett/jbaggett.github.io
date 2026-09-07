@@ -89,7 +89,7 @@
                         <option value="200">200</option>
                     </select>
                 </label>
-                <label for="alpha-select">Discernibility level (α):
+                <label for="alpha-select" title="Also called the significance level — the two mean the same thing.">Discernibility level (α):
                     <select id="alpha-select">
                         <option value="0.10">0.10</option>
                         <option value="0.05" selected>0.05</option>
@@ -126,6 +126,7 @@
     <dialog id="page-help" aria-label="Help">
         <h2>Decision Errors — Help</h2>
         <p class="help-intro">Each study draws a sample of n patients, finds the success rate, and runs a one-proportion test of H₀: p = 0.50 (the treatment does nothing) against Hₐ: p &gt; 0.50. A study can reach the right verdict or make one of two mistakes:</p>
+        <p><strong>A note on wording:</strong> &alpha; is the <em>discernibility level</em> here, following the course text. Many books and exercise sets call the same number the <em>significance level</em> &mdash; they mean the same thing.</p>
         <ul class="help-intro">
             <li>When <strong>Hₐ is true</strong> (it really works): rejecting H₀ <strong>detects</strong> the effect; failing to reject is a <strong>Type II error</strong> (a miss).</li>
             <li>When <strong>H₀ is true</strong> (it does nothing): rejecting H₀ is a <strong>Type I error</strong> (a false alarm); failing to reject is the correct call. The false-alarm rate stays near α.</li>

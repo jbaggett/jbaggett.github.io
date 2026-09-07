@@ -212,7 +212,7 @@ export function initSettings() {
     </div>
     <div class="setting-row">
       <div>
-        <label for="set-alpha" class="setting-label">Discernibility level (α)</label>
+        <label for="set-alpha" class="setting-label" title="Also called the significance level — the two mean the same thing.">Discernibility level (α)</label>
         <p class="setting-hint">Default α for hypothesis tests. Older texts and many
           exercise banks call this the <em>significance level</em> &mdash; same thing.</p>
       </div>

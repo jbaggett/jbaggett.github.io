@@ -210,7 +210,7 @@
                 </div>
             </div>
             <div class="controls-row">
-                <label for="alpha-level">Discernibility level (&alpha;)
+                <label for="alpha-level" title="Also called the significance level — the two mean the same thing.">Discernibility level (&alpha;)
                     <select id="alpha-level">
                         <option value="0.01">0.01</option>
                         <option value="0.05" selected>0.05</option>
@@ -255,6 +255,7 @@
     <dialog id="page-help" aria-label="Help">
         <h2>Multiple Comparisons</h2>
         <p class="help-intro">Load data (3+ groups) or enter group summary statistics. After the overall F-test, the <strong>post-hoc panel</strong> shows every pairwise difference in means with family-wise confidence intervals and adjusted p-values (Tukey HSD or Bonferroni) — so you can see <em>which</em> groups differ, not just that some do.</p>
+        <p><strong>A note on wording:</strong> &alpha; is the <em>discernibility level</em> here, following the course text. Many books and exercise sets call the same number the <em>significance level</em> &mdash; they mean the same thing.</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
