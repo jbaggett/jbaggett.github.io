@@ -289,15 +289,19 @@ body.ll-embed h1 { font-size: 1.1rem; }
    close the gap". A figure that does not say which function it draws is not
    less chatty, it is anonymous, and the QR case has no instructor in it to say
    so aloud. */
+/* Both scale with the viewport: on a projector these are read from the back of
+   a room, and at reading distance they should sit just above body text. The
+   floor is what a phone gets, the ceiling stops the quotient outgrowing its
+   column. */
 .ll-figure-caption {
-  margin: 0 0 0.4rem; font-size: 1.05rem; text-align: center; color: var(--fg);
+  margin: 0 0 0.4rem; text-align: center; color: var(--fg);
+  font-size: clamp(1.15rem, 1.5vw, 1.75rem);
 }
 .ll-working {
   margin: 0.5rem 0 0; text-align: center; overflow-x: auto;
-  font-size: 1.02rem;
+  font-size: clamp(1.1rem, 1.3vw, 1.5rem);
 }
 .ll-working:empty { display: none; }
-@media (max-width: 600px) { .ll-working { font-size: 0.92rem; } }
 
 [data-prose="none"] .ll-legend,
 [data-prose="none"] .ll-readout { display: none; }
