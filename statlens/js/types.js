@@ -75,7 +75,7 @@
  * @property {string}   [cats]          - Comma-separated categories (categorical gen)
  * @property {string}   [probs]         - Comma-separated probabilities (categorical gen)
  * @property {string}   [summary]       - Compact summary stats (format varies by page)
- * @property {number}   [alpha]         - Significance level (inference pages)
+ * @property {number}   [alpha]         - Discernibility level (inference pages)
  * @property {string}   [alt]           - Alternative hypothesis: less|greater|two-sided
  */
 

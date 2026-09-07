@@ -71,7 +71,7 @@
       }
     },
     {
-      "instruction": "One defense is a **stricter threshold**. Change **Significance level (α)** to **0.01**, click **↺** to reset, and run **+1000** again.",
+      "instruction": "One defense is a **stricter threshold**. Change **Discernibility level (α)** to **0.01**, click **↺** to reset, and run **+1000** again.",
       "observe": "The false-alarm rate drops to about **1%** — far fewer harmless colors get flagged.",
       "gate": {
         "question": "Why does lowering α help when you're running many tests?",

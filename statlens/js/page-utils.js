@@ -212,8 +212,9 @@ export function initSettings() {
     </div>
     <div class="setting-row">
       <div>
-        <label for="set-alpha" class="setting-label">Significance level (α)</label>
-        <p class="setting-hint">Default α for hypothesis tests</p>
+        <label for="set-alpha" class="setting-label">Discernibility level (α)</label>
+        <p class="setting-hint">Default α for hypothesis tests. Older texts and many
+          exercise banks call this the <em>significance level</em> &mdash; same thing.</p>
       </div>
       <select id="set-alpha">
         <option value="0.01"${s.alpha === 0.01 ? ' selected' : ''}>0.01</option>

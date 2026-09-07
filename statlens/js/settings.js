@@ -25,7 +25,7 @@ const DEFAULTS = {
   decimalsPMF:     4,      // binomial PMF probabilities: 0.1316
 
   // Inference defaults
-  alpha:           0.05,   // significance level
+  alpha:           0.05,   // discernibility level
   confidenceLevel: 0.95,   // CI level (0.80–0.99)
 
   // Simulation

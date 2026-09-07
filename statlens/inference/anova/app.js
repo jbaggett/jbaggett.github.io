@@ -429,7 +429,7 @@ function renderPostHoc() {
     + (sig.length
       ? `<strong>${sig.length} of ${r.nPairs}</strong> differ: ${sig.map(p => `${p.a}–${p.b}`).join(', ')}.`
       : `No pair differs at this level.`)
-    + ` <span class="muted">Examine pairwise differences once the overall F-test is significant.</span>`;
+    + ` <span class="muted">Examine pairwise differences once the overall F-test is discernible.</span>`;
 
   /** @type {HTMLElement} */ (document.getElementById('posthoc-plot')).innerHTML = forestPlot(r, dataPrecision);
   /** @type {HTMLElement} */ (document.getElementById('posthoc-table')).innerHTML = posthocTable(r, dataPrecision);
@@ -738,7 +738,7 @@ function loadFromSummaryStats(names, nArr, meanArr, sdArr) {
 dataPanel.ready.then(() => {
   const params = parseParams();
 
-  // ?alpha= sets significance level
+  // ?alpha= sets the discernibility level
   if (params.alpha != null && alphaSelect) {
     const a = String(params.alpha);
     if ([...alphaSelect.options].some(o => o.value === a)) {

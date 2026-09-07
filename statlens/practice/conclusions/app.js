@@ -566,7 +566,7 @@ function showScenario(idx) {
     <h3>${s.datasetName}</h3>
     <div class="hypotheses">${s.hypotheses}</div>
     ${parameterNote}
-    <p>Significance level: ${tex('\\alpha')} = ${s.alpha}</p>
+    <p>Discernibility level: ${tex('\\alpha')} = ${s.alpha}</p>
     <div class="test-results">${s.resultsDisplay}</div>
   `;
 
@@ -589,7 +589,7 @@ function showScenario(idx) {
 
   // ── Pre-build formal + practical HTML (hidden until claim is correct) ──
   const alphaStr = s.alpha;
-  formalSentence.innerHTML = `At the ${tex(`\\alpha = ${alphaStr}`)} significance level, we
+  formalSentence.innerHTML = `At the ${tex(`\\alpha = ${alphaStr}`)} discernibility level, we
     <select id="formal-decision" class="madlib-select" aria-label="Decision: reject or fail to reject">
       <option value="" selected disabled>choose...</option>
       <option value="reject">reject</option>

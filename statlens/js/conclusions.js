@@ -117,7 +117,7 @@ function formatP(p) {
  * @property {string} decision - 'reject' | 'fail to reject'
  * @property {string} evidenceWord - 'sufficient' | 'insufficient'
  * @property {string} strength - Evidence strength phrase
- * @property {boolean} sig - Whether result is statistically significant
+ * @property {boolean} sig - Whether result is statistically discernible
  */
 
 /**
