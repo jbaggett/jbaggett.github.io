@@ -33,10 +33,10 @@
     {
       "instruction": "Leave the truth set to **H₀ is true — the treatment does nothing**. Click **+1000** to run a thousand studies of a treatment that genuinely has no effect.",
       "observe": "What fraction of these studies still *rejected* H₀ — that is, raised a false alarm?",
-      "reveal": "About **5%** of studies reject H₀ even though it's true. These are *Type I errors*. The rate isn't an accident — it matches the significance level α = 0.05 we chose. Rejecting H₀ at the 5% level *means* allowing a 5% false-alarm rate."
+      "reveal": "About **5%** of studies reject H₀ even though it's true. These are *Type I errors*. The rate isn't an accident — it matches the discernibility level α = 0.05 we chose. Rejecting H₀ at the 5% level *means* allowing a 5% false-alarm rate."
     },
     {
-      "instruction": "Change the **significance level (α)** to **0.10**, then click **↺** to reset and **+1000** again.",
+      "instruction": "Change the **discernibility level (α)** to **0.10**, then click **↺** to reset and **+1000** again.",
       "observe": "How does the false-alarm rate change?",
       "reveal": "Now roughly **10%** of studies make a Type I error. The Type I error rate is exactly what α controls: loosen α and you accept more false alarms; tighten it and you accept fewer."
     },
@@ -58,7 +58,7 @@
     {
       "instruction": "Finally, with **Hₐ true** and the success rate at 65%, n = 30, change **α** to **0.01**. Reset and run **+1000**, then compare to α = 0.05.",
       "observe": "Did power go up or down when you made α stricter?",
-      "reveal": "Stricter α (0.01) lowers the Type I error rate but *raises* Type II errors — power **drops**. You can't shrink both error types at once for a fixed n: that trade-off is the heart of choosing a significance level."
+      "reveal": "Stricter α (0.01) lowers the Type I error rate but *raises* Type II errors — power **drops**. You can't shrink both error types at once for a fixed n: that trade-off is the heart of choosing a discernibility level."
     },
     {
       "instruction": "You've run studies under both H₀ and Hₐ, varying n and α. Put the key ideas in your own words.",

@@ -141,7 +141,7 @@ function render(empty) {
   const empRate = total ? rejects / total : 0;
 
   const empLabel = hasEffect ? 'Empirical power' : 'Empirical false-alarm rate';
-  const theoryLabel = hasEffect ? 'Theoretical power (1−β)' : 'Significance level α';
+  const theoryLabel = hasEffect ? 'Theoretical power (1−β)' : 'Discernibility level α';
   const theoryVal = hasEffect ? theory.power : p.alpha;
 
   readout.innerHTML = `
@@ -215,7 +215,7 @@ function renderDance() {
   danceSvg.innerHTML = svg;
   const nSig = recentP.filter(d => d.sig).length;
   danceSvg.setAttribute('aria-label',
-    recentP.length ? `${nSig} of the last ${recentP.length} studies reached significance (p below α = ${alpha}).`
+    recentP.length ? `${nSig} of the last ${recentP.length} studies were discernible (p below α = ${alpha}).`
                    : 'No studies run yet.');
 }
 

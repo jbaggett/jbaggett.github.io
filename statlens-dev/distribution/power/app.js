@@ -351,7 +351,7 @@ function initPowerVisualizer() {
     announceDiv.textContent =
       `Power is ${(power * 100).toFixed(1)}%, ` +
       `Type II error is ${(beta * 100).toFixed(1)}%, ` +
-      `significance level is ${(p.alpha * 100).toFixed(1)}%`;
+      `discernibility level is ${(p.alpha * 100).toFixed(1)}%`;
   }
 
   /**

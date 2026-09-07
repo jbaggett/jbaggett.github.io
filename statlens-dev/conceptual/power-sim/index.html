@@ -74,7 +74,7 @@
 
     <main>
         <h1>Power Lab<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
-        <p>Run a study over and over and watch how often it reaches significance. The fraction that reject H₀ is the <strong>power</strong> — and it converges to the theoretical value as you run more studies. Set the effect size to 0 to watch the false-positive rate settle near α.</p>
+        <p>Run a study over and over and watch how often it is discernible. The fraction that reject H₀ is the <strong>power</strong> — and it converges to the theoretical value as you run more studies. Set the effect size to 0 to watch the false-positive rate settle near α.</p>
 
         <section id="settings" aria-label="Simulation settings">
             <div class="ps-controls">
@@ -90,9 +90,9 @@
                 <input type="range" id="slider-n" min="2" max="200" step="1" value="30" aria-label="Sample size n">
                 <input type="number" id="input-n" step="1" value="30" aria-label="Sample size value">
 
-                <span class="row-label">Significance level (α)</span>
-                <input type="range" id="slider-alpha" min="0.001" max="0.2" step="0.001" value="0.05" aria-label="Significance level alpha">
-                <input type="number" id="input-alpha" step="0.001" value="0.05" aria-label="Significance level value">
+                <span class="row-label">Discernibility level (α)</span>
+                <input type="range" id="slider-alpha" min="0.001" max="0.2" step="0.001" value="0.05" aria-label="Discernibility level alpha">
+                <input type="number" id="input-alpha" step="0.001" value="0.05" aria-label="Discernibility level value">
             </div>
             <div class="ps-tail" role="radiogroup" aria-label="Test direction">
                 <span class="row-label">Test:</span>
@@ -123,7 +123,7 @@
             <div class="dance-wrap">
                 <h2>Dance of the p-values</h2>
                 <p class="dance-note">The 30 most recent studies. Each dot is one study's p-value; the dashed line is α. Points below the line reach significance — notice how wildly p bounces even when nothing about the setup changed.</p>
-                <svg id="dance-svg" role="img" aria-label="p-values of recent studies relative to the significance level"></svg>
+                <svg id="dance-svg" role="img" aria-label="p-values of recent studies relative to the discernibility level"></svg>
             </div>
 
             <div id="result-summary" class="ps-interpret">
