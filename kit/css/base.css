@@ -149,7 +149,7 @@ button.ll-primary:hover { background: #2F6A8F; }
 }
 .ll-readout b { font-family: var(--font-body); font-weight: normal; color: var(--ims-gray-text); }
 
-.ll-result { font-size: 1.05rem; margin: 0.6rem 0; }
+.ll-result { font-size: clamp(1.05rem, 1.15vw, 1.4rem); margin: 0.6rem 0; }
 .ll-verdict { font-weight: bold; }
 .ll-verdict.ok { color: var(--ok); }
 .ll-verdict.bad { color: var(--bad); }
@@ -222,12 +222,18 @@ button.ll-primary:hover { background: #2F6A8F; }
 
 /* ── Tables ──────────────────────────────────────────────────────────────── */
 
-.ll-table { border-collapse: collapse; width: 100%; max-width: 32rem;
-            font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+/* Scales with the viewport like the caption and the quotient above it, but
+   stays clearly subordinate to them — on a projector this is what the room
+   reads numbers off, so it must not be the smallest thing in its column. The
+   floor is today's size, so nothing anywhere gets smaller. */
+.ll-table { border-collapse: collapse; width: 100%; max-width: 38rem;
+            font-variant-numeric: tabular-nums; font-family: var(--font-mono);
+            font-size: clamp(1rem, 1.05vw, 1.3rem); }
+/* Headers and caption in em, so they follow the table rather than drifting. */
 .ll-table caption { text-align: left; font-family: var(--font-body);
-                    font-size: 0.9rem; color: var(--ims-gray-text); padding-bottom: 0.35rem; }
+                    font-size: 0.92em; color: var(--ims-gray-text); padding-bottom: 0.35rem; }
 .ll-table th, .ll-table td { text-align: right; padding: 0.25rem 0.7rem 0.25rem 0; }
-.ll-table th { font-family: var(--font-body); font-weight: 700; font-size: 0.88rem;
+.ll-table th { font-family: var(--font-body); font-weight: 700; font-size: 0.9em;
                color: var(--ims-gray-text); border-bottom: 1px solid var(--border); }
 /* The current row is marked by weight and a rule as well as tint — a highlight
    carried by background colour alone disappears for a good many readers. */
