@@ -106,12 +106,50 @@ function render() {
       .attr('x2', xs(Math.min(x1, Math.max(a, q) + ext)))
       .attr('y2', ys(at(Math.min(x1, Math.max(a, q) + ext))));
 
-    // Rise over run, drawn: the difference quotient as a picture.
-    chart.gOver.append('path')
-      .attr('d', `M${xs(a)},${ys(fa)} L${xs(q)},${ys(fa)} L${xs(q)},${ys(fq)}`)
-      .attr('fill', 'none').attr('stroke', 'var(--tangent)')
-      .attr('stroke-width', 1).attr('stroke-dasharray', '3 3').attr('opacity', 0.8);
-    if (Math.abs(xs(q) - xs(a)) > 26) {
+    // Tie each point to its coordinates.
+    //
+    // Without this the quotient's s(b) - s(a) floats free of the picture: the
+    // graph says "P" and the algebra says "s(a)" and nothing on screen connects
+    // them. Guides run from each point to BOTH axes, so P is visibly the point
+    // (a, s(a)) — and the rise-over-run triangle falls out of the same grid,
+    // because its corner is where P's horizontal meets Q's vertical.
+    //
+    // Symbols on the axes rather than numbers: the numbers are already in the
+    // quotient and the table, and it is the symbol that the algebra is written
+    // in. That pairing is the whole bridge.
+    const axisX = Math.min(chart.width - chart.margin.right,
+      Math.max(chart.margin.left, xs(0)));
+    const axisY = Math.min(chart.height - chart.margin.bottom,
+      Math.max(chart.margin.top, ys(0)));
+    const guide = (x1, y1, x2, y2) => chart.gOver.append('line')
+      .attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2)
+      .attr('stroke', 'var(--tangent)').attr('stroke-width', 1)
+      .attr('stroke-dasharray', '3 3').attr('opacity', 0.7);
+    // P's horizontal runs all the way to Q's vertical, so it doubles as the run.
+    guide(axisX, ys(fa), xs(q), ys(fa));
+    guide(xs(a), ys(fa), xs(a), axisY);
+    guide(axisX, ys(fq), xs(q), ys(fq));
+    guide(xs(q), ys(fq), xs(q), axisY);
+
+    const mark = (x, y, text, colour, anchor, dx, dy) => chart.gOver.append('text')
+      .attr('x', x + dx).attr('y', y + dy)
+      .attr('text-anchor', anchor).attr('font-size', chart.fs(13))
+      .attr('font-style', 'italic').attr('fill', colour)
+      .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
+      .text(text);
+    const n = state.name;
+    // As Q closes on P the two marks converge on the same pixel. Past that
+    // point the second one is noise sitting on top of the first, so it goes —
+    // the points keep their own P and Q labels either way.
+    const roomOnX = Math.abs(xs(q) - xs(a)) > 18;
+    const roomOnY = Math.abs(ys(fq) - ys(fa)) > 15;
+    mark(xs(a), axisY, 'a', '#222', 'middle', 0, -6);
+    if (roomOnX) mark(xs(q), axisY, 'b', 'var(--tangent)', 'middle', 0, -6);
+    mark(axisX, ys(fa), `${n}(a)`, '#222', 'start', 5, -5);
+    if (roomOnY) mark(axisX, ys(fq), `${n}(b)`, 'var(--tangent)', 'start', 5, -5);
+    // 70px, not 26: the label is about fifty wide, and at h = 0.1 it was being
+    // drawn straight through P and Q.
+    if (Math.abs(xs(q) - xs(a)) > 70) {
       // The run line sits at f(a). When that is near y = 0 the label would land
       // on the x-axis tick numbers, and a white halo is not enough to make two
       // overlapping strings readable — so move it to the other side instead.
