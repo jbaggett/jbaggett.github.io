@@ -1339,7 +1339,14 @@ function fetchExternalCSV(url, handleText, populateEditor, resolve) {
 export function initDataPanel(config) {
   const { datasetFilter, deepLinkFilter, onDataset, onText, onRawText, onClear,
     autoCollapse = false, stickyControls = false, showPreview = false,
-    datasetGroupFn } = config;
+    datasetGroupFn,
+    // Whether `?data=` (a flat comma list) can express this page's data shape.
+    // docs/url-api.md has always said "single-variable pages only", but the code
+    // accepted it everywhere — and on the randomization pages, which need two
+    // groups or matched pairs, a flat list produced NaN chart geometry. Callers
+    // that compare groups pass false so the param is ignored rather than
+    // half-loaded into a broken state (REQ-060).
+    acceptsInlineData = true } = config;
 
   const datasetSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('dataset-select'));
   const datasetDesc = document.getElementById('dataset-desc');
@@ -1545,7 +1552,7 @@ export function initDataPanel(config) {
             // dist param present but invalid (missing n, etc.) — fall through
             resolveReady();
           }
-        } else if (effectiveParams.data && effectiveParams.data.length > 0) {
+        } else if (acceptsInlineData && effectiveParams.data && effectiveParams.data.length > 0) {
           // Auto-load inline data from URL (?data=1,2,3,...)
           const csv = 'value\n' + effectiveParams.data.join('\n');
           queueMicrotask(() => {
