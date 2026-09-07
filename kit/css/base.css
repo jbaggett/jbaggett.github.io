@@ -335,6 +335,10 @@ body.ll-embed h1 { font-size: 1.1rem; }
   [data-prose="none"] .ll-chart-svg {
     height: 54vh; width: auto; max-width: 100%; margin-inline: auto;
   }
+  /* Its viewBox was built to match this box, so let it size itself. */
+  [data-prose="none"] .ll-chart-svg.ll-chart-fitted {
+    height: auto; width: 100%; max-width: 100%;
+  }
 }
 
 /* Wide enough to size the figure by height, but too narrow for two columns.

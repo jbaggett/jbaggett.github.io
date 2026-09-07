@@ -18,7 +18,7 @@
  *   turns it on for the second pass.
  */
 
-import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange, onLayoutChange, afterLayout } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -78,7 +78,7 @@ function render() {
   const slope = (fq - fa) / h;
   const exact = df(a);
 
-  chart = chart || createChart('#chart-f', { height: 320, label: 'placeholder' });
+  chart = chart || createChart('#chart-f', { height: 320, fit: true, label: 'placeholder' });
   const yDom = state.yWin || autoYDomain(f, x0, x1, { minSpan: 2 });
   const { xs, ys } = makeScales(chart, [x0, x1], yDom);
   drawAxes(chart, { xs, ys, xLabel: state.v, yLabel: `${state.name}(${state.v})` });
@@ -680,6 +680,10 @@ initPage({
     // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
     // squeezed into a phone-sized box with six-pixel labels.
     onBreakpointChange(() => { chart = null; render(); });
+    // A fitted chart is rebuilt for any resize, not only across the breakpoint.
+    onLayoutChange(() => { chart = null; render(); });
+    // …and once more after the first paint, when the space below it is real.
+    afterLayout(() => { chart = null; render(); });
     setForm(state.form);
     applyControls(q.get('controls'), q.get('hide'));
     reparse();

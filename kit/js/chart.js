@@ -32,6 +32,74 @@ export const PHONE_MARGIN = { top: 12, right: 12, bottom: 26, left: 34 };
 /** Below this viewport width a chart is built with the phone geometry. */
 export const NARROW_QUERY = '(max-width: 599px)';
 
+/** Where fitting the chart to its box is safe — see `fittedHeight`. */
+const FIT_QUERY = '(min-width: 1000px) and (min-height: 500px)';
+
+/**
+ * Choose a viewBox height so the chart fills the space its box actually has.
+ *
+ * A fixed aspect ratio is why freed vertical space kept turning into
+ * whitespace instead of a bigger graph. With a 2:1 viewBox the COLUMN WIDTH
+ * caps the height: at 1920x1080 there were 825px available below the chart and
+ * the width only allowed 577, so raising a `height:` value achieved nothing.
+ * The aspect has to give, not the height.
+ *
+ * Only applied at `prose=none` on a wide screen, and that limit is not
+ * timidity: it is the one layout where nothing follows the chart in its column,
+ * so "everything below the chart top" is genuinely the chart's to take. On an
+ * ordinary page the legend, readout and table live down there.
+ *
+ * @param {Element} root the chart's container
+ * @param {number} width the viewBox width in use
+ * @returns {number|null} a viewBox height, or null to keep the default
+ */
+function fittedHeight(root, width) {
+  if (typeof window === 'undefined' || !window.matchMedia) return null;
+  if (document.body?.dataset.prose !== 'none') return null;
+  if (!window.matchMedia(FIT_QUERY).matches) return null;
+  const r = root.getBoundingClientRect();
+  const availW = r.width;
+  // The gap covers what sits BELOW the svg inside its own box — the chart
+  // container's padding and border, and main's bottom padding. Measured: 14px
+  // left the page 8px over the fold at every size.
+  const availH = window.innerHeight - r.top - 26;
+  if (!availW || availH < 240) return null;
+  // Clamped: a chart taller than it is wide reads as a column, and one much
+  // flatter than 2:1 loses the curve.
+  const ratio = Math.max(0.42, Math.min(0.85, availH / availW));
+  return Math.round(width * ratio);
+}
+
+/**
+ * Run `cb` once the browser has settled the layout.
+ *
+ * A fitted chart measures the space below itself, and on the very first render
+ * that space is not yet real: the chart is built during the tool's first pass,
+ * when its own container has not been placed where it will end up. Measuring
+ * then gave an aspect barely different from the default. Two frames later the
+ * page is laid out and the measurement is true, and re-fitting is stable
+ * because the chart's own height does not move its top edge.
+ *
+ * @param {() => void} cb
+ */
+export function afterLayout(cb) {
+  if (typeof requestAnimationFrame === 'undefined') { cb(); return; }
+  requestAnimationFrame(() => requestAnimationFrame(cb));
+}
+
+/**
+ * Re-run `cb` after the window settles at a new size.
+ *
+ * `onBreakpointChange` only fires when the phone/desktop line is crossed, but a
+ * fitted chart has to be rebuilt for any size change at all.
+ * @param {() => void} cb
+ */
+export function onLayoutChange(cb) {
+  if (typeof window === 'undefined') return;
+  let t = null;
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(cb, 150); });
+}
+
 /**
  * How large chart text should actually appear, in CSS pixels.
  *
@@ -70,14 +138,19 @@ export function createChart(container, opts) {
   // enlarges every label proportionally, without a single px of CSS override.
   const narrow = typeof window !== 'undefined'
     && window.matchMedia && window.matchMedia(NARROW_QUERY).matches;
-  const {
-    width = narrow ? PHONE_WIDTH : VIEW_WIDTH,
-    height = VIEW_HEIGHT,
-    margin = narrow ? PHONE_MARGIN : MARGIN,
-    label,
-  } = opts;
+  // The container is resolved first: fitting the chart to its box has to
+  // measure that box before any dimension is chosen.
   const root = typeof container === 'string' ? document.querySelector(container) : container;
   select(root).selectAll('svg').remove();
+
+  const {
+    width = narrow ? PHONE_WIDTH : VIEW_WIDTH,
+    margin = narrow ? PHONE_MARGIN : MARGIN,
+    label,
+    fit = false,
+  } = opts;
+  const fitted = fit ? fittedHeight(root, width) : null;
+  const height = fitted ?? opts.height ?? VIEW_HEIGHT;
 
   const svg = select(root).append('svg')
     .attr('viewBox', `0 0 ${width} ${height}`)
@@ -86,7 +159,9 @@ export function createChart(container, opts) {
     // Sizing lives in CSS, not in an inline style: an inline style set here
     // cannot be overridden by a stylesheet, which is what silently defeated the
     // projector layout's attempt to size the figure by height.
-    .attr('class', 'll-chart-svg');
+    // A fitted chart's viewBox already matches its box, so it wants natural
+    // sizing; the CSS height fallback is for everything else.
+    .attr('class', fitted ? 'll-chart-svg ll-chart-fitted' : 'll-chart-svg');
 
   const clipId = `clip-${Math.random().toString(36).slice(2, 9)}`;
   svg.append('defs').append('clipPath').attr('id', clipId)

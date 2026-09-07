@@ -18,7 +18,7 @@
  * two bounds do not agree in the limit (the sin(1/x) preset).
  */
 
-import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange, onLayoutChange, afterLayout } from 'kit/chart.js';
 import { drawCurve, autoYDomain, sampleCurve, linePath } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -64,7 +64,7 @@ function render() {
   const d = delta();
   const x0 = a - d, x1 = a + d;
 
-  chart = chart || createChart('#chart-main', { height: 340, label: 'placeholder' });
+  chart = chart || createChart('#chart-main', { height: 340, fit: true, label: 'placeholder' });
 
   // The vertical axis stays where it started unless asked otherwise. That is
   // what makes the trap visibly close instead of silently rescaling itself.
@@ -398,6 +398,10 @@ initPage({
     // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
     // squeezed into a phone-sized box with six-pixel labels.
     onBreakpointChange(() => { chart = null; render(); });
+    // A fitted chart is rebuilt for any resize, not only across the breakpoint.
+    onLayoutChange(() => { chart = null; render(); });
+    // …and once more after the first paint, when the space below it is real.
+    afterLayout(() => { chart = null; render(); });
     applyControls(q.get('controls'), q.get('hide'));
     refresh();
     setD(state.d, { quiet: true });
