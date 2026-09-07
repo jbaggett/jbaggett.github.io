@@ -56,6 +56,7 @@ const state = {
   /** @type {(x:number)=>number} */ df: () => NaN,
   v: 'x',          // the variable's name — the ball problem wants t, not x
   name: 'f',       // the function's name — the Day 1 slide calls it s, not f
+  form: 'h',       // 'h' (gap) or 'interval' (endpoints a and b)
   a: 1,
   h: 0,            // log10 of the gap: 0 means h = 1
   side: 1,         // +1 from the right, -1 from the left
@@ -121,7 +122,7 @@ function render() {
         .attr('y', runY + (clash ? -9 : 16))
         .attr('text-anchor', 'middle').attr('font-size', chart.fs(12)).attr('fill', 'var(--tangent)')
         .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
-        .text(`h = ${fmt(h, Math.abs(h) < 0.01 ? 4 : 3)}`);
+        .text(`${state.form === 'interval' ? 'b − a' : 'h'} = ${fmt(h, Math.abs(h) < 0.01 ? 4 : 3)}`);
     }
   }
 
@@ -177,8 +178,16 @@ function updateReadout(h, q, fa, fq, slope, exact) {
     + (state.showTangent
       ? `<span><b>${state.name}&nbsp;′(${fmt(state.a, 2)})</b> ${fmt(exact, 4)}</span>` : '');
 
-  $('#q-pos').textContent = fmt(q, Math.abs(h) < 0.01 ? 4 : 3);
-  $('#h-out').textContent = fmt(h, Math.abs(h) < 0.01 ? 5 : 3);
+  // The slider names whichever quantity the chosen notation leads with.
+  const dp = Math.abs(h) < 0.01 ? 5 : 3;
+  const label = $('#h-label');
+  if (label) {
+    label.innerHTML = state.form === 'interval'
+      ? `Right endpoint <i>b</i> = <output id="h-out" for="h-slider">${fmt(q, dp)}</output>`
+        + `&nbsp; <span class="ll-hint">(<i>b</i> − <i>a</i> = <span id="q-pos">${fmt(h, dp)}</span>)</span>`
+      : `Gap <i>h</i> = <output id="h-out" for="h-slider">${fmt(h, dp)}</output>`
+        + `&nbsp; <span class="ll-hint">(<i>Q</i> sits at <i>${v}</i> = <span id="q-pos">${fmt(q, dp)}</span>)</span>`;
+  }
   document.querySelectorAll('.varname').forEach(el => { el.textContent = v; });
 }
 
@@ -195,16 +204,28 @@ function updateTable() {
     Math.abs(Math.log10(Math.abs(r.h)) - Math.log10(Math.abs(signedH()))) <
     Math.abs(Math.log10(Math.abs(b.h)) - Math.log10(Math.abs(signedH()))) ? r : b);
 
-  $('#table-body').innerHTML = rows.map(r => `
+  // Same three numbers either way; which two lead depends on how the section
+  // writes an average rate of change. Stewart does §2.1 over [a, b] and the
+  // derivative in h, so a course needs both spellings of one idea.
+  const interval = state.form === 'interval';
+  $('#col-1').innerHTML = interval ? '<i>b</i>' : '<i>h</i>';
+  $('#col-2').innerHTML = interval ? '<i>b</i> − <i>a</i>' : '<i>Q</i> at';
+  $('#table-body').innerHTML = rows.map(r => {
+    const gap = `${r.h > 0 ? '' : '−'}${fmt(Math.abs(r.h), Math.abs(r.h) < 0.01 ? 4 : 3)}`;
+    const at = fmt(r.q, 4);
+    return `
     <tr${r === near ? ' class="ll-row-current"' : ''}>
-      <td>${r.h > 0 ? '' : '−'}${fmt(Math.abs(r.h), Math.abs(r.h) < 0.01 ? 4 : 3)}</td>
-      <td>${fmt(r.q, 4)}</td>
+      <td>${interval ? at : gap}</td>
+      <td>${interval ? gap : at}</td>
       <td>${Number.isFinite(r.slope) ? fmt(r.slope, 5) : 'undefined'}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
-  $('#table-caption').innerHTML =
-    `Slope of the secant as <i>h</i> shrinks, approaching <i>P</i> `
-    + `<b>from the ${state.side > 0 ? 'right' : 'left'}</b>`;
+  $('#table-caption').innerHTML = state.form === 'interval'
+    ? `Slope of the secant as <i>b</i> approaches <i>a</i> = ${fmt(state.a, 3)} `
+      + `<b>from the ${state.side > 0 ? 'right' : 'left'}</b>`
+    : `Slope of the secant as <i>h</i> shrinks, approaching <i>P</i> `
+      + `<b>from the ${state.side > 0 ? 'right' : 'left'}</b>`;
 
   // Say what the numbers are doing, without naming the limit unless asked.
   const last = rows[rows.length - 1].slope;
@@ -313,9 +334,22 @@ function updateWorking(a, q, fa, fq, slope) {
     const t = v.toFixed(d);
     return /^-0\.?0*$/.test(t) ? t.slice(1) : t;   // never a bare "-0.00"
   };
+  // Three aligned lines rather than one long one: it has to fit a narrow
+  // column beside the table, and naming the pattern before substituting into it
+  // is how the quotient is written on the board anyway.
+  const v = state.v;
+  const general = state.form === 'interval'
+    ? `\\frac{${n}(b) - ${n}(a)}{b - a}`
+    : `\\frac{${n}(${v}_0 + h) - ${n}(${v}_0)}{h}`;
+  const substituted = state.form === 'interval'
+    ? `\\frac{${n}(${num(q, dx)}) - ${n}(${num(a, dx)})}{${num(q, dx)} - ${num(a, dx)}}`
+    : `\\frac{${n}(${num(q, dx)}) - ${n}(${num(a, dx)})}{${num(q - a, dx)}}`;
   el.innerHTML = tex(
-    `m_{PQ} = \\frac{${n}(${num(q, dx)}) - ${n}(${num(a, dx)})}{${num(q, dx)} - ${num(a, dx)}}`
-    + ` = \\frac{${num(fq, dy)} - ${num(fa, dy)}}{${num(q - a, dx)}} = ${num(slope, ds)}`,
+    `\\begin{aligned}`
+    + `m_{PQ} &= ${general} \\\\[2pt]`
+    + `&= ${substituted} \\\\[2pt]`
+    + `&= \\frac{${num(fq, dy)} - ${num(fa, dy)}}{${num(q - a, dx)}} = ${num(slope, ds)}`
+    + `\\end{aligned}`,
     { display: true });
 }
 
@@ -422,11 +456,20 @@ function syncRange() {
 function setH(logH, opts = {}) {
   state.h = Math.min(maxLogH(), Math.max(-4, logH));
   $('#h-slider').value = String(state.h);
+  // #h-out is rebuilt by updateReadout below; nothing to set here.
   render();
   if (!opts.quiet) {
     const h = signedH();
     announce(`h is ${fmt(h, 4)}. Secant slope ${fmt((state.f(state.a + h) - state.f(state.a)) / h, 3)}.`);
   }
+}
+
+function setForm(form) {
+  state.form = form === 'interval' ? 'interval' : 'h';
+  $('#form-h').setAttribute('aria-pressed', String(state.form === 'h'));
+  $('#form-interval').setAttribute('aria-pressed', String(state.form === 'interval'));
+  updateUrl({ form: state.form === 'h' ? null : 'interval' });
+  render();
 }
 
 function setSide(side) {
@@ -541,6 +584,7 @@ initPage({
     if (q.get('window')) $('#win-input').value = q.get('window');
     if (q.get('h')) state.h = Math.log10(Math.abs(Number(q.get('h')) || 1));
     if (q.get('side') === 'left') state.side = -1;
+    if (q.get('form') === 'interval') state.form = 'interval';
     if (q.get('y')) {
       const yp = q.get('y').split(',').map(Number);
       if (yp.length === 2 && yp.every(Number.isFinite) && yp[1] > yp[0]) state.yWin = [yp[0], yp[1]];
@@ -610,6 +654,8 @@ initPage({
       readWindow(); updateUrl({ window: $('#win-input').value }); syncRange(); render();
     });
     $('#h-slider').addEventListener('input', e => { stopAnim(); setH(Number(e.target.value)); });
+    $('#form-h').addEventListener('click', () => setForm('h'));
+    $('#form-interval').addEventListener('click', () => setForm('interval'));
     $('#side-right').addEventListener('click', () => setSide(1));
     $('#side-left').addEventListener('click', () => setSide(-1));
     $('#close-btn').addEventListener('click', () => (anim === null ? startAnim() : stopAnim()));
@@ -630,6 +676,7 @@ initPage({
     // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
     // squeezed into a phone-sized box with six-pixel labels.
     onBreakpointChange(() => { chart = null; render(); });
+    setForm(state.form);
     applyControls(q.get('controls'), q.get('hide'));
     reparse();
     syncRange();

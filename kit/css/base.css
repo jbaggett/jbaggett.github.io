@@ -329,12 +329,11 @@ body.ll-embed h1 { font-size: 1.1rem; }
   [data-prose="none"] main > h1 { grid-column: 1 / -1; }
   [data-prose="none"] main > #table,
   [data-prose="none"] main > #results { grid-column: 2; grid-row: 2 / 200; }
-  /* 46vh, not 56: the figure caption and the substituted quotient are part of
-     the figure now, and they need their share of the column or the working
-     falls off the bottom of a 768px projector — which is the one screen this
-     layout exists for. */
+  /* Sized so the whole page lands inside a 1366x768 projector without a
+     scroll. Measured, not guessed — the caption above the figure and the
+     working over in the evidence column both take height off this budget. */
   [data-prose="none"] .ll-chart-svg {
-    height: 46vh; width: auto; max-width: 100%; margin-inline: auto;
+    height: 54vh; width: auto; max-width: 100%; margin-inline: auto;
   }
 }
 

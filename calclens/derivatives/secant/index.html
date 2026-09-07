@@ -98,7 +98,7 @@
 
   <section class="ll-panel" aria-label="Position of Q">
     <label for="h-slider" data-control="h" style="display:block;">
-      <span>Gap <i>h</i> = <output id="h-out" for="h-slider">1</output>
+      <span id="h-label">Gap <i>h</i> = <output id="h-out" for="h-slider">1</output>
         &nbsp; <span class="ll-hint">(<i>Q</i> sits at <i class="varname">x</i> = <span id="q-pos">2</span>)</span></span>
       <input type="range" id="h-slider" min="-4" max="0.3" step="0.02" value="0"
              aria-describedby="h-help">
@@ -113,6 +113,10 @@
         <button type="button" id="side-left" class="side-btn" aria-pressed="false">From the left</button>
       </div>
       <button type="button" id="close-btn" data-control="h" class="ll-primary">▶ Close the gap</button>
+      <div class="ll-segmented" role="group" data-control="form" aria-label="How to write the interval">
+        <button type="button" id="form-h" class="form-btn" aria-pressed="true">gap <i>h</i></button>
+        <button type="button" id="form-interval" class="form-btn" aria-pressed="false">endpoints <i>a</i>, <i>b</i></button>
+      </div>
 
     </div>
   </section>
@@ -121,7 +125,6 @@
     <div id="reveal-slot"></div>
     <p class="ll-figure-caption" id="fn-display"></p>
     <div class="ll-chart"><div id="chart-f"></div></div>
-    <div class="ll-working" id="working"></div>
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> the function</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant <i>PQ</i></span>
@@ -133,11 +136,15 @@
   </section>
 
   <section id="table" aria-label="Difference quotients" data-control="table">
+    <!-- The working sits with the evidence, not under the figure: it belongs
+         beside the table it explains, and it gives the graph back its height on
+         a projector. -->
+    <div class="ll-working" id="working"></div>
     <h2>Closing the gap</h2>
     <table class="ll-table">
       <caption id="table-caption">Slope of the secant as <i>h</i> shrinks</caption>
       <thead>
-        <tr><th scope="col"><i>h</i></th><th scope="col"><i>Q</i> at</th>
+        <tr><th scope="col" id="col-1"><i>h</i></th><th scope="col" id="col-2"><i>Q</i> at</th>
             <th scope="col">slope of <i>PQ</i></th></tr>
       </thead>
       <tbody id="table-body"></tbody>

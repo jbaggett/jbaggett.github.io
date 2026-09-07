@@ -170,6 +170,7 @@ An embedded page also posts its height to the framing window
 | `controls` | list | all | Which control groups to show: `f`, `a`, `window`, `h`, `tangent`, `table`. Anything omitted is hidden, and a panel left with no visible control is hidden too. |
 | `var` | letter | inferred | Only used when the expression has no variable to infer from. The expression always wins. |
 | `name` | letter(s) | `f` | What the function is called, so the page can match the slide: `?name=s` labels the axis, the caption and the quotient *s*(*t*) rather than *f*(*t*). |
+| `form` | `h` \| `interval` | `h` | How the interval is written. `h` gives *h* / *Q* at / slope and the quotient over *h*; `interval` gives *b* / *b* − *a* / slope and the quotient over *b* − *a*. Same three numbers, two spellings — Stewart does §2.1 over [*a*, *b*] and the derivative in *h*, so a course needs both. |
 
 Both points are **draggable on the graph** and reachable by keyboard: each is a
 `role="slider"` handle with a 44px hit area, so Tab reaches it and the arrow keys
