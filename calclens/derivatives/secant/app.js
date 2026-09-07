@@ -530,6 +530,10 @@ function applyControls(/** @type {string|null} */ list, /** @type {string|null} 
   });
   // A panel emptied of every control should not leave a bare box behind.
   document.querySelectorAll('.ll-panel').forEach(p => {
+    // Never collapse the panel that holds the reveal control. It now lives with
+    // the slider, and hiding it would leave the R key working with nothing on
+    // screen to say so — the same trap `controls=` used to set for it.
+    if (p.querySelector('#reveal-slot')) return;
     const live = [...p.querySelectorAll('[data-control]')].some(e => !(/** @type {HTMLElement} */ (e).hidden));
     const own = p.querySelectorAll('[data-control]').length;
     if (own > 0 && !live) /** @type {HTMLElement} */ (p).hidden = true;

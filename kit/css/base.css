@@ -396,6 +396,8 @@ body.ll-embed h1 { font-size: 1.1rem; }
 /* ── Reveal ──────────────────────────────────────────────────────────────── */
 
 .ll-reveal-slot { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; margin: 0.7rem 0; }
+/* Nested in a control row it supplies no margin of its own — the row spaces it. */
+.ll-row > .ll-reveal-slot { margin: 0; }
 .ll-reveal-btn {
   font-size: 1rem; font-weight: bold; min-height: 42px; padding: 0.45rem 1.1rem;
   border: 2px solid var(--accent); border-radius: 8px; background: var(--bg); color: var(--accent);
