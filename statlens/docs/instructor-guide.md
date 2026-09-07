@@ -60,10 +60,11 @@ This works on every page — explore tools, simulation pages, inference tests, d
 Every tool page has a **Share** button that renders the page's current link as a scannable QR code (with *Download SVG* for slides). A QR code carries a link, not a spreadsheet — so put the data on the web first, then let the link point at it:
 
 1. Save the data as `.csv` (Excel: *File → Save As → CSV*).
-2. At [gist.github.com](https://gist.github.com), name the file something ending in `.csv`, paste the contents, and choose **Create secret gist**. "Secret" means unlisted, not private — anyone with the link can read it, which is what students need. Don't put anything sensitive in a gist.
-3. Click **Raw** and copy the address (it starts with `gist.githubusercontent.com`). Deleting the long revision hash between `/raw/` and the filename makes the link always serve the newest version, so editing the gist updates everyone.
-4. In the StatLens tool, go to **Open File/URL**, paste the link, click **Load**.
-5. Click **Share** and project the QR code.
+2. At [gist.github.com](https://gist.github.com), paste the data into the text box, and **name the file** in the box above it, ending in `.csv` — `class_commute.csv`, not the `gistfile1.txt` GitHub defaults to. StatLens uses the filename as the name of your data, so it shows up in the summary bar, on the axes, and in student downloads.
+3. Click **Create public gist** or **Create secret gist** — either works. "Secret" means unlisted, not private: anyone with the link can open it, which is all students need, and it stays off your profile and out of search. Public makes it findable so colleagues can reuse it. Either way, only data you'd be comfortable posting publicly; never student-identifiable data.
+4. Click **Raw** and copy the address (it starts with `gist.githubusercontent.com`). Deleting the long revision hash between `/raw/` and the filename makes the link always serve the newest version, so editing the gist updates everyone who has scanned the code. If you rename the file later, update the last segment of the link.
+5. In the StatLens tool, go to **Open File/URL**, paste the link, click **Load**.
+6. Click **Share** and project the QR code.
 
 A Google Sheet published via *File → Share → Publish to the web → CSV* gives a link that works the same way and updates when the sheet does.
 
