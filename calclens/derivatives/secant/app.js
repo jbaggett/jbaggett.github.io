@@ -55,6 +55,7 @@ const state = {
   /** @type {(x:number)=>number} */ f: () => NaN,
   /** @type {(x:number)=>number} */ df: () => NaN,
   v: 'x',          // the variable's name — the ball problem wants t, not x
+  name: 'f',       // the function's name — the Day 1 slide calls it s, not f
   a: 1,
   h: 0,            // log10 of the gap: 0 means h = 1
   side: 1,         // +1 from the right, -1 from the left
@@ -79,7 +80,7 @@ function render() {
   chart = chart || createChart('#chart-f', { height: 320, label: 'placeholder' });
   const yDom = state.yWin || autoYDomain(f, x0, x1, { minSpan: 2 });
   const { xs, ys } = makeScales(chart, [x0, x1], yDom);
-  drawAxes(chart, { xs, ys, xLabel: state.v, yLabel: `f(${state.v})` });
+  drawAxes(chart, { xs, ys, xLabel: state.v, yLabel: `${state.name}(${state.v})` });
   drawCurve(chart.plot, f, { xs, ys });
 
   chart.gOver.selectAll('*').remove();
@@ -162,6 +163,7 @@ function render() {
     + `${fmt(q, 3)}. The secant through them has slope ${fmt(slope, 3)}.`);
 
   updateReadout(h, q, fa, fq, slope, exact);
+  updateWorking(a, q, fa, fq, slope);
   updateTable();
 }
 
@@ -172,7 +174,8 @@ function updateReadout(h, q, fa, fq, slope, exact) {
     <span><b>rise</b> ${fmt(fq - fa, 4)}</span>
     <span><b>run</b> ${fmt(h, Math.abs(h) < 0.01 ? 5 : 3)}</span>
     <span><b>slope of PQ</b> ${fmt(slope, 4)}</span>`
-    + (state.showTangent ? `<span><b>f&nbsp;′(${fmt(state.a, 2)})</b> ${fmt(exact, 4)}</span>` : '');
+    + (state.showTangent
+      ? `<span><b>${state.name}&nbsp;′(${fmt(state.a, 2)})</b> ${fmt(exact, 4)}</span>` : '');
 
   $('#q-pos').textContent = fmt(q, Math.abs(h) < 0.01 ? 4 : 3);
   $('#h-out').textContent = fmt(h, Math.abs(h) < 0.01 ? 5 : 3);
@@ -260,6 +263,60 @@ function beginDrag(xs, onMove) {
   window.addEventListener('pointermove', onWindowDrag, { passive: false });
   window.addEventListener('pointerup', endDrag);
   window.addEventListener('pointercancel', endDrag);
+}
+
+/**
+ * The fewest decimal places that still show every one of these values exactly,
+ * so the numbers in the quotient share one precision.
+ *
+ * Both ends matter. Padding to a fixed width renders f(4) - f(3) = 16 - 9 as
+ * "16.000 - 9.000", which is the arithmetic a student did by hand dressed up as
+ * something harder. Truncating turns the h = 0.001 numerator into "0.00", which
+ * hides the very quantity the table is about. So: exact if it can be, capped
+ * when the value is a dragged position with no short form.
+ */
+function sharedDecimals(values, cap = 4) {
+  let d = 0;
+  for (const v of values) {
+    if (!Number.isFinite(v)) continue;
+    for (let k = 0; k <= cap; k++) {
+      if (Math.abs(v - Number(v.toFixed(k))) <= Math.max(1e-12, Math.abs(v) * 1e-12)) {
+        d = Math.max(d, k);
+        break;
+      }
+      if (k === cap) d = cap;
+    }
+  }
+  return d;
+}
+
+/**
+ * The difference quotient with the numbers substituted in, updating as Q moves.
+ *
+ * The figure shows a secant and the table shows slopes; until now nothing on the
+ * page showed WHY those are the same thing, which is the whole content of §2.1
+ * — "compute the average rate of change and explain why it is the slope of a
+ * secant line". Students work exactly this quotient by hand before the figure
+ * opens, so seeing their own arithmetic appear as they drag is the bridge.
+ *
+ * It survives `prose=none`: this is the working, not commentary on it.
+ */
+function updateWorking(a, q, fa, fq, slope) {
+  const el = $('#working');
+  if (!el) return;
+  if (![a, q, fa, fq, slope].every(Number.isFinite)) { el.innerHTML = ''; return; }
+  const n = state.name;
+  const dx = sharedDecimals([a, q, q - a]);
+  const dy = sharedDecimals([fa, fq, fq - fa], 6);
+  const ds = sharedDecimals([slope]);
+  const num = (/** @type {number} */ v, /** @type {number} */ d) => {
+    const t = v.toFixed(d);
+    return /^-0\.?0*$/.test(t) ? t.slice(1) : t;   // never a bare "-0.00"
+  };
+  el.innerHTML = tex(
+    `m_{PQ} = \\frac{${n}(${num(q, dx)}) - ${n}(${num(a, dx)})}{${num(q, dx)} - ${num(a, dx)}}`
+    + ` = \\frac{${num(fq, dy)} - ${num(fa, dy)}}{${num(q - a, dx)}} = ${num(slope, ds)}`,
+    { display: true });
 }
 
 /**
@@ -449,11 +506,17 @@ function adopt(node) {
   if (vars.length === 1) state.v = vars[0];
   else if (vars.length > 1) state.v = vars.includes('x') ? 'x' : vars[0];
   state.node = node;
+  // The figure has to say WHICH function it is drawing. Projected, the slide
+  // above it does that and the instructor says it aloud; scanned from a QR
+  // there is neither, and an anonymous curve labelled f(t) is unusable.
+  setTex($('#fn-display'), `${state.name}(${state.v}) = ${toLatex(node)}`);
+  const lbl = $('#fn-label-var');
+  if (lbl) lbl.textContent = state.name;
   state.dNode = derivative(node, state.v);
   state.f = compile(node, state.v);
   state.df = compile(state.dNode, state.v);
-  setTex($('#help-tex1'), `\\frac{f(${state.v}_0+h)-f(${state.v}_0)}{h}`);
-  setTex($('#help-tex2'), `f'(${state.v}_0)`);
+  setTex($('#help-tex1'), `\\frac{${state.name}(${state.v}_0+h)-${state.name}(${state.v}_0)}{h}`);
+  setTex($('#help-tex2'), `${state.name}'(${state.v}_0)`);
 }
 
 function reparse() {
@@ -470,6 +533,9 @@ initPage({
     const q = p.raw;
 
     if (q.get('var')) state.v = q.get('var').slice(0, 1);
+    // The Day 1 slide calls the height s(t); the tool called it f(t) regardless.
+    if (q.get('name')) state.name = q.get('name').replace(/[^A-Za-z]/g, '').slice(0, 2) || 'f';
+    $('#name-input').value = state.name;
     if (p.f) $('#fn-input').value = p.f;
     if (p.a !== null) { state.a = p.a; $('#a-input').value = String(p.a); }
     if (q.get('window')) $('#win-input').value = q.get('window');
@@ -528,6 +594,12 @@ initPage({
       $('#fn-input').dispatchEvent(new Event('change'));
     }));
 
+    $('#name-input').addEventListener('input', () => {
+      state.name = $('#name-input').value.replace(/[^A-Za-z]/g, '').slice(0, 2) || 'f';
+      updateUrl({ name: state.name === 'f' ? null : state.name });
+      reparse();
+      render();
+    });
     $('#a-input').addEventListener('input', () => {
       state.a = Number($('#a-input').value) || 0;
       updateUrl({ a: state.a });

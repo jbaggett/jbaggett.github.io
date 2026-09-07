@@ -283,6 +283,22 @@ body.ll-embed h1 { font-size: 1.1rem; }
 [data-prose] .ll-lede,
 [data-prose] .ll-hint:not(.ll-reveal-hint) { display: none; }
 
+/* Two things that look like prose and are not, so they survive every level:
+   the IDENTITY of what is on screen, and the WORKING behind the answer.
+   `prose` strips explanation — the intro, the hints, "slide right to left to
+   close the gap". A figure that does not say which function it draws is not
+   less chatty, it is anonymous, and the QR case has no instructor in it to say
+   so aloud. */
+.ll-figure-caption {
+  margin: 0 0 0.4rem; font-size: 1.05rem; text-align: center; color: var(--fg);
+}
+.ll-working {
+  margin: 0.5rem 0 0; text-align: center; overflow-x: auto;
+  font-size: 1.02rem;
+}
+.ll-working:empty { display: none; }
+@media (max-width: 600px) { .ll-working { font-size: 0.92rem; } }
+
 [data-prose="none"] .ll-legend,
 [data-prose="none"] .ll-readout { display: none; }
 
@@ -313,12 +329,19 @@ body.ll-embed h1 { font-size: 1.1rem; }
   [data-prose="none"] main > h1 { grid-column: 1 / -1; }
   [data-prose="none"] main > #table,
   [data-prose="none"] main > #results { grid-column: 2; grid-row: 2 / 200; }
+  /* 46vh, not 56: the figure caption and the substituted quotient are part of
+     the figure now, and they need their share of the column or the working
+     falls off the bottom of a 768px projector — which is the one screen this
+     layout exists for. */
   [data-prose="none"] .ll-chart-svg {
-    height: 56vh; width: auto; max-width: 100%; margin-inline: auto;
+    height: 46vh; width: auto; max-width: 100%; margin-inline: auto;
   }
 }
 
-@media (min-width: 900px) and (min-height: 500px) {
+/* Wide enough to size the figure by height, but too narrow for two columns.
+   Bounded above, or this would override the two-column rule at every width —
+   equal specificity, and it comes later in the file. */
+@media (min-width: 900px) and (max-width: 999px) and (min-height: 500px) {
   [data-prose="none"] .ll-chart-svg { height: 54vh; width: auto; max-width: 100%; margin-inline: auto; }
 }
 [data-prose] .ll-panel { padding-top: 0.6rem; padding-bottom: 0.6rem; }

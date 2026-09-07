@@ -69,6 +69,11 @@
         <span><i>P</i> at <i class="varname">x</i> =</span>
         <input type="number" id="a-input" value="1" step="0.1" style="width:6rem">
       </label>
+      <label for="name-input" data-control="f">
+        <span>Call it</span>
+        <input type="text" id="name-input" value="f" maxlength="2" style="width:4rem"
+               aria-label="Name of the function">
+      </label>
       <label for="win-input" data-control="window">
         <span>Window</span>
         <input type="text" id="win-input" value="-1, 3" style="width:7rem"
@@ -114,7 +119,9 @@
 
   <section id="chart" aria-label="Graph">
     <div id="reveal-slot"></div>
+    <p class="ll-figure-caption" id="fn-display"></p>
     <div class="ll-chart"><div id="chart-f"></div></div>
+    <div class="ll-working" id="working"></div>
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> the function</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant <i>PQ</i></span>

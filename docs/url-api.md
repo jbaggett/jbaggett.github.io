@@ -110,6 +110,14 @@ wants the first without the third.
 | legend | yes | yes | — |
 | live readout row | yes | yes | — |
 | **controls, figure, table, and the question being asked** | yes | yes | **yes** |
+| **the function, written out** | yes | yes | **yes** |
+| **the difference quotient, substituted** | yes | yes | **yes** |
+
+The last two look like prose and are not. `prose` strips **explanation**; the
+identity of what is on screen and the working behind the answer are **evidence**.
+A figure that does not say which function it draws is not less chatty, it is
+anonymous — and the QR case, which is the whole reason the share button exists,
+has no instructor in it to say the function aloud.
 
 At `none` the page also widens past the reading column and the figure is sized
 by **height**, so the table stays on screen beside it — on a projector the table
@@ -161,6 +169,7 @@ An embedded page also posts its height to the framing window
 | `readout` | `true`/`false` | **off** | The tangent line. Off by default: it is the answer to the question the tool asks. |
 | `controls` | list | all | Which control groups to show: `f`, `a`, `window`, `h`, `tangent`, `table`. Anything omitted is hidden, and a panel left with no visible control is hidden too. |
 | `var` | letter | inferred | Only used when the expression has no variable to infer from. The expression always wins. |
+| `name` | letter(s) | `f` | What the function is called, so the page can match the slide: `?name=s` labels the axis, the caption and the quotient *s*(*t*) rather than *f*(*t*). |
 
 Both points are **draggable on the graph** and reachable by keyboard: each is a
 `role="slider"` handle with a 44px hit area, so Tab reaches it and the arrow keys
