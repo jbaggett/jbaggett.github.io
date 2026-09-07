@@ -140,8 +140,10 @@
         <h3>Built-in datasets</h3>
         <p>The <strong>Datasets</strong> tab offers 100+ curated datasets, automatically filtered to those that fit the tool. Students pick from a dropdown &mdash; no files or URLs needed. <a href="../data/">Browse the dataset index &rarr;</a></p>
 
-        <h3>Open a file</h3>
-        <p>The <strong>Open File</strong> tab accepts <strong>CSV</strong>, <strong>TSV</strong> (handy when copying from a spreadsheet), and StatLens <strong>JSON</strong> datasets. Multi-column files are fine &mdash; the page shows variable pickers so students choose the relevant column(s).</p>
+        <h3>Open a file &mdash; or a link to one</h3>
+        <p>The <strong>Open File/URL</strong> tab accepts <strong>CSV</strong>, <strong>TSV</strong> (handy when copying from a spreadsheet), and StatLens <strong>JSON</strong> datasets. Multi-column files are fine &mdash; the page shows variable pickers so students choose the relevant column(s).</p>
+        <p>The same tab takes a <strong>link</strong> to a hosted file (any <code>https://</code> address that points straight at the file). Opening data from a link does one extra thing that matters in a classroom: <strong>the link becomes part of the page&rsquo;s own URL</strong>, so <strong>Share</strong> then hands you a QR code that opens the tool with that data already loaded. Post the file once; the class scans instead of uploading. See <a href="#qr">Show the class a QR code</a>.</p>
+        <p>If a file&rsquo;s first row is data rather than column names, uncheck <strong>My data has headers</strong> &mdash; StatLens names the columns for you rather than eating the first value.</p>
         <div class="callout">
             <strong>Simplest way to distribute custom data:</strong> build a dataset in the <a href="../data/builder/">Dataset Builder</a>, download the <code>.json</code>, and share that file (LMS, email, course site). Students open it on whichever StatLens page they need &mdash; the study description and variable labels travel with it.
         </div>
@@ -162,7 +164,18 @@
             </tbody>
         </table>
         </div>
-        <p><strong>To make a link that auto-loads your dataset:</strong> host a CSV or JSON on <a href="https://gist.github.com" target="_blank" rel="noopener">GitHub Gist</a> (use the &ldquo;Raw&rdquo; URL) or any HTTPS server, then append <code>?csv=YOUR_RAW_URL</code> to any tool page.</p>
+        <p>You don&rsquo;t have to build these by hand. Load your data through <strong>Open File/URL</strong> (or pick a dataset, or set the seed and confidence level), then click <strong>Share</strong> &mdash; StatLens writes the link for you.</p>
+
+        <h3 id="qr">Show the class a QR code instead of having 30 students upload the same file</h3>
+        <p>Every tool page has a <strong>Share</strong> button that shows the page&rsquo;s current link as a scannable QR code (with a <em>Download SVG</em> option for slides). A QR code holds a link, not a spreadsheet &mdash; so the data needs a home on the web first. Any HTTPS host works; a <a href="https://gist.github.com" target="_blank" rel="noopener">GitHub Gist</a> is the quickest, needs no website, and is free:</p>
+        <ol>
+            <li>Save your data as a <code>.csv</code> (in Excel: <em>File &rarr; Save As &rarr; CSV</em>).</li>
+            <li>Go to <a href="https://gist.github.com" target="_blank" rel="noopener">gist.github.com</a> (sign in with a free GitHub account). Give the file a name ending in <code>.csv</code>, paste the contents in, and choose <strong>Create secret gist</strong> &mdash; &ldquo;secret&rdquo; means unlisted, not private; anyone with the link can still read it, which is what students need.</li>
+            <li>Click the <strong>Raw</strong> button and copy the address from the browser bar. It starts with <code>gist.githubusercontent.com</code>. You can delete the long code between <code>/raw/</code> and the filename &mdash; without it, the link always serves the newest version of the file, so fixing a typo in the gist fixes it for everyone.</li>
+            <li>Open the StatLens tool you want, go to <strong>Open File/URL</strong>, paste the link, and click <strong>Load</strong>.</li>
+            <li>Click <strong>Share</strong> and project the QR code. Students scan it and land on the tool with your data in it.</li>
+        </ol>
+        <p class="hint">Keep the data out of a gist if it contains anything students shouldn&rsquo;t see &mdash; an unlisted gist is still readable by anyone who has the address. For class data collected in a Google Sheet, <em>File &rarr; Share &rarr; Publish to the web &rarr; CSV</em> gives a link that works the same way, and updates when the sheet does.</p>
 
         <!-- ── Links ───────────────────────────────────────────── -->
         <p class="section-label">Share &amp; pre-configure</p>
@@ -225,6 +238,7 @@
             <thead><tr><th>I want to&hellip;</th><th>Do this</th></tr></thead>
             <tbody>
                 <tr><td>Share a custom dataset with students</td><td>Build in the <a href="../data/builder/">Dataset Builder</a> &rarr; download JSON &rarr; share the file</td></tr>
+                <tr><td>Get my own data to the whole class at once</td><td>Post the CSV to a <a href="https://gist.github.com" target="_blank" rel="noopener">gist</a> &rarr; paste the raw link into <strong>Open File/URL</strong> &rarr; <strong>Share</strong> &rarr; project the QR code (<a href="#qr">how</a>)</td></tr>
                 <tr><td>Link students to a pre-loaded tool</td><td>Add <code>?dataset=id</code> or <code>?csv=url</code> to the link</td></tr>
                 <tr><td>Hide numbers for a visual exercise</td><td>Add <code>?labels=names</code> or <code>?readout=false</code></td></tr>
                 <tr><td>Make output reproducible for grading</td><td>Add <code>?seed=some_string</code></td></tr>

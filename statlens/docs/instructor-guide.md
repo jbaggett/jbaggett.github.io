@@ -12,15 +12,19 @@ StatLens offers several ways to load data, from zero-setup to fully automated.
 
 Every tool page has a **Datasets** tab with curated datasets filtered to match the tool. Students select from a dropdown — no files or URLs needed.
 
-### Open a File
+### Open a File (or a Link to One)
 
-Every tool page has an **Open File** tab that accepts:
+Every tool page has an **Open File/URL** tab that accepts:
 
 - **CSV** files (comma-separated values)
 - **TSV** files (tab-separated values — common when copying from spreadsheets)
 - **JSON** files (StatLens dataset format — created by the [Dataset Builder](https://learnlens.org/statlens/data/builder/))
 
 This is the simplest way for instructors to distribute custom data: build a dataset JSON in the Dataset Builder, download it, and share the `.json` file with students (via LMS, email, or course website). Students open it on whatever StatLens page they need.
+
+The same tab also takes a **link** to a hosted file — any `https://` address pointing straight at the file. Loading data from a link writes it into the page's own URL, so **Share** then produces a QR code that opens the tool with that data already in it. See [Showing the class a QR code](#showing-the-class-a-qr-code).
+
+If a file's first row is data rather than column names, uncheck **My data has headers** — StatLens supplies the column names instead of consuming the first value.
 
 ### Paste or Type Data
 
@@ -47,9 +51,21 @@ To create a shareable URL that auto-loads your dataset:
 
 1. Build your dataset in the [Dataset Builder](https://learnlens.org/statlens/data/builder/) or prepare a CSV file
 2. Host it on [GitHub Gist](https://gist.github.com) (click "Raw" to get the direct URL) or any HTTPS server
-3. Append `?json=YOUR_RAW_URL` or `?csv=YOUR_RAW_URL` to any StatLens page URL
+3. Either paste that link into the tool's **Open File/URL** tab and click **Share**, or append `?json=YOUR_RAW_URL` / `?csv=YOUR_RAW_URL` to any StatLens page URL by hand
 
 This works on every page — explore tools, simulation pages, inference tests, distribution calculators.
+
+### Showing the Class a QR Code
+
+Every tool page has a **Share** button that renders the page's current link as a scannable QR code (with *Download SVG* for slides). A QR code carries a link, not a spreadsheet — so put the data on the web first, then let the link point at it:
+
+1. Save the data as `.csv` (Excel: *File → Save As → CSV*).
+2. At [gist.github.com](https://gist.github.com), name the file something ending in `.csv`, paste the contents, and choose **Create secret gist**. "Secret" means unlisted, not private — anyone with the link can read it, which is what students need. Don't put anything sensitive in a gist.
+3. Click **Raw** and copy the address (it starts with `gist.githubusercontent.com`). Deleting the long revision hash between `/raw/` and the filename makes the link always serve the newest version, so editing the gist updates everyone.
+4. In the StatLens tool, go to **Open File/URL**, paste the link, click **Load**.
+5. Click **Share** and project the QR code.
+
+A Google Sheet published via *File → Share → Publish to the web → CSV* gives a link that works the same way and updates when the sheet does.
 
 ---
 
@@ -152,6 +168,7 @@ Pre-computed quiz variants link to StatLens with specific seeds. See [Canvas Int
 | I want to... | Do this |
 |---|---|
 | Share a custom dataset with students | Build in Dataset Builder → download JSON → share file |
+| Get my own data to a whole class at once | Post the CSV to a gist → paste the raw link into **Open File/URL** → **Share** → project the QR code |
 | Link students to a pre-loaded tool | Use `?dataset=id` or `?json=url` in the link |
 | Hide numbers for a visual exercise | Add `?labels=names` or `?labels=none` |
 | Pre-set category ordering | Add `?sort=alpha` or `?sort=freq-desc` |

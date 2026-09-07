@@ -19,7 +19,7 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
@@ -603,20 +603,9 @@ export function initSimPage(config) {
     }
   }
 
-  // Tab handling
-  const tabs = document.querySelectorAll('[role="tab"]');
-  const panels = document.querySelectorAll('[role="tabpanel"]');
-  for (const tab of tabs) {
-    tab.addEventListener('click', () => {
-      for (const t of tabs) t.setAttribute('aria-selected', 'false');
-      for (const p of panels) p.hidden = true;
-      tab.setAttribute('aria-selected', 'true');
-      const panelId = tab.getAttribute('aria-controls');
-      const panel = document.getElementById(panelId);
-      if (panel) panel.hidden = false;
-      updateTabHint(tab.id, resultDiv, 'run a simulation to see results');
-    });
-  }
+  // Tab handling. Shared with every other data page (page-utils), so the
+  // "Open URL" tab that initDataPanel injects later is wired here too.
+  initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 
   // Hypothesis display elements (randomization tests)
   const hypothesisDisplay = document.getElementById('hypothesis-display');
