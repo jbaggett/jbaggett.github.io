@@ -46,6 +46,10 @@ const PRESETS = {
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
+/** P is the anchor, Q is the one that moves; their marks and guides share these. */
+const ANCHOR = '#222';
+const MOVER = 'var(--tangent)';
+
 /** Fixed rows, so the convergence pattern is legible before anyone touches a slider. */
 const TABLE_H = [1, 0.5, 0.1, 0.01, 0.001, 0.0001];
 
@@ -111,8 +115,7 @@ function render() {
     // Without this the quotient's s(b) - s(a) floats free of the picture: the
     // graph says "P" and the algebra says "s(a)" and nothing on screen connects
     // them. Guides run from each point to BOTH axes, so P is visibly the point
-    // (a, s(a)) — and the rise-over-run triangle falls out of the same grid,
-    // because its corner is where P's horizontal meets Q's vertical.
+    // (a, s(a)), and Q the point (b, s(b)).
     //
     // Symbols on the axes rather than numbers: the numbers are already in the
     // quotient and the table, and it is the symbol that the algebra is written
@@ -121,15 +124,23 @@ function render() {
       Math.max(chart.margin.left, xs(0)));
     const axisY = Math.min(chart.height - chart.margin.bottom,
       Math.max(chart.margin.top, ys(0)));
-    const guide = (x1, y1, x2, y2) => chart.gOver.append('line')
+    // Each pair of guides takes its point's colour, so a line can be followed
+    // from a label back to the point it belongs to. One colour for all four
+    // says "construction lines"; two says "these are P's and these are Q's",
+    // which is the connection this whole construction exists to make.
+    const guide = (x1, y1, x2, y2, colour) => chart.gOver.append('line')
       .attr('x1', x1).attr('y1', y1).attr('x2', x2).attr('y2', y2)
-      .attr('stroke', 'var(--tangent)').attr('stroke-width', 1)
-      .attr('stroke-dasharray', '3 3').attr('opacity', 0.7);
-    // P's horizontal runs all the way to Q's vertical, so it doubles as the run.
-    guide(axisX, ys(fa), xs(q), ys(fa));
-    guide(xs(a), ys(fa), xs(a), axisY);
-    guide(axisX, ys(fq), xs(q), ys(fq));
-    guide(xs(q), ys(fq), xs(q), axisY);
+      .attr('stroke', colour).attr('stroke-width', 1)
+      .attr('stroke-dasharray', '3 3').attr('opacity', colour === ANCHOR ? 0.5 : 0.7);
+    // Each guide runs from its own axis to its own point and stops there. P's
+    // used to carry on to Q's vertical so it could double as the run line of a
+    // rise-over-run triangle; with the gap size now living in the quotient
+    // there is no triangle to draw, and the overshoot just read as a stray line
+    // through the figure.
+    guide(axisX, ys(fa), xs(a), ys(fa), ANCHOR);
+    guide(xs(a), ys(fa), xs(a), axisY, ANCHOR);
+    guide(axisX, ys(fq), xs(q), ys(fq), MOVER);
+    guide(xs(q), ys(fq), xs(q), axisY, MOVER);
 
     const mark = (x, y, text, colour, anchor, dx, dy) => chart.gOver.append('text')
       .attr('x', x + dx).attr('y', y + dy)
@@ -143,10 +154,10 @@ function render() {
     // the points keep their own P and Q labels either way.
     const roomOnX = Math.abs(xs(q) - xs(a)) > 18;
     const roomOnY = Math.abs(ys(fq) - ys(fa)) > 15;
-    mark(xs(a), axisY, 'a', '#222', 'middle', 0, -6);
-    if (roomOnX) mark(xs(q), axisY, 'b', 'var(--tangent)', 'middle', 0, -6);
-    mark(axisX, ys(fa), `${n}(a)`, '#222', 'start', 5, -5);
-    if (roomOnY) mark(axisX, ys(fq), `${n}(b)`, 'var(--tangent)', 'start', 5, -5);
+    mark(xs(a), axisY, 'a', ANCHOR, 'middle', 0, -6);
+    if (roomOnX) mark(xs(q), axisY, 'b', MOVER, 'middle', 0, -6);
+    mark(axisX, ys(fa), `${n}(a)`, ANCHOR, 'start', 5, -5);
+    if (roomOnY) mark(axisX, ys(fq), `${n}(b)`, MOVER, 'start', 5, -5);
     // The gap's SIZE is not labelled on the figure: it is the denominator of the
     // quotient sitting beside it, and printing it twice earned two collision
     // workarounds — one for short runs, one for runs sitting on the x-axis —
@@ -413,7 +424,7 @@ function drawHandle(o) {
   g.append('text')
     .attr('x', cx + 13).attr('y', cy - 11).attr('font-size', chart.fs(13)).attr('font-style', 'italic')
     .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
-    .attr('fill', o.anchor ? '#222' : 'var(--tangent)')
+    .attr('fill', o.anchor ? ANCHOR : MOVER)
     .text(o.key);
 
   const node = g.node();
