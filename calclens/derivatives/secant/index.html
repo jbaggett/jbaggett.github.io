@@ -113,12 +113,12 @@
   </section>
 
   <section id="chart" aria-label="Graph">
-    <div id="reveal-slot" data-control="tangent"></div>
+    <div id="reveal-slot"></div>
     <div class="ll-chart"><div id="chart-f"></div></div>
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> the function</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant <i>PQ</i></span>
-      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5"/></svg> tangent at <i>P</i></span>
+      <span id="legend-tangent" hidden><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5"/></svg> tangent at <i>P</i></span>
       <span><svg viewBox="0 0 26 12"><circle cx="13" cy="6" r="4" fill="#222"/><circle cx="13" cy="6" r="7" fill="none" stroke="#222" stroke-width="1.2" opacity="0.55"/></svg> <i>P</i> — anchored</span>
       <span><svg viewBox="0 0 26 12"><circle cx="13" cy="6" r="7.5" fill="#C2185B" opacity="0.18"/><circle cx="13" cy="6" r="4" fill="#C2185B"/></svg> <i>Q</i> — drag me</span>
     </div>

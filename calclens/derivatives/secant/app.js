@@ -154,6 +154,9 @@ function render() {
     });
   }
 
+  const legendTangent = $('#legend-tangent');
+  if (legendTangent) legendTangent.hidden = !state.showTangent;
+
   chart.setLabel(
     `Graph of the function with P fixed at ${state.v} = ${fmt(a, 2)} and Q at `
     + `${fmt(q, 3)}. The secant through them has slope ${fmt(slope, 3)}.`);
@@ -209,8 +212,7 @@ function updateTable() {
     $('#verdict').innerHTML = state.showTangent
       ? `The slopes are converging on <b>${fmt(exact, 4)}</b>, which is `
         + `${tex(`f'(${fmt(a, 2)})`)} — the slope of the tangent line drawn above.`
-      : `The slopes are settling down. What number are they heading for? `
-        + `<span class="ll-hint">(Tick <b>Show the tangent</b> when you are ready.)</span>`;
+      : 'The slopes are settling down. What number are they heading for?';
   } else {
     // Includes |x| at 0, where the two sides disagree and there is no derivative.
     const otherH = -rows[rows.length - 1].h;
@@ -414,12 +416,17 @@ function startAnim() {
  * Hide the controls a slide does not want. `controls=h` leaves the h slider and
  * the table and takes everything else away, which is the lecture-figure form.
  */
-function applyControls(/** @type {string|null} */ list) {
-  if (!list) return;
-  const keep = new Set(list.split(',').map(s => s.trim()).filter(Boolean));
+function applyControls(/** @type {string|null} */ list, /** @type {string|null} */ hideList) {
+  const keep = list ? new Set(list.split(',').map(s => s.trim()).filter(Boolean)) : null;
+  // `hide=` is StatLens's spelling (a blacklist); `controls=` is ours (a
+  // keep-list, which is what a lecture figure wants — name the two things you
+  // need rather than the nine you do not). Both are honoured.
+  const drop = hideList ? new Set(hideList.split(',').map(s => s.trim()).filter(Boolean)) : null;
+  if (!keep && !drop) return;
   document.querySelectorAll('[data-control]').forEach(el => {
     const name = /** @type {HTMLElement} */ (el).dataset.control;
-    if (!keep.has(name)) /** @type {HTMLElement} */ (el).hidden = true;
+    const hidden = (keep && !keep.has(name)) || (drop && drop.has(name));
+    if (hidden) /** @type {HTMLElement} */ (el).hidden = true;
   });
   // A panel emptied of every control should not leave a bare box behind.
   document.querySelectorAll('.ll-panel').forEach(p => {
@@ -551,7 +558,7 @@ initPage({
     // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
     // squeezed into a phone-sized box with six-pixel labels.
     onBreakpointChange(() => { chart = null; render(); });
-    applyControls(q.get('controls'));
+    applyControls(q.get('controls'), q.get('hide'));
     reparse();
     syncRange();
     $('#h-slider').value = String(state.h);

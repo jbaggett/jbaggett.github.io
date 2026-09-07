@@ -95,17 +95,28 @@ export function initReveal(opts) {
 }
 
 /**
- * Read the shared `reveal` parameter.
+ * Read the withhold-the-answer parameter.
+ *
+ * `readout` is the SHARED spelling across lenses. StatLens froze it first, for
+ * the same idea in different clothes — `readout=false` there hides the computed
+ * CI or p-value so the student reads it off the histogram, which is exactly
+ * this: withhold the answer, keep the evidence. One concept should not have two
+ * names across two lenses that sit side by side on the same site.
+ *
+ * `reveal` remains as a CalcLens spelling, and a tool may name one older
+ * parameter of its own (`tangent`). All three are honoured forever; `readout`
+ * is what new links should use. First one present wins, most specific first.
+ *
  * @param {URLSearchParams} q
  * @param {boolean} shownByDefault
- * @param {string} [legacy] a tool's older, still-frozen parameter name
+ * @param {string} [legacy] a tool's own older, still-frozen parameter name
  */
 export function revealHidden(q, shownByDefault, legacy) {
-  for (const name of [legacy, 'reveal']) {
+  for (const name of [legacy, 'reveal', 'readout']) {
     if (!name) continue;
     const v = q.get(name);
-    if (v === 'false') return true;
-    if (v === 'true') return false;
+    if (v === 'false' || v === '0' || v === 'no') return true;
+    if (v === 'true' || v === '1' || v === 'yes') return false;
   }
   return !shownByDefault;
 }

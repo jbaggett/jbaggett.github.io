@@ -49,6 +49,35 @@ export function initHelp() {
  * Apply `?embed=true`: strip the page down to the tool itself for an iframe in
  * the textbook. Everything hidden is chrome, never content.
  */
+/**
+ * How much the page explains itself.
+ *
+ * Orthogonal to `?controls=`, which decides which controls EXIST. This decides
+ * how much prose surrounds them, and the two are genuinely different decisions:
+ * a student alone at 11pm needs every word, while the same page on a projector
+ * with an instructor narrating wants the figure twice the size and the prose
+ * gone. Deliberately not folded into `?embed=true` either — stripping site
+ * chrome and stripping pedagogical prose are different asks, and a page
+ * embedded in a student handout wants the first without the second.
+ *
+ *   full  (default)  everything
+ *   lean             no lede, no explanatory hints; legend and readout stay
+ *   none             also no legend, no readout, and the page widens to the
+ *                    full projector rather than the reading-width column
+ *
+ * What NEVER goes at any level: the controls, the figure, the table, and the
+ * question the tool is asking. Those are the lesson, not the commentary.
+ *
+ * It works on every existing tool with no per-page markup, because it keys off
+ * the kit's own classes.
+ */
+export function applyProse() {
+  const level = getParams().raw.get('prose');
+  if (level === 'lean' || level === 'none') {
+    document.body.setAttribute('data-prose', level);
+  }
+}
+
 export function applyEmbed() {
   // Height reporting is useful whenever we are framed, with or without ?embed.
   initEmbedHeight();
@@ -62,6 +91,7 @@ export function applyEmbed() {
  */
 export function initPage(opts = {}) {
   applyEmbed();
+  applyProse();
   initHelp();
   opts.onReady?.();
 }

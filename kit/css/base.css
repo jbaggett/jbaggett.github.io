@@ -102,6 +102,7 @@ button.ll-primary:hover { background: #2F6A8F; }
 /* ── Charts ──────────────────────────────────────────────────────────────── */
 
 .ll-chart { border: 1px solid var(--border); border-radius: 8px; padding: 0.3rem; background: var(--bg); }
+.ll-chart-svg { width: 100%; height: auto; display: block; }
 .ll-chart + .ll-chart { margin-top: 0.6rem; }
 
 .ll-grid line { stroke: #ECECEC; stroke-width: 1; }
@@ -274,6 +275,53 @@ body.ll-embed .ll-lede,
 body.ll-embed .ll-embed-hide { display: none; }
 body.ll-embed main { padding: 0.5rem 0.7rem 1rem; max-width: none; }
 body.ll-embed h1 { font-size: 1.1rem; }
+
+/* ── Prose level (?prose=lean | none) ────────────────────────────────────── */
+
+/* The reveal prompt survives every level: it is the question being asked, not
+   commentary on it. */
+[data-prose] .ll-lede,
+[data-prose] .ll-hint:not(.ll-reveal-hint) { display: none; }
+
+[data-prose="none"] .ll-legend,
+[data-prose="none"] .ll-readout { display: none; }
+
+/* At `none` an instructor is narrating to a room, so the figure takes the whole
+   projector rather than the reading-width column the prose needed. */
+[data-prose="none"] main { max-width: none; padding-left: 1rem; padding-right: 1rem; }
+
+/* On a projector, "make the figure as large as possible" and "keep the table
+   visible" pull against each other, and the table wins the tie: it is the
+   evidence the class is being asked to read. A full-width chart is 623px tall
+   on a 1280x760 screen, which pushes the table off the bottom — so the figure
+   is sized by HEIGHT here, taking all the room that leaves the table on screen.
+   Landscape and roomy only; a phone keeps the full-width figure. */
+@media (min-width: 1000px) and (min-height: 500px) {
+  /* Stacked, a figure and a seven-row table need about 1050px of height and a
+     projector gives 760 — so at this level they go SIDE BY SIDE instead, figure
+     left and evidence right, and the class can see both without being scrolled.
+     Placement is by column rather than by wrapper so it needs no per-tool
+     markup: the heading spans, everything else falls down column one, and the
+     table (or the evaluator's results) is pinned to column two. */
+  [data-prose="none"] main {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    column-gap: 1.4rem;
+    align-content: start;
+  }
+  [data-prose="none"] main > * { grid-column: 1; }
+  [data-prose="none"] main > h1 { grid-column: 1 / -1; }
+  [data-prose="none"] main > #table,
+  [data-prose="none"] main > #results { grid-column: 2; grid-row: 2 / 200; }
+  [data-prose="none"] .ll-chart-svg {
+    height: 56vh; width: auto; max-width: 100%; margin-inline: auto;
+  }
+}
+
+@media (min-width: 900px) and (min-height: 500px) {
+  [data-prose="none"] .ll-chart-svg { height: 54vh; width: auto; max-width: 100%; margin-inline: auto; }
+}
+[data-prose] .ll-panel { padding-top: 0.6rem; padding-bottom: 0.6rem; }
 
 /* ── Mobile: 44px touch targets ──────────────────────────────────────────── */
 

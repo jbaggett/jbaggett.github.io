@@ -282,11 +282,13 @@ function startAnim() {
   anim = requestAnimationFrame(step);
 }
 
-function applyControls(/** @type {string|null} */ list) {
-  if (!list) return;
-  const keep = new Set(list.split(',').map(s => s.trim()).filter(Boolean));
+function applyControls(/** @type {string|null} */ list, /** @type {string|null} */ hideList) {
+  const keep = list ? new Set(list.split(',').map(s => s.trim()).filter(Boolean)) : null;
+  const drop = hideList ? new Set(hideList.split(',').map(s => s.trim()).filter(Boolean)) : null;
+  if (!keep && !drop) return;
   document.querySelectorAll('[data-control]').forEach(el => {
-    if (!keep.has(/** @type {HTMLElement} */ (el).dataset.control)) {
+    const name = /** @type {HTMLElement} */ (el).dataset.control;
+    if ((keep && !keep.has(name)) || (drop && drop.has(name))) {
       /** @type {HTMLElement} */ (el).hidden = true;
     }
   });
@@ -396,7 +398,7 @@ initPage({
     // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
     // squeezed into a phone-sized box with six-pixel labels.
     onBreakpointChange(() => { chart = null; render(); });
-    applyControls(q.get('controls'));
+    applyControls(q.get('controls'), q.get('hide'));
     refresh();
     setD(state.d, { quiet: true });
   },

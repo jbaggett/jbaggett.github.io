@@ -25,7 +25,7 @@ let activePreset = null;
 
 export function getParams(presets) {
   const q = new URLSearchParams(location.search);
-  // `?p=<key>` expands a named preset into the parameters it stands for.
+  // `?preset=<key>` expands a named preset into the parameters it stands for.
   //
   // This exists for QR codes. A fully spelled-out lecture link runs to ~126
   // characters, and percent-encoding makes it worse than it reads (`%5E`,
@@ -40,7 +40,7 @@ export function getParams(presets) {
   // preset serves the projected figure and the phone a student opens.
   //
   // An explicitly given parameter always wins over the preset's value.
-  const key = q.get('p');
+  const key = q.get('preset');
   if (key && presets && Object.prototype.hasOwnProperty.call(presets, key)) {
     activePreset = presets[key];
     for (const [k, v] of Object.entries(presets[key])) {
@@ -69,7 +69,7 @@ export function updateUrl(/** @type {Record<string, string|number|null>} */ upda
   const q = new URLSearchParams(location.search);
   for (const [k, v] of Object.entries(updates)) {
     // A value the preset already stands for is dropped rather than written.
-    // Otherwise the first render expands `?p=ball` back into the full
+    // Otherwise the first render expands `?preset=ball` back into the full
     // parameter list, the address bar grows to 120 characters, and the QR code
     // the preset existed to shrink is dense again.
     if (activePreset && Object.prototype.hasOwnProperty.call(activePreset, k)

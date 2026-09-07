@@ -13,6 +13,28 @@ so a plus sign inside a function must be written `%2B`:
 ?f=-16t%5E2%2B32t%2B48        →  f = -16t^2+32t+48
 ```
 
+## Names are shared with StatLens
+
+CalcLens and StatLens sit side by side on the same site and are read by the same
+people, so **a parameter that means the same thing must be spelled the same
+way.** StatLens's `docs/url-api.md` is the older and larger vocabulary; check it
+before naming anything new here. Alignments already made:
+
+| concept | shared name | notes |
+|---|---|---|
+| withhold the computed answer | **`readout=false`** | StatLens hides the CI/p-value so it is read off the histogram; CalcLens hides the tangent, the true *f*′, the named limit. Same idea. `reveal=` and the per-tool `tangent=` still work. |
+| decimal places | **`decimals`** | was `dp` here |
+| hide controls by name | **`hide=`** | StatLens's blacklist, now honoured alongside our `controls=` keep-list |
+| compact iframe mode | **`embed=true`** | already identical |
+| deterministic seed | **`seed`** | already identical |
+
+And one name we must NOT reuse: **`p`** is StatLens's null-hypothesis
+proportion, a float. Named presets here are `preset=` for that reason.
+
+`controls=` (a keep-list) has no StatLens equivalent and stays, because a
+lecture figure wants to name the two things it needs rather than the nine it
+does not. `hide=` does the inverse for consistency.
+
 ## Shared — every lens page (`kit/js/url.js`)
 
 | Parameter | Type | Meaning |
@@ -22,8 +44,9 @@ so a plus sign inside a function must be written `%2B`:
 | `seed` | string | Seed for any randomness on the page, so a graded link is reproducible. |
 | `f` | expression | The function under study, written as a student would type it. |
 | `a`, `b` | number | The page's two principal numeric inputs — a lens says below what they mean for it. |
-| `p` | preset key | Expands a named starting state into the parameters it stands for. See below. |
-| `reveal` | `true` / `false` | Show or withhold the tool's payoff. Per-tool default; see each tool. |
+| `preset` | key | Expands a named starting state into the parameters it stands for. See below. |
+| `readout` | `true` / `false` | Show or withhold the tool's computed answer. Per-tool default; see each tool. `reveal=` is an accepted alias. |
+| `prose` | `lean` / `none` | How much the page explains itself. See below. |
 
 ### `reveal` — withholding the answer
 
@@ -49,7 +72,7 @@ reaches for in front of the class — and the **`R` key** toggles it from
 anywhere on the page (except while typing in a field). Reloading mid-discussion
 would lose the state the discussion is about.
 
-### `p` — named presets, for QR codes
+### `preset` — named presets, for QR codes
 
 A fully spelled-out lecture link runs to ~126 characters, and percent-encoding
 makes it worse than it reads. `?p=<key>` names the same state in a fraction of
@@ -59,7 +82,7 @@ room. Measured, at error-correction level H (what a centre mark needs):
 | | chars | modules |
 |---|---:|---:|
 | `…/secant/?f=-16t%5E2%2B32t%2B48&a=0.5&window=0,2` | 91 | 53 × 53 |
-| `…/secant/?p=ball` | 57 | **41 × 41** |
+| `…/secant/?preset=ball` | 62 | **41 × 41** |
 
 About 1.7× less area for the same module size. Two rules:
 
@@ -68,10 +91,33 @@ About 1.7× less area for the same module size. Two rules:
   serves both the projected figure and the phone a student opens.
 - **An explicit parameter always wins**, and a parameter whose value still
   matches the preset is dropped from the address bar rather than written back —
-  otherwise the first render would re-expand `?p=ball` and undo the saving.
+  otherwise the first render would re-expand `?preset=ball` and undo the saving.
 
 Preset keys are defined per tool and listed with it below. Ask for a new key
 rather than inventing one; like every other name here, they are frozen once used.
+
+### `prose` — how much the page explains itself
+
+A third axis, orthogonal to the other two. `embed` strips **site chrome**;
+`readout` withholds the **answer**; `prose` removes the page's **self-explanation**.
+They are genuinely different decisions — a page embedded in a student handout
+wants the first without the third.
+
+| | `full` (default) | `lean` | `none` |
+|---|---|---|---|
+| intro paragraph | yes | — | — |
+| explanatory hints | yes | — | — |
+| legend | yes | yes | — |
+| live readout row | yes | yes | — |
+| **controls, figure, table, and the question being asked** | yes | yes | **yes** |
+
+At `none` the page also widens past the reading column and the figure is sized
+by **height**, so the table stays on screen beside it — on a projector the table
+is the evidence the class is being asked to read, so it wins the tie against a
+slightly larger graph.
+
+A student alone at 11pm needs every word; the same page narrated to a room wants
+none of them. Nothing that carries the lesson is ever removed at any level.
 
 ### Sharing
 
@@ -112,7 +158,7 @@ An embedded page also posts its height to the framing window
 | `window` | `lo,hi` | `-1,3` | Horizontal window. |
 | `y` | `lo,hi` | auto | Vertical window. Give this when the automatic frame is not the one you drew. |
 | `tangent` | `true`/`false` | off | Frozen older spelling of `reveal` for this tool. Still honoured; prefer `reveal`. |
-| `reveal` | `true`/`false` | **off** | The tangent line. Off by default: it is the answer to the question the tool asks. |
+| `readout` | `true`/`false` | **off** | The tangent line. Off by default: it is the answer to the question the tool asks. |
 | `controls` | list | all | Which control groups to show: `f`, `a`, `window`, `h`, `tangent`, `table`. Anything omitted is hidden, and a panel left with no visible control is hidden too. |
 | `var` | letter | inferred | Only used when the expression has no variable to infer from. The expression always wins. |
 
@@ -139,7 +185,7 @@ calclens/derivatives/secant/?f=-16t%5E2%2B32t%2B48&a=0.5&window=0,2
 |---|---|---|---|
 | `f` | expression | `(x^2 - 1)/(x - 1)` | The function. Any letter is the variable; the table labels itself from the expression. |
 | `x` | values spec | `~1` | **One parameter, four modes** — see below. |
-| `dp` | 0–10 | `4` | Decimal places in the *output* column. The input column always shows the values as chosen. |
+| `decimals` | 0–10 | `4` | Decimal places in the *output* column. The input column always shows the values as chosen. |
 
 The `x` parameter carries every input mode, which keeps links short enough to
 encode well:
@@ -156,7 +202,7 @@ limit table wants, which an even grid never gives. The row at `a` itself is kept
 and marked, and reads **undefined** when the function has no value there. That
 row is not noise: for `(x²−1)/(x−1)` at `x = 1` it is the entire point.
 
-Presets: `limit`, `ball`, `endbehaviour`.
+Presets: `?preset=limit`, `ball`, `endbehaviour`.
 
 ## CalcLens — Squeeze Theorem
 
@@ -169,10 +215,10 @@ Presets: `limit`, `ball`, `endbehaviour`.
 | `upper` | expression | `x^2` | The upper bound *h*. |
 | `a` | number | `0` | The point being approached. |
 | `delta` | number | `1` | Starting window half-width. The slider is logarithmic. |
-| `reveal` | `true`/`false` | **on** | The named limit in the verdict. `reveal=false` swaps it for "what number?". |
+| `readout` | `true`/`false` | **on** | The named limit in the verdict. `reveal=false` swaps it for "what number?". |
 | `rescale` | `true` | off | Rescale the vertical axis while zooming. **Off by default**: with it off the trap visibly closes, which is the point; with it on, *g* keeps oscillating just as violently all the way down. Both pictures are true and students should see both. |
 | `controls` | list | all | `f`, `a`, `delta`, `rescale`, `table`. |
-| `p` | preset | — | `classic`, `linear`, `nosqueeze`. |
+| `preset` | key | — | `classic`, `linear`, `nosqueeze`. |
 
 Bounds the reader types are **checked**: if *g* leaves the band anywhere in the
 window, the page says so and refuses to pretend the theorem applies. If the two
@@ -195,7 +241,7 @@ calclens/limits/squeeze/?g=x%5E2+sin(1%2Fx)&lower=-x%5E2&upper=x%5E2&a=0
 | `f` | expression | `2x - 2` | The integrand. |
 | `a` | number | `0` | Lower limit — where *A* is pinned to 0. |
 | `b` | number | `a + 1.2` | Starting position of the upper limit *x*. |
-| `reveal` | `true`/`false` | **on** | The *A*(*x*) curve. `reveal=false` keeps the axes and the marker so the shape can be predicted first. |
+| `readout` | `true`/`false` | **on** | The *A*(*x*) curve. `reveal=false` keeps the axes and the marker so the shape can be predicted first. |
 
 ## CalcLens — Derivative Builder
 
@@ -204,7 +250,7 @@ calclens/limits/squeeze/?g=x%5E2+sin(1%2Fx)&lower=-x%5E2&upper=x%5E2&a=0
 | Parameter | Type | Default | Meaning |
 |---|---|---|---|
 | `f` | expression | `x^3 - 3x` | The function. |
-| `reveal` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
+| `readout` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
 
 ## CalcLens — Check My Answer
 

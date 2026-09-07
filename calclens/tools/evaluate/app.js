@@ -184,7 +184,7 @@ function render() {
   $('#undef-note').hidden = !anyUndef;
 
   if (!error) {
-    updateUrl({ x: valueSpec(), dp: state.dp === 4 ? null : state.dp });
+    updateUrl({ x: valueSpec(), decimals: state.dp === 4 ? null : state.dp });
     announce(`${values.length} value${values.length === 1 ? '' : 's'} shown.`);
   }
 }
@@ -226,8 +226,9 @@ initPage({
     setTex($('#t2'), 's(t) = -16t^2 + 32t + 48');
 
     if (q.get('f')) $('#fn-input').value = q.get('f');
-    if (q.get('dp')) {
-      const d = Number(q.get('dp'));
+    // `decimals` is StatLens's frozen spelling for the same idea.
+    if (q.get('decimals')) {
+      const d = Number(q.get('decimals'));
       if (Number.isFinite(d) && d >= 0 && d <= 10) { state.dp = d; $('#dp-input').value = String(d); }
     }
     applySpec(q.get('x'));

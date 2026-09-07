@@ -40,8 +40,18 @@ export const NARROW_QUERY = '(max-width: 599px)';
  * which got a landscape phone wrong, treating 664x390 as a desktop and shrinking
  * its labels to 11px at the exact moment the reader turned the phone to see
  * better — the scale is MEASURED after layout and the unit size solved for.
+ *
+ * The target itself grows with the chart, because a bigger chart is usually
+ * being read from further away: a 350px chart is a phone at arm's length, a
+ * 1200px one is a projector with a back row. Sub-linear, so the text never
+ * takes over.
+ *
+ * @param {number} shownWidth CSS pixels the chart actually occupies
  */
-const TARGET_TEXT_PX = 13;
+function targetTextPx(shownWidth) {
+  const t = 12.5 + (shownWidth - 350) * 0.0088;
+  return Math.max(12.5, Math.min(20, t));
+}
 
 /**
  * Build the responsive SVG frame every CalcLens chart sits in.
@@ -73,9 +83,10 @@ export function createChart(container, opts) {
     .attr('viewBox', `0 0 ${width} ${height}`)
     .attr('preserveAspectRatio', 'xMidYMid meet')
     .attr('aria-label', label)
-    .style('width', '100%')
-    .style('height', 'auto')
-    .style('display', 'block');
+    // Sizing lives in CSS, not in an inline style: an inline style set here
+    // cannot be overridden by a stylesheet, which is what silently defeated the
+    // projector layout's attempt to size the figure by height.
+    .attr('class', 'll-chart-svg');
 
   const clipId = `clip-${Math.random().toString(36).slice(2, 9)}`;
   svg.append('defs').append('clipPath').attr('id', clipId)
@@ -92,7 +103,7 @@ export function createChart(container, opts) {
     const shown = /** @type {SVGSVGElement} */ (svg.node()).getBoundingClientRect().width;
     if (!shown) return;                       // not laid out yet (hidden tab, say)
     const scale = shown / width;
-    unit = Math.max(9, Math.min(24, TARGET_TEXT_PX / scale));
+    unit = Math.max(9, Math.min(30, targetTextPx(shown) / scale));
     // A custom property, not `font-size`: d3-axis puts font-size="10" on the
     // axis group it builds, so `1em` on a tick would resolve against THAT
     // rather than against this element. Custom properties inherit past it.
