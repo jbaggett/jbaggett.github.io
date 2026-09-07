@@ -5142,3 +5142,24 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
    rule by id, which outranks a class+attribute selector on specificity. */
 .var-selectors[hidden],
 #var-selectors[hidden] { display: none !important; }
+
+/* ── Shared inline label (pays down D-18) ──────────────────────────────────
+   The global `label { display:flex; flex-direction:column }` stacks a control
+   under its text, and any inline element inside the text (an <i>, a <code>)
+   becomes its own flex item and takes its own line. Any label that should read
+   as ONE row uses this instead of re-deriving the same three !important lines
+   per page. Second consumer is the data panel's "My data has headers" toggle,
+   which is injected onto 36 pages. */
+.inline-label {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center;
+  gap: 0.4rem;
+}
+.inline-label > span { white-space: nowrap; }
+
+/* The header toggle sits under its panel's control, with its own quiet note. */
+.header-toggle-row { margin-top: 0.5rem; }
+.header-toggle-note { margin: 0.2rem 0 0; }
+.header-toggle-note[hidden] { display: none; }

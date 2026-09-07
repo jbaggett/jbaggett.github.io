@@ -5,7 +5,7 @@
  * @module page-utils
  */
 
-import { parseCSV, rowsToCSV, downloadCSV } from './csv-parser.js';
+import { parseCSV, detectDelimiter, rowsToCSV, downloadCSV } from './csv-parser.js';
 import { renderDatasetActions, icon } from './dataset-actions.js';
 import { getSettings, setSettings, resetSettings, applySettings, getActivityMode, getExpertMode, prefersReducedMotion } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -1356,26 +1356,82 @@ export function initDataPanel(config) {
   const saveBtn = document.getElementById('save-btn');
   const fileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('file-input'));
 
-  // ── State the CSV header convention where the student types (REQ-061) ──
+  // ── "My data has headers" (REQ-063, Jeff's proposal) ────────────────────
   // parseCSV always treats line 1 as column names, so a pasted bare column of
-  // numbers loses its first value (verified: 5 values in, n = 4 on
-  // simulate/bootstrap-mean and inference/one-mean). The paste placeholder
-  // actually demonstrates the failing shape — a bare column, no header. Jeff's
-  // call was to state the convention rather than rewrite the parser, so say it
-  // where they are about to type. Injected here so all 36 pages carrying this
-  // panel get it from one place, and worded as advice that is safe on every
-  // page rather than an assertion about a behaviour that varies.
-  for (const [panelId, extra] of [['panel-paste', true], ['panel-file', false]]) {
-    const panel = document.getElementById(panelId);
-    if (!panel || panel.querySelector('.csv-header-hint')) continue;
-    const hint = document.createElement('p');
-    hint.className = 'hint csv-header-hint';
-    hint.innerHTML = 'The <strong>first row is read as column names</strong>.'
-      + (extra
-        ? ' Pasting a plain list of numbers? Put a label such as <code>value</code> on the '
-          + 'first line, so none of your data is mistaken for a heading.'
-        : ' A file whose first row is already data will lose that row.');
-    panel.appendChild(hint);
+  // numbers silently lost its first value (5 in → n = 4). We tried a hint
+  // (REQ-061) and a heuristic (REQ-059); both are ways of guessing well. A
+  // toggle means not guessing: the heuristic is demoted from DECISION to
+  // DEFAULT — it sets the box's initial state, and its mistakes become visible
+  // and one click from fixed instead of silent and irreversible.
+  //
+  // Scope: Open File always, and the paste panel only where that is a real
+  // textarea. explore/descriptive's paste tab is a spreadsheet with its own
+  // Value column, where "does your data have headers" means nothing.
+  const headerToggles = /** @type {HTMLInputElement[]} */ ([]);
+  const headerNotes = /** @type {HTMLElement[]} */ ([]);
+  {
+    const targets = [document.getElementById('panel-file')];
+    if (pasteArea && !pasteArea.hidden) targets.push(document.getElementById('panel-paste'));
+    for (const panel of targets) {
+      if (!panel || panel.querySelector('.header-toggle-row')) continue;
+      const row = document.createElement('div');
+      row.className = 'header-toggle-row';
+      const id = 'has-headers-' + panel.id;
+      row.innerHTML = `<label class="inline-label" for="${id}">`
+        + `<input type="checkbox" id="${id}" checked>`
+        + `<span>My data has headers</span></label>`
+        + `<p class="hint header-toggle-note" hidden></p>`;
+      panel.appendChild(row);
+      headerToggles.push(/** @type {HTMLInputElement} */ (row.querySelector('input')));
+      headerNotes.push(/** @type {HTMLElement} */ (row.querySelector('.header-toggle-note')));
+    }
+  }
+
+  /** Raw text as the student supplied it, so flipping the box can re-parse. */
+  let lastRawText = '';
+  let lastRawSource = '';
+
+  const firstLineOf = (/** @type {string} */ t) => (t.trim().split('\n')[0] || '');
+
+  /** The heuristic — now only a default, never a decision. */
+  function looksHeaderless(/** @type {string} */ text) {
+    const d = detectDelimiter(text);
+    const fields = firstLineOf(text).split(d);
+    return fields.length > 0 && fields.every(f => f.trim() !== '' && isFinite(Number(f.trim())));
+  }
+
+  function columnCount(/** @type {string} */ text) {
+    return firstLineOf(text).split(detectDelimiter(text)).length;
+  }
+
+  /**
+   * When the box is unchecked, synthesise the header row the parser expects.
+   * Naming follows what the codebase already uses — `Value` for one column
+   * (it reads better as an axis label and there is nothing to disambiguate),
+   * `Variable 1…N` for several. "Variable", not "Column": it is the word the
+   * course teaches.
+   */
+  function applyHeaderChoice(/** @type {string} */ text) {
+    const box = headerToggles[0];
+    if (!box || box.checked) return text;
+    const n = columnCount(text);
+    const d = detectDelimiter(text);
+    const header = n <= 1 ? 'Value'
+      : Array.from({ length: n }, (_, k) => `Variable ${k + 1}`).join(d);
+    return header + '\n' + text;
+  }
+
+  function syncHeaderNote() {
+    const box = headerToggles[0];
+    const many = lastRawText ? columnCount(lastRawText) > 1 : false;
+    const show = !!box && !box.checked && many;
+    for (const n of headerNotes) {
+      n.hidden = !show;
+      if (show) {
+        n.textContent = 'Columns will be named Variable 1, Variable 2, … — easier to work '
+          + 'with if your file has a header row.';
+      }
+    }
   }
 
   /** @type {Array<{id:string,name:string,description:string,type:string,n:number}>} */
@@ -1651,6 +1707,36 @@ export function initDataPanel(config) {
     }
   });
 
+  /**
+   * Everything the student supplies by hand goes through here: remember the raw
+   * text, let the heuristic set the toggle's default, then hand the parser a
+   * text that matches what the toggle says. Flipping the box re-runs this on the
+   * stored text, so `n` updates without a re-paste — which is the point: the
+   * student can see 4 become 5 and understand what happened.
+   */
+  function ingestText(/** @type {string} */ text, /** @type {string} */ sourceName, /** @type {boolean} */ isNew = true) {
+    if (isNew) {
+      lastRawText = text;
+      lastRawSource = sourceName;
+      const box = headerToggles[0];
+      if (box) {
+        const guess = !looksHeaderless(text);
+        for (const t of headerToggles) t.checked = guess;
+      }
+    }
+    syncHeaderNote();
+    handleText(applyHeaderChoice(lastRawText || text), sourceName);
+  }
+
+  for (const box of headerToggles) {
+    box.addEventListener('change', () => {
+      for (const other of headerToggles) other.checked = box.checked;
+      if (!lastRawText) { syncHeaderNote(); return; }
+      ingestText(lastRawText, lastRawSource, false);
+      postLoadUI();
+    });
+  }
+
   // ── Apply (paste/edit) ──
   if (loadPastedBtn && pasteArea) {
     loadPastedBtn.addEventListener('click', () => {
@@ -1658,7 +1744,7 @@ export function initDataPanel(config) {
       if (!text) return;
       currentSourceName = 'edited_data';
       lastLoadedDataset = undefined;
-      handleText(text, 'Edited data');
+      ingestText(text, 'Edited data');
       postLoadUI();
     });
   }
@@ -1667,7 +1753,7 @@ export function initDataPanel(config) {
   if (fileInput) {
     setupFileInput(fileInput, (text, filename) => {
       lastLoadedDataset = undefined;
-      handleText(text, filename);
+      ingestText(text, filename);
       populateEditor(text, filename);
       postLoadUI();
     });

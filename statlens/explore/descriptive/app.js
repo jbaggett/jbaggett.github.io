@@ -305,17 +305,11 @@ function loadRawText(raw, sourceName) {
   loadedDataset = null;
   if (variableSelector) variableSelector.hidden = true;
 
-  // A bare column (or row) of numbers has no header line, but parseCSV always
-  // treats line 1 as one — so pasting 3,7,11,15,19 silently dropped the 3 and
-  // reported n = 4. Detect that shape and fall through to the plain-number path
-  // below, which reads every value. Local guard on purpose: giving parseCSV a
-  // header option would change behaviour on every page that parses CSV.
-  const firstLine = (raw.trim().split('\n')[0] || '');
-  const headerlessNumeric = firstLine.split(/[,\t;]/)
-    .every(f => f.trim() !== '' && isFinite(Number(f.trim())));
-
+  // Header handling now belongs to the data panel's "My data has headers"
+  // toggle (REQ-063), which routes text through initDataPanel before it reaches
+  // here. The local heuristic that used to live here would override the
+  // student's explicit choice — the one thing the toggle exists to prevent.
   try {
-    if (headerlessNumeric) throw new Error('headerless numeric input');
     const parsed = parseCSV(raw);
     const numIdx = parsed.types.indexOf('numeric');
     if (numIdx >= 0) {
