@@ -27,19 +27,7 @@
     }
     </script>
     <style>
-        /* The global `label { display:flex; flex-direction:column }` stacked the
-           text, the <i>n</i> and the input on three separate lines — the <i> is
-           its own flex item, so `white-space:nowrap` on the label could not help.
-           Reported as "the Sample size (n): label wraps onto separate lines"
-           (REQ-057 item 4, Todd Will). */
-        .inline-label {
-            display: inline-flex !important;
-            flex-direction: row !important;
-            flex-wrap: nowrap !important;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        .inline-label > span { white-space: nowrap; }
+        /* .inline-label now lives in css/style.css (D-18). */
 
         .controls-bar {
             display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center;

@@ -367,6 +367,29 @@ explore/one-cat/?dataset=brexit&sort=alpha
 explore/one-cat/?dataset=brexit&sort=data&labels=names
 ```
 
+### Regression / scatterplot (`explore/regression/`)
+
+Also used by `inference/slope/` and `inference/estimate/slope/`, which share the variable
+selectors. Read with `URLSearchParams` at load; `?x=`/`?y=` are applied once, after the
+dataset's numeric columns are known.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `x` | string | _(first numeric)_ | Name of the numeric variable on the x-axis. Must match a numeric column in the loaded dataset; if it does not, the tool keeps its default **and logs a console warning naming the available columns** (added after an activity shipped `?x=total_l` against a dataset that had no such column, and the mismatch was silent). | `?dataset=possum&x=total_l` |
+| `y` | string | _(second numeric)_ | Same, for the y-axis. | `?y=head_l` |
+| `start` | string | _(none)_ | `clean` (alias `bare`) opens the tool in its **un-analysed** state: no fitted line, no prediction overlay — just the scatter. For predict-then-confront activities, where the tool otherwise performs the step before the student is asked to (REQ-062). Survives the dataset load, unlike toggling the checkboxes. An explicit `predict=true` still wins over it. | `?dataset=possum&start=clean` |
+| `predict` | string | `true` | The draggable prediction marker. `false`/`0` hides it. | `?predict=false` |
+| `bands` | string | _(off)_ | Confidence / prediction bands (alias `interval`). `true`, `mean`, `prediction` or `both` turn them on; for backward compatibility this also turns the prediction marker on. | `?bands=both` |
+
+**`?start=clean` is deliberately semantic, not one flag per control.** Each tool decides
+what "un-analysed" means for it, so an activity author can ask for a clean slate without
+knowing the tool's control names. Currently implemented on `explore/regression/`; other
+tools ignore it. `explore/categorical/` shows its contingency table and bar chart
+side by side by design, so it has no "chart hidden" state to request — an activity step
+there should not say "switch to the chart view".
+
+---
+
 ### Regression by Eye (`explore/regression-by-eye/`)
 
 Uses `initDataPanel` for data loading (see Global Parameters). Also supports random data generation with `?seed=` for deterministic output.

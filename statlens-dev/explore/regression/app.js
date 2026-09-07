@@ -52,6 +52,20 @@ const showLineCheckbox = /** @type {HTMLInputElement} */ (document.getElementByI
 const showLoessCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-loess'));
 const showBandsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-bands'));
 const showPredictCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-predict'));
+
+// ── ?start=clean — open in the un-analysed state (REQ-062) ───────────────────
+// Both toggles ship ON, so the fitted line and prediction overlay are already
+// drawn on load. That pre-answers any activity step asking the student to
+// imagine or predict the line first — the same failure as REQ-056 one level up:
+// the tool performing the step before the student is asked to. `?start=clean`
+// leaves the scatter bare so the reveal is the student's action. Semantic
+// rather than one flag per control, so each tool decides what "un-analysed"
+// means for it; documented per page in url-api.md.
+const startClean = /^(clean|bare)$/i.test(new URLSearchParams(location.search).get('start') || '');
+if (startClean) {
+  if (showLineCheckbox) showLineCheckbox.checked = false;
+  if (showPredictCheckbox) showPredictCheckbox.checked = false;
+}
 const showResidualsCheckbox = /** @type {HTMLInputElement} */ (document.getElementById('show-residuals'));
 const bandsLegend = document.getElementById('bands-legend');
 const predictPanel = document.getElementById('predict-panel');
@@ -147,6 +161,18 @@ function populateVarSelectors() {
         urlVarsApplied = true;
         const q = new URLSearchParams(location.search);
         const px = q.get('x'), py = q.get('y');
+        // Warn loudly when a requested variable isn't in the loaded dataset.
+        // Silently falling back to whatever exists turned an activity-authoring
+        // typo (?x=total_l against a dataset holding only skull_w/head_l) into a
+        // reviewer bug report, when a console line would have made it a
+        // five-second fix (REQ-062 doc gap 2).
+        for (const [axis, name] of [['x', px], ['y', py]]) {
+            if (name && !numericColumns.includes(name)) {
+                console.warn(`[StatLens] ?${axis}=${name} requested, but the loaded dataset `
+                    + `has no numeric variable by that name. Available: `
+                    + `${numericColumns.join(', ') || '(none)'}. Falling back to the default.`);
+            }
+        }
         if (px && numericColumns.includes(px)) xVarSelect.value = px;
         if (py && numericColumns.includes(py)) yVarSelect.value = py;
     }
@@ -445,8 +471,9 @@ initDataPanel({
                 typeof currentRows[0][k] === 'number');
         }
 
-        // Reset controls to defaults on new data
-        showLineCheckbox.checked = true;
+        // Reset controls to defaults on new data — but `?start=clean` IS the
+        // requested default for this session, so it must survive a dataset load.
+        showLineCheckbox.checked = !startClean;
         showLoessCheckbox.checked = false;
         showResidualsCheckbox.checked = false;
 

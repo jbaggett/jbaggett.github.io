@@ -149,6 +149,11 @@ These parameters are available across most pages via the shared `parseParams()` 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a regression dataset | `dataset=ames_regression` |
+| `x` | string | Numeric variable for the x-axis (warns in the console if absent from the dataset) | `?x=total_l` |
+| `y` | string | Numeric variable for the y-axis | `?y=head_l` |
+| `start` | string | `clean` opens with no fitted line and no prediction overlay — for predict-then-confront activities | `?start=clean` |
+| `predict` | string | `false` hides the draggable prediction marker | `?predict=false` |
+| `bands` | string | `true`/`mean`/`prediction`/`both` show CI/PI bands | `?bands=both` |
 
 **Compatible Datasets:** Datasets where `type === 'regression'`. Includes: `ames_regression`, `possum_regression`, `elmhurst_regression`, `mariokart_regression`, `loan50_regression`, `county_regression`, `bac`, `duke_forest`, `starbucks`, `babies_crawl`, `births14_regression`, `midterms_house`, `coast_starlight_regression`, `gpa_study_hours`, `cherry`, `satgpa`, `evals`, `gifted`
 
