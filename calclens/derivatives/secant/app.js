@@ -147,21 +147,11 @@ function render() {
     if (roomOnX) mark(xs(q), axisY, 'b', 'var(--tangent)', 'middle', 0, -6);
     mark(axisX, ys(fa), `${n}(a)`, '#222', 'start', 5, -5);
     if (roomOnY) mark(axisX, ys(fq), `${n}(b)`, 'var(--tangent)', 'start', 5, -5);
-    // 70px, not 26: the label is about fifty wide, and at h = 0.1 it was being
-    // drawn straight through P and Q.
-    if (Math.abs(xs(q) - xs(a)) > 70) {
-      // The run line sits at f(a). When that is near y = 0 the label would land
-      // on the x-axis tick numbers, and a white halo is not enough to make two
-      // overlapping strings readable — so move it to the other side instead.
-      const runY = ys(fa);
-      const clash = Math.abs(runY - ys(0)) < 18;
-      chart.gOver.append('text')
-        .attr('x', (xs(a) + xs(q)) / 2)
-        .attr('y', runY + (clash ? -9 : 16))
-        .attr('text-anchor', 'middle').attr('font-size', chart.fs(12)).attr('fill', 'var(--tangent)')
-        .attr('stroke', '#fff').attr('stroke-width', 3).attr('paint-order', 'stroke')
-        .text(`${state.form === 'interval' ? 'b − a' : 'h'} = ${fmt(h, Math.abs(h) < 0.01 ? 4 : 3)}`);
-    }
+    // The gap's SIZE is not labelled on the figure: it is the denominator of the
+    // quotient sitting beside it, and printing it twice earned two collision
+    // workarounds — one for short runs, one for runs sitting on the x-axis —
+    // to say something already on screen. The run is still drawn; only the
+    // number is gone.
   }
 
   // P is the anchor and Q is the one that moves, and that has to be legible
