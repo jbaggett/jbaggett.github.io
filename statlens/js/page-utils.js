@@ -1356,6 +1356,28 @@ export function initDataPanel(config) {
   const saveBtn = document.getElementById('save-btn');
   const fileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('file-input'));
 
+  // ── State the CSV header convention where the student types (REQ-061) ──
+  // parseCSV always treats line 1 as column names, so a pasted bare column of
+  // numbers loses its first value (verified: 5 values in, n = 4 on
+  // simulate/bootstrap-mean and inference/one-mean). The paste placeholder
+  // actually demonstrates the failing shape — a bare column, no header. Jeff's
+  // call was to state the convention rather than rewrite the parser, so say it
+  // where they are about to type. Injected here so all 36 pages carrying this
+  // panel get it from one place, and worded as advice that is safe on every
+  // page rather than an assertion about a behaviour that varies.
+  for (const [panelId, extra] of [['panel-paste', true], ['panel-file', false]]) {
+    const panel = document.getElementById(panelId);
+    if (!panel || panel.querySelector('.csv-header-hint')) continue;
+    const hint = document.createElement('p');
+    hint.className = 'hint csv-header-hint';
+    hint.innerHTML = 'The <strong>first row is read as column names</strong>.'
+      + (extra
+        ? ' Pasting a plain list of numbers? Put a label such as <code>value</code> on the '
+          + 'first line, so none of your data is mistaken for a heading.'
+        : ' A file whose first row is already data will lose that row.');
+    panel.appendChild(hint);
+  }
+
   /** @type {Array<{id:string,name:string,description:string,type:string,n:number}>} */
   let datasetIndex = [];
 

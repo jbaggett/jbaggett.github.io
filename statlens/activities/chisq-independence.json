@@ -63,12 +63,12 @@
           },
           {
             "id": "assoc_not_cause",
-            "label": "A significant \\(\\chi^2\\) shows the variables are associated. Why does that NOT establish that one causes the other?",
+            "label": "A discernible \\(\\chi^2\\) shows the variables are associated. Why does that NOT establish that one causes the other?",
             "placeholder": "Your reasoning",
             "rows": 2
           }
         ],
-        "answer": "A strong answer: the marginal totals fix how much of each category exists; under independence the best estimate of a cell is \\((\\text{row}\\times\\text{col})/n\\), spreading the marginals proportionally. A significant result means the cells depart from that proportional pattern — an **association** — but association can come from confounding or how the data were collected; only a randomized experiment supports a causal claim."
+        "answer": "A strong answer: the marginal totals fix how much of each category exists; under independence the best estimate of a cell is \\((\\text{row}\\times\\text{col})/n\\), spreading the marginals proportionally. A discernible result means the cells depart from that proportional pattern — an **association** — but association can come from confounding or how the data were collected; only a randomized experiment supports a causal claim."
       }
     }
   ]
