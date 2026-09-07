@@ -5133,3 +5133,12 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .gof-hypotheses { font-size: 0.95rem; line-height: 1.5; }
 .gof-hypotheses .hypothesis-row { align-items: baseline; }
 .gof-hypotheses sub { font-size: 0.72em; }
+
+/* ── `hidden` must actually hide the variable selectors ────────────────────
+   Every page using this block sets `display: flex` in its own <style>, which
+   outranks the plain `hidden` attribute — so the empty "Grouping variable" /
+   "Response variable" dropdowns showed on every load before a dataset was
+   chosen (REQ-057 item 1, Todd Will). !important because some pages scope the
+   rule by id, which outranks a class+attribute selector on specificity. */
+.var-selectors[hidden],
+#var-selectors[hidden] { display: none !important; }

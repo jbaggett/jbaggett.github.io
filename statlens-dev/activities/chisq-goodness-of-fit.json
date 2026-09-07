@@ -63,7 +63,7 @@
           },
           {
             "id": "contributions",
-            "label": "How do the per-category \\((O-E)^2/E\\) contributions tell you WHICH categories drive a significant result?",
+            "label": "How do the per-category \\((O-E)^2/E\\) contributions tell you WHICH categories drive a discernible result?",
             "placeholder": "Your reasoning",
             "rows": 2
           }

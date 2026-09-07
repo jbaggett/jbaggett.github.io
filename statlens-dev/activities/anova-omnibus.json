@@ -63,7 +63,7 @@
           },
           {
             "id": "at_least_one",
-            "label": "A significant \\(F\\) lets you conclude 'at least one mean differs.' Why can't you conclude that all groups differ from each other?",
+            "label": "A discernible \\(F\\) lets you conclude 'at least one mean differs.' Why can't you conclude that all groups differ from each other?",
             "placeholder": "Your reasoning",
             "rows": 2
           }
