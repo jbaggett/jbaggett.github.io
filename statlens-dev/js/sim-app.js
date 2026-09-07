@@ -1224,6 +1224,9 @@ export function initSimPage(config) {
     stickyControls: true,
     showPreview: true,
     datasetFilter: simDatasetFilter,
+    // A flat `?data=` list cannot express two groups or matched pairs, so the
+    // comparison pages ignore it instead of loading half a dataset.
+    acceptsInlineData: !config.twoGroup && !config.paired,
     onDataset: (/** @type {any} */ ds) => {
       resetSimulation();
       hideVarSelector();
