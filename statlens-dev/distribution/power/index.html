@@ -226,7 +226,7 @@
         <section id="controls" aria-label="Test parameters">
             <div class="power-controls">
                 <div class="control-group">
-                    <label for="input-alpha">Discernibility level (&alpha;)</label>
+                    <label for="input-alpha" title="Also called the significance level — the two mean the same thing.">Discernibility level (&alpha;)</label>
                     <div class="slider-row">
                         <input type="range" id="slider-alpha" aria-label="Discernibility level α slider" min="0.001" max="0.20" step="0.001" value="0.05">
                         <input type="number" id="input-alpha" min="0.001" max="0.50" step="0.001" value="0.05">
@@ -269,6 +269,7 @@
     <dialog id="page-help" aria-label="Help and keyboard shortcuts">
         <h2>Power &amp; Error Visualizer</h2>
         <p class="help-intro">Explore how discernibility level (&alpha;), sample size (n), effect size (&delta;), and population variability (&sigma;) interact to determine statistical power.</p>
+        <p><strong>A note on wording:</strong> &alpha; is the <em>discernibility level</em> here, following the course text. Many books and exercise sets call the same number the <em>significance level</em> &mdash; they mean the same thing.</p>
         <h3>What am I looking at?</h3>
         <p>Two overlapping normal distributions represent the sampling distribution of the sample mean under:</p>
         <ul>

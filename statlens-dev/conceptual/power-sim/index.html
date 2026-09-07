@@ -90,7 +90,7 @@
                 <input type="range" id="slider-n" min="2" max="200" step="1" value="30" aria-label="Sample size n">
                 <input type="number" id="input-n" step="1" value="30" aria-label="Sample size value">
 
-                <span class="row-label">Discernibility level (α)</span>
+                <span class="row-label" title="Also called the significance level — the two mean the same thing.">Discernibility level (α)</span>
                 <input type="range" id="slider-alpha" min="0.001" max="0.2" step="0.001" value="0.05" aria-label="Discernibility level alpha">
                 <input type="number" id="input-alpha" step="0.001" value="0.05" aria-label="Discernibility level value">
             </div>
@@ -137,6 +137,7 @@
     <dialog id="page-help" aria-label="Help">
         <h2>Power Lab — Help</h2>
         <p class="help-intro">This simulates a known-σ one-sample z-test (H₀: μ = 0 vs H₁: μ = δ), the same model as the <a href="../../distribution/power/">Power &amp; Error Visualizer</a>. Each study draws n observations, runs the test, and is tallied. The empirical reject-rate converges to the analytic power shown beside it. Set δ = 0 to see the Type I error rate (≈ α).</p>
+        <p><strong>A note on wording:</strong> &alpha; is the <em>discernibility level</em> here, following the course text. Many books and exercise sets call the same number the <em>significance level</em> &mdash; they mean the same thing.</p>
         <dl>
             <dt><kbd>1</kbd></dt><dd>+1 study</dd>
             <dt><kbd>2</kbd></dt><dd>+100 studies</dd>

@@ -305,37 +305,65 @@ function loadRawText(raw, sourceName) {
   loadedDataset = null;
   if (variableSelector) variableSelector.hidden = true;
 
+  // A bare column (or row) of numbers has no header line, but parseCSV always
+  // treats line 1 as one — so pasting 3,7,11,15,19 silently dropped the 3 and
+  // reported n = 4. Detect that shape and fall through to the plain-number path
+  // below, which reads every value. Local guard on purpose: giving parseCSV a
+  // header option would change behaviour on every page that parses CSV.
+  const firstLine = (raw.trim().split('\n')[0] || '');
+  const headerlessNumeric = firstLine.split(/[,\t;]/)
+    .every(f => f.trim() !== '' && isFinite(Number(f.trim())));
+
   try {
+    if (headerlessNumeric) throw new Error('headerless numeric input');
     const parsed = parseCSV(raw);
     const numIdx = parsed.types.indexOf('numeric');
     if (numIdx >= 0) {
       const numericCols = parsed.headers.filter((_h, i) => parsed.types[i] === 'numeric');
+      const catCols = parsed.headers.filter((_h, i) => parsed.types[i] === 'categorical');
       const colName = numericCols[0];
       const values = parsed.data
         .map(row => parseFloat(row[colName]))
         .filter(v => isFinite(v));
 
-      if (numericCols.length > 1) {
-        varSelect.innerHTML = '';
-        for (const col of numericCols) {
-          const opt = document.createElement('option');
-          opt.value = col;
-          opt.textContent = col;
-          varSelect.appendChild(opt);
-        }
-        if (variableSelector) variableSelector.hidden = false;
-        loadedDataset = {
-          variables: numericCols.map(c => ({ name: c, label: c, type: 'numeric' })),
-          rows: parsed.data.map(row => {
-            /** @type {Record<string,number>} */
-            const obj = {};
-            for (const col of numericCols) {
-              obj[col] = parseFloat(row[col]);
-            }
-            return obj;
-          }),
-        };
+      // Always rebuild the variable list, even for a single numeric column:
+      // leaving the previous dataset's options in place left `varSelect.value`
+      // pointing at a column the new data doesn't have. Only SHOW the selector
+      // when there is an actual choice.
+      varSelect.innerHTML = '';
+      for (const col of numericCols) {
+        const opt = document.createElement('option');
+        opt.value = col;
+        opt.textContent = col;
+        varSelect.appendChild(opt);
       }
+      if (variableSelector) variableSelector.hidden = numericCols.length <= 1;
+
+      // Keep the CATEGORICAL columns too. This was numeric-only, so an upload
+      // silently discarded every text column and there was nothing left to
+      // group by (REQ-059 item 2, Todd Will). Built whenever there is at least
+      // one numeric column — it used to require two, so a single-measurement
+      // file could never group at all.
+      loadedDataset = {
+        variables: [
+          ...numericCols.map(c => ({ name: c, label: c, type: 'numeric' })),
+          ...catCols.map(c => ({ name: c, label: c, type: 'categorical' })),
+        ],
+        rows: parsed.data.map(row => {
+          /** @type {Record<string, number|string>} */
+          const obj = {};
+          for (const col of numericCols) obj[col] = parseFloat(row[col]);
+          for (const col of catCols) obj[col] = String(row[col] ?? '');
+          return obj;
+        }),
+      };
+
+      // The built-in path calls this; the upload path never did, so the filter
+      // kept serving the PREVIOUS dataset's levels and counts — Todd's "n values
+      // adding up to 6 even though the uploaded data has 32 cases" (REQ-059
+      // item 1). It also hides the filter when the upload has nothing groupable,
+      // reusing the identifier-skip rule from REQ-058.
+      setupGroupFilter(loadedDataset);
 
       setData(values, colName, sourceName);
       return;
@@ -355,6 +383,10 @@ function loadRawText(raw, sourceName) {
     return;
   }
 
+  // A bare list of numbers has no columns to group by — clear the stale filter.
+  groupVarName = '';
+  groupedSubsets = {};
+  if (groupFilterEl) groupFilterEl.hidden = true;
   setData(values, 'Value', sourceName);
 }
 
