@@ -407,12 +407,22 @@ function setupGroupFilter(ds) {
   groupedSubsets = {};
 
   const catVars = ds.variables.filter(v => v.type === 'categorical');
-  if (catVars.length === 0) {
+  // Skip identifier-like columns. Grouping by a column with one row per level
+  // puts every group at n=1, which makes the control look broken — reported on
+  // the companion's very first tile, hollywoodmovies2023, which declares
+  // `title` first (REQ-058 item 1, Todd Will). Also hits floridalakes (`lake`),
+  // usstates (`state`) and urban_owner (`state`).
+  const groupable = catVars.filter(v => {
+    const levels = new Set(ds.rows.map(r => String(r[v.name])));
+    return levels.size < ds.rows.length;
+  });
+  // Every categorical is an identifier (urban_owner) → no meaningful grouping.
+  if (groupable.length === 0) {
     if (groupFilterEl) groupFilterEl.hidden = true;
     return;
   }
 
-  const catVar = catVars[0];
+  const catVar = groupable[0];
   groupVarName = catVar.name;
   const groupLabel = catVar.label || catVar.name;
 
@@ -479,7 +489,7 @@ groupSelect.addEventListener('change', () => {
       .map(r => parseFloat(r[numVar.name]))
       .filter(v => isFinite(v));
     const label = `${numVar.label || numVar.name} (${selectedGroup})`;
-    setData(values, label, '');
+    setData(values, label, '', { keepGroup: true });
   } else {
     loadVariable(numVar, loadedDataset);
   }
@@ -586,7 +596,7 @@ function loadVariable(varInfo, ds) {
  * @param {string} varLabel
  * @param {string} sourceName
  */
-function setData(values, varLabel, sourceName) {
+function setData(values, varLabel, sourceName, opts = {}) {
   currentValues = values;
   currentVarLabel = varLabel;
   dataPrecision = detectPrecision(values);
@@ -609,7 +619,12 @@ function setData(values, varLabel, sourceName) {
   const defaultRadio = /** @type {HTMLInputElement|null} */ (
     document.querySelector(`input[name="chart-type"][value="${activeChart}"]`));
   if (defaultRadio) defaultRadio.checked = true;
-  if (groupSelect) groupSelect.value = '';
+  // Resetting the group filter is right for NEW data (new dataset or variable)
+  // and wrong when setData was called BY the group filter: it snapped the
+  // dropdown back to "All" while the data stayed filtered, after which picking
+  // "All" fired no change event (the value was already '') and the only way out
+  // was to switch variables. REQ-058 item 2, Todd Will.
+  if (groupSelect && !opts.keepGroup) groupSelect.value = '';
 
   // Populate spreadsheet editor
   if (quantSheetBody) populateSheet(quantSheetBody, 'number', values.map(String));
