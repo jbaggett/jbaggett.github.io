@@ -115,6 +115,28 @@ function updateDotplotAvailability() {
       label.title = tooMany ? 'Too many values for dotplot — try Histogram' : '';
       label.style.opacity = tooMany ? '0.45' : '';
     }
+    // Say WHY, visibly. The title above is hover-only: invisible on touch and
+    // easy to miss, and the reviewer who hit this inferred the reason rather
+    // than reading it (REQ-064). A disabled control that explains itself is a
+    // teaching moment; one that just greys out is a dead end.
+    if (label?.parentElement) {
+      let why = label.parentElement.querySelector('.dotplot-why');
+      if (!why) {
+        why = document.createElement('p');
+        why.className = 'hint dotplot-why';
+        why.style.cssText = 'flex-basis:100%;margin:0.25rem 0 0;';
+        label.parentElement.appendChild(why);
+      }
+      why.hidden = !tooMany;
+      if (tooMany) {
+        const n = values.length;
+        why.innerHTML = n > DOTPLOT_AUTO_THRESHOLD
+          ? `<strong>Dotplot unavailable</strong> — ${n.toLocaleString()} values is too many to `
+            + 'draw one dot each. Use the histogram, which bins them.'
+          : '<strong>Dotplot unavailable</strong> — too many repeated values here, so the '
+            + 'tallest stack would run off the top of the plot. Use the histogram, which bins them.';
+      }
+    }
     if (tooMany && activeChart === 'dotplot') {
       const histRadio = /** @type {HTMLInputElement|null} */ (
         document.querySelector('input[name="chart-type"][value="histogram"]'));
