@@ -22,9 +22,9 @@
       "reveal": "A dot plot draws **one dot per observation** and stacks dots that share a value. With 2,930 prices there is no way to draw them all legibly, so the tool disables the option and tells you why. The limit is not really about the number of rows — it is about whether the tallest **stack** of dots still fits in the plot. A dataset with few rows but many repeated values can be blocked too. Histograms have no such limit, because they bin values instead of drawing each one."
     },
     {
-      "instruction": "Load a smaller dataset --- open the data panel and choose **Durham Air Quality (2022)**, variable **pm25** (356 daily readings) --- then switch to **Dotplot**. Now it works. Use the **Stacks** control to try few stacks (5-8), then many (30-40).",
+      "instruction": "Load a smaller dataset --- open the data panel and choose **Cherry Blossom Race Times** (100 finish times) --- then switch to **Dotplot**. Now it works, and every runner is one dot. Use the **Stacks** control to try few stacks (5-8), then many (30-40).",
       "observe": "With fewer stacks, the dot plot starts to look like a histogram --- dots pile into tall columns. With more stacks, the dots spread out. Does changing the number of stacks change your conclusion about the shape?",
-      "reveal": "Just like histogram bins, the number of stacks changes the **resolution**, not the story: daily PM2.5 in Durham is **right skewed** at every setting --- most days are clean, a few are much worse. Fewer stacks give a coarser picture; more stacks show finer detail. Both charts involve a binning choice. The difference is that the dot plot still shows you every individual day --- and 356 is small enough to allow that, while 2,930 was not."
+      "reveal": "Just like histogram bins, the number of stacks changes the **resolution**, not the story: most finishers cluster on the right, with a tail stretching toward the faster times, at every setting. Fewer stacks give a coarser picture; more stacks show finer detail. Both charts involve a binning choice --- the difference is that the dot plot still shows you every individual runner, and 100 is small enough to allow that where 2,930 was not."
     },
     {
       "instruction": "Switch to **Boxplot**.",
