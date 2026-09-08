@@ -218,7 +218,7 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 **Path:** `explore/categorical/`
 **Category:** Explore
-**Description:** Contingency table with four display modes (counts, row proportions, column proportions, cell proportions) and bar chart with four modes (stacked, side-by-side, filled, relative frequency). Includes chart-table color linking and variable swap button.
+**Description:** Contingency table with four display modes (counts, row proportions, column proportions, cell proportions) and bar chart with four modes (stacked, side-by-side, filled, relative frequency). Includes chart-table color linking and variable swap button. **Data entry is an editable r×c grid of counts** (rows/columns steppers up to 10×10, editable variable and level names, live row/column/grand totals, and paste-a-block from Excel or Word); case-level CSV is a secondary option, and loading a dataset mirrors its cross-tabulation into the grid.
 **Concepts:** Contingency table, conditional proportions, marginal proportions, stacked/side-by-side/mosaic bar charts, independence vs association
 
 **URL Parameters:**

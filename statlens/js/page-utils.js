@@ -1430,7 +1430,12 @@ export function initDataPanel(config) {
   const headerNotes = /** @type {HTMLElement[]} */ ([]);
   {
     const targets = [document.getElementById('panel-file')];
-    if (pasteArea && !pasteArea.hidden) targets.push(document.getElementById('panel-paste'));
+    // Sit with the textarea it governs. On explore/categorical the paste box
+    // now lives inside a <details> under the contingency grid, and a header
+    // checkbox floating below that grid would look like it applied to the grid.
+    if (pasteArea && !pasteArea.hidden) {
+      targets.push(pasteArea.closest('details') ?? document.getElementById('panel-paste'));
+    }
     for (const panel of targets) {
       if (!panel || panel.querySelector('.header-toggle-row')) continue;
       const row = document.createElement('div');
@@ -1948,6 +1953,10 @@ function autoWrapSteppers() {
       if (input.closest('.stepper-group')) continue;
       // Skip inputs inside dialogs (settings, help)
       if (input.closest('dialog')) continue;
+      // Skip contingency-table cells (and anything opting out): a count is
+      // typed, not nudged, and a +/- pair triples the width of every cell —
+      // enough to push a 2x2 grid off the side of a phone.
+      if (input.closest('.input-table, [data-no-stepper]')) continue;
       // Skip free-form decimal inputs (step="any" or fractional step like 0.01)
       const step = input.step || '1';
       if (step === 'any') continue;

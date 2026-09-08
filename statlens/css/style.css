@@ -527,6 +527,95 @@ main {
   }
 }
 
+
+/* ===== Editable contingency table (js/table-editor.js) ===================
+   Lived inline in inference/chisq until explore/categorical needed the same
+   grid (REQ-065). Shared here so the two pages cannot drift apart. */
+/* Table dimension controls */
+.dim-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+.dim-controls label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+.dim-controls input[type="number"] {
+    width: 5rem;
+}
+
+/* Editable contingency table */
+.input-table {
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+    width: 100%;
+    max-width: 40rem;
+}
+.input-table th,
+.input-table td {
+    border: 1px solid var(--border, #ccc);
+    padding: 0.3rem 0.4rem;
+    text-align: center;
+}
+.input-table th {
+    background: var(--bg-alt, #f5f5f5);
+    font-weight: 600;
+}
+.input-table input[type="text"] {
+    width: 6rem;
+    text-align: center;
+    border: 1px solid var(--border, #ccc);
+    border-radius: 3px;
+    padding: 0.2rem 0.3rem;
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+.input-table input[type="number"] {
+    width: 5rem;
+    text-align: center;
+    border: 1px solid var(--border, #ccc);
+    border-radius: 3px;
+    padding: 0.2rem 0.3rem;
+    font-family: var(--font-mono, 'Source Code Pro', monospace);
+    font-size: 0.9rem;
+}
+.input-table .corner-cell {
+    background: transparent;
+    border: none;
+}
+
+/* Variable-name inputs and the live totals band. Totals exist to catch
+   transcription slips when copying a table out of a book, so they read as
+   derived values rather than cells you can type in. */
+.table-var-names { display: flex; flex-wrap: wrap; gap: 0.75rem; margin: 0 0 0.6rem; }
+.table-var-names label { display: flex; flex-direction: column; gap: 0.15rem;
+  font-size: 0.85rem; font-weight: 600; }
+.table-var-names input { font-weight: 400; min-width: 9rem; }
+.input-table .total-cell { text-align: center; font-variant-numeric: tabular-nums;
+  color: var(--ims-gray-text); background: var(--bg-alt, #f5f5f5); font-weight: 600; }
+.input-table .total-cell.grand { color: var(--text); }
+.input-table .total-head { font-size: 0.78rem; text-transform: uppercase;
+  letter-spacing: 0.03em; color: var(--ims-gray-text); }
+.raw-csv-details { margin-top: 0.85rem; }
+.raw-csv-details summary { cursor: pointer; }
+
+/* A 4-column grid of 5-6rem inputs is wider than a phone. Scroll the grid
+   inside its own box rather than letting the page scroll sideways, and shrink
+   the cells so a 2x2 — the common case — needs no scrolling at all. */
+#table-input-container { overflow-x: auto; }
+@media (max-width: 600px) {
+  .input-table input[type="text"] { width: 4.2rem; }
+  .input-table input[type="number"] { width: 3.2rem; }
+  .input-table th, .input-table td { padding: 0.2rem 0.25rem; }
+  .table-var-names input { min-width: 7rem; }
+}
+
 /* ===== Help Dialog Content ===== */
 
 dialog .help-intro {
