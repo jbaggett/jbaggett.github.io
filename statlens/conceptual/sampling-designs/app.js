@@ -471,7 +471,16 @@ function renderVerdict() {
     <p>${clusterVerdict}</p>
     <p><strong>Convenience</strong> is in a different category. Its estimates are <em>precise</em> —
        they agree closely with each other — and consistently wrong. Measuring more would only tighten
-       them around the wrong answer.</p>`;
+       them around the wrong answer.</p>
+    <p class="hint"><strong>Worth comparing those last two rows carefully</strong>, because one sample
+       of each can feel alike: pick three trees of one variety and you have essentially looked in one
+       place, just as a convenience sample does. Over many samples they behave in opposite ways.
+       Cluster sampling is <em>unbiased and scattered</em> — its average error is near zero, and it
+       misses in both directions, because the clusters were chosen at random. Convenience is
+       <em>biased and tight</em> — it misses the same way every time, and a larger sample would
+       sharpen the error rather than remove it. A cluster sample of ${cl ? cl.k.toFixed(0) : 'k'}
+       homogeneous clusters behaves like a simple random sample of ${cl ? cl.k.toFixed(0) : 'k'}
+       items: a very small honest sample, not a large dishonest one.</p>`;
 }
 
 // ── Wiring ──────────────────────────────────────────────────────────────

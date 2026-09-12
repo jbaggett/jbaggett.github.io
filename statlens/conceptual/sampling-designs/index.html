@@ -58,6 +58,8 @@
 
         .design-note { font-size: 0.94rem; margin: 0.55rem 0 0; }
         .cost-note { font-size: 0.88rem; color: var(--ims-gray-text, #6B6B6B); margin: 0.25rem 0 0; }
+        /* Hidden once the reader is already in expert mode — it has done its job. */
+        body[data-expert="true"] #more-hint { display: none; }
 
         #compare-wrap { overflow-x: auto; margin-top: 0.4rem; }
         #compare { display: block; width: 100%; height: auto; max-width: 46rem; }
@@ -133,6 +135,9 @@
             </dl>
             <p class="design-note" id="design-note"></p>
             <p class="cost-note" id="cost-note"></p>
+            <p class="cost-note" id="more-hint">One sample is luck. To see how each design behaves over
+               <em>many</em> samples &mdash; and why a cheap design can still be a good one &mdash; choose
+               <strong>More options</strong> above.</p>
         </section>
 
         <section id="compare-section" class="expert-only" aria-label="Comparison across designs" hidden>

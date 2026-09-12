@@ -135,8 +135,10 @@ export const SCENARIOS = [
       tree: {
         label: 'tree', labels: 'trees', kind: 'patch', n: 8, rows: 4, verb: 'visited',
         note: 'Pick a few trees at random and take all the fruit from each — one ladder, one tree, '
-            + 'done. That is as cheap as orchard sampling gets. But a tree is one variety, and its '
-            + 'apples are all much of a muchness, so three trees tell you about three trees.',
+            + 'done. That is as cheap as orchard sampling gets, and it is cluster sampling used where '
+            + 'it works worst: the method wants clusters that are varied inside and alike from one to '
+            + 'the next, and a tree is the reverse — one variety, all much of a muchness, while tree '
+            + 'differs sharply from tree. Three trees tell you about three trees.',
       },
     },
     convenience: {
