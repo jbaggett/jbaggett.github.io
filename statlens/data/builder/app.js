@@ -5,7 +5,7 @@
  */
 
 import { parseCSV } from '../../js/csv-parser.js';
-import { announce, initHelp, suggestDesktop } from '../../js/page-utils.js';
+import { announce, fetchDataText, dataLinkError, initHelp, suggestDesktop } from '../../js/page-utils.js';
 
 // ─── DOM references ──────────────────────────────────────────────────────────
 
@@ -78,12 +78,46 @@ fileInput.addEventListener('change', () => {
         const text = /** @type {string} */ (reader.result);
         csvInput.value = text;
         doParse(text);
+        seedNameFromFilename(file.name);
     };
     reader.onerror = () => {
         showStatus('Failed to read file.', 'err');
     };
     reader.readAsText(file);
 });
+
+// ── Open from a link ──────────────────────────────────────────────────
+// The same affordance as every tool's Open File/URL tab, sharing its fetch
+// helper: an instructor converting a CSV that is already on the web shouldn't
+// have to download it first.
+const dataUrlInput = /** @type {HTMLInputElement|null} */ (document.getElementById('data-url-input'));
+const loadUrlBtn = document.getElementById('load-url');
+const dataUrlNote = document.getElementById('data-url-note');
+
+if (dataUrlInput && loadUrlBtn) {
+    const defaultNote = dataUrlNote?.innerHTML ?? '';
+    const loadFromUrl = () => {
+        const url = dataUrlInput.value.trim();
+        if (!url) return;
+        if (dataUrlNote) dataUrlNote.textContent = 'Loading…';
+        fetchDataText(url)
+            .then(({ text, name }) => {
+                csvInput.value = text;
+                doParse(text);
+                seedNameFromFilename(name);
+                if (dataUrlNote) dataUrlNote.innerHTML = defaultNote;
+            })
+            .catch(err => {
+                const msg = dataLinkError(err);
+                if (dataUrlNote) dataUrlNote.textContent = msg;
+                showStatus(msg, 'err');
+            });
+    };
+    loadUrlBtn.addEventListener('click', loadFromUrl);
+    dataUrlInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); loadFromUrl(); }
+    });
+}
 
 // Auto-parse on paste into textarea
 csvInput.addEventListener('paste', () => {
@@ -246,7 +280,8 @@ function renderPreview() {
         const tr = document.createElement('tr');
         const tdNum = document.createElement('td');
         tdNum.textContent = String(i + 1);
-        tdNum.style.color = '#999';
+        // Was inline #999 on #fafafa — 2.72:1, the last AA failure on this page.
+        tdNum.className = 'row-num';
         tr.appendChild(tdNum);
         for (const h of parsedHeaders) {
             const td = document.createElement('td');
@@ -256,6 +291,66 @@ function renderPreview() {
         previewTbody.appendChild(tr);
     }
     previewWrap.hidden = false;
+}
+
+// ─── "Ready to send?" checklist ─────────────────────────────────────────────
+//
+// Jeff's call, and the right division of labour: instructors should send the
+// JSON rather than the spreadsheet, because the JSON carries the study and
+// variable descriptions and those are the half only the person who collected
+// the data can write. Which means the builder has to answer the two questions
+// a non-technical sender actually has — what am I supposed to fill in, and am I
+// done? — rather than leaving every metadata field silently optional.
+//
+// Advisory, never blocking: a dataset with thin metadata is still better than
+// no dataset, and a form that refuses to export is a form people abandon.
+
+const submitCheck = document.getElementById('submit-check');
+const submitCheckList = document.getElementById('submit-check-list');
+const submitCheckNote = document.getElementById('submit-check-note');
+
+function updateSubmitCheck() {
+    if (!submitCheck || !submitCheckList) return;
+    if (!dataParsed) { submitCheck.hidden = true; return; }
+    submitCheck.hidden = false;
+
+    const descInputs = [...varDescContainer.querySelectorAll('.var-desc-input')];
+    const describedCols = descInputs.filter(
+        (/** @type {any} */ el) => el.value.trim() !== '').length;
+
+    /** @type {Array<{label: string, done: boolean, why: string}>} */
+    const items = [
+        { label: 'A name for the dataset', done: dsName.value.trim() !== '',
+          why: 'shown wherever the data is used' },
+        { label: 'One-line description', done: dsDescription.value.trim() !== '',
+          why: 'what it is, with the sample size' },
+        { label: 'What the study was', done: dsStudy.value.trim().length >= 40,
+          why: 'who or what was measured, how many, how they were collected, '
+             + 'and whether it was an experiment or observational' },
+        { label: `What each column means (${describedCols} of ${descInputs.length})`,
+          done: descInputs.length > 0 && describedCols === descInputs.length,
+          why: 'including units — "minutes", not just "time"' },
+        { label: 'Where it came from', done: dsSourceDetail.value.trim() !== '' || dsSource.value.trim() !== '',
+          why: 'a textbook, a paper, an R package, or "collected in my class"' },
+    ];
+
+    submitCheckList.innerHTML = items.map(i =>
+        `<li class="${i.done ? 'ok' : 'todo'}">${escapeHtml(i.label)}`
+        + (i.done ? '' : ` <span class="hint">&mdash; ${escapeHtml(i.why)}</span>`)
+        + '</li>').join('');
+
+    const left = items.filter(i => !i.done).length;
+    if (submitCheckNote) {
+        submitCheckNote.textContent = left === 0
+            ? 'All filled in. Download the JSON below and send that file — not the spreadsheet.'
+            : `${left} still empty. You can send it anyway, but these are the parts nobody else can write.`;
+    }
+}
+
+/** @param {string} s */
+function escapeHtml(s) {
+    return String(s).replace(/[<>&"]/g, c =>
+        ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] ?? c);
 }
 
 // ─── Variable fields (descriptions + labels) ────────────────────────────────
@@ -322,6 +417,28 @@ for (const el of [dsId, dsDescription, dsSource, dsChapter, dsStudy, dsSourceDet
 }
 
 /**
+ * Name the dataset after the file it came from.
+ *
+ * Uploading a CSV already yields loadable JSON, but with `id: "untitled"` and
+ * no name — so it downloaded as `untitled.json` and arrived in the tool with
+ * nothing to call it. The filename is the one piece of naming the instructor
+ * has already done, so use it rather than asking again. Only fills blanks:
+ * anything typed already wins.
+ *
+ * @param {string} filename
+ */
+function seedNameFromFilename(filename) {
+    const stem = filename.replace(/\.[^.]+$/, '').trim();
+    if (!stem) return;
+    if (!dsName.value.trim()) {
+        const words = stem.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+        dsName.value = words.charAt(0).toUpperCase() + words.slice(1);
+    }
+    if (!userEditedId && !dsId.value.trim()) dsId.value = toSnakeCase(stem);
+    updateJSON();
+}
+
+/**
  * Convert a display name to snake_case ID.
  * @param {string} name
  * @returns {string}
@@ -338,6 +455,7 @@ function toSnakeCase(name) {
 // ─── JSON generation ─────────────────────────────────────────────────────────
 
 function updateJSON() {
+    updateSubmitCheck();
     if (!dataParsed) return;
 
     const id = dsId.value.trim() || toSnakeCase(dsName.value || 'untitled');

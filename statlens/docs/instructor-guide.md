@@ -66,7 +66,20 @@ Every tool page has a **Share** button that renders the page's current link as a
 5. In the StatLens tool, go to **Open File/URL**, paste the link, click **Load**.
 6. Click **Share** and project the QR code.
 
-A Google Sheet published via *File → Share → Publish to the web → CSV* gives a link that works the same way and updates when the sheet does.
+### Which files can StatLens link to?
+
+Any `https://` address that points **straight at the file** (not at a page you view it on) from a host that lets other websites read it:
+
+| Where the file lives | Link to use |
+|---|---|
+| **GitHub Gist** — tested end to end | the **Raw** button's address |
+| **A Dataset Builder `.json`** in a gist — tested | the same **Raw** address. Preferable to CSV: variable labels, the study description and the "About this data" panel travel with the file. Recognised by contents, so the filename and extension don't matter. |
+| **Google Sheets** | *File → Share → Publish to the web → CSV*, not the ordinary Share link. Updates when you edit the sheet. |
+| **Dropbox** | the share link with `?raw=1` instead of `?dl=0` |
+| **Your own web space** | the file's address |
+| **University OneDrive/SharePoint**, Canvas file links, Google Drive viewer pages | **Won't work** — they require a sign-in, and a phone arriving from a QR code has no session. The tool says it can't read the link. |
+
+Trying costs nothing: an unreadable link produces a message in the panel and changes nothing else.
 
 ---
 

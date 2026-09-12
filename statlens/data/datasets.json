@@ -2287,5 +2287,26 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "example_commute",
+    "name": "Example: Commute Times",
+    "description": "Commute time, housing status and year for 30 students in one section. Example of a contributed dataset (synthetic data).",
+    "type": "explore",
+    "chapter": "",
+    "n": 30,
+    "variables": [
+      "commute_min",
+      "housing",
+      "year"
+    ],
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "numericCount": 1,
+    "catCount": 2,
+    "groupLevels": 2,
+    "minGroupN": 15,
+    "contributed": true,
+    "contributor": "StatLens (example)"
   }
 ]

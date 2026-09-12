@@ -1,0 +1,184 @@
+{
+ "id": "example_commute",
+ "name": "Example: Commute Times",
+ "description": "Commute time, housing status and year for 30 students in one section. Example of a contributed dataset (synthetic data).",
+ "source": "instructor-collected",
+ "variables": [
+  {
+   "name": "commute_min",
+   "label": "Commute time (minutes)",
+   "type": "numeric"
+  },
+  {
+   "name": "housing",
+   "label": "Housing",
+   "type": "categorical"
+  },
+  {
+   "name": "year",
+   "label": "Year in school",
+   "type": "categorical"
+  }
+ ],
+ "rows": [
+  {
+   "commute_min": 14,
+   "housing": "on-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 22,
+   "housing": "off-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 8,
+   "housing": "on-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 35,
+   "housing": "off-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 11,
+   "housing": "on-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 28,
+   "housing": "off-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 6,
+   "housing": "on-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 41,
+   "housing": "off-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 19,
+   "housing": "on-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 25,
+   "housing": "off-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 9,
+   "housing": "on-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 33,
+   "housing": "off-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 12,
+   "housing": "on-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 17,
+   "housing": "off-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 7,
+   "housing": "on-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 46,
+   "housing": "off-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 15,
+   "housing": "on-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 30,
+   "housing": "off-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 10,
+   "housing": "on-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 24,
+   "housing": "off-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 13,
+   "housing": "on-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 52,
+   "housing": "off-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 18,
+   "housing": "on-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 27,
+   "housing": "off-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 5,
+   "housing": "on-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 21,
+   "housing": "off-campus",
+   "year": "first"
+  },
+  {
+   "commute_min": 16,
+   "housing": "on-campus",
+   "year": "fourth"
+  },
+  {
+   "commute_min": 38,
+   "housing": "off-campus",
+   "year": "third"
+  },
+  {
+   "commute_min": 20,
+   "housing": "on-campus",
+   "year": "second"
+  },
+  {
+   "commute_min": 29,
+   "housing": "off-campus",
+   "year": "fourth"
+  }
+ ],
+ "studyDescription": "Students in one section reported their typical one-way commute time in minutes, along with whether they live on or off campus and their year in school. The numbers are synthetic: this dataset exists as a worked example of how a contributed dataset looks.",
+ "variableDescriptions": {
+  "commute_min": "Self-reported typical one-way commute time, in minutes.",
+  "housing": "Whether the student lives in campus housing or off campus.",
+  "year": "The student's year in school."
+ },
+ "sourceDetail": "Synthetic example dataset, included to show the shape of a contributed submission. Not real data.",
+ "contributor": "StatLens (example)",
+ "type": "explore"
+}

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sampling Designs | StatLens</title>
+    <meta name="description" content="Dig for rocks: compare simple random, stratified, cluster, multistage and convenience sampling on the same buried population — what each costs to collect, and how precise each one is.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .design-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.6rem; }
+        .design-bar button[aria-pressed] {
+            padding: 0.35rem 0.7rem; border: 1px solid var(--border, #ccc); border-radius: 4px;
+            background: var(--bg, #fff); font-family: inherit; font-size: 0.88rem; cursor: pointer;
+        }
+        .design-bar button[aria-pressed="true"] {
+            background: var(--ims-green, #114B5F); color: #fff; border-color: var(--ims-green, #114B5F);
+            font-weight: 700;
+        }
+
+        #ground-wrap { overflow-x: auto; }
+        #ground { display: block; width: 100%; height: auto; max-width: 46rem; }
+
+        .readout { display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 0.6rem 0 0.2rem; }
+        .readout div { min-width: 7rem; }
+        .readout dt { font-size: 0.82rem; letter-spacing: 0.01em; font-weight: 600;
+                      color: var(--ims-gray-text, #6B6B6B); margin: 0; }
+        .readout dd { margin: 0.05rem 0 0; font-size: 1.15rem; font-weight: 700;
+                      font-variant-numeric: tabular-nums; color: var(--ims-green, #114B5F); }
+        .readout dd .unit { font-size: 0.8rem; font-weight: 400; color: var(--ims-gray-text, #6B6B6B); }
+
+        .shape-bar { margin: 0 0 0.6rem; }
+        .shape-bar .shape-label { font-size: 0.85rem; color: var(--ims-gray-text, #6B6B6B);
+                                  margin-right: 0.35rem; }
+        .shape-bar button { padding: 0.3rem 0.6rem; border: 1px solid var(--border, #ccc);
+            border-radius: 4px; background: var(--bg, #fff); font-family: inherit;
+            font-size: 0.85rem; cursor: pointer; }
+        .shape-bar button[aria-pressed="true"] { background: #E3EEF4; color: var(--ims-green, #114B5F);
+            border-color: var(--ims-green, #114B5F); border-width: 2px; font-weight: 700; }
+        @media (max-width: 600px) { .shape-bar button { min-height: 44px; } }
+
+        .design-note { font-size: 0.92rem; margin: 0.5rem 0 0; }
+        .cost-note { font-size: 0.88rem; color: var(--ims-gray-text, #6B6B6B); margin: 0.2rem 0 0; }
+
+        #compare-wrap { overflow-x: auto; margin-top: 0.4rem; }
+        #compare { display: block; width: 100%; height: auto; max-width: 46rem; }
+        .verdict { margin-top: 0.6rem; font-size: 0.93rem; }
+        /* Six columns do not fit a phone: scroll the table inside its own box
+           rather than letting the page scroll sideways. */
+        .verdict-scroll { overflow-x: auto; margin-top: 0.4rem; }
+        .verdict table { border-collapse: collapse; font-size: 0.88rem; }
+        .verdict th, .verdict td { border: 1px solid var(--border, #ccc); padding: 0.25rem 0.5rem;
+                                   text-align: right; }
+        .verdict th { background: var(--bg-alt, #f5f5f5); color: var(--ims-green, #114B5F); }
+        .verdict td:first-child, .verdict th:first-child { text-align: left; }
+        .verdict .biased { color: #A33; font-weight: 700; }
+
+        @media (max-width: 600px) {
+            .design-bar button[aria-pressed] { min-height: 44px; }
+            .readout { gap: 0.9rem; }
+            .readout dd { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#controls">Skip to Controls</a>
+        <a href="#ground-section">Skip to the ground</a>
+        <a href="#compare-section">Skip to the comparison</a>
+    </nav>
+
+    <main>
+        <h1>Sampling Designs<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+
+        <p id="scenario">
+            Buried under a plot of ground are thousands of rocks. You want their
+            <strong>average weight</strong> &mdash; but you can only weigh the ones you dig up.
+            Rocks settle by size: <strong>pebbles near the surface, boulders at the bottom</strong>.
+            How you choose which rocks to weigh is the sampling design.
+        </p>
+
+        <section id="controls" aria-label="Sampling design controls">
+            <div class="design-bar" role="group" aria-label="Sampling design" id="design-bar">
+                <button type="button" data-design="srs" aria-pressed="true">Simple random</button>
+                <button type="button" data-design="stratified" aria-pressed="false">Stratified</button>
+                <button type="button" data-design="cluster" aria-pressed="false">Cluster</button>
+                <button type="button" data-design="multistage" aria-pressed="false">Multistage</button>
+                <button type="button" data-design="convenience" aria-pressed="false">Convenience</button>
+            </div>
+            <div class="shape-bar" id="shape-bar" hidden>
+                <span role="group" aria-label="Cluster shape" class="seg-control">
+                    <span class="shape-label">Clusters are</span>
+                    <button type="button" data-shape="holes" aria-pressed="true">vertical holes</button>
+                    <button type="button" data-shape="layers" aria-pressed="false">horizontal layers</button>
+                </span>
+            </div>
+            <div class="generate-bar" role="group" aria-label="Draw samples">
+                <label for="target-n">Rocks to weigh
+                    <input type="number" id="target-n" value="60" min="12" max="200" step="6"
+                           style="width:4.5rem" aria-label="Approximate number of rocks to weigh">
+                </label>
+                <button type="button" id="dig-btn" class="gen-btn">Dig a new sample</button>
+                <button type="button" id="run-many" class="btn-secondary">Run 500 of each design</button>
+                <button type="button" id="reset-btn" class="reset-btn" title="Reset" aria-label="Reset">&#x21BA;</button>
+            </div>
+        </section>
+
+        <section id="ground-section" aria-label="The ground and your sample">
+            <div id="ground-wrap">
+                <svg id="ground" viewBox="0 0 760 330" aria-label="Cross-section of the ground. Rocks are drawn as circles sized by weight; the ones in your sample are highlighted."></svg>
+            </div>
+
+            <dl class="readout" id="readout">
+                <div><dt>True mean &mu;</dt><dd id="out-mu">&mdash;</dd></div>
+                <div><dt>Your estimate x&#772;</dt><dd id="out-xbar">&mdash;</dd></div>
+                <div><dt>Off by</dt><dd id="out-err">&mdash;</dd></div>
+                <div><dt>Rocks weighed</dt><dd id="out-n">&mdash;</dd></div>
+                <div><dt>Holes dug</dt><dd id="out-holes">&mdash;</dd></div>
+            </dl>
+            <p class="design-note" id="design-note"></p>
+            <p class="cost-note" id="cost-note"></p>
+        </section>
+
+        <section id="compare-section" aria-label="Comparison across designs" hidden>
+            <h2>500 samples from each design</h2>
+            <p id="compare-intro">Each dot is one sample's estimate of the average weight. The dashed
+               line is the truth. A design is <strong>accurate</strong> if its dots centre on the line,
+               and <strong>precise</strong> if they cluster tightly.</p>
+            <div id="compare-wrap">
+                <svg id="compare" viewBox="0 0 760 300" aria-label="Estimates from 500 samples of each design, on one shared scale."></svg>
+            </div>
+            <div class="verdict" id="verdict"></div>
+        </section>
+
+        <div id="sr-announce" class="sr-only" aria-live="polite"></div>
+    </main>
+
+    <dialog id="page-help" class="help-dialog">
+        <h2>Sampling Designs</h2>
+        <p>Every design here picks rocks <em>at random</em> in some way &mdash; except the last one. The
+           question is not whether randomness is used, but <em>what it is applied to</em>.</p>
+        <ul>
+            <li><strong>Simple random</strong> — every rock equally likely. Fair, but scattered all over
+                the plot: you dig a great many holes.</li>
+            <li><strong>Stratified</strong> — split the ground into the three depth layers first, then
+                take a random sample from each, in proportion to its size. Guarantees every layer is
+                represented.</li>
+            <li><strong>Cluster</strong> — pick a few holes at random and weigh <em>every</em> rock you
+                find in them. Far less digging. Use <strong>Clusters are&hellip;</strong> to switch between
+                vertical holes and horizontal layers: this is the whole ball game. A hole runs top to
+                bottom, so it is a miniature of the population and cluster sampling does well. A layer is
+                all one kind of rock, so three layers can tell you almost nothing.</li>
+            <li><strong>Multistage</strong> — pick a few holes at random, then a random sample of rocks
+                <em>within</em> each hole. Less digging <em>and</em> less weighing.</li>
+            <li><strong>Convenience</strong> — just take what's near the surface. No randomness at all.</li>
+        </ul>
+        <p><strong>Run 500 of each design</strong> is where the lesson is. Four of the five centre on the
+           truth; they differ in <em>spread</em>. Convenience doesn't centre on the truth at all, and no
+           sample size fixes that.</p>
+        <p>The <strong>Holes dug</strong> and <strong>Rocks weighed</strong> figures are the point of
+           cluster and multistage sampling: they buy a much cheaper sample. Whether you also pay for it
+           in precision depends on the shape of the clusters &mdash; which is what the toggle is for.</p>
+        <p><strong>The rule worth taking away:</strong> good <em>strata</em> are uniform inside and
+           different from each other; good <em>clusters</em> are varied inside, each a small copy of the
+           whole. They are opposites, and the same ground can give you either.</p>
+        <button type="button">Close</button>
+    </dialog>
+
+    <script src="../../js/page-number.js"></script>
+    <script type="module" src="app.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

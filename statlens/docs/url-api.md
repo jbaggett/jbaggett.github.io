@@ -34,6 +34,25 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 | `json` | string (URL) | _(none)_ | URL of a remote JSON dataset to fetch. Must be an **HTTPS** URL (or `http://localhost` for local development). Maximum 2,000 characters. Must conform to the StatLens dataset JSON schema (with `variables` and `rows` arrays). | `?json=https://example.com/ds.json` |
 | `seed` | string | _(random)_ | PRNG seed for deterministic simulation output. When provided, a "Seed: ..." notice is displayed. Maximum 100 characters. Critical for graded assessments where reproducibility is required. | `?seed=abc123` |
 
+### `conceptual/sampling-designs/`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `design` | string | `srs` | `srs`, `stratified`, `cluster`, `multistage`, `convenience` — an unrecognised value falls back to `srs`. |
+| `n` | integer | `60` | Rocks to weigh, clamped to 12–200. |
+| `seed` | string | _(random)_ | Fixes every dig for reproducibility. The population itself is always built from a fixed internal seed, so μ never changes. |
+
+**Contributed datasets are reachable by `?dataset=` but absent from every dropdown.**
+Datasets in `data/extra/` are indexed with `contributed: true`. They are filtered out of
+all browse dropdowns (already 11–36 options per tool, and curated for the course) while
+`?dataset=<id>` loads them in any tool. The guard on that deep-link path is a tool's
+`deepLinkFilter` where one is defined, otherwise its `datasetFilter` — except for
+contributed datasets, which always load, because a tool's `datasetFilter` mixes capability
+with curation (`explore/categorical` rejects any dataset containing a numeric column to
+keep its menu purely categorical, though the page handles one fine). Built-in behaviour is
+unchanged. Ids are permanent once handed out: a contributed dataset's link is the whole
+point of it, so renaming one breaks somebody's slide.
+
 **`csv` / `json` can now be written by the tool, not just read.** Every data page's
 **Open File/URL** tab takes a link to a hosted file; a successful load calls
 `history.replaceState` to put that link in the address bar as `?csv=` (or `?json=`

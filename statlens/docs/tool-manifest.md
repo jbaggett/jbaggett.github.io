@@ -1083,6 +1083,25 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ---
 
+### Sampling Designs
+
+**Path:** `conceptual/sampling-designs/`
+**Category:** Conceptual
+**Description:** Rocks buried under a plot of ground, sorted by size with depth (pebbles on top, boulders at the bottom); the parameter is their average weight. Five designs draw from the same population — **simple random**, **stratified** (proportional allocation across the three depth layers), **cluster** (dig a few whole holes, weigh everything in them), **multistage** (a few holes, then a sample within each), and **convenience** (scrape the surface). Each sample reports x̄ against μ plus its *cost*: rocks weighed and holes dug. **Run 500 of each design** builds the sampling distribution of x̄ for all five on one shared axis, with a table of bias, SD, spread relative to simple random, and mean cost. A **cluster shape** toggle switches clusters between vertical holes and horizontal layers — the same design, the same n, and a ~34× swing in variance (measured: 0.57× simple random's SD with vertical holes, 6.56× with horizontal layers), which is the tool's central point: good strata are uniform inside, good clusters are varied inside. Adapted from Todd Will's Mathematica demo, with the rigged SRS removed — the original deletes middle-stratum points to make simple random *look* unbalanced.
+**Concepts:** Sampling designs, simple random vs stratified vs cluster vs multistage sampling, convenience sampling and bias, design effect, precision vs cost of data collection, accuracy vs precision, why cluster geometry matters.
+
+**URL Parameters:**
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `design` | string | `srs` | Which design to open on: `srs`, `stratified`, `cluster`, `multistage`, `convenience`. | `?design=cluster` |
+| `n` | integer | `60` | Approximate number of rocks to weigh (12–200). | `?n=120` |
+| `seed` | string | _(random)_ | Fixes every dig, so a class sees identical samples. | `?seed=rocks1` |
+
+**Compatible Datasets:** N/A — the population is generated from a fixed seed, so μ is the same for everyone.
+
+---
+
 ### Sampling Bias Lab
 
 **Path:** `conceptual/sampling-bias/`
@@ -1253,11 +1272,24 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ## Utilities (Instructor-Facing)
 
+### Extra Datasets
+
+**Path:** `data/extra/`
+**Category:** Utility (instructor-facing)
+**Description:** Lists datasets contributed by instructors and hosted in `data/extra/`. Each card shows the contributor, n, and variables, with a ready-made link into every tool the dataset fits, plus a copy-link button. Contributed datasets are indexed with `contributed: true`, which keeps them out of every tool's dataset dropdown while remaining loadable by `?dataset=<id>` anywhere — so an instructor with no file hosting can email a spreadsheet and get back a short link (and, via **Share**, a QR code).
+**Concepts:** N/A (authoring/distribution utility)
+
+**URL Parameters:** None.
+
+**Compatible Datasets:** Any dataset in `data/extra/`. Submission instructions: `instructors/#submit`; maintenance workflow: `data/extra/README.md`.
+
+---
+
 ### Dataset Builder
 
 **Path:** `data/builder/`
 **Category:** Utility (not a student tool)
-**Description:** An instructor utility that converts CSV/TSV data into a StatLens-format JSON dataset. Three steps: (1) paste or upload CSV/TSV — the parser auto-detects the delimiter and infers each column's type; (2) fill in metadata (name, description, source, chapter, study description, variable descriptions and labels, optional categorical `levels`); (3) export the JSON via copy-to-clipboard or file download. Includes instructions for hosting the result on a GitHub Gist and linking it into any tool via `?json=`.
+**Description:** An instructor utility that converts CSV/TSV data into a StatLens-format JSON dataset. Three steps: (1) paste, upload, **or open from a link** — the parser auto-detects the delimiter and infers each column's type, and the dataset's name and id are seeded from the filename; (2) fill in metadata (name, description, source, chapter, study description, variable descriptions and labels, optional categorical `levels`); (3) export the JSON via copy-to-clipboard or file download. Includes instructions for hosting the result (gist or any HTTPS host) and opening it via a tool's **Open File/URL** tab or `?json=`.
 **Concepts:** N/A (authoring utility)
 
 **URL Parameters:** None. All configuration is through the on-page form.

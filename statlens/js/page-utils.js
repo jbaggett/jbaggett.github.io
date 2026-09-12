@@ -1061,7 +1061,12 @@ export async function loadDatasetIndex(selectEl, filterFn, descEl, groupFn) {
     const resp = await fetch(dataPath('datasets.json'));
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const index = await resp.json();
-    const relevant = index.filter(filterFn);
+    // Contributed datasets (data/extra/) are addressable by `?dataset=` but are
+    // kept out of every browse dropdown: those already run 11-36 options deep,
+    // and a menu that grows with every colleague's submission is a menu students
+    // stop reading. `loadDatasetIndex` returns the browse list; the deep-link
+    // path below consults the full index instead.
+    const relevant = index.filter(ds => !ds.contributed).filter(filterFn);
     populateDatasetSelect(selectEl, relevant, groupFn);
     return relevant;
   } catch {
@@ -1075,8 +1080,10 @@ export async function loadDatasetIndex(selectEl, filterFn, descEl, groupFn) {
  * @param {string} id
  * @returns {Promise<any>}
  */
-export async function fetchDataset(id) {
-  const resp = await fetch(dataPath(`${id}.json`));
+export async function fetchDataset(id, contributed = false) {
+  // Contributed datasets live in data/extra/ so that an instructor's submission
+  // is a file drop rather than an edit to a 500-line build script.
+  const resp = await fetch(dataPath(contributed ? `extra/${id}.json` : `${id}.json`));
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
 }
@@ -1267,6 +1274,85 @@ function isAllowedExternalUrl(url) {
   return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(url);
 }
 
+/**
+ * Throw unless this parses as a StatLens dataset. Variable names are stripped
+ * of markup in place, as they end up in labels and headings.
+ * @param {any} ds
+ */
+function validateDataset(ds) {
+  if (!ds || !ds.variables || !Array.isArray(ds.variables) || !ds.rows || !Array.isArray(ds.rows)) {
+    throw new Error('Invalid format: must have "variables" and "rows" arrays.');
+  }
+  if (ds.rows.length > 50_000) throw new Error('Too many rows (max 50,000).');
+  for (const v of ds.variables) {
+    if (typeof v.name !== 'string') throw new Error('Each variable must have a "name" string.');
+    v.name = v.name.replace(/<[^>]*>/g, '').trim();
+  }
+}
+
+/**
+ * @param {any} ds
+ * @param {string} fallbackName
+ */
+function datasetMeta(ds, fallbackName) {
+  return { id: 'external', name: ds.name || fallbackName, description: ds.description || '',
+    type: 'external', n: ds.rows.length };
+}
+
+/**
+ * Is this text a StatLens dataset? Returns the parsed dataset, or null for
+ * anything else (CSV, TSV, a stray HTML error page).
+ * @param {string} text
+ */
+function asDatasetJSON(text) {
+  if (!text.trimStart().startsWith('{')) return null;
+  try {
+    const ds = JSON.parse(text);
+    validateDataset(ds);
+    return ds;
+  } catch { return null; }
+}
+
+/**
+ * Fetch a data file from a link, with the guards every caller needs: HTTPS
+ * only, a size cap, and an error message that names the two things that
+ * actually go wrong (a link to a viewing page rather than the file, or a host
+ * that blocks other sites).
+ *
+ * Shared by the data panel's Open File/URL tab and by the Dataset Builder, so
+ * both behave identically and there is one place to fix.
+ *
+ * @param {string} url
+ * @returns {Promise<{text: string, name: string}>}
+ */
+export function fetchDataText(url) {
+  if (!isAllowedExternalUrl(url)) {
+    return Promise.reject(new RangeError('The link must start with https://'));
+  }
+  return fetch(url, { mode: 'cors' })
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
+    })
+    .then(text => {
+      if (text.length > 5_000_000) throw new Error('File too large (max 5MB).');
+      return { text, name: url.split('/').pop()?.replace(/\.\w+$/, '') || 'external' };
+    });
+}
+
+/** The message to show when `fetchDataText` rejects. */
+export function dataLinkError(/** @type {unknown} */ err) {
+  if (err instanceof RangeError) {
+    return 'The link must start with https://. On GitHub, Dropbox, or Google Drive use the '
+      + 'raw (direct-to-file) link, not the page you read the file on.';
+  }
+  if (err instanceof TypeError) {
+    return 'Could not load that link. Check that it points straight at the file (a "raw" link) '
+      + 'and that the site allows other sites to read it.';
+  }
+  return `Could not load that link: ${err instanceof Error ? err.message : String(err)}`;
+}
+
 function fetchExternalJSON(url, onDataset, populateEditor, resolve) {
   if (!isAllowedExternalUrl(url)) {
     announce('External datasets require HTTPS URLs.');
@@ -1279,16 +1365,8 @@ function fetchExternalJSON(url, onDataset, populateEditor, resolve) {
       return r.json();
     })
     .then(ds => {
-      if (!ds.variables || !Array.isArray(ds.variables) || !ds.rows || !Array.isArray(ds.rows)) {
-        throw new Error('Invalid format: must have "variables" and "rows" arrays.');
-      }
-      if (ds.rows.length > 50_000) throw new Error('Too many rows (max 50,000).');
-      // Sanitize variable names
-      for (const v of ds.variables) {
-        if (typeof v.name !== 'string') throw new Error('Each variable must have a "name" string.');
-        v.name = v.name.replace(/<[^>]*>/g, '').trim();
-      }
-      const meta = { id: 'external', name: ds.name || 'External data', description: ds.description || '', type: 'external', n: ds.rows.length };
+      validateDataset(ds);
+      const meta = datasetMeta(ds, 'External data');
       onDataset(ds, meta);
       if (ds.rows && ds.variables) {
         const cols = ds.variables.map(/** @param {any} v */ v => v.name);
@@ -1396,6 +1474,12 @@ export function initDataPanel(config) {
   let urlNote = null;
   {
     const filePanel = document.getElementById('panel-file');
+    // Todd Will's second point: the workflow is easy to forget between
+    // semesters. So the instructions live at the point of use rather than in a
+    // document you have to remember exists. Path derived from the home link
+    // because page depth varies and production serves the site under /statlens/.
+    const hubHref = (document.querySelector('.home-btn')?.getAttribute('href') || '../../')
+      + 'instructors/#qr';
     if (filePanel && !filePanel.querySelector('.url-open')) {
       const row = document.createElement('div');
       row.className = 'url-open';
@@ -1406,7 +1490,7 @@ export function initDataPanel(config) {
         + '<div class="btn-row"><button type="button" id="load-url" class="btn-secondary">Load</button></div>'
         + '<p class="hint" id="data-url-note">Data opened from a link becomes part of the page link, so'
         + ' <strong>Share</strong> will give you a QR code that opens this tool with this data'
-        + ' already in it.</p>';
+        + ' already in it. <a href="' + hubHref + '">Which files can I link to?</a></p>';
       filePanel.appendChild(row);
 
       urlInput = /** @type {HTMLInputElement} */ (row.querySelector('#data-url-input'));
@@ -1552,7 +1636,7 @@ export function initDataPanel(config) {
    */
   function loadDatasetById(id, meta) {
     if (meta && datasetDesc) datasetDesc.textContent = meta.description;
-    return fetchDataset(id)
+    return fetchDataset(id, !!meta?.contributed)
       .then(ds => {
         currentDatasetId = id;
         currentSourceName = meta?.name || ds.name || id;
@@ -1630,17 +1714,35 @@ export function initDataPanel(config) {
         if (effectiveParams.dataset && index.some(ds => ds.id === effectiveParams.dataset)) {
           datasetSelect.value = effectiveParams.dataset;
           datasetSelect.dispatchEvent(new Event('change'));
-        } else if (effectiveParams.dataset && deepLinkFilter) {
+        } else if (effectiveParams.dataset) {
           // Deep-link bypass: a `?dataset=` link is an explicit request, so honor it
           // even when the dataset is filtered out of the curated dropdown — provided
-          // it exists in the full index AND passes deepLinkFilter, a capability guard
-          // that keeps e.g. a categorical-only dataset out of a numeric-only tool.
+          // it exists in the full index AND passes a capability guard that keeps
+          // e.g. a categorical-only dataset out of a numeric-only tool. That guard
+          // is `deepLinkFilter` where a tool supplies one, and otherwise the tool's
+          // own `datasetFilter` — which is what lets a contributed dataset open in
+          // any tool it actually fits without appearing in anybody's menu.
           const wanted = effectiveParams.dataset;
+          // Which guard, and why it matters: a tool's `datasetFilter` mixes
+          // capability with *curation*. explore/categorical's, for instance,
+          // rejects any dataset containing a numeric column — not because the
+          // page can't handle one (it ignores it) but to keep the browse menu
+          // purely categorical. Judging an explicit link by a curation rule
+          // silently refuses datasets the tool handles perfectly well.
+          //
+          // So: `deepLinkFilter` where a tool has defined a real capability
+          // guard; otherwise `datasetFilter`, which preserves the old
+          // behaviour exactly for built-ins (a built-in passing datasetFilter
+          // is already in the dropdown, so the branch above caught it). And a
+          // contributed dataset always loads — it is opened by a link an
+          // instructor was handed, and the page's own loader says whether it
+          // can use it, which is a question about the data, not the menu.
+          const guard = deepLinkFilter || datasetFilter;
           fetch(dataPath('datasets.json'))
             .then(r => r.ok ? r.json() : [])
             .then(full => {
               const meta = full.find(/** @param {any} d */ d => d.id === wanted);
-              if (meta && deepLinkFilter(meta)) loadDatasetById(wanted, meta);
+              if (meta && (meta.contributed || guard(meta))) loadDatasetById(wanted, meta);
               else resolveReady();
             })
             .catch(() => resolveReady());
@@ -1855,41 +1957,37 @@ export function initDataPanel(config) {
     const loadFromUrl = () => {
       const url = (urlInput?.value ?? '').trim();
       if (!url) return;
-      if (!isAllowedExternalUrl(url)) {
-        setNote('The link must start with <code>https://</code>. On GitHub, Dropbox, or Google Drive '
-          + 'use the <strong>raw</strong> (direct-to-file) link, not the page you read the file on.');
-        announce('The link must start with https://');
-        return;
-      }
       setNote('Loading…');
       lastLoadedDataset = undefined;
       currentDatasetId = null;
-      const isJson = /\.json(\?|#|$)/i.test(url);
-      let loaded = false;
-      // Both fetch helpers call `resolve` on failure too, so track success
-      // explicitly — otherwise a 404 would still rewrite the address bar.
-      const finish = () => {
-        if (!loaded) {
-          setNote('Could not load that link. Check that it points straight at the file '
-            + '(a &ldquo;raw&rdquo; link) and that the site allows other sites to read it.');
-          return;
-        }
-        postLoadUI();
-        rememberDataUrl(url, isJson);
-        setNote(defaultNote);
-        announce('Data loaded from link.');
-      };
-      if (isJson) {
-        fetchExternalJSON(url, (/** @type {any} */ ds, /** @type {any} */ meta) => {
-          loaded = true;
-          onDataset(ds, meta);
-        }, populateEditor, finish);
-      } else {
-        fetchExternalCSV(url, (/** @type {string} */ text, /** @type {string} */ name) => {
-          loaded = true;
-          ingestText(text, name);
-        }, populateEditor, finish);
-      }
+
+      // Decide by *content* rather than by file extension. A
+      // dataset exported from the Dataset Builder is StatLens JSON whatever the
+      // file happens to be called — and guessing from the extension failed
+      // silently on the five pages that supply their own `onRawText`, because
+      // the JSON sniff lives in the default text handler those pages replace.
+      // The sniff also picks the parameter written to the address bar, so the
+      // link in the QR code loads the same way the tab just did.
+      fetchDataText(url)
+        .then(({ text, name }) => {
+          const ds = asDatasetJSON(text);
+          if (ds) {
+            const meta = datasetMeta(ds, name);
+            onDataset(ds, meta);
+            populateEditor(rowsToCSV(ds.rows, ds.variables.map((/** @type {any} */ v) => v.name)), meta.name);
+          } else {
+            ingestText(text, name);
+            populateEditor(text, name);
+          }
+          postLoadUI();
+          rememberDataUrl(url, !!ds);
+          setNote(defaultNote);
+          announce('Data loaded from link.');
+        })
+        .catch(err => {
+          setNote(dataLinkError(err));
+          announce(dataLinkError(err));
+        });
     };
 
     loadUrlBtn.addEventListener('click', loadFromUrl);

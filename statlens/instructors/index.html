@@ -177,7 +177,50 @@
             <li>Open the StatLens tool you want, go to <strong>Open File/URL</strong>, paste the link, and click <strong>Load</strong>.</li>
             <li>Click <strong>Share</strong> and project the QR code. Students scan it and land on the tool with your data in it.</li>
         </ol>
+        <h4 id="hosts">Which files can StatLens link to?</h4>
+        <p>Any <code>https://</code> address that (a) points <em>straight at the file</em> rather than at a page you view it on, and (b) comes from a host that lets other websites read it. Two things follow from that, and they cover most of the confusion:</p>
+        <div class="table-scroll">
+        <table>
+            <thead><tr><th>Where the file lives</th><th>Link to use</th></tr></thead>
+            <tbody>
+                <tr><td><strong>GitHub Gist</strong> &mdash; tested end to end</td><td>The <strong>Raw</strong> button&rsquo;s address</td></tr>
+                <tr><td><strong>A Dataset Builder <code>.json</code></strong> in a gist &mdash; tested</td><td>Same <strong>Raw</strong> address. Worth preferring over CSV: the variable labels, study description and &ldquo;About this data&rdquo; panel travel with the file. StatLens recognises it by its contents, so the file&rsquo;s name and extension don&rsquo;t matter.</td></tr>
+                <tr><td><strong>Google Sheets</strong></td><td><em>File &rarr; Share &rarr; Publish to the web &rarr; CSV</em>. Not the ordinary &ldquo;Share&rdquo; link &mdash; that one opens a page, not a file. Updates when you edit the sheet.</td></tr>
+                <tr><td><strong>Dropbox</strong></td><td>The share link with <code>?raw=1</code> on the end (instead of <code>?dl=0</code>)</td></tr>
+                <tr><td><strong>Your own web space</strong></td><td>The file&rsquo;s address, as normal</td></tr>
+                <tr><td><strong>OneDrive or SharePoint at a university</strong>, Canvas file links, Google&nbsp;Drive viewer pages</td><td><strong>Won&rsquo;t work.</strong> These require a sign-in, and a student&rsquo;s phone arriving from a QR code has no session. The tool will tell you it can&rsquo;t read the link.</td></tr>
+            </tbody>
+        </table>
+        </div>
+        <p>Trying costs nothing: a link StatLens can&rsquo;t read produces a message in the panel and changes nothing else, so paste it and see.</p>
+
         <p class="hint">Keep the data out of a gist if it contains anything students shouldn&rsquo;t see &mdash; an unlisted gist is still readable by anyone who has the address. For class data collected in a Google Sheet, <em>File &rarr; Share &rarr; Publish to the web &rarr; CSV</em> gives a link that works the same way, and updates when the sheet does.</p>
+
+        <h3 id="submit">Or skip all of this: send me the dataset</h3>
+        <p>Everything above assumes you want to host the data yourself. You don&rsquo;t have to. Send me
+           the dataset and I&rsquo;ll host it, then send you back a link like
+           <code>explore/grouped/?dataset=your_data</code> &mdash; short enough to read off a slide, and
+           it becomes a QR code with one click of <strong>Share</strong>. No account, no gist, no file
+           hosting, nothing to remember next semester.</p>
+        <ol>
+            <li>Open the <a href="../data/builder/">Dataset Builder</a> and drop in your CSV (or an
+                Excel file saved as CSV). It reads the columns and works out which are numeric and
+                which are categories.</li>
+            <li>Fill in the description fields. A <strong>&ldquo;Ready to send?&rdquo;</strong> checklist
+                appears as you go and tells you what&rsquo;s still empty &mdash; what the study was, what each
+                column means and its units, and where the data came from.</li>
+            <li>Click <strong>Download JSON</strong> and email me that file.
+                <!-- TODO (Jeff): your address here, e.g. <a href="mailto:you@example.edu">you@example.edu</a>. --></li>
+        </ol>
+        <p><strong>Send the JSON, not the spreadsheet.</strong> A spreadsheet is just numbers; the JSON
+           carries your description of the study and of each variable, and that&rsquo;s what students read
+           in the &ldquo;About this data&rdquo; panel before they analyse anything. It&rsquo;s also the half
+           nobody else can write for you &mdash; I can convert a CSV, but I can&rsquo;t tell your class how
+           the data were collected.</p>
+        <p class="hint">If the builder gives you any trouble, send the spreadsheet and a few sentences
+           about the study and I&rsquo;ll do the conversion. Either way it lands on the
+           <a href="../data/extra/">Extra Datasets</a> page. Nothing goes up that identifies a student
+           &mdash; strip names, IDs and anything else identifying before you send it.</p>
 
         <!-- ── Links ───────────────────────────────────────────── -->
         <p class="section-label">Share &amp; pre-configure</p>
@@ -240,6 +283,7 @@
             <thead><tr><th>I want to&hellip;</th><th>Do this</th></tr></thead>
             <tbody>
                 <tr><td>Share a custom dataset with students</td><td>Build in the <a href="../data/builder/">Dataset Builder</a> &rarr; download JSON &rarr; share the file</td></tr>
+                <tr><td>Get my data into StatLens without any setup</td><td><a href="#submit">Build the JSON</a> in the Dataset Builder &rarr; email it &rarr; you get a link and a QR code</td></tr>
                 <tr><td>Get my own data to the whole class at once</td><td>Post the CSV to a <a href="https://gist.github.com" target="_blank" rel="noopener">gist</a> &rarr; paste the raw link into <strong>Open File/URL</strong> &rarr; <strong>Share</strong> &rarr; project the QR code (<a href="#qr">how</a>)</td></tr>
                 <tr><td>Link students to a pre-loaded tool</td><td>Add <code>?dataset=id</code> or <code>?csv=url</code> to the link</td></tr>
                 <tr><td>Hide numbers for a visual exercise</td><td>Add <code>?labels=names</code> or <code>?readout=false</code></td></tr>
