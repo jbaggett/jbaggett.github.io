@@ -103,15 +103,6 @@
                 <button type="button" data-design="multistage" aria-pressed="false">Multistage</button>
                 <button type="button" data-design="convenience" aria-pressed="false">Convenience</button>
             </div>
-            <div class="shape-bar expert-only" id="shape-bar" hidden>
-                <span role="group" aria-label="Cluster shape" class="seg-control">
-                    <span class="shape-label">Clusters are</span>
-                    <button type="button" data-shape="holes" aria-pressed="true">deep holes</button>
-                    <button type="button" data-shape="pits" aria-pressed="false">shallow pits</button>
-                </span>
-                <p class="hint" style="margin:0.25rem 0 0">A deep hole cuts through all three layers; a
-                   shallow pit sits at one depth. Same design, different clusters.</p>
-            </div>
             <div class="generate-bar" role="group" aria-label="Draw samples">
                 <label for="target-n">Rocks to weigh
                     <input type="number" id="target-n" value="60" min="12" max="200" step="6"
@@ -180,12 +171,14 @@
         <p><strong>The rule worth taking away:</strong> good <em>strata</em> are uniform inside and
            different from each other; good <em>clusters</em> are varied inside, each a small copy of the
            whole. They are opposites, and the same ground can give you either.</p>
-        <p class="hint"><strong>For instructors:</strong> choose <em>More options</em> to switch the
-           clusters from deep holes to shallow pits. Pits sit at a single depth, so they are uniform
-           inside &mdash; the way real clusters (city blocks, classrooms) usually are. Run 500 again and
-           the spread jumps, which is the design effect textbooks refer to when they say cluster
-           sampling costs precision. It is hidden by default because it is a second question, worth
-           asking only once the four designs are straight.</p>
+        <p class="hint"><strong>One caution for instructors.</strong> Cluster sampling does unusually
+           <em>well</em> in this scenario, and the reason is worth saying out loud rather than leaving
+           for students to over-generalise. A cluster is whatever unit is cheap to collect whole; here
+           that is a hole, and a hole happens to cut through all three layers, so each one is a
+           miniature of the plot. Real clusters &mdash; city blocks, classrooms, villages &mdash; are
+           usually the opposite: their members resemble each other, so each extra one tells you less
+           than a fresh random pick would, and cluster sampling costs precision for a given sample size
+           and earns it back by being cheap. Same design, different ground.</p>
         <button type="button">Close</button>
     </dialog>
 
