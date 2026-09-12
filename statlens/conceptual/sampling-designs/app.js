@@ -161,11 +161,19 @@ const DESIGNS = {
     label: 'Convenience',
     note: () => scenario.convenience.note,
     draw: (n, rng) => {
-      // Whatever is easiest to reach: always one band, never a fair picture. On
-      // a beach and in an orchard that is the far band (the storm berm by the
-      // car park, the crabapples by the lane); underground it is the surface.
-      const i = scenario.id === 'buried' ? 0 : scenario.bands.length - 1;
-      return { sample: sampleOf(BY_BAND[i], n, rng), picked: [], found: [], bandsShown: [i] };
+      // Todd Will's suggestion: everything within arm's reach of where you
+      // arrived. Taking the n nearest items to the access point *is* a
+      // semicircle of whatever happens to be underfoot — no randomness, and no
+      // travelling. Where there is no such point (you cannot park inside a hole
+      // in the ground) it falls back to scraping the nearest band.
+      const a = scenario.convenience.anchor;
+      if (!a) {
+        const i = 0;
+        return { sample: sampleOf(BY_BAND[i], n, rng), picked: [], found: [], bandsShown: [i] };
+      }
+      const byDistance = [...POP].sort((p, q) =>
+        ((p.x - a.x) ** 2 + (p.y - a.y) ** 2) - ((q.x - a.x) ** 2 + (q.y - a.y) ** 2));
+      return { sample: byDistance.slice(0, n), picked: [], found: [], bandsShown: null };
     },
   },
 };
@@ -262,6 +270,21 @@ function drawScene() {
           .attr('stroke', '#114B5F').attr('stroke-width', 1.5).attr('stroke-dasharray', '5 3');
       }
     }
+  }
+
+  // Where you arrived — the thing that makes a convenience sample convenient
+  const anchor = scenario.convenience.anchor;
+  if (anchor && design === 'convenience') {
+    const ax = gx(anchor.x), ay = gy(anchor.y);
+    const g = svg.append('g');
+    g.append('circle').attr('cx', ax).attr('cy', ay).attr('r', 5)
+      .attr('fill', '#333').attr('stroke', '#fff').attr('stroke-width', 1.5);
+    const leftEdge = anchor.x < 0.5;
+    g.append('text').attr('x', ax + (leftEdge ? 10 : -10)).attr('y', ay - 9)
+      .attr('text-anchor', leftEdge ? 'start' : 'end')
+      .attr('font-size', 11.5).attr('font-weight', 700).attr('fill', '#222')
+      .attr('stroke', '#fff').attr('stroke-width', 3.5).attr('paint-order', 'stroke')
+      .text(scenario.convenience.accessLabel ?? 'you are here');
   }
 
   // Items in three states: left alone, collected but not measured, measured.

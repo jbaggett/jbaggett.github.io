@@ -61,7 +61,11 @@ import { createRng } from '../../js/prng.js';
  * @property {string} bandAxisLabel  - names the gradient for a reader
  * @property {Array<{name: string, label: string, count: number, mean: number, sd: number}>} bands
  * @property {Record<string, ClusterShape>} clusters - keyed, first is the default
- * @property {{label: string, note: string}} convenience
+ * @property {{label: string, note: string, anchor?: {x: number, y: number}, accessLabel?: string}} convenience
+ *   `anchor` is where you park, arrive, or stand. With one, the convenience sample
+ *   is simply the nearest items to that point — which comes out as a semicircle of
+ *   whatever happens to be underfoot (Todd Will's suggestion, and better than a
+ *   random draw from one band, because it is localised as well as biased).
  * @property {string} srsNote
  * @property {string} stratifiedNote
  */
@@ -107,9 +111,12 @@ export const SCENARIOS = [
       },
     },
     convenience: {
-      label: 'the stones by the parking area',
-      note: 'Fill a bucket from the shingle right where you parked, at the top of the beach. No '
-          + 'randomness anywhere — and the top of the beach is where the big stones are.',
+      label: 'the stones by the car',
+      anchor: { x: 0.14, y: 1 },
+      accessLabel: 'you parked here',
+      note: 'Fill a bucket from the shingle in arm’s reach of where you parked. No randomness at all '
+          + '— and the back of the beach, where you can drive to, is exactly where the storm waves '
+          + 'pile the big stones.',
     },
     srsNote: 'Every cobble on the beach is equally likely — which means walking the whole beach and '
            + 'bending down more or less everywhere.',
@@ -142,9 +149,11 @@ export const SCENARIOS = [
       },
     },
     convenience: {
-      label: 'what you can reach from the ground',
-      note: 'Pick whatever you can reach without a ladder, from the trees nearest the lane. No '
-          + 'randomness anywhere &mdash; and those are crabapples.',
+      label: 'the trees by the gate',
+      anchor: { x: 1, y: 0.5 },
+      accessLabel: 'the gate',
+      note: 'Fill a crate from the trees just inside the gate, without walking the orchard. No '
+          + 'randomness at all — and the block by the gate is the crabapples.',
     },
     srsNote: 'Every apple in the orchard is equally likely — which means a ladder, a different tree, '
            + 'and a walk across the orchard for practically every apple you weigh.',
