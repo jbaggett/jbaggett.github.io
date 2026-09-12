@@ -1087,18 +1087,23 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 **Path:** `conceptual/sampling-designs/`
 **Category:** Conceptual
-**Description:** Rocks buried under a plot of ground, sorted by size with depth (pebbles on top, boulders at the bottom); the parameter is their average weight. Five designs draw from the same population — **simple random**, **stratified** (proportional allocation across the three depth layers), **cluster** (dig a few whole holes, weigh everything in them), **multistage** (a few holes, then a sample within each), and **convenience** (scrape the surface). Each sample reports x̄ against μ plus its *cost*: rocks weighed and holes dug. **Run 500 of each design** builds the sampling distribution of x̄ for all five on one shared axis, with a table of bias, SD, spread relative to simple random, and mean cost. **The clusters are always holes**, because a cluster is whatever unit is cheap to collect whole and a hole is the only such unit here. That makes this scenario unusually kind to cluster sampling (its one convenient unit happens to cut all three strata, so it is a miniature of the population), which the help text states outright rather than engineering around. Two alternative geometries were tried and withdrawn: horizontal layers are strata in this scenario, not clusters (Todd Will), and shallow pits at depth are not convenient at all, since reaching one means excavating and discarding everything above it (Jeff). Adapted from Todd Will's Mathematica demo, with the rigged SRS removed — the original deletes middle-stratum points to make simple random *look* unbalanced.
-**Concepts:** Sampling designs, simple random vs stratified vs cluster vs multistage sampling, convenience sampling and bias, design effect, precision vs cost of data collection, accuracy vs precision, why cluster geometry matters.
+**Description:** Five designs — **simple random**, **stratified**, **cluster**, **multistage**, **convenience** — drawing from the same population in three settings, each reporting its estimate against the truth *and what it cost to collect*. Adapted from Todd Will's Mathematica demo, with the rigged SRS removed (the original deletes middle-stratum points so simple random *looks* unbalanced).
+
+**Settings.** A **cobble beach** (wave-sorted stones; clusters are transects walked from the water up, or quadrats tossed on the shingle — field ecologists use both); an **apple orchard** (three variety blocks, apples clumped on visible trees; the cluster is a tree); and Todd's original **buried rocks** (cross-section, depth strata; the only cheap unit is a hole). The settings differ in *which clusters are convenient*, which is the point: a cluster is whatever unit is cheap to collect whole, and you don't choose what's inside it. Measured intracluster correlations: orchard trees 0.86 (cluster sampling runs ~4× simple random's spread — the usual case), beach quadrats 0.76 (~3.9×), beach transects −0.001 and buried holes −0.002 (clusters that cut every stratum, so clustering actually *helps*).
+
+**Default view is Chapter 2 material only** — the scene, the five designs, the estimate against the truth, and the cost (clusters opened, items measured). **More options** reveals *Run 500 of each design*: five sampling distributions on one axis plus a table of bias, SD, spread relative to simple random, and mean cost. That split is deliberate — standard errors are a later course's question.
+**Concepts:** Sampling designs, simple random vs stratified vs cluster vs multistage, convenience sampling and bias, cost of data collection, accuracy vs precision; (expert) design effect, intracluster correlation, why cluster sampling usually costs precision.
 
 **URL Parameters:**
 
 | Parameter | Type | Default | Description | Example |
 |-----------|------|---------|-------------|---------|
-| `design` | string | `srs` | Which design to open on: `srs`, `stratified`, `cluster`, `multistage`, `convenience`. | `?design=cluster` |
-| `n` | integer | `60` | Approximate number of rocks to weigh (12–200). | `?n=120` |
-| `seed` | string | _(random)_ | Fixes every dig, so a class sees identical samples. | `?seed=rocks1` |
+| `scenario` | string | `beach` | `beach`, `orchard`, or `buried`. | `?scenario=orchard` |
+| `design` | string | `srs` | `srs`, `stratified`, `cluster`, `multistage`, `convenience`. | `?design=cluster` |
+| `n` | integer | `60` | Approximately how many items to measure (12–200). | `?n=120` |
+| `seed` | string | _(random)_ | Fixes every sample, so a class sees identical draws. | `?seed=beach1` |
 
-**Compatible Datasets:** N/A — the population is generated from a fixed seed, so μ is the same for everyone.
+**Compatible Datasets:** N/A — each setting's population is generated from a fixed seed, so its true mean is the same for every reader (beach 2.09 kg, orchard 132 g, buried rocks 2.62 kg).
 
 ---
 

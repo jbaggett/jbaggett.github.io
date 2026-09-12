@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sampling Designs | StatLens</title>
-    <meta name="description" content="Dig for rocks: compare simple random, stratified, cluster, multistage and convenience sampling on the same buried population — what each costs to collect, and how precise each one is.">
+    <meta name="description" content="Simple random, stratified, cluster, multistage and convenience sampling on a cobble beach, an apple orchard, or a plot of buried rocks — what each design costs to collect, and how close it gets.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
@@ -24,20 +24,31 @@
     </script>
 
     <style>
-        .design-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.6rem; }
-        .design-bar button[aria-pressed] {
+        .pick-bar { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-bottom: 0.5rem; }
+        .pick-bar .pick-label { font-size: 0.85rem; color: var(--ims-gray-text, #6B6B6B); margin-right: 0.2rem; }
+        .pick-bar button[aria-pressed] {
             padding: 0.35rem 0.7rem; border: 1px solid var(--border, #ccc); border-radius: 4px;
             background: var(--bg, #fff); font-family: inherit; font-size: 0.88rem; cursor: pointer;
         }
-        .design-bar button[aria-pressed="true"] {
-            background: var(--ims-green, #114B5F); color: #fff; border-color: var(--ims-green, #114B5F);
-            font-weight: 700;
+        .pick-bar button[aria-pressed="true"] {
+            background: var(--ims-green, #114B5F); color: #fff;
+            border-color: var(--ims-green, #114B5F); font-weight: 700;
+        }
+        #scenario-bar button[aria-pressed="true"] {
+            background: #E3EEF4; color: var(--ims-green, #114B5F);
+            border-color: var(--ims-green, #114B5F); border-width: 2px;
+        }
+        #shape-bar button[aria-pressed="true"] {
+            background: #E3EEF4; color: var(--ims-green, #114B5F);
+            border-color: var(--ims-green, #114B5F); border-width: 2px;
         }
 
-        #ground-wrap { overflow-x: auto; }
-        #ground { display: block; width: 100%; height: auto; max-width: 46rem; }
+        #scenario-blurb { margin: 0.2rem 0 0.8rem; }
 
-        .readout { display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 0.6rem 0 0.2rem; }
+        #scene-wrap { overflow-x: auto; }
+        #scene { display: block; width: 100%; height: auto; max-width: 46rem; }
+
+        .readout { display: flex; flex-wrap: wrap; gap: 1.2rem; margin: 0.7rem 0 0.2rem; }
         .readout div { min-width: 7rem; }
         .readout dt { font-size: 0.82rem; letter-spacing: 0.01em; font-weight: 600;
                       color: var(--ims-gray-text, #6B6B6B); margin: 0; }
@@ -45,24 +56,12 @@
                       font-variant-numeric: tabular-nums; color: var(--ims-green, #114B5F); }
         .readout dd .unit { font-size: 0.8rem; font-weight: 400; color: var(--ims-gray-text, #6B6B6B); }
 
-        .shape-bar { margin: 0 0 0.6rem; }
-        .shape-bar .shape-label { font-size: 0.85rem; color: var(--ims-gray-text, #6B6B6B);
-                                  margin-right: 0.35rem; }
-        .shape-bar button { padding: 0.3rem 0.6rem; border: 1px solid var(--border, #ccc);
-            border-radius: 4px; background: var(--bg, #fff); font-family: inherit;
-            font-size: 0.85rem; cursor: pointer; }
-        .shape-bar button[aria-pressed="true"] { background: #E3EEF4; color: var(--ims-green, #114B5F);
-            border-color: var(--ims-green, #114B5F); border-width: 2px; font-weight: 700; }
-        @media (max-width: 600px) { .shape-bar button { min-height: 44px; } }
-
-        .design-note { font-size: 0.92rem; margin: 0.5rem 0 0; }
-        .cost-note { font-size: 0.88rem; color: var(--ims-gray-text, #6B6B6B); margin: 0.2rem 0 0; }
+        .design-note { font-size: 0.94rem; margin: 0.55rem 0 0; }
+        .cost-note { font-size: 0.88rem; color: var(--ims-gray-text, #6B6B6B); margin: 0.25rem 0 0; }
 
         #compare-wrap { overflow-x: auto; margin-top: 0.4rem; }
         #compare { display: block; width: 100%; height: auto; max-width: 46rem; }
         .verdict { margin-top: 0.6rem; font-size: 0.93rem; }
-        /* Six columns do not fit a phone: scroll the table inside its own box
-           rather than letting the page scroll sideways. */
         .verdict-scroll { overflow-x: auto; margin-top: 0.4rem; }
         .verdict table { border-collapse: collapse; font-size: 0.88rem; }
         .verdict th, .verdict td { border: 1px solid var(--border, #ccc); padding: 0.25rem 0.5rem;
@@ -72,7 +71,7 @@
         .verdict .biased { color: #A33; font-weight: 700; }
 
         @media (max-width: 600px) {
-            .design-bar button[aria-pressed] { min-height: 44px; }
+            .pick-bar button[aria-pressed] { min-height: 44px; }
             .readout { gap: 0.9rem; }
             .readout dd { font-size: 1rem; }
         }
@@ -81,61 +80,66 @@
 <body>
     <nav class="skip-links" aria-label="Skip links">
         <a href="#controls">Skip to Controls</a>
-        <a href="#ground-section">Skip to the ground</a>
-        <a href="#compare-section">Skip to the comparison</a>
+        <a href="#scene-section">Skip to the site</a>
     </nav>
 
     <main>
         <h1>Sampling Designs<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
-        <p id="scenario">
-            Buried under a plot of ground are thousands of rocks. You want their
-            <strong>average weight</strong> &mdash; but you can only weigh the ones you dig up.
-            Rocks settle by size: <strong>pebbles near the surface, boulders at the bottom</strong>.
-            How you choose which rocks to weigh is the sampling design.
-        </p>
+        <section id="controls" aria-label="Controls">
+            <div class="pick-bar" role="group" aria-label="Setting" id="scenario-bar">
+                <span class="pick-label">Setting</span>
+                <button type="button" data-scenario="beach" aria-pressed="true">Cobble beach</button>
+                <button type="button" data-scenario="orchard" aria-pressed="false">Apple orchard</button>
+                <button type="button" data-scenario="buried" aria-pressed="false">Buried rocks</button>
+            </div>
 
-        <section id="controls" aria-label="Sampling design controls">
-            <div class="design-bar" role="group" aria-label="Sampling design" id="design-bar">
+            <p id="scenario-blurb"></p>
+
+            <div class="pick-bar" role="group" aria-label="Sampling design" id="design-bar">
+                <span class="pick-label">Design</span>
                 <button type="button" data-design="srs" aria-pressed="true">Simple random</button>
                 <button type="button" data-design="stratified" aria-pressed="false">Stratified</button>
                 <button type="button" data-design="cluster" aria-pressed="false">Cluster</button>
                 <button type="button" data-design="multistage" aria-pressed="false">Multistage</button>
                 <button type="button" data-design="convenience" aria-pressed="false">Convenience</button>
             </div>
-            <div class="generate-bar" role="group" aria-label="Draw samples">
-                <label for="target-n">Rocks to weigh
+
+            <div class="pick-bar" role="group" aria-label="Cluster shape" id="shape-bar" hidden></div>
+
+            <div class="generate-bar" role="group" aria-label="Take samples">
+                <label for="target-n">How many to measure
                     <input type="number" id="target-n" value="60" min="12" max="200" step="6"
-                           style="width:4.5rem" aria-label="Approximate number of rocks to weigh">
+                           style="width:4.5rem" aria-label="Approximate number to measure">
                 </label>
-                <button type="button" id="dig-btn" class="gen-btn">Dig a new sample</button>
-                <button type="button" id="run-many" class="btn-secondary">Run 500 of each design</button>
+                <button type="button" id="take-btn" class="gen-btn">Take a sample</button>
+                <button type="button" id="run-many" class="btn-secondary expert-only">Run 500 of each design</button>
                 <button type="button" id="reset-btn" class="reset-btn" title="Reset" aria-label="Reset">&#x21BA;</button>
             </div>
         </section>
 
-        <section id="ground-section" aria-label="The ground and your sample">
-            <div id="ground-wrap">
-                <svg id="ground" viewBox="0 0 760 330" aria-label="Cross-section of the ground. Rocks are drawn as circles sized by weight; the ones in your sample are highlighted."></svg>
+        <section id="scene-section" aria-label="The site and your sample">
+            <div id="scene-wrap">
+                <svg id="scene" viewBox="0 0 760 352" aria-label="The site, with the items in your sample highlighted."></svg>
             </div>
 
             <dl class="readout" id="readout">
-                <div><dt>True mean &mu;</dt><dd id="out-mu">&mdash;</dd></div>
-                <div><dt>Your estimate <span class="x-bar">x</span></dt><dd id="out-xbar">&mdash;</dd></div>
+                <div><dt>True average</dt><dd id="out-mu">&mdash;</dd></div>
+                <div><dt>Your estimate</dt><dd id="out-est">&mdash;</dd></div>
                 <div><dt>Off by</dt><dd id="out-err">&mdash;</dd></div>
-                <div id="found-row" hidden><dt>Rocks dug up</dt><dd id="out-found">&mdash;</dd></div>
-                <div><dt>Rocks weighed</dt><dd id="out-n">&mdash;</dd></div>
-                <div><dt>Holes dug</dt><dd id="out-holes">&mdash;</dd></div>
+                <div><dt id="lab-n">Measured</dt><dd id="out-n">&mdash;</dd></div>
+                <div id="collected-row" hidden><dt id="lab-collected">Collected</dt><dd id="out-collected">&mdash;</dd></div>
+                <div id="cost-row" hidden><dt id="lab-cost">Clusters</dt><dd id="out-cost">&mdash;</dd></div>
             </dl>
             <p class="design-note" id="design-note"></p>
             <p class="cost-note" id="cost-note"></p>
         </section>
 
-        <section id="compare-section" aria-label="Comparison across designs" hidden>
+        <section id="compare-section" class="expert-only" aria-label="Comparison across designs" hidden>
             <h2>500 samples from each design</h2>
-            <p id="compare-intro">Each dot is one sample's estimate of the average weight. The dashed
-               line is the truth. A design is <strong>accurate</strong> if its dots centre on the line,
-               and <strong>precise</strong> if they cluster tightly.</p>
+            <p>Each dot is one sample's estimate. The dashed line is the truth. A design is
+               <strong>accurate</strong> if its dots centre on the line, and <strong>precise</strong>
+               if they cluster tightly.</p>
             <div id="compare-wrap">
                 <svg id="compare" viewBox="0 0 760 300" aria-label="Estimates from 500 samples of each design, on one shared scale."></svg>
             </div>
@@ -147,38 +151,35 @@
 
     <dialog id="page-help" class="help-dialog">
         <h2>Sampling Designs</h2>
-        <p>Every design here picks rocks <em>at random</em> in some way &mdash; except the last one. The
-           question is not whether randomness is used, but <em>what it is applied to</em>.</p>
+        <p>Every design here chooses at random in some way &mdash; except the last one. The question is
+           not whether randomness is used, but <em>what it is applied to</em>.</p>
         <ul>
-            <li><strong>Simple random</strong> — every rock equally likely. Fair, but scattered all over
-                the plot: you dig a great many holes.</li>
-            <li><strong>Stratified</strong> — split the ground into the three depth layers first, then
-                take a random sample from each, in proportion to its size. Guarantees every layer is
-                represented.</li>
-            <li><strong>Cluster</strong> — pick a few holes at random and weigh <em>every</em> rock you
-                find in them. Far less digging. A hole runs top to bottom, so it contains all three
-                layers &mdash; each one a small copy of the population, which is the condition under which
-                cluster sampling does well.</li>
-            <li><strong>Multistage</strong> — pick a few holes at random, then a random sample of rocks
-                <em>within</em> each hole. Less digging <em>and</em> less weighing.</li>
-            <li><strong>Convenience</strong> — just take what's near the surface. No randomness at all.</li>
+            <li><strong>Simple random</strong> — everything equally likely. Fair, and scattered across
+                the whole site, so you cover a lot of ground.</li>
+            <li><strong>Stratified</strong> — split the site into its natural bands first, then sample
+                each at random in proportion to its size. Guarantees every band is represented.</li>
+            <li><strong>Cluster</strong> — pick a few whole groups at random and take
+                <em>everything</em> in them. Far less travelling.</li>
+            <li><strong>Multistage</strong> — pick a few groups, then a random sample
+                <em>within</em> each. Less travelling and less measuring.</li>
+            <li><strong>Convenience</strong> — take whatever is easy to reach. No randomness at all.</li>
         </ul>
-        <p><strong>Run 500 of each design</strong> is where the lesson is. Four of the five centre on the
-           truth; they differ in <em>spread</em>. Convenience doesn't centre on the truth at all, and no
-           sample size fixes that.</p>
-        <p>The <strong>Holes dug</strong> and <strong>Rocks weighed</strong> figures are the point of
-           cluster and multistage sampling: they buy a much cheaper sample.</p>
-        <p><strong>The rule worth taking away:</strong> good <em>strata</em> are uniform inside and
-           different from each other; good <em>clusters</em> are varied inside, each a small copy of the
-           whole. They are opposites, and the same ground can give you either.</p>
-        <p class="hint"><strong>One caution for instructors.</strong> Cluster sampling does unusually
-           <em>well</em> in this scenario, and the reason is worth saying out loud rather than leaving
-           for students to over-generalise. A cluster is whatever unit is cheap to collect whole; here
-           that is a hole, and a hole happens to cut through all three layers, so each one is a
-           miniature of the plot. Real clusters &mdash; city blocks, classrooms, villages &mdash; are
-           usually the opposite: their members resemble each other, so each extra one tells you less
-           than a fresh random pick would, and cluster sampling costs precision for a given sample size
-           and earns it back by being cheap. Same design, different ground.</p>
+        <h3>Strata and clusters are opposites</h3>
+        <p>A <strong>stratum</strong> is a group you know about in advance and want to control: good
+           ones are uniform inside and different from each other. A <strong>cluster</strong> is a group
+           that is cheap to collect <em>whole</em> &mdash; and you do not choose what is inside it, you
+           get whatever the site's convenient units happen to contain.</p>
+        <p>That is why the setting matters. On the beach you can walk a <strong>transect</strong> from
+           the water up (crossing every zone) or toss a <strong>quadrat</strong> (all one zone);
+           ecologists do both. In the orchard a <strong>row</strong> crosses all three varieties while a
+           <strong>tree</strong> is one variety. Underground there is only the <strong>hole</strong>:
+           a patch at depth would mean excavating everything above it and throwing the spoil away, which
+           is the opposite of convenient.</p>
+        <p>Watch <strong>how much you had to collect</strong> next to <strong>how close you got</strong>.
+           That trade &mdash; precision against effort &mdash; is the whole reason these designs exist.</p>
+        <p class="hint">Choose <strong>More options</strong> for <em>Run 500 of each design</em>, which
+           compares the spread of the estimates. That is a standard-error question and belongs to a
+           later course; a first look at study design does not need it.</p>
         <button type="button">Close</button>
     </dialog>
 

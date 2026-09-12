@@ -38,9 +38,10 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `scenario` | string | `beach` | `beach`, `orchard`, or `buried` — an unrecognised value falls back to `beach`. |
 | `design` | string | `srs` | `srs`, `stratified`, `cluster`, `multistage`, `convenience` — an unrecognised value falls back to `srs`. |
 | `n` | integer | `60` | Rocks to weigh, clamped to 12–200. |
-| `seed` | string | _(random)_ | Fixes every dig for reproducibility. The population itself is always built from a fixed internal seed, so μ never changes. |
+| `seed` | string | _(random)_ | Fixes every sample for reproducibility. Each setting's population is built from its own fixed internal seed, so the true mean never changes. |
 
 **Contributed datasets are reachable by `?dataset=` but absent from every dropdown.**
 Datasets in `data/extra/` are indexed with `contributed: true`. They are filtered out of

@@ -1,43 +1,34 @@
 // @ts-check
 /**
- * Sampling Designs — simple random, stratified, cluster, multistage, convenience,
- * all drawing from the same buried population.
+ * Sampling Designs — simple random, stratified, cluster, multistage and
+ * convenience sampling, drawn from the same population in three settings.
  *
- * From Todd Will's "contrived/playful sampling example" (Sept 2026): rocks under a
- * plot of ground, sorted by size with depth, sampled four ways. The physical
- * metaphor is the good part — "a cluster sample is easier, you only dig three
- * holes" makes concrete the thing a definition never does, which is that these
- * designs differ in what they *cost to collect*.
+ * Origin: Todd Will's "contrived/playful sampling example" (Sept 2026) — rocks
+ * buried under a plot of ground, sorted by size with depth, sampled four ways.
+ * The physical metaphor is the good part: *"a cluster sample is easier, you only
+ * have to dig three holes"* makes concrete the thing a definition never does,
+ * which is that these designs differ in what they **cost to collect**.
  *
- * Three deliberate departures from the original demo:
+ * What this adds to the original demo:
  *
  * 1. **The simple random sample is not rigged.** The Mathematica version draws an
- *    SRS and then deletes 25 middle-stratum rocks so that it looks unbalanced. It
- *    makes a vivid picture of a false claim: an SRS is unbiased, and on average it
- *    represents the strata in proportion. Here every design is run honestly, and
- *    the real difference is shown where it actually lives — in the *spread* of the
- *    estimates over many samples, not in one rigged picture.
+ *    SRS and then deletes 25 middle-stratum rocks so it *looks* unbalanced — a
+ *    vivid picture of a false claim, since an SRS is unbiased and on average
+ *    represents the strata in proportion. Every design here runs honestly.
+ * 2. **Something gets estimated.** The original names the parameter and never
+ *    computes it. Each sample reports its estimate against the truth.
+ * 3. **Cost is a number** — clusters opened, items measured — because that is the
+ *    argument for cluster sampling and it is usually left as an assertion.
+ * 4. **Three settings** (see scenarios.js). The buried-rocks scene has only one
+ *    convenient cluster and it happens to be an unusually *good* one, so on its
+ *    own it teaches the exception. A beach and an orchard each offer two shapes
+ *    that people actually use, which lets the tool show that a cluster's quality
+ *    is a fact about the world rather than a choice the statistician makes.
  *
- * 2. **Something gets estimated.** The original names the parameter (average
- *    weight) and then never computes it. Each sample here reports x̄ against μ, and
- *    "Run 500" builds the sampling distribution of x̄ for all five designs on one
- *    shared axis — which is the only way to see that stratified is *tighter* than
- *    simple random, and by how much (measured here: 0.23x its spread).
- *
- * 3. **Cost is a number.** Holes dug and rocks weighed are displayed, because the
- *    trade-off being taught is precision per unit of effort.
- *
- * And one addition the measurements forced. Running the five designs honestly
- * showed cluster sampling coming out *more* precise than a simple random sample
- * here, not less — because Todd's holes are vertical and therefore each contains
- * all three strata. That is not a quirk to hide; it is the actual principle,
- * so the cluster shape is an (expert-only) control: switch the clusters from deep
- * holes to shallow pits and watch the same design collapse. Good strata are
- * uniform inside; good clusters are varied inside. Opposite rules, same ground.
- *
- * Convenience sampling is added as a fifth design: it is the only biased one, and
- * it sets up the contrast that `conceptual/sampling-bias` develops — more data
- * does not fix a sample that was chosen wrong.
+ * The variability machinery — 500 runs, the spread comparison, the table — sits
+ * behind expert mode. A Chapter 2 reader is learning what the designs *are* and
+ * what they cost; standard errors belong to a later course, and putting them in
+ * front of a first reading buys confusion at full price.
  */
 
 import { select } from 'd3-selection';
@@ -46,87 +37,54 @@ import { axisBottom } from 'd3-axis';
 import { mean } from '../../js/stats.js';
 import { createRng } from '../../js/prng.js';
 import { initHelp, announce, createExpertToggle } from '../../js/page-utils.js';
-import { parseParams } from '../../js/url-params.js';
+import { scenarioById, buildPopulation, clusterGroups } from './scenarios.js';
 
 initHelp();
 
-// ── Population ──────────────────────────────────────────────────────────
-// Three depth strata. Rocks settle by size, so weight rises sharply with depth
-// — that gradient is what makes stratification pay and convenience sampling
-// fail, so it needs to be strong enough to see.
-const STRATA = [
-  { name: 'Topsoil', label: 'pebbles', depth: [0, 1], count: 320, meanW: 0.6, sd: 0.18 },
-  { name: 'Subsoil', label: 'cobbles', depth: [1, 2], count: 240, meanW: 2.4, sd: 0.6 },
-  { name: 'Bedrock layer', label: 'boulders', depth: [2, 3], count: 150, meanW: 7.0, sd: 1.8 },
-];
-const N_HOLES = 16;   // vertical columns ("holes") the plot is divided into
+// ── State ───────────────────────────────────────────────────────────────
+const qs = new URLSearchParams(location.search);
+const DESIGN_ORDER = ['srs', 'stratified', 'cluster', 'multistage', 'convenience'];
 
-/** @typedef {{x: number, y: number, w: number, stratum: number, hole: number}} Rock */
+let scenario = scenarioById((qs.get('scenario') || 'beach').toLowerCase());
+let shapeKey = Object.keys(scenario.clusters)[0];
+const designParam = (qs.get('design') || '').toLowerCase();
+let design = DESIGN_ORDER.includes(designParam) ? designParam : 'srs';
+let targetN = 60;
+let drawCounter = 0;
 
-/** Build the population once, from a fixed seed, so the truth is stable. */
-function buildPopulation() {
-  const rng = createRng('sampling-designs-population');
-  /** @type {Rock[]} */
-  const pop = [];
-  STRATA.forEach((s, si) => {
-    for (let i = 0; i < s.count; i++) {
-      const x = rng();
-      const y = s.depth[0] + rng() * (s.depth[1] - s.depth[0]);
-      // Log-normal-ish: weights are positive and right-skewed, like real rocks.
-      const z = (rng() + rng() + rng() + rng() - 2) * 1.2;
-      const w = Math.max(0.05, s.meanW * Math.exp(z * (s.sd / s.meanW)));
-      pop.push({ x, y, w, stratum: si, hole: Math.min(N_HOLES - 1, Math.floor(x * N_HOLES)) });
-    }
-  });
-  return pop;
+/** @type {import('./scenarios.js').Item[]} */
+let POP = [];
+let MU = 0;
+/** @type {import('./scenarios.js').Item[][]} */
+let BY_BAND = [];
+/** @type {import('./scenarios.js').Item[][]} */
+let CLUSTERS = [];
+let vMax = 1;
+
+function rebuild() {
+  POP = buildPopulation(scenario);
+  MU = mean(POP.map(p => p.v));
+  BY_BAND = scenario.bands.map((_, i) => POP.filter(p => p.band === i));
+  CLUSTERS = clusterGroups(POP, scenario, scenario.clusters[shapeKey]);
+  vMax = Math.max(...POP.map(p => p.v));
 }
 
-const POPULATION = buildPopulation();
-const MU = mean(POPULATION.map(r => r.w));
-/** Rock indices grouped by stratum and by cluster — precomputed, they never change. */
-const BY_STRATUM = STRATA.map((_, si) => POPULATION.filter(r => r.stratum === si));
-const BY_HOLE = Array.from({ length: N_HOLES }, (_, h) => POPULATION.filter(r => r.hole === h));
-/**
- * The alternative cluster shape: small pits on a grid, each one dug to a single
- * depth. Not horizontal *layers* — Todd Will's objection to those was right, if
- * not for the reason he gave: a full-width layer here IS a stratum, so using one
- * as a cluster blurs the very distinction the page exists to draw. A pit is a
- * patch, plainly not a layer, and it is something you could actually dig.
- */
-
-/**
- * The cluster is always a hole, because a cluster is whatever unit is cheap to
- * collect *whole*, and a hole is the only such unit here: you sink it once and
- * everything in it comes up together.
- *
- * Two alternatives were tried and both were wrong, for the same reason in the
- * end. Horizontal layers (Todd Will's objection) are strata in this scenario, not
- * clusters. Shallow pits at depth (Jeff's objection) are not convenient at all —
- * reaching one means excavating everything above it and discarding those rocks.
- * Neither is a grouping anybody would actually collect, so neither is a cluster,
- * whatever the arithmetic says.
- *
- * The consequence is that this scenario is unusually kind to cluster sampling:
- * its one convenient unit happens to be heterogeneous. That is stated plainly in
- * the help text rather than engineered around.
- */
-const clusterGroups = () => BY_HOLE;
-const clusterCount = () => N_HOLES;
+const shape = () => scenario.clusters[shapeKey];
+const seedBase = qs.get('seed') || null;
+const nextRng = () => createRng(`${seedBase ?? Math.random()}-${drawCounter++}`);
+const fmt = (/** @type {number} */ v) => scenario.unit === 'g' ? v.toFixed(0) : v.toFixed(2);
+const cap = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // ── Designs ─────────────────────────────────────────────────────────────
-
 /**
  * @typedef {object} Draw
- * @property {Rock[]} sample - the rocks actually weighed
- * @property {number[]} holes - which clusters were opened
- * @property {number[]|null} strataShown - stratum indices to draw bands for
- * @property {Rock[]} [found] - rocks turned up by the digging but NOT weighed.
- *   Cluster and multistage dig the same holes; the only difference between them
- *   is how much of what they find gets weighed, and that difference is invisible
- *   unless the unweighed rocks are drawn in a state of their own.
+ * @property {import('./scenarios.js').Item[]} sample - what was measured
+ * @property {number[]} picked - which clusters were opened
+ * @property {import('./scenarios.js').Item[]} found - collected but not measured
+ * @property {number[]|null} bandsShown
  */
 
-/** Random sample of k items without replacement. @param {any[]} arr @param {number} k @param {() => number} rng */
+/** @param {any[]} arr @param {number} k @param {() => number} rng */
 function sampleOf(arr, k, rng) {
   const idx = arr.map((_, i) => i);
   const take = Math.min(k, idx.length);
@@ -138,292 +96,294 @@ function sampleOf(arr, k, rng) {
 }
 
 /**
- * Open clusters at random until they hold at least `n` rocks between them.
- * Shared by cluster and multistage so both dig the same amount — the designs
- * differ in weighing, not in digging, and the display should say only that.
- * @param {number} n
- * @param {() => number} rng
+ * Open clusters at random until they hold at least `n` items. Shared by cluster
+ * and multistage so the two differ only in how much of the haul gets measured,
+ * which is the whole distinction between them.
+ * @param {number} n @param {() => number} rng
  */
 function pickClusters(n, rng) {
-  const groups = clusterGroups();
-  const order = sampleOf(Array.from({ length: clusterCount() }, (_, i) => i), clusterCount(), rng);
+  const order = sampleOf(CLUSTERS.map((_, i) => i), CLUSTERS.length, rng);
   /** @type {number[]} */
   const picked = [];
   let held = 0;
-  for (const h of order) {
+  for (const c of order) {
     if (held >= n) break;
-    picked.push(h);
-    held += groups[h].length;
+    picked.push(c);
+    held += CLUSTERS[c].length;
   }
-  return { groups, picked: picked.sort((a, b) => a - b) };
+  return picked.sort((a, b) => a - b);
 }
 
-/** How many holes a scattered sample touches — the digging it actually costs. */
-const holesTouched = (/** @type {Rock[]} */ s) => [...new Set(s.map(r => r.hole))].sort((a, b) => a - b);
-
-/** @type {Record<string, {label: string, note: string, draw: (n: number, rng: () => number) => Draw}>} */
+/** @type {Record<string, {label: string, note: () => string, draw: (n: number, rng: () => number) => Draw}>} */
 const DESIGNS = {
   srs: {
     label: 'Simple random',
-    note: 'Every rock in the plot is equally likely — so the sample is scattered across the whole '
-        + 'plot, and you end up digging almost everywhere.',
-    draw: (n, rng) => {
-      const sample = sampleOf(POPULATION, n, rng);
-      return { sample, holes: holesTouched(sample), strataShown: null };
-    },
+    note: () => scenario.srsNote,
+    draw: (n, rng) => ({ sample: sampleOf(POP, n, rng), picked: [], found: [], bandsShown: null }),
   },
   stratified: {
     label: 'Stratified',
-    note: 'Split the ground into its three depth layers first, then sample each layer at random, in '
-        + 'proportion to its size. Every layer is represented every single time.',
+    note: () => scenario.stratifiedNote,
     draw: (n, rng) => {
-      /** @type {Rock[]} */
+      /** @type {import('./scenarios.js').Item[]} */
       let sample = [];
-      const total = POPULATION.length;
-      STRATA.forEach((s, si) => {
-        const k = Math.round(n * BY_STRATUM[si].length / total);
-        sample = sample.concat(sampleOf(BY_STRATUM[si], k, rng));
+      scenario.bands.forEach((_, i) => {
+        sample = sample.concat(
+          sampleOf(BY_BAND[i], Math.round(n * BY_BAND[i].length / POP.length), rng));
       });
-      return { sample, holes: holesTouched(sample), strataShown: [0, 1, 2] };
+      return { sample, picked: [], found: [], bandsShown: scenario.bands.map((_, i) => i) };
     },
   },
   cluster: {
     label: 'Cluster',
-    note: 'Open whole clusters at random and weigh every rock you find. Each vertical hole runs top '
-        + 'to bottom, so it holds all three layers — which is exactly what makes clusters work here.',
+    note: () => shape().note,
     draw: (n, rng) => {
-      const { groups, picked } = pickClusters(n, rng);
-      const sample = picked.flatMap(h => groups[h]);
-      return { sample, holes: picked, strataShown: null, found: [] };
+      const picked = pickClusters(n, rng);
+      return { sample: picked.flatMap(c => CLUSTERS[c]), picked, found: [], bandsShown: null };
     },
   },
   multistage: {
     label: 'Multistage',
-    note: 'Open the same clusters — then weigh only a random sample of the rocks in each. The same '
-        + 'digging, a fraction of the weighing. The pale rocks are the ones you dug up and put back.',
+    note: () => `The same ${shape().labels}, but you measure a random handful from each instead of `
+      + `everything. The pale ${scenario.items} are the ones you collected and put back.`,
     draw: (n, rng) => {
-      // Deliberately the same clusters cluster sampling would have opened, so
-      // the only thing that differs on screen is how much of the haul is
-      // weighed. That *is* the distinction between the two designs.
-      const { groups, picked } = pickClusters(n, rng);
+      const picked = pickClusters(n, rng);
       const per = Math.max(1, Math.round(n / picked.length));
-      /** @type {Rock[]} */
+      /** @type {import('./scenarios.js').Item[]} */
       let sample = [];
-      for (const h of picked) sample = sample.concat(sampleOf(groups[h], per, rng));
-      const weighed = new Set(sample);
-      const found = picked.flatMap(h => groups[h]).filter(r => !weighed.has(r));
-      return { sample, holes: picked, strataShown: null, found };
+      for (const c of picked) sample = sample.concat(sampleOf(CLUSTERS[c], per, rng));
+      const measured = new Set(sample);
+      const found = picked.flatMap(c => CLUSTERS[c]).filter(p => !measured.has(p));
+      return { sample, picked, found, bandsShown: null };
     },
   },
   convenience: {
     label: 'Convenience',
-    note: 'Take what is easy to reach: scrape the surface and weigh what turns up. No randomness '
-        + 'anywhere — and the topsoil is nothing but pebbles.',
+    note: () => scenario.convenience.note,
     draw: (n, rng) => {
-      // No digging at all: you take what is lying on top, so "holes dug" is 0.
-      const sample = sampleOf(BY_STRATUM[0], n, rng);
-      return { sample, holes: [], strataShown: [0] };
+      // Whatever is easiest to reach: always one band, never a fair picture. On
+      // a beach and in an orchard that is the far band (the storm berm by the
+      // car park, the crabapples by the lane); underground it is the surface.
+      const i = scenario.id === 'buried' ? 0 : scenario.bands.length - 1;
+      return { sample: sampleOf(BY_BAND[i], n, rng), picked: [], found: [], bandsShown: [i] };
     },
   },
 };
 
-const DESIGN_ORDER = ['srs', 'stratified', 'cluster', 'multistage', 'convenience'];
-
-// ── State ───────────────────────────────────────────────────────────────
-const params = parseParams();
-const qs = new URLSearchParams(location.search);
-const designParam = (qs.get('design') || '').toLowerCase();
-let design = DESIGN_ORDER.includes(designParam) ? designParam : 'srs';
-let targetN = 60;
-let drawCounter = 0;
 /** @type {Draw|null} */
 let current = null;
 /** @type {Record<string, number[]>|null} */
 let manyResults = null;
-/** Mean sample size and mean holes dug per design, over the same 500 runs. */
-let manyCost = /** @type {Record<string, {n: number, holes: number}>} */ ({});
-
-const seedBase = params.seed ? String(params.seed) : null;
-/** A fresh stream per dig; seeded when `?seed=` is given, so a class all sees the same rocks. */
-const nextRng = () => createRng(`${seedBase ?? Math.random()}-${drawCounter++}`);
+let manyCost = /** @type {Record<string, {n: number, k: number}>} */ ({});
 
 // ── Elements ────────────────────────────────────────────────────────────
 const el = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
+const scenarioBar = el('scenario-bar');
 const designBar = el('design-bar');
-const targetInput = /** @type {HTMLInputElement} */ (el('target-n'));
+const shapeBar = el('shape-bar');
 const compareSection = el('compare-section');
+const targetInput = /** @type {HTMLInputElement} */ (el('target-n'));
 
-// ── The ground ──────────────────────────────────────────────────────────
-const GW = 760, GH = 330, GM = { t: 26, r: 14, b: 22, l: 92 };
+// ── The scene ───────────────────────────────────────────────────────────
+const GW = 760, GH = 352, GM = { t: 26, r: 14, b: 42, l: 100 };
 const gx = scaleLinear().domain([0, 1]).range([GM.l, GW - GM.r]);
-const gy = scaleLinear().domain([0, 3]).range([GM.t, GH - GM.b]);
-/** Weight → radius. Square root, so area tracks weight rather than radius. */
-const gr = (/** @type {number} */ w) => 1.4 + Math.sqrt(w) * 1.5;
+const gy = scaleLinear().domain([0, 1]).range([GM.t, GH - GM.b]);
+const gr = (/** @type {number} */ v) => 1.4 + Math.sqrt(v / vMax) * 5.2;
 
-function drawGround() {
-  const svg = select('#ground');
+function drawScene() {
+  const svg = select('#scene');
   svg.selectAll('*').remove();
-  const sampled = new Set(current ? current.sample : []);
+  const measured = new Set(current ? current.sample : []);
+  const heldBack = new Set(current ? current.found : []);
+  const alongX = scenario.gradient === 'x';
 
-  // Strata bands, labelled — the structure students are meant to notice
+  // Bands across the gradient — the natural strata
   const bands = svg.append('g');
-  STRATA.forEach((s, si) => {
+  scenario.bands.forEach((b, i) => {
+    const a0 = i / 3, a1 = (i + 1) / 3;
     bands.append('rect')
-      .attr('x', gx(0)).attr('y', gy(s.depth[0]))
-      .attr('width', gx(1) - gx(0)).attr('height', gy(s.depth[1]) - gy(s.depth[0]))
-      .attr('fill', si % 2 ? '#f3efe9' : '#faf7f2');
-    bands.append('text')
-      .attr('x', GM.l - 8).attr('y', (gy(s.depth[0]) + gy(s.depth[1])) / 2)
-      .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-      .attr('font-size', 12).attr('fill', '#5a5148')
-      .text(`${s.name}`);
-    bands.append('text')
-      .attr('x', GM.l - 8).attr('y', (gy(s.depth[0]) + gy(s.depth[1])) / 2 + 13)
-      .attr('text-anchor', 'end').attr('dominant-baseline', 'middle')
-      .attr('font-size', 10.5).attr('fill', '#8a7f72')
-      .text(`(${s.label})`);
+      .attr('x', alongX ? gx(a0) : gx(0)).attr('y', alongX ? gy(0) : gy(a0))
+      .attr('width', alongX ? gx(a1) - gx(a0) : gx(1) - gx(0))
+      .attr('height', alongX ? gy(1) - gy(0) : gy(a1) - gy(a0))
+      .attr('fill', i % 2 ? '#f3efe9' : '#faf7f2');
+    if (alongX) {
+      const cx = gx((a0 + a1) / 2);
+      bands.append('text').attr('x', cx).attr('y', GH - GM.b + 16).attr('text-anchor', 'middle')
+        .attr('font-size', 12).attr('fill', '#5a5148').text(b.name);
+      bands.append('text').attr('x', cx).attr('y', GH - GM.b + 29).attr('text-anchor', 'middle')
+        .attr('font-size', 10.5).attr('fill', '#8a7f72').text(`(${b.label})`);
+    } else {
+      const cy = (gy(a0) + gy(a1)) / 2;
+      bands.append('text').attr('x', GM.l - 8).attr('y', cy).attr('text-anchor', 'end')
+        .attr('dominant-baseline', 'middle').attr('font-size', 12).attr('fill', '#5a5148').text(b.name);
+      bands.append('text').attr('x', GM.l - 8).attr('y', cy + 13).attr('text-anchor', 'end')
+        .attr('dominant-baseline', 'middle').attr('font-size', 10.5).attr('fill', '#8a7f72')
+        .text(`(${b.label})`);
+    }
   });
 
-  // Hole walls, when the design digs specific holes
-  const digsHoles = design === 'cluster' || design === 'multistage';
-  if (digsHoles && current) {
+  // The water's edge, so a beach reads as a beach
+  if (scenario.id === 'beach') {
+    svg.append('rect').attr('x', gx(0)).attr('y', gy(0) - 8).attr('width', gx(1) - gx(0))
+      .attr('height', 8).attr('fill', '#9ec9e0');
+    svg.append('text').attr('x', gx(1) - 4).attr('y', gy(0) - 11).attr('text-anchor', 'end')
+      .attr('font-size', 10.5).attr('fill', '#4a7f9c').text('water');
+  }
+
+  // Clusters that were opened
+  if (current?.picked.length) {
     const g = svg.append('g');
-    for (const h of current.holes) {
-      g.append('rect')
-        .attr('x', gx(h / N_HOLES)).attr('y', gy(0))
-        .attr('width', gx(1 / N_HOLES) - gx(0)).attr('height', gy(3) - gy(0))
+    const sh = shape();
+    const stripVertical = scenario.gradient === 'y';
+    for (const c of current.picked) {
+      let x0, y0, w, h;
+      if (sh.kind === 'strip') {
+        if (stripVertical) { x0 = gx(c / sh.n); y0 = gy(0); w = gx(1 / sh.n) - gx(0); h = gy(1) - gy(0); }
+        else { x0 = gx(0); y0 = gy(c / sh.n); w = gx(1) - gx(0); h = gy(1 / sh.n) - gy(0); }
+      } else {
+        const cols = sh.n, rows = sh.rows ?? 4;
+        x0 = gx((c % cols) / cols); y0 = gy(Math.floor(c / cols) / rows);
+        w = gx(1 / cols) - gx(0); h = gy(1 / rows) - gy(0);
+      }
+      g.append('rect').attr('x', x0).attr('y', y0).attr('width', w).attr('height', h)
         .attr('fill', '#569BBD').attr('fill-opacity', 0.1)
         .attr('stroke', '#114B5F').attr('stroke-opacity', 0.45).attr('stroke-dasharray', '3 2');
     }
   }
-  // Stratum boundaries, when the design uses them
-  if (current?.strataShown) {
+
+  // Band boundaries, when the design uses them
+  if (current?.bandsShown) {
     const g = svg.append('g');
-    for (const si of current.strataShown) {
-      for (const d of STRATA[si].depth) {
+    for (const i of current.bandsShown) {
+      for (const a of [i / 3, (i + 1) / 3]) {
         g.append('line')
-          .attr('x1', gx(0)).attr('x2', gx(1)).attr('y1', gy(d)).attr('y2', gy(d))
+          .attr('x1', alongX ? gx(a) : gx(0)).attr('x2', alongX ? gx(a) : gx(1))
+          .attr('y1', alongX ? gy(0) : gy(a)).attr('y2', alongX ? gy(1) : gy(a))
           .attr('stroke', '#114B5F').attr('stroke-width', 1.5).attr('stroke-dasharray', '5 3');
       }
     }
   }
 
-  // Rocks, in three states: left in the ground, dug up but not weighed, weighed.
-  const foundOnly = new Set(current?.found ?? []);
-  const rocks = svg.append('g');
-  for (const r of POPULATION) {
-    if (sampled.has(r) || foundOnly.has(r)) continue;
-    rocks.append('circle')
-      .attr('cx', gx(r.x)).attr('cy', gy(r.y)).attr('r', gr(r.w))
+  // Items in three states: left alone, collected but not measured, measured.
+  const dots = svg.append('g');
+  for (const p of POP) {
+    if (measured.has(p) || heldBack.has(p)) continue;
+    dots.append('circle').attr('cx', gx(p.x)).attr('cy', gy(p.y)).attr('r', gr(p.v))
       .attr('fill', '#b9b2a8').attr('fill-opacity', 0.75);
   }
-  // Dug up and put back: hollow, so it reads as "handled but not measured" and
-  // is distinguishable from both other states without relying on colour.
-  for (const r of foundOnly) {
-    rocks.append('circle')
-      .attr('cx', gx(r.x)).attr('cy', gy(r.y)).attr('r', gr(r.w))
+  for (const p of heldBack) {
+    dots.append('circle').attr('cx', gx(p.x)).attr('cy', gy(p.y)).attr('r', gr(p.v))
       .attr('fill', '#fff').attr('fill-opacity', 0.85)
       .attr('stroke', '#C08700').attr('stroke-width', 1.2).attr('stroke-dasharray', '2 1.5');
   }
-  // Sampled rocks: filled orange AND ringed dark — never colour alone.
-  for (const r of (current ? current.sample : [])) {
-    rocks.append('circle')
-      .attr('cx', gx(r.x)).attr('cy', gy(r.y)).attr('r', gr(r.w) + 0.6)
+  for (const p of measured) {
+    dots.append('circle').attr('cx', gx(p.x)).attr('cy', gy(p.y)).attr('r', gr(p.v) + 0.6)
       .attr('fill', '#E07020').attr('stroke', '#5a2d00').attr('stroke-width', 1);
   }
 
-  svg.append('text')
-    .attr('x', gx(0)).attr('y', 16).attr('font-size', 12).attr('fill', '#5a5148')
-    .text(current ? `${DESIGNS[design].label} sample — ${current.sample.length} rocks weighed`
-                  : 'The plot, before you dig');
+  svg.append('text').attr('x', gx(0)).attr('y', 14).attr('font-size', 12).attr('fill', '#5a5148')
+    .text(current ? `${DESIGNS[design].label} — ${current.sample.length} ${scenario.items} measured`
+                  : scenario.name);
 
-  if (foundOnly.size > 0) {
-    const lg = svg.append('g').attr('transform', `translate(${gx(1) - 232},6)`);
-    lg.append('circle').attr('cx', 6).attr('cy', 7).attr('r', 5)
+  if (heldBack.size > 0) {
+    const lg = svg.append('g').attr('transform', `translate(${gx(1) - 250},5)`);
+    lg.append('circle').attr('cx', 6).attr('cy', 6).attr('r', 5)
       .attr('fill', '#E07020').attr('stroke', '#5a2d00').attr('stroke-width', 1);
-    lg.append('text').attr('x', 16).attr('y', 7).attr('dominant-baseline', 'middle')
-      .attr('font-size', 11).attr('fill', '#5a5148').text('weighed');
-    lg.append('circle').attr('cx', 92).attr('cy', 7).attr('r', 5)
-      .attr('fill', '#fff').attr('stroke', '#C08700').attr('stroke-width', 1.2)
-      .attr('stroke-dasharray', '2 1.5');
-    lg.append('text').attr('x', 102).attr('y', 7).attr('dominant-baseline', 'middle')
-      .attr('font-size', 11).attr('fill', '#5a5148').text('dug up, put back');
+    lg.append('text').attr('x', 16).attr('y', 6).attr('dominant-baseline', 'middle')
+      .attr('font-size', 11).attr('fill', '#5a5148').text('measured');
+    lg.append('circle').attr('cx', 100).attr('cy', 6).attr('r', 5).attr('fill', '#fff')
+      .attr('stroke', '#C08700').attr('stroke-width', 1.2).attr('stroke-dasharray', '2 1.5');
+    lg.append('text').attr('x', 110).attr('y', 6).attr('dominant-baseline', 'middle')
+      .attr('font-size', 11).attr('fill', '#5a5148').text('collected, put back');
   }
+
   svg.attr('aria-label', current
-    ? `Cross-section of the ground. ${current.sample.length} rocks highlighted as the `
-      + `${DESIGNS[design].label.toLowerCase()} sample, from ${current.holes.length} holes.`
-    : 'Cross-section of the ground before any sample is taken.');
+    ? `${scenario.name}. ${current.sample.length} ${scenario.items} highlighted as the `
+      + `${DESIGNS[design].label.toLowerCase()} sample.`
+    : scenario.name);
 }
 
-// ── One dig ─────────────────────────────────────────────────────────────
-function dig() {
-  const rng = nextRng();
-  current = DESIGNS[design].draw(targetN, rng);
-  const xbar = mean(current.sample.map(r => r.w));
-  const err = xbar - MU;
-
-  el('out-mu').innerHTML = `${MU.toFixed(2)} <span class="unit">kg</span>`;
-  el('out-xbar').innerHTML = `${xbar.toFixed(2)} <span class="unit">kg</span>`;
-  el('out-err').innerHTML = `${err >= 0 ? '+' : ''}${err.toFixed(2)} <span class="unit">kg</span>`;
-  el('out-n').textContent = String(current.sample.length);
-  el('out-holes').textContent = String(current.holes.length);
-  const dugUp = current.sample.length + (current.found?.length ?? 0);
-  const foundRow = el('found-row');
+// ── One sample ──────────────────────────────────────────────────────────
+function takeSample() {
+  current = DESIGNS[design].draw(targetN, nextRng());
+  const est = mean(current.sample.map(p => p.v));
+  const err = est - MU;
   const usesClusters = design === 'cluster' || design === 'multistage';
-  foundRow.hidden = !usesClusters;
-  if (usesClusters) el('out-found').textContent = String(dugUp);
 
-  el('design-note').textContent = DESIGNS[design].note;
-  const holes = current.holes.length;
-  const unit = 'hole';
-  const outOf = (design === 'cluster' || design === 'multistage') ? clusterCount() : N_HOLES;
-  const dug = current.sample.length + (current.found?.length ?? 0);
-  el('cost-note').textContent = design === 'convenience'
-    ? 'No digging at all — you took what was lying on the surface.'
-    : design === 'multistage'
-      ? `You opened ${holes} ${unit}${holes === 1 ? '' : 's'}, turned up ${dug} rocks, and weighed `
-        + `${current.sample.length} of them. Cluster sampling digs exactly the same ${unit}s and `
-        + `weighs all ${dug}.`
-      : design === 'cluster'
-        ? `You opened ${holes} ${unit}${holes === 1 ? '' : 's'} and weighed every one of the ${dug} `
-          + `rocks in them. Multistage digs the same ${unit}s and weighs only some.`
-        : holes >= N_HOLES - 1
-          ? `You dug in all ${holes} places across the plot to find those rocks.`
-          : `You opened ${holes} ${unit}${holes === 1 ? '' : 's'} out of ${outOf}.`;
+  el('out-mu').innerHTML = `${fmt(MU)} <span class="unit">${scenario.unit}</span>`;
+  el('out-est').innerHTML = `${fmt(est)} <span class="unit">${scenario.unit}</span>`;
+  el('out-err').innerHTML = `${err >= 0 ? '+' : ''}${fmt(err)} <span class="unit">${scenario.unit}</span>`;
+  el('out-n').textContent = String(current.sample.length);
+  el('lab-n').textContent = `${cap(scenario.items)} measured`;
 
-  drawGround();
-  announce(`${DESIGNS[design].label}: ${current.sample.length} rocks from ${holes} holes, `
-    + `estimate ${xbar.toFixed(2)} kilograms against a true mean of ${MU.toFixed(2)}.`);
+  const collectedRow = el('collected-row');
+  collectedRow.hidden = current.found.length === 0;
+  if (current.found.length) {
+    el('out-collected').textContent = String(current.sample.length + current.found.length);
+    el('lab-collected').textContent = `${cap(scenario.items)} collected`;
+  }
+
+  const costRow = el('cost-row');
+  costRow.hidden = !usesClusters;
+  if (usesClusters) {
+    el('out-cost').textContent = String(current.picked.length);
+    el('lab-cost').textContent = `${cap(shape().labels)} ${shape().verb}`;
+  }
+
+  el('design-note').textContent = DESIGNS[design].note();
+  el('cost-note').textContent = costSentence();
+  drawScene();
+  announce(`${DESIGNS[design].label}: ${current.sample.length} ${scenario.items} measured, `
+    + `estimate ${fmt(est)} ${scenario.unit} against a true average of ${fmt(MU)}.`);
 }
 
-// ── Many samples ────────────────────────────────────────────────────────
-const CW = 760, CH = 300, CM = { t: 16, r: 18, b: 34, l: 92 };
+function costSentence() {
+  if (!current) return '';
+  const sh = shape();
+  const k = current.picked.length;
+  const name = k === 1 ? sh.label : sh.labels;
+  if (design === 'convenience') return 'Nothing was chosen at random, and nothing was searched for.';
+  if (design === 'cluster') {
+    return `You ${sh.verb} ${k} ${name} out of ${CLUSTERS.length}, and measured every one of the `
+      + `${current.sample.length} ${scenario.items} in them.`;
+  }
+  if (design === 'multistage') {
+    return `You ${sh.verb} the same ${k} ${name}, collected `
+      + `${current.sample.length + current.found.length} ${scenario.items}, and measured only `
+      + `${current.sample.length}.`;
+  }
+  const axis = scenario.gradient === 'y' ? 'x' : 'y';
+  const touched = new Set(current.sample.map(p =>
+    Math.min(sh.n - 1, Math.floor(p[axis] * sh.n)))).size;
+  return `Your ${scenario.items} came from ${touched} different parts of the site. There is no `
+    + `shortcut with this design — that is what it costs to give everything an equal chance.`;
+}
+
+// ── Many samples (expert) ───────────────────────────────────────────────
+const CW = 760, CH = 300, CM = { t: 16, r: 18, b: 34, l: 100 };
 
 function runMany() {
   const REPS = 500;
   /** @type {Record<string, number[]>} */
   const out = {};
-  /** @type {Record<string, {n: number, holes: number}>} */
+  /** @type {Record<string, {n: number, k: number}>} */
   const cost = {};
   for (const key of DESIGN_ORDER) {
-    const vals = [];
-    let nSum = 0, holeSum = 0;
+    const vals = []; let nSum = 0, kSum = 0;
     for (let i = 0; i < REPS; i++) {
-      const rng = createRng(`${seedBase ?? 'many'}-${key}-${i}`);
-      const d = DESIGNS[key].draw(targetN, rng);
-      vals.push(mean(d.sample.map(r => r.w)));
-      nSum += d.sample.length;
-      holeSum += d.holes.length;
+      const d = DESIGNS[key].draw(targetN,
+        createRng(`${seedBase ?? 'many'}-${scenario.id}-${shapeKey}-${key}-${i}`));
+      vals.push(mean(d.sample.map(p => p.v)));
+      nSum += d.sample.length; kSum += d.picked.length;
     }
     out[key] = vals;
-    cost[key] = { n: nSum / REPS, holes: holeSum / REPS };
+    cost[key] = { n: nSum / REPS, k: kSum / REPS };
   }
-  manyResults = out;
-  manyCost = cost;
+  manyResults = out; manyCost = cost;
   compareSection.hidden = false;
   drawCompare();
   renderVerdict();
-  announce('500 samples from each of the five designs. The comparison is below the ground.');
+  announce('500 samples from each design. The comparison is below.');
   compareSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -431,110 +391,122 @@ function drawCompare() {
   if (!manyResults) return;
   const svg = select('#compare');
   svg.selectAll('*').remove();
-
-  const all = DESIGN_ORDER.flatMap(k => manyResults[k]);
+  const all = DESIGN_ORDER.flatMap(k => /** @type {number[]} */ (manyResults?.[k] ?? []));
   const lo = Math.min(MU, ...all), hi = Math.max(MU, ...all);
   const pad = (hi - lo) * 0.06 || 0.1;
   const x = scaleLinear().domain([lo - pad, hi + pad]).range([CM.l, CW - CM.r]);
   const rowH = (CH - CM.t - CM.b) / DESIGN_ORDER.length;
 
-  // Truth line, drawn under the dots and labelled
-  svg.append('line')
-    .attr('x1', x(MU)).attr('x2', x(MU)).attr('y1', CM.t - 6).attr('y2', CH - CM.b)
+  svg.append('line').attr('x1', x(MU)).attr('x2', x(MU)).attr('y1', CM.t - 6).attr('y2', CH - CM.b)
     .attr('stroke', '#114B5F').attr('stroke-width', 2).attr('stroke-dasharray', '6 4');
-  svg.append('text')
-    .attr('x', x(MU)).attr('y', CM.t - 9).attr('text-anchor', 'middle')
+  svg.append('text').attr('x', x(MU)).attr('y', CM.t - 9).attr('text-anchor', 'middle')
     .attr('font-size', 11.5).attr('font-weight', 700).attr('fill', '#114B5F')
-    .text(`truth ${MU.toFixed(2)} kg`);
+    .text(`truth ${fmt(MU)} ${scenario.unit}`);
 
   DESIGN_ORDER.forEach((key, i) => {
-    const yTop = CM.t + i * rowH;
-    const yMid = yTop + rowH / 2;
-    const vals = manyResults[key];
+    const yMid = CM.t + i * rowH + rowH / 2;
     const biased = key === 'convenience';
-
-    svg.append('text')
-      .attr('x', CM.l - 8).attr('y', yMid).attr('text-anchor', 'end')
+    svg.append('text').attr('x', CM.l - 8).attr('y', yMid).attr('text-anchor', 'end')
       .attr('dominant-baseline', 'middle').attr('font-size', 12)
-      .attr('font-weight', biased ? 700 : 400)
-      .attr('fill', biased ? '#A33' : '#333')
+      .attr('font-weight', biased ? 700 : 400).attr('fill', biased ? '#A33' : '#333')
       .text(DESIGNS[key].label);
-
-    // Jittered strip: one dot per sample, deterministic jitter so it doesn't
-    // twitch between redraws.
     const jit = createRng(`jitter-${key}`);
-    for (const v of vals) {
-      svg.append('circle')
-        .attr('cx', x(v))
-        .attr('cy', yMid + (jit() - 0.5) * (rowH * 0.55))
-        .attr('r', 1.9)
-        .attr('fill', biased ? '#A33' : '#569BBD')
-        .attr('fill-opacity', 0.45);
+    for (const v of manyResults[key]) {
+      svg.append('circle').attr('cx', x(v)).attr('cy', yMid + (jit() - 0.5) * (rowH * 0.55))
+        .attr('r', 1.9).attr('fill', biased ? '#A33' : '#569BBD').attr('fill-opacity', 0.45);
     }
   });
 
-  const axis = svg.append('g').attr('transform', `translate(0,${CH - CM.b})`);
-  axis.call(/** @type {any} */ (axisBottom(x).ticks(7)));
-  svg.append('text')
-    .attr('x', (CM.l + CW - CM.r) / 2).attr('y', CH - 4)
-    .attr('text-anchor', 'middle').attr('font-size', 11.5).attr('fill', '#5a5148')
-    .text('estimated average weight (kg)');
+  svg.append('g').attr('transform', `translate(0,${CH - CM.b})`)
+    .call(/** @type {any} */ (axisBottom(x).ticks(7)));
+  svg.append('text').attr('x', (CM.l + CW - CM.r) / 2).attr('y', CH - 4).attr('text-anchor', 'middle')
+    .attr('font-size', 11.5).attr('fill', '#5a5148')
+    .text(`estimated average ${scenario.measure} (${scenario.unit})`);
 }
 
 function renderVerdict() {
   if (!manyResults) return;
   const rows = DESIGN_ORDER.map(key => {
-    const v = manyResults[key];
+    const v = /** @type {number[]} */ (manyResults?.[key] ?? []);
     const m = mean(v);
     const sd = Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / (v.length - 1));
-    const cost = manyCost[key];
-    return { key, label: DESIGNS[key].label, bias: m - MU, sd, n: cost.n, holes: cost.holes };
+    return { key, label: DESIGNS[key].label, bias: m - MU, sd, ...manyCost[key] };
   });
   const srsSd = rows.find(r => r.key === 'srs')?.sd ?? 1;
+  const cl = rows.find(r => r.key === 'cluster');
+  const sh = shape();
 
   const body = rows.map(r => {
-    const biased = Math.abs(r.bias) > 3 * r.sd / Math.sqrt(500) + 0.02;
-    return `<tr>
-      <td>${r.label}</td>
-      <td class="${biased ? 'biased' : ''}">${r.bias >= 0 ? '+' : ''}${r.bias.toFixed(3)}</td>
-      <td>${r.sd.toFixed(3)}</td>
-      <td>${(r.sd / srsSd).toFixed(2)}&times;</td>
-      <td>${Math.round(r.n)}</td>
-      <td>${r.holes.toFixed(1)}</td>
-    </tr>`;
+    const biased = Math.abs(r.bias) > 3 * r.sd / Math.sqrt(500) + 0.02 * MU;
+    return `<tr><td>${r.label}</td>
+      <td class="${biased ? 'biased' : ''}">${r.bias >= 0 ? '+' : ''}${fmt(r.bias)}</td>
+      <td>${fmt(r.sd)}</td><td>${(r.sd / srsSd).toFixed(2)}&times;</td>
+      <td>${Math.round(r.n)}</td><td>${r.k ? r.k.toFixed(1) : '—'}</td></tr>`;
   }).join('');
 
-  // Say what actually happened rather than what usually happens: with vertical
-  // holes cluster sampling here beats a simple random sample, and claiming
-  // otherwise in front of the table would be teaching a slogan over the data.
-  const clusterRow = rows.find(r => r.key === 'cluster');
-  const clusterTighter = clusterRow ? clusterRow.sd < srsSd : false;
-  const shapeSentence = `Cluster sampling came out <strong>${clusterTighter ? 'tighter' : 'wider'}</strong>
-       than simple random here, on ${clusterRow ? Math.round(clusterRow.holes) : 3} holes instead of a
-       dig across the whole plot. That is this ground being kind rather than a general rule: a hole is
-       the cheap unit to collect, and here it happens to cut through all three layers, so each one is a
-       miniature of the plot. Real clusters — city blocks, classrooms — usually hold members who
-       resemble each other, and then the same design costs precision instead of saving it.`;
+  const clusterVerdict = !cl ? ''
+    : cl.sd < srsSd
+      ? `Cluster sampling came out <strong>tighter</strong> than simple random here, on about
+         ${cl.k.toFixed(0)} ${sh.labels} rather than a search across the whole site. A ${sh.label}
+         cuts across all three bands, so each one is a small copy of the whole — the condition under
+         which clustering does well, and not the usual one.`
+      : `Cluster sampling came out <strong>${(cl.sd / srsSd).toFixed(1)}&times; wider</strong> than
+         simple random, on about ${cl.k.toFixed(0)} ${sh.labels}. A ${sh.label} sits inside one band,
+         so everything in it is alike: you measured ${Math.round(cl.n)} ${scenario.items} but only
+         really looked in ${cl.k.toFixed(0)} places. That is the usual situation, and it is why
+         cluster sampling normally costs precision for a given sample size and earns it back by being
+         cheap.`;
 
   el('verdict').innerHTML = `
     <div class="verdict-scroll"><table>
       <caption class="sr-only">Bias, spread and cost of each design over 500 samples</caption>
       <thead><tr><th>Design</th><th>Average error</th><th>SD of estimates</th>
-        <th>Spread vs simple random</th><th>Rocks weighed</th><th>Holes dug</th></tr></thead>
+        <th>Spread vs simple random</th><th>Measured</th><th>Clusters</th></tr></thead>
       <tbody>${body}</tbody>
     </table></div>
     <p style="margin-top:0.5rem">Four designs have an average error near zero: random selection makes
        them <strong>accurate</strong>, however the randomness is organised. Where they differ is
-       <strong>precision</strong> — and in what they cost to collect. Stratifying cuts the spread
-       sharply, because it removes the luck of how many deep rocks you happened to catch.</p>
-    <p>${shapeSentence}</p>
-    <p><strong>Convenience</strong> is in a different category altogether. Its estimates are
-       <em>precise</em> — they agree closely with each other — and consistently wrong by about
-       ${rows.find(r => r.key === 'convenience') ? Math.abs(rows.find(r => r.key === 'convenience').bias).toFixed(1) : '?'} kg.
-       Weighing more pebbles would tighten them further around the wrong answer.</p>`;
+       <strong>precision</strong> — and in what they cost. Stratifying cuts the spread sharply, because
+       it removes the luck of how much of each band you happened to catch.</p>
+    <p>${clusterVerdict}</p>
+    <p><strong>Convenience</strong> is in a different category. Its estimates are <em>precise</em> —
+       they agree closely with each other — and consistently wrong. Measuring more would only tighten
+       them around the wrong answer.</p>`;
 }
 
 // ── Wiring ──────────────────────────────────────────────────────────────
+function syncShapeBar() {
+  const keys = Object.keys(scenario.clusters);
+  const relevant = keys.length > 1 && (design === 'cluster' || design === 'multistage');
+  shapeBar.hidden = !relevant;
+  // Clear when hiding: a scenario with one cluster shape (buried rocks) would
+  // otherwise keep the previous scenario's buttons in the DOM.
+  if (!relevant) { shapeBar.innerHTML = ''; return; }
+  shapeBar.innerHTML = '<span class="shape-label">Clusters are</span>'
+    + keys.map(k => `<button type="button" data-shape="${k}" aria-pressed="${k === shapeKey}">`
+      + `${scenario.clusters[k].labels}</button>`).join('');
+}
+
+function clearMany() {
+  manyResults = null;
+  compareSection.hidden = true;
+}
+
+scenarioBar.addEventListener('click', (e) => {
+  const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-scenario]');
+  if (!btn) return;
+  scenario = scenarioById(btn.getAttribute('data-scenario') ?? 'beach');
+  shapeKey = Object.keys(scenario.clusters)[0];
+  for (const b of scenarioBar.querySelectorAll('button[data-scenario]')) {
+    b.setAttribute('aria-pressed', String(b === btn));
+  }
+  el('scenario-blurb').textContent = scenario.blurb;
+  rebuild();
+  clearMany();
+  syncShapeBar();
+  takeSample();
+});
+
 designBar.addEventListener('click', (e) => {
   const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-design]');
   if (!btn) return;
@@ -542,28 +514,41 @@ designBar.addEventListener('click', (e) => {
   for (const b of designBar.querySelectorAll('button[data-design]')) {
     b.setAttribute('aria-pressed', String(b === btn));
   }
-  dig();
+  syncShapeBar();
+  takeSample();
 });
 
-el('dig-btn').addEventListener('click', dig);
+shapeBar.addEventListener('click', (e) => {
+  const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-shape]');
+  if (!btn) return;
+  shapeKey = btn.getAttribute('data-shape') ?? Object.keys(scenario.clusters)[0];
+  rebuild();
+  clearMany();
+  syncShapeBar();
+  takeSample();
+});
+
+el('take-btn').addEventListener('click', takeSample);
 el('run-many').addEventListener('click', runMany);
 targetInput.addEventListener('change', () => {
   targetN = Math.max(12, Math.min(200, parseInt(targetInput.value, 10) || 60));
   targetInput.value = String(targetN);
-  dig();
-  if (manyResults) { manyResults = null; compareSection.hidden = true; }
+  clearMany();
+  takeSample();
 });
-el('reset-btn').addEventListener('click', () => {
-  manyResults = null;
-  compareSection.hidden = true;
-  dig();
-});
+el('reset-btn').addEventListener('click', () => { clearMany(); takeSample(); });
 
-// Reflect the chosen design in the button bar when it came from the URL
+// ── Init ────────────────────────────────────────────────────────────────
+for (const b of scenarioBar.querySelectorAll('button[data-scenario]')) {
+  b.setAttribute('aria-pressed', String(b.getAttribute('data-scenario') === scenario.id));
+}
 for (const b of designBar.querySelectorAll('button[data-design]')) {
   b.setAttribute('aria-pressed', String(b.getAttribute('data-design') === design));
 }
+el('scenario-blurb').textContent = scenario.blurb;
 createExpertToggle(/** @type {HTMLElement} */ (document.querySelector('.generate-bar')));
-if (params.n) targetInput.value = String(params.n);
+if (qs.get('n')) targetInput.value = String(parseInt(qs.get('n') ?? '60', 10));
 targetN = Math.max(12, Math.min(200, parseInt(targetInput.value, 10) || 60));
-dig();
+rebuild();
+syncShapeBar();
+takeSample();
