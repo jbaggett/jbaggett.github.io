@@ -41,6 +41,7 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 | `design` | string | `srs` | `srs`, `stratified`, `cluster`, `multistage`, `convenience` — an unrecognised value falls back to `srs`. |
 | `n` | integer | `60` | Rocks to weigh, clamped to 12–200. |
 | `seed` | string | _(random)_ | Fixes every dig for reproducibility. The population itself is always built from a fixed internal seed, so μ never changes. |
+| `clusters` | string | `holes` | `holes` (each cluster cuts all three strata) or `pits` (each sits at one depth). Applies to the `cluster` and `multistage` designs. Setting it also makes the control visible, which is otherwise gated behind expert mode — arriving in a state with no visible control and no way back would be worse than not linking at all. An unrecognised value is ignored. |
 
 **Contributed datasets are reachable by `?dataset=` but absent from every dropdown.**
 Datasets in `data/extra/` are indexed with `contributed: true`. They are filtered out of

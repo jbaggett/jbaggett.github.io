@@ -31,9 +31,9 @@
  * showed cluster sampling coming out *more* precise than a simple random sample
  * here, not less — because Todd's holes are vertical and therefore each contains
  * all three strata. That is not a quirk to hide; it is the actual principle,
- * so the cluster shape is now a control: switch to horizontal layers and watch
- * the same design collapse. Good strata are uniform inside; good clusters are
- * varied inside. Opposite rules, same ground.
+ * so the cluster shape is an (expert-only) control: switch the clusters from deep
+ * holes to shallow pits and watch the same design collapse. Good strata are
+ * uniform inside; good clusters are varied inside. Opposite rules, same ground.
  *
  * Convenience sampling is added as a fifth design: it is the only biased one, and
  * it sets up the contrast that `conceptual/sampling-bias` develops — more data
@@ -45,7 +45,7 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom } from 'd3-axis';
 import { mean } from '../../js/stats.js';
 import { createRng } from '../../js/prng.js';
-import { initHelp, announce } from '../../js/page-utils.js';
+import { initHelp, announce, createExpertToggle } from '../../js/page-utils.js';
 import { parseParams } from '../../js/url-params.js';
 
 initHelp();
@@ -60,7 +60,7 @@ const STRATA = [
   { name: 'Bedrock layer', label: 'boulders', depth: [2, 3], count: 150, meanW: 7.0, sd: 1.8 },
 ];
 const N_HOLES = 16;   // vertical columns ("holes") the plot is divided into
-const N_LAYERS = 8;   // horizontal slabs, the alternative cluster shape
+const PATCH_COLS = 8, PATCH_ROWS = 4;  // grid of shallow pits, the alternative cluster shape
 
 /** @typedef {{x: number, y: number, w: number, stratum: number, hole: number}} Rock */
 
@@ -87,27 +87,42 @@ const MU = mean(POPULATION.map(r => r.w));
 /** Rock indices grouped by stratum and by cluster — precomputed, they never change. */
 const BY_STRATUM = STRATA.map((_, si) => POPULATION.filter(r => r.stratum === si));
 const BY_HOLE = Array.from({ length: N_HOLES }, (_, h) => POPULATION.filter(r => r.hole === h));
-const BY_LAYER = Array.from({ length: N_LAYERS }, (_, l) =>
-  POPULATION.filter(r => Math.min(N_LAYERS - 1, Math.floor((r.y / 3) * N_LAYERS)) === l));
+/**
+ * The alternative cluster shape: small pits on a grid, each one dug to a single
+ * depth. Not horizontal *layers* — Todd Will's objection to those was right, if
+ * not for the reason he gave: a full-width layer here IS a stratum, so using one
+ * as a cluster blurs the very distinction the page exists to draw. A pit is a
+ * patch, plainly not a layer, and it is something you could actually dig.
+ */
+const PATCHES = Array.from({ length: PATCH_COLS * PATCH_ROWS }, (_, k) => {
+  const col = k % PATCH_COLS, row = Math.floor(k / PATCH_COLS);
+  return POPULATION.filter(r =>
+    Math.min(PATCH_COLS - 1, Math.floor(r.x * PATCH_COLS)) === col &&
+    Math.min(PATCH_ROWS - 1, Math.floor((r.y / 3) * PATCH_ROWS)) === row);
+});
 
 /**
- * Which shape the clusters take. This is the tool's real subject.
+ * Which shape the clusters take — an expert-only control, and deliberately so.
  *
- * Measured over 500 samples: with *vertical* holes, cluster sampling is MORE
- * precise than a simple random sample (SD 0.19 vs 0.34), because every hole
- * runs top to bottom and is therefore a miniature of the whole population. With
- * *horizontal* layers it falls apart, because each cluster is uniform inside and
- * the clusters differ wildly from each other — you may dig three slabs of
- * topsoil and conclude the ground is full of pebbles.
+ * Todd Will, on the first version: "it confuses the issue a little to illustrate
+ * horizontal clusters, as clusters are defined to be heterogeneous." The premise
+ * is not right — heterogeneity is what makes clusters *efficient*, not what makes
+ * them clusters; real clusters (city blocks, schools, villages) are usually
+ * homogeneous, which is exactly why the textbook result is that cluster sampling
+ * costs precision. But the conclusion was right for a reason worth recording: a
+ * full-width horizontal layer in THIS scenario is a stratum, so offering one as a
+ * cluster blurs the distinction the page is built to teach.
  *
- * That is the principle, and it is the opposite of the one for strata: good
- * clusters are internally varied, good strata are internally uniform. Most
- * intro texts state that clusters "usually" lose precision without saying what
- * decides it; here you can switch the geometry and watch it happen.
+ * So the alternative shape is now a grid of shallow pits rather than layers —
+ * plainly not strata, physically diggable, and internally uniform in the way real
+ * clusters usually are. And the control is hidden behind expert mode, because a
+ * student meeting these four designs for the first time does not need the design
+ * effect; an instructor showing why the textbook says clusters lose precision
+ * does.
  */
-let clusterShape = /** @type {'holes'|'layers'} */ ('holes');
-const clusterGroups = () => (clusterShape === 'holes' ? BY_HOLE : BY_LAYER);
-const clusterCount = () => (clusterShape === 'holes' ? N_HOLES : N_LAYERS);
+let clusterShape = /** @type {'holes'|'pits'} */ ('holes');
+const clusterGroups = () => (clusterShape === 'holes' ? BY_HOLE : PATCHES);
+const clusterCount = () => (clusterShape === 'holes' ? N_HOLES : PATCHES.length);
 
 // ── Designs ─────────────────────────────────────────────────────────────
 
@@ -227,8 +242,17 @@ const DESIGN_ORDER = ['srs', 'stratified', 'cluster', 'multistage', 'convenience
 
 // ── State ───────────────────────────────────────────────────────────────
 const params = parseParams();
-const designParam = (new URLSearchParams(location.search).get('design') || '').toLowerCase();
+const qs = new URLSearchParams(location.search);
+const designParam = (qs.get('design') || '').toLowerCase();
 let design = DESIGN_ORDER.includes(designParam) ? designParam : 'srs';
+/**
+ * `?clusters=pits` is for a chapter or an instructor link that wants the design
+ * effect directly. It also forces the control into view: arriving at a page whose
+ * clusters are pits, with no visible control saying so and no way back, would be
+ * worse than not offering the link.
+ */
+const clustersParam = (qs.get('clusters') || '').toLowerCase();
+const clustersPinned = clustersParam === 'pits' || clustersParam === 'holes';
 let targetN = 60;
 let drawCounter = 0;
 /** @type {Draw|null} */
@@ -285,11 +309,14 @@ function drawGround() {
     const g = svg.append('g');
     for (const h of current.holes) {
       const vertical = clusterShape === 'holes';
+      const col = vertical ? h : h % PATCH_COLS;
+      const row = vertical ? 0 : Math.floor(h / PATCH_COLS);
+      const cols = vertical ? N_HOLES : PATCH_COLS;
       g.append('rect')
-        .attr('x', vertical ? gx(h / N_HOLES) : gx(0))
-        .attr('y', vertical ? gy(0) : gy((h / N_LAYERS) * 3))
-        .attr('width', vertical ? gx(1 / N_HOLES) - gx(0) : gx(1) - gx(0))
-        .attr('height', vertical ? gy(3) - gy(0) : gy(3 / N_LAYERS) - gy(0))
+        .attr('x', gx(col / cols))
+        .attr('y', vertical ? gy(0) : gy((row / PATCH_ROWS) * 3))
+        .attr('width', gx(1 / cols) - gx(0))
+        .attr('height', vertical ? gy(3) - gy(0) : gy(3 / PATCH_ROWS) - gy(0))
         .attr('fill', '#569BBD').attr('fill-opacity', 0.1)
         .attr('stroke', '#114B5F').attr('stroke-opacity', 0.45).attr('stroke-dasharray', '3 2');
     }
@@ -373,8 +400,8 @@ function dig() {
 
   el('design-note').textContent = DESIGNS[design].note;
   const holes = current.holes.length;
-  const unit = (design === 'cluster' || design === 'multistage') && clusterShape === 'layers'
-    ? 'layer' : 'hole';
+  const unit = (design === 'cluster' || design === 'multistage') && clusterShape === 'pits'
+    ? 'pit' : 'hole';
   const outOf = (design === 'cluster' || design === 'multistage') ? clusterCount() : N_HOLES;
   const dug = current.sample.length + (current.found?.length ?? 0);
   el('cost-note').textContent = design === 'convenience'
@@ -512,11 +539,13 @@ function renderVerdict() {
     ? `Cluster sampling came out <strong>${clusterTighter ? 'tighter' : 'wider'}</strong> than simple
        random here, on ${clusterRow ? Math.round(clusterRow.holes) : 3} holes instead of a dig across
        the whole plot. That is not luck: a hole runs top to bottom, so each one is a small copy of the
-       whole population. Switch <em>Clusters are</em> to <strong>horizontal layers</strong> and run it
-       again — same design, same sample size, and watch what happens.`
-    : `With clusters as horizontal layers the spread is <strong>${clusterRow ? (clusterRow.sd / srsSd).toFixed(1) : '?'}&times;</strong>
-       simple random's. Each layer holds only one kind of rock, so three layers tell you about three
-       depths and guess at the rest. The design did not change &mdash; only the shape of the clusters did.`;
+       whole population &mdash; the condition under which cluster sampling does well.`
+    : `With clusters as shallow pits the spread is <strong>${clusterRow ? (clusterRow.sd / srsSd).toFixed(1) : '?'}&times;</strong>
+       simple random's. Each pit sits at one depth and holds one kind of rock, so a handful of pits can
+       tell you about a handful of depths and leave you guessing at the rest. Nothing about the design
+       changed &mdash; only the shape of the clusters. This is the usual situation in practice, which is
+       why textbooks say cluster sampling costs precision: real clusters, like city blocks or
+       classrooms, tend to be uniform inside.`;
 
   el('verdict').innerHTML = `
     <div class="verdict-scroll"><table>
@@ -552,7 +581,7 @@ const shapeBar = el('shape-bar');
 shapeBar.addEventListener('click', (e) => {
   const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-shape]');
   if (!btn) return;
-  clusterShape = /** @type {'holes'|'layers'} */ (btn.getAttribute('data-shape') ?? 'holes');
+  clusterShape = /** @type {'holes'|'pits'} */ (btn.getAttribute('data-shape') ?? 'holes');
   for (const b of shapeBar.querySelectorAll('button[data-shape]')) {
     b.setAttribute('aria-pressed', String(b === btn));
   }
@@ -560,14 +589,18 @@ shapeBar.addEventListener('click', (e) => {
   // that is precisely the number this control changes.
   if (manyResults) { manyResults = null; compareSection.hidden = true; }
   dig();
-  announce(clusterShape === 'layers'
-    ? 'Clusters are now horizontal layers — each one is all the same kind of rock.'
-    : 'Clusters are now vertical holes — each one runs through all three layers.');
+  announce(clusterShape === 'pits'
+    ? 'Clusters are now shallow pits — each one sits at a single depth, so it holds one kind of rock.'
+    : 'Clusters are now deep holes — each one runs through all three layers.');
 });
 
 /** The shape control only means anything for the two designs that use clusters. */
 function syncShapeBar() {
-  shapeBar.hidden = !(design === 'cluster' || design === 'multistage');
+  const relevant = design === 'cluster' || design === 'multistage';
+  shapeBar.hidden = !relevant;
+  // A pinned ?clusters= value escapes expert-only gating, so the reader can see
+  // — and undo — the state they were sent into.
+  shapeBar.classList.toggle('expert-only', !clustersPinned);
 }
 
 el('dig-btn').addEventListener('click', dig);
@@ -588,6 +621,13 @@ el('reset-btn').addEventListener('click', () => {
 for (const b of designBar.querySelectorAll('button[data-design]')) {
   b.setAttribute('aria-pressed', String(b.getAttribute('data-design') === design));
 }
+if (clustersPinned) {
+  clusterShape = /** @type {'holes'|'pits'} */ (clustersParam);
+  for (const b of document.querySelectorAll('#shape-bar button[data-shape]')) {
+    b.setAttribute('aria-pressed', String(b.getAttribute('data-shape') === clusterShape));
+  }
+}
+createExpertToggle(/** @type {HTMLElement} */ (document.querySelector('.generate-bar')));
 syncShapeBar();
 if (params.n) targetInput.value = String(params.n);
 targetN = Math.max(12, Math.min(200, parseInt(targetInput.value, 10) || 60));
