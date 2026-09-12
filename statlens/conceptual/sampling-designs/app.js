@@ -113,9 +113,13 @@ const clusterCount = () => (clusterShape === 'holes' ? N_HOLES : N_LAYERS);
 
 /**
  * @typedef {object} Draw
- * @property {Rock[]} sample
- * @property {number[]} holes - which columns were dug
+ * @property {Rock[]} sample - the rocks actually weighed
+ * @property {number[]} holes - which clusters were opened
  * @property {number[]|null} strataShown - stratum indices to draw bands for
+ * @property {Rock[]} [found] - rocks turned up by the digging but NOT weighed.
+ *   Cluster and multistage dig the same holes; the only difference between them
+ *   is how much of what they find gets weighed, and that difference is invisible
+ *   unless the unweighed rocks are drawn in a state of their own.
  */
 
 /** Random sample of k items without replacement. @param {any[]} arr @param {number} k @param {() => number} rng */
@@ -127,6 +131,27 @@ function sampleOf(arr, k, rng) {
     [idx[i], idx[j]] = [idx[j], idx[i]];
   }
   return idx.slice(0, take).map(i => arr[i]);
+}
+
+/**
+ * Open clusters at random until they hold at least `n` rocks between them.
+ * Shared by cluster and multistage so both dig the same amount — the designs
+ * differ in weighing, not in digging, and the display should say only that.
+ * @param {number} n
+ * @param {() => number} rng
+ */
+function pickClusters(n, rng) {
+  const groups = clusterGroups();
+  const order = sampleOf(Array.from({ length: clusterCount() }, (_, i) => i), clusterCount(), rng);
+  /** @type {number[]} */
+  const picked = [];
+  let held = 0;
+  for (const h of order) {
+    if (held >= n) break;
+    picked.push(h);
+    held += groups[h].length;
+  }
+  return { groups, picked: picked.sort((a, b) => a - b) };
 }
 
 /** How many holes a scattered sample touches — the digging it actually costs. */
@@ -160,37 +185,30 @@ const DESIGNS = {
   },
   cluster: {
     label: 'Cluster',
-    note: 'Pick whole holes at random and weigh every rock you find in them. Each hole runs top to '
-        + 'bottom, so it contains all three layers — which is exactly what makes clusters work here.',
+    note: 'Open whole clusters at random and weigh every rock you find. Each vertical hole runs top '
+        + 'to bottom, so it holds all three layers — which is exactly what makes clusters work here.',
     draw: (n, rng) => {
-      const groups = clusterGroups();
-      const order = sampleOf(Array.from({ length: clusterCount() }, (_, i) => i), clusterCount(), rng);
-      /** @type {Rock[]} */
-      let sample = [];
-      /** @type {number[]} */
-      const picked = [];
-      for (const h of order) {
-        if (sample.length >= n) break;
-        picked.push(h);
-        sample = sample.concat(groups[h]);
-      }
-      return { sample, holes: picked.sort((a, b) => a - b), strataShown: null };
+      const { groups, picked } = pickClusters(n, rng);
+      const sample = picked.flatMap(h => groups[h]);
+      return { sample, holes: picked, strataShown: null, found: [] };
     },
   },
   multistage: {
     label: 'Multistage',
-    note: 'Pick a few holes at random, then take a random sample of rocks within each one. Less '
-        + 'digging and less weighing — the cheapest design here, and the one that pays for it.',
+    note: 'Open the same clusters — then weigh only a random sample of the rocks in each. The same '
+        + 'digging, a fraction of the weighing. The pale rocks are the ones you dug up and put back.',
     draw: (n, rng) => {
-      const k = 3;
-      const groups = clusterGroups();
-      const picked = sampleOf(Array.from({ length: clusterCount() }, (_, i) => i), k, rng)
-        .sort((a, b) => a - b);
-      const per = Math.max(1, Math.round(n / k));
+      // Deliberately the same clusters cluster sampling would have opened, so
+      // the only thing that differs on screen is how much of the haul is
+      // weighed. That *is* the distinction between the two designs.
+      const { groups, picked } = pickClusters(n, rng);
+      const per = Math.max(1, Math.round(n / picked.length));
       /** @type {Rock[]} */
       let sample = [];
       for (const h of picked) sample = sample.concat(sampleOf(groups[h], per, rng));
-      return { sample, holes: picked, strataShown: null };
+      const weighed = new Set(sample);
+      const found = picked.flatMap(h => groups[h]).filter(r => !weighed.has(r));
+      return { sample, holes: picked, strataShown: null, found };
     },
   },
   convenience: {
@@ -288,13 +306,22 @@ function drawGround() {
     }
   }
 
-  // Rocks. Unsampled first so the sample always sits on top.
+  // Rocks, in three states: left in the ground, dug up but not weighed, weighed.
+  const foundOnly = new Set(current?.found ?? []);
   const rocks = svg.append('g');
   for (const r of POPULATION) {
-    if (sampled.has(r)) continue;
+    if (sampled.has(r) || foundOnly.has(r)) continue;
     rocks.append('circle')
       .attr('cx', gx(r.x)).attr('cy', gy(r.y)).attr('r', gr(r.w))
       .attr('fill', '#b9b2a8').attr('fill-opacity', 0.75);
+  }
+  // Dug up and put back: hollow, so it reads as "handled but not measured" and
+  // is distinguishable from both other states without relying on colour.
+  for (const r of foundOnly) {
+    rocks.append('circle')
+      .attr('cx', gx(r.x)).attr('cy', gy(r.y)).attr('r', gr(r.w))
+      .attr('fill', '#fff').attr('fill-opacity', 0.85)
+      .attr('stroke', '#C08700').attr('stroke-width', 1.2).attr('stroke-dasharray', '2 1.5');
   }
   // Sampled rocks: filled orange AND ringed dark — never colour alone.
   for (const r of (current ? current.sample : [])) {
@@ -307,6 +334,19 @@ function drawGround() {
     .attr('x', gx(0)).attr('y', 16).attr('font-size', 12).attr('fill', '#5a5148')
     .text(current ? `${DESIGNS[design].label} sample — ${current.sample.length} rocks weighed`
                   : 'The plot, before you dig');
+
+  if (foundOnly.size > 0) {
+    const lg = svg.append('g').attr('transform', `translate(${gx(1) - 232},6)`);
+    lg.append('circle').attr('cx', 6).attr('cy', 7).attr('r', 5)
+      .attr('fill', '#E07020').attr('stroke', '#5a2d00').attr('stroke-width', 1);
+    lg.append('text').attr('x', 16).attr('y', 7).attr('dominant-baseline', 'middle')
+      .attr('font-size', 11).attr('fill', '#5a5148').text('weighed');
+    lg.append('circle').attr('cx', 92).attr('cy', 7).attr('r', 5)
+      .attr('fill', '#fff').attr('stroke', '#C08700').attr('stroke-width', 1.2)
+      .attr('stroke-dasharray', '2 1.5');
+    lg.append('text').attr('x', 102).attr('y', 7).attr('dominant-baseline', 'middle')
+      .attr('font-size', 11).attr('fill', '#5a5148').text('dug up, put back');
+  }
   svg.attr('aria-label', current
     ? `Cross-section of the ground. ${current.sample.length} rocks highlighted as the `
       + `${DESIGNS[design].label.toLowerCase()} sample, from ${current.holes.length} holes.`
@@ -325,17 +365,30 @@ function dig() {
   el('out-err').innerHTML = `${err >= 0 ? '+' : ''}${err.toFixed(2)} <span class="unit">kg</span>`;
   el('out-n').textContent = String(current.sample.length);
   el('out-holes').textContent = String(current.holes.length);
+  const dugUp = current.sample.length + (current.found?.length ?? 0);
+  const foundRow = el('found-row');
+  const usesClusters = design === 'cluster' || design === 'multistage';
+  foundRow.hidden = !usesClusters;
+  if (usesClusters) el('out-found').textContent = String(dugUp);
 
   el('design-note').textContent = DESIGNS[design].note;
   const holes = current.holes.length;
   const unit = (design === 'cluster' || design === 'multistage') && clusterShape === 'layers'
     ? 'layer' : 'hole';
   const outOf = (design === 'cluster' || design === 'multistage') ? clusterCount() : N_HOLES;
+  const dug = current.sample.length + (current.found?.length ?? 0);
   el('cost-note').textContent = design === 'convenience'
     ? 'No digging at all — you took what was lying on the surface.'
-    : holes >= N_HOLES - 1
-      ? `You dug in all ${holes} places across the plot to find those rocks.`
-      : `You opened ${holes} ${unit}${holes === 1 ? '' : 's'} out of ${outOf}.`;
+    : design === 'multistage'
+      ? `You opened ${holes} ${unit}${holes === 1 ? '' : 's'}, turned up ${dug} rocks, and weighed `
+        + `${current.sample.length} of them. Cluster sampling digs exactly the same ${unit}s and `
+        + `weighs all ${dug}.`
+      : design === 'cluster'
+        ? `You opened ${holes} ${unit}${holes === 1 ? '' : 's'} and weighed every one of the ${dug} `
+          + `rocks in them. Multistage digs the same ${unit}s and weighs only some.`
+        : holes >= N_HOLES - 1
+          ? `You dug in all ${holes} places across the plot to find those rocks.`
+          : `You opened ${holes} ${unit}${holes === 1 ? '' : 's'} out of ${outOf}.`;
 
   drawGround();
   announce(`${DESIGNS[design].label}: ${current.sample.length} rocks from ${holes} holes, `
