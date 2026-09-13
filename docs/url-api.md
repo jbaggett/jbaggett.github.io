@@ -214,6 +214,35 @@ row is not noise: for `(x²−1)/(x−1)` at `x = 1` it is the entire point.
 
 Presets: `?preset=limit`, `ball`, `endbehaviour`.
 
+## CalcLens — Squeezing π
+
+`calclens/limits/exhaustion/`
+
+Archimedes' method of exhaustion, as a squeeze. A unit circle between an
+inscribed and a circumscribed regular *n*-gon:
+*A*ᵢₙ = (*n*/2)·sin(2π/*n*) ≤ π ≤ *n*·tan(π/*n*) = *A*ₒᵤₜ.
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `n` | 3–120 | `6` | Number of sides. |
+| `readout` | `true`/`false` | **off** | π itself. Off by default: the point is watching two bounds close on a number and being asked what it is. |
+| `wedge` | `false` | on | The highlighted half-wedge — the three areas that give sin(*x*)/*x*. |
+| `controls` | list | all | `n`, `wedge`, `table`, `sinx`. |
+| `preset` | key | — | `archimedes` (n = 96, where he stopped), `hexagon`, `triangle`. |
+
+**Why one tool does two jobs.** With *x* = π/*n*,
+*A*ᵢₙ = π·cos *x*·(sin *x*)/*x* and *A*ₒᵤₜ = π·(sin *x*)/*x* ÷ cos *x*, so
+*A*ᵢₙ ≤ π ≤ *A*ₒᵤₜ says exactly cos *x* ≤ (sin *x*)/*x* ≤ 1/cos *x*. The limit
+needed to differentiate sine is not an analogy to this figure — it is this
+figure, read one wedge at a time. The `sinx` panel shows that reading; hide it
+with `controls=` if a class is not there yet.
+
+**Lecture-figure form:**
+
+```
+calclens/limits/exhaustion/?preset=hexagon&embed=true&controls=n,table&prose=none
+```
+
 ## CalcLens — Squeeze Theorem
 
 `calclens/limits/squeeze/`

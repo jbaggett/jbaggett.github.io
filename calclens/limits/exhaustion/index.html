@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Squeezing π | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#chart">Skip to the figure</a>
+  <a href="#table">Skip to the table</a>
+</nav>
+
+<main>
+  <h1>Squeezing π
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    A circle of radius 1 has area π. Trap it between a polygon drawn inside and
+    a polygon drawn outside, then add sides. Neither polygon is a circle, but
+    together they leave the circle nowhere to hide — which is how Archimedes
+    found π, and it is the squeeze theorem two thousand years early.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Number of sides">
+    <label for="n-slider" data-control="n" style="display:block;">
+      <span>Sides: <output id="n-out" for="n-slider">6</output></span>
+      <input type="range" id="n-slider" min="3" max="120" step="1" value="6">
+    </label>
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.6rem;">
+      <div class="ll-segmented" role="group" data-control="n" aria-label="Archimedes' doubling">
+        <button type="button" id="halve-btn" aria-label="Halve the number of sides">÷2</button>
+        <button type="button" id="double-btn" aria-label="Double the number of sides">×2</button>
+      </div>
+      <button type="button" id="run-btn" data-control="n" class="ll-primary">▶ Add sides</button>
+      <label class="ll-row" style="font-size:0.9rem;" data-control="wedge">
+        <input type="checkbox" id="wedge-check" checked> Highlight one wedge
+      </label>
+      <div id="reveal-slot"></div>
+    </div>
+  </section>
+
+  <section id="chart" aria-label="The circle with its inscribed and circumscribed polygons">
+    <p class="ll-figure-caption" id="fig-caption"></p>
+    <div class="ll-chart"><div id="fig"></div></div>
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> the circle</span>
+      <span><svg viewBox="0 0 26 10"><rect x="1" y="1" width="24" height="8" fill="rgba(86,155,189,0.38)" stroke="#3A7CA5"/></svg> inside — too small</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2" stroke-dasharray="7 4"/></svg> outside — too big</span>
+    </div>
+  </section>
+
+  <section id="table" aria-label="The bounds closing" data-control="table">
+    <div class="ll-working" id="working"></div>
+    <h2>Archimedes' doubling</h2>
+    <table class="ll-table">
+      <caption>He started with a hexagon and doubled, by hand, to 96 sides</caption>
+      <thead>
+        <tr><th scope="col">sides</th><th scope="col">inside</th>
+            <th scope="col">outside</th><th scope="col">gap</th></tr>
+      </thead>
+      <tbody id="tbl-body"></tbody>
+    </table>
+    <p id="verdict" class="ll-result"></p>
+    <div id="sinx" class="ll-panel" data-control="sinx"></div>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Squeezing π</h2>
+  <p>The circle has radius 1, so its area is π. The polygon drawn <b>inside</b>
+     it is too small; the polygon drawn <b>outside</b> is too big. Add sides and
+     the two close in.</p>
+
+  <h3>The two areas</h3>
+  <p>For a regular <i>n</i>-gon in a unit circle,
+     <span class="ll-math" id="t1"></span>, and for the one around it,
+     <span class="ll-math" id="t2"></span>. Neither is ever equal to π — but
+     every value of <i>n</i> gives a genuine pair of bounds, and the gap between
+     them goes to zero.</p>
+
+  <h3>Why this is the squeeze theorem</h3>
+  <p>Two sequences with the same limit, and the thing you care about trapped
+     between them. That is the whole hypothesis, and Archimedes was using it in
+     the third century BC — with 96 sides, by hand, no decimal notation and no
+     trigonometry tables, to get
+     <span class="ll-math" id="t3"></span>.</p>
+  <p class="ll-hint">A footnote for accuracy: he squeezed the <b>circumference</b>
+     between the two perimeters, not the area between the two areas. Both work,
+     and both give π. The area version is the one shown here because it is the
+     one that leads to sin(<i>x</i>)/<i>x</i> below.</p>
+
+  <h3>Where sin(x)/x comes from</h3>
+  <p>Look at one wedge and cut it in half. With <span class="ll-math" id="t4"></span>
+     the half-wedge gives three areas — a triangle inside, the sector, and a
+     triangle outside — and reading them off is exactly
+     <span class="ll-math" id="t5"></span>.</p>
+  <p>Divide by sin <i>x</i> and turn it over, and you get
+     <span class="ll-math" id="t6"></span>. Both ends go to 1, so the thing
+     between them does too. <b>The limit we need for the derivative of sin is
+     the same picture as Archimedes' π</b> — it is this figure, read at the
+     level of one wedge instead of the whole circle.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Change the number of sides</dd>
+    <dt><kbd>Space</kbd></dt><dd>Run or stop adding sides</dd>
+    <dt><kbd>R</kbd></dt><dd>Show or hide the answer</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
