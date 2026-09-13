@@ -168,8 +168,12 @@ const DESIGNS = {
       // in the ground) it falls back to scraping the nearest band.
       const a = scenario.convenience.anchor;
       if (!a) {
-        const i = 0;
-        return { sample: sampleOf(BY_BAND[i], n, rng), picked: [], found: [], bandsShown: [i] };
+        // Nowhere to park inside a hole in the ground, so "convenient" means the
+        // shallowest rocks there are — the ones you could pick up without
+        // digging at all. Todd Will's note: the old version scattered them
+        // through the topsoil, which looked like work.
+        const shallowest = [...POP].sort((p, q) => p.y - q.y).slice(0, n);
+        return { sample: shallowest, picked: [], found: [], bandsShown: null };
       }
       const byDistance = [...POP].sort((p, q) =>
         ((p.x - a.x) ** 2 + (p.y - a.y) ** 2) - ((q.x - a.x) ** 2 + (q.y - a.y) ** 2));
@@ -238,7 +242,32 @@ function drawScene() {
       .attr('font-size', 10.5).attr('fill', '#4a7f9c').text('water');
   }
 
-  // Clusters that were opened
+  // Every cluster, faintly, then the ones that were opened. Todd Will's note:
+  // without the full set on screen there is nothing to show that you dug two
+  // holes out of sixteen, which is the entire argument for the design.
+  const usesClusters = design === 'cluster' || design === 'multistage';
+  if (usesClusters) {
+    const sh = shape();
+    const stripVertical = scenario.gradient === 'y';
+    /** @param {number} c */
+    const cellOf = (c) => {
+      if (sh.kind === 'strip') {
+        return stripVertical
+          ? { x: gx(c / sh.n), y: gy(0), w: gx(1 / sh.n) - gx(0), h: gy(1) - gy(0) }
+          : { x: gx(0), y: gy(c / sh.n), w: gx(1) - gx(0), h: gy(1 / sh.n) - gy(0) };
+      }
+      const cols = sh.n, rows = sh.rows ?? 4;
+      return { x: gx((c % cols) / cols), y: gy(Math.floor(c / cols) / rows),
+        w: gx(1 / cols) - gx(0), h: gy(1 / rows) - gy(0) };
+    };
+    const all = svg.append('g');
+    for (let c = 0; c < CLUSTERS.length; c++) {
+      const r = cellOf(c);
+      all.append('rect').attr('x', r.x).attr('y', r.y).attr('width', r.w).attr('height', r.h)
+        .attr('fill', 'none').attr('stroke', '#114B5F').attr('stroke-opacity', 0.16)
+        .attr('stroke-width', 1);
+    }
+  }
   if (current?.picked.length) {
     const g = svg.append('g');
     const sh = shape();
@@ -484,9 +513,14 @@ function renderVerdict() {
     <div class="verdict-scroll"><table>
       <caption class="sr-only">Bias, spread and cost of each design over 500 samples</caption>
       <thead><tr><th>Design</th><th>Average error</th><th>SD of estimates</th>
-        <th>Spread vs simple random</th><th>Measured</th><th>Clusters</th></tr></thead>
+        <th>SD &divide; simple random&rsquo;s SD</th><th>Measured</th><th>Clusters</th></tr></thead>
       <tbody>${body}</tbody>
     </table></div>
+    <p class="hint" style="margin-top:0.3rem">Each row comes from 500 samples of that design.
+       <strong>Average error</strong> is how far its estimates sat from the truth on average — near
+       zero means unbiased. <strong>SD of estimates</strong> is how much they varied from sample to
+       sample, and the fourth column is just that SD divided by simple random&rsquo;s, so 2&times;
+       means twice as scattered.</p>
     <p style="margin-top:0.5rem">Four designs have an average error near zero: random selection makes
        them <strong>accurate</strong>, however the randomness is organised. Where they differ is
        <strong>precision</strong> — and in what they cost. Stratifying cuts the spread sharply, because
@@ -515,8 +549,11 @@ function syncShapeBar() {
   // otherwise keep the previous scenario's buttons in the DOM.
   if (!relevant) { shapeBar.innerHTML = ''; return; }
   shapeBar.innerHTML = '<span class="shape-label">Clusters are</span>'
-    + keys.map(k => `<button type="button" data-shape="${k}" aria-pressed="${k === shapeKey}">`
-      + `${scenario.clusters[k].labels}</button>`).join('');
+    + keys.map(k => {
+      const c = scenario.clusters[k];
+      return `<button type="button" data-shape="${k}" aria-pressed="${k === shapeKey}">`
+        + `${c.labels}${c.gloss ? ` <span class="gloss">(${c.gloss})</span>` : ''}</button>`;
+    }).join('');
 }
 
 function clearMany() {

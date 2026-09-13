@@ -79,6 +79,8 @@ import { createRng } from '../../js/prng.js';
  * @property {number} [rows]     - patches only
  * @property {string} note       - what it is, in the scenario's own terms
  * @property {string} verb       - 'walked', 'tossed', 'dug'
+ * @property {string} [gloss]    - a few words on the chooser button for a term a
+ *   reader may not know ('quadrats' read as 'quadrants' in review)
  */
 
 /** @type {Scenario[]} */
@@ -86,8 +88,9 @@ export const SCENARIOS = [
   {
     id: 'beach',
     name: 'Cobble beach',
-    blurb: 'A rocky Lake Superior beach, seen from above: the water runs along the top, and wave '
-         + 'sorting grades the stones by size as you walk up the shore. You want their average weight.',
+    blurb: 'A rocky Lake Superior beach, seen from above, with the water along the top. The waves '
+         + 'sort the stones by size: the smallest sit at the water’s edge and the biggest are thrown '
+         + 'up at the back. You want their average weight.',
     item: 'cobble', items: 'cobbles', measure: 'weight', unit: 'kg',
     gradient: 'y', view: 'plan',
     bandAxisLabel: 'distance from the water',
@@ -98,25 +101,27 @@ export const SCENARIOS = [
     ],
     clusters: {
       transect: {
-        label: 'transect', labels: 'transects', kind: 'strip', n: 16, verb: 'walked',
+        label: 'transect', labels: 'transects', gloss: 'water to treeline', kind: 'strip', n: 16,
+        verb: 'walked',
         note: 'A line run from the water straight up the beach, collecting everything along it. It '
             + 'crosses every zone, so each transect is a small version of the whole beach — which is '
             + 'exactly why ecologists lay transects when a gradient runs across their site.',
       },
       quadrat: {
-        label: 'quadrat', labels: 'quadrats', kind: 'patch', n: 8, rows: 4, verb: 'tossed',
-        note: 'A one-metre frame dropped on the stones; you take everything inside it. Easy to do — '
-            + 'but everything in the frame sits at one distance from the water, so it is all the '
-            + 'same kind of stone.',
+        label: 'quadrat', labels: 'quadrats', gloss: '1 m frames', kind: 'patch', n: 8, rows: 4,
+        verb: 'tossed',
+        note: 'A quadrat is a one-metre square frame: drop it on the stones and take everything inside '
+            + 'it. Easy to do — but everything in the frame sits at one distance from the water, so it '
+            + 'is all the same kind of stone.',
       },
     },
     convenience: {
       label: 'the stones by the car',
       anchor: { x: 0.14, y: 1 },
       accessLabel: 'you parked here',
-      note: 'Fill a bucket from the shingle in arm’s reach of where you parked. No randomness at all '
-          + '— and the back of the beach, where you can drive to, is exactly where the storm waves '
-          + 'pile the big stones.',
+      note: 'Fill a bucket from whatever is within arm’s reach of where you parked. No randomness at '
+          + 'all — and the back of the beach, the part you can drive to, is exactly where the storm '
+          + 'waves throw the big stones.',
     },
     srsNote: 'Every cobble on the beach is equally likely — which means walking the whole beach and '
            + 'bending down more or less everywhere.',
