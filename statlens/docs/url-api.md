@@ -43,6 +43,41 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 | `n` | integer | `60` | Rocks to weigh, clamped to 12–200. |
 | `seed` | string | _(random)_ | Fixes every sample for reproducibility. Each setting's population is built from its own fixed internal seed, so the true mean never changes. |
 
+### Reporting a student's answer to a framing page (`qn`, `report`)
+
+For embedding a StatLens tool **inside** a MyOpenMath question rather than linking out of
+one (REQ-055). Entirely opt-in: with no `qn`, nothing is ever posted and every existing
+link behaves exactly as before.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `qn` | string (digits) | _(none)_ | The MyOpenMath answer-box number. 1–6 digits; anything else is refused with a console warning and no posting. Present ⇒ the tool posts the student's produced value to the parent frame. Ignored when the page is not framed. |
+| `report` | string | _(per page)_ | Which quantity to send, when a page produces several. Bootstrap pages: `ci_lower` (default), `ci_upper`, `se`, `stat`. Randomization pages: `p_value` (default), `count`, `stat`. |
+
+**The message shape is fixed by MyOpenMath and is not ours to change:**
+
+```js
+window.parent.postMessage(JSON.stringify({
+  subject: 'imathas.update', qn: '<the qn param>', value: '<the number, as a string>'
+}), '*');
+```
+
+MOM's `general.js` matches on the literal string `imathas.update`, so renaming the subject
+or the `qn`/`value` keys silently stops it working — the student sees a functioning tool and
+an ungraded box. `js/answer-report.js` is the single place this shape is constructed, and
+`tests/unit/answer-report.test.js` pins it down.
+
+Two behaviours worth knowing when writing a question:
+
+- **The value posted is the one the student can see**, rounded the way the page displays it
+  (a CI bound to the page's data precision, a p-value to its p-value decimals). Posting full
+  float precision would put `9.68665123457` in the box beside a `9.7` on screen.
+- **Nothing is posted in reasoning mode.** With `?readout=false` the tool deliberately hides
+  the p-value so the student reads it off the chart; posting it would answer the question.
+
+**Where it works today:** the 14 `sim-app.js` simulation pages (bootstrap CI and
+randomization) and the two `one-sample-sim.js` pages. Other tools ignore `qn` for now.
+
 **Contributed datasets are reachable by `?dataset=` but absent from every dropdown.**
 Datasets in `data/extra/` are indexed with `contributed: true`. They are filtered out of
 all browse dropdowns (already 11–36 options per tool, and curated for the course) while

@@ -21,6 +21,7 @@ import {
 } from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
+import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
@@ -373,6 +374,15 @@ export function initSimPage(config) {
   let chartType = 'auto';
   /** Cached render params for chart type toggle re-render. */
   /** @type {[number,number]|null} */
+  // REQ-055: when embedded in a MyOpenMath question, post the value the student
+  // produces into the answer box. Bootstrap pages default to the lower CI bound
+  // and randomization pages to the p-value, since those are what the homework
+  // asks for; `?report=` overrides.
+  const answer = initAnswerReport({
+    defaultKey: config.mode === 'bootstrap' ? 'ci_lower' : 'p_value',
+    keys: ['ci_lower', 'ci_upper', 'se', 'stat', 'p_value', 'count'],
+  });
+
   let lastCI = null;
   /** @type {number|undefined} */
   let lastObserved;
@@ -3726,6 +3736,13 @@ export function initSimPage(config) {
     const fmt = (v) => config.proportion ? formatStat(v, dataPrecision, 'proportion') : formatStat(v, dataPrecision);
     const ciLo = `<span class="ci-value">${fmt(ci[0])}</span>`;
     const ciHi = `<span class="ci-value">${fmt(ci[1])}</span>`;
+    // REQ-055: report the number the student can see. Posting full float
+    // precision would put 9.68665123457 in the answer box beside a 9.69 on
+    // screen, and a student comparing the two would be right to distrust it.
+    answer.send({
+      ci_lower: Number(fmt(ci[0])), ci_upper: Number(fmt(ci[1])),
+      se: Number(fmt(se)), stat: lastObserved,
+    });
     // Data spread (SD) vs bootstrap spread (SE): the classic confusion (REQ-032).
     // The bootstrap distribution's spread is the SE — how much the *statistic*
     // varies — and is much narrower than the spread of the *data*. Shown for the
@@ -3845,6 +3862,14 @@ export function initSimPage(config) {
     const pLine = extremeCount === 0
       ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
       : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
+    // REQ-055: report what the student can see, to the same 3 decimals. Not
+    // when `?readout=false` is on — that mode exists to make them read the
+    // p-value off the chart themselves, and posting it would answer the
+    // question for them.
+    if (showReadout) {
+      answer.send({ p_value: Number(pValue.toFixed(3)), count: extremeCount,
+        stat: observedStat + getNullValue() });
+    }
     resultDiv.innerHTML = showReadout ? `
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
