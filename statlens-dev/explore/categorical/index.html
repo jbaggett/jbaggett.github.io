@@ -143,35 +143,23 @@
             </div>
 
             <div role="tabpanel" id="panel-paste" aria-labelledby="tab-paste" hidden>
-                <div class="cat-editors">
-                    <div id="paste-spreadsheet">
-                        <p class="hint" style="margin:0 0 0.3rem;">Type values one per row:</p>
-                        <div class="spreadsheet" aria-label="Data editor">
-                            <table>
-                                <thead><tr><th class="row-num">#</th><th>Value</th></tr></thead>
-                                <tbody id="cat-sheet-body">
-                                    <!-- Rows injected by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div id="paste-summary" class="summary-table-wrap">
-                        <p class="hint" style="margin:0 0 0.3rem;">Or enter summary counts:</p>
-                        <label for="num-categories" class="hint">Categories:
-                            <input type="number" id="num-categories" value="3" min="2" max="20"
-                                   style="width:3.5rem; padding:0.15rem 0.3rem; font-size:0.85rem;">
-                        </label>
-                        <table class="summary-table" aria-label="Summary counts">
-                            <thead><tr><th>Category</th><th>Count</th></tr></thead>
-                            <tbody id="summary-table-body">
-                                <!-- Rows injected by JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                <p class="hint" style="margin:0 0 0.4rem;">Enter a contingency table of counts &mdash; the shape a textbook prints:</p>
+                <div class="dim-controls">
+                    <label for="num-rows">Rows
+                        <input type="number" id="num-rows" value="2" min="2" max="10" step="1"></label>
+                    <label for="num-cols">Columns
+                        <input type="number" id="num-cols" value="2" min="2" max="10" step="1"></label>
                 </div>
-                <details style="margin-top:0.5rem;">
-                    <summary class="hint">Paste CSV data</summary>
-                    <label for="paste-area">Paste CSV with categorical columns:
+                <div id="table-input-container" aria-label="Editable contingency table">
+                    <!-- Built by js/table-editor.js -->
+                </div>
+                <p class="hint">Name the variables and their levels so the table and chart come out
+                   labelled. You can copy a table out of Excel or Word and paste it straight into
+                   the grid.</p>
+
+                <details class="raw-csv-details">
+                    <summary class="hint">Have case-level data instead? Paste CSV</summary>
+                    <label for="paste-area">One row per observation, with two categorical columns:
                         <textarea id="paste-area" rows="6"
                                   placeholder="group,outcome&#10;treatment,survived&#10;control,died&#10;treatment,survived"></textarea>
                     </label>

@@ -12,6 +12,7 @@ import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curv
 import { formatStat } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { announce, initTabs, initDataPanel, initKeyboardShortcuts, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
+import { createTableEditor } from '../../js/table-editor.js';
 
 import { tex } from '../../js/tex.js';
 
@@ -229,84 +230,24 @@ function buildFromRawData(sourceName) {
 }
 
 // ── Editable table (Enter Table tab) ────────────────────────────────
+//
+// The grid itself now lives in js/table-editor.js: explore/categorical needed
+// the same editor (REQ-065), and a second copy would have been the third
+// count-entry editor in the codebase. The module keeps this page's DOM contract
+// (`cell-<i>-<j>`, `row-label-<i>`, `col-label-<j>`) and adds live totals,
+// which catch the transcription slips that come with copying a table out of a
+// book, plus paste-a-block for Excel's clipboard.
 
-let nRows = 2;
-let nCols = 2;
+const tableEditor = createTableEditor({
+  container: tableInputContainer,
+  rowsInput: inputRows,
+  colsInput: inputCols,
+  announce,
+  totals: true,
+  // Enter-to-load is already wired below, scoped to the count inputs.
+});
 
-function buildInputTable() {
-  nRows = Math.max(2, Math.min(10, parseInt(inputRows.value, 10) || 2));
-  nCols = Math.max(2, Math.min(10, parseInt(inputCols.value, 10) || 2));
-
-  const rowLabels = Array.from({ length: nRows }, (_, i) => `Row ${i + 1}`);
-  const colLabels = Array.from({ length: nCols }, (_, j) => `Col ${j + 1}`);
-
-  let html = '<table class="input-table" aria-label="Editable contingency table">';
-  html += '<thead><tr>';
-  html += '<td class="corner-cell"></td>';
-  for (let j = 0; j < nCols; j++) {
-    html += `<th scope="col"><input type="text" id="col-label-${j}" value="${colLabels[j]}" aria-label="Column ${j + 1} label"></th>`;
-  }
-  html += '</tr></thead>';
-
-  html += '<tbody>';
-  for (let i = 0; i < nRows; i++) {
-    html += '<tr>';
-    html += `<th scope="row"><input type="text" id="row-label-${i}" value="${rowLabels[i]}" aria-label="Row ${i + 1} label"></th>`;
-    for (let j = 0; j < nCols; j++) {
-      html += `<td><input type="number" id="cell-${i}-${j}" value="0" min="0" step="1" aria-label="Count for ${rowLabels[i]}, ${colLabels[j]}"></td>`;
-    }
-    html += '</tr>';
-  }
-  html += '</tbody></table>';
-
-  tableInputContainer.innerHTML = html;
-}
-
-inputRows.addEventListener('change', buildInputTable);
-inputCols.addEventListener('change', buildInputTable);
-buildInputTable();
-
-/**
- * Read the contingency table from the editable input.
- * @returns {{ observed: number[][], rowLabels: string[], colLabels: string[] } | null}
- */
-function readTable() {
-  const rowLabels = [];
-  const colLabels = [];
-  const observed = [];
-
-  for (let i = 0; i < nRows; i++) {
-    const el = /** @type {HTMLInputElement} */ (document.getElementById(`row-label-${i}`));
-    rowLabels.push(el.value.trim() || `Row ${i + 1}`);
-  }
-  for (let j = 0; j < nCols; j++) {
-    const el = /** @type {HTMLInputElement} */ (document.getElementById(`col-label-${j}`));
-    colLabels.push(el.value.trim() || `Col ${j + 1}`);
-  }
-
-  for (let i = 0; i < nRows; i++) {
-    const row = [];
-    for (let j = 0; j < nCols; j++) {
-      const el = /** @type {HTMLInputElement} */ (document.getElementById(`cell-${i}-${j}`));
-      const val = parseInt(el.value, 10);
-      if (isNaN(val) || val < 0) {
-        announce(`Invalid count in ${rowLabels[i]}, ${colLabels[j]}. Counts must be non-negative integers.`);
-        el.focus();
-        return null;
-      }
-      row.push(val);
-    }
-    observed.push(row);
-  }
-
-  const total = observed.flat().reduce((a, b) => a + b, 0);
-  if (total === 0) {
-    announce('All counts are zero. Enter at least some non-zero counts.');
-    return null;
-  }
-
-  return { observed, rowLabels, colLabels };
-}
+const readTable = () => tableEditor.read();
 
 // Load table button
 loadTableBtn.addEventListener('click', () => {
@@ -337,7 +278,7 @@ tableInputContainer.addEventListener('keydown', (e) => {
 
 // Clear table button
 clearTableBtn.addEventListener('click', () => {
-  buildInputTable();
+  tableEditor.clear();
   announce('Table cleared.');
 });
 

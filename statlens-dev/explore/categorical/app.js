@@ -9,7 +9,7 @@ import { formatStat } from '../../js/stats.js';
 import { announce, initTabs, initDataPanel, initHelp, setPageTitle } from '../../js/page-utils.js';
 import { wrapTable } from '../../js/export.js';
 import { parseCSV } from '../../js/csv-parser.js';
-import { initSheet, handleSheetPaste, readSheetValues, populateSheet } from '../../js/spreadsheet.js';
+import { createTableEditor, tableToRows } from '../../js/table-editor.js';
 
 initHelp();
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
@@ -43,73 +43,42 @@ function setChartMode(value) {
     btn.setAttribute('aria-pressed', String(/** @type {HTMLButtonElement} */ (btn).dataset.value === value));
   }
 }
-const catSheetBody = /** @type {HTMLElement} */ (document.getElementById('cat-sheet-body'));
-const numCategoriesInput = /** @type {HTMLInputElement} */ (document.getElementById('num-categories'));
-const summaryTableBody = /** @type {HTMLElement} */ (document.getElementById('summary-table-body'));
+const numRowsInput = /** @type {HTMLInputElement} */ (document.getElementById('num-rows'));
+const numColsInput = /** @type {HTMLInputElement} */ (document.getElementById('num-cols'));
+const tableInputContainer = /** @type {HTMLElement} */ (document.getElementById('table-input-container'));
 
 initTabs();
 
-// ── Spreadsheet + summary table init ────────────────────────────────
+// ── Contingency-table editor ─────────────────────────────────────────
+//
+// This page is about two categorical variables, but until REQ-065 both of its
+// visible editors could only express one: a column of values and a list of
+// category counts, both copied from `explore/one-cat/`. The only two-variable
+// path was a CSV box behind a disclosure triangle. A reviewer sat down to type
+// in a 2×2 and found nowhere to put it.
+//
+// The grid is now the primary editor, because an r×c table of counts is the
+// shape a textbook prints and the shape an instructor has on the board. The
+// single-variable editors are gone from this page — `explore/one-cat/` is where
+// they belong, and it already has them.
 
-if (catSheetBody) {
-  initSheet(catSheetBody, 'text');
-  catSheetBody.closest('.spreadsheet')?.addEventListener('paste', (e) => {
-    handleSheetPaste(catSheetBody, 'text', /** @type {ClipboardEvent} */ (e));
-  });
-}
+/** Which editor the student touched last, so Apply reads the one they meant. */
+let lastEdited = /** @type {'grid'|'csv'} */ ('grid');
 
-/** Build the summary table rows (category name + count pairs). */
-function buildSummaryTable() {
-  if (!summaryTableBody) return;
-  const n = parseInt(numCategoriesInput?.value ?? '3', 10) || 3;
-  summaryTableBody.innerHTML = '';
-  for (let i = 0; i < n; i++) {
-    const tr = document.createElement('tr');
-    const tdName = document.createElement('td');
-    const inputName = document.createElement('input');
-    inputName.type = 'text';
-    inputName.placeholder = `Category ${i + 1}`;
-    inputName.setAttribute('aria-label', `Category ${i + 1} name`);
-    tdName.appendChild(inputName);
-    tr.appendChild(tdName);
-
-    const tdCount = document.createElement('td');
-    const inputCount = document.createElement('input');
-    inputCount.type = 'number';
-    inputCount.min = '0';
-    inputCount.placeholder = '0';
-    inputCount.setAttribute('aria-label', `Category ${i + 1} count`);
-    tdCount.appendChild(inputCount);
-    tr.appendChild(tdCount);
-
-    summaryTableBody.appendChild(tr);
-  }
-}
-
-buildSummaryTable();
-numCategoriesInput?.addEventListener('change', buildSummaryTable);
-
-/**
- * Read data from the summary table (category name + count → expanded values).
- * @returns {{ values: string[], varName: string } | null}
- */
-function readSummaryData() {
-  if (!summaryTableBody) return null;
-  const rows = summaryTableBody.querySelectorAll('tr');
-  /** @type {string[]} */
-  const values = [];
-  let hasData = false;
-  for (const row of rows) {
-    const inputs = row.querySelectorAll('input');
-    const name = inputs[0]?.value.trim();
-    const count = parseInt(inputs[1]?.value ?? '0', 10);
-    if (name && count > 0) {
-      hasData = true;
-      for (let i = 0; i < count; i++) values.push(name);
-    }
-  }
-  return hasData ? { values, varName: 'Category' } : null;
-}
+const tableEditor = createTableEditor({
+  container: tableInputContainer,
+  rowsInput: numRowsInput,
+  colsInput: numColsInput,
+  announce,
+  totals: true,
+  varNames: true,
+  defaultRowVar: 'Row',
+  defaultColVar: 'Column',
+  onEnter: () => handleApply(),
+});
+tableInputContainer?.addEventListener('input', () => { lastEdited = 'grid'; });
+tableInputContainer?.addEventListener('paste', () => { lastEdited = 'grid'; });
+document.getElementById('paste-area')?.addEventListener('input', () => { lastEdited = 'csv'; });
 
 // ── State ────────────────────────────────────────────────────────────
 
@@ -177,11 +146,6 @@ initDataPanel({
     catVarNames = catVars.map(/** @param {any} v */ v => v.name);
     rawRows = ds.rows;
     setupVariableSelectors(catVarNames);
-    // Populate spreadsheet with the first categorical variable's values
-    if (catSheetBody && catVarNames.length > 0) {
-      const vals = rawRows.map(r => String(r[catVarNames[0]] ?? ''));
-      populateSheet(catSheetBody, 'text', vals);
-    }
     showDataLoaded(ds.name);
   },
   onText: loadParsedData,
@@ -193,56 +157,58 @@ initDataPanel({
     if (resultsSection) resultsSection.hidden = true;
     if (tableContainer) tableContainer.innerHTML = '';
     if (chartContainer) chartContainer.innerHTML = '';
-    if (catSheetBody) initSheet(catSheetBody, 'text');
-    buildSummaryTable();
+    numRowsInput.value = '2';
+    numColsInput.value = '2';
+    tableEditor.clear();
     announce('Data cleared.');
   },
 });
 
 /**
- * Load a flat array of categorical values (from spreadsheet or summary table).
- * @param {string[]} values
- * @param {string} varName
- * @param {string} sourceName
+ * Load an entered contingency table by expanding its counts into case-level
+ * rows, which is what everything downstream (chart, table, percentages)
+ * already consumes.
+ * @param {import('../../js/table-editor.js').TableData} table
  */
-function loadRawValues(values, varName, sourceName) {
-  catVarNames = [varName];
-  rawRows = values.map(v => ({ [varName]: v }));
+function loadTable(table) {
+  catVarNames = [table.rowVar, table.colVar];
+  rawRows = tableToRows(table);
+  rowVar = table.rowVar;
+  colVar = table.colVar;
   setupVariableSelectors(catVarNames);
-  showDataLoaded(sourceName);
+  rowVarSelect.value = rowVar;
+  colVarSelect.value = colVar;
+  showDataLoaded('Contingency table');
 }
 
 /**
  * Handle the Apply button — check summary table, then spreadsheet, then CSV textarea.
  */
 function handleApply() {
-  // 1. Summary table
-  const summary = readSummaryData();
-  if (summary) {
-    loadRawValues(summary.values, summary.varName, 'Summary data');
-    return;
-  }
-  // 2. Spreadsheet
-  if (catSheetBody) {
-    const sheetValues = readSheetValues(catSheetBody).filter(v => v.length > 0);
-    if (sheetValues.length > 0) {
-      loadRawValues(sheetValues, 'Value', 'Edited data');
-      return;
-    }
-  }
-  // 3. CSV textarea fallback
   const pasteArea = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('paste-area'));
   const text = pasteArea?.value?.trim();
+
+  // Whichever editor the student touched last is the one they mean. Precedence
+  // by position would get this wrong in a common case: loading a dataset fills
+  // the CSV box automatically, so a student who then edits the grid and clicks
+  // Apply would silently get the old dataset back.
+  const csvFirst = lastEdited === 'csv' && !!text;
+
+  if (!csvFirst) {
+    const table = tableEditor.read();
+    if (table) { loadTable(table); return; }
+    if (!text) return; // read() already said what was wrong
+  }
+
   if (text) {
     try {
-      const parsed = parseCSV(text);
-      loadParsedData(parsed, 'Edited data');
+      loadParsedData(parseCSV(text), 'Edited data');
     } catch (e) {
       announce(`Error parsing data: ${e instanceof Error ? e.message : String(e)}`);
     }
     return;
   }
-  announce('Enter categorical values or summary counts.');
+  announce('Enter counts in the table, or paste case-level CSV.');
 }
 
 // Override the default Apply button to use our custom handler
@@ -357,9 +323,34 @@ function updateDisplay() {
     // Color the table dimension that matches the chart's fill variable
     applyTableColors(chartFlipped ? 'row' : 'col');
 
+    // Mirror the cross-tab into the editor, so loading a dataset *shows* you
+    // its contingency table — which is what the old one-variable spreadsheet
+    // occupied this space failing to do.
+    fillGridFromData(rowValues, colValues);
+
   }
 
   if (resultsSection) resultsSection.hidden = false;
+}
+
+/**
+ * Push the current cross-tabulation into the editable grid. Skipped when the
+ * table is larger than the grid holds — the display table below handles any
+ * size, and silently truncating an instructor's data would be worse than
+ * leaving the editor alone.
+ * @param {string[]} rowValues
+ * @param {string[]} colValues
+ */
+function fillGridFromData(rowValues, colValues) {
+  const { primaryCats, secondaryCats, table } = computeGroupedFrequencies(rowValues, colValues);
+  if (primaryCats.length > 10 || secondaryCats.length > 10) return;
+  const observed = primaryCats.map(p => secondaryCats.map(sc => table.get(p)?.get(sc) ?? 0));
+  tableEditor.setTable({
+    observed,
+    rowLabels: primaryCats.map(String),
+    colLabels: secondaryCats.map(String),
+    rowVar, colVar,
+  });
 }
 
 // ── Contingency table ─────────────────────────────────────────────────

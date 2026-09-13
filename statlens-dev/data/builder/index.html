@@ -27,6 +27,17 @@
     }
     </script>
     <style>
+        /* Section headings here run 15.2px bold, below the >=18pt where the
+           IMSCOL blue clears AA. */
+        main h3 { color: var(--ims-green, #114B5F); }
+        .submit-check { border: 1px solid var(--border, #ccc); border-left: 4px solid var(--ims-blue, #569BBD);
+                        border-radius: 4px; padding: 0.7rem 0.9rem; margin: 0.9rem 0; }
+        .submit-check h3 { font-size: 0.95rem; margin: 0 0 0.3rem; color: var(--ims-green, #114B5F); }
+        .submit-check ul { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+        .submit-check li { font-size: 0.88rem; padding: 0.12rem 0; }
+        .submit-check .ok::before { content: "\2713 "; color: #1a7f37; font-weight: 700; }
+        .submit-check .todo::before { content: "\25CB "; color: #8a6d00; font-weight: 700; }
+        .submit-check .todo { color: var(--ims-gray-text); }
         /* ── Step layout ──────────────────────────────────────── */
         .builder-step {
             border: 1px solid var(--border);
@@ -169,8 +180,10 @@
             text-align: left;
             white-space: nowrap;
         }
+        .preview-table .row-num { color: var(--ims-gray-text, #595959); }
         .preview-table th {
             background: var(--bg-alt, #f5f5f5);
+            color: var(--ims-green, #114B5F);
             font-weight: 700;
             position: sticky;
             top: 0;
@@ -193,7 +206,10 @@
             padding: 0.35rem 0.5rem;
             text-align: left;
         }
+        /* Not --heading: style.css documents that blue as AA-safe only at >=18pt.
+           These are 13.6px bold — axe measured them failing at 16 nodes. */
         .col-config th {
+            color: var(--ims-green, #114B5F);
             background: var(--bg-alt, #f5f5f5);
             font-weight: 700;
         }
@@ -352,6 +368,22 @@
                 <input type="file" id="file-input" accept=".csv,.tsv,.txt,.json">
                 <button type="button" id="clear-input-btn" class="btn-secondary">Clear</button>
             </div>
+            <div class="url-open">
+                <label for="data-url-input">&hellip;or open a file from a link (must start with https://):
+                    <input type="url" id="data-url-input" class="data-url-input" spellcheck="false"
+                           placeholder="https://gist.githubusercontent.com/.../data.csv"></label>
+                <div id="submit-check" class="submit-check" hidden>
+                <h3>Ready to send?</h3>
+                <p class="hint">The data is the easy half. These are the parts only you can write &mdash;
+                   they become the &ldquo;About this data&rdquo; panel students read before they analyse
+                   anything.</p>
+                <ul id="submit-check-list"></ul>
+                <p class="hint" id="submit-check-note"></p>
+            </div>
+            <div class="btn-row"><button type="button" id="load-url" class="btn-secondary">Load</button></div>
+                <p class="hint" id="data-url-note">Handy for converting a CSV someone else published, or
+                   one of your own already on the web. <a href="../../instructors/#hosts">Which files can I link to?</a></p>
+            </div>
             <div id="parse-status" aria-live="polite"></div>
 
             <!-- Column configuration -->
@@ -368,7 +400,7 @@
             <!-- Data preview -->
             <div id="preview-wrap" hidden>
                 <h3 style="font-size:0.95rem; margin:0.75rem 0 0.25rem;">Preview <span id="preview-count" style="font-weight:400; color:#666;"></span></h3>
-                <div class="preview-wrap">
+                <div class="preview-wrap" tabindex="0" role="group" aria-label="Data preview (scrollable)">
                     <table class="preview-table" aria-label="Data preview">
                         <thead id="preview-thead"></thead>
                         <tbody id="preview-tbody"></tbody>
@@ -438,29 +470,36 @@
             <div class="instructions">
                 <h3>How to use your dataset</h3>
 
-                <h3>1. Host on GitHub Gist</h3>
+                <h3>1. Host the file</h3>
                 <ol>
                     <li>Go to <a href="https://gist.github.com" target="_blank" rel="noopener">gist.github.com</a> and create a new gist.</li>
-                    <li>Paste the JSON into the file content. Name the file <code>{id}.json</code>.</li>
-                    <li>Click "Create public gist", then click "Raw" to get the direct URL.</li>
+                    <li>Paste the JSON in and name the file <code>{id}.json</code>. (StatLens recognises a dataset by its contents, so the name is for your benefit, not the tool's.)</li>
+                    <li><strong>Public or secret</strong> — either works; secret is unlisted, not private, so the link still opens for your students. Click <strong>Raw</strong> to get the direct URL.</li>
                 </ol>
 
-                <h3>2. Use in StatLens</h3>
-                <p>Use <code>?json=</code> on any StatLens page — explore tools, simulation pages, inference tests, and more:</p>
+                <h3>2. Open it in StatLens</h3>
+                <p>Paste that raw link into any tool's <strong>Open File/URL</strong> tab and click <strong>Load</strong>. The link becomes part of the page's address, so <strong>Share</strong> then gives you a QR code that opens the tool with your data already in it &mdash; no file for students to download.
+                   <a href="../../instructors/#qr">Step-by-step, including the Google Sheets route &rarr;</a></p>
+                <p style="margin-top:0.25rem;">Or build the link by hand with <code>?json=</code>, which is handy inside an activity or an LMS page:</p>
                 <ul style="margin:0.25rem 0 0.5rem 1.25rem; font-size:0.85rem;">
                     <li><code>explore/descriptive/?json=YOUR_RAW_URL</code></li>
                     <li><code>simulate/bootstrap-mean/?json=YOUR_RAW_URL</code></li>
                     <li><code>inference/two-means/?json=YOUR_RAW_URL</code></li>
                 </ul>
-                <p style="margin-top:0.25rem;">You can also link directly to a CSV or TSV (tab-separated values) file using <code>?csv=</code> instead — no JSON conversion needed:</p>
-                <ul style="margin:0.25rem 0 0.5rem 1.25rem; font-size:0.85rem;">
-                    <li><code>explore/descriptive/?csv=YOUR_RAW_CSV_URL</code></li>
-                </ul>
+                <p style="margin-top:0.25rem;">A plain CSV or TSV works the same way with <code>?csv=</code>, if you'd rather skip the conversion &mdash; you just lose the variable labels and study description that a dataset file carries.</p>
 
-                <h3>3. Submit for inclusion</h3>
-                <p>To add your dataset to StatLens's built-in collection, open an issue at
-                   <a href="https://github.com/jbaggett/statlens/issues" target="_blank" rel="noopener">github.com/jbaggett/statlens/issues</a>
-                   and attach the JSON file.</p>
+                <h3>3. Or let me host it &mdash; just send the JSON</h3>
+                <p>If you'd rather not deal with hosting at all, <strong>download the JSON and email it</strong>
+                   <!-- TODO (Jeff): put your address here, e.g. <a href="mailto:you@example.edu">you@example.edu</a>. -->
+                   &mdash; it goes up on the <a href="../extra/">Extra Datasets</a> page and you get back a short
+                   link like <code>explore/grouped/?dataset=your_data</code>, which any tool's
+                   <strong>Share</strong> button turns into a QR code for the class.</p>
+                <p>Send the <strong>JSON</strong> rather than the spreadsheet: the JSON carries the study
+                   description and the variable descriptions you filled in above, and those are the half
+                   nobody else can write for you. The checklist above shows what's still empty.</p>
+                <p class="hint">To propose a dataset for StatLens's built-in collection instead, open an
+                   issue at <a href="https://github.com/jbaggett/statlens/issues" target="_blank" rel="noopener">github.com/jbaggett/statlens/issues</a>
+                   and attach the JSON.</p>
             </div>
         </section>
 

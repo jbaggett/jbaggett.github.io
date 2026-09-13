@@ -218,7 +218,7 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 **Path:** `explore/categorical/`
 **Category:** Explore
-**Description:** Contingency table with four display modes (counts, row proportions, column proportions, cell proportions) and bar chart with four modes (stacked, side-by-side, filled, relative frequency). Includes chart-table color linking and variable swap button.
+**Description:** Contingency table with four display modes (counts, row proportions, column proportions, cell proportions) and bar chart with four modes (stacked, side-by-side, filled, relative frequency). Includes chart-table color linking and variable swap button. **Data entry is an editable r×c grid of counts** (rows/columns steppers up to 10×10, editable variable and level names, live row/column/grand totals, and paste-a-block from Excel or Word); case-level CSV is a secondary option, and loading a dataset mirrors its cross-tabulation into the grid.
 **Concepts:** Contingency table, conditional proportions, marginal proportions, stacked/side-by-side/mosaic bar charts, independence vs association
 
 **URL Parameters:**
@@ -1083,6 +1083,30 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ---
 
+### Sampling Designs
+
+**Path:** `conceptual/sampling-designs/`
+**Category:** Conceptual
+**Description:** Five designs — **simple random**, **stratified**, **cluster**, **multistage**, **convenience** — drawing from the same population in three settings, each reporting its estimate against the truth *and what it cost to collect*. Adapted from Todd Will's Mathematica demo, with the rigged SRS removed (the original deletes middle-stratum points so simple random *looks* unbalanced).
+
+**Settings.** A **cobble beach** (wave-sorted stones; clusters are transects walked from the water up, or quadrats tossed on the shingle — field ecologists use both); an **apple orchard** (three variety blocks, apples clumped on visible trees; the cluster is a tree); and Todd's original **buried rocks** (cross-section, depth strata; the only cheap unit is a hole). The settings differ in *which clusters are convenient*, which is the point: a cluster is whatever unit is cheap to collect whole, and you don't choose what's inside it. Measured intracluster correlations: orchard trees 0.86 (cluster sampling runs ~4× simple random's spread — the usual case), beach quadrats 0.76 (~3.7×), beach transects −0.001 (0.78×, i.e. clustering *helps*) and buried holes −0.002. **Convenience** is everything within arm's reach of where you arrived — the stones by the car, the trees by the gate — so it is localised as well as biased (Todd Will's suggestion); underground, where there is nowhere to park, it falls back to scraping the surface.
+
+**Default view is Chapter 2 material only** — the scene, the five designs, the estimate against the truth, and the cost (clusters opened, items measured). **More options** reveals *Run 500 of each design*: five sampling distributions on one axis plus a table of bias, SD, spread relative to simple random, and mean cost. That split is deliberate — standard errors are a later course's question.
+**Concepts:** Sampling designs, simple random vs stratified vs cluster vs multistage, convenience sampling and bias, cost of data collection, accuracy vs precision; (expert) design effect, intracluster correlation, why cluster sampling usually costs precision.
+
+**URL Parameters:**
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `scenario` | string | `beach` | `beach`, `orchard`, or `buried`. | `?scenario=orchard` |
+| `design` | string | `srs` | `srs`, `stratified`, `cluster`, `multistage`, `convenience`. | `?design=cluster` |
+| `n` | integer | `60` | Approximately how many items to measure (12–200). | `?n=120` |
+| `seed` | string | _(random)_ | Fixes every sample, so a class sees identical draws. | `?seed=beach1` |
+
+**Compatible Datasets:** N/A — each setting's population is generated from a fixed seed, so its true mean is the same for every reader (beach 2.09 kg, orchard 132 g, buried rocks 2.62 kg).
+
+---
+
 ### Sampling Bias Lab
 
 **Path:** `conceptual/sampling-bias/`
@@ -1253,11 +1277,24 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ## Utilities (Instructor-Facing)
 
+### Extra Datasets
+
+**Path:** `data/extra/`
+**Category:** Utility (instructor-facing)
+**Description:** Lists datasets contributed by instructors and hosted in `data/extra/`. Each card shows the contributor, n, and variables, with a ready-made link into every tool the dataset fits, plus a copy-link button. Contributed datasets are indexed with `contributed: true`, which keeps them out of every tool's dataset dropdown while remaining loadable by `?dataset=<id>` anywhere — so an instructor with no file hosting can email a spreadsheet and get back a short link (and, via **Share**, a QR code).
+**Concepts:** N/A (authoring/distribution utility)
+
+**URL Parameters:** None.
+
+**Compatible Datasets:** Any dataset in `data/extra/`. Submission instructions: `instructors/#submit`; maintenance workflow: `data/extra/README.md`.
+
+---
+
 ### Dataset Builder
 
 **Path:** `data/builder/`
 **Category:** Utility (not a student tool)
-**Description:** An instructor utility that converts CSV/TSV data into a StatLens-format JSON dataset. Three steps: (1) paste or upload CSV/TSV — the parser auto-detects the delimiter and infers each column's type; (2) fill in metadata (name, description, source, chapter, study description, variable descriptions and labels, optional categorical `levels`); (3) export the JSON via copy-to-clipboard or file download. Includes instructions for hosting the result on a GitHub Gist and linking it into any tool via `?json=`.
+**Description:** An instructor utility that converts CSV/TSV data into a StatLens-format JSON dataset. Three steps: (1) paste, upload, **or open from a link** — the parser auto-detects the delimiter and infers each column's type, and the dataset's name and id are seeded from the filename; (2) fill in metadata (name, description, source, chapter, study description, variable descriptions and labels, optional categorical `levels`); (3) export the JSON via copy-to-clipboard or file download. Includes instructions for hosting the result (gist or any HTTPS host) and opening it via a tool's **Open File/URL** tab or `?json=`.
 **Concepts:** N/A (authoring utility)
 
 **URL Parameters:** None. All configuration is through the on-page form.

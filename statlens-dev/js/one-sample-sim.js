@@ -17,6 +17,8 @@ import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.j
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
+import { initAnswerReport } from './answer-report.js';
+import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
@@ -112,6 +114,9 @@ export function initOneSamplePage(config) {
   const loadSummaryBtn = document.getElementById('load-summary');
 
   initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
+
+  // REQ-055: one-sample randomization pages report the p-value by default.
+  const answer = initAnswerReport({ defaultKey: 'p_value', keys: ['p_value', 'count', 'stat'] });
   initKeyboardShortcuts(genBtns, resetBtn);
   initPlayPause(genBtns, resetBtn);
   initHelp();
@@ -1284,6 +1289,17 @@ export function initOneSamplePage(config) {
   function displayResults(stats, observed, pValue, extremeCount, direction) {
     const dirLabel = direction === 'both' ? 'two-sided'
       : direction === 'right' ? 'right-tail' : 'left-tail';
+
+    // REQ-055: post the p-value to a framing MyOpenMath question, rounded the
+    // way this page displays it — the decimals are a user setting, so reading
+    // it from there keeps the answer box and the screen agreeing. `fmtPValue`
+    // itself is not used: it can return "< 0.0001", which is true but is not a
+    // number an answer box can grade. Suppressed in reasoning mode below, where
+    // the student is meant to read the p-value off the chart themselves.
+    if (showReadout) {
+      const dp = getSetting('decimalsPValue');
+      answer.send({ p_value: Number(pValue.toFixed(dp)), count: extremeCount, stat: observed });
+    }
 
     if (!showReadout) {
       // Reasoning mode: keep the count + observed marker, hide the p-value — the

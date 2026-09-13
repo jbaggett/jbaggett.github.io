@@ -34,6 +34,61 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 | `json` | string (URL) | _(none)_ | URL of a remote JSON dataset to fetch. Must be an **HTTPS** URL (or `http://localhost` for local development). Maximum 2,000 characters. Must conform to the StatLens dataset JSON schema (with `variables` and `rows` arrays). | `?json=https://example.com/ds.json` |
 | `seed` | string | _(random)_ | PRNG seed for deterministic simulation output. When provided, a "Seed: ..." notice is displayed. Maximum 100 characters. Critical for graded assessments where reproducibility is required. | `?seed=abc123` |
 
+### `conceptual/sampling-designs/`
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `scenario` | string | `beach` | `beach`, `orchard`, or `buried` — an unrecognised value falls back to `beach`. |
+| `design` | string | `srs` | `srs`, `stratified`, `cluster`, `multistage`, `convenience` — an unrecognised value falls back to `srs`. |
+| `n` | integer | `60` | Rocks to weigh, clamped to 12–200. |
+| `seed` | string | _(random)_ | Fixes every sample for reproducibility. Each setting's population is built from its own fixed internal seed, so the true mean never changes. |
+
+### Reporting a student's answer to a framing page (`qn`, `report`)
+
+For embedding a StatLens tool **inside** a MyOpenMath question rather than linking out of
+one (REQ-055). Entirely opt-in: with no `qn`, nothing is ever posted and every existing
+link behaves exactly as before.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `qn` | string (digits) | _(none)_ | The MyOpenMath answer-box number. 1–6 digits; anything else is refused with a console warning and no posting. Present ⇒ the tool posts the student's produced value to the parent frame. Ignored when the page is not framed. |
+| `report` | string | _(per page)_ | Which quantity to send, when a page produces several. Bootstrap pages: `ci_lower` (default), `ci_upper`, `se`, `stat`. Randomization pages: `p_value` (default), `count`, `stat`. |
+
+**The message shape is fixed by MyOpenMath and is not ours to change:**
+
+```js
+window.parent.postMessage(JSON.stringify({
+  subject: 'imathas.update', qn: '<the qn param>', value: '<the number, as a string>'
+}), '*');
+```
+
+MOM's `general.js` matches on the literal string `imathas.update`, so renaming the subject
+or the `qn`/`value` keys silently stops it working — the student sees a functioning tool and
+an ungraded box. `js/answer-report.js` is the single place this shape is constructed, and
+`tests/unit/answer-report.test.js` pins it down.
+
+Two behaviours worth knowing when writing a question:
+
+- **The value posted is the one the student can see**, rounded the way the page displays it
+  (a CI bound to the page's data precision, a p-value to its p-value decimals). Posting full
+  float precision would put `9.68665123457` in the box beside a `9.7` on screen.
+- **Nothing is posted in reasoning mode.** With `?readout=false` the tool deliberately hides
+  the p-value so the student reads it off the chart; posting it would answer the question.
+
+**Where it works today:** the 14 `sim-app.js` simulation pages (bootstrap CI and
+randomization) and the two `one-sample-sim.js` pages. Other tools ignore `qn` for now.
+
+**Contributed datasets are reachable by `?dataset=` but absent from every dropdown.**
+Datasets in `data/extra/` are indexed with `contributed: true`. They are filtered out of
+all browse dropdowns (already 11–36 options per tool, and curated for the course) while
+`?dataset=<id>` loads them in any tool. The guard on that deep-link path is a tool's
+`deepLinkFilter` where one is defined, otherwise its `datasetFilter` — except for
+contributed datasets, which always load, because a tool's `datasetFilter` mixes capability
+with curation (`explore/categorical` rejects any dataset containing a numeric column to
+keep its menu purely categorical, though the page handles one fine). Built-in behaviour is
+unchanged. Ids are permanent once handed out: a contributed dataset's link is the whole
+point of it, so renaming one breaks somebody's slide.
+
 **`csv` / `json` can now be written by the tool, not just read.** Every data page's
 **Open File/URL** tab takes a link to a hosted file; a successful load calls
 `history.replaceState` to put that link in the address bar as `?csv=` (or `?json=`

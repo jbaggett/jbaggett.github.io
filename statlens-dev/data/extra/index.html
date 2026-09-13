@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extra Datasets | StatLens</title>
+    <meta name="description" content="Datasets contributed by instructors, hosted on StatLens and ready to open in any tool.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+
+    <style>
+        main { max-width: 52rem; }
+        .ds-card { border: 1px solid var(--border, #ccc); border-radius: 6px; padding: 0.85rem 1rem;
+                   margin-bottom: 0.9rem; }
+        /* Not --heading: style.css documents that blue as AA-safe only at >=18pt,
+           and a 1.05rem bold card title is 12.6pt (measured 3.07:1, needs 4.5:1). */
+        .ds-card h2 { font-size: 1.05rem; margin: 0 0 0.2rem; color: var(--ims-green, #114B5F); }
+        .ds-meta { font-size: 0.82rem; color: var(--ims-gray-text); margin: 0 0 0.4rem; }
+        .ds-card p { margin: 0.3rem 0; font-size: 0.93rem; }
+        .ds-vars { font-family: var(--font-mono, monospace); font-size: 0.82rem; }
+        .ds-open { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; align-items: center; }
+        .ds-open a { font-size: 0.85rem; padding: 0.3rem 0.6rem; border: 1px solid var(--border, #ccc);
+                     border-radius: 4px; text-decoration: none; }
+        .ds-open a:hover { background: var(--bg-alt, #f5f5f5); }
+        .ds-copy { font-size: 0.85rem; }
+        .copy-note { font-size: 0.8rem; color: var(--ims-gray-text); }
+        .empty { border: 1px dashed var(--border, #ccc); border-radius: 6px; padding: 1rem;
+                 color: var(--ims-gray-text); }
+        @media (max-width: 600px) {
+            .ds-open a, .ds-copy { min-height: 44px; display: inline-flex; align-items: center; }
+        }
+    </style>
+</head>
+<body>
+    <div id="sr-announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <main>
+        <h1>Extra Datasets<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+
+        <p>Datasets contributed by instructors and hosted here. They are <strong>not</strong> in the
+           tools' dataset menus &mdash; those are curated for the course and already long &mdash; but each one
+           opens in any tool that fits it, from the links below.</p>
+
+        <p class="hint">Want one of your own here? You don't need an account or any file hosting:
+           <a href="../../instructors/#submit">email it in</a> and it appears on this page with links
+           like these. Students need nothing but the link.</p>
+
+        <div id="ds-list" aria-live="polite">
+            <p class="hint">Loading&hellip;</p>
+        </div>
+
+        <p style="margin-top:1.5rem;"><a href="../">&larr; All built-in datasets</a> &middot;
+           <a href="../../instructors/">For instructors</a> &middot;
+           <a href="../builder/">Dataset Builder</a></p>
+    </main>
+
+    <dialog id="page-help">
+        <h2>Extra Datasets</h2>
+        <p>These datasets were sent in by instructors and are hosted on StatLens. Because the
+           dataset menus inside the tools are curated for the course, contributed datasets are
+           reached by link instead:</p>
+        <ul>
+            <li>Click any <strong>Open in&hellip;</strong> link to load the dataset in that tool.</li>
+            <li>Use <strong>Copy link</strong> to get a URL you can paste into a slide, an LMS page,
+                or an assignment. Once it's open, the tool's own <strong>Share</strong> button turns
+                that link into a QR code.</li>
+        </ul>
+        <p>To contribute one, see <a href="../../instructors/#submit">For instructors</a>. Emailing a
+           spreadsheet is enough &mdash; no accounts, no file hosting, no GitHub.</p>
+        <button type="button">Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>
