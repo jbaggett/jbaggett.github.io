@@ -227,7 +227,7 @@ makes you build.
 | `f` | expression | `x^3 - 3x` | The first function. |
 | `f2`, `f3` | expression | — | Two more, drawn in their own colour and dash. |
 | `window` | `x0,x1` | `-4,4` | Horizontal window. |
-| `y` | `y0,y1` | auto | Vertical window. Omit and it is chosen over every visible layer, so switching on *f*′ cannot push it off the frame. |
+| `y` | `y0,y1` | auto | Vertical window. Omitted, it fits **the functions you typed** — `f`, `f2`, `f3`. Derived layers are drawn onto those axes and never move them, so ticking *f*′ cannot change the shape of *f* on screen; if a derived layer falls entirely outside, the readout says so. |
 | `show` | list | — | Layers to switch on: `deriv`, `second`, `critical`, `inflection`, `tangent`. |
 | `hide` | list | — | Layers to switch off, including `asymptotes`. |
 | `at` | number | `0` | Where the tangent line sits. |

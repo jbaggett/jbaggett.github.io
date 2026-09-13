@@ -146,9 +146,16 @@ function render() {
     layers.push({ f: compile(derivative(derivative(primary.node, state.v), state.v), state.v, state.params), ...STYLE.second, key: 'second' });
   }
 
-  // The y window is chosen over every visible layer, so turning on f′ does not
-  // silently push it off the top of the frame.
-  const yDom = state.yWin || layers.reduce((acc, l) => {
+  // The window fits WHAT YOU TYPED, and derived layers are drawn on those axes.
+  //
+  // Fitting it over every visible layer instead meant ticking "show f′" moved
+  // the function you were looking at — a box that is not about f changing f's
+  // shape on screen. The frame belongs to the functions the reader entered;
+  // f′ and f″ are answers drawn onto it, and if one runs off the top that is
+  // worth knowing rather than worth rescaling for. It is said out loud below
+  // instead, and the y field overrides all of this.
+  const typed = layers.filter(l => l.key === 'f1' || l.key === 'f2' || l.key === 'f3');
+  const yDom = state.yWin || typed.reduce((acc, l) => {
     const d = autoYDomain(l.f, x0, x1, { minSpan: 2 });
     return acc ? [Math.min(acc[0], d[0]), Math.max(acc[1], d[1])] : d;
   }, null) || [-5, 5];
@@ -171,9 +178,21 @@ function render() {
   if (primary) markPoints(primary, xs, ys);
   if (primary && state.show.tangent) drawTangent(primary, xs, ys);
 
+  state.clipped = layers.filter(l => (l.key === 'deriv' || l.key === 'second')
+    && !anyVisible(l.f, x0, x1, yDom)).map(l => (l.key === 'deriv' ? 'f ′' : 'f ″'));
+
   updateLegend(layers);
   updateReadout(primary);
   chart.setLabel(describe(layers, yDom));
+}
+
+/** Does any of this curve fall inside the window at all? */
+function anyVisible(f, x0, x1, yDom) {
+  for (let i = 0; i <= 200; i++) {
+    const y = f(x0 + ((x1 - x0) * i) / 200);
+    if (Number.isFinite(y) && y >= yDom[0] && y <= yDom[1]) return true;
+  }
+  return false;
 }
 
 /**
@@ -264,6 +283,11 @@ function updateReadout(primary) {
   bits.push(list(state.critical, 'critical at'));
   bits.push(list(state.inflection, 'inflection at'));
   bits.push(list(state.asymptotes, 'asymptote at'));
+  if (state.clipped?.length) {
+    bits.push(`<span class="ll-hint">${state.clipped.join(' and ')} `
+      + `${state.clipped.length > 1 ? 'are' : 'is'} outside this window — set a `
+      + `<i>y</i> range to bring ${state.clipped.length > 1 ? 'them' : 'it'} in.</span>`);
+  }
   $('#readout').innerHTML = bits.filter(Boolean).join('');
 }
 
