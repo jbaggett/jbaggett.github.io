@@ -154,3 +154,63 @@ export function autoYDomain(f, x0, x1, opts = {}) {
   const p = (hi - lo) * pad;
   return [lo - p, hi + p];
 }
+
+/**
+ * Where a curve breaks on [x0, x1], and what kind of break it is.
+ *
+ * `sampleCurve` already splits its polylines at these points so nothing is
+ * drawn through them — this reports them so a caller can also DRAW them, which
+ * is the difference between a graph that merely avoids a lie and one that
+ * tells you 1/x has an asymptote at 0.
+ *
+ * `pole` is a sign-flipping blow-up (1/x, tan). `gap` is a domain hole where
+ * the function simply stops being defined (ln at 0, sqrt at a negative). The
+ * distinction matters: the first wants a vertical line drawn, the second does
+ * not.
+ *
+ * @param {(x:number)=>number} f
+ * @param {number} x0 @param {number} x1
+ * @param {{samples?:number, yMin?:number, yMax?:number}} [opts]
+ * @returns {{x:number, kind:'pole'|'gap'}[]}
+ */
+export function findBreaks(f, x0, x1, opts = {}) {
+  const { samples = 1200, yMin = -10, yMax = 10 } = opts;
+  const span = Math.max(1e-12, yMax - yMin);
+  const out = [];
+  const step = (x1 - x0) / samples;
+  let px = x0, pv = f(x0);
+  for (let i = 1; i <= samples; i++) {
+    const x = x0 + i * step, v = f(x);
+    const pOk = Number.isFinite(pv), vOk = Number.isFinite(v);
+    if (pOk && vOk) {
+      if (Math.abs(v - pv) > 6 * span && Math.sign(v) !== Math.sign(pv)) {
+        // Narrow it down: the blow-up is where |f| is largest between the two.
+        out.push({ x: refinePole(f, px, x), kind: /** @type {'pole'} */ ('pole') });
+      }
+    } else if (pOk !== vOk) {
+      // Infinity is a blow-up, NaN is the function ceasing to exist. Both are
+      // "not finite", and treating them alike put a gap where 1/x has an
+      // asymptote — because a sample can land exactly on the pole, and 1/0 is
+      // Infinity rather than NaN.
+      const bad = pOk ? v : pv;
+      out.push({
+        x: pOk ? x : px,
+        kind: /** @type {'pole'|'gap'} */ (Number.isNaN(bad) ? 'gap' : 'pole'),
+      });
+    }
+    px = x; pv = v;
+  }
+  return out.filter((b, i) => i === 0 || Math.abs(b.x - out[i - 1].x) > Math.abs(step));
+}
+
+/** Bisect toward the largest |f| between two samples that straddle a blow-up. */
+function refinePole(f, a, b) {
+  let lo = a, hi = b;
+  for (let i = 0; i < 60; i++) {
+    const m = (lo + hi) / 2;
+    const v = f(m);
+    if (!Number.isFinite(v)) return m;
+    if (Math.abs(f(lo)) > Math.abs(f(hi))) hi = m; else lo = m;
+  }
+  return (lo + hi) / 2;
+}

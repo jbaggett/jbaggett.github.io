@@ -286,28 +286,37 @@ export function tryParse(/** @type {string} */ src) {
  * Compile to a closure tree. Plotting samples thousands of points per frame, so
  * this walks the AST once instead of once per point.
  * @param {Node} node
- * @param {string} [v]
+ * @param {string} [v] the independent variable
+ * @param {Record<string,number>|null} [params] live values for every OTHER
+ *   letter, read at call time so a slider moves without recompiling
  * @returns {(x:number)=>number}
  */
-export function compile(node, v = 'x') {
+export function compile(node, v = 'x', params = null) {
   switch (node.type) {
     case 'num': { const c = node.value; return () => c; }
     case 'const': { const c = CONSTANTS[node.name] ?? NaN; return () => c; }
-    case 'var': return node.name === v ? (x => x) : (() => NaN);
+    case 'var': {
+      if (node.name === v) return (x => x);
+      // Any OTHER letter is a parameter: a slider's value, read at call time so
+      // moving the slider does not mean recompiling the expression. Without
+      // this, `a*sin(b*x)` could only ever evaluate to NaN.
+      if (params) { const name = node.name; return () => params[name] ?? NaN; }
+      return (() => NaN);
+    }
     case 'add': {
-      const fs = node.args.map(a => compile(a, v));
+      const fs = node.args.map(a => compile(a, v, params));
       return x => { let s = 0; for (const f of fs) s += f(x); return s; };
     }
     case 'mul': {
-      const fs = node.args.map(a => compile(a, v));
+      const fs = node.args.map(a => compile(a, v, params));
       return x => { let s = 1; for (const f of fs) s *= f(x); return s; };
     }
     case 'pow': {
-      const b = compile(node.base, v), e = compile(node.exp, v);
+      const b = compile(node.base, v, params), e = compile(node.exp, v, params);
       return x => Math.pow(b(x), e(x));
     }
     case 'fn': {
-      const g = FUNCTIONS[node.name].f, a = compile(node.arg, v);
+      const g = FUNCTIONS[node.name].f, a = compile(node.arg, v, params);
       return x => g(a(x));
     }
     default: return () => NaN;

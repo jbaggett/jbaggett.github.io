@@ -214,6 +214,46 @@ row is not noise: for `(x²−1)/(x−1)` at `x = 1` it is the entire point.
 
 Presets: `?preset=limit`, `ball`, `endbehaviour`.
 
+## CalcLens — Grapher
+
+`calclens/graph/`
+
+The kit's plotting engine with a face on it. Deliberately not a Desmos: what it
+adds is the handful of things a *calculus* reader wants and a general grapher
+makes you build.
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `x^3 - 3x` | The first function. |
+| `f2`, `f3` | expression | — | Two more, drawn in their own colour and dash. |
+| `window` | `x0,x1` | `-4,4` | Horizontal window. |
+| `y` | `y0,y1` | auto | Vertical window. Omit and it is chosen over every visible layer, so switching on *f*′ cannot push it off the frame. |
+| `show` | list | — | Layers to switch on: `deriv`, `second`, `critical`, `inflection`, `tangent`. |
+| `hide` | list | — | Layers to switch off, including `asymptotes`. |
+| `at` | number | `0` | Where the tangent line sits. |
+| `plot` | `only` | — | **Figure alone** — no controls, no chrome. StatLens's spelling, same meaning. For an iframe. |
+| *any single letter* | number | `1` | A parameter's value. `?f=a*sin(b*x)&a=2&b=3` |
+
+**Sliders appear by themselves.** Any letter that is not the variable becomes
+one, so the same page serves `x^2` and `a*x^2 + b*x + c` with nothing to
+configure. The variable is inferred from the expression, so a problem written
+in *t* graphs against *t*.
+
+**Asymptotes are not an optional layer.** They are drawn by default and `show=`
+never switches them off, because drawing them is about not lying — the curve is
+already split there, and a reader looking at 1/*x* should see why the two
+branches are separate. `hide=asymptotes` if you really want them gone.
+
+**Embedding:**
+
+```html
+<iframe src="https://learnlens.org/calclens/graph/?f=x%5E3-3x&window=-3,3&plot=only"
+        width="600" height="400" style="border:0"></iframe>
+```
+
+Leave `plot=only` off and the reader gets the sliders too — a demo rather than a
+figure. The page reports its own height to the framing document either way.
+
 ## CalcLens — Squeezing π
 
 `calclens/limits/exhaustion/`

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grapher | CalcLens</title>
+
+<link rel="stylesheet" href="../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="manifest" href="../manifest.json">
+
+<script defer src="../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../kit/js/"
+  }
+}
+</script>
+<style>
+  .gr-fn { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+  .gr-swatch { flex: none; width: 30px; height: 12px; border-radius: 2px; }
+  .gr-fn input[type="text"] { flex: 1 1 auto; min-width: 0; }
+  .gr-params { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0.5rem 1rem; }
+  .gr-params label { display: grid; grid-template-columns: auto 1fr auto; gap: 0.4rem;
+                     align-items: center; font-size: 0.9rem; }
+  .gr-params output { font-family: var(--font-mono); min-width: 3.6rem; text-align: right; }
+  .gr-layers { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.9rem; }
+  .gr-layers label { display: inline-flex; align-items: center; gap: 0.35rem; }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to controls</a>
+  <a href="#chart">Skip to the graph</a>
+</nav>
+
+<main>
+  <h1>Grapher
+    <span class="header-actions">
+      <a class="home-btn" href="../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Plot up to three functions, with the derivative, the second derivative,
+    critical points and a tangent line available on request. Any letter other
+    than the variable becomes a slider.
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Functions">
+    <div data-control="f">
+      <div class="gr-fn">
+        <span class="gr-swatch" style="background:#114B5F" aria-hidden="true"></span>
+        <label for="f1" class="sr-only">First function</label>
+        <input type="text" id="f1" value="x^3 - 3x" autocomplete="off" autocapitalize="off"
+               spellcheck="false" placeholder="f(x) = …" aria-describedby="f-error">
+      </div>
+      <div class="ll-preview" id="p1"></div>
+      <div class="gr-fn">
+        <span class="gr-swatch" style="background:#7B2D8E" aria-hidden="true"></span>
+        <label for="f2" class="sr-only">Second function</label>
+        <input type="text" id="f2" value="" autocomplete="off" autocapitalize="off"
+               spellcheck="false" placeholder="a second function (optional)">
+      </div>
+      <div class="ll-preview" id="p2"></div>
+      <div class="gr-fn">
+        <span class="gr-swatch" style="background:#1B7A3D" aria-hidden="true"></span>
+        <label for="f3" class="sr-only">Third function</label>
+        <input type="text" id="f3" value="" autocomplete="off" autocapitalize="off"
+               spellcheck="false" placeholder="a third (optional)">
+      </div>
+      <div class="ll-preview" id="p3"></div>
+      <p class="ll-error" id="f-error" role="alert" hidden></p>
+      <div class="ll-palette" id="palette"></div>
+    </div>
+
+    <div id="params-wrap" data-control="params" hidden>
+      <h3 style="margin:0.8rem 0 0.3rem; font-size:0.95rem;">Sliders</h3>
+      <div class="gr-params" id="params"></div>
+    </div>
+
+    <div class="ll-controls" data-control="window" style="margin-top:0.8rem;">
+      <label for="win-x"><span><i>x</i> from, to</span>
+        <input type="text" id="win-x" value="-4, 4" style="width:8rem"></label>
+      <label for="win-y"><span><i>y</i> from, to <span class="ll-hint">(blank = auto)</span></span>
+        <input type="text" id="win-y" value="" style="width:8rem" placeholder="auto"></label>
+    </div>
+
+    <div class="gr-layers" data-control="layers" style="margin-top:0.8rem;">
+      <label><input type="checkbox" id="L-deriv"> show <i>f</i>′</label>
+      <label><input type="checkbox" id="L-second"> show <i>f</i>″</label>
+      <label><input type="checkbox" id="L-critical"> critical points</label>
+      <label><input type="checkbox" id="L-inflection"> inflection points</label>
+      <label><input type="checkbox" id="L-tangent"> tangent line</label>
+      <label><input type="checkbox" id="L-asymptotes" checked> asymptotes</label>
+    </div>
+
+    <label for="at-slider" id="at-wrap" data-control="tangent" style="display:block; margin-top:0.6rem;" hidden>
+      <span>Tangent at <i>x</i> = <output id="at-out" for="at-slider">0</output></span>
+      <input type="range" id="at-slider" min="-4" max="4" step="0.01" value="0">
+    </label>
+  </section>
+
+  <section id="chart" aria-label="Graph">
+    <div class="ll-chart"><div id="fig"></div></div>
+    <div class="ll-legend" id="legend" aria-hidden="true"></div>
+    <div class="ll-readout" id="readout"></div>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Grapher</h2>
+  <p>Type a function and it is drawn. Type another and it joins it. Anything
+     that is not the variable becomes a slider.</p>
+
+  <h3>What it does that a plain grapher does not</h3>
+  <ul>
+    <li><b><i>f</i>′ and <i>f</i>″</b> are differentiated symbolically, not
+        estimated — so they are exact, and they are drawn with their own dash
+        patterns rather than relying on colour.</li>
+    <li><b>Critical and inflection points</b> are found as roots of <i>f</i>′
+        and <i>f</i>″ and marked on the curve. Points where the function only
+        touches zero without crossing are not found; nothing is invented.</li>
+    <li><b>Vertical asymptotes</b> are detected and drawn, and the curve is
+        never joined across one. A grapher that connects the two branches of
+        1/<i>x</i> is drawing a line that is not there.</li>
+    <li><b>A tangent line</b> at a point you can slide.</li>
+  </ul>
+
+  <h3>Embedding it</h3>
+  <p>Everything is in the URL, so a graph can be dropped into a page, a quiz or
+     a homework problem as an iframe:</p>
+  <pre class="ll-code">&lt;iframe src="https://learnlens.org/calclens/graph/?f=x%5E3-3x&amp;window=-3,3&amp;plot=only"
+        width="600" height="400" style="border:0"&gt;&lt;/iframe&gt;</pre>
+  <p><code>plot=only</code> renders the figure alone — no controls, no chrome.
+     Leave it off and the reader gets the sliders too, which is what you want
+     for a demo rather than a static figure. The page reports its own height to
+     the framing document, so the iframe can size itself.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

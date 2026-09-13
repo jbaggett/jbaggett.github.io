@@ -159,3 +159,42 @@ export function bisect(f, a, b, tol = 1e-12) {
   }
   return (lo + hi) / 2;
 }
+
+/**
+ * Every sign change of `f` on [a, b], refined by bisection.
+ *
+ * This is what lets a grapher mark the things a calculus reader wants without
+ * being asked: critical points are the roots of f′, inflection candidates the
+ * roots of f″.
+ *
+ * It is honest about what it cannot see. A root the scan steps over is missed,
+ * and so is any root of even order, where the function touches zero without
+ * crossing — x² at 0 is reported by nobody, which is better than being reported
+ * wrongly. And a sign change across a POLE is not a root at all: 1/x flips sign
+ * at 0 without ever being zero, so every candidate is checked for actually
+ * being small before it is believed.
+ *
+ * @param {(x:number)=>number} f
+ * @param {number} a @param {number} b
+ * @param {{steps?:number, tol?:number}} [opts]
+ * @returns {number[]}
+ */
+export function findRoots(f, a, b, opts = {}) {
+  const { steps = 800, tol = 1e-11 } = opts;
+  const out = [];
+  const dx = (b - a) / steps;
+  let px = a, pv = f(a);
+  for (let i = 1; i <= steps; i++) {
+    const x = a + i * dx, v = f(x);
+    if (Number.isFinite(pv) && Number.isFinite(v)) {
+      if (pv === 0) out.push(px);
+      else if (pv * v < 0) {
+        const r = bisect(f, px, x, tol);
+        if (r !== null && Math.abs(f(r)) < 1e-6 * Math.max(1, Math.abs(pv), Math.abs(v))) out.push(r);
+      }
+    }
+    px = x; pv = v;
+  }
+  if (Number.isFinite(pv) && pv === 0) out.push(b);
+  return out.filter((r, i) => i === 0 || Math.abs(r - out[i - 1]) > Math.abs(dx) / 2);
+}
