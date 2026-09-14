@@ -322,6 +322,29 @@ calclens/limits/squeeze/?g=x%5E2+sin(1%2Fx)&lower=-x%5E2&upper=x%5E2&a=0
 | `b` | number | `a + 1.2` | Starting position of the upper limit *x*. |
 | `readout` | `true`/`false` | **on** | The *A*(*x*) curve. `reveal=false` keeps the axes and the marker so the shape can be predicted first. |
 
+## CalcLens — Sketch from Signs
+
+`calclens/derivatives/sketch/`
+
+Curve sketching as assembly. The tool finds the cut points itself — the roots
+of *f*′ and *f*″ — shows both sign charts and the heights at those points, and
+asks for one of four shapes per interval. It does not plot the function.
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `x^3 - 3x` | The function. Not graphed until asked. |
+| `window` | `x0,x1` | `-3,3` | The stretch being sketched. |
+| `readout` | `true`/`false` | **off** | The real graph, dashed over the sketch. Off by default — building it is the exercise. |
+
+The four shapes are the two sign pairs: *f*′ says rising or falling, *f*″ says
+which way it bends. Sign-chart columns are drawn proportional to the intervals
+they describe, so reading across the chart is reading along the axis.
+
+**A shape that contradicts the given values is named as such**, separately from
+being merely wrong: "you chose rising, but it ends lower than it starts". That
+mismatch — the shape and the numbers telling different stories — is the usual
+way a hand sketch goes astray.
+
 ## CalcLens — Derivative Builder
 
 `calclens/derivatives/builder/`

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch from Signs | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+<style>
+  /* The sign chart: one column per interval, two rows of signs, then the
+     shape picker under each. Grid columns are set from JS so the columns line
+     up with the intervals on the sketch below. */
+  .sk-chart { display: grid; gap: 0 2px; margin: 0.6rem 0 0; }
+  .sk-row-label { font-size: 0.85rem; color: var(--ims-gray-text); text-align: right;
+                  padding-right: 0.5rem; white-space: nowrap; }
+  .sk-sign { text-align: center; font-family: var(--font-mono); font-weight: 700;
+             padding: 0.15rem 0; background: var(--surface); border-radius: 3px; }
+  .sk-sign.pos { color: #1B7A3D; }
+  .sk-sign.neg { color: #A52714; }
+  .sk-cut { font-size: 0.78rem; color: var(--ims-gray-text); text-align: center;
+            font-family: var(--font-mono); }
+
+  .sk-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 0 2px; }
+  .sk-pick button { padding: 2px; min-height: 0; border-radius: 4px; line-height: 0;
+                    border: 1px solid var(--border); background: var(--bg); }
+  .sk-pick button svg { width: 100%; height: auto; max-width: 34px; }
+  .sk-pick button[aria-pressed="true"] { border-color: var(--ims-blue-text); border-width: 2px;
+                                         background: #EAF3F8; }
+  .sk-pick button.sk-wrong[aria-pressed="true"] { border-color: var(--bad); background: #FFF2F0; }
+  .sk-pick button.sk-right[aria-pressed="true"] { border-color: var(--ok); background: #F0F8F2; }
+
+  .sk-key { display: grid; grid-template-columns: auto auto auto; gap: 0.3rem 0.7rem;
+            align-items: center; font-size: 0.85rem; max-width: 26rem; }
+  .sk-key svg { width: 34px; height: 26px; }
+  .sk-values { font-family: var(--font-mono); font-size: 0.92rem; }
+  @media (max-width: 600px) { .sk-pick button svg { max-width: 28px; } }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#signs">Skip to the sign charts</a>
+  <a href="#chart">Skip to the sketch</a>
+</nav>
+
+<main>
+  <h1>Sketch from Signs
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    You are not asked to plot points. On any stretch where <i>f</i>′ and
+    <i>f</i>″ keep their signs there are only <b>four shapes</b> a graph can
+    have — pick one per interval and the sketch assembles itself.
+  </p>
+
+  <section class="ll-panel" aria-label="The function">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 260px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="x^3 - 3x" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error">
+      </label>
+      <label for="win-input" data-control="window">
+        <span>Window</span>
+        <input type="text" id="win-input" value="-3, 3" style="width:7rem">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-segmented" role="group" aria-label="Examples" data-control="f">
+      <button type="button" class="preset" data-math="x^3 - 3x" data-f="x^3 - 3x" data-win="-3, 3">x^3-3x</button>
+      <button type="button" class="preset" data-math="x^4 - 4x^2" data-f="x^4 - 4x^2" data-win="-2.6, 2.6">x^4-4x^2</button>
+      <button type="button" class="preset" data-math="x/(x^2 + 1)" data-f="x/(x^2 + 1)" data-win="-4, 4">x/(x^2+1)</button>
+      <button type="button" class="preset" data-math="x^3 - 3x^2 + 2" data-f="x^3 - 3x^2 + 2" data-win="-1.5, 3.5">x^3-3x^2+2</button>
+    </div>
+  </section>
+
+  <section id="signs" class="ll-panel" aria-label="Sign charts and shape choices">
+    <p class="ll-hint" style="margin-top:0">
+      The cut points are where <i>f</i>′ or <i>f</i>″ changes sign. Read each
+      column's two signs, pick the shape they force, and the sketch below
+      updates.
+    </p>
+    <div class="sk-chart" id="chart-grid"></div>
+    <p class="ll-values" id="values"></p>
+    <div class="ll-row" style="gap:0.6rem; margin-top:0.8rem;">
+      <button type="button" id="check-btn" class="ll-primary">Check my sketch</button>
+      <button type="button" id="clear-btn">Clear</button>
+      <div id="reveal-slot"></div>
+    </div>
+    <p class="ll-result" id="verdict"></p>
+  </section>
+
+  <section id="chart" aria-label="Your sketch">
+    <div class="ll-chart"><div id="fig"></div></div>
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#3A7CA5" stroke-width="2.5"/></svg> your sketch</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5" stroke-dasharray="6 3"/></svg> the real graph</span>
+      <span><svg viewBox="0 0 26 10"><circle cx="13" cy="5" r="3.5" fill="#222"/></svg> values you were given</span>
+    </div>
+  </section>
+
+  <section class="ll-panel" aria-label="The four shapes">
+    <h3 style="margin-top:0">The only four shapes</h3>
+    <div class="sk-key" id="key"></div>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Sketch from Signs</h2>
+  <p>On any interval where <i>f</i>′ and <i>f</i>″ both keep their signs, the
+     graph can only do one of four things. Rising or falling is <i>f</i>′;
+     bending up or down is <i>f</i>″. Two signs, four combinations, four
+     shapes — and a curve sketch is those shapes laid end to end.</p>
+
+  <h3>How to work it</h3>
+  <ol>
+    <li>The cut points are already found for you: they are where <i>f</i>′ or
+        <i>f</i>″ changes sign — the critical points and the inflection
+        points.</li>
+    <li>Read the two signs in a column.</li>
+    <li>Pick the shape those two signs force.</li>
+    <li>The heights are given, so each piece starts and ends where it must.</li>
+    <li><b>Check my sketch</b> marks each interval and lays the real graph over
+        the top.</li>
+  </ol>
+
+  <h3>If a shape disagrees with the numbers</h3>
+  <p>Saying "rising" on an interval that ends lower than it starts is a
+     contradiction, and the tool says so specifically rather than just marking
+     it wrong. That mismatch is the most common way a sketch goes astray:
+     the shape and the values have to tell the same story.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>R</kbd></dt><dd>Show or hide the real graph</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
