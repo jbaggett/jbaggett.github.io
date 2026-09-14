@@ -114,8 +114,14 @@ function renderChart() {
   // picker.
   const widths = state.intervals.map(iv => iv.b - iv.a);
   const total = widths.reduce((s2, w) => s2 + w, 0);
-  grid.style.gridTemplateColumns = 'auto '
-    + widths.map(w => `minmax(86px, ${((w / total) * 100).toFixed(2)}fr)`).join(' ');
+  // A fixed label column, so the axis below lines up with the columns above it
+  // rather than with whatever width the widest row label happened to need.
+  const MIN_COL = 78;
+  grid.style.gridTemplateColumns = '4.6rem '
+    + widths.map(w => `minmax(${MIN_COL}px, ${((w / total) * 100).toFixed(2)}fr)`).join(' ');
+  // Wide enough that every picker stays usable, and no wider — so it fills a
+  // desktop panel and scrolls on a phone instead of stretching the page.
+  grid.style.minWidth = `max(100%, ${n * MIN_COL + 82}px)`;
   const cell = (cls, html) => `<div class="${cls}">${html}</div>`;
   let html = '';
 
@@ -140,12 +146,17 @@ function renderChart() {
       }).join('') + '</div>';
   });
 
-  // The cut points, under the columns they separate.
-  html += cell('sk-row-label', '<span class="ll-hint">from … to</span>');
-  for (const iv of state.intervals) {
-    html += cell('sk-cut', `${fmt(iv.a, 2)} … ${fmt(iv.b, 2)}`);
-  }
+  // A real axis under the columns, with a tick at every cut point. The columns
+  // are already proportional, so a tick placed at the same cumulative fraction
+  // lands exactly on the boundary above it — the chart reads as a stretch of
+  // the x-axis rather than as four boxes that happen to stand for one.
+  html += cell('sk-row-label', '');
+  const cuts = [state.intervals[0].a, ...state.intervals.map(iv => iv.b)];
+  html += `<div class="sk-axis" aria-hidden="true">`
+    + cuts.map(x => `<span class="sk-tick"><i></i><b>${fmt(x, 2)}</b></span>`).join('')
+    + `</div>`;
   grid.innerHTML = html;
+  positionTicks();
 
   grid.querySelectorAll('button.sk-shape').forEach(b => b.addEventListener('click', () => {
     const i = Number(b.dataset.iv);
@@ -159,6 +170,30 @@ function renderChart() {
   const vals = [state.intervals[0].a, ...state.intervals.map(iv => iv.b)];
   $('#values').innerHTML = 'You are given: '
     + vals.map(x => tex(`f(${fmt(x, 2)}) = ${fmt(state.f(x), 2)}`)).join('&nbsp; &nbsp;');
+}
+
+/**
+ * Put each tick where its column boundary ACTUALLY is.
+ *
+ * The columns are proportional to their intervals, but only until a narrow one
+ * hits the minimum width that keeps its picker usable — after that the
+ * proportions no longer describe the layout, and ticks placed at the
+ * mathematical fractions drift off the boundaries they are supposed to mark.
+ * Six intervals in the space of four was enough to do it. Measuring is the only
+ * thing that stays true whatever the layout does.
+ */
+function positionTicks() {
+  const axis = document.querySelector('.sk-axis');
+  const picks = [...document.querySelectorAll('.sk-pick')];
+  const ticks = [...document.querySelectorAll('.sk-tick')];
+  if (!axis || !picks.length || ticks.length !== picks.length + 1) return;
+  const base = axis.getBoundingClientRect();
+  if (!base.width) return;                      // not laid out yet
+  const edges = picks.map(el => el.getBoundingClientRect().left)
+    .concat(picks[picks.length - 1].getBoundingClientRect().right);
+  ticks.forEach((t, i) => {
+    t.style.left = `${(((edges[i] - base.left) / base.width) * 100).toFixed(2)}%`;
+  });
 }
 
 const isRight = (/** @type {number} */ i) => {
@@ -354,8 +389,8 @@ initPage({
     });
 
     renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
-    onBreakpointChange(() => { chart = null; render(); });
-    onLayoutChange(() => { chart = null; render(); });
-    afterLayout(() => { chart = null; render(); });
+    onBreakpointChange(() => { chart = null; render(); positionTicks(); });
+    onLayoutChange(() => { chart = null; render(); positionTicks(); });
+    afterLayout(() => { chart = null; render(); positionTicks(); });
   },
 });
