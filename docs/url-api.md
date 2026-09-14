@@ -337,8 +337,17 @@ asks for one of four shapes per interval. It does not plot the function.
 | `readout` | `true`/`false` | **off** | The real graph, dashed over the sketch. Off by default — building it is the exercise. |
 
 The four shapes are the two sign pairs: *f*′ says rising or falling, *f*″ says
-which way it bends. Sign-chart columns are drawn proportional to the intervals
-they describe, so reading across the chart is reading along the axis.
+which way it bends.
+
+**The sign charts are drawn inside the plot**, in a band under the x-axis, in
+the same SVG at the same scale — so they cannot drift out of step with the graph
+the way a separate chart above it would. The dashed cut lines run from the top
+of the plot down through both sign rows and the shape slots.
+
+**One palette, not four buttons per interval.** Pick a shape up and drop it in
+an interval, or click it and click the interval — the same gesture without a
+mouse, and the only one that works from a keyboard. Every interval is a
+focusable target that says its own sign pair and current contents aloud.
 
 **A shape that contradicts the given values is named as such**, separately from
 being merely wrong: "you chose rising, but it ends lower than it starts". That

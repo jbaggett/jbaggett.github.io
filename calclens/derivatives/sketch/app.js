@@ -3,26 +3,40 @@
  *
  * The claim being taught: on any interval where f′ and f″ both keep their
  * signs, a graph can only do one of four things. Two signs, four combinations,
- * four shapes, and a curve sketch is those shapes laid end to end. Once a
- * student sees that, sketching stops being an art and becomes a lookup plus
- * some arithmetic about heights.
+ * four shapes, and a curve sketch is those shapes laid end to end.
  *
- * So the tool does NOT plot the function. It finds the cut points — where f′
- * or f″ changes sign — reads out the two sign charts and the handful of heights
- * that pin the ends, and asks for one shape per interval. The real graph is
- * withheld until the sketch is complete.
+ * So the tool does not plot the function. It finds the cut points — where f′ or
+ * f″ changes sign — and asks for one shape per interval. The real graph is
+ * withheld until the sketch is built.
  *
- * The consistency check is the part that teaches rather than grades. "Rising"
+ * TWO DECISIONS ABOUT THE INTERFACE, both of which turned out to matter more
+ * than they sound:
+ *
+ * 1. THE SIGN CHARTS LIVE INSIDE THE PLOT, in a band under the x-axis, drawn in
+ *    the same SVG at the same scale. A separate chart above the graph has to
+ *    claim that its columns correspond to stretches of the axis; this one just
+ *    is the axis, and the dashed cut lines run through both.
+ *
+ * 2. ONE PALETTE, NOT FOUR BUTTONS PER INTERVAL. Repeating the four shapes in
+ *    every column made the page grow with the function and buried the point,
+ *    which is that there are only ever four. Pick up a shape, drop it in an
+ *    interval.
+ *
+ *    Dragging is the discoverable half and is NOT the whole interface: a tile
+ *    can be clicked to pick it up and an interval clicked to place it, which is
+ *    the same gesture without a mouse and the only one that works from a
+ *    keyboard. Every interval is a focusable target with a spoken name.
+ *
+ * The consistency check is the part that teaches rather than grades: "rising"
  * on an interval that ends lower than it starts is a contradiction between the
- * shape and the numbers, and it is named as one — the most common way a sketch
- * goes astray is the two halves telling different stories.
+ * shape and the numbers, and it is named as one.
  */
 
 import { createChart, makeScales, drawAxes, onBreakpointChange, onLayoutChange, afterLayout } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
-import { tex, setTex, renderMathLabels } from 'kit/tex.js';
+import { tex, renderMathLabels } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
 import { initShare } from 'kit/share.js';
 import { initReveal, revealHidden } from 'kit/reveal.js';
@@ -33,27 +47,21 @@ import { findRoots } from '../../js/numeric.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
-/**
- * The four shapes, as (rising?, bending up?) with the arc that draws each.
- *
- * The keys are the two signs, because that is the lookup the student is
- * learning; the icons are quarter-arcs, which is what each actually looks like.
- */
+/** The four shapes, as (rising?, bending up?) with the quarter-arc that draws each. */
 const SHAPES = [
-  { id: 'inc-cu', up: true, cu: true, name: 'rising, steepening',
-    path: 'M3,21 Q17,21 21,3', words: 'increasing and concave up' },
-  { id: 'inc-cd', up: true, cu: false, name: 'rising, levelling off',
-    path: 'M3,21 Q7,3 21,3', words: 'increasing and concave down' },
-  { id: 'dec-cu', up: false, cu: true, name: 'falling, levelling off',
-    path: 'M3,3 Q7,21 21,21', words: 'decreasing and concave up' },
-  { id: 'dec-cd', up: false, cu: false, name: 'falling, steepening',
-    path: 'M3,3 Q17,3 21,21', words: 'decreasing and concave down' },
+  { id: 'inc-cu', up: true, cu: true, name: 'rising, steepening', path: 'M3,21 Q17,21 21,3' },
+  { id: 'inc-cd', up: true, cu: false, name: 'rising, levelling off', path: 'M3,21 Q7,3 21,3' },
+  { id: 'dec-cu', up: false, cu: true, name: 'falling, levelling off', path: 'M3,3 Q7,21 21,21' },
+  { id: 'dec-cd', up: false, cu: false, name: 'falling, steepening', path: 'M3,3 Q17,3 21,21' },
 ];
 const byId = (/** @type {string} */ id) => SHAPES.find(s => s.id === id);
+const icon = (/** @type {string} */ path, /** @type {string} */ colour = 'currentColor', w = 2.6) =>
+  `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}" fill="none" stroke="${colour}" `
+  + `stroke-width="${w}" stroke-linecap="round"/></svg>`;
 
-const icon = (/** @type {string} */ path, /** @type {string} */ colour = 'currentColor') =>
-  `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}" fill="none" `
-  + `stroke="${colour}" stroke-width="2.6" stroke-linecap="round"/></svg>`;
+/** Height of the sign band under the axis: two sign rows and a shape slot. */
+const BAND = { rowH: 21, slotH: 30, gap: 5, pad: 10 };
+const BAND_H = BAND.pad + BAND.rowH * 2 + BAND.slotH + BAND.gap * 2 + 16;
 
 const state = {
   node: null,
@@ -61,7 +69,8 @@ const state = {
   x0: -3, x1: 3,
   /** @type {{a:number,b:number,ya:number,yb:number,upTrue:boolean,cuTrue:boolean}[]} */
   intervals: [],
-  /** @type {(string|null)[]} one chosen shape id per interval */ picks: [],
+  /** @type {(string|null)[]} */ picks: [],
+  /** @type {string|null} the shape currently picked up */ held: null,
   checked: false,
   showReal: false,
 };
@@ -70,14 +79,6 @@ let chart = null;
 
 /* ──────────────────────── the problem, from the function ────────────────── */
 
-/**
- * Cut the window at every sign change of f′ and f″, and record what each
- * interval actually does.
- *
- * The cut points are the critical and inflection points — which is why the
- * scaffolding this tool hands out is the same scaffolding the course asks
- * students to produce by hand.
- */
 function buildIntervals() {
   const { x0, x1, node } = state;
   const d1 = compile(derivative(node), 'x');
@@ -100,124 +101,66 @@ function buildIntervals() {
   state.checked = false;
 }
 
-/* ────────────────────────────── the sign chart ─────────────────────────── */
-
-function renderChart() {
-  const grid = $('#chart-grid');
-  const n = state.intervals.length;
-  if (!n) { grid.innerHTML = '<p class="ll-error">No sign changes found in this window.</p>'; return; }
-
-  // Columns are proportional to the intervals they describe, so reading across
-  // the chart is reading along the axis — equal columns made a 2-unit stretch
-  // and a 1-unit stretch look alike, which is the correspondence the whole
-  // exercise depends on. The minimum stops a narrow interval crushing its
-  // picker.
-  const widths = state.intervals.map(iv => iv.b - iv.a);
-  const total = widths.reduce((s2, w) => s2 + w, 0);
-  // A fixed label column, so the axis below lines up with the columns above it
-  // rather than with whatever width the widest row label happened to need.
-  const MIN_COL = 78;
-  grid.style.gridTemplateColumns = '4.6rem '
-    + widths.map(w => `minmax(${MIN_COL}px, ${((w / total) * 100).toFixed(2)}fr)`).join(' ');
-  // Wide enough that every picker stays usable, and no wider — so it fills a
-  // desktop panel and scrolls on a phone instead of stretching the page.
-  grid.style.minWidth = `max(100%, ${n * MIN_COL + 82}px)`;
-  const cell = (cls, html) => `<div class="${cls}">${html}</div>`;
-  let html = '';
-
-  html += cell('sk-row-label', tex("f'(x)"));
-  for (const iv of state.intervals) {
-    html += cell(`sk-sign ${iv.upTrue ? 'pos' : 'neg'}`, iv.upTrue ? '+' : '−');
-  }
-  html += cell('sk-row-label', tex('f\'\'(x)'));
-  for (const iv of state.intervals) {
-    html += cell(`sk-sign ${iv.cuTrue ? 'pos' : 'neg'}`, iv.cuTrue ? '+' : '−');
-  }
-
-  html += cell('sk-row-label', '<span class="ll-hint">shape</span>');
-  state.intervals.forEach((iv, i) => {
-    const pick = state.picks[i];
-    html += `<div class="sk-pick" role="group" aria-label="Shape for the interval from ${fmt(iv.a, 2)} to ${fmt(iv.b, 2)}">`
-      + SHAPES.map(s => {
-        let mark = '';
-        if (state.checked && pick === s.id) mark = isRight(i) ? ' sk-right' : ' sk-wrong';
-        return `<button type="button" class="sk-shape${mark}" data-iv="${i}" data-shape="${s.id}" `
-          + `aria-pressed="${pick === s.id}" title="${s.name}" aria-label="${s.name}">${icon(s.path)}</button>`;
-      }).join('') + '</div>';
-  });
-
-  // A real axis under the columns, with a tick at every cut point. The columns
-  // are already proportional, so a tick placed at the same cumulative fraction
-  // lands exactly on the boundary above it — the chart reads as a stretch of
-  // the x-axis rather than as four boxes that happen to stand for one.
-  html += cell('sk-row-label', '');
-  const cuts = [state.intervals[0].a, ...state.intervals.map(iv => iv.b)];
-  html += `<div class="sk-axis" aria-hidden="true">`
-    + cuts.map(x => `<span class="sk-tick"><i></i><b>${fmt(x, 2)}</b></span>`).join('')
-    + `</div>`;
-  grid.innerHTML = html;
-  positionTicks();
-
-  grid.querySelectorAll('button.sk-shape').forEach(b => b.addEventListener('click', () => {
-    const i = Number(b.dataset.iv);
-    state.picks[i] = state.picks[i] === b.dataset.shape ? null : b.dataset.shape;
-    state.checked = false;
-    $('#verdict').innerHTML = '';
-    renderChart();
-    render();
-  }));
-
-  const vals = [state.intervals[0].a, ...state.intervals.map(iv => iv.b)];
-  $('#values').innerHTML = 'You are given: '
-    + vals.map(x => tex(`f(${fmt(x, 2)}) = ${fmt(state.f(x), 2)}`)).join('&nbsp; &nbsp;');
-}
-
-/**
- * Put each tick where its column boundary ACTUALLY is.
- *
- * The columns are proportional to their intervals, but only until a narrow one
- * hits the minimum width that keeps its picker usable — after that the
- * proportions no longer describe the layout, and ticks placed at the
- * mathematical fractions drift off the boundaries they are supposed to mark.
- * Six intervals in the space of four was enough to do it. Measuring is the only
- * thing that stays true whatever the layout does.
- */
-function positionTicks() {
-  const axis = document.querySelector('.sk-axis');
-  const picks = [...document.querySelectorAll('.sk-pick')];
-  const ticks = [...document.querySelectorAll('.sk-tick')];
-  if (!axis || !picks.length || ticks.length !== picks.length + 1) return;
-  const base = axis.getBoundingClientRect();
-  if (!base.width) return;                      // not laid out yet
-  const edges = picks.map(el => el.getBoundingClientRect().left)
-    .concat(picks[picks.length - 1].getBoundingClientRect().right);
-  ticks.forEach((t, i) => {
-    t.style.left = `${(((edges[i] - base.left) / base.width) * 100).toFixed(2)}%`;
-  });
-}
-
 const isRight = (/** @type {number} */ i) => {
   const s = byId(state.picks[i]);
   const iv = state.intervals[i];
   return !!s && s.up === iv.upTrue && s.cu === iv.cuTrue;
 };
 
-/* ─────────────────────────────── the sketch ────────────────────────────── */
+/* ─────────────────────────────── the palette ───────────────────────────── */
+
+function renderPalette() {
+  $('#palette').innerHTML = SHAPES.map(s =>
+    `<button type="button" class="sk-tile" data-shape="${s.id}" aria-pressed="${state.held === s.id}"`
+    + ` aria-label="${s.name}. Pick up, then choose an interval.">`
+    + icon(s.path, 'var(--ims-blue-text)')
+    + `<small>${s.name}</small></button>`).join('');
+
+  // ONE gesture handler, not two. A separate click listener alongside
+  // pointerdown meant every tap ran both: pointerdown picked the shape up and
+  // the click that followed toggled it straight back off, so nothing was ever
+  // held and nothing could be placed. Tap and drag are the same gesture here,
+  // told apart at pointerup by whether it landed on an interval.
+  document.querySelectorAll('.sk-tile').forEach(t => {
+    t.addEventListener('pointerdown', ev => startDrag(ev, t.dataset.shape));
+  });
+}
+
+function hold(id) {
+  state.held = id;
+  document.querySelectorAll('.sk-tile').forEach(t =>
+    t.setAttribute('aria-pressed', String(t.dataset.shape === id)));
+  updateHint();
+  if (id) announce(`${byId(id).name} picked up. Now choose an interval.`);
+}
+
+function updateHint() {
+  const left = state.picks.filter(p => !p).length;
+  // A held shape stays held, so the same shape can go in several intervals —
+  // but the count has to stay visible or there is no way to tell how far along
+  // you are without counting boxes.
+  const todo = left
+    ? `${left} interval${left > 1 ? 's' : ''} still empty.`
+    : 'Every interval has a shape — check your sketch.';
+  $('#drop-hint').innerHTML = state.held
+    ? `<b>${byId(state.held).name}</b> is picked up — click an interval to place it. ${todo}`
+    : left
+      ? `${todo} Pick a shape above, then click an interval.`
+      : todo;
+}
+
+/* ─────────────────────────────── the drawing ───────────────────────────── */
 
 /**
- * One piece of the sketch: a curve from (a, ya) to (b, yb) with the chosen
- * concavity.
+ * One piece: a curve from (a, ya) to (b, yb) with the chosen concavity.
  *
  * Only two interpolants are needed. With y = ya + (yb − ya)·s(t), the curve is
- * concave up exactly when (yb − ya)·s″ > 0 — so which of t² and 2t − t² gives
- * "concave up" FLIPS with the direction the interval actually runs. That is
- * also why the direction claim can be checked for free: the values already
- * decide whether it rises.
+ * concave up exactly when (yb − ya)·s″ > 0 — so which of t² and 2t − t² means
+ * "concave up" flips with the direction the interval actually runs. That is
+ * also why the direction claim can be checked for free.
  */
 function piecePath(iv, shape, xs, ys) {
-  const rising = iv.yb > iv.ya;
-  const wantCU = shape.cu;
-  const accel = rising ? wantCU : !wantCU;      // true → s(t) = t²
+  const accel = (iv.yb > iv.ya) ? shape.cu : !shape.cu;
   const s = accel ? (t => t * t) : (t => 2 * t - t * t);
   const pts = [];
   for (let k = 0; k <= 40; k++) {
@@ -228,8 +171,14 @@ function piecePath(iv, shape, xs, ys) {
 }
 
 function render() {
-  chart = chart || createChart('#fig', { height: 400, fit: true, label: 'placeholder' });
   const { x0, x1 } = state;
+  chart = chart || createChart('#fig', {
+    height: 470,
+    // The bottom margin holds the sign band, so the curve never runs into it.
+    margin: { top: 16, right: 20, bottom: 34 + BAND_H, left: 44 },
+    label: 'placeholder',
+  });
+
   const yDom = autoYDomain(state.f, x0, x1, { minSpan: 2 });
   const { xs, ys } = makeScales(chart, [x0, x1], yDom);
   drawAxes(chart, { xs, ys, xLabel: 'x', yLabel: 'y' });
@@ -237,7 +186,6 @@ function render() {
   chart.plot.selectAll('*').remove();
   chart.gOver.selectAll('*').remove();
 
-  // The real graph, dashed, only once asked for.
   if (state.showReal) {
     const g = chart.plot.append('g');
     drawCurve(g, state.f, { xs, ys, className: 'sk-real' });
@@ -245,34 +193,200 @@ function render() {
       .attr('stroke-dasharray', '6 3').attr('fill', 'none').attr('opacity', 0.85);
   }
 
-  // The cut points, which are the heights the student was given.
+  drawBand(xs);
+
+  // The given heights.
   const marks = state.intervals.length
     ? [state.intervals[0].a, ...state.intervals.map(iv => iv.b)] : [];
   for (const x of marks) {
     const y = state.f(x);
     if (!Number.isFinite(y)) continue;
-    chart.gOver.append('line').attr('class', 'll-marker-line')
-      .attr('x1', xs(x)).attr('x2', xs(x))
-      .attr('y1', chart.margin.top).attr('y2', chart.height - chart.margin.bottom);
     chart.gOver.append('circle').attr('cx', xs(x)).attr('cy', ys(y)).attr('r', 4.5)
       .attr('fill', '#222').attr('stroke', '#fff').attr('stroke-width', 1.5);
   }
 
-  // The student's pieces.
   state.intervals.forEach((iv, i) => {
     const shape = byId(state.picks[i]);
     if (!shape) return;
-    const wrong = state.checked && !isRight(i);
     chart.plot.append('path')
       .attr('d', piecePath(iv, shape, xs, ys))
       .attr('fill', 'none')
-      .attr('stroke', wrong ? 'var(--bad)' : 'var(--ims-blue-text)')
+      .attr('stroke', state.checked && !isRight(i) ? 'var(--bad)' : 'var(--ims-blue-text)')
       .attr('stroke-width', 3).attr('stroke-linecap', 'round');
   });
 
+  drawTargets(xs);
+
   const done = state.picks.filter(Boolean).length;
-  chart.setLabel(`Your sketch: ${done} of ${state.intervals.length} intervals drawn`
-    + (state.showReal ? ', with the real graph laid over it' : '') + '.');
+  chart.setLabel(`Your sketch: ${done} of ${state.intervals.length} intervals filled`
+    + (state.showReal ? ', with the real graph over it' : '') + '.');
+  updateHint();
+}
+
+/**
+ * The sign charts, drawn in the same SVG as the graph and at the same scale.
+ *
+ * This is the whole reason they moved: a chart drawn separately has to assert
+ * that its columns line up with stretches of the axis, and then keep that
+ * promise through every layout change. Drawn here they cannot drift, because
+ * they use the same x scale the curve does.
+ */
+function drawBand(xs) {
+  const top = chart.height - chart.margin.bottom + BAND.pad;
+  const rows = [
+    { y: top, h: BAND.rowH, label: "f'", get: iv => iv.upTrue },
+    { y: top + BAND.rowH + BAND.gap, h: BAND.rowH, label: "f''", get: iv => iv.cuTrue },
+  ];
+  const slotY = top + (BAND.rowH + BAND.gap) * 2;
+  const g = chart.gOver.append('g').attr('class', 'sk-band');
+
+  // Dashed cut lines, top of the plot right down through the band — the same
+  // rule the graph already draws at those points.
+  const cuts = state.intervals.length
+    ? [state.intervals[0].a, ...state.intervals.map(iv => iv.b)] : [];
+  for (const x of cuts) {
+    g.append('line').attr('x1', xs(x)).attr('x2', xs(x))
+      .attr('y1', chart.margin.top).attr('y2', slotY + BAND.slotH)
+      .attr('stroke', '#8a8a8a').attr('stroke-width', 1).attr('stroke-dasharray', '3 3');
+    g.append('text').attr('x', xs(x)).attr('y', slotY + BAND.slotH + 13)
+      .attr('text-anchor', 'middle').attr('font-size', chart.fs(11))
+      .attr('font-family', 'var(--font-mono)').attr('fill', 'var(--ims-gray-text)')
+      .text(fmt(x, 2));
+  }
+
+  for (const row of rows) {
+    g.append('text').attr('x', chart.margin.left - 8).attr('y', row.y + row.h * 0.72)
+      .attr('text-anchor', 'end').attr('font-size', chart.fs(12))
+      .attr('font-style', 'italic').attr('fill', 'var(--ims-gray-text)')
+      .text(row.label === "f'" ? 'f ′' : 'f ″');
+    for (const iv of state.intervals) {
+      const on = row.get(iv);
+      g.append('rect').attr('x', xs(iv.a) + 1).attr('y', row.y)
+        .attr('width', Math.max(0, xs(iv.b) - xs(iv.a) - 2)).attr('height', row.h)
+        .attr('fill', on ? 'rgba(27,122,61,0.10)' : 'rgba(165,39,20,0.09)').attr('rx', 3);
+      g.append('text').attr('x', (xs(iv.a) + xs(iv.b)) / 2).attr('y', row.y + row.h * 0.76)
+        .attr('text-anchor', 'middle').attr('font-size', chart.fs(14)).attr('font-weight', '700')
+        .attr('fill', on ? '#1B7A3D' : '#A52714')
+        .text(on ? '+' : '−');
+    }
+  }
+
+  // The slot row: what has been dropped, or an empty dashed box inviting one.
+  g.append('text').attr('x', chart.margin.left - 8).attr('y', slotY + BAND.slotH * 0.68)
+    .attr('text-anchor', 'end').attr('font-size', chart.fs(12))
+    .attr('fill', 'var(--ims-gray-text)').text('shape');
+  state.intervals.forEach((iv, i) => {
+    const w = Math.max(0, xs(iv.b) - xs(iv.a) - 2);
+    const shape = byId(state.picks[i]);
+    const wrong = state.checked && shape && !isRight(i);
+    const right = state.checked && shape && isRight(i);
+    g.append('rect').attr('x', xs(iv.a) + 1).attr('y', slotY)
+      .attr('width', w).attr('height', BAND.slotH).attr('rx', 4)
+      .attr('fill', right ? '#F0F8F2' : wrong ? '#FFF2F0' : shape ? '#EAF3F8' : 'none')
+      .attr('stroke', right ? 'var(--ok)' : wrong ? 'var(--bad)' : shape ? 'var(--ims-blue-text)' : '#b4b4b4')
+      .attr('stroke-width', shape ? 1.6 : 1)
+      .attr('stroke-dasharray', shape ? null : '4 3');
+    if (shape && w > 14) {
+      const size = Math.min(BAND.slotH - 6, w - 6);
+      const cx = (xs(iv.a) + xs(iv.b)) / 2;
+      g.append('g')
+        .attr('transform', `translate(${cx - size / 2},${slotY + (BAND.slotH - size) / 2}) scale(${size / 24})`)
+        .html(`<path d="${shape.path}" fill="none" stroke="${wrong ? 'var(--bad)' : 'var(--ims-blue-text)'}" stroke-width="2.6" stroke-linecap="round"/>`);
+    }
+  });
+  state.slotY = slotY;
+}
+
+/**
+ * A focusable, clickable target per interval, covering the graph and the band.
+ *
+ * Dragging is the discoverable gesture; this is the one that works without a
+ * mouse. Both end in the same place — a shape assigned to an interval — so
+ * neither is a second-class path.
+ */
+function drawTargets(xs) {
+  const top = chart.margin.top;
+  const bottom = state.slotY + BAND.slotH;
+  state.intervals.forEach((iv, i) => {
+    const shape = byId(state.picks[i]);
+    const node = chart.gOver.append('rect')
+      .attr('class', 'sk-drop')
+      .attr('x', xs(iv.a)).attr('y', top)
+      .attr('width', Math.max(0, xs(iv.b) - xs(iv.a))).attr('height', bottom - top)
+      .attr('fill', 'transparent')
+      .attr('tabindex', 0)
+      .attr('role', 'button')
+      .attr('data-iv', i)
+      .attr('aria-label',
+        `Interval from ${fmt(iv.a, 2)} to ${fmt(iv.b, 2)}. `
+        + `f prime is ${iv.upTrue ? 'positive' : 'negative'}, `
+        + `f double prime is ${iv.cuTrue ? 'positive' : 'negative'}. `
+        + (shape ? `Currently ${shape.name}.` : 'Currently empty.'))
+      .node();
+    node.addEventListener('click', () => place(i));
+    node.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); place(i); }
+    });
+  });
+}
+
+function place(i) {
+  if (state.held) {
+    state.picks[i] = state.held;
+    announce(`${byId(state.held).name} placed on ${fmt(state.intervals[i].a, 2)} to ${fmt(state.intervals[i].b, 2)}.`);
+  } else if (state.picks[i]) {
+    state.picks[i] = null;
+    announce('Interval cleared.');
+  } else {
+    announce('Pick up a shape first.');
+    return;
+  }
+  state.checked = false;
+  $('#verdict').innerHTML = '';
+  const hadFocus = document.activeElement?.classList?.contains('sk-drop');
+  render();
+  // render() rebuilds the targets, so a keyboard user would lose their place.
+  if (hadFocus) document.querySelector(`.sk-drop[data-iv="${i}"]`)?.focus();
+}
+
+/* ─────────────────────────────── dragging ──────────────────────────────── */
+
+let ghost = null;
+/** Was this shape already held when the gesture began? A tap then toggles it off. */
+let heldBefore = false;
+let dragFrom = { x: 0, y: 0 };
+
+function startDrag(ev, id) {
+  ev.preventDefault();
+  heldBefore = state.held === id;
+  dragFrom = { x: ev.clientX, y: ev.clientY };
+  hold(id);
+  ghost = document.createElement('div');
+  ghost.className = 'sk-ghost';
+  ghost.innerHTML = icon(byId(id).path, 'var(--ims-blue-text)', 3);
+  document.body.appendChild(ghost);
+  moveGhost(ev);
+  window.addEventListener('pointermove', moveGhost);
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+}
+function moveGhost(ev) {
+  if (ghost) { ghost.style.left = `${ev.clientX}px`; ghost.style.top = `${ev.clientY}px`; }
+}
+function endDrag(ev) {
+  window.removeEventListener('pointermove', moveGhost);
+  window.removeEventListener('pointerup', endDrag);
+  window.removeEventListener('pointercancel', endDrag);
+  if (ghost) { ghost.remove(); ghost = null; }
+  // elementFromPoint rather than a drop handler: the target is an SVG rect, and
+  // HTML5 drag-and-drop on SVG is not reliable across browsers or on touch.
+  const el = document.elementFromPoint(ev.clientX, ev.clientY);
+  const iv = el && el.closest && el.closest('.sk-drop');
+  if (iv) { place(Number(iv.getAttribute('data-iv'))); return; }
+  // Not a drop. If the pointer barely moved it was a tap on the tile, which
+  // picks the shape up — or puts it back down if it was already held.
+  const moved = Math.hypot(ev.clientX - dragFrom.x, ev.clientY - dragFrom.y);
+  if (moved < 6 && heldBefore) hold(null);
 }
 
 /* ────────────────────────────── checking ───────────────────────────────── */
@@ -281,8 +395,8 @@ function check() {
   const n = state.intervals.length;
   const missing = state.picks.filter(p => !p).length;
   if (missing) {
-    $('#verdict').innerHTML = `<b>${missing} interval${missing > 1 ? 's' : ''}</b> `
-      + `still ${missing > 1 ? 'have' : 'has'} no shape. Pick one for each, then check.`;
+    $('#verdict').innerHTML = `<b>${missing} interval${missing > 1 ? 's' : ''}</b> still `
+      + `${missing > 1 ? 'have' : 'has'} no shape.`;
     announce(`${missing} intervals still empty.`);
     return;
   }
@@ -293,31 +407,27 @@ function check() {
   state.intervals.forEach((iv, i) => {
     const s = byId(state.picks[i]);
     if (!isRight(i)) wrong.push(i);
-    // The shape and the numbers must tell the same story. This is a different
-    // error from "wrong shape", and worth naming separately.
-    if (s.up !== (iv.yb > iv.ya)) contradictions.push({ i, iv, s });
+    if (s.up !== (iv.yb > iv.ya)) contradictions.push({ iv, s });
   });
 
   const parts = [];
   if (!wrong.length) {
     parts.push(`<span class="ll-verdict ok">✓ All ${n} intervals right.</span> `
-      + `That sketch is the function's shape everywhere — only the exact heights between `
+      + `That sketch has the function's shape everywhere — only the heights between `
       + `the marked points are approximations.`);
   } else {
     parts.push(`<span class="ll-verdict bad">${n - wrong.length} of ${n} right.</span> `
-      + `The ones in red are marked on both the chart and the sketch.`);
+      + `The wrong ones are outlined in red, in the graph and in the shape row.`);
   }
   for (const c of contradictions) {
     parts.push(`<br>On <b>${fmt(c.iv.a, 2)} to ${fmt(c.iv.b, 2)}</b> you chose `
-      + `<b>${c.s.name}</b>, but you were given `
-      + `${tex(`f(${fmt(c.iv.a, 2)}) = ${fmt(c.iv.ya, 2)}`)} and `
-      + `${tex(`f(${fmt(c.iv.b, 2)}) = ${fmt(c.iv.yb, 2)}`)} — it ends `
+      + `<b>${c.s.name}</b>, but you were given ${tex(`f(${fmt(c.iv.a, 2)}) = ${fmt(c.iv.ya, 2)}`)} `
+      + `and ${tex(`f(${fmt(c.iv.b, 2)}) = ${fmt(c.iv.yb, 2)}`)} — it ends `
       + `${c.iv.yb > c.iv.ya ? 'higher' : 'lower'} than it starts, so it cannot be `
       + `${c.s.up ? 'rising' : 'falling'}. The shape and the numbers have to agree.`);
   }
   $('#verdict').innerHTML = parts.join('');
   announce(wrong.length ? `${n - wrong.length} of ${n} correct.` : 'All correct.', 120);
-  renderChart();
   render();
 }
 
@@ -326,7 +436,11 @@ function check() {
 function rebuild() {
   if (!state.node) return;
   buildIntervals();
-  renderChart();
+  const vals = state.intervals.length
+    ? [state.intervals[0].a, ...state.intervals.map(iv => iv.b)] : [];
+  $('#values').innerHTML = vals.length
+    ? 'You are given: ' + vals.map(x => tex(`f(${fmt(x, 2)}) = ${fmt(state.f(x), 2)}`)).join('&nbsp; &nbsp;')
+    : '';
   render();
 }
 
@@ -337,6 +451,7 @@ initPage({
     if (q.get('f')) $('#fn-input').value = q.get('f');
     if (q.get('window')) $('#win-input').value = q.get('window');
 
+    renderPalette();
     $('#key').innerHTML = SHAPES.map(s =>
       `<span>${icon(s.path, 'var(--ims-blue-text)')}</span>`
       + `<span>${tex(`f' ${s.up ? '>' : '<'} 0, \\; f'' ${s.cu ? '>' : '<'} 0`)}</span>`
@@ -383,14 +498,15 @@ initPage({
     $('#clear-btn').addEventListener('click', () => {
       state.picks = state.intervals.map(() => null);
       state.checked = false;
+      hold(null);
       $('#verdict').innerHTML = '';
-      renderChart(); render();
+      render();
       announce('Cleared.', 100);
     });
 
     renderMathLabels(src => { const r = tryParse(src); return r.node ? toLatex(r.node) : null; });
-    onBreakpointChange(() => { chart = null; render(); positionTicks(); });
-    onLayoutChange(() => { chart = null; render(); positionTicks(); });
-    afterLayout(() => { chart = null; render(); positionTicks(); });
+    onBreakpointChange(() => { chart = null; render(); });
+    onLayoutChange(() => { chart = null; render(); });
+    afterLayout(() => { chart = null; render(); });
   },
 });

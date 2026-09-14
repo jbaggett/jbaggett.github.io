@@ -29,53 +29,28 @@
 }
 </script>
 <style>
-  /* The sign chart: one column per interval, two rows of signs, then the
-     shape picker under each. Grid columns are set from JS so the columns line
-     up with the intervals on the sketch below. */
-  /* The chart is inherently as wide as the function has intervals, so on a
-     narrow screen it scrolls inside its own panel rather than pushing the page
-     sideways. min-width is set from JS: enough for every picker to stay usable,
-     and no wider than it needs to be. */
-  .sk-scroll { overflow-x: auto; margin: 0.6rem 0 0; }
-  .sk-chart { display: grid; gap: 0 2px; }
-  .sk-row-label { font-size: 0.85rem; color: var(--ims-gray-text); text-align: right;
-                  padding-right: 0.5rem; white-space: nowrap; }
-  .sk-sign { text-align: center; font-family: var(--font-mono); font-weight: 700;
-             padding: 0.15rem 0; background: var(--surface); border-radius: 3px; }
-  .sk-sign.pos { color: #1B7A3D; }
-  .sk-sign.neg { color: #A52714; }
-  /* The same dashed rule the plot draws at each cut point, carried up through
-     the chart so a column is visibly the stretch of axis it describes. */
-  .sk-sign, .sk-pick { border-left: 1px dashed #8a8a8a; }
-  .sk-sign:last-child, .sk-pick:last-child { border-right: 1px dashed #8a8a8a; }
-
-  .sk-axis { position: relative; height: 2.1rem; border-top: 1.5px solid #555;
-             grid-column: 2 / -1; margin-top: 0.15rem; }
-  .sk-tick { position: absolute; top: 0; transform: translateX(-50%); text-align: center; }
-  .sk-tick i { display: block; width: 1px; height: 6px; background: #555; margin: 0 auto; }
-  .sk-tick b { display: block; font-family: var(--font-mono); font-weight: 400;
-               font-size: 0.75rem; color: var(--ims-gray-text); margin-top: 1px; }
-  /* The end LABELS get nudged inward so they do not hang off the panel — the
-     tick marks themselves stay centred on their boundaries, which is the whole
-     point of drawing them. Shifting the tick instead put the first and last
-     6px off the columns they mark. */
-  .sk-tick:first-child b { transform: translateX(28%); }
-  .sk-tick:last-child b { transform: translateX(-28%); }
-
-  .sk-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 0 2px; }
-  .sk-pick button { padding: 2px; min-height: 0; border-radius: 4px; line-height: 0;
-                    border: 1px solid var(--border); background: var(--bg); }
-  .sk-pick button svg { width: 100%; height: auto; max-width: 34px; }
-  .sk-pick button[aria-pressed="true"] { border-color: var(--ims-blue-text); border-width: 2px;
-                                         background: #EAF3F8; }
-  .sk-pick button.sk-wrong[aria-pressed="true"] { border-color: var(--bad); background: #FFF2F0; }
-  .sk-pick button.sk-right[aria-pressed="true"] { border-color: var(--ok); background: #F0F8F2; }
+  /* One palette, not four buttons per interval. A tile is picked up, then
+     dropped — or clicked, then an interval clicked, which is the same thing
+     without a mouse. */
+  .sk-palette { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .sk-tile { display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+             padding: 0.35rem 0.5rem; min-height: 0; line-height: 1.15;
+             border: 1px solid var(--border); border-radius: 7px; background: var(--bg);
+             cursor: grab; touch-action: none; }
+  .sk-tile:active { cursor: grabbing; }
+  .sk-tile svg { width: 40px; height: 40px; }
+  .sk-tile small { font-size: 0.72rem; color: var(--ims-gray-text); max-width: 8.5rem; }
+  .sk-tile[aria-pressed="true"] { border-color: var(--ims-blue-text); border-width: 2px;
+                                  background: #EAF3F8; }
+  .sk-ghost { position: fixed; pointer-events: none; z-index: 50; opacity: 0.85;
+              width: 46px; height: 46px; margin: -23px 0 0 -23px; }
 
   .sk-key { display: grid; grid-template-columns: auto auto auto; gap: 0.3rem 0.7rem;
             align-items: center; font-size: 0.85rem; max-width: 26rem; }
   .sk-key svg { width: 34px; height: 26px; }
   .sk-values { font-family: var(--font-mono); font-size: 0.92rem; }
-  @media (max-width: 600px) { .sk-pick button svg { max-width: 28px; } }
+  .sk-drop { cursor: pointer; }
+  .sk-drop:focus-visible { outline: 2px solid var(--highlight-orange-dark); outline-offset: -2px; }
 </style>
 </head>
 <body>
@@ -124,13 +99,12 @@
     </div>
   </section>
 
-  <section id="signs" class="ll-panel" aria-label="Sign charts and shape choices">
+  <section id="signs" class="ll-panel" aria-label="The four shapes">
     <p class="ll-hint" style="margin-top:0">
-      The cut points are where <i>f</i>′ or <i>f</i>″ changes sign. Read each
-      column's two signs, pick the shape they force, and the sketch below
-      updates.
+      Pick a shape, then click the interval it belongs to — or drag it there.
+      The sign charts are under the graph, lined up with the axis.
     </p>
-    <div class="sk-scroll"><div class="sk-chart" id="chart-grid"></div></div>
+    <div class="sk-palette" id="palette" role="group" aria-label="The four shapes"></div>
     <p class="ll-values" id="values"></p>
     <div class="ll-row" style="gap:0.6rem; margin-top:0.8rem;">
       <button type="button" id="check-btn" class="ll-primary">Check my sketch</button>
@@ -142,6 +116,7 @@
 
   <section id="chart" aria-label="Your sketch">
     <div class="ll-chart"><div id="fig"></div></div>
+    <p class="ll-hint" id="drop-hint" style="margin:0.3rem 0 0;"></p>
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#3A7CA5" stroke-width="2.5"/></svg> your sketch</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5" stroke-dasharray="6 3"/></svg> the real graph</span>
