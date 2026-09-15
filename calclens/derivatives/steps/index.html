@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worked Derivative | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  /* The working is a numbered list of equalities. Each line is one rule, so the
+     rule sits on the line that used it — a legend at the bottom would make the
+     reader hold the correspondence in their head, which is the whole difficulty
+     being taught. */
+  .ll-steps { list-style: none; margin: 0; padding: 0; }
+
+  .ll-step {
+    display: grid;
+    grid-template-columns: 1.6rem 1fr;
+    gap: 0 0.4rem;
+    padding: 0.55rem 0.2rem;
+    border-top: 1px solid var(--border);
+    align-items: baseline;
+  }
+  .ll-step:first-child { border-top: 0; }
+  .ll-step-sign { color: var(--ims-gray-text); font-size: 1.05rem; }
+  .ll-step-eq { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
+  .ll-step-eq .katex { font-size: 1.16em; }
+
+  /* The rule tags: never colour alone — each carries its name as text. */
+  .ll-step-rules {
+    grid-column: 2;
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+    margin-top: 0.35rem;
+  }
+  .ll-tag {
+    font-size: 0.8rem; line-height: 1.3;
+    padding: 0.12rem 0.45rem;
+    border: 1px solid var(--ims-blue);
+    border-radius: 999px;
+    background: #F2F8FB;
+    color: var(--ims-green);
+    white-space: nowrap;
+  }
+  .ll-tag-tidy { border-color: var(--ims-lgray); background: var(--surface); color: var(--ims-gray-text); }
+
+  /* The line not yet shown. Asking "which rule comes next?" only works if the
+     reader can see that something is being withheld. */
+  .ll-step-ghost { color: var(--ims-gray-text); font-style: italic; }
+  .ll-step-ghost .ll-step-sign { font-style: normal; }
+
+  .ll-step-final { background: #F7FBF8; }
+  .ll-step-final .ll-step-eq .katex { font-size: 1.28em; }
+
+  #step-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.9rem; }
+
+  #rules-used { margin-top: 1.2rem; }
+  #rule-list { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
+  #rule-list li { display: flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; align-items: baseline; }
+  #rule-list b { font-weight: 600; min-width: 11rem; }
+
+  @media (max-width: 480px) {
+    .ll-step { grid-template-columns: 1.1rem 1fr; }
+    #rule-list b { min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the function</a>
+  <a href="#work">Skip to the working</a>
+</nav>
+
+<main>
+  <h1>Worked Derivative
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Type a function and take the derivative <b>one rule at a time</b>. Each line
+    names the rule it used, so you can find the exact step where your own work
+    went a different way.
+    <span class="ll-hint">Try to say which rule comes next before you press the
+    button — that is the part the answer alone never teaches.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The function">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 300px;">
+        <span><i>f</i>(<i class="varname">x</i>) =</span>
+        <input type="text" id="fn-input" value="x^2 e^x" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+    <p class="ll-hint" id="fn-syntax" data-control="f">
+      Write it as you would say it: <code>x^2 e^x</code>, <code>sin(3x^2)</code>,
+      <code>(3x+1)/(x^2-4)</code>, <code>sqrt(2x+5)</code>, <code>ln(cos(x^3))</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example functions" data-control="f">
+      <button type="button" class="preset" data-f="x^2 e^x">product</button>
+      <button type="button" class="preset" data-f="(3x+1)/(x^2-4)">quotient</button>
+      <button type="button" class="preset" data-f="sin(3x^2)">chain</button>
+      <button type="button" class="preset" data-f="ln(cos(x^3))">chain twice</button>
+      <button type="button" class="preset" data-f="sqrt(2x+5)">root</button>
+      <button type="button" class="preset" data-f="x^x">x^x</button>
+    </div>
+  </section>
+
+  <section id="work" aria-label="The working">
+    <h2>The working</h2>
+    <ol class="ll-steps" id="steps"></ol>
+    <div id="step-controls" data-control="steps">
+      <button type="button" id="next-btn" class="ll-primary">Next step ▸</button>
+      <button type="button" id="all-btn">Show all</button>
+      <button type="button" id="reset-btn" hidden>Start over</button>
+      <span class="ll-hint" id="step-hint"></span>
+    </div>
+    <p class="ll-hint" id="note" hidden></p>
+  </section>
+
+  <section id="rules-used" aria-label="Rules used" hidden>
+    <h2>Rules used</h2>
+    <ul id="rule-list"></ul>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Worked Derivative</h2>
+  <p>Type any function of one variable. The page differentiates it the way you
+     would on paper: one rule per line, with the rule named beside the line that
+     used it.</p>
+
+  <h3>Use it to find your mistake, not to avoid the work</h3>
+  <p>The value is in the middle lines. If your answer disagrees with the last
+     line, walk down from the top until the working stops matching yours — that
+     line is the one to re-learn, and it is almost never the last one.</p>
+  <p><b>Next step</b> reveals one line at a time on purpose. Say which rule
+     applies before you press it. Getting <em>that</em> right is the skill;
+     executing the rule is the easy half.</p>
+
+  <h3>How the lines are written</h3>
+  <p>A derivative that has not been taken yet is left standing as
+     <span class="ll-math" id="help-tex1"></span>, exactly as you would write it
+     mid-problem. So the product rule appears as</p>
+  <p class="ll-math" id="help-tex2"></p>
+  <p>before either half is evaluated. The last line tidies the algebra, and is
+     marked <b>Tidy up</b> — no new calculus happens there.</p>
+
+  <h3>Constants come out first</h3>
+  <p>3<i>x</i>⁴ is handled by the <b>constant multiple</b> rule and then the
+     power rule — not by the product rule. The page separates those two steps
+     because running a numeric coefficient through the product rule is a common
+     and expensive habit.</p>
+
+  <h3>What it will not do</h3>
+  <p>The tidy-up is algebraic. It knows sin²<i>u</i> + cos²<i>u</i> = 1 and
+     nothing else about trig identities, so an answer may be correct and still
+     not look like the one in the back of the book. To settle that, use
+     <a href="../../tools/check-answer/">Check My Answer</a>, which compares the
+     two numerically.</p>
+  <p>It differentiates with respect to whichever variable appears. If more than
+     one letter appears, it uses <i>x</i> — or whatever <code>?var=</code> says —
+     and treats the rest as constants.</p>
+
+  <h3>Putting this in a slide or a page</h3>
+  <pre class="ll-code">?f=sin(3x^2)&amp;embed=true&amp;steps=all&amp;controls=none</pre>
+  <p>gives the finished working with no function box. Leave <code>steps</code>
+     off and the class advances it a line at a time. See
+     <code>docs/url-api.md</code> for every parameter.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>N</kbd></dt><dd>Next step</dd>
+    <dt><kbd>A</kbd></dt><dd>Show all the working</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -20,7 +20,7 @@
 
 import { createChart, makeScales, drawAxes, onBreakpointChange, onLayoutChange, afterLayout } from 'kit/chart.js';
 import { drawCurve, autoYDomain, sampleCurve, linePath } from 'kit/curve.js';
-import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
+import { initPage, announce, prefersReducedMotion, applyControls } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex, renderMathLabels } from 'kit/tex.js';
 import { fmt } from 'kit/format.js';
@@ -280,23 +280,6 @@ function startAnim() {
     else { stopAnim(); announce('The trap has closed. Read the verdict below the table.', 100); }
   };
   anim = requestAnimationFrame(step);
-}
-
-function applyControls(/** @type {string|null} */ list, /** @type {string|null} */ hideList) {
-  const keep = list ? new Set(list.split(',').map(s => s.trim()).filter(Boolean)) : null;
-  const drop = hideList ? new Set(hideList.split(',').map(s => s.trim()).filter(Boolean)) : null;
-  if (!keep && !drop) return;
-  document.querySelectorAll('[data-control]').forEach(el => {
-    const name = /** @type {HTMLElement} */ (el).dataset.control;
-    if ((keep && !keep.has(name)) || (drop && drop.has(name))) {
-      /** @type {HTMLElement} */ (el).hidden = true;
-    }
-  });
-  document.querySelectorAll('.ll-panel').forEach(p => {
-    const own = p.querySelectorAll('[data-control]').length;
-    const live = [...p.querySelectorAll('[data-control]')].some(e => !(/** @type {HTMLElement} */ (e).hidden));
-    if (own > 0 && !live) /** @type {HTMLElement} */ (p).hidden = true;
-  });
 }
 
 /** Parse all three fields; report the first failure against its own input. */

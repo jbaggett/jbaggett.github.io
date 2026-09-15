@@ -23,7 +23,7 @@
  */
 
 import { createChart, onBreakpointChange, onLayoutChange, afterLayout } from 'kit/chart.js';
-import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
+import { initPage, announce, prefersReducedMotion, applyControls } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex } from 'kit/tex.js';
 import { initShare } from 'kit/share.js';
@@ -253,24 +253,6 @@ function startAnim() {
     else { stopAnim(); announce('The gap has closed. Read the verdict below the table.', 100); }
   };
   anim = requestAnimationFrame(step);
-}
-
-function applyControls(list, hideList) {
-  const keep = list ? new Set(list.split(',').map(s => s.trim()).filter(Boolean)) : null;
-  const drop = hideList ? new Set(hideList.split(',').map(s => s.trim()).filter(Boolean)) : null;
-  if (!keep && !drop) return;
-  document.querySelectorAll('[data-control]').forEach(el => {
-    const name = /** @type {HTMLElement} */ (el).dataset.control;
-    if ((keep && !keep.has(name)) || (drop && drop.has(name))) {
-      /** @type {HTMLElement} */ (el).hidden = true;
-    }
-  });
-  document.querySelectorAll('.ll-panel').forEach(p => {
-    if (p.querySelector('#reveal-slot')) return;
-    const own = p.querySelectorAll('[data-control]').length;
-    const live = [...p.querySelectorAll('[data-control]')].some(e => !(/** @type {HTMLElement} */ (e).hidden));
-    if (own > 0 && !live) /** @type {HTMLElement} */ (p).hidden = true;
-  });
 }
 
 /* ────────────────────────────────── boot ───────────────────────────────── */

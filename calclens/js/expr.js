@@ -44,7 +44,11 @@
 /** @typedef {{type:'mul',args:Node[]}} MulNode */
 /** @typedef {{type:'pow',base:Node,exp:Node}} PowNode */
 /** @typedef {{type:'fn',name:string,arg:Node}} FnNode */
-/** @typedef {NumNode|VarNode|ConstNode|AddNode|MulNode|PowNode|FnNode} Node */
+/** A NOT-YET-TAKEN derivative. Only `steps.js` builds these: they let a line of
+ *  working be printed while some derivatives are still pending, which is how a
+ *  person writes the product rule out before evaluating either half.
+ *  @typedef {{type:'deriv',arg:Node,v:string}} DerivNode */
+/** @typedef {NumNode|VarNode|ConstNode|AddNode|MulNode|PowNode|FnNode|DerivNode} Node */
 
 export const num = (/** @type {number} */ value) => ({ type: 'num', value });
 export const vr = (/** @type {string} */ name) => ({ type: 'var', name });
@@ -339,8 +343,8 @@ export function evaluate(node, scope = {}) {
 
 /* ─────────────────────────────── simplify ──────────────────────────────── */
 
-const isNum = (/** @type {Node} */ n) => n.type === 'num';
-const numV = (/** @type {Node} */ n) => /** @type {NumNode} */(n).value;
+export const isNum = (/** @type {Node} */ n) => n.type === 'num';
+export const numV = (/** @type {Node} */ n) => /** @type {NumNode} */(n).value;
 const isInt = (/** @type {number} */ x) => Number.isFinite(x) && Math.abs(x - Math.round(x)) < 1e-12;
 
 /**
@@ -384,6 +388,7 @@ function factorRank(/** @type {Node} */ n) {
   if (n.type === 'const') return 1;
   if (n.type === 'var') return 2;
   if (n.type === 'pow') return n.base.type === 'var' ? 3 : 5;
+  if (n.type === 'deriv') return 6;
   if (n.type === 'fn') return 4;
   return 6;
 }
@@ -451,6 +456,20 @@ function simplifyAdd(/** @type {Node[]} */ args) {
     if (hit) hit.coeff += c;
     else terms.set(key, { coeff: c, node: rest });
   }
+  // sin²u + cos²u = 1. The only identity in the engine, and it earns its place:
+  // without it the quotient rule on sin(x)/(1 + cos(x)) stalls at
+  // cos²x + sin²x + cos x, one identity short of the answer every textbook
+  // prints. Both halves must carry the same coefficient to collapse.
+  for (const [key, t] of terms) {
+    if (!key.startsWith('(sin(')) continue;
+    const u = key.slice(5, -4);
+    if (key !== `(sin(${u})^2)`) continue;
+    const other = terms.get(`(cos(${u})^2)`);
+    if (!other || Math.abs(other.coeff - t.coeff) > 1e-14) continue;
+    constant += t.coeff;
+    terms.delete(key); terms.delete(`(cos(${u})^2)`);
+  }
+
   const out = [];
   for (const { coeff, node } of terms.values()) {
     if (Math.abs(coeff) < 1e-14) continue;
@@ -564,21 +583,101 @@ export function derivative(node, v = 'x') {
   return simplify(d(node, v));
 }
 
+/**
+ * Read a product back as a quotient, when it is one.
+ *
+ * Canonical form has no `div` node — `u/v` is `u · v⁻¹` — so the shape has to be
+ * recovered before the quotient rule can be applied. Only factors whose
+ * exponent is a NEGATIVE number and which actually involve the variable count
+ * as the denominator; a numeric factor like ½ is a coefficient, not a divisor.
+ *
+ * @returns {{num:Node, den:Node}|null}
+ */
+export function asQuotient(n, v) {
+  const bottom = [], top = [];
+  for (const a of n.args) {
+    if (a.type === 'pow' && isNum(a.exp) && numV(a.exp) < 0 && !isConstant(a.base, v)) {
+      bottom.push(simplifyPow(a.base, num(-numV(a.exp))));
+    } else top.push(a);
+  }
+  if (!bottom.length) return null;
+  return {
+    num: top.length === 0 ? ONE : (top.length === 1 ? top[0] : mul(...top)),
+    den: bottom.length === 1 ? bottom[0] : mul(...bottom),
+  };
+}
+
+/**
+ * Distribute products over sums — but only where it SHORTENS the result.
+ *
+ * The quotient rule leaves a numerator like `2x(x² − 1) − 2x(x² + 1)`, which is
+ * correct and is not what any textbook prints: multiplied out it is `−4x`.
+ * Expanding unconditionally would be worse elsewhere — `cos(x)(cos(x) + 1) +
+ * sin(x)²` needs the Pythagorean identity to pay off, and this engine has no
+ * trig identities — so the expansion is kept only when it comes out no longer
+ * than the factored form. `pow` is never expanded, which keeps (x²+1)⁵ intact.
+ *
+ * @param {Node} n @returns {Node}
+ */
+export function expandIfShorter(n) {
+  const wide = simplify(distribute(n));
+  const tight = simplify(n);
+  return toText(wide).length <= toText(tight).length ? wide : tight;
+}
+
+function distribute(/** @type {Node} */ n) {
+  switch (n.type) {
+    case 'add': return add(...n.args.map(distribute));
+    case 'mul': {
+      // Cartesian product across every factor that is a sum.
+      let terms = [[]];
+      for (const a of n.args.map(distribute)) {
+        const parts = a.type === 'add' ? a.args : [a];
+        if (terms.length * parts.length > 60) return mul(...n.args.map(distribute));
+        const next = [];
+        for (const t of terms) for (const p of parts) next.push([...t, p]);
+        terms = next;
+      }
+      if (terms.length === 1) return mul(...terms[0]);
+      return add(...terms.map(t => mul(...t)));
+    }
+    default: return n;
+  }
+}
+
 function d(/** @type {Node} */ n, /** @type {string} */ v) {
   switch (n.type) {
     case 'num': case 'const': return ZERO;
     case 'var': return n.name === v ? ONE : ZERO;
     case 'add': return add(...n.args.map(a => d(a, v)));
-    case 'mul':
+    case 'mul': {
+      // A quotient is stored as u·v⁻¹, and differentiating it AS a product is
+      // correct but unrecognisable: d/dx[x/(x+1)] came out as
+      // 1/(x+1) − x/(x+1)², which a student compares against 1/(x+1)² and
+      // concludes they are wrong. Spotting the quotient and applying the
+      // quotient rule directly gives the single fraction a textbook prints —
+      // and lets the worked steps name the rule the course actually taught.
+      const q = asQuotient(n, v);
+      if (q) {
+        const top = sub(mul(d(q.num, v), q.den), mul(q.num, d(q.den, v)));
+        return div(expandIfShorter(top), pow(q.den, num(2)));
+      }
       // Generalised product rule: sum over i of (d of arg i) × (all the others).
       return add(...n.args.map((_, i) =>
         mul(...n.args.map((b, j) => (i === j ? d(b, v) : b)))));
+    }
     case 'pow': {
       const { base, exp } = n;
       const constExp = isConstant(exp, v), constBase = isConstant(base, v);
       if (constExp && constBase) return ZERO;
-      // Power rule + chain rule.
-      if (constExp) return mul(exp, pow(base, sub(exp, ONE)), d(base, v));
+      // Power rule + chain rule. The new exponent is evaluated rather than left
+      // as a subtraction: x^(2/3) was differentiating to 2x^(2/3 − 1)/3, which
+      // is right and reads like a mistake.
+      if (constExp) {
+        const e = evaluate(exp, {});
+        const next = Number.isFinite(e) ? num(e - 1) : sub(exp, ONE);
+        return mul(exp, pow(base, next), d(base, v));
+      }
       // Exponential rule: a^u.
       if (constBase) return mul(n, ln(base), d(exp, v));
       // General f^g, via logarithmic differentiation.
@@ -854,6 +953,18 @@ export function toLatex(node) {
   return texOf(simplify(node));
 }
 
+/**
+ * Print exactly the tree given, with no simplification.
+ *
+ * `toLatex` simplifies first, which is right for an answer and fatal for a line
+ * of working: every intermediate step would collapse straight to the final one.
+ * @param {Node} node
+ * @returns {string}
+ */
+export function toLatexRaw(node) {
+  return texOf(node);
+}
+
 function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
   const wrap = (/** @type {string} */ s, /** @type {number} */ own) =>
     own < parentPrec ? `\\left(${s}\\right)` : s;
@@ -887,12 +998,31 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
           bottom.push(simplifyPow(f.base, num(-numV(f.exp))));
         } else top.push(f);
       }
-      top.sort((a, b) => factorRank(a) - factorRank(b));
-      bottom.sort((a, b) => factorRank(a) - factorRank(b));
-      const joinTop = joinFactors(top.length ? top : [ONE]);
+      // Factors are normally reordered so `2x cos(x²)` reads better than
+      // `2 cos(x²) x` — but a line of working containing pending derivatives is
+      // AUTHORED order, and sorting it turned the product rule from the
+      // recognisable f'g + fg' into g f' + f g'. Leave working alone.
+      if (factors.some(f => f.type === 'deriv')) {
+        // Working: pull numbers to the front but keep everything else in the
+        // order it was written, so `3cos(3x²)·d/dx[x²]` reads naturally without
+        // the full sort turning f'g + fg' into g f' + f g'.
+        const lead = (/** @type {Node[]} */ fs) =>
+          [...fs.filter(isNum), ...fs.filter(f => !isNum(f))];
+        top.splice(0, top.length, ...lead(top));
+        bottom.splice(0, bottom.length, ...lead(bottom));
+      } else {
+        top.sort((a, b) => factorRank(a) - factorRank(b));
+        bottom.sort((a, b) => factorRank(a) - factorRank(b));
+      }
+      // Inside \frac{}{} the braces already group, so a lone sum needs no
+      // parentheses: \frac{(-3x^2 - 2x - 12)}{...} was printing a redundant
+      // pair on the numerator of every quotient-rule answer.
+      const half = (/** @type {Node[]} */ fs) =>
+        (fs.length === 1 ? texOf(fs[0], 0) : joinFactors(fs));
+      const joinTop = top.length ? half(top) : '1';
       const body = bottom.length
-        ? `\\frac{${joinTop}}{${joinFactors(bottom)}}`
-        : joinTop;
+        ? `\\frac{${joinTop}}{${half(bottom)}}`
+        : joinFactors(top.length ? top : [ONE]);
       const signed = negative ? `-${body}` : body;
       // A fraction is visually self-bracketing; a bare product is not.
       const own = bottom.length && !negative ? 4 : 2;
@@ -910,6 +1040,9 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       if (base.type === 'const' && base.name === 'e') return wrap(`e^{${texOf(exp, 0)}}`, 3);
       return wrap(`${texOf(base, 4)}^{${texOf(exp, 0)}}`, 3);
     }
+
+    case 'deriv':
+      return wrap(`\\frac{d}{d${n.v}}\\!\\left[${texOf(n.arg, 0)}\\right]`, 3);
 
     case 'fn': {
       const inner = texOf(n.arg, 0);
@@ -962,6 +1095,7 @@ export function toText(n) {
     case 'mul': return '(' + n.args.map(toText).join('*') + ')';
     case 'pow': return '(' + toText(n.base) + '^' + toText(n.exp) + ')';
     case 'fn': return n.name + '(' + toText(n.arg) + ')';
+    case 'deriv': return 'D[' + toText(n.arg) + ']';
     default: return '?';
   }
 }

@@ -86,6 +86,43 @@ export function applyEmbed() {
 }
 
 /**
+ * Hide the controls a slide does not want.
+ *
+ * `controls=` is a KEEP-list (ours) and `hide=` a blacklist (StatLens's
+ * spelling); both are honoured, because a lecture figure wants to name the two
+ * things it needs rather than the nine it does not. Elements opt in by carrying
+ * `data-control="<name>"`, and a panel emptied of every control hides itself
+ * rather than leaving a bare box behind.
+ *
+ * This lived in three tools and had already drifted — only two of the copies
+ * carried the `#reveal-slot` guard, so `?controls=` could hide the reveal
+ * button on the squeeze page while leaving its R key working with nothing on
+ * screen to say so. One copy, in the kit, is the fix.
+ *
+ * @param {string|null} list      `controls=` — names to KEEP
+ * @param {string|null} [hideList] `hide=` — names to drop
+ */
+export function applyControls(list, hideList) {
+  const keep = list ? new Set(list.split(',').map(s => s.trim()).filter(Boolean)) : null;
+  const drop = hideList ? new Set(hideList.split(',').map(s => s.trim()).filter(Boolean)) : null;
+  if (!keep && !drop) return;
+  document.querySelectorAll('[data-control]').forEach(el => {
+    const name = /** @type {HTMLElement} */ (el).dataset.control;
+    if ((keep && !keep.has(name)) || (drop && drop.has(name))) {
+      /** @type {HTMLElement} */ (el).hidden = true;
+    }
+  });
+  document.querySelectorAll('.ll-panel').forEach(p => {
+    // Never collapse the panel holding the reveal control: hiding it leaves the
+    // R key live with nothing on screen to announce it.
+    if (p.querySelector('#reveal-slot')) return;
+    const own = p.querySelectorAll('[data-control]').length;
+    const live = [...p.querySelectorAll('[data-control]')].some(e => !(/** @type {HTMLElement} */ (e).hidden));
+    if (own > 0 && !live) /** @type {HTMLElement} */ (p).hidden = true;
+  });
+}
+
+/**
  * Standard boot sequence for a tool page.
  * @param {{onReady?:()=>void}} [opts]
  */

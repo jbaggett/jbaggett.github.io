@@ -363,6 +363,25 @@ way a hand sketch goes astray.
 | `f` | expression | `x^3 - 3x` | The function. |
 | `readout` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
 
+## CalcLens — Worked Derivative
+
+`calclens/derivatives/steps/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `x^2 e^x` | The function to differentiate. **Write it in whatever letter the problem uses** — `5t^3-2t` works, and the page then writes `d/dt`. |
+| `var` | letter | inferred | Only used when the expression has more than one letter, or none to infer from. The expression always wins. |
+| `steps` | `all` | first line only | Reveal the whole derivation at load. For a worked example on a slide; leave it off and the class advances a line at a time. |
+| `controls` | list | all | Which control groups to show: `f`, `steps`. Taking `steps` away also opens the working, since there would otherwise be no way to advance it. |
+| `preset` | key | — | `product`, `quotient`, `chain`, `logdiff`. |
+
+The working itself is content, not a readout, so `readout=`/`reveal=` do not
+apply here — `steps=all` is the spelling for "show me the answer".
+
+```
+calclens/derivatives/steps/?f=sin(3x^2)&embed=true&steps=all&controls=none
+```
+
 ## CalcLens — Check My Answer
 
 `calclens/tools/check-answer/`
