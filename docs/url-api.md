@@ -363,6 +363,25 @@ way a hand sketch goes astray.
 | `f` | expression | `x^3 - 3x` | The function. |
 | `readout` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
 
+## CalcLens — Derivative from the Definition
+
+`calclens/limits/difference-quotient/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `2x^2` | The function. **Write it in whatever letter the problem uses.** |
+| `a` | number | — | The point. **Omit it for the general derivative** *f*′(*x*); give a number for *f*′ there. |
+| `var` | letter | inferred | Only used when the expression has more than one letter. |
+| `steps` | `all` | first line only | Reveal the whole derivation at load, for a worked example on a slide. |
+| `controls` | list | all | `f`, `a`, `steps`. Removing `steps` also opens the working, since nothing could advance it. |
+| `preset` | key | — | `poly`, `cubic`, `root`, `rational`, `point`. |
+
+The increment is `h`, or `k` if the function itself is written in *h*.
+
+```
+calclens/limits/difference-quotient/?f=sqrt(x)&embed=true&steps=all&controls=none
+```
+
 ## CalcLens — Worked Derivative
 
 `calclens/derivatives/steps/`

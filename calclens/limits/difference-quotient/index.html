@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Derivative from the Definition | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  #blocked { border-left: 3px solid var(--highlight-orange-dark); background: var(--surface);
+             padding: 0.7rem 0.9rem; border-radius: 0 4px 4px 0; margin-top: 1rem; }
+  #blocked p { margin: 0 0 0.5rem; }
+  #blocked p:last-child { margin-bottom: 0; }
+  #answer-echo { margin-top: 1rem; font-size: 1.05rem; }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the function</a>
+  <a href="#work">Skip to the working</a>
+</nav>
+
+<main>
+  <h1>Derivative from the Definition
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    The difference quotient, worked out <b>one move at a time</b>. Substitution
+    gives <span class="ll-math" id="lede-tex"></span>, so the quotient has to be
+    rewritten before the limit can be taken — and the margin says which move was
+    made and why it was allowed.
+    <span class="ll-hint">Say what you would do next before you press the
+    button. Choosing the move is the skill; doing the algebra is the easy
+    half.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The function">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 260px;">
+        <span><i>f</i>(<i class="varname">x</i>) =</span>
+        <input type="text" id="fn-input" value="2x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+      </label>
+      <label for="at-input" data-control="a">
+        <span>at <i class="varname">x</i> =</span>
+        <input type="text" id="at-input" value="" style="width:6rem" autocomplete="off"
+               spellcheck="false" aria-describedby="at-help">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <p class="ll-error" id="at-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+    <p class="ll-hint" id="at-help" data-control="a">
+      Leave the point blank for the general derivative <i>f</i>′(<i class="varname">x</i>);
+      give a number for <i>f</i>′ at that one place.
+    </p>
+    <p class="ll-hint" id="fn-syntax" data-control="f">
+      Write it as you would say it: <code>2x^2</code>, <code>x^3-2x</code>,
+      <code>1/x</code>, <code>sqrt(x)</code>, <code>x/(x+1)</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example functions" data-control="f">
+      <button type="button" class="preset" data-f="2x^2" data-a="">2x^2</button>
+      <button type="button" class="preset" data-f="x^3-2x" data-a="">cubic</button>
+      <button type="button" class="preset" data-f="sqrt(x)" data-a="">square root</button>
+      <button type="button" class="preset" data-f="1/x" data-a="">1/x</button>
+      <button type="button" class="preset" data-f="x/(x+1)" data-a="">x/(x+1)</button>
+      <button type="button" class="preset" data-f="5x^2-3x+2" data-a="1">at a point</button>
+    </div>
+  </section>
+
+  <section id="work" aria-label="The working">
+    <h2>The working</h2>
+    <div id="work-mount"></div>
+    <div id="blocked" hidden></div>
+    <p id="answer-echo" hidden></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Derivative from the Definition</h2>
+  <p>Type a function. The page works out</p>
+  <p class="ll-math" id="help-tex1"></p>
+  <p>one move at a time, naming the move in the margin beside the line that made
+     it. Leave the point blank for <i>f</i>′(<i>x</i>); give a number for
+     <i>f</i>′ at that place.</p>
+
+  <h3>Why nothing ever equals 0/0</h3>
+  <p>Substituting <i>h</i> = 0 into the quotient gives 0/0, and you will see
+     that said in the margin — never on a line. <b>0/0 is not a number the limit
+     equals.</b> It is the result of an attempt that failed, which is why the
+     next move is to rewrite. Writing "<span class="ll-math" id="help-tex2"></span>"
+     is the single most common way to lose marks on this topic, so this page
+     never models it.</p>
+  <p>For the same reason <span class="ll-math" id="help-tex3"></span> stays on
+     every line until the limit is actually taken. Dropping it early is the same
+     false equality in a different place.</p>
+
+  <h3>The three moves</h3>
+  <ul>
+    <li><b>Polynomial</b> — multiply out, collect, factor <i>h</i>, cancel.
+        Everything without an <i>h</i> in it cancels; that is what makes the
+        rest divisible by <i>h</i>.</li>
+    <li><b>Rational</b> — common denominator first, then the same thing.</li>
+    <li><b>Root</b> — multiply top and bottom by the conjugate, which clears the
+        root by (<i>a</i> − <i>b</i>)(<i>a</i> + <i>b</i>) = <i>a</i>² − <i>b</i>².</li>
+  </ul>
+  <p>Cancelling <i>h</i> is legal because the limit never uses <i>h</i> = 0 — it
+     only uses values <em>near</em> 0, and at every one of those
+     <i>h</i>/<i>h</i> = 1. That sentence is the whole justification, and it is
+     on the line that does the cancelling.</p>
+
+  <h3>What it will not do</h3>
+  <p>sin, cos, ln and <i>e</i>ˣ are <b>declined</b>, not guessed at: their
+     difference quotients need a special limit such as
+     <span class="ll-math" id="help-tex4"></span> rather than algebra. The page
+     says so and hands you the derivative from the rules instead. A tool that
+     confidently stated a wrong limit would be worse than no tool.</p>
+  <p>To see the rules applied instead, use
+     <a href="../../derivatives/steps/">Worked Derivative</a>.</p>
+
+  <h3>Putting this in a slide or a page</h3>
+  <pre class="ll-code">?f=sqrt(x)&amp;embed=true&amp;steps=all&amp;controls=none</pre>
+  <p>gives the finished working with no function box. Leave <code>steps</code>
+     off and the class advances it a line at a time. See
+     <code>docs/url-api.md</code> for every parameter.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>N</kbd></dt><dd>Next step</dd>
+    <dt><kbd>A</kbd></dt><dd>Show all the working</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

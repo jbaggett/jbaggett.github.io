@@ -9,7 +9,8 @@
  * teaches. `?steps=all` opens it fully for a worked example on a slide.
  */
 
-import { initPage, announce, applyControls } from 'kit/page.js';
+import { initPage, applyControls } from 'kit/page.js';
+import { initWorking } from 'kit/working.js';
 import { getParams, updateUrl } from 'kit/url.js';
 import { tex, setTex } from 'kit/tex.js';
 import { initExpressionInput } from 'kit/input.js';
@@ -29,10 +30,9 @@ const PRESETS = {
   logdiff:  { f: 'x^x' },
 };
 
-let steps = [];        // every line of the derivation
-let shown = 1;         // how many are on screen — the statement always is
+let rawSteps = [];   // the engine's shape: {tex, rules[]} — rulesUsed reads this
 let varName = 'x';
-let controlsOff = false;   // ?controls= took the step buttons away
+let work = null;
 
 /* ─────────────────────────────── variable ──────────────────────────────── */
 
@@ -52,72 +52,11 @@ function pickVariable(node, requested) {
 
 /* ─────────────────────────────── rendering ─────────────────────────────── */
 
-function render() {
-  const list = $('#steps');
-  list.innerHTML = '';
-
-  steps.slice(0, shown).forEach((s, i) => {
-    const li = document.createElement('li');
-    li.className = 'll-wstep';
-    if (i === steps.length - 1 && shown === steps.length) li.classList.add('ll-wstep-final');
-
-    const sign = document.createElement('span');
-    sign.className = 'll-wstep-sign';
-    sign.setAttribute('aria-hidden', 'true');
-    sign.textContent = i === 0 ? '' : '=';
-
-    const eq = document.createElement('div');
-    eq.className = 'll-wstep-eq';
-    eq.innerHTML = tex(s.tex, { display: false });
-
-    li.append(sign, eq);
-
-    if (s.rules.length) {
-      const tags = document.createElement('div');
-      tags.className = 'll-wstep-notes';
-      for (const r of s.rules) {
-        const t = document.createElement('span');
-        t.className = 'll-rule' + (r === 'simplify' ? ' ll-rule-tidy' : '');
-        t.textContent = ruleInfo(r, varName).name;
-        tags.appendChild(t);
-      }
-      li.appendChild(tags);
-    }
-    list.appendChild(li);
-  });
-
-  // A withheld line has to look withheld, or "which rule is next?" is a
-  // question about a blank space.
-  if (shown < steps.length) {
-    const li = document.createElement('li');
-    li.className = 'll-wstep ll-wstep-ghost';
-    // The question goes in the margin column, where the answer will appear —
-    // which is also what teaches the reader what that column is for.
-    li.innerHTML = '<span class="ll-wstep-sign" aria-hidden="true">=</span>'
-      + '<div class="ll-wstep-eq" aria-hidden="true">…</div>'
-      + '<div class="ll-wstep-notes">which rule applies here?</div>';
-    list.appendChild(li);
-  }
-
-  // An unreadable `?f=` leaves nothing to step through, and a live "Next step"
-  // button over an empty panel reads as a broken page rather than a typo.
-  $('#step-controls').hidden = controlsOff || steps.length === 0;
-
-  const done = shown >= steps.length;
-  $('#next-btn').hidden = done;
-  $('#all-btn').hidden = done || shown >= steps.length - 1;
-  $('#reset-btn').hidden = !done || steps.length <= 2;
-  $('#step-hint').textContent = done
-    ? ''
-    : `Step ${shown} of ${steps.length - 1} — press N for the next one.`;
-
-  renderRules(done);
-}
-
+/** The rules met, stated in full, once the derivation is open. */
 function renderRules(done) {
   const sec = $('#rules-used');
-  const used = rulesUsed(steps.slice(0, shown));
-  sec.hidden = !done || !used.length;
+  const used = done ? rulesUsed(rawSteps) : [];
+  sec.hidden = !used.length;
   if (sec.hidden) return;
   const ul = $('#rule-list');
   ul.innerHTML = '';
@@ -136,9 +75,14 @@ function rebuild(node, src) {
   document.querySelectorAll('.varname').forEach(el => { el.textContent = varName; });
 
   const result = derivationSteps(node, varName);
-  steps = result.steps;
-  shown = wantsAll() ? steps.length : 1;
-  render();
+  rawSteps = result.steps;
+  // The engine speaks in rule ids; the renderer wants notes. Every rule here
+  // describes how the line was reached, so every note is a transition.
+  const steps = result.steps.map(s => ({
+    tex: s.tex,
+    notes: s.rules.map(r => ({ text: ruleInfo(r, varName).name, kind: 'transition' })),
+  }));
+  work.set(steps, { openAll: wantsAll() });
 
   $('#note').hidden = result.complete;
   if (!result.complete) {
@@ -151,19 +95,6 @@ function rebuild(node, src) {
 function wantsAll() {
   const v = getParams().raw.get('steps');
   return v === 'all' || v === 'true';
-}
-
-function advance(to) {
-  const before = shown;
-  shown = Math.min(to, steps.length);
-  if (shown === before) return;
-  render();
-  const s = steps[shown - 1];
-  // Screen readers get the rule name — the KaTeX MathML carries the algebra,
-  // but nothing in the markup says *why* the line changed.
-  announce(s.rules.length
-    ? `${s.rules.map(r => ruleInfo(r, varName).name).join(', ')}.`
-    : `Step ${shown}.`, 120);
 }
 
 /* ────────────────────────────────── boot ───────────────────────────────── */
@@ -179,12 +110,18 @@ initPage({
       '\\frac{d}{dx}\\!\\left[x^{2}e^{x}\\right] = \\frac{d}{dx}\\!\\left[x^{2}\\right]e^{x}'
       + ' + x^{2}\\cdot\\frac{d}{dx}\\!\\left[e^{x}\\right]');
 
-    // Before the field is wired: initExpressionInput runs immediately, and its
-    // first render decides whether #step-controls is hidden for lack of a
-    // parseable function. Reading controlsOff after that would latch THAT
-    // answer, and the buttons would never come back when the typo was fixed.
+    work = initWorking({
+      mount: $('#work-mount'),
+      controlsName: 'steps',
+      ghost: 'which rule applies here?',
+      onChange: (_shown, done) => renderRules(done),
+    });
+
+    // applyControls before the field: initExpressionInput runs immediately, and
+    // reading the suppressed flag off the DOM after that would latch whatever
+    // its first render decided rather than what the URL asked for.
     applyControls(params.raw.get('controls'), params.raw.get('hide'));
-    controlsOff = $('#step-controls').hidden;
+    work.setSuppressed(work.controlsEl.hidden);
 
     const field = initExpressionInput({
       input: $('#fn-input'),
@@ -194,27 +131,15 @@ initPage({
       parse: tryParse,
       format: toLatex,
       onChange: rebuild,
-      onError: () => { steps = []; shown = 1; render(); },
+      onError: () => { rawSteps = []; work.set([]); },
     });
+
+    // A slide that takes the step buttons away must not also freeze the working
+    // on its first line: with no way to advance, the only sane state is opened.
+    if (work.controlsEl.hidden) work.openAll();
 
     for (const b of document.querySelectorAll('.preset')) {
       b.addEventListener('click', () => field.set(b.dataset.f));
     }
-
-    // A slide that takes the step buttons away must not also freeze the working
-    // on its first line: with no way to advance, the only sane state is opened.
-    if (controlsOff && shown < steps.length) advance(steps.length);
-
-    $('#next-btn').addEventListener('click', () => advance(shown + 1));
-    $('#all-btn').addEventListener('click', () => advance(steps.length));
-    $('#reset-btn').addEventListener('click', () => { shown = 1; render(); $('#next-btn').focus(); });
-
-    document.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
-      const t = /** @type {any} */ (e.target);
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'n' || e.key === 'N') { e.preventDefault(); advance(shown + 1); }
-      if (e.key === 'a' || e.key === 'A') { e.preventDefault(); advance(steps.length); }
-    });
   },
 });

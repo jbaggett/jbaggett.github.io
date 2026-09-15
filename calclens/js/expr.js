@@ -382,6 +382,19 @@ export function isConstant(/** @type {Node} */ node, /** @type {string} */ v = '
 
 const gcd = (/** @type {number} */ a, /** @type {number} */ b) => (b < 1e-9 ? a : gcd(b, a % b));
 
+/**
+ * Letters that are conventionally an INCREMENT, not the subject of the problem.
+ * They print last among variables, so a difference quotient expands to the
+ * `2x² + 4xh + 2h²` a textbook shows rather than `2x² + 4hx + 2h²`. Plain
+ * alphabetical order puts h first, which reads as a different expression to a
+ * student checking their own work against it.
+ */
+const INCREMENT_LETTERS = new Set(['h', 'k', 'dx', 'dt']);
+const incRank = (/** @type {Node} */ n) => {
+  const base = n.type === 'pow' ? n.base : n;
+  return base.type === 'var' && INCREMENT_LETTERS.has(base.name) ? 1 : 0;
+};
+
 /** Print order within a product: 2x cos(x²) reads better than 2 cos(x²) x. */
 function factorRank(/** @type {Node} */ n) {
   if (n.type === 'num') return 0;
@@ -525,7 +538,11 @@ function simplifyMul(/** @type {Node[]} */ args) {
       if (fr) { cNum = fr.n; cDen = fr.d; }
     }
   }
-  out.sort((a, b) => factorRank(a) - factorRank(b) || (toText(a) < toText(b) ? -1 : 1));
+  // The increment sorts after everything else it shares a term with — ahead of
+  // the factor category, so 3hx² prints as 3x²h — but numbers still lead.
+  out.sort((a, b) => incRank(a) - incRank(b)
+    || factorRank(a) - factorRank(b)
+    || (toText(a) < toText(b) ? -1 : 1));
   if (cNum !== 1 || out.length === 0) out.unshift(num(cNum));
   if (cDen !== 1) out.push(pow(num(cDen), num(-1)));
   const kept = out.filter(f => !(isNum(f) && numV(f) === 1) || out.length === 1);
@@ -554,6 +571,12 @@ function simplifyPow(/** @type {Node} */ base, /** @type {Node} */ exp) {
     // (a^m)^n → a^(mn) when the outer exponent is an integer (always valid).
     if (base.type === 'pow' && isNum(base.exp) && isInt(e)) {
       return simplifyPow(base.base, num(numV(base.exp) * e));
+    }
+    // (ab)^n → a^n b^n for integer n. Without it a numeric factor trapped
+    // inside a reciprocal never meets its partner outside: d/dx sqrt(2x+5) came
+    // out of the definition as 2/(2√(2x+5)) instead of 1/√(2x+5).
+    if (base.type === 'mul' && isInt(e)) {
+      return simplifyMul(base.args.map(a => simplifyPow(a, num(e))));
     }
   }
   if (isNum(base) && numV(base) === 1) return ONE;
@@ -625,15 +648,39 @@ export function expandIfShorter(n) {
   return toText(wide).length <= toText(tight).length ? wide : tight;
 }
 
-function distribute(/** @type {Node} */ n) {
+function distribute(/** @type {Node} */ n, /** @type {boolean} */ powers = false) {
   switch (n.type) {
-    case 'add': return add(...n.args.map(distribute));
+    // Flattened, not merely mapped: distributing -1 over (x + h) turns one
+    // argument into a sum of its own, and an unflattened nest hides those terms
+    // from the cartesian product below. `2/(3 - x)` stalled there with a
+    // numerator it could not factor h out of.
+    case 'add': {
+      const out = [];
+      for (const a of n.args.map(x => distribute(x, powers))) {
+        if (a.type === 'add') out.push(...a.args); else out.push(a);
+      }
+      return add(...out);
+    }
+    // (a + b)^n, by repeated multiplication. Off by default: expandIfShorter
+    // must keep (x² + 1)⁵ factored, and a quotient-rule numerator that expands
+    // a fifth power is never the answer anyone wanted. The difference quotient
+    // needs it, so it asks.
+    case 'pow': {
+      if (!powers || !isNum(n.exp)) return n;
+      const e = numV(n.exp);
+      if (!isInt(e) || e < 2 || e > 8) return n;
+      const base = distribute(n.base, powers);
+      if (base.type !== 'add') return n;
+      let acc = base;
+      for (let i = 1; i < e; i++) acc = distribute(mul(acc, base), powers);
+      return acc;
+    }
     case 'mul': {
       // Cartesian product across every factor that is a sum.
       let terms = [[]];
-      for (const a of n.args.map(distribute)) {
+      for (const a of n.args.map(x => distribute(x, powers))) {
         const parts = a.type === 'add' ? a.args : [a];
-        if (terms.length * parts.length > 60) return mul(...n.args.map(distribute));
+        if (terms.length * parts.length > 60) return mul(...n.args.map(x => distribute(x, powers)));
         const next = [];
         for (const t of terms) for (const p of parts) next.push([...t, p]);
         terms = next;
@@ -641,6 +688,34 @@ function distribute(/** @type {Node} */ n) {
       if (terms.length === 1) return mul(...terms[0]);
       return add(...terms.map(t => mul(...t)));
     }
+    default: return n;
+  }
+}
+
+/**
+ * Multiply everything out, powers included, and collect. This is the "expand"
+ * of a worked line, so it is deliberately unconditional — unlike
+ * {@link expandIfShorter}, which is an answer-formatting decision.
+ * @param {Node} n @returns {Node}
+ */
+export function expand(n) {
+  return simplify(distribute(n, true));
+}
+
+/**
+ * Replace every occurrence of a variable with a subtree.
+ *
+ * The whole of the difference quotient is this plus algebra: f(x + h) is
+ * `substitute(f, 'x', x + h)`.
+ * @param {Node} n @param {string} v @param {Node} rep @returns {Node}
+ */
+export function substitute(n, v, rep) {
+  switch (n.type) {
+    case 'var': return n.name === v ? rep : n;
+    case 'add': return add(...n.args.map(a => substitute(a, v, rep)));
+    case 'mul': return mul(...n.args.map(a => substitute(a, v, rep)));
+    case 'pow': return pow(substitute(n.base, v, rep), substitute(n.exp, v, rep));
+    case 'fn': return fn(n.name, substitute(n.arg, v, rep));
     default: return n;
   }
 }
@@ -1011,8 +1086,13 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
         top.splice(0, top.length, ...lead(top));
         bottom.splice(0, bottom.length, ...lead(bottom));
       } else {
-        top.sort((a, b) => factorRank(a) - factorRank(b));
-        bottom.sort((a, b) => factorRank(a) - factorRank(b));
+        // Same comparator simplifyMul uses, or the print-time sort undoes it:
+        // simplifyMul had already put 3hx² in the order 3, x², h and this sort
+        // pulled the bare h back in front of the x².
+        const order = (/** @type {Node} */ a, /** @type {Node} */ b) =>
+          incRank(a) - incRank(b) || factorRank(a) - factorRank(b);
+        top.sort(order);
+        bottom.sort(order);
       }
       // Inside \frac{}{} the braces already group, so a lone sum needs no
       // parentheses: \frac{(-3x^2 - 2x - 12)}{...} was printing a redundant
