@@ -10,7 +10,7 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip } from './chart-utils.js';
+import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 
 /** Default bar fill (IMS blue at 50% opacity) — used when no isTail predicate. */
 const BAR_FILL = '#569BBD80';
@@ -224,14 +224,16 @@ export function drawHistogram(container, values, options = {}) {
   yScale.range([frame.height, 0]);
 
   const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
-  const yAxis = relativeFrequency
-    ? d3Axis.axisLeft(yScale).tickFormat(/** @param {any} d */ d => {
-        const v = +d / totalN;
-        if (v === 0) return '0';
-        // Keep labels compact: up to 3 sig figs, strip trailing zeros
-        return String(Number(v.toPrecision(3)));
-      })
-    : d3Axis.axisLeft(yScale).tickFormat(formatTick);
+  const freqFormat = /** @param {any} d */ (d) => {
+    const v = +d / totalN;
+    if (v === 0) return '0';
+    // Keep labels compact: up to 3 sig figs, strip trailing zeros
+    return String(Number(v.toPrecision(3)));
+  };
+  // Relative frequency is still a count in disguise, so it is blanked in by-eye
+  // mode for the same reason (see countTickFormat).
+  const yAxis = d3Axis.axisLeft(yScale)
+    .tickFormat(countTickFormat(labels, relativeFrequency ? freqFormat : formatTick));
   addAxes(frame, xAxis, yAxis, xLabel, effectiveYLabel);
   // drawHorizontalGridlines(frame); // disabled — bars are readable without gridlines (theme_classic style)
 

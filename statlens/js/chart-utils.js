@@ -29,6 +29,31 @@ const PHONE_MARGIN = { top: 30, right: 15, bottom: 60, left: 80 };
 export const TRANSITION_MS = 300;
 
 /**
+ * Tick formatter for a **count** axis in by-eye mode.
+ *
+ * `labels=names` / `labels=none` exist so students read a chart by shape rather
+ * than by number — the categorical-charts activity tells them to "use only the
+ * bar heights". But the count axis went on printing 0, 20, … 280 beside the
+ * bars, which hands back exactly what the mode withholds. Reported by Todd Will
+ * on `explore/one-cat/?dataset=brexit&labels=names`.
+ *
+ * Only the tick *text* is blanked. The axis line, the ticks and the axis title
+ * stay, because the chart still has to read as a measured thing — a bare
+ * rectangle with no axis is a different (and worse) picture than one whose
+ * scale is deliberately unlabelled.
+ *
+ * Restoring them needs no extra wiring: "Show values" already flips `labels`
+ * back to `full` and re-renders.
+ *
+ * @param {'full'|'names'|'none'|undefined} labels
+ * @param {(d: any) => string} format - the formatter to use when values show
+ * @returns {(d: any) => string}
+ */
+export function countTickFormat(labels, format) {
+  return (labels === 'names' || labels === 'none') ? () => '' : format;
+}
+
+/**
  * Compute responsive pill dimensions (charWidth, padding, pill height)
  * for SVG rounded-rect + text "pill" labels. All pill renderers in the
  * app should call this instead of hard-coding per-breakpoint values.

@@ -616,6 +616,44 @@ main {
   .table-var-names input { min-width: 7rem; }
 }
 
+
+/* ===== Live Rooms (REQ-067) =============================================
+   The host block is sized to be read off a projector from the back of a
+   lecture hall, which is why the code is enormous and the QR is not small. */
+.room-panel { border: 1px solid var(--border, #ccc); border-left: 4px solid var(--ims-blue, #569BBD);
+  border-radius: 4px; padding: 0.7rem 0.9rem; margin: 0 0 1rem; }
+.room-panel .btn-row { margin-top: 0.6rem; }
+.room-start-hint { margin: 0.35rem 0 0; }
+.room-joined { border-left-color: #1a7f37; }
+.room-error { border-left-color: #A33; }
+.room-error p, .room-joined p { margin: 0; }
+.room-joined p + * { margin-top: 0.4rem; }
+.room-what summary { cursor: pointer; font-size: 0.88rem; color: var(--ims-gray-text, #6B6B6B); }
+.room-what p { margin: 0.3rem 0 0; font-size: 0.9rem; }
+/* "Just watch" is deliberately quiet: available, never advertised. */
+.link-button { background: none; border: none; padding: 0; font: inherit;
+  color: var(--ims-gray-text, #6B6B6B); text-decoration: underline; cursor: pointer; }
+.link-button:hover { color: var(--ims-green, #114B5F); }
+.room-watch-line { margin-top: 0.45rem; }
+@media (max-width: 600px) { .link-button { min-height: 44px; } }
+
+.room-code-block { display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: center; }
+.room-qr { width: 168px; flex: 0 0 auto; }
+.room-qr svg { display: block; width: 100%; height: auto; }
+.room-code-label { margin: 0; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ims-gray-text, #6B6B6B); }
+.room-code { margin: 0.1rem 0 0.2rem; font-family: var(--font-mono, monospace);
+  font-size: 3.1rem; font-weight: 700; letter-spacing: 0.16em; line-height: 1;
+  color: var(--ims-green, #114B5F); }
+.room-join-url { margin: 0; word-break: break-all; }
+.room-count { margin: 0.7rem 0 0; font-size: 1.05rem; color: var(--ims-green, #114B5F); }
+.room-warning { border-top: 1px solid var(--border, #ccc); margin-top: 0.6rem; padding-top: 0.5rem; }
+
+@media (max-width: 600px) {
+  .room-code { font-size: 2.2rem; }
+  .room-qr { width: 132px; }
+  .room-panel button { min-height: 44px; }
+}
 /* ===== Help Dialog Content ===== */
 
 dialog .help-intro {

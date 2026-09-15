@@ -10,6 +10,11 @@
  * QR library (qrcode-generator) is lazy-loaded from CDN on first use.
  */
 
+/** This file's own URL, captured at parse time while `currentScript` is valid. */
+const SHARE_SCRIPT_SRC = document.currentScript
+  ? /** @type {HTMLScriptElement} */ (document.currentScript).src
+  : location.href;
+
 (function initShare() {
   const actions = document.querySelector('.header-actions');
   if (!actions) return;
@@ -47,18 +52,18 @@
   /** @type {boolean} */
   let qrLibLoaded = false;
 
+  // The loader moved to js/qr.js when Live Rooms needed the same library for an
+  // unbranded, projector-sized code (REQ-067).
+  //
+  // Imported *dynamically*: page-number.js injects this file as a classic
+  // <script>, so a top-level `import` is a syntax error and the whole share
+  // button disappears site-wide. And the specifier is resolved against this
+  // script's own URL, because a bare './qr.js' in a classic script resolves
+  // against the *document* — which sits at a different depth on every page.
   async function loadQrLib() {
-    if (qrLibLoaded || typeof window['qrcode'] !== 'undefined') {
-      qrLibLoaded = true;
-      return;
-    }
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
-      script.onload = () => { qrLibLoaded = true; resolve(undefined); };
-      script.onerror = () => reject(new Error('Failed to load QR library'));
-      document.head.appendChild(script);
-    });
+    const { ensureQrLib } = await import(new URL('./qr.js', SHARE_SCRIPT_SRC).href);
+    await ensureQrLib();
+    qrLibLoaded = true;
   }
 
   // StatLens favicon as inline SVG (blue circle + bell curve)
