@@ -32,6 +32,7 @@ const PRESETS = {
 let steps = [];        // every line of the derivation
 let shown = 1;         // how many are on screen — the statement always is
 let varName = 'x';
+let controlsOff = false;   // ?controls= took the step buttons away
 
 /* ─────────────────────────────── variable ──────────────────────────────── */
 
@@ -57,26 +58,26 @@ function render() {
 
   steps.slice(0, shown).forEach((s, i) => {
     const li = document.createElement('li');
-    li.className = 'll-step';
-    if (i === steps.length - 1 && shown === steps.length) li.classList.add('ll-step-final');
+    li.className = 'll-wstep';
+    if (i === steps.length - 1 && shown === steps.length) li.classList.add('ll-wstep-final');
 
     const sign = document.createElement('span');
-    sign.className = 'll-step-sign';
+    sign.className = 'll-wstep-sign';
     sign.setAttribute('aria-hidden', 'true');
     sign.textContent = i === 0 ? '' : '=';
 
     const eq = document.createElement('div');
-    eq.className = 'll-step-eq';
+    eq.className = 'll-wstep-eq';
     eq.innerHTML = tex(s.tex, { display: false });
 
     li.append(sign, eq);
 
     if (s.rules.length) {
       const tags = document.createElement('div');
-      tags.className = 'll-step-rules';
+      tags.className = 'll-wstep-notes';
       for (const r of s.rules) {
         const t = document.createElement('span');
-        t.className = 'll-tag' + (r === 'simplify' ? ' ll-tag-tidy' : '');
+        t.className = 'll-rule' + (r === 'simplify' ? ' ll-rule-tidy' : '');
         t.textContent = ruleInfo(r, varName).name;
         tags.appendChild(t);
       }
@@ -89,11 +90,18 @@ function render() {
   // question about a blank space.
   if (shown < steps.length) {
     const li = document.createElement('li');
-    li.className = 'll-step ll-step-ghost';
-    li.innerHTML = '<span class="ll-step-sign" aria-hidden="true">=</span>'
-      + '<div class="ll-step-eq">… which rule applies here?</div>';
+    li.className = 'll-wstep ll-wstep-ghost';
+    // The question goes in the margin column, where the answer will appear —
+    // which is also what teaches the reader what that column is for.
+    li.innerHTML = '<span class="ll-wstep-sign" aria-hidden="true">=</span>'
+      + '<div class="ll-wstep-eq" aria-hidden="true">…</div>'
+      + '<div class="ll-wstep-notes">which rule applies here?</div>';
     list.appendChild(li);
   }
+
+  // An unreadable `?f=` leaves nothing to step through, and a live "Next step"
+  // button over an empty panel reads as a broken page rather than a typo.
+  $('#step-controls').hidden = controlsOff || steps.length === 0;
 
   const done = shown >= steps.length;
   $('#next-btn').hidden = done;
@@ -171,6 +179,13 @@ initPage({
       '\\frac{d}{dx}\\!\\left[x^{2}e^{x}\\right] = \\frac{d}{dx}\\!\\left[x^{2}\\right]e^{x}'
       + ' + x^{2}\\cdot\\frac{d}{dx}\\!\\left[e^{x}\\right]');
 
+    // Before the field is wired: initExpressionInput runs immediately, and its
+    // first render decides whether #step-controls is hidden for lack of a
+    // parseable function. Reading controlsOff after that would latch THAT
+    // answer, and the buttons would never come back when the typo was fixed.
+    applyControls(params.raw.get('controls'), params.raw.get('hide'));
+    controlsOff = $('#step-controls').hidden;
+
     const field = initExpressionInput({
       input: $('#fn-input'),
       error: $('#fn-error'),
@@ -179,16 +194,16 @@ initPage({
       parse: tryParse,
       format: toLatex,
       onChange: rebuild,
+      onError: () => { steps = []; shown = 1; render(); },
     });
 
     for (const b of document.querySelectorAll('.preset')) {
       b.addEventListener('click', () => field.set(b.dataset.f));
     }
 
-    applyControls(params.raw.get('controls'), params.raw.get('hide'));
     // A slide that takes the step buttons away must not also freeze the working
     // on its first line: with no way to advance, the only sane state is opened.
-    if ($('#step-controls').hidden && shown < steps.length) advance(steps.length);
+    if (controlsOff && shown < steps.length) advance(steps.length);
 
     $('#next-btn').addEventListener('click', () => advance(shown + 1));
     $('#all-btn').addEventListener('click', () => advance(steps.length));

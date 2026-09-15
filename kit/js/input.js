@@ -43,13 +43,14 @@ function showPreview(el, format, node) {
  *   error: HTMLElement|null,
  *   parse: (src:string) => {node?:any, error?:string, pos?:number},
  *   onChange: (node:any, src:string) => void,
+ *   onError?: (result:{error?:string, pos?:number}) => void,
  *   debounce?: number
  * }} opts
  * @returns {{ set:(src:string)=>void, current:()=>any }}
  */
 export function initExpressionInput(opts) {
   const {
-    input, error, parse, onChange, preview, format, palette, paletteItems, debounce = 220,
+    input, error, parse, onChange, onError, preview, format, palette, paletteItems, debounce = 220,
   } = opts;
   let timer = null;
   let node = null;
@@ -73,6 +74,10 @@ export function initExpressionInput(opts) {
       }
       showPreview(preview, format, null);
       announce(result.error || 'Could not read that expression.');
+      // A tool whose whole output derives from the expression has to be told the
+      // expression is gone: otherwise the last good result stays on screen next
+      // to an error message, or its controls stay live over an empty panel.
+      onError?.(result);
     }
   }
 

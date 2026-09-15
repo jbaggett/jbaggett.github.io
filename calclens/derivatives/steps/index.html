@@ -36,43 +36,56 @@
      being taught. */
   .ll-steps { list-style: none; margin: 0; padding: 0; }
 
-  .ll-step {
+  .ll-wstep {
     display: grid;
-    grid-template-columns: 1.6rem 1fr;
+    grid-template-columns: 1.6rem minmax(0, 1fr);
     gap: 0 0.4rem;
     padding: 0.55rem 0.2rem;
     border-top: 1px solid var(--border);
     align-items: baseline;
   }
-  .ll-step:first-child { border-top: 0; }
-  .ll-step-sign { color: var(--ims-gray-text); font-size: 1.05rem; }
-  .ll-step-eq { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
-  .ll-step-eq .katex { font-size: 1.16em; }
+  .ll-wstep:first-child { border-top: 0; }
+  .ll-wstep-sign { color: var(--ims-gray-text); font-size: 1.05rem; }
+  .ll-wstep-eq { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
+  .ll-wstep-eq .katex { font-size: 1.16em; }
 
-  /* The rule tags: never colour alone — each carries its name as text. */
-  .ll-step-rules {
+  /* The rules read as margin notes, which is how a textbook annotates a line of
+     working. Plain text, not badges: on a five-line derivation a column of
+     pills competes with the algebra it is supposed to be annotating. Never
+     colour alone — each note is its own name. */
+  .ll-wstep-notes {
     grid-column: 2;
-    display: flex; flex-wrap: wrap; gap: 0.3rem;
-    margin-top: 0.35rem;
+    margin-top: 0.3rem;
+    font-size: 0.83rem;
+    line-height: 1.35;
+    color: var(--ims-gray-text);
   }
-  .ll-tag {
-    font-size: 0.8rem; line-height: 1.3;
-    padding: 0.12rem 0.45rem;
-    border: 1px solid var(--ims-blue);
-    border-radius: 999px;
-    background: #F2F8FB;
-    color: var(--ims-green);
-    white-space: nowrap;
+  .ll-rule { display: inline; }
+  .ll-rule + .ll-rule::before { content: " · "; }
+  .ll-rule-tidy { font-style: italic; }
+
+  /* Desktop: the notes move into a margin of their own, level with the line
+     they describe, so the equalities stack in one unbroken column. */
+  @media (min-width: 760px) {
+    .ll-wstep { grid-template-columns: 1.6rem minmax(0, 1fr) 12.5rem; }
+    .ll-wstep-notes {
+      grid-column: 3; grid-row: 1;
+      margin-top: 0;
+      padding-left: 1rem;
+      border-left: 1px solid var(--border);
+      align-self: stretch;
+    }
+    .ll-rule { display: block; }
+    .ll-rule + .ll-rule::before { content: none; }
   }
-  .ll-tag-tidy { border-color: var(--ims-lgray); background: var(--surface); color: var(--ims-gray-text); }
 
   /* The line not yet shown. Asking "which rule comes next?" only works if the
      reader can see that something is being withheld. */
-  .ll-step-ghost { color: var(--ims-gray-text); font-style: italic; }
-  .ll-step-ghost .ll-step-sign { font-style: normal; }
+  .ll-wstep-ghost { color: var(--ims-gray-text); }
+  .ll-wstep-ghost .ll-wstep-notes { font-style: italic; }
 
-  .ll-step-final { background: #F7FBF8; }
-  .ll-step-final .ll-step-eq .katex { font-size: 1.28em; }
+  .ll-wstep-final { background: #F7FBF8; }
+  .ll-wstep-final .ll-wstep-eq .katex { font-size: 1.28em; }
 
   #step-controls { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.9rem; }
 
@@ -82,7 +95,7 @@
   #rule-list b { font-weight: 600; min-width: 11rem; }
 
   @media (max-width: 480px) {
-    .ll-step { grid-template-columns: 1.1rem 1fr; }
+    .ll-wstep { grid-template-columns: 1.1rem 1fr; }
     #rule-list b { min-width: 0; width: 100%; }
   }
 </style>
