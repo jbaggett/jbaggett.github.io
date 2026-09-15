@@ -259,12 +259,16 @@ button.ll-primary:hover { background: #2F6A8F; }
   gap: 0 0.4rem;
   padding: 0.55rem 0.2rem;
   border-top: 1px solid var(--border);
-  align-items: baseline;
+  align-items: start;
 }
 .ll-wstep:first-child { border-top: 0; }
-.ll-wstep-sign { color: var(--ims-gray-text); font-size: 1.05rem; }
-.ll-wstep-eq { overflow-x: auto; overflow-y: hidden; padding-bottom: 0.15rem; }
-.ll-wstep-eq .katex { font-size: 1.16em; }
+.ll-wstep-sign { color: var(--ims-gray-text); font-size: 1.15rem; padding-top: 0.15rem; }
+/* Display style makes the fractions and the limit taller, so the rows need
+   room to breathe and the baseline alignment has to give way to the top: a
+   two-storey fraction baselined against a bare `=` drags the sign to the middle
+   of the row. */
+.ll-wstep-eq { overflow-x: auto; overflow-y: hidden; padding: 0.15rem 0; }
+.ll-wstep-eq .katex { font-size: 1.22em; }
 
 /* The notes read as margin notes, which is how a textbook annotates a line of
    working. Plain text, not badges: on a six-line derivation a column of pills
@@ -300,7 +304,7 @@ button.ll-primary:hover { background: #2F6A8F; }
 .ll-wstep-ghost .ll-wstep-notes { font-style: italic; }
 
 .ll-wstep-final { background: #F7FBF8; }
-.ll-wstep-final .ll-wstep-eq .katex { font-size: 1.28em; }
+.ll-wstep-final .ll-wstep-eq .katex { font-size: 1.36em; }
 
 .ll-work-controls {
   display: flex; flex-wrap: wrap; gap: 0.5rem;

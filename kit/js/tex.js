@@ -31,8 +31,16 @@ export function escapeTex(str) {
 
 /**
  * Render LaTeX to an HTML string. The single choke point for math.
+ *
+ * `display` is BLOCK display math — centred, with margins above and below.
+ * `displayStyle` is the typesetting style without the block: full-size
+ * fractions, and a limit's condition set underneath the word rather than beside
+ * it. A line of working wants the second and not the first — it must stay left
+ * aligned under its `=` — and inline style renders `lim_{h→0}` and a nested
+ * fraction small enough to be genuinely hard to read on a projector.
+ *
  * @param {string} latex
- * @param {{display?:boolean}} [opts]
+ * @param {{display?:boolean, displayStyle?:boolean}} [opts]
  * @returns {string}
  */
 export function tex(latex, opts = {}) {
@@ -40,7 +48,8 @@ export function tex(latex, opts = {}) {
   if (!katex || !katex.renderToString) {
     return `<code class="ll-tex-fallback">${escapeHtml(latex)}</code>`;
   }
-  return katex.renderToString(latex, {
+  const src = opts.displayStyle ? `\\displaystyle ${latex}` : latex;
+  return katex.renderToString(src, {
     throwOnError: false,
     displayMode: !!opts.display,
     strict: false,

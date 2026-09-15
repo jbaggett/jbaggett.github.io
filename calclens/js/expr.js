@@ -991,6 +991,24 @@ export function differsByConstant(F, G, opts = {}) {
 
 /* ─────────────────────────────── printing ──────────────────────────────── */
 
+/**
+ * Keep nested fractions full size.
+ *
+ * TeX sets the numerator of a fraction one style smaller, so inside a worked
+ * line the d/dx of a quotient rule, or the compound fraction of a common
+ * denominator, comes out small enough to be genuinely hard to read on a
+ * projector. `\displaystyle` on each part stops the shrinking.
+ *
+ * Off by default, because a lone inline fraction in a readout should NOT grow
+ * to two storeys — it is only worked steps that want this. And never inside an
+ * exponent: x^(2/3) with a display-size exponent is a disaster, which is what
+ * SCRIPT tracks.
+ */
+let DISPLAY_FRACS = false;
+let SCRIPT_DEPTH = 0;
+const dwrap = (/** @type {string} */ s) =>
+  (DISPLAY_FRACS && SCRIPT_DEPTH === 0 ? `\\displaystyle ${s}` : s);
+
 /** Precedence for parenthesising: add < mul < pow < atom. */
 const PREC = { add: 1, mul: 2, pow: 3 };
 const precOf = (/** @type {Node} */ n) => PREC[n.type] ?? 4;
@@ -1024,8 +1042,14 @@ function numToLatex(/** @type {number} */ x) {
  * @param {Node} node
  * @returns {string}
  */
-export function toLatex(node) {
-  return texOf(simplify(node));
+export function toLatex(node, opts = {}) {
+  return print(simplify(node), opts);
+}
+
+function print(/** @type {Node} */ node, /** @type {{displayFractions?:boolean}} */ opts) {
+  DISPLAY_FRACS = !!opts.displayFractions;
+  SCRIPT_DEPTH = 0;
+  try { return texOf(node); } finally { DISPLAY_FRACS = false; }
 }
 
 /**
@@ -1036,8 +1060,8 @@ export function toLatex(node) {
  * @param {Node} node
  * @returns {string}
  */
-export function toLatexRaw(node) {
-  return texOf(node);
+export function toLatexRaw(node, opts = {}) {
+  return print(node, opts);
 }
 
 function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
@@ -1101,7 +1125,7 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
         (fs.length === 1 ? texOf(fs[0], 0) : joinFactors(fs));
       const joinTop = top.length ? half(top) : '1';
       const body = bottom.length
-        ? `\\frac{${joinTop}}{${half(bottom)}}`
+        ? `\\frac{${dwrap(joinTop)}}{${dwrap(half(bottom))}}`
         : joinFactors(top.length ? top : [ONE]);
       const signed = negative ? `-${body}` : body;
       // A fraction is visually self-bracketing; a bare product is not.
@@ -1115,10 +1139,12 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
         const e = numV(exp);
         if (Math.abs(e - 0.5) < 1e-12) return `\\sqrt{${texOf(base, 0)}}`;
         if (Math.abs(e - 1 / 3) < 1e-6) return `\\sqrt[3]{${texOf(base, 0)}}`;
-        if (e < 0) return wrap(`\\frac{1}{${texOf(simplifyPow(base, num(-e)), 0)}}`, 4);
+        if (e < 0) return wrap(`\\frac{1}{${dwrap(texOf(simplifyPow(base, num(-e)), 0))}}`, 4);
       }
-      if (base.type === 'const' && base.name === 'e') return wrap(`e^{${texOf(exp, 0)}}`, 3);
-      return wrap(`${texOf(base, 4)}^{${texOf(exp, 0)}}`, 3);
+      // An exponent is script style all the way down, whatever the line wants.
+      const sup = () => { SCRIPT_DEPTH += 1; const t = texOf(exp, 0); SCRIPT_DEPTH -= 1; return t; };
+      if (base.type === 'const' && base.name === 'e') return wrap(`e^{${sup()}}`, 3);
+      return wrap(`${texOf(base, 4)}^{${sup()}}`, 3);
     }
 
     case 'deriv':

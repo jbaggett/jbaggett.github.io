@@ -77,7 +77,7 @@ export function initWorking(opts) {
       const sign = el('span', 'll-wstep-sign', i === 0 ? '' : '=');
       sign.setAttribute('aria-hidden', 'true');
       const eq = el('div', 'll-wstep-eq', '');
-      eq.innerHTML = tex(s.tex);
+      eq.innerHTML = tex(s.tex, { displayStyle: true });
       li.append(sign, eq);
 
       if (s.notes && s.notes.length) {

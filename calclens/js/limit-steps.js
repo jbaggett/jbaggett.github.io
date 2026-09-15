@@ -24,9 +24,14 @@
 
 import {
   num, vr, add, mul, pow, sub, div, ZERO, ONE,
-  simplify, expand, substitute, toLatex, toLatexRaw, toText,
+  simplify, expand, substitute, toLatex as toLatexPlain, toLatexRaw as toLatexRawPlain, toText,
   isConstant, isNum, numV, evaluate, compile, derivative,
 } from './expr.js';
+
+/** Worked lines keep nested fractions full size; see expr.js `dwrap`. */
+const DISPLAY = { displayFractions: true };
+const toLatexRaw = (/** @type {any} */ n) => toLatexRawPlain(n, DISPLAY);
+const toLatex = (/** @type {any} */ n) => toLatexPlain(n, DISPLAY);
 
 const dependsOn = (/** @type {any} */ n, /** @type {string} */ v) => !isConstant(n, v);
 
@@ -201,7 +206,10 @@ export function differenceQuotientSteps(f, opts = {}) {
   // lines up with the h underneath it that it is about to cancel with.
   const hTimes = (/** @type {any} */ q) =>
     (isNum(q) ? toLatexRaw(prod([H, q])) : `${h}\\left(${toLatexRaw(q)}\\right)`);
-  const frac = (/** @type {string} */ a, /** @type {string} */ b) => `\\frac{${a}}{${b}}`;
+  // Both parts display style, so a compound fraction — the common-denominator
+  // line is one — does not shrink its way out of legibility.
+  const frac = (/** @type {string} */ a, /** @type {string} */ b) =>
+    `\\frac{\\displaystyle ${a}}{\\displaystyle ${b}}`;
   const push = (/** @type {string} */ tex, /** @type {Note[]} */ ...notes) => steps.push({ tex, notes });
   const viaRules = derivative(f, v);
   const stop = (/** @type {string} */ reason) =>

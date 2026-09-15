@@ -26,6 +26,10 @@ import {
   evaluate, derivative, asQuotient,
 } from './expr.js';
 
+/** Worked lines keep nested fractions full size; see expr.js `dwrap`. */
+const DISPLAY = { displayFractions: true };
+const show = (/** @type {any} */ n) => toLatexRaw(n, DISPLAY);
+
 /** A pending derivative. @param {any} arg @param {string} v */
 const D = (arg, v) => ({ type: 'deriv', arg, v });
 const ln = (/** @type {any} */ a) => fn('ln', a);
@@ -225,21 +229,21 @@ export function derivationSteps(node, v = 'x', opts = {}) {
   const maxLines = opts.maxLines ?? 16;
   let cur = D(node, v);
   /** @type {Step[]} */
-  const steps = [{ tex: toLatexRaw(cur), rules: [] }];
+  const steps = [{ tex: show(cur), rules: [] }];
 
   let guard = 0;
   while (hasDeriv(cur) && guard++ < maxLines) {
     /** @type {Set<string>} */
     const used = new Set();
     cur = tidy(expandOnce(cur, v, used));
-    const tex = toLatexRaw(cur);
+    const tex = show(cur);
     // A pass that changed nothing visible is not a step worth a line.
     if (tex === steps[steps.length - 1].tex) continue;
     steps.push({ tex, rules: [...used] });
   }
 
   const answer = derivative(node, v);
-  const final = toLatex(answer);
+  const final = toLatex(answer, DISPLAY);
   if (final !== steps[steps.length - 1].tex) steps.push({ tex: final, rules: ['simplify'] });
 
   return { steps, answer, complete: !hasDeriv(cur) };
