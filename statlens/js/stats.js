@@ -89,17 +89,77 @@ export function quantile(arr, p) {
 }
 
 /**
- * Interquartile range (Q3 - Q1, using type=7 quantiles).
+ * Q1 and Q3 by the **median-of-halves** rule — the course convention.
+ *
+ * Split the ordered data at the median and take the median of each half. When
+ * *n* is odd the overall median belongs to neither half (the Tukey / TI-84 /
+ * Moore & McCabe method), so `{1,2,3,4,5,6,7}` gives Q1 = 2 and Q3 = 6.
+ *
+ * **This is deliberately not `quantile(arr, 0.25)`.** R's type-7 interpolation
+ * gives 2.5 and 5.5 for that data, and a student who worked the quartiles by
+ * hand from the coursepack would find the tool disagreeing with them. Quartiles
+ * that a student *reads* — a five-number summary, an IQR, the edges of a box —
+ * use this rule; quantiles a tool *computes with*, above all the percentile
+ * bootstrap CI in sim-engine.js, stay on type-7, which is the right standard
+ * there. Keep that line where it is.
+ *
+ * Two other conventions are selectable because students meet all three and the
+ * disagreement is itself worth teaching — see `js/quartile-method.js`:
+ *
+ * - `'exclusive'` (default, the course rule) — median in neither half
+ * - `'inclusive'` — median in both halves when n is odd (R's `fivenum` hinges)
+ * - `'type7'` — R's interpolating `quantile(type=7)`, what most software reports
+ *
+ * They coincide in pairs by parity, which is the point: for even n the two
+ * median-of-halves rules agree, and for {1,2,3,4,5} the inclusive rule and
+ * type-7 both give 2 and 4. Only the data tells them apart.
+ *
  * @param {number[]} arr
+ * @param {'exclusive'|'inclusive'|'type7'} [method]
+ * @returns {{q1: number, q3: number}} NaNs for an empty array
+ */
+export function quartiles(arr, method = 'exclusive') {
+    if (arr.length === 0) return { q1: NaN, q3: NaN };
+    const sorted = arr.slice().sort((a, b) => a - b);
+    const n = sorted.length;
+    if (method === 'type7') {
+        return { q1: quantile(sorted, 0.25), q3: quantile(sorted, 0.75) };
+    }
+    if (n === 1) return { q1: sorted[0], q3: sorted[0] };
+    // floor(n/2) leaves the middle value out of both halves when n is odd, and
+    // splits them evenly when it is even.
+    const half = Math.floor(n / 2);
+    if (method === 'inclusive' && n % 2) {
+        // Odd n, median kept: both halves reach the middle value and include it.
+        return {
+            q1: median(sorted.slice(0, half + 1)),
+            q3: median(sorted.slice(half)),
+        };
+    }
+    return {
+        q1: median(sorted.slice(0, half)),
+        q3: median(sorted.slice(n - half)),
+    };
+}
+
+/**
+ * Interquartile range (Q3 - Q1), from `quartiles()` — the course rule unless a
+ * method is named.
+ * @param {number[]} arr
+ * @param {'exclusive'|'inclusive'|'type7'} [method]
  * @returns {number}
  */
-export function iqr(arr) {
-    return quantile(arr, 0.75) - quantile(arr, 0.25);
+export function iqr(arr, method) {
+    const { q1, q3 } = quartiles(arr, method);
+    return q3 - q1;
 }
 
 /**
  * Tukey's five-number summary: min, lower hinge, median, upper hinge, max.
- * Matches R fivenum().
+ * Matches R fivenum(), whose hinges *include* the median in both halves when n
+ * is odd — so these are not the quartiles the course teaches and not what the
+ * tools display. For a five-number summary a student will check by hand, use
+ * `quartiles()`.
  * @param {number[]} arr
  * @returns {[number, number, number, number, number]}
  */

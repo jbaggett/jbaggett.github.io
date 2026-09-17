@@ -617,6 +617,12 @@ main {
 }
 
 
+/* Quartile-method control (expert-only) + the note that outlives expert mode. */
+.quartile-method { margin: 0.6rem 0 0; }
+.quartile-method select { width: 100%; max-width: 15rem; }
+.quartile-method-note { margin: 0.5rem 0 0; color: var(--ims-green, #114B5F);
+  border-left: 3px solid var(--ims-blue, #569BBD); padding-left: 0.5rem; }
+
 /* ===== Live Rooms (REQ-067) =============================================
    The host block is sized to be read off a projector from the back of a
    lecture hall, which is why the code is enormous and the QR is not small. */
@@ -646,8 +652,13 @@ main {
   font-size: 3.1rem; font-weight: 700; letter-spacing: 0.16em; line-height: 1;
   color: var(--ims-green, #114B5F); }
 .room-join-url { margin: 0; word-break: break-all; }
+.room-expiry { margin: 0.35rem 0 0; }
 .room-count { margin: 0.7rem 0 0; font-size: 1.05rem; color: var(--ims-green, #114B5F); }
 .room-warning { border-top: 1px solid var(--border, #ccc); margin-top: 0.6rem; padding-top: 0.5rem; }
+.room-warning code { word-break: break-all; }
+/* Only present when something actually failed — it must not hold a gap open. */
+.room-problem { margin: 0.6rem 0 0; color: #A33; }
+.room-problem:empty { display: none; }
 
 @media (max-width: 600px) {
   .room-code { font-size: 2.2rem; }

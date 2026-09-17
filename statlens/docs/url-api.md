@@ -383,6 +383,35 @@ Pre-selects the active chart type on page load. The value must match one of the 
 | `explore/one-cat/` | `chart` | `bar`, `pie`, `waffle` | `bar` | `?dataset=homeownership&chart=pie` |
 | `explore/grouped/` | `chart` | `boxplot`, `dotplot`, `histogram`, `density` | `boxplot` | `?dataset=county_income_popgain&chart=density` |
 
+### Quartile Convention (`explore/descriptive/`, `explore/grouped/`)
+
+Pins which quartile rule the descriptive tools display — the Q1/Q3 readout, the IQR, the five-number
+summary and the box edges, which always move together.
+
+| Parameter | Type | Valid Values | Default | Description |
+|-----------|------|-------------|---------|-------------|
+| `quartile_method` | string | `exclusive`, `inclusive`, `type7` | `exclusive` | Which convention to display. `exclusive` is the course rule: Q1 and Q3 are the medians of the lower and upper halves, with the overall median in **neither** half when *n* is odd (coursepack / TI-84 / Tukey / Moore & McCabe). `inclusive` keeps the median in **both** halves when *n* is odd (R's `fivenum` hinges); identical to `exclusive` whenever *n* is even. `type7` interpolates, as R, NumPy and Excel do by default. |
+
+```
+explore/descriptive/?dataset=corn_yield                          → Q1 = 1511, Q3 = 2060 (course)
+explore/descriptive/?dataset=corn_yield&quartile_method=type7    → Q1 = 1561.5, Q3 = 2010.5
+```
+
+**Stability:** the parameter and its three values are frozen. `exclusive` is the default and embeds need
+not pass anything to get it — pass it explicitly only if you want to be immune to a future default change.
+
+**Notes for embedders**
+
+- The parameter **wins over the on-page control**, so an embedded figure keeps the convention its link
+  asked for no matter what the reader selects. The control renders disabled in that case.
+- Without the parameter, the convention is a **session** choice (expert mode only, via the settings
+  gear) and resets to the course rule on every page load — a reader cannot leave a tool set to a
+  convention that disagrees with the printed book.
+- Whenever the displayed method is not the course rule, the page shows a visible note saying so. That
+  note is deliberately *not* expert-only.
+- Display only. The percentile bootstrap CI (`ci_method=percentile`) uses R type-7 quantiles regardless,
+  which is the right standard there; `quartile_method` does not touch it.
+
 ### Label Visibility (`explore/one-cat/`, `explore/descriptive/`)
 
 Controls numeric annotation visibility on charts. Designed for exercises where students must judge visually before seeing numbers.

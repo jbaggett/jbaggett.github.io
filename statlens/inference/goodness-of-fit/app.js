@@ -9,7 +9,7 @@
 import { setJStat, pdfChisq, chisqCDF, chisqInv } from '../../js/distributions.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { drawCurve, computeDomain } from '../../js/curve.js';
-import { loadDatasetIndex, dataPath, announce, initTabs, initHelp, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, announce, initTabs, initHelp, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 import { tex } from '../../js/tex.js';
 
 const jstatMod = await import('jstat');
@@ -66,9 +66,7 @@ datasetSelect?.addEventListener('change', async () => {
   const id = datasetSelect.value;
   if (!id) return;
   try {
-    const resp = await fetch(dataPath(`${id}.json`));
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    loadDataset(await resp.json(), id);
+    loadDataset(await fetchDataset(id), id);
   } catch {
     announce('Could not load that dataset.');
   }

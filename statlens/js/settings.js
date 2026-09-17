@@ -51,6 +51,12 @@ const DEFAULTS = {
   // 'focus' (tight + mechanism auto-collapses on mass sim). Remove once chosen.
   layout: 'current',
 
+  // Which quartile convention the descriptive tools display. Session-only, like
+  // expertMode: a fresh page always shows the course's rule, so a student can
+  // never end up quietly disagreeing with the printed coursepack.
+  // See js/quartile-method.js.
+  quartileMethod:  'exclusive',
+
   // Coaching — opt-in, state-driven hints for novice students (default off).
   // Emphasizes the next action, shows an empty-state coach + next-step line.
   // See project_onboarding_coaching_design memory. Persisted (returning-user opt-in).
@@ -73,6 +79,7 @@ function loadSettings() {
     const stored = raw ? JSON.parse(raw) : {};
     // expertMode is session-only — ignore any previously persisted value
     delete stored.expertMode;
+    delete stored.quartileMethod;   // session-only for the same reason
     _cache = { ...DEFAULTS, ...stored };
   } catch {
     _cache = { ...DEFAULTS };

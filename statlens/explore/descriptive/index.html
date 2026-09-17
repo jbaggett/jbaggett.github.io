@@ -164,6 +164,7 @@
                                 <tr><th scope="row">Range</th><td id="stat-range">&mdash;</td></tr>
                             </tbody>
                         </table>
+                        <div id="quartile-method-host"></div>
                     </div>
                 </div>
             </div>
@@ -184,6 +185,7 @@
             <li><strong>Bins</strong> — when the histogram is selected, a bin-count control lets you change how many bars the range is split into. Fewer, wider bins smooth the picture; more, narrower bins show finer detail.</li>
         </ul>
         <p>The <strong>Summary Statistics</strong> panel reports n, mean, standard deviation, and the five-number summary (min, Q1, median, Q3, max) plus IQR and range. Once data loads, a summary bar appears with buttons to Explore, Preview, or Download the data, and a <strong>Change Data</strong> button to load something else.</p>
+        <p><strong>How Q1 and Q3 are computed.</strong> Split the ordered data at the median and take the median of each half. When <em>n</em> is odd the median itself belongs to neither half. This is the rule in the coursepack and on a TI-84, so a quartile you work out by hand will match what you see here. (Statistical software often interpolates instead and reports slightly different quartiles — both are in use; this tool follows the course.)</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

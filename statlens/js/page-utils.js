@@ -1080,12 +1080,40 @@ export async function loadDatasetIndex(selectEl, filterFn, descEl, groupFn) {
  * @param {string} id
  * @returns {Promise<any>}
  */
-export async function fetchDataset(id, contributed = false) {
+export async function fetchDataset(id, contributed) {
   // Contributed datasets live in data/extra/ so that an instructor's submission
-  // is a file drop rather than an edit to a 500-line build script.
+  // is a file drop rather than an edit to a 500-line build script. A caller that
+  // already holds the index entry passes the flag; one that only has an id from
+  // `?dataset=` gets it looked up, because guessing wrong means a 404 in the
+  // console and a dead link for a dataset we told an instructor was addressable.
+  if (contributed === undefined) contributed = await isContributed(id);
   const resp = await fetch(dataPath(contributed ? `extra/${id}.json` : `${id}.json`));
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
+}
+
+/** @type {Promise<any[]>|null} */
+let indexPromise = null;
+
+/**
+ * The dataset index, fetched at most once per page. Distinct from
+ * `loadDatasetIndex`, which filters for a dropdown and reports its own errors;
+ * this is the raw list, used to answer "where does this id live?".
+ * @returns {Promise<any[]>}
+ */
+export function datasetIndex() {
+  if (!indexPromise) {
+    indexPromise = fetch(dataPath('datasets.json'))
+      .then(r => (r.ok ? r.json() : []))
+      .catch(() => []);   // offline or missing: fall back to the built-in path
+  }
+  return indexPromise;
+}
+
+/** @param {string} id */
+async function isContributed(id) {
+  const index = await datasetIndex();
+  return !!index.find(d => d && d.id === id)?.contributed;
 }
 
 /**

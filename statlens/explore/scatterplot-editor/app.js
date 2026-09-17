@@ -11,7 +11,7 @@ import * as d3Scale from 'd3-scale';
 import * as d3Axis from 'd3-axis';
 import { drag as d3drag } from 'd3-drag';
 import { linreg, formatStat } from '../../js/stats.js';
-import { loadDatasetIndex, dataPath, announce, initHelp } from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, announce, initHelp } from '../../js/page-utils.js';
 import { createRng, randNormal } from '../../js/prng.js';
 
 initHelp();
@@ -267,8 +267,7 @@ document.getElementById('add-point-btn')?.addEventListener('click', () => {
     if (!id) return;
     presetSelect.value = '';
     try {
-      const resp = await fetch(dataPath(`${id}.json`));
-      const ds = await resp.json();
+      const ds = await fetchDataset(id);
       const nums = ds.variables.filter(/** @param {any} v */ v => v.type === 'numeric');
       if (nums.length < 2) { announce('This dataset needs two numeric variables.'); return; }
       const xv = nums[0].name, yv = nums[1].name;

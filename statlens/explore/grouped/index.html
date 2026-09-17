@@ -247,6 +247,7 @@
                             <tbody id="stats-tbody"></tbody>
                         </table>
                     </div>
+                    <div id="quartile-method-host"></div>
                 </div>
             </div>
         </section>
@@ -265,6 +266,7 @@
             <li><strong>Chart type</strong> — view the groups as a <strong>Boxplot</strong> (five-number summary and outliers), a <strong>Dotplot</strong> (every value as a dot), a <strong>Histogram</strong>, or a <strong>Density</strong> curve. Boxplots make centers and spreads easy to line up; dotplots and histograms reveal shape and gaps.</li>
         </ul>
         <p>The <strong>Summary Statistics</strong> table on the right reports n, mean, standard deviation, and the five-number summary for each group. Once data loads, a summary bar appears with buttons to Explore, Preview, or Download the data, and a <strong>Change Data</strong> button to load something else.</p>
+        <p><strong>How Q1 and Q3 are computed.</strong> Split each group's ordered data at its median and take the median of each half; when <em>n</em> is odd the median itself belongs to neither half. That is the rule in the coursepack and on a TI-84, so quartiles worked out by hand match the box edges drawn here.</p>
         <dl>
             <dt><kbd>?</kbd></dt><dd>Show this help</dd>
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>

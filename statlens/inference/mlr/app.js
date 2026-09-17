@@ -8,7 +8,7 @@
  * and — base track — a pairwise scatterplot matrix of the predictors. Expert
  * mode (?expert=true) adds a VIF column.
  */
-import { initHelp, initSettings, initTabs, announce } from '../../js/page-utils.js';
+import { fetchDataset, initHelp, initSettings, initTabs, announce } from '../../js/page-utils.js';
 import { setJStat } from '../../js/distributions.js';
 import { fitMLR } from '../../js/mlr.js';
 import { formatStat } from '../../js/stats.js';
@@ -59,7 +59,7 @@ for (const id of CURATED) {
 
 /** Load a bundled dataset by id. */
 async function loadDataset(id) {
-  const ds = await fetch(`../../data/${id}.json`).then(r => r.json());
+  const ds = await fetchDataset(id);
   currentVars = ds.variables;
   currentRows = ds.rows;
   onDataLoaded(ds.name || id);

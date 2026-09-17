@@ -9,7 +9,7 @@
 import { createRng, sampleMultinomial } from '../../js/prng.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { loadDatasetIndex, dataPath, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
@@ -83,9 +83,7 @@ datasetSelect?.addEventListener('change', async () => {
   const id = datasetSelect.value;
   if (!id) return;
   try {
-    const resp = await fetch(dataPath(`${id}.json`));
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    loadDataset(await resp.json());
+    loadDataset(await fetchDataset(id));
   } catch {
     announce('Could not load that dataset.');
   }

@@ -4,7 +4,8 @@
  * Used by descriptive, grouped, and multi (Data Explorer) apps.
  */
 
-import { mean, median, sd, quantile, iqr, range, detectPrecision, formatStat } from './stats.js';
+import { mean, median, quartiles, sd, iqr, range, detectPrecision, formatStat } from './stats.js';
+import { getQuartileMethod } from './quartile-method.js';
 import { getColors } from './chart-utils.js';
 import { computeBins } from './histogram.js';
 
@@ -21,11 +22,11 @@ function groupedStatDefs(dp) {
     { label: 'Mean', fn: (v) => formatStat(mean(v), dp), sep: true },
     { label: 'Std Dev', fn: (v) => formatStat(sd(v), dp) },
     { label: 'Min', fn: (v) => { const [lo] = range(v); return formatStat(lo, dp); }, sep: true },
-    { label: 'Q1', fn: (v) => formatStat(quantile(v, 0.25), dp) },
+    { label: 'Q1', fn: (v) => formatStat(quartiles(v, getQuartileMethod()).q1, dp) },
     { label: 'Median', fn: (v) => formatStat(median(v), dp) },
-    { label: 'Q3', fn: (v) => formatStat(quantile(v, 0.75), dp) },
+    { label: 'Q3', fn: (v) => formatStat(quartiles(v, getQuartileMethod()).q3, dp) },
     { label: 'Max', fn: (v) => { const [, hi] = range(v); return formatStat(hi, dp); } },
-    { label: 'IQR', fn: (v) => formatStat(iqr(v), dp), sep: true },
+    { label: 'IQR', fn: (v) => formatStat(iqr(v, getQuartileMethod()), dp), sep: true },
     { label: 'Range', fn: (v) => { const [lo, hi] = range(v); return formatStat(hi - lo, dp); } },
   ];
 }
@@ -125,10 +126,10 @@ export function buildNumericStatsTable(container, label, values) {
     ['Mean', formatStat(mean(values), dp)],
     ['Median', formatStat(median(values), dp)],
     ['SD', formatStat(sd(values), dp)],
-    ['IQR', formatStat(iqr(values), dp)],
+    ['IQR', formatStat(iqr(values, getQuartileMethod()), dp)],
     ['Min', formatStat(lo, dp)],
-    ['Q1', formatStat(quantile(values, 0.25), dp)],
-    ['Q3', formatStat(quantile(values, 0.75), dp)],
+    ['Q1', formatStat(quartiles(values, getQuartileMethod()).q1, dp)],
+    ['Q3', formatStat(quartiles(values, getQuartileMethod()).q3, dp)],
     ['Max', formatStat(hi, dp)],
   ];
 
