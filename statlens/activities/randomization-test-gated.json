@@ -13,8 +13,8 @@
   },
   "steps": [
     {
-      "instruction": "In the 1970s, 48 bank supervisors were each given the same personnel file and asked whether the candidate should be promoted. The files were identical except for one thing: the name was male on 24 of them and female on the other 24. Each card in the **Original Groups** panel is one file; filled cards were promoted.",
-      "observe": "**21 of 24** \"male\" files were promoted (filled cards), but only **14 of 24** \"female\" files.",
+      "instruction": "In the 1970s, 48 bank supervisors were each given the same personnel file and asked whether the candidate should be promoted. The files were identical except for one thing: the name was male on 24 of them and female on the other 24. Each card in the **Original Groups** panel is one candidate's file; a filled card means the supervisor recommended that candidate for promotion.",
+      "observe": "The supervisors recommended promotion for **21 of 24** \"male\" files (filled cards), but only **14 of 24** \"female\" files.",
       "gate": {
         "question": "How big is the gap between the two promotion rates?",
         "choices": [
@@ -45,14 +45,14 @@
             "text": "Exactly 50% in each group would be promoted"
           },
           {
-            "text": "The same 35 people would have been promoted regardless of the name on the file",
+            "text": "The same 35 supervisors would have recommended promotion regardless of the name on the file",
             "correct": true
           },
           {
             "text": "We would need more data to tell"
           }
         ],
-        "feedback": "Under the null hypothesis the outcomes are fixed — the same 35 promotions would have happened either way. Only the group labels are random. That's exactly what shuffling simulates.",
+        "feedback": "Under the null hypothesis the outcomes are fixed — the same 35 supervisors would have recommended promotion either way. Only the group labels are random. That's exactly what shuffling simulates.",
         "retryFeedback": "Think about what \"no effect\" means: the decision was already determined by the file's contents, not the name."
       }
     },

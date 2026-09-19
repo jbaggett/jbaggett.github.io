@@ -1061,7 +1061,8 @@ export async function loadDatasetIndex(selectEl, filterFn, descEl, groupFn) {
     const resp = await fetch(dataPath('datasets.json'));
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const index = await resp.json();
-    // Contributed datasets (data/extra/) are addressable by `?dataset=` but are
+    // Contributed datasets (the store beside the site) are addressable by
+    // `?dataset=` but are
     // kept out of every browse dropdown: those already run 11-36 options deep,
     // and a menu that grows with every colleague's submission is a menu students
     // stop reading. `loadDatasetIndex` returns the browse list; the deep-link
@@ -1076,18 +1077,102 @@ export async function loadDatasetIndex(selectEl, filterFn, descEl, groupFn) {
 }
 
 /**
+ * Report a problem with something the user just submitted — **visibly**, and to
+ * assistive technology.
+ *
+ * `announce()` alone writes to the visually-hidden live region. A sighted user
+ * who presses Load with an empty field then sees nothing happen at all, which
+ * is indistinguishable from a broken button: Todd Will reported the sample-size
+ * field on `randomization-one-prop` as "greyed out and won't load", when in
+ * fact the grey was the placeholder and the refusal was being narrated only to
+ * screen readers.
+ *
+ * Pass an empty message to clear.
+ *
+ * @param {Element|null} anchor - the control the message belongs beside
+ * @param {string} message
+ */
+export function reportInputProblem(anchor, message) {
+  if (message) announce(message);
+  if (!anchor) return;
+  const host = anchor.parentElement || anchor;
+  let note = host.querySelector(':scope > .input-problem');
+  if (!message) { note?.remove(); return; }
+  if (!note) {
+    note = document.createElement('p');
+    note.className = 'input-problem';
+    // role=alert so it is spoken when it appears, not only when focused.
+    note.setAttribute('role', 'alert');
+    host.appendChild(note);
+  }
+  note.textContent = message;
+}
+
+/**
+ * Resolve a file in the **contributed dataset store** — the datasets
+ * instructors send in, which live beside the deployed site rather than in this
+ * repo (`learnlens.org/statlens-data/`, a sibling of `learnlens.org/statlens/`).
+ *
+ * They are kept out of the repo deliberately: they are other people's data, a
+ * fork of StatLens should get the tool and not a colleague's class data, and
+ * anything committed here is in the public history for good — the wrong
+ * property for material someone may later ask to withdraw. Being a sibling of
+ * the site rather than inside it also means `deploy.sh`, which wipes and
+ * rewrites `statlens/` on every deploy, cannot delete the contributions.
+ *
+ * Same origin as the tools, so no CORS negotiation; derived from the
+ * stylesheet prefix like `dataPath`, so no host is hard-coded (see
+ * `scripts/set-host.mjs`).
+ *
+ * @param {string} file - e.g. 'index.json' or 'their_data.json'
+ */
+export function storePath(file) {
+  return `${dataPath('').replace(/data\/$/, '')}../statlens-data/${file}`;
+}
+
+/** @type {Promise<any[]>|null} */
+let contributedPromise = null;
+
+/**
+ * The contributed store's own index. Empty on any failure: a store that is
+ * unreachable must cost a page nothing but the contributed datasets, never an
+ * error where a built-in dataset was expected.
+ * @returns {Promise<any[]>}
+ */
+export function contributedIndex() {
+  if (!contributedPromise) {
+    contributedPromise = fetch(storePath('index.json'))
+      .then(r => (r.ok ? r.json() : []))
+      .then(list => (Array.isArray(list) ? list : []))
+      .catch(() => []);
+  }
+  return contributedPromise;
+}
+
+/**
+ * Built-ins plus contributed, for answering "does this id exist, and where?".
+ * Only the deep-link path needs it, so the store is not fetched by a page that
+ * never asks for a dataset by id.
+ * @returns {Promise<any[]>}
+ */
+export async function fullDatasetIndex() {
+  const [builtin, contributed] = await Promise.all([datasetIndex(), contributedIndex()]);
+  return [...builtin, ...contributed];
+}
+
+/**
  * Fetch a dataset by ID and return the parsed JSON.
  * @param {string} id
  * @returns {Promise<any>}
  */
 export async function fetchDataset(id, contributed) {
-  // Contributed datasets live in data/extra/ so that an instructor's submission
-  // is a file drop rather than an edit to a 500-line build script. A caller that
+  // Contributed datasets live in the store beside the deployed site, not in
+  // this repo — see `storePath`. A caller that
   // already holds the index entry passes the flag; one that only has an id from
   // `?dataset=` gets it looked up, because guessing wrong means a 404 in the
   // console and a dead link for a dataset we told an instructor was addressable.
   if (contributed === undefined) contributed = await isContributed(id);
-  const resp = await fetch(dataPath(contributed ? `extra/${id}.json` : `${id}.json`));
+  const resp = await fetch(contributed ? storePath(`${id}.json`) : dataPath(`${id}.json`));
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   return resp.json();
 }
@@ -1112,8 +1197,10 @@ export function datasetIndex() {
 
 /** @param {string} id */
 async function isContributed(id) {
-  const index = await datasetIndex();
-  return !!index.find(d => d && d.id === id)?.contributed;
+  const builtin = await datasetIndex();
+  if (builtin.find(d => d && d.id === id)) return false;
+  const contributed = await contributedIndex();
+  return !!contributed.find(d => d && d.id === id);
 }
 
 /**
@@ -1766,8 +1853,10 @@ export function initDataPanel(config) {
           // instructor was handed, and the page's own loader says whether it
           // can use it, which is a question about the data, not the menu.
           const guard = deepLinkFilter || datasetFilter;
-          fetch(dataPath('datasets.json'))
-            .then(r => r.ok ? r.json() : [])
+          // Both indexes: a contributed dataset is not in datasets.json at all
+          // any more — it lives in the store beside the site — and a link an
+          // instructor was handed must still open.
+          fullDatasetIndex()
             .then(full => {
               const meta = full.find(/** @param {any} d */ d => d.id === wanted);
               if (meta && (meta.contributed || guard(meta))) loadDatasetById(wanted, meta);

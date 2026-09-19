@@ -19,7 +19,7 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
@@ -885,6 +885,7 @@ export function initSimPage(config) {
   if (loadSummaryBtn && config.proportion) {
     loadSummaryBtn.addEventListener('click', () => {
       resetSimulation();
+      reportInputProblem(loadSummaryBtn, '');   // clear any previous refusal
 
       if (config.twoGroup) {
         // Two-proportion summary: two groups with successes + n
@@ -901,15 +902,15 @@ export function initSimPage(config) {
         const n2 = Math.round(Number(n2El?.value));
 
         if (!Number.isFinite(n1) || n1 < 1 || !Number.isFinite(n2) || n2 < 1) {
-          announce('Enter valid sample sizes (at least 1).');
+          reportInputProblem(loadSummaryBtn, 'Enter both sample sizes — the grey numbers are only examples.');
           return;
         }
         if (!Number.isFinite(x1) || x1 < 0 || x1 > n1) {
-          announce('Group 1 successes must be between 0 and n\u2081.');
+          reportInputProblem(loadSummaryBtn, 'Group 1 successes must be between 0 and n\u2081.');
           return;
         }
         if (!Number.isFinite(x2) || x2 < 0 || x2 > n2) {
-          announce('Group 2 successes must be between 0 and n\u2082.');
+          reportInputProblem(loadSummaryBtn, 'Group 2 successes must be between 0 and n\u2082.');
           return;
         }
 
@@ -939,11 +940,11 @@ export function initSimPage(config) {
         const k = Math.round(Number(kEl?.value));
 
         if (!Number.isFinite(n) || n < 1) {
-          announce('Sample size must be at least 1.');
+          reportInputProblem(loadSummaryBtn, 'Enter a sample size (n) — the grey number is only an example.');
           return;
         }
         if (!Number.isFinite(k) || k < 0 || k > n) {
-          announce('Successes must be between 0 and n.');
+          reportInputProblem(loadSummaryBtn, 'Successes must be a whole number between 0 and n.');
           return;
         }
 

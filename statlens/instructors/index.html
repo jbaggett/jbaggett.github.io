@@ -196,12 +196,12 @@
 
         <p class="hint">Keep the data out of a gist if it contains anything students shouldn&rsquo;t see &mdash; an unlisted gist is still readable by anyone who has the address. For class data collected in a Google Sheet, <em>File &rarr; Share &rarr; Publish to the web &rarr; CSV</em> gives a link that works the same way, and updates when the sheet does.</p>
 
-        <h3 id="submit">Or skip all of this: send me the dataset</h3>
-        <p>Everything above assumes you want to host the data yourself. You don&rsquo;t have to. Send me
-           the dataset and I&rsquo;ll host it, then send you back a link like
-           <code>explore/grouped/?dataset=your_data</code> &mdash; short enough to read off a slide, and
-           it becomes a QR code with one click of <strong>Share</strong>. No account, no gist, no file
-           hosting, nothing to remember next semester.</p>
+        <h3 id="submit">Or skip all of this: post it in Canvas and we&rsquo;ll host it</h3>
+        <p>Everything above assumes you want to host the data yourself. You don&rsquo;t have to. Post the
+           dataset in the <strong>UWL STAT 145 Materials</strong> Canvas course and it comes back as a
+           link like <code>explore/grouped/?dataset=your_data</code> &mdash; short enough to read off a
+           slide, and a QR code with one click of <strong>Share</strong>. No gist, no file hosting,
+           nothing to remember next semester, and nothing that breaks when you tidy your Drive.</p>
         <ol>
             <li>Open the <a href="../data/builder/">Dataset Builder</a> and drop in your CSV (or an
                 Excel file saved as CSV). It reads the columns and works out which are numeric and
@@ -209,18 +209,48 @@
             <li>Fill in the description fields. A <strong>&ldquo;Ready to send?&rdquo;</strong> checklist
                 appears as you go and tells you what&rsquo;s still empty &mdash; what the study was, what each
                 column means and its units, and where the data came from.</li>
-            <li>Click <strong>Download JSON</strong> and email me that file.
-                <!-- TODO (Jeff): your address here, e.g. <a href="mailto:you@example.edu">you@example.edu</a>. --></li>
+            <li>Click <strong>Download JSON</strong>, then attach that file to a post in the
+                <a href="https://uws.instructure.com/courses/880956/discussion_topics/7483592" target="_blank"
+                   rel="noopener">Contribute a Dataset</a> discussion.</li>
+            <li>You get a reply in the same thread with your link, and the dataset appears on the
+                <a href="../data/extra/">Extra Datasets</a> page, credited to you.</li>
         </ol>
-        <p><strong>Send the JSON, not the spreadsheet.</strong> A spreadsheet is just numbers; the JSON
+        <p><strong>Post the JSON, not the spreadsheet.</strong> A spreadsheet is just numbers; the JSON
            carries your description of the study and of each variable, and that&rsquo;s what students read
            in the &ldquo;About this data&rdquo; panel before they analyse anything. It&rsquo;s also the half
-           nobody else can write for you &mdash; I can convert a CSV, but I can&rsquo;t tell your class how
-           the data were collected.</p>
-        <p class="hint">If the builder gives you any trouble, send the spreadsheet and a few sentences
-           about the study and I&rsquo;ll do the conversion. Either way it lands on the
-           <a href="../data/extra/">Extra Datasets</a> page. Nothing goes up that identifies a student
-           &mdash; strip names, IDs and anything else identifying before you send it.</p>
+           nobody else can write for you &mdash; a CSV can be converted for you, but nobody else can tell
+           your class how the data were collected.</p>
+        <p class="hint">If the builder gives you any trouble, attach the spreadsheet and a few sentences
+           about the study and it&rsquo;ll be converted for you. Either way, nothing goes up that
+           identifies a student &mdash; strip names, IDs and anything else identifying before you post.
+           These datasets are published on a public website.</p>
+
+        <h3 id="already-hosted">If it&rsquo;s already on the Extra Datasets page, don&rsquo;t paste anything</h3>
+        <p>A dataset that has been through the step above is hosted here, and the
+           <a href="../data/extra/">Extra Datasets</a> page already lists a ready-made link into every
+           tool it fits, with a <strong>Copy link</strong> button and a QR code beside each one. Hand
+           one of those to a class and you are done &mdash; there is no file to open and no URL to paste.</p>
+        <p>The <strong>Open File/URL</strong> route above is for data that lives somewhere we don&rsquo;t
+           host: your own gist, your own web space. Both end in the same place &mdash; a link that opens
+           the tool with the data already in it &mdash; but <code>?dataset=</code> links are shorter, make
+           sparser QR codes, and don&rsquo;t break if you delete the file they came from.</p>
+
+        <h3 id="which-links">Which links can StatLens open?</h3>
+        <p>Opening a link is a request your <em>students&rsquo; browsers</em> make, so the file has to be
+           readable by anyone with the address, over HTTPS, with no sign-in. Two consequences catch
+           people out:</p>
+        <ul>
+            <li><strong>A Canvas file link will not work</strong> &mdash; not even the file you just
+                attached to the discussion. Canvas checks who is asking and bounces the browser to a
+                login page, which is not a dataset. That is exactly why posting it gets you a hosted
+                copy instead.</li>
+            <li><strong>Neither will a Google Drive or OneDrive &ldquo;share&rdquo; link</strong>, for the
+                same reason &mdash; those serve a preview page, not the file. For a Google Sheet, use
+                <em>File &rarr; Share &rarr; Publish to the web &rarr; CSV</em>, which does work and
+                updates when the sheet does.</li>
+        </ul>
+        <p>Gist raw links work, and so does anything on an ordinary web server. The quick test: open the
+           link in a private window. If you see the raw data and no login, StatLens can read it too.</p>
 
         <!-- ── Links ───────────────────────────────────────────── -->
         <p class="section-label">Share &amp; pre-configure</p>

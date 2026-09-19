@@ -617,6 +617,39 @@ main {
 }
 
 
+/* A refusal the user can actually see. Paired with announce() rather than
+   replacing it — the live region still serves screen readers. */
+.input-problem { margin: 0.5rem 0 0; color: #A33; font-size: 0.9rem; }
+
+/* Extra Datasets: the QR + data-file panel, revealed per card on request. */
+/* `display: flex` beats the UA's [hidden] rule, so the panel would render even
+   when hidden — say it explicitly. */
+.ds-qr[hidden] { display: none; }
+.ds-qr {
+  display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start;
+  margin: 0.7rem 0 0; padding: 0.7rem 0 0;
+  border-top: 1px solid var(--border, #ccc);
+}
+.ds-qr-img { width: 148px; flex: 0 0 auto; }
+.ds-qr-img svg { display: block; width: 100%; height: auto; }
+.ds-qr-side { flex: 1 1 14rem; min-width: 0; }
+.ds-qr-side p { margin: 0 0 0.4rem; }
+.ds-raw-url { word-break: break-all; font-size: 0.85em; }
+@media (max-width: 600px) { .ds-qr-img { width: 120px; } }
+
+/* Extra Datasets filter bar — appears once there is enough to sift. */
+.ds-filters {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem; padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border, #ccc); border-radius: 4px;
+}
+.ds-filters input[type="search"] { flex: 1 1 14rem; min-width: 0; }
+.ds-filters #ds-count { flex-basis: 100%; margin: 0; }
+@media (max-width: 600px) {
+  .ds-filters input[type="search"], .ds-filters select { min-height: 44px; }
+  .ds-filters .control-label { flex-basis: 100%; margin-bottom: -0.25rem; }
+}
+
 /* Quartile-method control (expert-only) + the note that outlives expert mode. */
 .quartile-method { margin: 0.6rem 0 0; }
 .quartile-method select { width: 100%; max-width: 15rem; }
@@ -1557,11 +1590,24 @@ input[aria-invalid="true"] {
   flex-wrap: wrap;
   min-height: 60px;
 }
-.mech-card-display .card-group { flex: 0 1 auto; max-width: 48%; }
+/* Both piles take the same width, so the grid below wraps at the same column
+   count in each. Sizing each to its own content let the longer heading widen
+   one pile, and two groups of 24 came out as different grid shapes — which
+   reads as "these groups aren't the same size" at exactly the moment the
+   activity asks a student to compare them. (Todd Will, 2026-09-18) */
+.mech-card-display .card-group {
+  flex: 1 1 0; min-width: 0; max-width: 48%;
+  /* The padding and the 1px rule are on BOTH groups — the second one's divider
+     is just this border made visible. Putting them only on the second shrank
+     its content box by 17px, which cost it a whole column: 24 cards drew as
+     13+11 in one pile and 12+12 in the other. Identical box models are what
+     make identical n draw an identical grid. */
+  padding-left: 1rem;
+  border-left: 1px solid transparent;
+}
 /* Subtle divider between the two sample groups so they read as distinct. */
 .mech-card-display .card-group + .card-group {
-  border-left: 1px solid var(--border, #ccc);
-  padding-left: 1rem;
+  border-left-color: var(--border, #ccc);
 }
 .mech-card-display .card-group h3 {
   font-size: 0.8rem;
@@ -1572,8 +1618,12 @@ input[aria-invalid="true"] {
 }
 .mech-card-count { font-weight: 400; color: #595959; }
 .mech-card-display .cards {
-  display: flex;
-  flex-wrap: wrap;
+  /* A fixed-track grid rather than wrapping flex: with equal group widths both
+     piles fit the same number of 15px columns, so equal n always draws the
+     same shape — and unequal n differs by whole rows, which is the comparison
+     the panel exists to make. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 15px);
   gap: 3px;
   justify-content: center;
 }
