@@ -100,16 +100,34 @@ function renderConds() {
 
 /* ───────────────────────────────── drawing ─────────────────────────────── */
 
+/** Where an endpoint is DRAWN — the window edge when that end runs off it. */
+function drawnY(b, i) {
+  const end = i === 0 ? b.left : i === b.pts.length - 1 ? b.right : null;
+  if (end === 'up') return state.yWin[1];
+  if (end === 'down') return state.yWin[0];
+  return b.pts[i].y;
+}
+
 function branchPath(b) {
   // A monotone fit, so the curve cannot overshoot between handles and invent a
-  // bump the student did not draw.
-  const p = b.pts.map(q => [xs(q.x), ys(q.y)]);
-  if (p.length < 3) return `M${p.map(q => q.join(',')).join('L')}`;
+  // bump the student did not draw. An end marked as running off the screen is
+  // drawn AT the edge: leaving it at its stored height put a flat line next to
+  // a detached arrowhead, so the picture claimed the function was 0 just right
+  // of the asymptote and unbounded there at the same time.
+  const p = b.pts.map((q, i) => [xs(q.x), ys(drawnY(b, i))]);
+  const offL = b.left === 'up' || b.left === 'down';
+  const offR = b.right === 'up' || b.right === 'down';
   let d = `M${p[0][0]},${p[0][1]}`;
   for (let i = 0; i < p.length - 1; i++) {
     const [x0, y0] = p[i], [x1, y1] = p[i + 1];
     const dx = (x1 - x0) / 2;
-    d += `C${x0 + dx},${y0} ${x1 - dx},${y1} ${x1},${y1}`;
+    // At an end that runs off the screen the tangent is made VERTICAL, by
+    // putting the control point directly above or below the endpoint. Arcing
+    // over into the asymptote is what a curve with a finite limit looks like;
+    // hugging it is the thing students have to learn to draw.
+    const c1 = (i === 0 && offL) ? [x0, y0 + (y1 - y0) * 0.55] : [x0 + dx, y0];
+    const c2 = (i === p.length - 2 && offR) ? [x1, y1 + (y0 - y1) * 0.55] : [x1 - dx, y1];
+    d += `C${c1[0]},${c1[1]} ${c2[0]},${c2[1]} ${x1},${y1}`;
   }
   return d;
 }
@@ -122,9 +140,17 @@ function draw() {
   drawAxes(chart, { xs, ys, xLabel: 'x', yLabel: 'y' });
 
   for (const a of state.sk.sites) {
+    // A site where a branch runs off the screen IS a vertical asymptote, and it
+    // is drawn as one — same weight and dash as the grapher uses, so the two
+    // tools teach the same notation.
+    const asym = state.sk.branches.some(b =>
+      (b.x1 === a && (b.right === 'up' || b.right === 'down'))
+      || (b.x0 === a && (b.left === 'up' || b.left === 'down')));
     chart.plot.append('line')
       .attr('x1', xs(a)).attr('x2', xs(a)).attr('y1', ys(state.yWin[1])).attr('y2', ys(state.yWin[0]))
-      .attr('stroke', 'var(--ims-lgray)').attr('stroke-dasharray', '4 4').attr('stroke-width', 1);
+      .attr('stroke', asym ? 'var(--ims-gray)' : 'var(--ims-lgray)')
+      .attr('stroke-dasharray', asym ? '5 5' : '4 4')
+      .attr('stroke-width', asym ? 1.5 : 1);
   }
 
   state.sk.branches.forEach((b, bi) => {
@@ -132,21 +158,36 @@ function draw() {
     g.append('path').attr('d', branchPath(b)).attr('fill', 'none')
       .attr('stroke', 'var(--curve-f)').attr('stroke-width', b.drawn ? 2.5 : 1.6)
       .attr('stroke-dasharray', b.drawn ? null : '6 5');
-    if (b.left === 'up' || b.left === 'down') arrow(g, b.pts[0].x, b.left);
-    if (b.right === 'up' || b.right === 'down') arrow(g, b.pts[b.pts.length - 1].x, b.right);
-    b.pts.forEach((_, pi) => handle(bi, pi, b));
+    b.pts.forEach((_, pi) => {
+      const end = pi === 0 ? b.left : pi === b.pts.length - 1 ? b.right : null;
+      if (end === 'up' || end === 'down') arrowHandle(bi, pi, b, end);
+      else handle(bi, pi, b);
+    });
   });
 
   for (const [k, y] of Object.entries(state.sk.dots)) dot(Number(k), y);
 }
 
-/** A branch running off the screen: the drawn line plus a head to say so. */
-function arrow(g, x, dir) {
-  const yEdge = dir === 'up' ? state.yWin[1] : state.yWin[0];
-  const tip = ys(yEdge), back = tip + (dir === 'up' ? 16 : -16);
-  g.append('path')
-    .attr('d', `M${xs(x)},${back}L${xs(x)},${tip}M${xs(x) - 5},${back}L${xs(x)},${tip}L${xs(x) + 5},${back}`)
-    .attr('stroke', 'var(--curve-f)').attr('stroke-width', 2.5).attr('fill', 'none');
+/**
+ * An end that runs off the screen. This is a HANDLE, not a decoration: the
+ * first version drew the arrowhead and returned without making anything
+ * focusable, so pressing "runs off the top" removed the only way back — no
+ * click target to undo it, and nothing for Tab to reach at all.
+ */
+function arrowHandle(bi, pi, b, dir) {
+  const pt = b.pts[pi];
+  const tip = ys(dir === 'up' ? state.yWin[1] : state.yWin[0]);
+  const back = tip + (dir === 'up' ? 18 : -18);
+  const ref = { kind: 'end', bi, pi };
+  chart.gOver.append('path')
+    .attr('class', 'sk-handle')
+    .attr('d', `M${xs(pt.x) - 7},${back}L${xs(pt.x)},${tip}L${xs(pt.x) + 7},${back}Z`)
+    .attr('fill', 'var(--curve-f)').attr('stroke', 'var(--curve-f)').attr('stroke-width', 2)
+    .attr('tabindex', 0).attr('role', 'button')
+    .attr('aria-label', nameOf(bi, pi, b, state.sk.sites.includes(pt.x), dir))
+    .on('pointerdown', ev => { ev.preventDefault(); select(ref); renderTools(); })
+    .on('focus', () => select(ref))
+    .on('keydown', ev => onKey(ev, ref));
 }
 
 function dot(a, y) {
@@ -196,12 +237,17 @@ function nameOf(bi, pi, b, atSite, end) {
   // start of the piece [2, 5] is what the function does approaching 2 from the
   // right, and calling it "the right-hand limit at 2" is both what it is and
   // the vocabulary the section is teaching.
+  const kindWord = end === 'closed' ? 'solid' : end === 'open' ? 'hollow'
+    : end === 'up' ? 'running off the top' : 'running off the bottom';
   const where = atSite
-    ? `${pi === 0 ? 'Right' : 'Left'}-hand limit at x = ${pt.x}, ${end === 'closed' ? 'solid' : 'hollow'}`
+    ? `${pi === 0 ? 'Right' : 'Left'}-hand limit at x = ${pt.x}, ${kindWord}`
     : (pi === 0 || pi === b.pts.length - 1)
       ? `Far ${pi === 0 ? 'left' : 'right'} end of the graph`
       : `Shape handle on piece ${bi + 1}`;
-  return `${where}, at height ${pt.y}.${b.drawn ? '' : ' This piece is not drawn yet.'} Arrow keys move it.`;
+  const off = end === 'up' || end === 'down';
+  return `${where}${off ? '' : `, at height ${pt.y}`}.`
+    + `${b.drawn ? '' : ' This piece is not drawn yet.'}`
+    + `${off ? ' Use the tools below to bring it back on screen.' : ' Arrow keys move it.'}`;
 }
 
 /* ──────────────────────────── moving the handles ───────────────────────── */
@@ -250,6 +296,11 @@ function startDrag(ev, ref) {
 }
 
 function onKey(ev, ref) {
+  if (ref.kind === 'end') {
+    const b0 = state.sk.branches[ref.bi];
+    const e0 = ref.pi === 0 ? b0.left : b0.right;
+    if (e0 === 'up' || e0 === 'down') return;   // no height to nudge at infinity
+  }
   const pt = refPoint(ref);
   const y = ref.kind === 'dot' ? state.sk.dots[String(ref.site)] : pt.y;
   let dx = 0, dy = 0;
