@@ -244,6 +244,12 @@ never switches them off, because drawing them is about not lying — the curve i
 already split there, and a reader looking at 1/*x* should see why the two
 branches are separate. `hide=asymptotes` if you really want them gone.
 
+Both kinds are drawn: **vertical** (found in the window, and the curve is never
+joined across one) and **horizontal** (measured by running *x* out to ±10⁸ and
+checking the values settle). The two ends are reported separately, because they
+can differ — `3x/sqrt(x^2+1)` approaches 3 on the right and −3 on the left.
+Slant asymptotes are not detected.
+
 **Embedding:**
 
 ```html

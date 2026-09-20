@@ -198,3 +198,73 @@ export function findRoots(f, a, b, opts = {}) {
   if (Number.isFinite(pv) && pv === 0) out.push(b);
   return out.filter((r, i) => i === 0 || Math.abs(r - out[i - 1]) > Math.abs(dx) / 2);
 }
+
+/**
+ * The limit of f as x runs off to ±∞, when there is one.
+ *
+ * There is no symbolic route to this in the engine, so it is measured: evaluate
+ * along a geometric ladder of ever-larger |x| and see whether the values settle.
+ * Two things have to be true before a number is believed, because the failure
+ * that matters is claiming an asymptote that is not there:
+ *
+ *   - the last few samples agree, and
+ *   - the steps between them are SHRINKING.
+ *
+ * The second test is what separates `arctan(x)`, which crawls up to π/2, from
+ * `ln(x)`, whose samples also look close together at any one scale and which has
+ * no limit at all. It is also what rejects `sin(x)`, whose samples at that size
+ * are effectively arbitrary and will not shrink toward each other.
+ *
+ * The ladder stops at 1e8 on purpose. Past that, a difference like
+ * `sqrt(x² + x) − x` — whose limit is ½ — loses the whole answer to
+ * cancellation, and the function would be reported as tending to 0.
+ *
+ * Deliberately misses slowly-converging limits: 1/ln(x) does go to 0 and this
+ * will not say so. Silence is the right failure here.
+ *
+ * @param {(x:number)=>number} f
+ * @param {1|-1} sign  which end to run off to
+ * @returns {number|null} the limit, or null if there is not one to be sure of
+ */
+export function limitAtInfinity(f, sign) {
+  const ladder = [1e3, 1e4, 1e5, 1e6, 1e7, 1e8];
+  const vals = [];
+  for (const m of ladder) {
+    const v = f(sign * m);
+    // An asymptote is a FINITE height; ±∞ and undefined are both "no".
+    if (!Number.isFinite(v) || Math.abs(v) > 1e12) return null;
+    vals.push(v);
+  }
+  const n = vals.length;
+  const L = vals[n - 1];
+  const scale = Math.max(1, Math.abs(L));
+
+  const tail = vals.slice(-3);
+  if (Math.max(...tail) - Math.min(...tail) > 1e-5 * scale) return null;
+
+  const d1 = Math.abs(vals[n - 2] - vals[n - 3]);
+  const d2 = Math.abs(vals[n - 1] - vals[n - 2]);
+  if (d2 > d1 * 0.75 && d2 > 1e-12 * scale) return null;   // not settling, just slow
+
+  // A limit that lands a hair off a whole number is a rounding artefact of the
+  // ladder, not a fact about the function: 3x/sqrt(x²+1) should read 3.
+  const near = Math.round(L);
+  // `|| 0` folds negative zero away: approaching 0 from below gives -0, which
+  // is never a meaningful asymptote level and compares unequal to 0.
+  return Math.abs(L - near) < 1e-7 * scale ? (near || 0) : L;
+}
+
+/**
+ * Horizontal asymptotes — the two ends, reported separately.
+ *
+ * Separately because they genuinely can differ, and that difference is the
+ * whole point of the classic example: 3x/√(x²+1) approaches 3 on the right and
+ * −3 on the left. A detector that returned one number would have to pick one
+ * and be wrong about the other.
+ *
+ * @param {(x:number)=>number} f
+ * @returns {{right:number|null, left:number|null}}
+ */
+export function horizontalAsymptotes(f) {
+  return { right: limitAtInfinity(f, 1), left: limitAtInfinity(f, -1) };
+}

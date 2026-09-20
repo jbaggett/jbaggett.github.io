@@ -26,7 +26,7 @@ import { initShare } from 'kit/share.js';
 import { fmt } from 'kit/format.js';
 import { MARK } from '../js/mark.js';
 import { tryParse, compile, derivative, toLatex, freeVariables } from '../js/expr.js';
-import { findRoots } from '../js/numeric.js';
+import { findRoots, horizontalAsymptotes } from '../js/numeric.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -203,16 +203,53 @@ function anyVisible(f, x0, x1, yDom) {
  * looking at 1/x should see WHY the two branches are separate.
  */
 function drawAsymptotes(f, xs, ys, yDom) {
+  const dashed = (/** @type {number[]} */ p) => chart.plot.append('line')
+    .attr('x1', p[0]).attr('y1', p[1]).attr('x2', p[2]).attr('y2', p[3])
+    .attr('stroke', 'var(--ims-gray)').attr('stroke-width', 1.5)
+    .attr('stroke-dasharray', '5 5').attr('opacity', 0.8);
+
   const breaks = findBreaks(f, state.x0, state.x1, { yMin: yDom[0], yMax: yDom[1] });
   for (const b of breaks) {
     if (b.kind !== 'pole') continue;      // a domain edge is not an asymptote
-    chart.plot.append('line')
-      .attr('x1', xs(b.x)).attr('x2', xs(b.x))
-      .attr('y1', ys(yDom[1])).attr('y2', ys(yDom[0]))
-      .attr('stroke', 'var(--ims-gray)').attr('stroke-width', 1.5)
-      .attr('stroke-dasharray', '5 5').attr('opacity', 0.8);
+    dashed([xs(b.x), ys(yDom[1]), xs(b.x), ys(yDom[0])]);
   }
-  state.asymptotes = breaks.filter(b => b.kind === 'pole').map(b => b.x);
+
+  // Horizontal ones are measured, not found in the window: the behaviour that
+  // defines them happens off the edge of any window the reader can see, which
+  // is exactly why the picture alone does not tell them.
+  const h = horizontalAsymptotes(f);
+  const levels = [];
+  for (const [side, y] of [['right', h.right], ['left', h.left]]) {
+    if (y === null) continue;
+    const same = levels.find(l => Math.abs(l.y - y) <= 1e-9 * Math.max(1, Math.abs(y)));
+    if (same) same.side = 'both'; else levels.push({ y, side });
+  }
+  for (const l of levels) {
+    // A level outside the window is still true, and drawing it at the edge
+    // would be a line the function never approaches there.
+    if (l.y < yDom[0] || l.y > yDom[1]) continue;
+    dashed([xs(state.x0), ys(l.y), xs(state.x1), ys(l.y)]);
+  }
+
+  state.asymptotes = {
+    vertical: breaks.filter(b => b.kind === 'pole').map(b => b.x),
+    horizontal: levels,
+  };
+}
+
+/** "y = 3 as x → ∞, y = −3 as x → −∞", or just "y = 2" when both ends agree. */
+function horizontalText(levels, arrow = true) {
+  const to = { both: '', right: ` as ${state.v} → ∞`, left: ` as ${state.v} → −∞` };
+  // A level the detector snapped to a whole number should read "y = 3", not
+  // "y = 3.0000" — the trailing zeros suggest a measurement it is not.
+  const level = (/** @type {number} */ y) => (Number.isInteger(y) ? String(y) : fmt(y, 4));
+  return (levels || []).map(l => `y = ${level(l.y)}${arrow ? to[l.side] : ''}`).join(', ');
+}
+
+/** Is any asymptote worth mentioning? */
+function anyAsymptote() {
+  const a = state.asymptotes;
+  return !!(a && (a.vertical?.length || a.horizontal?.length));
 }
 
 /** Critical points (f′ = 0) and inflection points (f″ = 0), on the curve. */
@@ -265,8 +302,23 @@ function updateLegend(layers) {
     `<span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="${l.colour}" `
     + `stroke-width="${l.width}"${l.dash ? ` stroke-dasharray="${l.dash}"` : ''}/></svg> `
     + `<i>${name[l.key]}</i></span>`).join('')
-    + (state.show.asymptotes && state.asymptotes?.length
-      ? `<span><svg viewBox="0 0 26 10"><line x1="13" y1="0" x2="13" y2="10" stroke="#808080" stroke-width="1.5" stroke-dasharray="3 3"/></svg> asymptote</span>` : '');
+    + asymptoteKey();
+}
+
+/**
+ * The legend swatch has to match what is actually on the graph. A vertical tick
+ * beside the word "asymptote" is a plain miscue when the only asymptote drawn
+ * is horizontal — and both orientations can be present at once.
+ */
+function asymptoteKey() {
+  if (!state.show.asymptotes || !anyAsymptote()) return '';
+  const a = state.asymptotes;
+  const dash = 'stroke="#808080" stroke-width="1.5" stroke-dasharray="3 3"';
+  const marks = [
+    a.vertical?.length ? `<line x1="13" y1="0" x2="13" y2="10" ${dash}/>` : '',
+    a.horizontal?.length ? `<line x1="1" y1="5" x2="25" y2="5" ${dash}/>` : '',
+  ].join('');
+  return `<span><svg viewBox="0 0 26 10">${marks}</svg> asymptote</span>`;
 }
 
 function updateReadout(primary) {
@@ -282,7 +334,10 @@ function updateReadout(primary) {
     ? `<span><b>${label}</b> ${xs2.map(x => fmt(x, 3)).join(', ')}</span>` : '';
   bits.push(list(state.critical, 'critical at'));
   bits.push(list(state.inflection, 'inflection at'));
-  bits.push(list(state.asymptotes, 'asymptote at'));
+  bits.push(list(state.asymptotes?.vertical, `vertical asymptote at ${state.v} =`));
+  if (state.asymptotes?.horizontal?.length) {
+    bits.push(`<span><b>horizontal asymptote</b> ${horizontalText(state.asymptotes.horizontal)}</span>`);
+  }
   if (state.clipped?.length) {
     bits.push(`<span class="ll-hint">${state.clipped.join(' and ')} `
       + `${state.clipped.length > 1 ? 'are' : 'is'} outside this window — set a `
@@ -297,7 +352,10 @@ function describe(layers, yDom) {
   return `A graph over ${state.v} from ${fmt(state.x0, 2)} to ${fmt(state.x1, 2)} and y from `
     + `${fmt(yDom[0], 2)} to ${fmt(yDom[1], 2)}, showing `
     + layers.map(l => names[l.key]).join(', ')
-    + (state.asymptotes?.length ? `, with vertical asymptotes at ${state.asymptotes.map(x => fmt(x, 3)).join(', ')}` : '')
+    + (state.asymptotes?.vertical?.length
+      ? `, with vertical asymptotes at ${state.v} = ${state.asymptotes.vertical.map(x => fmt(x, 3)).join(', ')}` : '')
+    + (state.asymptotes?.horizontal?.length
+      ? `, and a horizontal asymptote ${horizontalText(state.asymptotes.horizontal)}` : '')
     + '.';
 }
 
