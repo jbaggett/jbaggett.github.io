@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sketch from Conditions | CalcLens</title>
+
+<link rel="stylesheet" href="../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../icon-192.png">
+<link rel="manifest" href="../manifest.json">
+
+<script defer src="../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  /* The conditions are the problem statement, so they carry a problem's weight. */
+  #conds { list-style: none; margin: 0; padding: 0; }
+  #conds li { display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.1rem 0.5rem;
+              align-items: baseline; padding: 0.4rem 0.2rem; border-top: 1px solid var(--border); }
+  #conds li:first-child { border-top: 0; }
+  .cond-mark { font-size: 1.05rem; line-height: 1; }
+  .cond-ok  .cond-mark { color: var(--ok); }
+  .cond-bad .cond-mark { color: var(--bad); }
+  .cond-why { grid-column: 2; font-size: 0.86rem; color: var(--ims-gray-text); margin-top: 0.25rem; }
+  .cond-ok { background: #F7FBF8; }
+
+  #tally { margin: 0.7rem 0 0; font-weight: 600; }
+
+  .sk-handle { cursor: grab; touch-action: none; }
+  .sk-handle:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sk-ghost { opacity: 0.3; }
+
+  #picker { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.8rem; }
+  #tools { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center;
+           margin-top: 0.7rem; min-height: 2.4rem; }
+  #tools .ll-hint { flex-basis: 100%; margin: 0; }
+  #own { margin-top: 0.9rem; }
+  #own textarea { width: 100%; font-family: var(--font-mono); font-size: 0.86rem;
+                  min-height: 4.5rem; padding: 0.4rem; }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#conditions">Skip to the conditions</a>
+  <a href="#chart">Skip to the graph</a>
+  <a href="#tools">Skip to the drawing tools</a>
+</nav>
+
+<main>
+  <h1>Sketch from Conditions
+    <span class="header-actions">
+      <a class="home-btn" href="../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Build a graph that satisfies <b>every</b> condition. There are infinitely
+    many right answers, so nothing here is compared against one particular
+    curve — each condition is checked against what you drew, and told back to
+    you one at a time.
+    <span class="ll-hint">Drag the handles. Select one and the tools under the
+    graph say what you can do with it: a hollow dot, a solid dot, or an end that
+    runs off the screen.</span>
+  </p>
+
+  <section id="conditions" class="ll-panel" aria-label="The conditions">
+    <h2 style="margin-top:0">The conditions</h2>
+    <ul id="conds"></ul>
+    <p class="ll-error" id="cond-error" role="alert" hidden></p>
+    <p id="tally"></p>
+    <div id="picker">
+      <button type="button" id="check-btn" class="ll-primary">Check my sketch</button>
+      <button type="button" id="reset-btn">Start over</button>
+    </div>
+  </section>
+
+  <section id="chart" aria-label="Your sketch">
+    <div class="ll-chart"><div id="fig"></div></div>
+    <div id="tools" role="group" aria-label="Drawing tools"></div>
+  </section>
+
+  <section id="problems" class="ll-panel" aria-label="Choose a problem" data-control="problems">
+    <h2 style="margin-top:0">Problems</h2>
+    <div class="ll-segmented" role="group" aria-label="Problems" id="preset-row"></div>
+    <details id="own">
+      <summary>Write your own conditions</summary>
+      <p class="ll-hint" style="margin:0.5rem 0 0.3rem;">
+        One per line, or separated by semicolons. Write them as you would say
+        them: <code>lim(x-&gt;2-)=3</code>, <code>lim(x-&gt;2+)=-1</code>,
+        <code>f(2)=1</code>, <code>f(0)=undefined</code>,
+        <code>lim(x-&gt;1)=inf</code>, <code>lim(x-&gt;inf)=0</code>.
+      </p>
+      <label for="own-input" class="sr-only">Conditions</label>
+      <textarea id="own-input" spellcheck="false" autocapitalize="off"></textarea>
+      <button type="button" id="own-btn" style="margin-top:0.4rem;">Use these conditions</button>
+    </details>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Sketch from Conditions</h2>
+  <p>You are given facts about a function — one-sided limits, values, what it
+     does far out — and you draw <em>a</em> function that has all of them. This
+     is the exercise that is hard to grade on paper and impossible to
+     self-check, because there are infinitely many right answers.</p>
+
+  <h3>Nothing is compared to a model answer</h3>
+  <p>Each condition is checked against your drawing on its own. When one fails,
+     the page says what your graph does there instead — "your graph approaches
+     2 at <i>x</i> = 2 from the left, not 3" — because that is something you can
+     act on, and a cross is not.</p>
+
+  <h3>The pieces</h3>
+  <p>The canvas is cut at every <i>x</i> the conditions mention, and each piece
+     starts <b>undrawn</b>. Drag any of its handles to draw it. A piece you have
+     not touched claims nothing — otherwise a problem asking for
+     <span class="ll-math" id="help-tex1"></span> would open with that condition
+     already ticked.</p>
+  <ul>
+    <li><b>Hollow dot</b> ○ — the graph approaches this height but does not take
+        it: a one-sided limit with no value there.</li>
+    <li><b>Solid dot</b> ● — the function <em>is</em> this value here.</li>
+    <li><b>Arrow</b> ↑ ↓ — the graph runs off the screen: an infinite limit.
+        Dragging an end very high is <em>not</em> the same thing, and the check
+        says so.</li>
+  </ul>
+  <p>Two solid dots at the same <i>x</i> at different heights is the mistake
+     worth making once: a function cannot have two values there. The page names
+     it rather than quietly picking one.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>Tab</kbd></dt><dd>Move between handles</dd>
+    <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>Move the selected handle</dd>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Move an interior handle sideways</dd>
+    <dt><kbd>Enter</kbd></dt><dd>Check the sketch</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+  </dl>
+
+  <h3>Setting a problem</h3>
+  <p>The conditions are in the URL, so you can set one:</p>
+  <pre class="ll-code">?c=lim(x-&gt;2-)%3D3;lim(x-&gt;2%2B)%3D-1;f(2)%3D1;lim(x-&gt;inf)%3D0</pre>
+  <p>See <code>docs/url-api.md</code> for every parameter.</p>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

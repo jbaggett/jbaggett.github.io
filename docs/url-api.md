@@ -382,6 +382,36 @@ way a hand sketch goes astray.
 | `f` | expression | `x^3 - 3x` | The function. |
 | `readout` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
 
+## CalcLens — Sketch from Conditions
+
+`calclens/sketch/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `c` | conditions | the jump problem | The problem, as a `;`-separated list. |
+| `preset` | key | — | `jump`, `removable`, `infinite`, `onesided`, `ends`. Prefer this for a QR code — the spelled-out conditions run to ~90 percent-encoded characters. |
+| `controls` | list | all | `problems` is the only group; `controls=` with anything else hides the problem chooser, which is what a set exercise wants. |
+
+The condition spelling is what a person would type, and deliberately close to
+what the textbook prints:
+
+| condition | writes as |
+|---|---|
+| one-sided limit | `lim(x->2-)=3`, `lim(x->2+)=-1` |
+| two-sided limit | `lim(x->2)=3` |
+| infinite limit | `lim(x->1)=inf`, `lim(x->0-)=-inf` |
+| limit at infinity | `lim(x->inf)=0`, `lim(x->-inf)=2` |
+| a value | `f(2)=1` |
+| no value | `f(2)=undefined` |
+
+`→` is accepted for `->`. Anything unreadable is **reported on the page**, never
+dropped — a condition silently ignored is a problem the student cannot solve and
+cannot see why.
+
+```
+calclens/sketch/?preset=infinite&controls=none
+```
+
 ## CalcLens — Derivative from the Definition
 
 `calclens/limits/difference-quotient/`
