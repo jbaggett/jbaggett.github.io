@@ -100,7 +100,23 @@ function renderConds() {
 
 /* ───────────────────────────────── drawing ─────────────────────────────── */
 
-/** Where an endpoint is DRAWN — the window edge when that end runs off it. */
+/**
+ * Where an endpoint is DRAWN in x.
+ *
+ * A curve approaching a vertical asymptote leaves the top of the frame at some
+ * x NEAR the asymptote, never at it — so the two branches of x = 2 exit at
+ * slightly different places and stay two curves. Drawing both exactly at 2
+ * fused them into a single spike with one arrowhead, which reads as one curve
+ * peaking rather than two running away from each other.
+ */
+function drawnX(b, i) {
+  const end = i === 0 ? b.left : i === b.pts.length - 1 ? b.right : null;
+  if (end !== 'up' && end !== 'down') return b.pts[i].x;
+  const off = Math.abs(xs.invert(8) - xs.invert(0));
+  return i === 0 ? b.pts[i].x + off : b.pts[i].x - off;
+}
+
+/** Where an endpoint is DRAWN in y — the window edge when that end runs off it. */
 function drawnY(b, i) {
   const end = i === 0 ? b.left : i === b.pts.length - 1 ? b.right : null;
   if (end === 'up') return state.yWin[1];
@@ -114,7 +130,7 @@ function branchPath(b) {
   // drawn AT the edge: leaving it at its stored height put a flat line next to
   // a detached arrowhead, so the picture claimed the function was 0 just right
   // of the asymptote and unbounded there at the same time.
-  const p = b.pts.map((q, i) => [xs(q.x), ys(drawnY(b, i))]);
+  const p = b.pts.map((q, i) => [xs(drawnX(b, i)), ys(drawnY(b, i))]);
   const offL = b.left === 'up' || b.left === 'down';
   const offR = b.right === 'up' || b.right === 'down';
   let d = `M${p[0][0]},${p[0][1]}`;
@@ -165,6 +181,7 @@ function draw() {
     });
   });
 
+  (state.sk.hlines || []).forEach((y, i) => hline(i, y));
   for (const [k, y] of Object.entries(state.sk.dots)) dot(Number(k), y);
 }
 
@@ -175,7 +192,7 @@ function draw() {
  * click target to undo it, and nothing for Tab to reach at all.
  */
 function arrowHandle(bi, pi, b, dir) {
-  const pt = b.pts[pi];
+  const pt = { x: drawnX(b, pi), y: b.pts[pi].y };
   const tip = ys(dir === 'up' ? state.yWin[1] : state.yWin[0]);
   const back = tip + (dir === 'up' ? 18 : -18);
   const ref = { kind: 'end', bi, pi };
@@ -184,10 +201,39 @@ function arrowHandle(bi, pi, b, dir) {
     .attr('d', `M${xs(pt.x) - 7},${back}L${xs(pt.x)},${tip}L${xs(pt.x) + 7},${back}Z`)
     .attr('fill', 'var(--curve-f)').attr('stroke', 'var(--curve-f)').attr('stroke-width', 2)
     .attr('tabindex', 0).attr('role', 'button')
-    .attr('aria-label', nameOf(bi, pi, b, state.sk.sites.includes(pt.x), dir))
+    .attr('aria-label', nameOf(bi, pi, b, state.sk.sites.includes(b.pts[pi].x), dir))
     .on('pointerdown', ev => { ev.preventDefault(); select(ref); renderTools(); })
     .on('focus', () => select(ref))
     .on('keydown', ev => onKey(ev, ref));
+}
+
+/**
+ * A horizontal asymptote the STUDENT draws.
+ *
+ * Notation, not evidence: the check still reads the height the curve runs out
+ * at, never this line. Otherwise a line at the right height with the curve
+ * somewhere else would score, and a correct curve without the line would fail
+ * a condition the problem never stated. It earns its place because drawing the
+ * dashed line IS part of the answer Stewart prints — and because a far end
+ * dragged near one snaps to it, so the two cannot disagree by a pixel.
+ */
+function hline(i, y) {
+  chart.plot.append('line')
+    .attr('x1', xs(state.win[0])).attr('x2', xs(state.win[1]))
+    .attr('y1', ys(y)).attr('y2', ys(y))
+    .attr('stroke', 'var(--ims-gray)').attr('stroke-width', 1.5).attr('stroke-dasharray', '5 5');
+  chart.gOver.append('rect')
+    .attr('class', 'sk-handle').attr('tabindex', 0).attr('role', 'button')
+    .attr('aria-label', `Horizontal asymptote at y = ${y}. Arrow keys move it.`)
+    // Inset from the LEFT, not parked at the right edge: the far-end handles
+    // sit exactly on the frame, and the moment one snaps onto this guide — the
+    // common case — the two grab targets landed on top of each other.
+    .attr('x', xs(state.win[0] + (state.win[1] - state.win[0]) * 0.08) - 7).attr('y', ys(y) - 5)
+    .attr('width', 14).attr('height', 10).attr('rx', 2)
+    .attr('fill', '#fff').attr('stroke', 'var(--ims-gray)').attr('stroke-width', 2)
+    .on('pointerdown', ev => startDrag(ev, { kind: 'hline', i }))
+    .on('focus', () => select({ kind: 'hline', i }))
+    .on('keydown', ev => onKey(ev, { kind: 'hline', i }));
 }
 
 function dot(a, y) {
@@ -253,14 +299,29 @@ function nameOf(bi, pi, b, atSite, end) {
 /* ──────────────────────────── moving the handles ───────────────────────── */
 
 function refPoint(ref) {
-  if (ref.kind === 'dot') return null;
+  if (ref.kind === 'dot' || ref.kind === 'hline') return null;
   return state.sk.branches[ref.bi].pts[ref.pi];
 }
 
+const refY = (/** @type {any} */ ref) =>
+  (ref.kind === 'dot' ? state.sk.dots[String(ref.site)]
+    : ref.kind === 'hline' ? state.sk.hlines[ref.i]
+      : refPoint(ref).y);
+
 function moveTo(ref, x, y) {
-  const yv = clamp(snap(y), state.yWin[0], state.yWin[1]);
+  let yv = clamp(snap(y), state.yWin[0], state.yWin[1]);
+  if (ref.kind === 'hline') { state.sk.hlines[ref.i] = yv; return; }
   if (ref.kind === 'dot') { state.sk.dots[String(ref.site)] = yv; return; }
   const b = state.sk.branches[ref.bi];
+  // A far end dragged near a horizontal asymptote snaps onto it: the line is
+  // there to say where the curve is going, so the two must not differ by a
+  // pixel the student cannot see.
+  const outer = (ref.bi === 0 && ref.pi === 0)
+    || (ref.bi === state.sk.branches.length - 1 && ref.pi === b.pts.length - 1);
+  if (outer) {
+    const hit = (state.sk.hlines || []).find(h => Math.abs(h - yv) <= GRID);
+    if (hit !== undefined) yv = hit;
+  }
   const pt = b.pts[ref.pi];
   b.drawn = true;                       // touching a piece is what draws it
   pt.y = yv;
@@ -302,7 +363,7 @@ function onKey(ev, ref) {
     if (e0 === 'up' || e0 === 'down') return;   // no height to nudge at infinity
   }
   const pt = refPoint(ref);
-  const y = ref.kind === 'dot' ? state.sk.dots[String(ref.site)] : pt.y;
+  const y = refY(ref);
   let dx = 0, dy = 0;
   if (ev.key === 'ArrowUp') dy = GRID;
   else if (ev.key === 'ArrowDown') dy = -GRID;
@@ -314,7 +375,7 @@ function onKey(ev, ref) {
   state.marks = null;
   draw(); renderConds(); renderTools();
   refocus(ref);
-  announce(`height ${ref.kind === 'dot' ? state.sk.dots[String(ref.site)] : refPoint(ref).y}`, 60);
+  announce(`height ${refY(ref)}`, 60);
 }
 
 /** Redrawing throws the focused node away; put focus back where it was. */
@@ -322,7 +383,9 @@ function refocus(ref) {
   const nodes = [...document.querySelectorAll('.sk-handle')];
   const want = ref.kind === 'dot'
     ? nodes.find(n => n.getAttribute('aria-label')?.startsWith(`The value of f at x = ${ref.site}`))
-    : nodes.find(n => n.getAttribute('aria-label') === nameOfRef(ref));
+    : ref.kind === 'hline'
+      ? nodes.filter(n => n.getAttribute('aria-label')?.startsWith('Horizontal asymptote'))[ref.i]
+      : nodes.find(n => n.getAttribute('aria-label') === nameOfRef(ref));
   /** @type {any} */ (want)?.focus();
 }
 
@@ -385,6 +448,17 @@ function renderTools() {
     return;
   }
 
+  if (ref.kind === 'hline') {
+    add('Remove this line', () => { state.sk.hlines.splice(ref.i, 1); state.sel = null; });
+    const note = document.createElement('span');
+    note.className = 'll-hint';
+    note.textContent = `A horizontal asymptote at y = ${state.sk.hlines[ref.i]}. It is notation — `
+      + 'the check reads the height your curve runs out at, not this line. A far end dragged '
+      + 'near it snaps onto it.';
+    bar.append(note);
+    return;
+  }
+
   if (ref.kind === 'dot') {
     add('Remove this value', () => { delete state.sk.dots[String(ref.site)]; state.sel = null; });
     const note = document.createElement('span');
@@ -394,10 +468,20 @@ function renderTools() {
   }
 }
 
-/** One "add a value here" button per site, always available. */
+/** One "add a value here" button per site, plus the guide line. */
 function renderSiteButtons() {
   const row = $('#picker');
-  [...row.querySelectorAll('[data-site]')].forEach(n => n.remove());
+  [...row.querySelectorAll('[data-site], [data-hline]')].forEach(n => n.remove());
+  const hb = document.createElement('button');
+  hb.type = 'button'; hb.dataset.hline = '1';
+  hb.textContent = '⋯ add horizontal asymptote';
+  hb.addEventListener('click', () => {
+    state.sk.hlines.push(0);
+    state.marks = null;
+    draw(); renderConds(); renderTools(); renderSiteButtons();
+    announce('A horizontal asymptote added at y = 0. Drag it to the height you want.');
+  });
+  row.append(hb);
   for (const a of state.sk.sites) {
     if (String(a) in state.sk.dots) continue;
     const b = document.createElement('button');

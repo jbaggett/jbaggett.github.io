@@ -119,7 +119,7 @@ export function sitesOf(/** @type {Cond[]} */ conds) {
  * @typedef {{x0:number, x1:number, pts:{x:number,y:number}[], drawn:boolean,
  *   left:'open'|'closed'|'up'|'down', right:'open'|'closed'|'up'|'down'}} Branch
  * @typedef {{branches:Branch[], sites:number[], dots:Record<string, number>,
- *   window:[number,number]}} Sketch
+ *   hlines:number[], window:[number,number]}} Sketch
  */
 
 /**
@@ -141,7 +141,7 @@ export function blankSketch(/** @type {Cond[]} */ conds, /** @type {[number,numb
       pts: [{ x: x0, y: 0 }, { x: (x0 + x1) / 2, y: 0 }, { x: x1, y: 0 }],
     });
   }
-  return { branches, sites, dots: {}, window: win };
+  return { branches, sites, dots: {}, hlines: [], window: win };
 }
 
 /** Which branch owns this x? */

@@ -408,6 +408,11 @@ what the textbook prints:
 dropped — a condition silently ignored is a problem the student cannot solve and
 cannot see why.
 
+The student can add dashed **horizontal asymptote** lines as annotation. They
+are not checked and cannot be set from the URL: the check reads the height the
+curve runs out at, so a line at the right height with the curve elsewhere does
+not score, and a correct curve without the line does not fail.
+
 ```
 calclens/sketch/?preset=infinite&controls=none
 ```
