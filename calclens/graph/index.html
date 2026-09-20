@@ -38,6 +38,9 @@
   .gr-params output { font-family: var(--font-mono); min-width: 3.6rem; text-align: right; }
   .gr-layers { display: flex; flex-wrap: wrap; gap: 0.3rem 0.9rem; font-size: 0.9rem; }
   .gr-layers label { display: inline-flex; align-items: center; gap: 0.35rem; }
+  /* `display` on the class beats the browser's bare [hidden] rule, so a layer
+     withheld by ?layers= would stay on screen. Say it explicitly. */
+  .gr-layers label[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -149,7 +152,11 @@
         3<i>x</i>/√(<i>x</i>²+1) approaches 3 on the right and −3 on the left.
         They are measured by running <i>x</i> out to ±10⁸ and checking that the
         values settle, so a limit that converges very slowly — 1/ln <i>x</i> —
-        is not claimed. <b>Slant asymptotes are not detected yet.</b></li>
+        is not claimed.</li>
+    <li><b>Slant asymptotes</b> as well, by the same measurement: the slope is
+        what <i>f</i>(<i>x</i>)/<i>x</i> settles at, and the intercept is what
+        is left once that slope is taken away. A line is not dashed as its own
+        asymptote — true, and it annotates nothing.</li>
     <li><b>A tangent line</b> at a point you can slide.</li>
   </ul>
 
@@ -162,6 +169,16 @@
      Leave it off and the reader gets the sliders too, which is what you want
      for a demo rather than a static figure. The page reports its own height to
      the framing document, so the iframe can size itself.</p>
+
+  <h3>Giving a class fewer things to switch on</h3>
+  <p><code>layers=</code> decides which toggles the reader is <em>offered</em>.
+     It is a different axis from <code>show=</code>, which decides what is
+     <em>on</em>. A class meeting <i>f</i>′ for the first time gets</p>
+  <pre class="ll-code">?f=x%5E3-3x&amp;layers=deriv</pre>
+  <p>— one checkbox and nothing else to wander into. <code>layers=none</code>
+     offers nothing at all, and leaving it off offers everything. The two
+     combine: <code>show=deriv&amp;layers=none</code> puts the derivative on
+     screen without letting anyone switch it off.</p>
 
   <h3>Keyboard</h3>
   <dl>

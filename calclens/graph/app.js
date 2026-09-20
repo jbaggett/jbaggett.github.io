@@ -26,7 +26,7 @@ import { initShare } from 'kit/share.js';
 import { fmt } from 'kit/format.js';
 import { MARK } from '../js/mark.js';
 import { tryParse, compile, derivative, toLatex, freeVariables } from '../js/expr.js';
-import { findRoots, horizontalAsymptotes } from '../js/numeric.js';
+import { findRoots, horizontalAsymptotes, slantAsymptotes } from '../js/numeric.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -214,42 +214,79 @@ function drawAsymptotes(f, xs, ys, yDom) {
     dashed([xs(b.x), ys(yDom[1]), xs(b.x), ys(yDom[0])]);
   }
 
-  // Horizontal ones are measured, not found in the window: the behaviour that
-  // defines them happens off the edge of any window the reader can see, which
-  // is exactly why the picture alone does not tell them.
+  // End behaviour is MEASURED, not found in the window: what defines it happens
+  // off the edge of any window the reader can see, which is exactly why the
+  // picture alone does not tell them. A horizontal asymptote is the slope-zero
+  // case, so both kinds are carried as one line y = mx + b.
   const h = horizontalAsymptotes(f);
-  const levels = [];
-  for (const [side, y] of [['right', h.right], ['left', h.left]]) {
-    if (y === null) continue;
-    const same = levels.find(l => Math.abs(l.y - y) <= 1e-9 * Math.max(1, Math.abs(y)));
-    if (same) same.side = 'both'; else levels.push({ y, side });
+  const sl = slantAsymptotes(f);
+  /** @type {{m:number, b:number, side:string}[]} */
+  const ends = [];
+  for (const side of ['right', 'left']) {
+    const line = h[side] !== null ? { m: 0, b: h[side] } : sl[side];
+    if (!line) continue;
+    // A line is its own asymptote, truthfully and uselessly: dashing y = x on
+    // top of the graph of x annotates nothing.
+    if (isTheCurve(f, line)) continue;
+    const same = ends.find(e => Math.abs(e.m - line.m) < 1e-9
+      && Math.abs(e.b - line.b) <= 1e-9 * Math.max(1, Math.abs(line.b)));
+    if (same) same.side = 'both'; else ends.push({ ...line, side });
   }
-  for (const l of levels) {
-    // A level outside the window is still true, and drawing it at the edge
-    // would be a line the function never approaches there.
-    if (l.y < yDom[0] || l.y > yDom[1]) continue;
-    dashed([xs(state.x0), ys(l.y), xs(state.x1), ys(l.y)]);
+  for (const e of ends) {
+    const seg = clipLine(e.m, e.b, yDom);
+    if (seg) dashed([xs(seg[0]), ys(e.m * seg[0] + e.b), xs(seg[1]), ys(e.m * seg[1] + e.b)]);
   }
 
-  state.asymptotes = {
-    vertical: breaks.filter(b => b.kind === 'pole').map(b => b.x),
-    horizontal: levels,
-  };
+  state.asymptotes = { vertical: breaks.filter(b => b.kind === 'pole').map(b => b.x), ends };
+}
+
+/** Is f already this line, to the eye, across the whole window? */
+function isTheCurve(f, line) {
+  let seen = 0;
+  for (let i = 0; i <= 40; i++) {
+    const x = state.x0 + ((state.x1 - state.x0) * i) / 40;
+    const y = f(x);
+    if (!Number.isFinite(y)) continue;
+    seen += 1;
+    if (Math.abs(y - (line.m * x + line.b)) > 1e-9 * Math.max(1, Math.abs(y))) return false;
+  }
+  return seen > 4;
+}
+
+/** The part of y = mx + b that is inside the window, or null if none of it is. */
+function clipLine(m, b, yDom) {
+  if (m === 0) return (b < yDom[0] || b > yDom[1]) ? null : [state.x0, state.x1];
+  const xa = (yDom[0] - b) / m, xb = (yDom[1] - b) / m;
+  const lo = Math.max(state.x0, Math.min(xa, xb));
+  const hi = Math.min(state.x1, Math.max(xa, xb));
+  return hi > lo ? [lo, hi] : null;
+}
+
+/** "y = 3", "y = x + 1", "y = -2x". */
+function lineLabel(m, b) {
+  // A level the detector snapped to a whole number should read "y = 3", not
+  // "y = 3.0000" — the trailing zeros suggest a measurement it is not. The
+  // minus is the typographic one, so "y = −3 as x → −∞" does not mix two
+  // different dashes inside a single phrase.
+  const num = (/** @type {number} */ y) =>
+    (Number.isInteger(y) ? String(y) : fmt(y, 4)).replace('-', '\u2212');
+  if (m === 0) return `y = ${num(b)}`;
+  const slope = m === 1 ? '' : m === -1 ? '−' : num(m);
+  const inter = Math.abs(b) < 1e-12 ? ''
+    : (b > 0 ? ` + ${num(b)}` : ` − ${num(Math.abs(b))}`);
+  return `y = ${slope}${state.v}${inter}`;
 }
 
 /** "y = 3 as x → ∞, y = −3 as x → −∞", or just "y = 2" when both ends agree. */
-function horizontalText(levels, arrow = true) {
+function endText(ends) {
   const to = { both: '', right: ` as ${state.v} → ∞`, left: ` as ${state.v} → −∞` };
-  // A level the detector snapped to a whole number should read "y = 3", not
-  // "y = 3.0000" — the trailing zeros suggest a measurement it is not.
-  const level = (/** @type {number} */ y) => (Number.isInteger(y) ? String(y) : fmt(y, 4));
-  return (levels || []).map(l => `y = ${level(l.y)}${arrow ? to[l.side] : ''}`).join(', ');
+  return (ends || []).map(e => `${lineLabel(e.m, e.b)}${to[e.side]}`).join(', ');
 }
 
 /** Is any asymptote worth mentioning? */
 function anyAsymptote() {
   const a = state.asymptotes;
-  return !!(a && (a.vertical?.length || a.horizontal?.length));
+  return !!(a && (a.vertical?.length || a.ends?.length));
 }
 
 /** Critical points (f′ = 0) and inflection points (f″ = 0), on the curve. */
@@ -316,7 +353,8 @@ function asymptoteKey() {
   const dash = 'stroke="#808080" stroke-width="1.5" stroke-dasharray="3 3"';
   const marks = [
     a.vertical?.length ? `<line x1="13" y1="0" x2="13" y2="10" ${dash}/>` : '',
-    a.horizontal?.length ? `<line x1="1" y1="5" x2="25" y2="5" ${dash}/>` : '',
+    a.ends?.some(e => e.m === 0) ? `<line x1="1" y1="5" x2="25" y2="5" ${dash}/>` : '',
+    a.ends?.some(e => e.m !== 0) ? `<line x1="1" y1="9" x2="25" y2="1" ${dash}/>` : '',
   ].join('');
   return `<span><svg viewBox="0 0 26 10">${marks}</svg> asymptote</span>`;
 }
@@ -335,9 +373,10 @@ function updateReadout(primary) {
   bits.push(list(state.critical, 'critical at'));
   bits.push(list(state.inflection, 'inflection at'));
   bits.push(list(state.asymptotes?.vertical, `vertical asymptote at ${state.v} =`));
-  if (state.asymptotes?.horizontal?.length) {
-    bits.push(`<span><b>horizontal asymptote</b> ${horizontalText(state.asymptotes.horizontal)}</span>`);
-  }
+  const flat = (state.asymptotes?.ends || []).filter(e => e.m === 0);
+  const slant = (state.asymptotes?.ends || []).filter(e => e.m !== 0);
+  if (flat.length) bits.push(`<span><b>horizontal asymptote</b> ${endText(flat)}</span>`);
+  if (slant.length) bits.push(`<span><b>slant asymptote</b> ${endText(slant)}</span>`);
   if (state.clipped?.length) {
     bits.push(`<span class="ll-hint">${state.clipped.join(' and ')} `
       + `${state.clipped.length > 1 ? 'are' : 'is'} outside this window — set a `
@@ -354,8 +393,8 @@ function describe(layers, yDom) {
     + layers.map(l => names[l.key]).join(', ')
     + (state.asymptotes?.vertical?.length
       ? `, with vertical asymptotes at ${state.v} = ${state.asymptotes.vertical.map(x => fmt(x, 3)).join(', ')}` : '')
-    + (state.asymptotes?.horizontal?.length
-      ? `, and a horizontal asymptote ${horizontalText(state.asymptotes.horizontal)}` : '')
+    + (state.asymptotes?.ends?.length
+      ? `, and end behaviour ${endText(state.asymptotes.ends)}` : '')
     + '.';
 }
 
@@ -400,6 +439,28 @@ initPage({
       const box = $(`#L-${layer}`);
       if (box) box.checked = state.show[layer];
     }
+    // `layers=` is a different axis from `show=`: it decides which toggles the
+    // reader is OFFERED, not which are on. A class meeting f′ for the first
+    // time should not have a second-derivative checkbox sitting there, and an
+    // instructor may well want a layer shown but not switchable — `show=deriv`
+    // with `layers=none` is a legitimate pairing, so this never touches state.
+    //
+    // Absent or empty means everything, `none` means nothing: the same reading
+    // `controls=` already has, and matching it matters more than being clever.
+    const offered = q.get('layers');
+    if (offered) {
+      const keep = new Set(offered.split(',').map(t => t.trim()).filter(Boolean));
+      for (const layer of LAYERS) {
+        const box = $(`#L-${layer}`);
+        const row = box && box.closest('label');
+        if (row && !keep.has(layer)) row.hidden = true;
+      }
+      // Nothing left to offer: the empty box should go too, not sit there.
+      const block = /** @type {HTMLElement} */ (document.querySelector('.gr-layers'));
+      const rows = block ? [...block.querySelectorAll('label')] : [];
+      if (block && rows.every(l => /** @type {HTMLElement} */ (l).hidden)) block.hidden = true;
+    }
+
     // Asymptotes are NOT one of the optional layers, whatever `show=` lists.
     // Drawing them is about not lying: the curve is already split there, and a
     // reader looking at 1/x should see why the two branches are separate.

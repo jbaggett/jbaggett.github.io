@@ -230,6 +230,7 @@ makes you build.
 | `y` | `y0,y1` | auto | Vertical window. Omitted, it fits **the functions you typed** — `f`, `f2`, `f3`. Derived layers are drawn onto those axes and never move them, so ticking *f*′ cannot change the shape of *f* on screen; if a derived layer falls entirely outside, the readout says so. |
 | `show` | list | — | Layers to switch on: `deriv`, `second`, `critical`, `inflection`, `tangent`. |
 | `hide` | list | — | Layers to switch off, including `asymptotes`. |
+| `layers` | list | all | Which layer toggles the reader is **offered**. A different axis from `show`: this decides what can be switched, not what is on. `layers=none` offers nothing; absent or empty offers everything (the same reading `controls=` has). |
 | `at` | number | `0` | Where the tangent line sits. |
 | `plot` | `only` | — | **Figure alone** — no controls, no chrome. StatLens's spelling, same meaning. For an iframe. |
 | *any single letter* | number | `1` | A parameter's value. `?f=a*sin(b*x)&a=2&b=3` |
@@ -248,7 +249,19 @@ Both kinds are drawn: **vertical** (found in the window, and the curve is never
 joined across one) and **horizontal** (measured by running *x* out to ±10⁸ and
 checking the values settle). The two ends are reported separately, because they
 can differ — `3x/sqrt(x^2+1)` approaches 3 on the right and −3 on the left.
-Slant asymptotes are not detected.
+**Slant** asymptotes are drawn too, by the same measurement — the slope is what
+*f*(*x*)/*x* settles at, the intercept is what is left once that slope is taken
+away. A line is not annotated as its own asymptote.
+
+`show=` and `layers=` are meant to be used together. A class meeting *f*′ for
+the first time gets
+
+```
+calclens/graph/?f=x^3-3x&layers=deriv
+```
+
+— one checkbox, nothing else to wander into — and a figure that shows the
+derivative without letting anyone switch it off is `show=deriv&layers=none`.
 
 **Embedding:**
 

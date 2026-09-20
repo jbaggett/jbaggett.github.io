@@ -268,3 +268,30 @@ export function limitAtInfinity(f, sign) {
 export function horizontalAsymptotes(f) {
   return { right: limitAtInfinity(f, 1), left: limitAtInfinity(f, -1) };
 }
+
+/**
+ * Slant (oblique) asymptotes — the line the curve runs alongside when it does
+ * not level off.
+ *
+ * Two limits, in the order the textbook takes them: the slope is what f(x)/x
+ * settles at, and the intercept is what is left over once that slope is taken
+ * away. Both go through {@link limitAtInfinity}, so both inherit its refusal to
+ * claim a limit it cannot see settling — x² gives f(x)/x = x, which never
+ * settles, and is correctly reported as having no slant asymptote rather than
+ * some very large slope.
+ *
+ * A slope of zero is the HORIZONTAL case and is returned as null here, so the
+ * two detectors never both answer for the same end.
+ *
+ * @param {(x:number)=>number} f
+ * @returns {{right:{m:number,b:number}|null, left:{m:number,b:number}|null}}
+ */
+export function slantAsymptotes(f) {
+  const end = (/** @type {1|-1} */ sign) => {
+    const m = limitAtInfinity(x => f(x) / x, sign);
+    if (m === null || Math.abs(m) < 1e-9) return null;
+    const b = limitAtInfinity(x => f(x) - m * x, sign);
+    return b === null ? null : { m, b };
+  };
+  return { right: end(1), left: end(-1) };
+}
