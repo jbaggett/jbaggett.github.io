@@ -7,7 +7,7 @@
 import { parseParams } from './url-params.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
-import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat } from './stats.js';
+import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat, quartiles } from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -181,8 +181,15 @@ export function initSimPage(config) {
     mean:   { fn: (d) => mean(d),             label: 'Sample Mean',     longLabel: 'mean' },
     median: { fn: (d) => median(d),           label: 'Sample Median',   longLabel: 'median' },
     sd:     { fn: (d) => sd(d),               label: 'Sample Std Dev',  longLabel: 'standard deviation' },
-    q1:     { fn: (d) => quantile(d, 0.25),   label: 'Q1 (25th %ile)', longLabel: 'first quartile' },
-    q3:     { fn: (d) => quantile(d, 0.75),   label: 'Q3 (75th %ile)', longLabel: 'third quartile' },
+    // Median-of-halves, matching every quartile a student reads elsewhere on the
+    // site (Jeff, 2026-09-20: "let's use median-of-halves throughout"). NOT the
+    // percentile-CI quantiles in sim-engine.js, which stay type-7 — that is the
+    // interval's own method, not the statistic being bootstrapped.
+    // The label drops "25th %ile": under this rule Q1 is the median of the lower
+    // half, which is not the interpolated 25th percentile, and naming it that
+    // would teach the thing we just stopped computing.
+    q1:     { fn: (d) => quartiles(d).q1,     label: 'Q1 (first quartile)', longLabel: 'first quartile' },
+    q3:     { fn: (d) => quartiles(d).q3,     label: 'Q3 (third quartile)', longLabel: 'third quartile' },
   };
 
   /** Get the current bootstrap stat function and label. */

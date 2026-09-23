@@ -36,6 +36,32 @@ export function sturgesBins(n) {
 }
 
 /**
+ * Bin count by the **Rice rule**, `2 * cbrt(n)`, clamped to [6, 60].
+ *
+ * Sturges' rule grows like log2(n) and flattens out: 3,000 observations get 13
+ * bins and 10,000 get 15. That is fine for the few dozen values a histogram
+ * usually shows, and wrong for a sampling distribution, where the whole point
+ * is to run thousands of draws and look at the shape. Todd Will reported the
+ * consequence on `conceptual/sampling-lab` (2026-09-20): at n = 100 the
+ * sampling distribution is narrow and smooth, and 13 bars over it read as a
+ * blocky staircase — while the activity text next to it claims the shape is
+ * "now clearly bell-shaped".
+ *
+ * Rice keeps growing (3,000 → 29 bins, 10,000 → 44), which is what lets the
+ * bell actually appear as more samples arrive. Deliberately a separate export
+ * rather than a change to `sturgesBins`: every other histogram on the site
+ * depends on that default, and this is a judgement about sampling
+ * distributions, not about histograms in general.
+ *
+ * @param {number} n - Number of data values
+ * @returns {number}
+ */
+export function riceBins(n) {
+  if (n <= 0) return 6;
+  return Math.max(6, Math.min(60, Math.ceil(2 * Math.cbrt(n))));
+}
+
+/**
  * Generate snapped bin thresholds for proportion data.
  * Uses Sturges' rule to pick a reasonable bin count, then rounds
  * bin edges to the nearest k/n boundary so bars don't split

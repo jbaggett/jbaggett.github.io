@@ -13,8 +13,8 @@
   },
   "steps": [
     {
-      "instruction": "In the 1970s, 48 bank supervisors were each given the same personnel file and asked whether the candidate should be promoted. The files were identical except for one thing: the name was male on 24 of them and female on the other 24. Each card in the **Original Groups** panel is one candidate's file; a filled card means the supervisor recommended that candidate for promotion.",
-      "observe": "The supervisors recommended promotion for **21 of 24** \"male\" files (filled cards), but only **14 of 24** \"female\" files.",
+      "instruction": "In 1972, 48 male bank supervisors each reviewed one personnel file and decided whether to recommend the candidate for promotion. The files were identical except for one thing: 24 stated the candidate was male and 24 stated female. Each card in the **Original Groups** panel is one supervisor's review of a file — a filled card means that supervisor recommended promotion. A card sits in the **male** or **female** group according to the file that supervisor reviewed.",
+      "observe": "The supervisors recommended promotion for **21 of 24** reviews in the **male** group, but only **14 of 24** in the **female** group.",
       "gate": {
         "question": "How big is the gap between the two promotion rates?",
         "choices": [
@@ -34,9 +34,9 @@
       }
     },
     {
-      "instruction": "The skeptic's position — the *null hypothesis* — says sex had **no effect** on these decisions.",
+      "instruction": "The skeptic's position — the *null hypothesis* — says the file's stated sex had **no effect** on any supervisor's decision.",
       "gate": {
-        "question": "If sex truly had no effect on promotions, what would that mean about these 48 files?",
+        "question": "If the file's stated sex truly had no effect, what would that mean about these 48 decisions?",
         "choices": [
           {
             "text": "No one would be promoted"
@@ -52,12 +52,12 @@
             "text": "We would need more data to tell"
           }
         ],
-        "feedback": "Under the null hypothesis the outcomes are fixed — the same 35 supervisors would have recommended promotion either way. Only the group labels are random. That's exactly what shuffling simulates.",
-        "retryFeedback": "Think about what \"no effect\" means: the decision was already determined by the file's contents, not the name."
+        "feedback": "Under the null hypothesis the decisions are fixed — the same 35 supervisors would have recommended promotion either way. Only the group labels are random. That's exactly what shuffling simulates.",
+        "retryFeedback": "Think about what \"no effect\" means: each supervisor's decision came from the candidate's qualifications, not the sex on the file — so it would be the same either way."
       }
     },
     {
-      "instruction": "You're about to shuffle the group labels once — the **+1** button deals the same 35 promotions randomly between \"male\" and \"female\" files in the **Shuffled Groups** panel. **Before you click anything**, commit to a prediction.",
+      "instruction": "You're about to simulate one shuffle. The **+1** button keeps the two groups at 24 and 24 but **reassigns the same 35 promotions at random** across them — the **Shuffled Groups** panel shows the result (*same values, new grouping*). **Before you click anything**, commit to a prediction.",
       "gate": {
         "question": "How big do you expect the difference in promotion rates to be in one shuffle, if only chance is at work?",
         "choices": [
@@ -75,14 +75,14 @@
           }
         ]
       },
-      "observe": "Click **+1** a few times. Watch the mechanism strip deal the same promotions into new groups, and watch where each shuffled difference lands on the chart.",
+      "observe": "Click **+1** a few times. Watch the same 35 promotions get reassigned to new groups, and watch where each shuffled difference lands on the chart.",
       "phase": "predict"
     },
     {
       "instruction": "One shuffle is one data point. Click **+100**, then **+1000**, to see what chance alone typically produces.",
       "observe": "The null distribution piles up — where is its center? Now find the red line marking the observed difference (29.2 pp).",
       "gate": {
-        "question": "Look at the histogram. Where does the observed difference fall?",
+        "question": "Look at the null distribution. Where does the observed difference fall?",
         "choices": [
           {
             "text": "In the middle of the distribution — it looks typical for chance"
@@ -92,11 +92,11 @@
             "correct": true
           },
           {
-            "text": "I can't tell from the histogram"
+            "text": "I can't tell from the chart"
           }
         ],
         "feedback": "The observed 29.2 pp gap sits far in the right tail. The p-value (shown in the results panel) is the fraction of shuffles at least that extreme — and it's small.",
-        "retryFeedback": "Compare the red line's position to where most of the dots piled up. Is 29.2 pp common among the shuffles?"
+        "retryFeedback": "Compare the red line's position to where most of the shuffled differences piled up. Is 29.2 pp common among the shuffles?"
       }
     },
     {
@@ -124,7 +124,7 @@
         ],
         "answer": "A strong answer: shuffling enforces the null (labels don't matter), so on average the groups differ by 0 — the distribution centers at zero **by construction**, regardless of the real 29.2 pp gap. The fraction of shuffles at least as extreme as 29.2 pp **is** the p-value: how often chance alone matches the data. A different seed gives a **roughly** equal p-value (it's an estimate from finitely many shuffles); more shuffles → more stable."
       },
-      "reveal": "Because differences of 29.2 pp or more almost never occur when promotions are shuffled randomly, chance is not a plausible explanation. The data provide convincing evidence that sex influenced the promotion decisions. Note the logic: we didn't prove discrimination directly — we ruled out the skeptic's \"just luck\" explanation.",
+      "reveal": "Because differences of 29.2 pp or more almost never occur when the promotions are reassigned at random, chance is not a plausible explanation. The data provide convincing evidence that the file's stated sex influenced the promotion decisions. Note the logic: we didn't prove discrimination directly — a small p-value makes the skeptic's \"just luck\" explanation implausible, though it never rules chance out completely.",
       "phase": "explain"
     }
   ]
