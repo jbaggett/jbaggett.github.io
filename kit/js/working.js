@@ -141,7 +141,14 @@ export function initWorking(opts) {
     /** @param {WorkStep[]} next @param {{openAll?:boolean}} [o] */
     set(next, o = {}) {
       steps = next || [];
-      shown = o.openAll ? steps.length : 1;
+      // With the step buttons taken away by `?controls=`, there is no way to
+      // advance, so withholding lines strands the reader on line 1 under a
+      // question they cannot answer. That is what happened on the difference
+      // quotient: `?controls=f,a` opened in full, and retyping the function
+      // collapsed it to the definition plus "what would you do next?" with no
+      // control on screen. The rule belongs here, where `suppressed` is known,
+      // rather than in a boot-time line each page has to remember.
+      shown = (o.openAll || suppressed) ? steps.length : 1;
       render();
     },
     openAll() { advance(steps.length); },

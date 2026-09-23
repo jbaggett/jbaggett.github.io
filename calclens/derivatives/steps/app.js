@@ -134,10 +134,6 @@ initPage({
       onError: () => { rawSteps = []; work.set([]); },
     });
 
-    // A slide that takes the step buttons away must not also freeze the working
-    // on its first line: with no way to advance, the only sane state is opened.
-    if (work.controlsEl.hidden) work.openAll();
-
     for (const b of document.querySelectorAll('.preset')) {
       b.addEventListener('click', () => field.set(b.dataset.f));
     }

@@ -144,8 +144,6 @@ initPage({
       onError: () => { work.set([]); showBlocked(null); },
     });
 
-    if (work.controlsEl.hidden) work.openAll();
-
     const reread = () => {
       const node = field.current();
       if (node) rebuild(node, $('#fn-input').value);
