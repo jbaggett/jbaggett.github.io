@@ -255,14 +255,13 @@ button.ll-primary:hover { background: #2F6A8F; }
 
 .ll-wstep {
   display: grid;
-  grid-template-columns: 1.6rem minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 0 0.4rem;
   padding: 0.55rem 0.2rem;
   border-top: 1px solid var(--border);
   align-items: start;
 }
 .ll-wstep:first-child { border-top: 0; }
-.ll-wstep-sign { color: var(--ims-gray-text); font-size: 1.15rem; padding-top: 0.15rem; }
 /* Display style makes the fractions and the limit taller, so the rows need
    room to breathe and the baseline alignment has to give way to the top: a
    two-storey fraction baselined against a bare `=` drags the sign to the middle
@@ -275,7 +274,7 @@ button.ll-primary:hover { background: #2F6A8F; }
    competes with the algebra it is supposed to be annotating. A diagnosis is
    italic — it reports what was observed, it does not assert a step. */
 .ll-wstep-notes {
-  grid-column: 2;
+  grid-column: 1;
   margin-top: 0.3rem;
   font-size: 0.83rem;
   line-height: 1.35;
@@ -288,9 +287,9 @@ button.ll-primary:hover { background: #2F6A8F; }
 /* Desktop: the notes move into a margin of their own, level with the line they
    describe, so the equalities stack in one unbroken column. */
 @media (min-width: 760px) {
-  .ll-wstep { grid-template-columns: 1.6rem minmax(0, 1fr) 12.5rem; }
+  .ll-wstep { grid-template-columns: minmax(0, 1fr) 12.5rem; }
   .ll-wstep-notes {
-    grid-column: 3; grid-row: 1;
+    grid-column: 2; grid-row: 1;
     margin-top: 0;
     padding-left: 1rem;
     border-left: 1px solid var(--border);
@@ -311,7 +310,6 @@ button.ll-primary:hover { background: #2F6A8F; }
   align-items: center; margin-top: 0.9rem;
 }
 
-@media (max-width: 480px) { .ll-wstep { grid-template-columns: 1.1rem 1fr; } }
 
 /* ── Dialog ──────────────────────────────────────────────────────────────── */
 

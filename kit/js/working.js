@@ -28,6 +28,22 @@ import { announce } from './page.js';
  * @typedef {{tex:string, notes?:Note[]}} WorkStep
  */
 
+/**
+ * The `=` that opens every line after the first.
+ *
+ * It goes INSIDE the maths, which is the only way to get it onto the fraction
+ * bar. As its own element it cannot be aligned there: the equation div scrolls
+ * sideways for wide expressions, and an element with non-visible overflow stops
+ * propagating its children's baseline — CSS synthesises one from its bottom
+ * edge instead. So `align-items: baseline` dropped the sign to the foot of a
+ * tall fraction and `start` raised it to the top, and neither is where a person
+ * writes it. TeX sets a relation on the math axis, which is exactly the bar.
+ *
+ * The first line gets the same width as a phantom, so every expression in the
+ * column still starts at one x.
+ */
+const lead = (/** @type {number} */ i) => (i === 0 ? '\\phantom{{}={}}' : '{}={}');
+
 function el(/** @type {string} */ tag, /** @type {string} */ cls, /** @type {string} */ text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -74,11 +90,9 @@ export function initWorking(opts) {
       const li = el('li', 'll-wstep', '');
       if (i === steps.length - 1 && shown === steps.length) li.classList.add('ll-wstep-final');
 
-      const sign = el('span', 'll-wstep-sign', i === 0 ? '' : '=');
-      sign.setAttribute('aria-hidden', 'true');
       const eq = el('div', 'll-wstep-eq', '');
-      eq.innerHTML = tex(s.tex, { displayStyle: true });
-      li.append(sign, eq);
+      eq.innerHTML = tex(lead(i) + s.tex, { displayStyle: true });
+      li.append(eq);
 
       if (s.notes && s.notes.length) {
         const box = el('div', 'll-wstep-notes', '');
@@ -95,8 +109,10 @@ export function initWorking(opts) {
     // answer will appear — which is also what teaches that column's job.
     if (shown < steps.length) {
       const li = el('li', 'll-wstep ll-wstep-ghost', '');
-      li.innerHTML = '<span class="ll-wstep-sign" aria-hidden="true">=</span>'
-        + '<div class="ll-wstep-eq" aria-hidden="true">…</div>';
+      const eq = el('div', 'll-wstep-eq', '');
+      eq.setAttribute('aria-hidden', 'true');
+      eq.innerHTML = tex('{}={}\\;\\cdots', { displayStyle: true });
+      li.append(eq);
       li.append(el('div', 'll-wstep-notes', ghost));
       list.append(li);
     }
