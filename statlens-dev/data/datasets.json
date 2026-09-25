@@ -110,7 +110,7 @@
   {
     "id": "babies_crawl",
     "name": "Crawling Age vs. Temperature",
-    "description": "Average crawling age (weeks) vs. average outdoor temperature (°F) at 6 months. n=12 birth months. IMS Ch. 7.",
+    "description": "Average crawling age (weeks) vs. average outdoor temperature (\u00b0F) at 6 months. n=12 birth months. IMS Ch. 7.",
     "type": "regression",
     "chapter": "IMS Ch. 7",
     "n": 12,
@@ -990,7 +990,7 @@
   {
     "id": "floridalakes",
     "name": "Florida Lakes (Mercury)",
-    "description": "Water chemistry and fish mercury for 53 Florida lakes — pH/alkalinity vs mercury (Ch. 7, 24 regression/correlation).",
+    "description": "Water chemistry and fish mercury for 53 Florida lakes \u2014 pH/alkalinity vs mercury (Ch. 7, 24 regression/correlation).",
     "type": "regression",
     "chapter": "IMS Ch. 7, 24",
     "n": 53,
@@ -1175,7 +1175,7 @@
   {
     "id": "immigration",
     "name": "Immigration Views by Politics",
-    "description": "Views on immigration policy by political affiliation. 4 political groups × 3-4 response levels. IMS Ch. 4, 18.",
+    "description": "Views on immigration policy by political affiliation. 4 political groups \u00d7 3-4 response levels. IMS Ch. 4, 18.",
     "type": "chisq",
     "chapter": "IMS Ch. 4, 18",
     "n": 910,
@@ -1207,7 +1207,7 @@
   {
     "id": "jury",
     "name": "Jury Racial Composition",
-    "description": "Race of 275 jurors vs. the community distribution (72/7/12/9%) — goodness-of-fit. IMS Ch. 16.",
+    "description": "Race of 275 jurors vs. the community distribution (72/7/12/9%) \u2014 goodness-of-fit. IMS Ch. 16.",
     "chapter": "IMS Ch. 16",
     "n": 275,
     "variables": [
@@ -1222,7 +1222,7 @@
   {
     "id": "mendel_peas",
     "name": "Mendel's Peas",
-    "description": "Phenotype counts from Mendel's dihybrid cross (n=556) vs. the 9:3:3:1 ratio — goodness-of-fit. IMS Ch. 16.",
+    "description": "Phenotype counts from Mendel's dihybrid cross (n=556) vs. the 9:3:3:1 ratio \u2014 goodness-of-fit. IMS Ch. 16.",
     "type": "gof",
     "chapter": "IMS Ch. 16",
     "n": 556,
@@ -1237,7 +1237,7 @@
   {
     "id": "stock_geometric",
     "name": "Stock Streaks (Geometric Model)",
-    "description": "Days since a stock index last rose over 1,362 trading days vs. a geometric model — goodness-of-fit. IMS Ch. 16.",
+    "description": "Days since a stock index last rose over 1,362 trading days vs. a geometric model \u2014 goodness-of-fit. IMS Ch. 16.",
     "type": "gof",
     "chapter": "IMS Ch. 16",
     "n": 1362,
@@ -1252,7 +1252,7 @@
   {
     "id": "barking_deer",
     "name": "Barking Deer Foraging Sites",
-    "description": "Barking deer forage-site habitats vs. available land proportions — a strong-preference goodness-of-fit. IMS Ch. 16.",
+    "description": "Barking deer forage-site habitats vs. available land proportions \u2014 a strong-preference goodness-of-fit. IMS Ch. 16.",
     "type": "gof",
     "chapter": "IMS Ch. 16",
     "n": 426,
@@ -1267,7 +1267,7 @@
   {
     "id": "blood_types",
     "name": "Blood Types (Illustrative)",
-    "description": "Small ABO blood-type sample (n=80) vs. the approximate US distribution — a goodness-of-fit where an expected count is below 5. IMS Ch. 16.",
+    "description": "Small ABO blood-type sample (n=80) vs. the approximate US distribution \u2014 a goodness-of-fit where an expected count is below 5. IMS Ch. 16.",
     "type": "gof",
     "chapter": "IMS Ch. 16",
     "n": 80,
@@ -1282,7 +1282,7 @@
   {
     "id": "textbooks_format",
     "name": "Textbook Format Preference",
-    "description": "Format used by 126 students vs. a predicted 60/25/15% split — goodness-of-fit. IMS Ch. 16.",
+    "description": "Format used by 126 students vs. a predicted 60/25/15% split \u2014 goodness-of-fit. IMS Ch. 16.",
     "type": "gof",
     "chapter": "IMS Ch. 16",
     "n": 126,
@@ -1329,7 +1329,7 @@
   {
     "id": "arthritis_male",
     "name": "Rheumatoid Arthritis Treatment (Male Patients)",
-    "description": "Improvement by treatment for the 25 male patients in the arthritis trial — a borderline association (p ≈ 0.09). IMS Ch. 18 (chi-square).",
+    "description": "Improvement by treatment for the 25 male patients in the arthritis trial \u2014 a borderline association (p \u2248 0.09). IMS Ch. 18 (chi-square).",
     "type": "chisq",
     "chapter": "IMS Ch. 18",
     "n": 25,
@@ -1361,7 +1361,7 @@
   {
     "id": "loan50",
     "name": "Loan50 (Lending Club)",
-    "description": "A 50-loan sample from the Lending Club peer-to-peer platform — borrower, loan, and credit variables (IMS Ch. 1, 8).",
+    "description": "A 50-loan sample from the Lending Club peer-to-peer platform \u2014 borrower, loan, and credit variables (IMS Ch. 1, 8).",
     "type": "explore",
     "chapter": "IMS Ch. 1, 8",
     "n": 50,
@@ -1566,7 +1566,7 @@
   {
     "id": "medical_consultant",
     "name": "Medical Consultant",
-    "description": "Complication outcomes for 62 patients of a medical consultant. 3 of 62 had complications (p̂ = 0.048). National complication rate is 10%. IMS Ch. 12, 16.",
+    "description": "Complication outcomes for 62 patients of a medical consultant. 3 of 62 had complications (p\u0302 = 0.048). National complication rate is 10%. IMS Ch. 12, 16.",
     "type": "bootstrap_prop",
     "chapter": "",
     "n": 62,
@@ -1662,7 +1662,7 @@
   {
     "id": "nbasalaries2022",
     "name": "NBA Salaries 2022",
-    "description": "Salaries (millions) for 467 NBA players, 2022 — a strongly right-skewed distribution (Ch. 5, 12).",
+    "description": "Salaries (millions) for 467 NBA players, 2022 \u2014 a strongly right-skewed distribution (Ch. 5, 12).",
     "type": "bootstrap",
     "chapter": "IMS Ch. 5, 12",
     "n": 467,
@@ -1860,7 +1860,7 @@
   {
     "id": "pulserates",
     "name": "Pulse: Quiz vs Lecture",
-    "description": "Each student’s pulse during a quiz vs a lecture, n = 10 paired (Ch. 20 paired data).",
+    "description": "Each student\u2019s pulse during a quiz vs a lecture, n = 10 paired (Ch. 20 paired data).",
     "type": "paired",
     "chapter": "IMS Ch. 20",
     "n": 10,
@@ -1907,7 +1907,7 @@
   {
     "id": "salaries",
     "name": "Sales by Pay Type",
-    "description": "Sales totals for 15 employees across three pay structures — small 3-group comparison (Ch. 22 ANOVA).",
+    "description": "Sales totals for 15 employees across three pay structures \u2014 small 3-group comparison (Ch. 22 ANOVA).",
     "type": "anova",
     "chapter": "IMS Ch. 22",
     "n": 15,
@@ -2063,7 +2063,7 @@
   {
     "id": "stem_cell",
     "name": "Stem Cell Heart Repair",
-    "description": "Change in heart pumping capacity (after − before) for sheep receiving embryonic stem cell treatment vs. control. IMS Ch. 20.",
+    "description": "Change in heart pumping capacity (after \u2212 before) for sheep receiving embryonic stem cell treatment vs. control. IMS Ch. 20.",
     "type": "randomization",
     "chapter": "IMS Ch. 20",
     "n": 18,
@@ -2138,7 +2138,7 @@
   {
     "id": "transplant_survival",
     "name": "Heart Transplant Survival",
-    "description": "Survival outcomes for 34 heart transplant patients. 24 of 34 survived (p̂ = 0.706). Build a bootstrap CI for the true survival rate.",
+    "description": "Survival outcomes for 34 heart transplant patients. 24 of 34 survived (p\u0302 = 0.706). Build a bootstrap CI for the true survival rate.",
     "type": "bootstrap_prop",
     "chapter": "",
     "n": 34,
@@ -2219,7 +2219,7 @@
   {
     "id": "us_temperature",
     "name": "US 90th-Percentile Daily Highs: 1950 vs 2022",
-    "description": "90th-percentile daily high temperature (°F) at 26 NOAA stations in 1950 vs 2022. IMS Ch. 21.",
+    "description": "90th-percentile daily high temperature (\u00b0F) at 26 NOAA stations in 1950 vs 2022. IMS Ch. 21.",
     "type": "paired",
     "chapter": "IMS Ch. 21",
     "n": 26,
@@ -2287,26 +2287,5 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
-  },
-  {
-    "id": "example_commute",
-    "name": "Example: Commute Times",
-    "description": "Commute time, housing status and year for 30 students in one section. Example of a contributed dataset (synthetic data).",
-    "type": "explore",
-    "chapter": "",
-    "n": 30,
-    "variables": [
-      "commute_min",
-      "housing",
-      "year"
-    ],
-    "hasNumeric": true,
-    "hasCategorical": true,
-    "numericCount": 1,
-    "catCount": 2,
-    "groupLevels": 2,
-    "minGroupN": 15,
-    "contributed": true,
-    "contributor": "StatLens (example)"
   }
 ]

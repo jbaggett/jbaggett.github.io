@@ -616,6 +616,108 @@ main {
   .table-var-names input { min-width: 7rem; }
 }
 
+
+/* A refusal the user can actually see. Paired with announce() rather than
+   replacing it — the live region still serves screen readers. */
+.input-problem { margin: 0.5rem 0 0; color: #A33; font-size: 0.9rem; }
+
+/* Extra Datasets: the QR + data-file panel, revealed per card on request. */
+/* `display: flex` beats the UA's [hidden] rule, so the panel would render even
+   when hidden — say it explicitly. */
+.ds-qr[hidden] { display: none; }
+.ds-qr {
+  display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-start;
+  margin: 0.7rem 0 0; padding: 0.7rem 0 0;
+  border-top: 1px solid var(--border, #ccc);
+}
+.ds-qr-img { width: 148px; flex: 0 0 auto; }
+.ds-qr-img svg { display: block; width: 100%; height: auto; }
+.ds-qr-side { flex: 1 1 14rem; min-width: 0; }
+.ds-qr-side p { margin: 0 0 0.4rem; }
+.ds-raw-url { word-break: break-all; font-size: 0.85em; }
+@media (max-width: 600px) { .ds-qr-img { width: 120px; } }
+
+/* Extra Datasets filter bar — appears once there is enough to sift. */
+.ds-filters {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem; padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border, #ccc); border-radius: 4px;
+}
+.ds-filters input[type="search"] { flex: 1 1 14rem; min-width: 0; }
+.ds-filters #ds-count { flex-basis: 100%; margin: 0; }
+@media (max-width: 600px) {
+  .ds-filters input[type="search"], .ds-filters select { min-height: 44px; }
+  .ds-filters .control-label { flex-basis: 100%; margin-bottom: -0.25rem; }
+}
+
+/* Expert-mode badge — visible exactly while expert mode is on, which is the
+   opposite of .expert-only. Bottom-left so it never collides with the Share /
+   settings cluster top-right, and quiet enough to ignore while teaching. */
+.expert-badge {
+  position: fixed; left: 0.75rem; bottom: 0.75rem; z-index: 60;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 0.7rem; border-radius: 999px;
+  border: 1px solid var(--ims-blue, #569BBD); background: #fff;
+  color: var(--ims-green, #114B5F); font: inherit; font-size: 0.8rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); cursor: pointer;
+}
+.expert-badge:hover { background: var(--bg-alt, #f5f5f5); }
+.expert-badge:focus-visible { outline: 2px solid var(--ims-green, #114B5F); outline-offset: 2px; }
+.expert-badge-off { text-decoration: underline; color: var(--accent, #3A7CA5); }
+@media (max-width: 600px) {
+  /* 44px target, and out of the way of a bottom sheet's handle. */
+  .expert-badge { min-height: 44px; bottom: 0.5rem; left: 0.5rem; font-size: 0.75rem; }
+}
+@media print { .expert-badge { display: none; } }
+
+/* Quartile-method control (expert-only) + the note that outlives expert mode. */
+.quartile-method { margin: 0.6rem 0 0; }
+.quartile-method select { width: 100%; max-width: 15rem; }
+.quartile-method-note { margin: 0.5rem 0 0; color: var(--ims-green, #114B5F);
+  border-left: 3px solid var(--ims-blue, #569BBD); padding-left: 0.5rem; }
+
+/* ===== Live Rooms (REQ-067) =============================================
+   The host block is sized to be read off a projector from the back of a
+   lecture hall, which is why the code is enormous and the QR is not small. */
+.room-panel { border: 1px solid var(--border, #ccc); border-left: 4px solid var(--ims-blue, #569BBD);
+  border-radius: 4px; padding: 0.7rem 0.9rem; margin: 0 0 1rem; }
+.room-panel .btn-row { margin-top: 0.6rem; }
+.room-start-hint { margin: 0.35rem 0 0; }
+.room-joined { border-left-color: #1a7f37; }
+.room-error { border-left-color: #A33; }
+.room-error p, .room-joined p { margin: 0; }
+.room-joined p + * { margin-top: 0.4rem; }
+.room-what summary { cursor: pointer; font-size: 0.88rem; color: var(--ims-gray-text, #6B6B6B); }
+.room-what p { margin: 0.3rem 0 0; font-size: 0.9rem; }
+/* "Just watch" is deliberately quiet: available, never advertised. */
+.link-button { background: none; border: none; padding: 0; font: inherit;
+  color: var(--ims-gray-text, #6B6B6B); text-decoration: underline; cursor: pointer; }
+.link-button:hover { color: var(--ims-green, #114B5F); }
+.room-watch-line { margin-top: 0.45rem; }
+@media (max-width: 600px) { .link-button { min-height: 44px; } }
+
+.room-code-block { display: flex; flex-wrap: wrap; gap: 1.1rem; align-items: center; }
+.room-qr { width: 168px; flex: 0 0 auto; }
+.room-qr svg { display: block; width: 100%; height: auto; }
+.room-code-label { margin: 0; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ims-gray-text, #6B6B6B); }
+.room-code { margin: 0.1rem 0 0.2rem; font-family: var(--font-mono, monospace);
+  font-size: 3.1rem; font-weight: 700; letter-spacing: 0.16em; line-height: 1;
+  color: var(--ims-green, #114B5F); }
+.room-join-url { margin: 0; word-break: break-all; }
+.room-expiry { margin: 0.35rem 0 0; }
+.room-count { margin: 0.7rem 0 0; font-size: 1.05rem; color: var(--ims-green, #114B5F); }
+.room-warning { border-top: 1px solid var(--border, #ccc); margin-top: 0.6rem; padding-top: 0.5rem; }
+.room-warning code { word-break: break-all; }
+/* Only present when something actually failed — it must not hold a gap open. */
+.room-problem { margin: 0.6rem 0 0; color: #A33; }
+.room-problem:empty { display: none; }
+
+@media (max-width: 600px) {
+  .room-code { font-size: 2.2rem; }
+  .room-qr { width: 132px; }
+  .room-panel button { min-height: 44px; }
+}
 /* ===== Help Dialog Content ===== */
 
 dialog .help-intro {
@@ -1508,11 +1610,24 @@ input[aria-invalid="true"] {
   flex-wrap: wrap;
   min-height: 60px;
 }
-.mech-card-display .card-group { flex: 0 1 auto; max-width: 48%; }
+/* Both piles take the same width, so the grid below wraps at the same column
+   count in each. Sizing each to its own content let the longer heading widen
+   one pile, and two groups of 24 came out as different grid shapes — which
+   reads as "these groups aren't the same size" at exactly the moment the
+   activity asks a student to compare them. (Todd Will, 2026-09-18) */
+.mech-card-display .card-group {
+  flex: 1 1 0; min-width: 0; max-width: 48%;
+  /* The padding and the 1px rule are on BOTH groups — the second one's divider
+     is just this border made visible. Putting them only on the second shrank
+     its content box by 17px, which cost it a whole column: 24 cards drew as
+     13+11 in one pile and 12+12 in the other. Identical box models are what
+     make identical n draw an identical grid. */
+  padding-left: 1rem;
+  border-left: 1px solid transparent;
+}
 /* Subtle divider between the two sample groups so they read as distinct. */
 .mech-card-display .card-group + .card-group {
-  border-left: 1px solid var(--border, #ccc);
-  padding-left: 1rem;
+  border-left-color: var(--border, #ccc);
 }
 .mech-card-display .card-group h3 {
   font-size: 0.8rem;
@@ -1523,8 +1638,12 @@ input[aria-invalid="true"] {
 }
 .mech-card-count { font-weight: 400; color: #595959; }
 .mech-card-display .cards {
-  display: flex;
-  flex-wrap: wrap;
+  /* A fixed-track grid rather than wrapping flex: with equal group widths both
+     piles fit the same number of 15px columns, so equal n always draws the
+     same shape — and unequal n differs by whole rows, which is the comparison
+     the panel exists to make. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 15px);
   gap: 3px;
   justify-content: center;
 }

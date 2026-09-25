@@ -6,6 +6,8 @@
  * @import { ChartFrame } from './types.js'
  */
 
+import { quartiles, median } from './stats.js';
+import { getQuartileMethod } from './quartile-method.js';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
 
@@ -27,6 +29,31 @@ const PHONE_MARGIN = { top: 30, right: 15, bottom: 60, left: 80 };
  * @type {number}
  */
 export const TRANSITION_MS = 300;
+
+/**
+ * Tick formatter for a **count** axis in by-eye mode.
+ *
+ * `labels=names` / `labels=none` exist so students read a chart by shape rather
+ * than by number — the categorical-charts activity tells them to "use only the
+ * bar heights". But the count axis went on printing 0, 20, … 280 beside the
+ * bars, which hands back exactly what the mode withholds. Reported by Todd Will
+ * on `explore/one-cat/?dataset=brexit&labels=names`.
+ *
+ * Only the tick *text* is blanked. The axis line, the ticks and the axis title
+ * stay, because the chart still has to read as a measured thing — a bare
+ * rectangle with no axis is a different (and worse) picture than one whose
+ * scale is deliberately unlabelled.
+ *
+ * Restoring them needs no extra wiring: "Show values" already flips `labels`
+ * back to `full` and re-renders.
+ *
+ * @param {'full'|'names'|'none'|undefined} labels
+ * @param {(d: any) => string} format - the formatter to use when values show
+ * @returns {(d: any) => string}
+ */
+export function countTickFormat(labels, format) {
+  return (labels === 'names' || labels === 'none') ? () => '' : format;
+}
 
 /**
  * Compute responsive pill dimensions (charWidth, padding, pill height)
@@ -1365,16 +1392,10 @@ export function drawMiniBoxplot(container, values, options = {}) {
   const sorted = [...values].sort((a, b) => a - b);
   const n = sorted.length;
 
-  // Quartiles (R type=7 compatible via linear interpolation)
-  const q = (/** @type {number} */ p) => {
-    const h = (n - 1) * p;
-    const lo = Math.floor(h);
-    const hi = Math.ceil(h);
-    return sorted[lo] + (sorted[hi] - sorted[lo]) * (h - lo);
-  };
-  const q1 = q(0.25);
-  const med = q(0.5);
-  const q3 = q(0.75);
+  // Same convention as every other box plot on the site, whichever one the page
+  // is currently displaying (see js/quartile-method.js).
+  const { q1, q3 } = quartiles(sorted, getQuartileMethod());
+  const med = median(sorted);
   const iqr = q3 - q1;
 
   const lowerFence = q1 - 1.5 * iqr;

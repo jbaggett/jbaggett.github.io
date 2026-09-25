@@ -10,7 +10,8 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { quantile } from './stats.js';
+import { quartiles, median } from './stats.js';
+import { getQuartileMethod } from './quartile-method.js';
 import { createChart, addAxes, formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, showTooltip, hideTooltip, attachTooltip, wrapTickLabels, getColors, ensurePatterns } from './chart-utils.js';
 
 /** IMS blue for strokes and fills. */
@@ -39,16 +40,25 @@ const OUTLIER_RADIUS = 3;
 
 /**
  * Compute boxplot statistics from numeric data.
- * Uses R-compatible type=7 quantile (from stats.js).
+ *
+ * Quartiles follow the course's median-of-halves rule (`stats.quartiles`), not
+ * R type-7: the edges of a box are something a student is asked to find by
+ * hand, and a box that disagrees with their arithmetic teaches the wrong
+ * lesson. Every box plot on the site draws through here, so they all agree.
+ *
+ * The method defaults to whatever the page is displaying rather than to a
+ * constant, so an expert switching convention moves the box, the table and the
+ * five-number summary together — three surfaces showing different quartiles
+ * would be worse than any one of them being wrong.
  *
  * @param {number[]} values - Numeric data (unsorted OK)
+ * @param {import('./quartile-method.js').QuartileMethod} [method]
  * @returns {BoxplotStats}
  */
-export function computeBoxplotStats(values) {
+export function computeBoxplotStats(values, method = getQuartileMethod()) {
   const sorted = [...values].sort((a, b) => a - b);
-  const q1 = quantile(sorted, 0.25);
-  const med = quantile(sorted, 0.5);
-  const q3 = quantile(sorted, 0.75);
+  const { q1, q3 } = quartiles(sorted, method);
+  const med = median(sorted);
   const iqrVal = q3 - q1;
 
   const lowerFence = q1 - 1.5 * iqrVal;

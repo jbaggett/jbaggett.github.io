@@ -162,7 +162,7 @@ Accepted by pages under `simulate/`. Parsed by `js/url-params.js`, consumed by `
 | `seed` | string | _(random)_ | PRNG seed for reproducible resampling. | `?seed=hw3q2` |
 | `ci` | integer | `95` | Confidence interval level (as a percentage). Applied to the CI level dropdown. | `?ci=90` |
 | `ci_method` | string | `percentile` | Which CI(s) the results show on **bootstrap** pages: `percentile` (default, IMS), `se` (estimate ± z·SE — the "±2 SE" 95% rule of thumb), `both`, or `bca` (bias-corrected and accelerated). A live **Percentile \| ±2 SE \| Both** toggle is in the results; the **BCa** button is shown only in expert mode. `?ci_method=bca` selects it directly (works regardless of expert mode, for instructor links). | `?ci_method=both` |
-| `stat` | string | `mean` | Bootstrap statistic selector (bootstrap-mean page only). Valid values: `mean`, `median`, `sd`, `q1`, `q3`. Sets the `#boot-stat` dropdown on page load. | `?stat=median` |
+| `stat` | string | `mean` | Bootstrap statistic selector (bootstrap-mean page only). Valid values: `mean`, `median`, `sd`, `q1`, `q3`. Sets the `#boot-stat` dropdown on page load. **`q1`/`q3` use the course's median-of-halves rule** (as of 2026-09-20), matching every quartile a student reads elsewhere; the percentile CI built around them still uses type-7 quantiles, which is the interval's own method rather than the statistic. See the Quartile Convention section. | `?stat=median` |
 | `mview` | string | _(auto)_ | **Pin the mechanism-strip view.** Only `tiles` (alias `summary`) is honoured. A numeric sample larger than 30 auto-switches the resample panel to a histogram, which cannot show *how many times* a value was drawn — so an activity built around counting repeats (e.g. `bootstrap-explore` on `penny_ages`, n = 648) must ask for Tiles explicitly. Counts as an explicit user choice, so the auto-default leaves it alone. `histogram` is deliberately **not** accepted: the mean mechanism carries its own three-way Tiles/Dotplot/Histogram control that this param does not move, and it is the auto-default for large n anyway. | `?dataset=penny_ages&mview=tiles` |
 | `direction` | string | _(page default)_ | Tail direction for hypothesis test shading. Valid values: `less`, `greater`, `two-sided` (mapped internally to `twosided`). Sets the alternative hypothesis direction button. | `?direction=greater` |
 | `mechanism` | string | _(bars)_ | Mechanism-strip view for **two-group proportion randomization** pages (`randomization-diff-props`). `cards` sets the initial view to dealt cards instead of proportion bars; a live "Bars / Cards" toggle is available regardless. Cards are shown only for small samples (≤50 per group); ignored otherwise. Pairs with `success`/`failure` for card legend labels (which otherwise derive from the data's outcome levels). | `?mechanism=cards` |
@@ -382,6 +382,35 @@ Pre-selects the active chart type on page load. The value must match one of the 
 | `explore/descriptive/` | `chart` | `histogram`, `dotplot`, `boxplot` | `histogram` | `?dataset=loan50_interest&chart=boxplot` |
 | `explore/one-cat/` | `chart` | `bar`, `pie`, `waffle` | `bar` | `?dataset=homeownership&chart=pie` |
 | `explore/grouped/` | `chart` | `boxplot`, `dotplot`, `histogram`, `density` | `boxplot` | `?dataset=county_income_popgain&chart=density` |
+
+### Quartile Convention (`explore/descriptive/`, `explore/grouped/`)
+
+Pins which quartile rule the descriptive tools display — the Q1/Q3 readout, the IQR, the five-number
+summary and the box edges, which always move together.
+
+| Parameter | Type | Valid Values | Default | Description |
+|-----------|------|-------------|---------|-------------|
+| `quartile_method` | string | `exclusive`, `inclusive`, `type7` | `exclusive` | Which convention to display. `exclusive` is the course rule: Q1 and Q3 are the medians of the lower and upper halves, with the overall median in **neither** half when *n* is odd (coursepack / TI-84 / Tukey / Moore & McCabe). `inclusive` keeps the median in **both** halves when *n* is odd (R's `fivenum` hinges); identical to `exclusive` whenever *n* is even. `type7` interpolates, as R, NumPy and Excel do by default. |
+
+```
+explore/descriptive/?dataset=corn_yield                          → Q1 = 1511, Q3 = 2060 (course)
+explore/descriptive/?dataset=corn_yield&quartile_method=type7    → Q1 = 1561.5, Q3 = 2010.5
+```
+
+**Stability:** the parameter and its three values are frozen. `exclusive` is the default and embeds need
+not pass anything to get it — pass it explicitly only if you want to be immune to a future default change.
+
+**Notes for embedders**
+
+- The parameter **wins over the on-page control**, so an embedded figure keeps the convention its link
+  asked for no matter what the reader selects. The control renders disabled in that case.
+- Without the parameter, the convention is a **session** choice (expert mode only, via the settings
+  gear) and resets to the course rule on every page load — a reader cannot leave a tool set to a
+  convention that disagrees with the printed book.
+- Whenever the displayed method is not the course rule, the page shows a visible note saying so. That
+  note is deliberately *not* expert-only.
+- Display only. The percentile bootstrap CI (`ci_method=percentile`) uses R type-7 quantiles regardless,
+  which is the right standard there; `quartile_method` does not touch it.
 
 ### Label Visibility (`explore/one-cat/`, `explore/descriptive/`)
 

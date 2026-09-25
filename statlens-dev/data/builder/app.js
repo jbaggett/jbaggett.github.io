@@ -188,8 +188,13 @@ function resetAll() {
     parseStatus.textContent = '';
     colConfigWrap.hidden = true;
     previewWrap.hidden = true;
-    stepMetadata.classList.add('disabled');
-    stepExport.classList.add('disabled');
+    // `inert` rather than pointer-events alone: a section you cannot click is
+    // still reachable by Tab, so a keyboard user could fill in fields that are
+    // supposed to be unavailable.
+    for (const step of [stepMetadata, stepExport]) {
+        step.classList.add('disabled');
+        step.inert = true;
+    }
     colConfigBody.innerHTML = '';
     previewThead.innerHTML = '';
     previewTbody.innerHTML = '';
@@ -199,8 +204,10 @@ function resetAll() {
 }
 
 function enableSteps() {
-    stepMetadata.classList.remove('disabled');
-    stepExport.classList.remove('disabled');
+    for (const step of [stepMetadata, stepExport]) {
+        step.classList.remove('disabled');
+        step.inert = false;
+    }
 }
 
 // ─── Column config ───────────────────────────────────────────────────────────

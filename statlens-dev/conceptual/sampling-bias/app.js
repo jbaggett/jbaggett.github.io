@@ -7,7 +7,8 @@
 import { mean } from '../../js/stats.js';
 import { createRng } from '../../js/prng.js';
 import { drawDotplot } from '../../js/dotplot.js';
-import { initHelp, announce } from '../../js/page-utils.js';
+import { initHelp, announce, createExpertToggle } from '../../js/page-utils.js';
+import { mountLiveRoom } from '../../js/live-room-ui.js';
 
 initHelp();
 
@@ -127,7 +128,11 @@ const meanLen = (/** @type {number[]} */ idx) => mean(idx.map(i => WORDS[i].len)
 // ─── Actions ───
 function addByeye() {
   if (picked.size !== n) return;
-  byeyeMeans.push(meanLen([...picked]));
+  const m = meanLen([...picked]);
+  byeyeMeans.push(m);
+  // REQ-067: in a class room, this is the value that builds the shared picture.
+  // A no-op when there is no room, which is every ordinary visit.
+  liveRoom?.publish(m);
   clearPicks();
   render();
   announce(`Added your by-eye sample. ${byeyeMeans.length} by-eye samples so far.`);
@@ -181,8 +186,32 @@ function renderChart(containerId, vals, fill) {
   });
 }
 
+/** @type {{publish: (v: number) => void}|null} */
+let liveRoom = null;
+/** The class's by-eye means, when hosting a room. Drawn instead of this
+ *  device's own handful — the point of the activity is the *class* pile-up. */
+let classMeans = /** @type {number[]|null} */ (null);
+
+// The class-room controls are instructor surface on a page students use alone,
+// so they sit behind expert mode — which this page did not previously offer.
+const expertBar = document.querySelector('#settings .btn-row, #settings, .generate-bar');
+if (expertBar) createExpertToggle(/** @type {HTMLElement} */ (expertBar));
+
+const roomHost = document.getElementById('live-room');
+if (roomHost) {
+  mountLiveRoom({
+    container: roomHost,
+    activity: 'sampling-bias',
+    label: 'by-eye sample mean',
+    onUpdate: (state) => {
+      classMeans = state.values;
+      render();
+    },
+  }).then(api => { liveRoom = api; });
+}
+
 function render() {
-  renderChart('byeye-chart', byeyeMeans, '#C08700');
+  renderChart('byeye-chart', classMeans ?? byeyeMeans, '#C08700');
   renderChart('random-chart', randomMeans, '#0072B2');
   if (byeyeStatEl) byeyeStatEl.innerHTML = panelStat(byeyeMeans);
   if (randomStatEl) randomStatEl.innerHTML = panelStat(randomMeans);

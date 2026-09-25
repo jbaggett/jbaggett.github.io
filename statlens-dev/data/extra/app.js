@@ -10,11 +10,16 @@
  * this page is how they are found.
  */
 
-import { announce, initHelp } from '../../js/page-utils.js';
+import { announce, initHelp, contributedIndex, storePath } from '../../js/page-utils.js';
+import { ensureQrLib, plainQrSvg } from '../../js/qr.js';
 
 initHelp();
 
 const list = /** @type {HTMLElement} */ (document.getElementById('ds-list'));
+const filters = document.getElementById('ds-filters');
+const searchBox = /** @type {HTMLInputElement|null} */ (document.getElementById('ds-search'));
+const kindSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('ds-kind'));
+const countLine = document.getElementById('ds-count');
 
 /**
  * Tools a dataset can open in, decided from the index entry's shape. Order is
@@ -61,6 +66,33 @@ function toolsFor(d) {
   return out;
 }
 
+/**
+ * Everything a search should look through: an instructor hunting for "reaction
+ * time" should find it whether that phrase is in the title, the description, a
+ * column name, or the name of whoever sent it in.
+ * @param {any} d
+ */
+function haystack(d) {
+  return [d.name, d.description, d.id, d.contributor, ...(d.variables || [])]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+
+/**
+ * Does this dataset support the kind of question the filter names? Phrased as
+ * questions an instructor asks ("two groups to compare"), not as data types.
+ * @param {any} d @param {string} kind
+ */
+function matchesKind(d, kind) {
+  if (!kind) return true;
+  const levels = d.groupLevels ?? 0;
+  if (kind === 'numeric') return !!d.hasNumeric;
+  if (kind === 'categorical') return !!d.hasCategorical;
+  if (kind === 'two') return !!d.hasCategorical && levels === 2;
+  if (kind === 'many') return !!d.hasCategorical && levels > 2;
+  if (kind === 'pairs') return (d.numericCount ?? 0) >= 2;
+  return true;
+}
+
 /** @param {string} s */
 const esc = (s) => String(s).replace(/[<>&"]/g, c =>
   ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] ?? c);
@@ -79,26 +111,110 @@ function card(d) {
     <p>${esc(d.description || '')}</p>
     <div class="ds-open">${links}
       <button type="button" class="btn-secondary ds-copy" data-id="${esc(d.id)}">Copy link</button>
+      <button type="button" class="btn-secondary ds-qr-btn" data-id="${esc(d.id)}"
+              aria-expanded="false">QR code</button>
     </div>
     <p class="copy-note" data-note="${esc(d.id)}" hidden></p>
+    <div class="ds-qr" data-qr="${esc(d.id)}" hidden>
+      <div class="ds-qr-img"></div>
+      <div class="ds-qr-side">
+        <p class="hint">Scannable from the back of a room. The link it carries is the first tool
+           above &mdash; open that tool, set it up how you want it, then use <strong>Share</strong>
+           for a code that matches what is on your screen.</p>
+        <p class="hint ds-raw">Data file (for <code>?json=</code> elsewhere):
+          <br><code class="ds-raw-url">${esc(new URL(storePath(`${d.id}.json`), location.href).href)}</code></p>
+      </div>
+    </div>
   </article>`;
 }
 
-fetch('../datasets.json')
-  .then(r => {
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  })
+// The store's own index, not this site's datasets.json — contributed datasets
+// are not in the StatLens repo at all (see `storePath`).
+contributedIndex()
   .then(index => {
-    const contributed = index.filter(/** @param {any} d */ d => d.contributed);
+    const contributed = index.filter(/** @param {any} d */ d => d.contributed !== false);
     if (contributed.length === 0) {
       list.innerHTML = '<p class="empty">No contributed datasets yet. '
         + '<a href="../../instructors/#submit">Send the first one</a> &mdash; a spreadsheet by email '
         + 'is enough.</p>';
       return;
     }
-    list.innerHTML = contributed.map(card).join('');
-    announce(`${contributed.length} contributed dataset${contributed.length === 1 ? '' : 's'}.`);
+    // The filter bar is markup the page ships with but only earns its place once
+    // there is enough here to sift: with two datasets on screen, a search box is
+    // just another thing to read past.
+    if (filters && contributed.length >= 4) filters.hidden = false;
+
+    const render = () => {
+      const q = (searchBox?.value ?? '').trim().toLowerCase();
+      const kind = kindSelect?.value ?? '';
+      const shown = contributed.filter(d =>
+        matchesKind(d, kind) && (!q || haystack(d).includes(q)));
+
+      if (shown.length === 0) {
+        list.innerHTML = '<p class="empty">Nothing matches that. '
+          + '<button type="button" class="link-button ds-clear">Clear the filters</button> '
+          + 'to see all ' + contributed.length + '.</p>';
+        list.querySelector('.ds-clear')?.addEventListener('click', () => {
+          if (searchBox) searchBox.value = '';
+          if (kindSelect) kindSelect.value = '';
+          render();
+          searchBox?.focus();
+        });
+      } else {
+        list.innerHTML = shown.map(card).join('');
+        wireCopyButtons();
+      }
+
+      if (countLine) {
+        countLine.textContent = shown.length === contributed.length
+          ? `${contributed.length} dataset${contributed.length === 1 ? '' : 's'}`
+          : `${shown.length} of ${contributed.length} shown`;
+      }
+      announce(`${shown.length} dataset${shown.length === 1 ? '' : 's'} shown.`);
+    };
+
+    searchBox?.addEventListener('input', render);
+    kindSelect?.addEventListener('change', render);
+    render();
+  })
+  .catch(() => {
+    list.innerHTML = '<p class="empty">Could not load the dataset index.</p>';
+  });
+
+/**
+ * (Re)attach the per-card buttons after a render.
+ *
+ * The QR is drawn on demand rather than for every card up front: the library
+ * is a CDN fetch, and a page of twenty datasets should not pull it down to
+ * render twenty codes nobody asked for.
+ */
+function wireCopyButtons() {
+    for (const btn of list.querySelectorAll('.ds-qr-btn')) {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id') ?? '';
+        const box = /** @type {HTMLElement|null} */ (
+          list.querySelector(`[data-qr="${CSS.escape(id)}"]`));
+        if (!box) return;
+        const showing = !box.hidden;
+        box.hidden = showing;
+        btn.setAttribute('aria-expanded', String(!showing));
+        if (showing) return;
+
+        const img = /** @type {HTMLElement} */ (box.querySelector('.ds-qr-img'));
+        if (img.childElementCount === 0) {
+          const first = /** @type {HTMLAnchorElement|null} */ (
+            btn.parentElement?.querySelector('a'));
+          const url = first ? new URL(first.getAttribute('href') ?? '', location.href).href : '';
+          try {
+            await ensureQrLib();
+            img.innerHTML = plainQrSvg(url, { cellSize: 6 });
+          } catch {
+            img.innerHTML = '<p class="hint">QR unavailable — copy the link instead.</p>';
+          }
+        }
+        announce(showing ? 'QR code hidden.' : 'QR code shown.');
+      });
+    }
 
     for (const btn of list.querySelectorAll('.ds-copy')) {
       btn.addEventListener('click', async () => {
@@ -125,7 +241,4 @@ fetch('../datasets.json')
         }
       });
     }
-  })
-  .catch(() => {
-    list.innerHTML = '<p class="empty">Could not load the dataset index.</p>';
-  });
+}

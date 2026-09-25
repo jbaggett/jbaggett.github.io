@@ -2,6 +2,7 @@
   "title": "Describing Associations in Scatterplots",
   "tool": "explore/regression",
   "params": { "dataset": "possum", "x": "total_l", "y": "head_l", "start": "clean" },
+  "chooseData": true,
   "steps": [
     {
       "instruction": "A scatterplot of head length vs. total body length for 104 possums is loaded. Before looking at any statistics, describe the **direction** of the association.",

@@ -42,13 +42,18 @@
         }
         .scenario-card h3 {
             margin: 0 0 0.5rem 0;
-            color: var(--ims-blue);
+            /* 17.6px bold is below AA's large-text threshold (18.66px bold),
+               so this needs the 4.5:1 blue rather than the heading blue. */
+            color: var(--ims-blue-text);
             font-size: 1.1rem;
         }
         .scenario-card .hypotheses {
             margin: 0.5rem 0;
             font-size: 1rem;
             line-height: 1.8;
+            /* KaTeX sets each expression on one unbreakable line. A long one
+               scrolls here rather than pushing the page sideways on a phone. */
+            overflow-x: auto;
         }
         .scenario-card .test-results {
             background: white;
@@ -147,7 +152,7 @@
             padding: 0;
             margin: 0;
         }
-        .claim-options li {
+        .claim-options .claim-option {
             margin: 0.4rem 0;
         }
         .claim-options label {
@@ -155,6 +160,10 @@
             align-items: flex-start;
             gap: 0.5rem;
             padding: 0.5rem 0.7rem;
+            /* The whole label is the touch target, not the 18px radio inside
+               it. A one-line claim would otherwise come in at 41px. */
+            min-height: 44px;
+            box-sizing: border-box;
             border: 2px solid var(--border);
             border-radius: 6px;
             cursor: pointer;
@@ -194,7 +203,9 @@
             margin: 1rem 0;
         }
         .btn-primary {
-            background: var(--ims-blue);
+            /* Not --ims-blue: white on #569BBD is 3.07:1, which fails AA for
+               text this size. --accent is the text-weight blue (4.56:1). */
+            background: var(--accent);
             color: white;
             border: none;
             padding: 0.5rem 1.2rem;
@@ -215,8 +226,8 @@
         }
         .btn-secondary {
             background: white;
-            color: var(--ims-blue);
-            border: 2px solid var(--ims-blue);
+            color: var(--accent);
+            border: 2px solid var(--accent);
             padding: 0.5rem 1.2rem;
             border-radius: 6px;
             font-weight: 700;
@@ -282,8 +293,8 @@
         <!-- Claim selection (shared by formal + practical) -->
         <div id="claim-section" class="claim-section" style="display:none;">
             <h4>Select the correct contextual claim:</h4>
-            <ul id="claim-options" class="claim-options" role="radiogroup" aria-label="Contextual claim options">
-            </ul>
+            <div id="claim-options" class="claim-options" role="radiogroup" aria-label="Contextual claim options">
+            </div>
             <div id="claim-feedback" class="feedback-box"></div>
             <button id="check-claim" class="btn-primary" style="margin-top: 0.5rem;">Check Claim</button>
         </div>

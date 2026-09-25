@@ -7,7 +7,7 @@
 
 import { createRng, randNormal } from '../../js/prng.js';
 import { mean, sd } from '../../js/stats.js';
-import { drawHistogram, computeBins, snappedPropThresholds } from '../../js/histogram.js';
+import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
 import { drawDotplot, computeDots } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
 import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart } from '../../js/page-utils.js';
@@ -919,7 +919,10 @@ function updateStatsAndRender(prevLength, count) {
       // proportion null/bootstrap distributions.
       thresholds = snappedPropThresholds(n, sharedDomain, sampleMeans.length);
     } else {
-      const { bins: fullBins } = computeBins(sampleMeans, { domain: sharedDomain });
+      // Same Rice count as the static draws, or the bars would change width
+      // when the animation hands over to the plain render.
+      const { bins: fullBins } = computeBins(sampleMeans,
+        { domain: sharedDomain, numBins: samplingBinCount() });
       thresholds = fullBins.slice(1).map(b => b.x0);
     }
 
@@ -950,6 +953,25 @@ function unionSamplingDomain() {
   ]);
 }
 
+/**
+ * Bin count for the sampling distribution, by the Rice rule rather than the
+ * histogram default of Sturges.
+ *
+ * Sturges flattens out — 3,000 sample means get 13 bars, 10,000 get 15 — which
+ * is the opposite of what this page needs: the whole activity is "draw more
+ * samples and watch a bell appear", and at n = 100 the distribution is narrow
+ * and smooth enough that 13 bars read as a staircase. (Todd Will, 2026-09-20.)
+ *
+ * The live and frozen distributions share one count because they are drawn on
+ * one axis to be compared; different bar widths between them would read as a
+ * difference in the data rather than in the binning.
+ */
+function samplingBinCount() {
+  const live = sampleMeans.length;
+  const frozenN = frozen?.means?.length ?? 0;
+  return riceBins(Math.max(live, frozenN));
+}
+
 /** Render the frozen distribution (muted, relative frequency) on the shared axis. */
 function renderFrozen() {
   if (!frozenContainer || !frozen) return;
@@ -961,6 +983,7 @@ function renderFrozen() {
     ...truthMarker(),
     animate: false,
     domain: unionSamplingDomain(),
+    numBins: samplingBinCount(),
     relativeFrequency: true,
     fillColor: '#8a8a8a',
     viewHeight: 230,        // compact so frozen + live both fit when comparing
@@ -985,6 +1008,7 @@ function renderComparisonLive() {
     ...truthMarker(),
     animate: false,
     domain: unionSamplingDomain(),
+    numBins: samplingBinCount(),
     relativeFrequency: true,
     viewHeight: 230,        // match the frozen chart height for a fair compare
     showExport: false,

@@ -7,6 +7,7 @@
 
 import { parseCSV } from '../../js/csv-parser.js';
 import { detectPrecision } from '../../js/stats.js';
+import { mountQuartileControl } from '../../js/quartile-method.js';
 import { sturgesBins } from '../../js/histogram.js';
 import { computeDots } from '../../js/dotplot.js';
 import { drawBoxplot } from '../../js/boxplot.js';
@@ -690,6 +691,17 @@ function renderStackedHistogramsLocal() {
 // ── Summary statistics table ──────────────────────────────────────────
 
 /** Render the grouped summary statistics table. */
+// Expert-only quartile-convention control (see js/quartile-method.js). The box
+// edges and the summary table have to move together.
+const quartileHost = document.getElementById('quartile-method-host');
+if (quartileHost) {
+  mountQuartileControl(quartileHost, () => {
+    renderStats();
+    renderActiveChart();
+    announce('Quartile method changed. Statistics and chart updated.');
+  });
+}
+
 function renderStats() {
   // Replace the existing table with a fresh one from buildGroupedStatsTable
   const wrap = document.querySelector('.grouped-stats-wrap');

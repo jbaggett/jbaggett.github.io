@@ -16,7 +16,7 @@ import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink } from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink, reportInputProblem } from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -582,9 +582,13 @@ export function initOneSamplePage(config) {
         const n = parseInt(inputN?.value, 10);
         const k = parseInt(inputSuccesses?.value, 10);
         if (!n || n < 1 || !isFinite(k) || k < 0 || k > n) {
-          announce('Enter a valid sample size and number of successes.');
+          reportInputProblem(loadSummaryBtn,
+            !n || n < 1
+              ? 'Enter a sample size (n) — the grey number is only an example.'
+              : `Successes must be a whole number between 0 and ${n}.`);
           return;
         }
+        reportInputProblem(loadSummaryBtn, '');
         sampleN = n;
         sampleSuccesses = k;
         observedStat = k / n;

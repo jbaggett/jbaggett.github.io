@@ -7,7 +7,7 @@
 import { parseParams } from './url-params.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
-import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat } from './stats.js';
+import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat, quartiles } from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -19,7 +19,7 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
@@ -181,8 +181,15 @@ export function initSimPage(config) {
     mean:   { fn: (d) => mean(d),             label: 'Sample Mean',     longLabel: 'mean' },
     median: { fn: (d) => median(d),           label: 'Sample Median',   longLabel: 'median' },
     sd:     { fn: (d) => sd(d),               label: 'Sample Std Dev',  longLabel: 'standard deviation' },
-    q1:     { fn: (d) => quantile(d, 0.25),   label: 'Q1 (25th %ile)', longLabel: 'first quartile' },
-    q3:     { fn: (d) => quantile(d, 0.75),   label: 'Q3 (75th %ile)', longLabel: 'third quartile' },
+    // Median-of-halves, matching every quartile a student reads elsewhere on the
+    // site (Jeff, 2026-09-20: "let's use median-of-halves throughout"). NOT the
+    // percentile-CI quantiles in sim-engine.js, which stay type-7 — that is the
+    // interval's own method, not the statistic being bootstrapped.
+    // The label drops "25th %ile": under this rule Q1 is the median of the lower
+    // half, which is not the interpolated 25th percentile, and naming it that
+    // would teach the thing we just stopped computing.
+    q1:     { fn: (d) => quartiles(d).q1,     label: 'Q1 (first quartile)', longLabel: 'first quartile' },
+    q3:     { fn: (d) => quartiles(d).q3,     label: 'Q3 (third quartile)', longLabel: 'third quartile' },
   };
 
   /** Get the current bootstrap stat function and label. */
@@ -885,6 +892,7 @@ export function initSimPage(config) {
   if (loadSummaryBtn && config.proportion) {
     loadSummaryBtn.addEventListener('click', () => {
       resetSimulation();
+      reportInputProblem(loadSummaryBtn, '');   // clear any previous refusal
 
       if (config.twoGroup) {
         // Two-proportion summary: two groups with successes + n
@@ -901,15 +909,15 @@ export function initSimPage(config) {
         const n2 = Math.round(Number(n2El?.value));
 
         if (!Number.isFinite(n1) || n1 < 1 || !Number.isFinite(n2) || n2 < 1) {
-          announce('Enter valid sample sizes (at least 1).');
+          reportInputProblem(loadSummaryBtn, 'Enter both sample sizes — the grey numbers are only examples.');
           return;
         }
         if (!Number.isFinite(x1) || x1 < 0 || x1 > n1) {
-          announce('Group 1 successes must be between 0 and n\u2081.');
+          reportInputProblem(loadSummaryBtn, 'Group 1 successes must be between 0 and n\u2081.');
           return;
         }
         if (!Number.isFinite(x2) || x2 < 0 || x2 > n2) {
-          announce('Group 2 successes must be between 0 and n\u2082.');
+          reportInputProblem(loadSummaryBtn, 'Group 2 successes must be between 0 and n\u2082.');
           return;
         }
 
@@ -939,11 +947,11 @@ export function initSimPage(config) {
         const k = Math.round(Number(kEl?.value));
 
         if (!Number.isFinite(n) || n < 1) {
-          announce('Sample size must be at least 1.');
+          reportInputProblem(loadSummaryBtn, 'Enter a sample size (n) — the grey number is only an example.');
           return;
         }
         if (!Number.isFinite(k) || k < 0 || k > n) {
-          announce('Successes must be between 0 and n.');
+          reportInputProblem(loadSummaryBtn, 'Successes must be a whole number between 0 and n.');
           return;
         }
 
@@ -1047,6 +1055,18 @@ export function initSimPage(config) {
       // Card legend (decodes filled vs outline) shows only in card view.
       updateMechCardLegend();
     }
+
+    // The H₀ sentence under the strip names the study ("survival rate is the
+    // same regardless of whether a transplant was received"), so it has to
+    // follow the data. It used to be written only from the mechanism-init
+    // block, which runs once — and on pages where the strip opens at load
+    // (small two-group proportion data, where cards are viable) that block
+    // never runs again. So loading heart_transplant and then yawn left the
+    // transplant hypothesis sitting over the yawning data, describing a study
+    // the numbers had nothing to do with. Datasets with no `nullClaim` fall
+    // back to the generic sentence, which is why this must re-run on every
+    // load rather than only when a claim exists. (Jeff, 2026-09-25.)
+    if (config.mode === 'randomization') renderMechanismNull();
 
     // Note: data panel collapse and sticky controls are handled by initDataPanel's postLoadUI
 
@@ -3441,6 +3461,50 @@ export function initSimPage(config) {
     return bcaCI([...stats], thetaHat, jack, ciLevel);
   }
 
+  /**
+   * Re-phase the dot grid so a bin BOUNDARY lands on the observed statistic.
+   *
+   * `computeDots` snaps each value to the nearest bin CENTRE, and the grid's
+   * origin is the pilot domain's left edge — nothing ties it to the observed.
+   * So a shuffle just past the observed can round down into a bin whose centre
+   * draws to the LEFT of the line, and the dots a student counts beyond it
+   * disagree with the p-value. Todd Will counted one dot past the line where
+   * the p-value said 16.
+   *
+   * Centres sit at `origin + k·w`, so boundaries sit at `origin + (k+0.5)·w`;
+   * putting a boundary on `observed` means the origin is a half-width below it.
+   * Only the phase changes — the bin width, and so every dot's size, is
+   * untouched.
+   *
+   * **Two-group pages only.** On a single-proportion grid the width is 1/n and
+   * the origin is itself an achievable p̂, so centres already sit ON the
+   * achievable values, which is the correct alignment there. Re-phasing by half
+   * a bin would leave every dot sitting exactly on a boundary and shift the
+   * whole plot sideways.
+   *
+   * Ties matter and are not left to chance. A shuffle exactly equal to the
+   * observed sits precisely on the boundary, where `Math.round` decides it — and
+   * at that point floating point decides: `(0.5 - 0.4) / 0.2` is 0.4999999…,
+   * which rounds DOWN, putting a tie on the non-extreme side for no reason
+   * anyone could see. Shuffled proportions hit their observed value often, so
+   * this is not a rare corner. The phase is therefore nudged a fraction of a bin
+   * so ties land on the side the p-value counts them: above for a right-tailed
+   * or two-sided test, below for a left-tailed one.
+   *
+   * @param {number|undefined} observed
+   * @param {string|undefined} direction
+   * @returns {number|undefined}
+   */
+  function dotGridOrigin(observed, direction) {
+    const w = lockedDotGrid?.binWidth;
+    const origin = lockedDotGrid?.binOrigin;
+    if (!w || origin === undefined) return origin;
+    if (!config.twoGroup || !Number.isFinite(observed)) return origin;
+    // Left tail: ties are extreme on the low side, so tip them below the line.
+    const tieNudge = direction === 'less' ? w * 1e-9 : -w * 1e-9;
+    return /** @type {number} */ (observed) - w / 2 + tieNudge;
+  }
+
   function renderChart(stats, ci, observedStat, direction) {
     chartContainer.innerHTML = '';
     const n = stats.length;
@@ -3578,7 +3642,7 @@ export function initSimPage(config) {
         domain,
         numBins: config.proportion ? sampleSize : userBinCount,
         binWidth: lockedDotGrid?.binWidth ?? (config.proportion ? 1 / sampleSize : undefined),
-        binOrigin: lockedDotGrid?.binOrigin,
+        binOrigin: dotGridOrigin(observedStat, direction),
         highlightIndex,
         highlightIndices,
         precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,

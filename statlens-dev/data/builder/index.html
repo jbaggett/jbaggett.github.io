@@ -321,10 +321,25 @@
             font-size: 0.82rem;
         }
 
-        /* ── Disabled state for steps 2-3 before parse ────────── */
+        /* ── Steps 2-3 before a file is parsed ────────────────────
+           NOT opacity. Dimming the whole block multiplies every colour toward
+           the background: labels landed at 2.3:1, hints at 1.6:1, and the page
+           carried 60 contrast failures — on the page every contributing
+           instructor is sent to. The text stays at full contrast and the
+           *chrome* carries the "not yet" instead. Interaction is blocked by
+           `inert` (set in app.js), which unlike pointer-events also takes the
+           controls out of the tab order and hides them from screen readers. */
         .builder-step.disabled {
-            opacity: 0.45;
-            pointer-events: none;
+            background: var(--bg-alt, #f7f7f7);
+            border-style: dashed;
+        }
+        .builder-step.disabled::before {
+            content: 'Unlocks once your data loads above';
+            display: block;
+            margin: -0.25rem 0 0.85rem;
+            font-size: 0.85rem;
+            font-style: italic;
+            color: var(--ims-gray-text, #6B6B6B);
         }
 
         /* ── Responsive ───────────────────────────────────────── */
@@ -410,7 +425,7 @@
         </section>
 
         <!-- Step 2: Metadata -->
-        <section id="step-metadata" class="builder-step disabled" aria-label="Step 2: Metadata">
+        <section id="step-metadata" class="builder-step disabled" inert aria-label="Step 2: Metadata">
             <h2><span class="step-number">2</span> Metadata</h2>
             <div class="form-grid">
                 <div class="form-group">
@@ -457,7 +472,7 @@
         </section>
 
         <!-- Step 3: Export -->
-        <section id="step-export" class="builder-step disabled" aria-label="Step 3: Export">
+        <section id="step-export" class="builder-step disabled" inert aria-label="Step 3: Export">
             <h2><span class="step-number">3</span> Export</h2>
             <label for="json-preview">Generated JSON:</label>
             <textarea id="json-preview" readonly></textarea>
@@ -488,16 +503,20 @@
                 </ul>
                 <p style="margin-top:0.25rem;">A plain CSV or TSV works the same way with <code>?csv=</code>, if you'd rather skip the conversion &mdash; you just lose the variable labels and study description that a dataset file carries.</p>
 
-                <h3>3. Or let me host it &mdash; just send the JSON</h3>
-                <p>If you'd rather not deal with hosting at all, <strong>download the JSON and email it</strong>
-                   <!-- TODO (Jeff): put your address here, e.g. <a href="mailto:you@example.edu">you@example.edu</a>. -->
-                   &mdash; it goes up on the <a href="../extra/">Extra Datasets</a> page and you get back a short
-                   link like <code>explore/grouped/?dataset=your_data</code>, which any tool's
-                   <strong>Share</strong> button turns into a QR code for the class.</p>
-                <p>Send the <strong>JSON</strong> rather than the spreadsheet: the JSON carries the study
+                <h3>3. Or let us host it &mdash; post the JSON in Canvas</h3>
+                <p>If you&rsquo;d rather not deal with hosting at all, <strong>download the JSON and attach it
+                   to a post</strong> in the <a href="https://uws.instructure.com/courses/880956/discussion_topics/7483592"
+                   target="_blank" rel="noopener">Contribute a Dataset</a> discussion in the UWL STAT 145
+                   Materials Canvas course. You get a reply in the thread with a short link like
+                   <code>explore/grouped/?dataset=your_data</code>, which any tool&rsquo;s <strong>Share</strong>
+                   button turns into a QR code for the class, and it is listed on the
+                   <a href="../extra/">Extra Datasets</a> page, credited to you.</p>
+                <p>Post the <strong>JSON</strong> rather than the spreadsheet: the JSON carries the study
                    description and the variable descriptions you filled in above, and those are the half
-                   nobody else can write for you. The checklist above shows what's still empty.</p>
-                <p class="hint">To propose a dataset for StatLens's built-in collection instead, open an
+                   nobody else can write for you. The checklist above shows what&rsquo;s still empty.</p>
+                <p class="hint">Strip names, student IDs and anything else identifying before you post &mdash;
+                   these datasets are published on a public website.</p>
+<p class="hint">To propose a dataset for StatLens's built-in collection instead, open an
                    issue at <a href="https://github.com/jbaggett/statlens/issues" target="_blank" rel="noopener">github.com/jbaggett/statlens/issues</a>
                    and attach the JSON.</p>
             </div>

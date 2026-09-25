@@ -77,11 +77,19 @@ export function makeActionButton(opts) {
 /**
  * Fetch the full dataset JSON (with rows) by id. Used where only the index metadata
  * is on hand — e.g. the dataset catalog previewing/downloading on demand.
+ *
+ * Callers here always hold the index entry, so they pass `contributed` from it:
+ * those datasets live in `data/extra/`, and asking for `data/<id>.json` instead
+ * is a 404. (This module cannot use `page-utils.fetchDataset` — page-utils
+ * imports *this* file, and the cycle is not worth it for one path.)
+ *
  * @param {string} id
+ * @param {boolean} [contributed] - from the index entry's `contributed` flag
  * @returns {Promise<any>}
  */
-export function fetchFullDataset(id) {
-  return fetch(`${sitePrefix()}data/${encodeURIComponent(id)}.json`)
+export function fetchFullDataset(id, contributed = false) {
+  const file = `${encodeURIComponent(id)}.json`;
+  return fetch(`${sitePrefix()}data/${contributed ? `extra/${file}` : file}`)
     .then(r => {
       if (!r.ok) throw new Error(`Failed to load ${id}`);
       return r.json();

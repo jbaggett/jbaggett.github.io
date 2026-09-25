@@ -10,7 +10,7 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip } from './chart-utils.js';
+import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 
 /** Default bar fill (IMS blue at 50% opacity) — used when no isTail predicate. */
 const BAR_FILL = '#569BBD80';
@@ -33,6 +33,32 @@ export function sturgesBins(n) {
   if (n <= 0) return 3;
   const k = Math.ceil(1 + 3.322 * Math.log10(n));
   return Math.max(3, Math.min(50, k));
+}
+
+/**
+ * Bin count by the **Rice rule**, `2 * cbrt(n)`, clamped to [6, 60].
+ *
+ * Sturges' rule grows like log2(n) and flattens out: 3,000 observations get 13
+ * bins and 10,000 get 15. That is fine for the few dozen values a histogram
+ * usually shows, and wrong for a sampling distribution, where the whole point
+ * is to run thousands of draws and look at the shape. Todd Will reported the
+ * consequence on `conceptual/sampling-lab` (2026-09-20): at n = 100 the
+ * sampling distribution is narrow and smooth, and 13 bars over it read as a
+ * blocky staircase — while the activity text next to it claims the shape is
+ * "now clearly bell-shaped".
+ *
+ * Rice keeps growing (3,000 → 29 bins, 10,000 → 44), which is what lets the
+ * bell actually appear as more samples arrive. Deliberately a separate export
+ * rather than a change to `sturgesBins`: every other histogram on the site
+ * depends on that default, and this is a judgement about sampling
+ * distributions, not about histograms in general.
+ *
+ * @param {number} n - Number of data values
+ * @returns {number}
+ */
+export function riceBins(n) {
+  if (n <= 0) return 6;
+  return Math.max(6, Math.min(60, Math.ceil(2 * Math.cbrt(n))));
 }
 
 /**
@@ -224,14 +250,16 @@ export function drawHistogram(container, values, options = {}) {
   yScale.range([frame.height, 0]);
 
   const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
-  const yAxis = relativeFrequency
-    ? d3Axis.axisLeft(yScale).tickFormat(/** @param {any} d */ d => {
-        const v = +d / totalN;
-        if (v === 0) return '0';
-        // Keep labels compact: up to 3 sig figs, strip trailing zeros
-        return String(Number(v.toPrecision(3)));
-      })
-    : d3Axis.axisLeft(yScale).tickFormat(formatTick);
+  const freqFormat = /** @param {any} d */ (d) => {
+    const v = +d / totalN;
+    if (v === 0) return '0';
+    // Keep labels compact: up to 3 sig figs, strip trailing zeros
+    return String(Number(v.toPrecision(3)));
+  };
+  // Relative frequency is still a count in disguise, so it is blanked in by-eye
+  // mode for the same reason (see countTickFormat).
+  const yAxis = d3Axis.axisLeft(yScale)
+    .tickFormat(countTickFormat(labels, relativeFrequency ? freqFormat : formatTick));
   addAxes(frame, xAxis, yAxis, xLabel, effectiveYLabel);
   // drawHorizontalGridlines(frame); // disabled — bars are readable without gridlines (theme_classic style)
 

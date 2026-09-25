@@ -11,7 +11,7 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, drawHorizontalGridlines, formatTick, getColors, ensurePatterns, prefersReducedMotion, hasD3Transition, TRANSITION_MS, showTooltip, hideTooltip, attachTooltip, wrapTickLabels, autoRotateLabels, fitYLabel } from './chart-utils.js';
+import { createChart, addAxes, drawHorizontalGridlines, formatTick, getColors, ensurePatterns, prefersReducedMotion, hasD3Transition, TRANSITION_MS, showTooltip, hideTooltip, attachTooltip, wrapTickLabels, autoRotateLabels, fitYLabel, countTickFormat } from './chart-utils.js';
 
 /** Bar stroke (white separator). */
 const BAR_STROKE = '#FFFFFF';
@@ -187,7 +187,7 @@ function drawSimpleBars(frame, values, mode, opts) {
     .range([frame.height, 0]);
 
   const xAxis = d3Axis.axisBottom(xScale);
-  const yAxis = d3Axis.axisLeft(yScale).tickFormat(formatTick);
+  const yAxis = d3Axis.axisLeft(yScale).tickFormat(countTickFormat(opts.labels, formatTick));
   // Reduce y-axis ticks on phone to avoid crowding
   const isPhone = typeof globalThis.matchMedia === 'function'
     && globalThis.matchMedia('(max-width: 480px)').matches;

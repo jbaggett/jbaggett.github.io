@@ -8,7 +8,7 @@ import * as d3 from 'd3-selection';
 import * as d3Scale from 'd3-scale';
 import * as d3Array from 'd3-array';
 import * as d3Axis from 'd3-axis';
-import { mean, median, sd, iqr, quantile, formatStat } from '../../js/stats.js';
+import { mean, median, quartiles, sd, iqr, formatStat } from '../../js/stats.js';
 import { computeBoxplotStats } from '../../js/boxplot.js';
 import { createChart } from '../../js/chart-utils.js';
 import { initHelp, announce } from '../../js/page-utils.js';
@@ -379,8 +379,8 @@ function updateStats() {
     iqr:    n > 0 ? formatStat(iqr(values), 0) : dash,
     range:  n > 0 ? formatStat((d3Array.max(values) ?? 0) - (d3Array.min(values) ?? 0), 0) : dash,
     min:    n > 0 ? String(d3Array.min(values)) : dash,
-    q1:     n > 0 ? formatStat(quantile(values, 0.25), 0) : dash,
-    q3:     n > 0 ? formatStat(quantile(values, 0.75), 0) : dash,
+    q1:     n > 0 ? formatStat(quartiles(values).q1, 0) : dash,
+    q3:     n > 0 ? formatStat(quartiles(values).q3, 0) : dash,
     max:    n > 0 ? String(d3Array.max(values)) : dash,
   };
 

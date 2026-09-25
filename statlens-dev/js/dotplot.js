@@ -10,7 +10,7 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, drawHorizontalGridlines, formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip } from './chart-utils.js';
+import { createChart, addAxes, drawHorizontalGridlines, formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 import { sturgesBins } from './histogram.js';
 
 /** Default dot fill — IMS blue. */
@@ -256,7 +256,7 @@ export function drawDotplot(container, values, options = {}) {
       .domain([0, maxStack])
       .nice()
       .range([frame.height, 0]);
-    const yAxis = d3Axis.axisLeft(yScale).tickFormat(formatTick);
+    const yAxis = d3Axis.axisLeft(yScale).tickFormat(countTickFormat(labels, formatTick));
     addAxes(frame, xAxis, yAxis, xLabel, 'Frequency');
     drawHorizontalGridlines(frame);
   } else {
@@ -353,7 +353,7 @@ export function drawDotplot(container, values, options = {}) {
           axes.selectAll('*').remove();
         }
         yScale.domain([0, newResult.maxStack]).nice();
-        const yAxisFn = d3Axis.axisLeft(yScale).tickFormat(formatTick);
+        const yAxisFn = d3Axis.axisLeft(yScale).tickFormat(countTickFormat(labels, formatTick));
         axes.selectAll('*').remove();
         addAxes(frame, xAxis, yAxisFn, xLabel, 'Frequency');
 

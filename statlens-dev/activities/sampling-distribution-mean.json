@@ -5,7 +5,7 @@
     "type": "quant",
     "shape": "right-skewed",
     "n": "10",
-    "seed": "ch6mean"
+    "seed": "ch6mean120"
   },
   "steps": [
     {
@@ -64,7 +64,7 @@
             "text": "Flat — every value equally likely"
           }
         ],
-        "feedback": "It centers at **μ**, and just averaging 10 values already pulls the shape toward symmetric — the skew is fading. Your **{{samples}}** sample means have an SD of \\(\\bar{x}\\)'s of **{{statSD}}**, close to the theory value σ/√n = **{{theorySE}}**. Watch the shape become fully bell-shaped when you increase n next.",
+        "feedback": "It centers at **μ**, and averaging just 10 values already pulls the shape toward symmetric — the skew is fading. Your **{{samples}}** sample means have an SD of \\(\\bar{x}\\)'s of **{{statSD}}**, close to the theory value σ/√n = **{{theorySE}}**. Watch the shape become fully bell-shaped when you increase n next.",
         "retryFeedback": "Look at where the dots pile up relative to the μ line, and compare the shape of the bottom panel to the skewed Population panel above."
       }
     },

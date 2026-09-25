@@ -7,7 +7,7 @@
  */
 
 import { generateConclusions } from '../../js/conclusions.js';
-import { initHelp } from '../../js/page-utils.js';
+import { initHelp, fetchDataset } from '../../js/page-utils.js';
 
 initHelp();
 
@@ -19,11 +19,22 @@ await new Promise((resolve) => {
   }, 50);
 });
 
-import { tex, escapeTex } from '../../js/tex.js';
+import { tex } from '../../js/tex.js';
 
 // Wait for jStat so we can compute test results
 const jstatMod = await import('jstat');
 const jStat = jstatMod.default || jstatMod;
+
+/**
+ * Column names come from dataset JSON and land in innerHTML. They used to be
+ * escaped for TeX because they were interpolated into maths; now that the
+ * sentence around the symbol is prose, they need HTML escaping instead.
+ * @param {string} str
+ */
+function escapeHtml(str) {
+  return String(str).replace(/[<>&"]/g, c =>
+    ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c] ?? c);
+}
 
 // ── DOM references ──────────────────────────────────────────────────
 const scenarioCard = /** @type {HTMLElement} */ (document.getElementById('scenario-card'));
@@ -295,8 +306,13 @@ function buildScenario(ds, ctx) {
       }
     }
     const p = 1 - jStat.chisquare.cdf(chiSq, df);
-    const h0 = tex(`H_0\\text{: ${escapeTex(rVar)} and ${escapeTex(cVar)} are independent}`);
-    const ha = tex(`H_a\\text{: There is an association between ${escapeTex(rVar)} and ${escapeTex(cVar)}}`);
+    // The maths here is just the symbol; the rest is a sentence. Putting the
+    // sentence inside \text{} made KaTeX render it as one unbreakable line —
+    // 460px of it — which pushed the whole page sideways on a phone. As prose
+    // it wraps, and a screen reader reads it as prose rather than as a formula.
+    const h0 = `${tex('H_0')}: ${escapeHtml(rVar)} and ${escapeHtml(cVar)} are independent`;
+    const ha = `${tex('H_a')}: There is an association between ${escapeHtml(rVar)} `
+      + `and ${escapeHtml(cVar)}`;
     return {
       ...base, testType: 'chisq',
       hypotheses: `${h0}<br>${ha}`,
@@ -515,8 +531,10 @@ async function loadScenarios() {
     const built = [];
     for (const meta of index) {
       try {
-        const dsResp = await fetch(`../../data/${meta.id}.json`);
-        const ds = await dsResp.json();
+        // Not `data/<id>.json` directly: contributed datasets live in
+        // `data/extra/`, and guessing the wrong path 404s into the console on
+        // every load of this page.
+        const ds = await fetchDataset(meta.id, meta.contributed);
         if (!ds.inferenceContexts) continue;
         for (const ctx of ds.inferenceContexts) {
           const scenario = buildScenario(ds, ctx);
@@ -573,14 +591,16 @@ function showScenario(idx) {
   // ── Build claim options ──
   const claimOptions = generateClaimOptions(s);
   const shuffled = shuffle(claimOptions);
+  // No aria-label on the input: it would *override* the wrapping label, so a
+  // screen reader would announce "Claim option 3" and never read the claim the
+  // student is being asked to judge.
   claimOptionsList.innerHTML = shuffled.map((opt, i) => `
-    <li>
+    <div class="claim-option">
       <label>
-        <input type="radio" name="claim-choice" value="${opt.type}" id="claim-${i}"
-               aria-label="Claim option ${i + 1}">
+        <input type="radio" name="claim-choice" value="${opt.type}" id="claim-${i}">
         <span>${opt.text}</span>
       </label>
-    </li>
+    </div>
   `).join('');
   claimSection.style.display = '';
   claimFeedback.className = 'feedback-box';

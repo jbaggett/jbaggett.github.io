@@ -49,6 +49,22 @@
            <a href="../../instructors/#submit">email it in</a> and it appears on this page with links
            like these. Students need nothing but the link.</p>
 
+        <div class="ds-filters" id="ds-filters" hidden>
+            <label class="control-label" for="ds-search">Search</label>
+            <input type="search" id="ds-search" placeholder="name, topic, variable, contributor"
+                   autocomplete="off" aria-describedby="ds-count">
+            <label class="control-label" for="ds-kind">Shows</label>
+            <select id="ds-kind">
+                <option value="">Any kind of data</option>
+                <option value="numeric">Has a numeric variable</option>
+                <option value="categorical">Has a category variable</option>
+                <option value="two">Two groups to compare</option>
+                <option value="many">Three or more groups</option>
+                <option value="pairs">Two or more numeric (relationships)</option>
+            </select>
+            <p class="hint" id="ds-count" role="status"></p>
+        </div>
+
         <div id="ds-list" aria-live="polite">
             <p class="hint">Loading&hellip;</p>
         </div>

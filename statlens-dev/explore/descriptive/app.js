@@ -5,7 +5,8 @@
  */
 
 import { parseCSV } from '../../js/csv-parser.js';
-import { mean, median, sd, quantile, iqr, range, detectPrecision, formatStat } from '../../js/stats.js';
+import { mean, median, quartiles, sd, iqr, range, detectPrecision, formatStat } from '../../js/stats.js';
+import { getQuartileMethod, mountQuartileControl } from '../../js/quartile-method.js';
 import { drawHistogram, sturgesBins } from '../../js/histogram.js';
 import { drawDotplot, computeDots, dotplotBins } from '../../js/dotplot.js';
 import { drawBoxplot } from '../../js/boxplot.js';
@@ -690,6 +691,20 @@ function setData(values, varLabel, sourceName, opts = {}) {
   announce(`${values.length} values. Statistics and chart updated.`);
 }
 
+// Expert-only quartile-convention control. Changing it has to move the table,
+// the box plot and the five-number summary together — a box drawn on one rule
+// beside a table computed on another is worse than either rule alone.
+const quartileHost = document.getElementById('quartile-method-host');
+if (quartileHost) {
+  mountQuartileControl(quartileHost, () => {
+    if (currentValues.length) {
+      computeAndDisplay(currentValues);
+      renderActiveChart();
+      announce(`Quartile method changed. Statistics and chart updated.`);
+    }
+  });
+}
+
 /**
  * Compute and display summary statistics.
  * @param {number[]} values
@@ -703,10 +718,15 @@ function computeAndDisplay(values) {
   if (statMedian) statMedian.textContent = formatStat(median(values), d);
   if (statSd) statSd.textContent = formatStat(sd(values), d);
   if (statMin) statMin.textContent = formatStat(lo, d);
-  if (statQ1) statQ1.textContent = formatStat(quantile(values, 0.25), d);
-  if (statQ3) statQ3.textContent = formatStat(quantile(values, 0.75), d);
+  // Median-of-halves, matching the coursepack — not type-7 (see stats.quartiles).
+  // An expert can switch convention; the caption below the table always says
+  // which one is showing, so a changed method is never silent.
+  const method = getQuartileMethod();
+  const qs = quartiles(values, method);
+  if (statQ1) statQ1.textContent = formatStat(qs.q1, d);
+  if (statQ3) statQ3.textContent = formatStat(qs.q3, d);
   if (statMax) statMax.textContent = formatStat(hi, d);
-  if (statIqr) statIqr.textContent = formatStat(iqr(values), d);
+  if (statIqr) statIqr.textContent = formatStat(iqr(values, method), d);
   if (statRange) statRange.textContent = formatStat(hi - lo, d);
 }
 
