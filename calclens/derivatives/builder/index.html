@@ -28,6 +28,16 @@
   }
 }
 </script>
+
+<style>
+  /* The two plots are read against each other, so nothing goes between them and
+     the seam is as thin as the frames allow — the shared dashed line only works
+     as a link if the eye can travel between the graphs without crossing prose.
+     Scoped under #charts, this page's own id, rather than redefining .ll-chart. */
+  #charts .ll-chart + .ll-chart { margin-top: 2px; border-top-left-radius: 0; border-top-right-radius: 0; }
+  #charts .ll-chart:first-of-type { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  #chart-key { margin: 0.5rem 0 0; }
+</style>
 </head>
 <body>
 
@@ -100,25 +110,20 @@
     <div class="ll-row" style="gap:0.6rem; margin-top:0.6rem; flex-wrap:wrap;">
       <button type="button" id="play-btn" class="ll-primary">▶ Sweep and trace</button>
       <button type="button" id="clear-btn">Clear trace</button>
-
+      <div id="reveal-slot"></div>
     </div>
   </section>
 
   <section id="charts" aria-label="Graphs">
-    <div class="ll-chart">
-      <p class="ll-hint" style="margin:0.2rem 0 0 0.5rem;">
-        <b>Top:</b> <i>f</i>, with the secant and the tangent at the point.
-        Drag anywhere on this graph to move the point.
-      </p>
-      <div id="chart-f"></div>
-    </div>
-    <div id="reveal-slot"></div>
-    <div class="ll-chart">
-      <p class="ll-hint" style="margin:0.2rem 0 0 0.5rem;">
-        <b>Bottom:</b> every slope you have visited, plotted as a height.
-      </p>
-      <div id="chart-d"></div>
-    </div>
+    <div class="ll-chart"><div id="chart-f"></div></div>
+    <div class="ll-chart"><div id="chart-d"></div></div>
+
+    <p class="ll-hint" id="chart-key">
+      <b>Top:</b> <i>f</i>, with the secant and the tangent at the point.
+      <b>Bottom:</b> every slope you have visited, plotted as a height.
+      The dashed line marks the same <i>x</i> on both — drag on
+      <b>either</b> graph to move it.
+    </p>
 
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>

@@ -92,6 +92,7 @@ function render() {
     chartF.gOver.append('circle').attr('class', 'll-point')
       .attr('cx', xs(x)).attr('cy', ys(fx)).attr('r', 6);
   }
+  markerLine(chartF, xs(x));
   addDragTarget(chartF, xs);
 
   /* ---- bottom: the traced slopes ---- */
@@ -112,16 +113,31 @@ function render() {
     .attr('cy', d => scalesD.ys(d.y));
 
   chartD.gOver.selectAll('*').remove();
+  // The line is drawn whether or not a slope exists there. It is the link
+  // between the two graphs, and |x| at 0 — where there IS no slope — is exactly
+  // the case worth being able to line up.
+  markerLine(chartD, scalesD.xs(x));
   if (Number.isFinite(slope)) {
-    chartD.gOver.append('line').attr('class', 'll-marker-line')
-      .attr('x1', scalesD.xs(x)).attr('x2', scalesD.xs(x))
-      .attr('y1', chartD.margin.top).attr('y2', chartD.height - chartD.margin.bottom);
     chartD.gOver.append('circle').attr('class', 'll-point')
       .attr('cx', scalesD.xs(x)).attr('cy', scalesD.ys(slope)).attr('r', 6);
   }
   addDragTarget(chartD, scalesD.xs);
 
   updateText(x, fx, slope, secantSlope);
+}
+
+/**
+ * The dashed line at the current x, drawn identically on both plots.
+ *
+ * It is what makes the pair readable as one picture: the height of f above the
+ * line and the height of f′ below it are the same x. The two charts are built
+ * with the same fixed margins and the same x domain, so a given x lands on the
+ * same pixel column in both — without that the line would be a lie.
+ */
+function markerLine(chart, px) {
+  chart.gOver.append('line').attr('class', 'll-marker-line')
+    .attr('x1', px).attr('x2', px)
+    .attr('y1', chart.margin.top).attr('y2', chart.height - chart.margin.bottom);
 }
 
 /** Keep the f′ axis steady while tracing, so dots do not jump as the range grows. */
