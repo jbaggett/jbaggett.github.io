@@ -142,9 +142,14 @@ export function initOneSamplePage(config) {
 
   if (chartContainer) {
     const toggle = createChartToggle(chartContainer, {
+      // p̂ is discrete, so this page offers the spike view — and 'auto' picks it.
+      // Without the button the toggle could not show the view being drawn.
+      types: isProp
+        ? [['dotplot', 'Dotplot'], ['spike', 'Spike'], ['histogram', 'Histogram']]
+        : undefined,
       onChange: (type) => {
         chartType = type;
-        if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (type));
+        if (binAdjuster) binAdjuster.setMode(type);
         if (allStats.length > 0) {
           renderChart(allStats, observedStat, getDirection());
         }
@@ -367,14 +372,23 @@ export function initOneSamplePage(config) {
     return /** @type {const} */ ('both');
   }
 
-  function getActiveChartType() {
+  /**
+   * @param {number[]} [stats] - defaults to every stat currently on screen
+   * @returns {'dotplot'|'histogram'|'spike'}
+   */
+  function getActiveChartType(stats = allStats) {
     // Reasoning-mode figures (plot=only / readout=false) hide the chart toggle:
     // discrete spike bars for a small/moderate-n proportion, binning to a
     // histogram only once the k/n values would crowd (see sim-app.js note).
     if ((plotOnly || !showReadout) && chartType === 'auto') {
-      return reasoningChartType(allStats, { proportion: isProp });
+      return reasoningChartType(stats, { proportion: isProp });
     }
-    return resolveChartType(allStats.length, chartType);
+    const resolved = resolveChartType(stats.length, chartType, { proportion: isProp, stats });
+    // The theoretical curve needs binned counts to sit on, so 'auto' bins rather
+    // than leaving that checkbox with nothing to draw. An explicit Spike choice
+    // is left alone.
+    if (resolved === 'spike' && theoryOverlayOn && chartType === 'auto') return 'histogram';
+    return resolved;
   }
 
   function syncAltNullValue() {
@@ -1203,9 +1217,9 @@ export function initOneSamplePage(config) {
     /** @type {[number, number]} */
     const domain = hlDomain || [cLo, cHi];
 
-    const activeChart = getActiveChartType();
+    const activeChart = getActiveChartType(stats);
     if (setToggleSelected) setToggleSelected(activeChart);
-    if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (activeChart));
+    if (binAdjuster) binAdjuster.setMode(activeChart);
 
     lastHistResult = null;
     lastDotResult = null;

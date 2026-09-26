@@ -44,12 +44,33 @@ export const DOMAIN_PADDING = 0.05;
 
 /**
  * Determine the active chart type, resolving 'auto'.
+ *
+ * A discrete statistic (a sample proportion, or a difference of two) already
+ * has bins — the values it can actually take — so 'auto' draws those as spike
+ * bars rather than imposing a grid on them. That puts the observed statistic
+ * *on* a bar instead of inside one, and makes the shaded tail hold exactly the
+ * shuffles the p-value counts. Binning them instead is what made a 16-shuffle
+ * tail render as a single dot (Todd Will, 2026-09-25), and it left the one view
+ * that gets discrete statistics right reachable only through expert mode.
+ *
+ * Past DISCRETE_BAR_MAX distinct values the bars crowd into an unreadable
+ * cloud, so 'auto' bins from there — which means a long run can cross over from
+ * spike to histogram partway, the same way it already crosses from dotplot to
+ * histogram at DOTPLOT_AUTO_THRESHOLD.
+ *
  * @param {number} n - Number of data points / simulated stats
  * @param {string} userChoice - 'auto', 'dotplot', 'histogram', or 'spike'
+ * @param {object} [opts]
+ * @param {boolean} [opts.proportion] - Is the statistic a proportion (discrete)?
+ * @param {number[]} [opts.stats] - The simulated statistics, for counting distinct values
  * @returns {'dotplot'|'histogram'|'spike'}
  */
-export function resolveChartType(n, userChoice) {
+export function resolveChartType(n, userChoice, opts = {}) {
   if (userChoice && userChoice !== 'auto') return /** @type {any} */ (userChoice);
+  if (opts.proportion && opts.stats && opts.stats.length > 0
+      && new Set(opts.stats).size <= DISCRETE_BAR_MAX) {
+    return 'spike';
+  }
   return n <= DOTPLOT_AUTO_THRESHOLD ? 'dotplot' : 'histogram';
 }
 
@@ -222,7 +243,7 @@ export function createChartToggle(container, opts) {
 /**
  * @typedef {object} BinAdjusterControl
  * @property {HTMLLabelElement} element - The label element
- * @property {(mode: 'dotplot'|'histogram') => void} setMode - Update label text for chart type
+ * @property {(mode: 'dotplot'|'histogram'|'spike') => void} setMode - Update label text for chart type
  * @property {(value: number) => void} setValue - Set the input value programmatically
  */
 
@@ -262,6 +283,9 @@ export function createBinAdjuster(parent, opts) {
   return {
     element: label,
     setMode: (mode) => {
+      // The spike view draws one bar per achievable value, so there is nothing
+      // to count bins of — hide the control rather than leave it inert.
+      label.hidden = mode === 'spike';
       labelSpan.textContent = mode === 'dotplot' ? 'Stacks:' : 'Bins:';
     },
     setValue: (value) => {

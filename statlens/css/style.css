@@ -650,6 +650,26 @@ main {
   .ds-filters .control-label { flex-basis: 100%; margin-bottom: -0.25rem; }
 }
 
+/* Expert-mode badge — visible exactly while expert mode is on, which is the
+   opposite of .expert-only. Bottom-left so it never collides with the Share /
+   settings cluster top-right, and quiet enough to ignore while teaching. */
+.expert-badge {
+  position: fixed; left: 0.75rem; bottom: 0.75rem; z-index: 60;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.35rem 0.7rem; border-radius: 999px;
+  border: 1px solid var(--ims-blue, #569BBD); background: #fff;
+  color: var(--ims-green, #114B5F); font: inherit; font-size: 0.8rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); cursor: pointer;
+}
+.expert-badge:hover { background: var(--bg-alt, #f5f5f5); }
+.expert-badge:focus-visible { outline: 2px solid var(--ims-green, #114B5F); outline-offset: 2px; }
+.expert-badge-off { text-decoration: underline; color: var(--accent, #3A7CA5); }
+@media (max-width: 600px) {
+  /* 44px target, and out of the way of a bottom sheet's handle. */
+  .expert-badge { min-height: 44px; bottom: 0.5rem; left: 0.5rem; font-size: 0.75rem; }
+}
+@media print { .expert-badge { display: none; } }
+
 /* Quartile-method control (expert-only) + the note that outlives expert mode. */
 .quartile-method { margin: 0.6rem 0 0; }
 .quartile-method select { width: 100%; max-width: 15rem; }

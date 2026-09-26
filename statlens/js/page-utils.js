@@ -354,6 +354,7 @@ export function initSettings() {
     expertCheck.addEventListener('change', () => {
       setSettings({ expertMode: expertCheck.checked });
       applySettings();
+      updateExpertBadge();
     });
   }
 
@@ -407,6 +408,9 @@ export function initSettings() {
   if (gearBtn) {
     gearBtn.addEventListener('click', () => dialog.showModal());
   }
+
+  // Reflect a remembered expert mode on arrival, not only when it is toggled.
+  updateExpertBadge();
 }
 
 /**
@@ -988,6 +992,46 @@ function renderDatasetInfo(panel, ds) {
  * Inserts a small text link into the given container. Syncs with settings.
  * @param {HTMLElement} container - Element to append the toggle to
  */
+/**
+ * The badge that makes persistent expert mode safe.
+ *
+ * Expert mode is remembered across visits now, which is what instructors need —
+ * but a mode that persists invisibly is how someone ends up confused weeks
+ * later by controls they don't remember enabling, or (Todd Will, 2026-09-25)
+ * by controls that vanish when it resets. So while it is on, it says so, and
+ * says how to stop: one click, no dialog, no hunting through the gear.
+ *
+ * Deliberately not `.expert-only` — it must be visible precisely when expert
+ * mode is, which is the opposite of what that class does.
+ */
+export function updateExpertBadge() {
+  if (typeof document === 'undefined' || !document.body) return;
+  const on = getExpertMode();
+  let badge = document.getElementById('expert-badge');
+
+  if (!on) { badge?.remove(); return; }
+  if (badge) return;
+
+  badge = document.createElement('button');
+  badge.id = 'expert-badge';
+  badge.type = 'button';
+  badge.className = 'expert-badge';
+  badge.innerHTML = '<span aria-hidden="true">\u2699</span> Expert mode on'
+    + ' <span class="expert-badge-off">turn off</span>';
+  badge.title = 'Expert mode is on — click to turn it off';
+  badge.setAttribute('aria-label', 'Expert mode is on. Click to turn it off.');
+  badge.addEventListener('click', () => {
+    setSettings({ expertMode: false });
+    applySettings();
+    updateExpertBadge();   // removes this badge: expert mode is off now
+    // Keep the settings dialog honest if it happens to be open behind this.
+    const box = /** @type {HTMLInputElement|null} */ (document.getElementById('set-expert'));
+    if (box) box.checked = false;
+    announce('Expert mode turned off.');
+  });
+  document.body.appendChild(badge);
+}
+
 export function createExpertToggle(container) {
   if (container.querySelector('.expert-toggle')) return;
 
@@ -999,6 +1043,7 @@ export function createExpertToggle(container) {
     const nowExpert = !getExpertMode();
     setSettings({ expertMode: nowExpert });
     applySettings();
+    updateExpertBadge();
     btn.textContent = nowExpert ? 'Fewer options' : 'More options';
   });
   container.appendChild(btn);

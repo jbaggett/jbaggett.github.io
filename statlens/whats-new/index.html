@@ -39,6 +39,26 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-09-25<span class="cl-tag tool">Improved</span></div>
+            <h2>Proportion simulations now draw the chart that fits them</h2>
+            <p>A difference in proportions can only land on certain values &mdash; the grid is set by
+               the group sizes &mdash; but the dotplot laid its own grid over the top of that one. When
+               the two grids disagreed, the observed statistic ended up <em>inside</em> a bin, and the
+               shaded tail stopped matching the p&#8209;value: Todd Will found a case showing
+               <strong>one dot</strong> past the observed value where the histogram showed
+               <strong>16</strong>. Three things changed. The null distribution of a proportion now
+               opens as a <strong>spike plot</strong> &mdash; one bar per outcome the statistic can
+               actually take, so the observed value lands <em>on</em> a bar. Dotplot bins, if you switch
+               back to them, are re-phased so a bin <strong>boundary</strong> sits on the observed
+               statistic rather than its middle. And the result now says how many shuffles came out
+               <strong>exactly</strong> as extreme as the data, since on a discrete statistic those ties
+               can be most of the p&#8209;value &mdash; 84% of it in the sex&#8209;discrimination study.
+               <a href="../simulate/randomization-diff-props/?dataset=sex_discrimination">See it &rarr;</a></p>
+            <p class="hint">Means and slopes are unaffected: continuous statistics still open as a
+               dotplot and bin into a histogram as the run grows.</p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-09-12<span class="cl-tag tool">New tool</span></div>
             <h2>Sampling Designs &mdash; five ways to sample, three places to do it</h2>
             <p>Chapter 2 finally has a tool. Five designs &mdash; <strong>simple random</strong>,

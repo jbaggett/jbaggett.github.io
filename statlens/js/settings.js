@@ -38,8 +38,9 @@ const DEFAULTS = {
   // Activity mode
   activityMode:    'discover', // 'discover' (guided, gated) or 'present' (open, all steps visible)
 
-  // Expert mode — hides advanced controls (statistic selector, CI level, chart toggle,
-  // bin adjuster, theory overlay) in simple mode for intro students
+  // Expert mode — hides advanced controls (statistic selector, CI level, chart
+  // toggle, bin adjuster, theory overlay) in simple mode for intro students.
+  // Persisted since 2026-09-25, with an always-visible badge while it is on.
   expertMode:      false,
 
   // Show interpretations — when off, hides auto-generated conclusions and
@@ -77,9 +78,16 @@ function loadSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     const stored = raw ? JSON.parse(raw) : {};
-    // expertMode is session-only — ignore any previously persisted value
-    delete stored.expertMode;
-    delete stored.quartileMethod;   // session-only for the same reason
+    // expertMode PERSISTS (changed 2026-09-25). It used to be dropped here, on
+    // the reasoning that a student shouldn't be stranded in a complex UI — but
+    // the cost landed on instructors, who lost their controls on every reload.
+    // Todd Will hit exactly that: the chart-type toggle (.expert-only)
+    // disappeared mid-investigation and he reasonably concluded the site was
+    // changing under him or serving him a stale cache. A setting that silently
+    // reverts is worse than a complex UI, so it is remembered — and while it is
+    // on, a badge says so and turns it off in one click (see `expertBadge` in
+    // page-utils.js), which is the part that makes persistence safe.
+    delete stored.quartileMethod;   // still session-only: see js/quartile-method.js
     _cache = { ...DEFAULTS, ...stored };
   } catch {
     _cache = { ...DEFAULTS };
@@ -113,12 +121,13 @@ export function setSettings(updates) {
   Object.assign(current, updates);
   _cache = current;
   try {
-    // Only persist keys that differ from defaults.
-    // expertMode is session-only — never persist (students shouldn't get stuck).
+    // Only persist keys that differ from defaults. `expertMode` used to be
+    // skipped here as well as dropped on load; both halves had to go, or the
+    // setting would look like it stuck until the next visit.
     /** @type {Record<string, any>} */
     const toStore = {};
     for (const [k, v] of Object.entries(current)) {
-      if (k === 'expertMode') continue;
+      if (k === 'quartileMethod') continue;   // session-only by design
       if (v !== DEFAULTS[k]) toStore[k] = v;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));

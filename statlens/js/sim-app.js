@@ -417,7 +417,7 @@ export function initSimPage(config) {
     const toggle = createChartToggle(chartContainer, {
       onChange: (type) => {
         chartType = type;
-        if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (type));
+        if (binAdjuster) binAdjuster.setMode(type);
         if (allStats.length > 0) {
           lastStatIndex = -1;
           batchHighlightIndices = null;
@@ -477,8 +477,12 @@ export function initSimPage(config) {
     });
   }
 
-  /** Get the currently active chart type (resolving 'auto'). */
-  function getActiveChartType() {
+  /**
+   * Get the active chart type for a set of simulated stats, resolving 'auto'.
+   * @param {number[]} [stats] - defaults to every stat currently on screen
+   * @returns {'dotplot'|'histogram'|'spike'}
+   */
+  function getActiveChartType(stats = allStats) {
     // Reasoning-mode figures (plot=only / readout=false) hide the chart toggle,
     // so pick a shape that reads well without controls: discrete spike bars for
     // a small/moderate-n proportion (the honest "possible k/n" picture), binning
@@ -486,9 +490,15 @@ export function initSimPage(config) {
     // a histogram for continuous statistics. (readout=false keeps the toggle, so
     // the student can still switch.)
     if ((plotOnly || !showReadout) && chartType === 'auto') {
-      return reasoningChartType(allStats, { proportion: !!config.proportion });
+      return reasoningChartType(stats, { proportion: !!config.proportion });
     }
-    return resolveChartType(allStats.length, chartType);
+    const resolved = resolveChartType(stats.length, chartType,
+      { proportion: !!config.proportion, stats });
+    // The theoretical curve is drawn against binned counts, so if 'auto' landed
+    // on the spike view while that overlay is on, bin instead — otherwise the
+    // checkbox would do nothing visible. An explicit Spike choice is left alone.
+    if (resolved === 'spike' && theoryOverlayOn && chartType === 'auto') return 'histogram';
+    return resolved;
   }
 
   /**
@@ -593,9 +603,22 @@ export function initSimPage(config) {
     const types = isDiscrete
       ? [['dotplot', 'Dotplot'], ['spike', 'Spike'], ['histogram', 'Histogram']]
       : [['dotplot', 'Dotplot'], ['histogram', 'Histogram']];
-    const selected = (chartType === 'auto' ? 'dotplot' : chartType);
+    // Highlight whatever 'auto' would actually draw, not a guess — on a discrete
+    // page with stats already on screen that is the spike view.
+    const selected = chartType === 'auto'
+      ? resolveChartType(allStats.length, 'auto', { proportion: isDiscrete, stats: allStats })
+      : chartType;
     // Remove existing chart type buttons but keep non-button children (theory toggle, bin adjuster)
     toggleFieldset.querySelectorAll('button[data-value]').forEach(b => b.remove());
+    // ...which orphans the closure createChartToggle handed back: its setSelected
+    // still points at the buttons just removed, so pressing Spike or Histogram
+    // updated detached nodes and "Dotplot" stayed highlighted however many times
+    // you switched (Todd Will, 2026-09-25). Re-point it at the live buttons.
+    setToggleSelected = (/** @type {string} */ type) => {
+      for (const b of toggleFieldset.querySelectorAll('button[data-value]')) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-value') === type));
+      }
+    };
     // Insert new segmented buttons at the start
     const refChild = toggleFieldset.firstChild;
     for (const [value, label] of types) {
@@ -607,7 +630,7 @@ export function initSimPage(config) {
       btn.addEventListener('click', () => {
         chartType = value;
         if (setToggleSelected) setToggleSelected(value);
-        if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (value));
+        if (binAdjuster) binAdjuster.setMode(value);
         if (allStats.length > 0) {
           lastStatIndex = -1;
           batchHighlightIndices = null;
@@ -1055,6 +1078,18 @@ export function initSimPage(config) {
       // Card legend (decodes filled vs outline) shows only in card view.
       updateMechCardLegend();
     }
+
+    // The H₀ sentence under the strip names the study ("survival rate is the
+    // same regardless of whether a transplant was received"), so it has to
+    // follow the data. It used to be written only from the mechanism-init
+    // block, which runs once — and on pages where the strip opens at load
+    // (small two-group proportion data, where cards are viable) that block
+    // never runs again. So loading heart_transplant and then yawn left the
+    // transplant hypothesis sitting over the yawning data, describing a study
+    // the numbers had nothing to do with. Datasets with no `nullClaim` fall
+    // back to the generic sentence, which is why this must re-run on every
+    // load rather than only when a claim exists. (Jeff, 2026-09-25.)
+    if (config.mode === 'randomization') renderMechanismNull();
 
     // Note: data panel collapse and sticky controls are handled by initDataPanel's postLoadUI
 
@@ -3449,6 +3484,50 @@ export function initSimPage(config) {
     return bcaCI([...stats], thetaHat, jack, ciLevel);
   }
 
+  /**
+   * Re-phase the dot grid so a bin BOUNDARY lands on the observed statistic.
+   *
+   * `computeDots` snaps each value to the nearest bin CENTRE, and the grid's
+   * origin is the pilot domain's left edge — nothing ties it to the observed.
+   * So a shuffle just past the observed can round down into a bin whose centre
+   * draws to the LEFT of the line, and the dots a student counts beyond it
+   * disagree with the p-value. Todd Will counted one dot past the line where
+   * the p-value said 16.
+   *
+   * Centres sit at `origin + k·w`, so boundaries sit at `origin + (k+0.5)·w`;
+   * putting a boundary on `observed` means the origin is a half-width below it.
+   * Only the phase changes — the bin width, and so every dot's size, is
+   * untouched.
+   *
+   * **Two-group pages only.** On a single-proportion grid the width is 1/n and
+   * the origin is itself an achievable p̂, so centres already sit ON the
+   * achievable values, which is the correct alignment there. Re-phasing by half
+   * a bin would leave every dot sitting exactly on a boundary and shift the
+   * whole plot sideways.
+   *
+   * Ties matter and are not left to chance. A shuffle exactly equal to the
+   * observed sits precisely on the boundary, where `Math.round` decides it — and
+   * at that point floating point decides: `(0.5 - 0.4) / 0.2` is 0.4999999…,
+   * which rounds DOWN, putting a tie on the non-extreme side for no reason
+   * anyone could see. Shuffled proportions hit their observed value often, so
+   * this is not a rare corner. The phase is therefore nudged a fraction of a bin
+   * so ties land on the side the p-value counts them: above for a right-tailed
+   * or two-sided test, below for a left-tailed one.
+   *
+   * @param {number|undefined} observed
+   * @param {string|undefined} direction
+   * @returns {number|undefined}
+   */
+  function dotGridOrigin(observed, direction) {
+    const w = lockedDotGrid?.binWidth;
+    const origin = lockedDotGrid?.binOrigin;
+    if (!w || origin === undefined) return origin;
+    if (!config.twoGroup || !Number.isFinite(observed)) return origin;
+    // Left tail: ties are extreme on the low side, so tip them below the line.
+    const tieNudge = direction === 'less' ? w * 1e-9 : -w * 1e-9;
+    return /** @type {number} */ (observed) - w / 2 + tieNudge;
+  }
+
   function renderChart(stats, ci, observedStat, direction) {
     chartContainer.innerHTML = '';
     const n = stats.length;
@@ -3538,15 +3617,13 @@ export function initSimPage(config) {
       propThresholds = snappedPropThresholds(sampleSize, domain, n);
     }
 
-    // Determine which chart type to render (reasoning mode picks spike-vs-
-    // histogram by the statistic's discreteness — see getActiveChartType).
-    const activeChart = ((plotOnly || !showReadout) && chartType === 'auto')
-      ? reasoningChartType(stats, { proportion: !!config.proportion })
-      : resolveChartType(n, chartType);
+    // One decision point for the chart type, shared with the toggle — these used
+    // to be two copies of the same rule, which is how they came apart.
+    const activeChart = getActiveChartType(stats);
 
     // Sync toggle radios and bin adjuster label to reflect actual chart type
     if (setToggleSelected) setToggleSelected(activeChart);
-    if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (activeChart));
+    if (binAdjuster) binAdjuster.setMode(activeChart);
     // Build region-of-interest predicate
     // Randomization: extreme values (tail) are the region of interest
     // Bootstrap CI: values inside the CI are the region of interest
@@ -3586,7 +3663,7 @@ export function initSimPage(config) {
         domain,
         numBins: config.proportion ? sampleSize : userBinCount,
         binWidth: lockedDotGrid?.binWidth ?? (config.proportion ? 1 / sampleSize : undefined),
-        binOrigin: lockedDotGrid?.binOrigin,
+        binOrigin: dotGridOrigin(observedStat, direction),
         highlightIndex,
         highlightIndices,
         precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
@@ -3867,6 +3944,19 @@ export function initSimPage(config) {
     // re-runs don't look arbitrary (REQ-031). And present the p-value *by
     // construction* — it IS the fraction of shuffles at least as extreme.
     const mcMargin = 1.96 * Math.sqrt(Math.max(pValue * (1 - pValue), 0) / N);
+    // Discrete statistics land exactly on the observed value, often a lot: on
+    // sex_discrimination those ties are 84% of the p-value, so a student who
+    // counts only what is PAST the line reads 0.004 where the answer is 0.025.
+    // The chart already colours that spike as extreme and `isExtreme` already
+    // uses >=; what was missing is anyone saying so. Shown only when ties exist,
+    // which is exactly the discrete case — a continuous statistic never repeats
+    // its observed value, so this line never appears there.
+    const tieCount = stats.filter(v => Math.abs(v - observedStat) < 1e-9).length;
+    const tieNote = tieCount > 0
+      ? `<p class="hint tie-note"><strong>${tieCount} of those ${extremeCount}</strong> came out
+           <em>exactly</em> as extreme as the observed value — the spike sitting on the line.
+           They count: “at least as extreme” includes equal.</p>`
+      : '';
     const pLine = extremeCount === 0
       ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
       : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
@@ -3883,11 +3973,15 @@ export function initSimPage(config) {
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
       <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). The “±” is the 95% Monte-Carlo margin — <strong>more shuffles → a tighter estimate</strong>.</p>
+      ${tieNote}
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     ` : `
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed value is marked on the distribution. Hover (or focus) the bars to read each bin's count, then find the fraction of the ${N} shuffles that are at least as extreme as the observed value (${dirLabel}).</p>
+      ${tieCount > 0 ? `<p class="hint tie-note">Some shuffles landed <em>exactly</em> on the
+           observed value — the spike on the line. Count those in: “at least as extreme”
+           includes equal.</p>` : ''}
     `;
   }
 
