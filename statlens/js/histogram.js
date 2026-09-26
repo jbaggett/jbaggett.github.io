@@ -62,19 +62,37 @@ export function riceBins(n) {
 }
 
 /**
- * Generate snapped bin thresholds for proportion data.
- * Uses Sturges' rule to pick a reasonable bin count, then rounds
- * bin edges to the nearest k/n boundary so bars don't split
- * discrete values across bins. Result: touching bars, clean display.
+ * Generate snapped bin thresholds for a discrete statistic.
  *
- * @param {number} sampleSize - The denominator n in k/n proportions
+ * Each bin holds a whole number of achievable values, so no bar splits one
+ * outcome across two bars or leaves a reachable outcome with a bar of its own
+ * standing empty. Bin count comes from Sturges' rule.
+ *
+ * Two things the caller should pass when it can:
+ *
+ * - **`opts.step`**, the exact distance between achievable values. Deriving it
+ *   as `1/sampleSize` is right for a single proportion but wrong for a
+ *   difference of two, where callers rounded `n₁n₂/(n₁+n₂)` first and lost about
+ *   1% — enough, after ten bins, for one bin to swallow two outcomes while its
+ *   neighbour catches none.
+ * - **`opts.anchor`**, an achievable value — in practice the observed statistic.
+ *   Edges are then placed a half-step below it, so the observed opens its own
+ *   bin (every value in that bin is ≥ the observed, which is what a right-tailed
+ *   p-value counts) and no achievable value ever lands *on* an edge, where
+ *   floating point would decide which side it falls.
+ *
+ * Without an anchor the edges fall where the domain happens to start, which is
+ * the old behaviour.
+ *
+ * @param {number} sampleSize - The denominator n in k/n proportions (ignored if opts.step is given)
  * @param {[number, number]} domain - [min, max] domain
  * @param {number} dataLength - Number of data values (for Sturges' rule)
- * @returns {number[]} Threshold values snapped to k/n grid
+ * @param {{ step?: number, anchor?: number }} [opts]
+ * @returns {number[]} Threshold values on the achievable grid
  */
-export function snappedPropThresholds(sampleSize, domain, dataLength) {
-  if (sampleSize <= 0) return [];
-  const step = 1 / sampleSize;
+export function snappedPropThresholds(sampleSize, domain, dataLength, opts = {}) {
+  const step = opts.step ?? (sampleSize > 0 ? 1 / sampleSize : 0);
+  if (!(step > 0)) return [];
   const range = domain[1] - domain[0];
   // How many discrete values fit in the domain?
   const discreteCount = Math.ceil(range / step);
@@ -85,8 +103,19 @@ export function snappedPropThresholds(sampleSize, domain, dataLength) {
   const binWidth = stepsPerBin * step;
 
   const thresholds = [];
+  if (opts.anchor != null && Number.isFinite(opts.anchor)) {
+    // Walk the grid out from the anchor in both directions.
+    const first = opts.anchor - step / 2;
+    let edge = first - Math.ceil((first - domain[0]) / binWidth) * binWidth;
+    while (edge <= domain[0]) edge += binWidth;
+    while (edge < domain[1]) {
+      thresholds.push(edge);
+      edge += binWidth;
+    }
+    return thresholds;
+  }
   // Start from the nearest k/n value at or below domain[0]
-  const startK = Math.floor(domain[0] * sampleSize);
+  const startK = Math.floor(domain[0] / step);
   let edge = (startK + stepsPerBin) * step;
   while (edge < domain[1]) {
     thresholds.push(edge);

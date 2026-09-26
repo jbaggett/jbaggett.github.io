@@ -743,16 +743,19 @@ function updateChart() {
       highlightIndices: batchHighlightIndices ?? undefined,
       domain,
       binWidth: discreteStep,
+      // Centre the grid on the observed difference, which is itself achievable,
+      // so every column is one outcome and the observed gets its own.
+      binOrigin: observedDiff,
     });
     chartFrame = r.frame;
     chartXScale = r.xScale;
   } else {
     // Snap histogram bin edges to the discrete grid
-    const thresholds = snappedPropThresholds(
-      Math.round(1 / discreteStep),  // effective "sample size" for grid
-      domain,
-      nullDiffs.length,
-    );
+    // Pass the step itself. Handing over `round(1/step)` as a sample size put
+    // the rounding back: on 34 vs 16 that is 1/11 against a true 1/10.88, and
+    // the bin edges walk off the achievable values from there.
+    const thresholds = snappedPropThresholds(0, domain, nullDiffs.length,
+      { step: discreteStep, anchor: observedDiff });
     const r = drawHistogram(container, nullDiffs, {
       xLabel,
       titleText: '',

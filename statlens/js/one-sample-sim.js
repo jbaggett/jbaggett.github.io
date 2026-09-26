@@ -21,7 +21,7 @@ import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
-import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
+import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
 
 
 /**
@@ -383,7 +383,10 @@ export function initOneSamplePage(config) {
     if ((plotOnly || !showReadout) && chartType === 'auto') {
       return reasoningChartType(stats, { proportion: isProp });
     }
-    return resolveChartType(stats.length, chartType);
+    // p̂ moves in steps of 1/n, so a big sample spans more achievable values
+    // than a dotplot can draw apart — bin them rather than overlap them.
+    return resolveChartType(stats.length, chartType,
+      { discreteColumns: isProp && sampleN > 0 ? discreteColumnSpan(stats, 1 / sampleN) : 0 });
   }
 
   function syncAltNullValue() {
@@ -1157,7 +1160,8 @@ export function initOneSamplePage(config) {
     // Thresholds: snapped for proportions, default for means
     // Pass numBins to match renderChart so delta bars align correctly
     const thresholdOpts = isProp
-      ? { domain: hlDomain, thresholds: snappedPropThresholds(sampleN, hlDomain, allStats.length) }
+      ? { domain: hlDomain, thresholds: snappedPropThresholds(sampleN, hlDomain, allStats.length,
+          { anchor: observedStat }) }
       : { domain: hlDomain, numBins: userBinCount };
     const { bins: fullBins } = computeBins(allStats, thresholdOpts);
     const lockedThresholds = fullBins.slice(1).map(b => b.x0);

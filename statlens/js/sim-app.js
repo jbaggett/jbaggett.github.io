@@ -22,7 +22,7 @@ import {
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
-import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
+import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
 import { createMeanMechanism } from './mean-mechanism.js';
@@ -492,7 +492,10 @@ export function initSimPage(config) {
     if ((plotOnly || !showReadout) && chartType === 'auto') {
       return reasoningChartType(stats, { proportion: !!config.proportion });
     }
-    return resolveChartType(stats.length, chartType);
+    // A discrete grid gets finer as the sample grows; past a point its columns
+    // can no longer be drawn apart, and a histogram is the honest shape.
+    return resolveChartType(stats.length, chartType,
+      { discreteColumns: discreteColumnSpan(stats, discreteGridStep()) });
   }
 
   /**
@@ -1549,11 +1552,9 @@ export function initSimPage(config) {
         }
         /** @type {[number,number]} */
         const fullDomain = [lo, hi];
-        const histSampleSize = (config.twoGroup && config.proportion && data2.length > 0)
-          ? Math.round(data1.length * data2.length / (data1.length + data2.length))
-          : data1.length;
         const histThresholds = config.proportion
-          ? snappedPropThresholds(histSampleSize, fullDomain, allStats.length)
+          ? snappedPropThresholds(0, fullDomain, allStats.length,
+              { step: discreteGridStep(), anchor: lastObserved })
           : undefined;
         const { bins: fullBins } = computeBins(allStats, {
           domain: fullDomain, thresholds: histThresholds,
@@ -1715,11 +1716,9 @@ export function initSimPage(config) {
         }
         /** @type {[number,number]} */
         const rDomain = [rLo, rHi];
-        const rHistSampleSize = (config.twoGroup && config.proportion && data2.length > 0)
-          ? Math.round(data1.length * data2.length / (data1.length + data2.length))
-          : data1.length;
         const rThresholds = config.proportion
-          ? snappedPropThresholds(rHistSampleSize, rDomain, allStats.length)
+          ? snappedPropThresholds(0, rDomain, allStats.length,
+              { step: discreteGridStep(), anchor: lastObserved })
           : undefined;
         // Bin the FULL dataset first to lock in bin edges
         // Pass same numBins as renderChart to ensure identical bin edges
@@ -3629,18 +3628,22 @@ export function initSimPage(config) {
     // Highlight new dots in dotplot mode
     const highlightIndex = lastStatIndex >= 0 ? lastStatIndex : -1;
     const highlightIndices = batchHighlightIndices ?? undefined;
-    // For two-group proportions, the step between possible difference values
-    // is 1/n₁ + 1/n₂ (not 1/n). Use harmonic mean so snappedPropThresholds
-    // produces bins aligned to the actual discrete grid.
+    // A rough column count, used only to size dots when nothing better is
+    // available. The GRID itself comes from discreteGridStep(), which does not
+    // round — rounding here is why the columns used to drift off the outcomes.
     const sampleSize = (config.twoGroup && config.proportion && data2.length > 0)
       ? Math.round(data1.length * data2.length / (data1.length + data2.length))
       : data1.length;
 
-    // For proportion histogram: snap bin edges to k/n grid so bars touch
+    // Snap the histogram's bin edges to the achievable grid too, anchored on the
+    // observed statistic: whole outcomes per bar, and the observed opens its own
+    // bin instead of sitting inside one where the shaded tail would disagree
+    // with the p-value.
     /** @type {number[]|undefined} */
     let propThresholds;
     if (config.proportion && domain) {
-      propThresholds = snappedPropThresholds(sampleSize, domain, n);
+      propThresholds = snappedPropThresholds(0, domain, n,
+        { step: discreteGridStep(), anchor: observedStat });
     }
 
     // One decision point for the chart type, shared with the toggle — these used
