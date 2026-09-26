@@ -383,12 +383,7 @@ export function initOneSamplePage(config) {
     if ((plotOnly || !showReadout) && chartType === 'auto') {
       return reasoningChartType(stats, { proportion: isProp });
     }
-    const resolved = resolveChartType(stats.length, chartType, { proportion: isProp, stats });
-    // The theoretical curve needs binned counts to sit on, so 'auto' bins rather
-    // than leaving that checkbox with nothing to draw. An explicit Spike choice
-    // is left alone.
-    if (resolved === 'spike' && theoryOverlayOn && chartType === 'auto') return 'histogram';
-    return resolved;
+    return resolveChartType(stats.length, chartType);
   }
 
   function syncAltNullValue() {

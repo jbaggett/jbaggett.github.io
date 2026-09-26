@@ -45,32 +45,22 @@ export const DOMAIN_PADDING = 0.05;
 /**
  * Determine the active chart type, resolving 'auto'.
  *
- * A discrete statistic (a sample proportion, or a difference of two) already
- * has bins — the values it can actually take — so 'auto' draws those as spike
- * bars rather than imposing a grid on them. That puts the observed statistic
- * *on* a bar instead of inside one, and makes the shaded tail hold exactly the
- * shuffles the p-value counts. Binning them instead is what made a 16-shuffle
- * tail render as a single dot (Todd Will, 2026-09-25), and it left the one view
- * that gets discrete statistics right reachable only through expert mode.
+ * Dots, then bins. A dotplot is the shape students meet first and the one that
+ * shows the mechanism — one shuffle, one dot — so 'auto' opens there and bins
+ * only when the run outgrows it. The spike view stays an expert choice: it is
+ * the exact picture of a discrete statistic, but it is also an unfamiliar one,
+ * and a dotplot whose grid sits on the achievable values (see sim-app's
+ * discreteGridStep) is exact too, while still looking like a dotplot.
  *
- * Past DISCRETE_BAR_MAX distinct values the bars crowd into an unreadable
- * cloud, so 'auto' bins from there — which means a long run can cross over from
- * spike to histogram partway, the same way it already crosses from dotplot to
- * histogram at DOTPLOT_AUTO_THRESHOLD.
+ * Reasoning-mode figures are the exception — they hide the toggle, so they pick
+ * separately in reasoningChartType below.
  *
  * @param {number} n - Number of data points / simulated stats
  * @param {string} userChoice - 'auto', 'dotplot', 'histogram', or 'spike'
- * @param {object} [opts]
- * @param {boolean} [opts.proportion] - Is the statistic a proportion (discrete)?
- * @param {number[]} [opts.stats] - The simulated statistics, for counting distinct values
  * @returns {'dotplot'|'histogram'|'spike'}
  */
-export function resolveChartType(n, userChoice, opts = {}) {
+export function resolveChartType(n, userChoice) {
   if (userChoice && userChoice !== 'auto') return /** @type {any} */ (userChoice);
-  if (opts.proportion && opts.stats && opts.stats.length > 0
-      && new Set(opts.stats).size <= DISCRETE_BAR_MAX) {
-    return 'spike';
-  }
   return n <= DOTPLOT_AUTO_THRESHOLD ? 'dotplot' : 'histogram';
 }
 

@@ -492,13 +492,7 @@ export function initSimPage(config) {
     if ((plotOnly || !showReadout) && chartType === 'auto') {
       return reasoningChartType(stats, { proportion: !!config.proportion });
     }
-    const resolved = resolveChartType(stats.length, chartType,
-      { proportion: !!config.proportion, stats });
-    // The theoretical curve is drawn against binned counts, so if 'auto' landed
-    // on the spike view while that overlay is on, bin instead — otherwise the
-    // checkbox would do nothing visible. An explicit Spike choice is left alone.
-    if (resolved === 'spike' && theoryOverlayOn && chartType === 'auto') return 'histogram';
-    return resolved;
+    return resolveChartType(stats.length, chartType);
   }
 
   /**
@@ -603,10 +597,9 @@ export function initSimPage(config) {
     const types = isDiscrete
       ? [['dotplot', 'Dotplot'], ['spike', 'Spike'], ['histogram', 'Histogram']]
       : [['dotplot', 'Dotplot'], ['histogram', 'Histogram']];
-    // Highlight whatever 'auto' would actually draw, not a guess — on a discrete
-    // page with stats already on screen that is the spike view.
+    // Highlight whatever 'auto' would actually draw, not a guess.
     const selected = chartType === 'auto'
-      ? resolveChartType(allStats.length, 'auto', { proportion: isDiscrete, stats: allStats })
+      ? resolveChartType(allStats.length, 'auto')
       : chartType;
     // Remove existing chart type buttons but keep non-button children (theory toggle, bin adjuster)
     toggleFieldset.querySelectorAll('button[data-value]').forEach(b => b.remove());
@@ -1167,18 +1160,12 @@ export function initSimPage(config) {
     const pad = (hi - lo) * 0.1 || 0.5;
     preSimDomain = [lo - pad, hi + pad];
 
-    // Lock the dotplot bin grid so dots don't shift as domain grows
-    // For two-group proportions, use same effective sample size as renderChart
-    const gridNumBins = config.proportion
-      ? (config.twoGroup && data2.length > 0
-          ? Math.round(data1.length * data2.length / (data1.length + data2.length))
-          : data1.length)
-      : (userBinCount ?? 40);
-    // For proportions, use natural 1/n step size (not domain_range/n) so dots
-    // are sized correctly relative to the visible bins, not the full 0-1 range.
-    const gridBinWidth = config.proportion
-      ? 1 / gridNumBins
-      : (preSimDomain[1] - preSimDomain[0]) / gridNumBins;
+    // Lock the dotplot bin grid so dots don't shift as domain grows. For a
+    // discrete statistic the grid is not a choice — it is the set of values the
+    // statistic can actually take (see discreteGridStep).
+    const gridNumBins = userBinCount ?? 40;
+    const gridBinWidth = discreteGridStep()
+      ?? (preSimDomain[1] - preSimDomain[0]) / gridNumBins;
     lockedDotGrid = { binWidth: gridBinWidth, binOrigin: preSimDomain[0] };
 
     // Render empty chart (no observed stat line — just axes)
@@ -3485,34 +3472,62 @@ export function initSimPage(config) {
   }
 
   /**
-   * Re-phase the dot grid so a bin BOUNDARY lands on the observed statistic.
+   * The step between values a discrete statistic can actually take, or `null`
+   * when the statistic is continuous.
+   *
+   * A single proportion moves in steps of `1/n`. A difference of two moves in
+   * steps of `1/n₁ + 1/n₂`: under the null a shuffle takes one success out of
+   * one group and puts it in the other, so both proportions move at once.
+   *
+   * This used to be derived as `1 / round(n₁n₂/(n₁+n₂))`. The reciprocal of that
+   * harmonic mean *is* `1/n₁ + 1/n₂` — exactly — but the rounding threw the
+   * identity away: on 34 vs 16 it gives 1/11 = 0.0909 against a true step of
+   * 0.0919, about 1% short. One bin off by 1% is invisible; eleven of them slip
+   * an eighth of a bin, which is enough that some bins swallow two achievable
+   * values and their neighbours catch none — the uneven gaps Jeff spotted on the
+   * yawn data (2026-09-26). So: no rounding.
+   *
+   * @returns {number|null}
+   */
+  function discreteGridStep() {
+    if (!config.proportion) return null;
+    if (!data1.length) return null;
+    return (config.twoGroup && data2.length > 0)
+      ? 1 / data1.length + 1 / data2.length
+      : 1 / data1.length;
+  }
+
+  /**
+   * Phase the dot grid against the observed statistic.
    *
    * `computeDots` snaps each value to the nearest bin CENTRE, and the grid's
-   * origin is the pilot domain's left edge — nothing ties it to the observed.
-   * So a shuffle just past the observed can round down into a bin whose centre
-   * draws to the LEFT of the line, and the dots a student counts beyond it
-   * disagree with the p-value. Todd Will counted one dot past the line where
-   * the p-value said 16.
+   * origin was the pilot domain's left edge — nothing tied it to the observed,
+   * or to anything else meaningful. So a shuffle just past the observed could
+   * round down into a bin whose centre draws to the LEFT of the line, and the
+   * dots a student counts beyond it disagreed with the p-value. Todd Will
+   * counted one dot past the line where the p-value said 16.
    *
-   * Centres sit at `origin + k·w`, so boundaries sit at `origin + (k+0.5)·w`;
-   * putting a boundary on `observed` means the origin is a half-width below it.
-   * Only the phase changes — the bin width, and so every dot's size, is
-   * untouched.
+   * For a **discrete** statistic the fix is not a phase trick: the bin width is
+   * the step between achievable values, so putting a centre on the observed —
+   * itself achievable — lands every centre on an achievable value. One column
+   * per outcome. Nothing straddles the line because nothing lies between the
+   * outcomes, ties stand in their own column on the line, and the note under
+   * the p-value says they count. This also fixes column mode, which colours by
+   * bin centre: the centre is now a value the statistic can actually take.
    *
-   * **Two-group pages only.** On a single-proportion grid the width is 1/n and
-   * the origin is itself an achievable p̂, so centres already sit ON the
-   * achievable values, which is the correct alignment there. Re-phasing by half
-   * a bin would leave every dot sitting exactly on a boundary and shift the
-   * whole plot sideways.
+   * For a **continuous** two-group statistic there is no such grid, so the best
+   * available is a bin BOUNDARY on the observed — centres sit at `origin + k·w`,
+   * so a boundary sits there when the origin is a half-width below. No bin can
+   * then hold values from both sides. Only the phase changes; the width, and so
+   * every dot's size, is untouched.
    *
-   * Ties matter and are not left to chance. A shuffle exactly equal to the
-   * observed sits precisely on the boundary, where `Math.round` decides it — and
-   * at that point floating point decides: `(0.5 - 0.4) / 0.2` is 0.4999999…,
+   * In that continuous case ties are not left to chance. A value exactly equal
+   * to the observed sits precisely on the boundary, where `Math.round` decides
+   * it — and there floating point decides: `(0.5 - 0.4) / 0.2` is 0.4999999…,
    * which rounds DOWN, putting a tie on the non-extreme side for no reason
-   * anyone could see. Shuffled proportions hit their observed value often, so
-   * this is not a rare corner. The phase is therefore nudged a fraction of a bin
-   * so ties land on the side the p-value counts them: above for a right-tailed
-   * or two-sided test, below for a left-tailed one.
+   * anyone could see. The phase is therefore nudged a fraction of a bin so ties
+   * land on the side the p-value counts them: above for a right-tailed or
+   * two-sided test, below for a left-tailed one.
    *
    * @param {number|undefined} observed
    * @param {string|undefined} direction
@@ -3522,7 +3537,18 @@ export function initSimPage(config) {
     const w = lockedDotGrid?.binWidth;
     const origin = lockedDotGrid?.binOrigin;
     if (!w || origin === undefined) return origin;
-    if (!config.twoGroup || !Number.isFinite(observed)) return origin;
+    if (!Number.isFinite(observed)) return origin;
+    // Discrete statistic: put a bin CENTRE on the observed value. The observed
+    // value is itself achievable, and the bin width is the step between
+    // achievable values, so every centre then lands on one — each column is one
+    // outcome, and none of them is a value the statistic could not produce.
+    // Shuffles equal to the observed get their own column, sitting on the line
+    // where they belong, and the note under the p-value says they count.
+    if (discreteGridStep() != null) return /** @type {number} */ (observed);
+    if (!config.twoGroup) return origin;
+    // Continuous statistic: there is no achievable grid to land on, so the best
+    // available is a bin BOUNDARY on the observed — no bin can then hold values
+    // from both sides of the line.
     // Left tail: ties are extreme on the low side, so tip them below the line.
     const tieNudge = direction === 'less' ? w * 1e-9 : -w * 1e-9;
     return /** @type {number} */ (observed) - w / 2 + tieNudge;
@@ -3662,13 +3688,16 @@ export function initSimPage(config) {
         animate: false,
         domain,
         numBins: config.proportion ? sampleSize : userBinCount,
-        binWidth: lockedDotGrid?.binWidth ?? (config.proportion ? 1 / sampleSize : undefined),
+        binWidth: lockedDotGrid?.binWidth ?? discreteGridStep() ?? undefined,
         binOrigin: dotGridOrigin(observedStat, direction),
         highlightIndex,
         highlightIndices,
         precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
         baseFill: dotBaseFill,
         extremeFill: dotExtremeFill,
+        // Slimmer dots on a discrete grid: the gap between columns is the point,
+        // since between two achievable values there is nothing to draw.
+        dotRadiusScale: discreteGridStep() != null ? 0.8 : 1,
       });
       chartResult = r.frame;
       chartXScale = r.xScale;
@@ -3954,7 +3983,7 @@ export function initSimPage(config) {
     const tieCount = stats.filter(v => Math.abs(v - observedStat) < 1e-9).length;
     const tieNote = tieCount > 0
       ? `<p class="hint tie-note"><strong>${tieCount} of those ${extremeCount}</strong> came out
-           <em>exactly</em> as extreme as the observed value — the spike sitting on the line.
+           <em>exactly</em> as extreme as the observed value — the column sitting on the line.
            They count: “at least as extreme” includes equal.</p>`
       : '';
     const pLine = extremeCount === 0
@@ -3980,7 +4009,7 @@ export function initSimPage(config) {
       <p>Observed statistic: ${obsLabel}</p>
       <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed value is marked on the distribution. Hover (or focus) the bars to read each bin's count, then find the fraction of the ${N} shuffles that are at least as extreme as the observed value (${dirLabel}).</p>
       ${tieCount > 0 ? `<p class="hint tie-note">Some shuffles landed <em>exactly</em> on the
-           observed value — the spike on the line. Count those in: “at least as extreme”
+           observed value — the column on the line. Count those in: “at least as extreme”
            includes equal.</p>` : ''}
     `;
   }

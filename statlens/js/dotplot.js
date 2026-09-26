@@ -28,6 +28,9 @@ const OBSERVED_COLOR = '#7B2D8E';
 /** Minimum dot radius. */
 const MIN_RADIUS = 3;
 
+/** Floor for a scaled-down radius, so shrinking for emphasis can't make dots vanish. */
+const SCALED_MIN_RADIUS = 2;
+
 /** Maximum dot radius (explore dotplots may go up to this). */
 const MAX_RADIUS = 12;
 
@@ -170,6 +173,7 @@ export function computeDotRadius(innerWidth, innerHeight, maxStack, numBins) {
  * @param {string} [options.filename] - PNG download filename
  * @param {'full'|'names'|'none'} [options.labels] - Label visibility: 'full' (default), 'names'/'none' (no value tooltips)
  * @param {number} [options.dotRadius] - Force an exact dot radius (overrides auto-fit); for matched bag/resample dotplots
+ * @param {number} [options.dotRadiusScale] - Shrink the auto-fit radius by this factor (default 1). A discrete statistic uses it to open gaps between its columns, so the eye reads a set of separate outcomes rather than a continuum.
  * @param {number} [options.sizingMaxStack] - Compute the auto-fit radius from this stack count instead of the data's own max (stable dot size across re-renders)
  * @returns {{ frame: ChartFrame, dots: Array<{value: number, binCenter: number, stackIndex: number}>, xScale: d3Scale.ScaleLinear<number,number>, maxStack: number, binWidth: number, dotRadius: number, update: (values: number[], opts?: object) => void }}
  */
@@ -203,6 +207,7 @@ export function drawDotplot(container, values, options = {}) {
     filename,
     labels = 'full',
     dotRadius: fixedDotRadius,
+    dotRadiusScale = 1,
     sizingMaxStack,
     forceDotMode = false,
     viewWidth,
@@ -237,7 +242,9 @@ export function drawDotplot(container, values, options = {}) {
   // keep a stable baseline as stacks vary.
   const dotRadius = fixedDotRadius != null
     ? fixedDotRadius
-    : computeDotRadius(frame.width, frame.height, sizingMaxStack ?? maxStack, effectiveBins);
+    : Math.max(SCALED_MIN_RADIUS,
+        computeDotRadius(frame.width, frame.height, sizingMaxStack ?? maxStack, effectiveBins)
+          * dotRadiusScale);
 
   // Detect if stacks overflow even at minimum radius — switch to filled columns.
   // `forceDotMode` keeps dots (mechanism strips want consistent dots across a
@@ -381,8 +388,8 @@ export function drawDotplot(container, values, options = {}) {
           autoReduceTicks(xAxisSel, xAxis);
         }
 
-        const newRadius = computeDotRadius(
-          frame.width, frame.height, newResult.maxStack, newEffectiveBins);
+        const newRadius = Math.max(SCALED_MIN_RADIUS, computeDotRadius(
+          frame.width, frame.height, newResult.maxStack, newEffectiveBins) * dotRadiusScale);
         renderDots(dataGroup, newResult.dots, xScale, frame.height, newRadius, newIsExtreme, animate, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill, highlightStroke);
       }
 
