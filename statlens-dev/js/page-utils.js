@@ -359,7 +359,19 @@ export function initSettings() {
     layoutSel.addEventListener('change', () => {
       setSettings({ resamplingLayout: layoutSel.value });
       applySettings();
-      location.reload();
+      // Drop any `?mech=` first. It is a per-link preview override and it beats
+      // the setting by design — but the address bar PRESERVES it across
+      // navigation, so anyone who had once opened a preview link found this
+      // control doing nothing at all, silently, forever. Choosing here is the
+      // more explicit act, so it wins. (Reported by Jeff, 2026-09-27: "both
+      // legacy and split seem to give the new split layout".)
+      const url = new URL(location.href);
+      if (url.searchParams.has('mech')) {
+        url.searchParams.delete('mech');
+        location.replace(url.toString());
+      } else {
+        location.reload();
+      }
     });
   }
 

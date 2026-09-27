@@ -6,12 +6,12 @@
  * name. This is the first thing to take advantage of that: a second layout,
  * chosen by `?mech=`, with no change to the default.
  *
- * Not `?layout=`, which the plan proposed and which is already taken:
- * `js/layout-variants.js` uses it for the current/tight/rail/focus prototypes,
- * and `settings.js` writes `body[data-layout]` from it — so an earlier draft of
- * this module had its attribute silently overwritten, leaving an emptied strip
- * visible beneath the tiers on whichever pages happened to apply settings last.
- * Hence `data-mech-layout`.
+ * Named `mech` rather than `layout` because `?layout=` was taken at the time by
+ * a current/tight/rail/focus page-layout experiment, which wrote
+ * `body[data-layout]` and silently overwrote an earlier draft of this module's
+ * attribute. That experiment has since been removed (2026-09-27) and the name
+ * is free again, but `mech` is the better one anyway: this lays out the
+ * mechanism, not the page.
  *
  * Chosen by `?mech=` on a single link, or by the **Resampling layout** setting
  * (`legacy` / `split`) for every page on this machine. The parameter wins.

@@ -32,7 +32,6 @@ import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
-import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
 /**
  * @typedef {object} SimConfig
@@ -4122,8 +4121,6 @@ export function initSimPage(config) {
   initPlayPause(genBtns, resetBtn);
 
   // TEMPORARY: apply experimental layout variant (rail/focus behavior)
-  initLayoutVariants();
-
   // Opt-in coaching hints (state-driven; no-op unless enabled)
   initCoaching();
 }

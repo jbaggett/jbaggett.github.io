@@ -162,6 +162,21 @@ const SHARE_SCRIPT_SRC = document.currentScript
   // the seed pinned (see share-state.js) their numbers match the projector's.
 
   const PIN_KEY = 'statlens:qr-pinned';
+  /**
+   * Pinned codes start BIG (Jeff, 2026-09-27). The pin exists to be scanned
+   * from across a room while the instructor gets on with the lesson, and a
+   * 116px code on a projector is not scannable from row three. Smaller is one
+   * click away, and remembered for whoever prefers it on a laptop.
+   */
+  const SIZE_KEY = 'statlens:qr-pin-size';
+
+  function isBig() {
+    try { return localStorage.getItem(SIZE_KEY) !== 'small'; } catch { return true; }
+  }
+
+  function setBig(big) {
+    try { localStorage.setItem(SIZE_KEY, big ? 'big' : 'small'); } catch { /* private mode */ }
+  }
 
   function isPinned() {
     try { return localStorage.getItem(PIN_KEY) === '1'; } catch { return false; }
@@ -172,12 +187,30 @@ const SHARE_SCRIPT_SRC = document.currentScript
     renderPin();
   }
 
-  /** Draw, update or remove the pinned panel to match the stored preference. */
+  /** Guards renderPin against itself — see the note below. */
+  let pinRendering = false;
+
+  /**
+   * Draw, update or remove the pinned panel to match the stored preference.
+   *
+   * Re-entrant by nature: a page that loads with the pin set calls this once on
+   * load and again on the first URL sync, and both await the QR library. Without
+   * the flag both calls got past the "does a panel exist?" check while the
+   * import was in flight, and both appended one — two stacked QR codes sharing
+   * an id. Found 2026-09-27 by a test that could not tell which of two svgs it
+   * meant.
+   */
   async function renderPin() {
+    if (pinRendering) return;
     let panel = document.getElementById('qr-pin');
     if (!isPinned()) { panel?.remove(); return; }
     if (!qrLibLoaded) {
+      pinRendering = true;
       try { await loadQrLib(); } catch { return; }   // CDN down: no pin, page fine
+      finally { pinRendering = false; }
+      // Anything could have happened while that was in flight.
+      if (!isPinned()) return;
+      panel = document.getElementById('qr-pin');
     }
 
     if (!panel) {
@@ -187,15 +220,24 @@ const SHARE_SCRIPT_SRC = document.currentScript
       panel.setAttribute('aria-label', 'Scan to open this page');
       panel.innerHTML = '<div class="qr-pin-code"></div>'
         + '<p class="qr-pin-caption">Scan to open this page</p>'
-        + '<button type="button" class="qr-pin-bigger" aria-pressed="false">Bigger</button>'
+        + '<button type="button" class="qr-pin-bigger">Smaller</button>'
         + '<button type="button" class="qr-pin-close" aria-label="Remove pinned QR code">\u00d7</button>';
       panel.querySelector('.qr-pin-close')?.addEventListener('click', () => setPinned(false));
       panel.querySelector('.qr-pin-bigger')?.addEventListener('click', (e) => {
         const big = panel.classList.toggle('qr-pin--big');
+        setBig(big);
         const b = /** @type {HTMLElement} */ (e.currentTarget);
         b.setAttribute('aria-pressed', String(big));
         b.textContent = big ? 'Smaller' : 'Bigger';
       });
+      // Big by default, and whatever was chosen last time after that.
+      const big = isBig();
+      panel.classList.toggle('qr-pin--big', big);
+      const sizeBtn = /** @type {HTMLElement|null} */ (panel.querySelector('.qr-pin-bigger'));
+      if (sizeBtn) {
+        sizeBtn.setAttribute('aria-pressed', String(big));
+        sizeBtn.textContent = big ? 'Smaller' : 'Bigger';
+      }
       document.body.appendChild(panel);
     }
 
