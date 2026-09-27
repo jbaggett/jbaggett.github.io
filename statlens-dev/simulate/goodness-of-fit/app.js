@@ -6,10 +6,15 @@
  * distribution. The observed χ² is marked; the p-value is the right-tail fraction.
  */
 
-import { createRng, sampleMultinomial } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+
+/** These pages break an association by permuting one side of it. */
+const words = wordsFor('permuteAssociation');
+import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { fetchDataset, loadDatasetIndex, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
@@ -31,7 +36,9 @@ const controlsSection = document.getElementById('controls');
 const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (document.querySelectorAll('.gen-btn'));
 
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'draw samples to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);
@@ -251,7 +258,7 @@ function generateSimulations(count) {
   /** @type {number[]} */ let lastSample = [];
   let lastChisq = 0;
   for (let i = 0; i < count; i++) {
-    const sample = sampleMultinomial(totalN, p0, rng);
+    const sample = drawMultinomial(totalN, p0, rng);
     const chi2 = gofChisqStat(sample, p0);
     allStats.push(chi2);
     lastSample = sample;
@@ -309,7 +316,7 @@ function renderChart(stats, observedStat, highlightIndex = -1, highlightIndices,
     chartType: resolveChartType(stats.length, 'auto'),
     id: 'sim-chart',
     xLabel: 'Chi-Square Statistic (χ²)',
-    titleText: 'Null Distribution',
+    titleText: words.distribution,
     observedStat,
     direction: 'right',
     domain,

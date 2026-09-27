@@ -10,6 +10,7 @@
  */
 
 import { drawHistogram, snappedPropThresholds } from '../../js/histogram.js';
+import { proportionStep } from '../../js/grid.js';
 import { drawDotplot } from '../../js/dotplot.js';
 import { renderSimPills } from '../../js/chart-utils.js';
 import { resolveChartType, createChartToggle } from '../../js/chart-defaults.js';
@@ -222,9 +223,10 @@ async function loadDataset(id) {
   const p2 = countSuccess(group2) / group2.length;
   observedDiff = +(p1 - p2).toFixed(6);
 
-  // Discrete step: when total successes are fixed and one moves from group1 to group2,
-  // the difference changes by 1/n1 + 1/n2
-  discreteStep = 1 / group1.length + 1 / group2.length;
+  // When total successes are fixed and one moves from group1 to group2, the
+  // difference changes by 1/n1 + 1/n2 — the grid authority owns that rule
+  // (js/grid.js), because a local copy is how it got rounded here before.
+  discreteStep = proportionStep(group1.length, group2.length) ?? 0;
 
   renderStep1(group1, group2);
   renderStep2();
@@ -743,16 +745,19 @@ function updateChart() {
       highlightIndices: batchHighlightIndices ?? undefined,
       domain,
       binWidth: discreteStep,
+      // Centre the grid on the observed difference, which is itself achievable,
+      // so every column is one outcome and the observed gets its own.
+      binOrigin: observedDiff,
     });
     chartFrame = r.frame;
     chartXScale = r.xScale;
   } else {
     // Snap histogram bin edges to the discrete grid
-    const thresholds = snappedPropThresholds(
-      Math.round(1 / discreteStep),  // effective "sample size" for grid
-      domain,
-      nullDiffs.length,
-    );
+    // Pass the step itself. Handing over `round(1/step)` as a sample size put
+    // the rounding back: on 34 vs 16 that is 1/11 against a true 1/10.88, and
+    // the bin edges walk off the achievable values from there.
+    const thresholds = snappedPropThresholds(0, domain, nullDiffs.length,
+      { step: discreteStep, anchor: observedDiff });
     const r = drawHistogram(container, nullDiffs, {
       xLabel,
       titleText: '',

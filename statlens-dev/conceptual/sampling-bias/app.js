@@ -7,7 +7,7 @@
 import { mean } from '../../js/stats.js';
 import { createRng } from '../../js/prng.js';
 import { drawDotplot } from '../../js/dotplot.js';
-import { initHelp, announce, createExpertToggle } from '../../js/page-utils.js';
+import { initHelp, announce } from '../../js/page-utils.js';
 import { mountLiveRoom } from '../../js/live-room-ui.js';
 
 initHelp();
@@ -195,7 +195,9 @@ let classMeans = /** @type {number[]|null} */ (null);
 // The class-room controls are instructor surface on a page students use alone,
 // so they sit behind expert mode — which this page did not previously offer.
 const expertBar = document.querySelector('#settings .btn-row, #settings, .generate-bar');
-if (expertBar) createExpertToggle(/** @type {HTMLElement} */ (expertBar));
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 const roomHost = document.getElementById('live-room');
 if (roomHost) {

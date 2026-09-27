@@ -917,7 +917,10 @@ function updateStatsAndRender(prevLength, count) {
       // p̂ is discrete (only k/n is achievable). Snap bin edges to that grid so
       // the histogram isn't aliased — the same helper the sim pages use for
       // proportion null/bootstrap distributions.
-      thresholds = snappedPropThresholds(n, sharedDomain, sampleMeans.length);
+      // Anchored on 0, which is an achievable p̂ (k = 0), so the edges fall
+      // midway between the k/n values instead of on top of them — no sample
+      // proportion lands on a bin edge for floating point to adjudicate.
+      thresholds = snappedPropThresholds(n, sharedDomain, sampleMeans.length, { anchor: 0 });
     } else {
       // Same Rice count as the static draws, or the bars would change width
       // when the animation hands over to the plain render.

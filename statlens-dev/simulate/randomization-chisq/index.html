@@ -113,13 +113,13 @@
         <!-- Mechanism strip: observed table → shuffled table -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Shuffling mechanism" hidden>
             <div class="mechanism-panels">
-                <div class="mechanism-panel">
+                <div class="mechanism-panel" data-entity="source">
                     <h2 class="mechanism-title">Observed Table</h2>
                     <div id="mech-observed-table"></div>
                     <p class="mechanism-stat">χ² = <span id="mech-observed-chisq">&mdash;</span></p>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">→</div>
-                <div class="mechanism-panel">
+                <div class="mechanism-panel" data-entity="draw">
                     <h2 class="mechanism-title" id="sim-title">This Shuffle</h2>
                     <div id="mech-shuffled-table"></div>
                     <p class="mechanism-stat">χ² = <span id="mech-shuffled-chisq">&mdash;</span></p>
@@ -131,7 +131,7 @@
         <section id="chart-and-results" aria-label="Chart and results">
             <div class="app-body">
                 <div class="app-main" id="chart" aria-label="Null distribution">
-                    <div id="chart-container"></div>
+                    <div id="chart-container" data-entity="distribution"></div>
                 </div>
                 <div class="app-sidebar" id="results">
                     <div id="result-summary" tabindex="-1">

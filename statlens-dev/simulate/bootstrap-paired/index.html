@@ -107,7 +107,7 @@
         <!-- Mechanism strip: original differences → resample differences → statistic -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Resampling mechanism" hidden>
             <div class="mechanism-panels">
-                <div class="mechanism-panel" id="original-sample">
+                <div class="mechanism-panel" data-entity="source" id="original-sample">
                     <h2 class="mechanism-title" id="orig-diff-title">Differences</h2>
                     <div id="original-sample-content"></div>
                     <p class="mechanism-stat">
@@ -116,7 +116,7 @@
                     </p>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">→</div>
-                <div class="mechanism-panel" id="bootstrap-sample" hidden>
+                <div class="mechanism-panel" data-entity="draw" id="bootstrap-sample" hidden>
                     <div class="mechanism-title-row">
                         <h2 class="mechanism-title" id="resample-title">This Resample</h2>
                         <button type="button" id="resample-view-toggle"
@@ -135,7 +135,7 @@
         <section id="chart-and-results" aria-label="Chart and results">
             <div class="app-body">
                 <div class="app-main" id="chart" aria-label="Bootstrap distribution">
-                    <div id="chart-container"></div>
+                    <div id="chart-container" data-entity="distribution"></div>
                 </div>
                 <div class="app-sidebar" id="results">
                     <div id="result-summary" tabindex="-1">

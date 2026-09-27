@@ -120,12 +120,12 @@
         <!-- Mechanism strip: two-group bootstrap -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Resampling mechanism" hidden>
             <div class="mechanism-panels">
-                <div class="mechanism-panel" id="mech-original">
+                <div class="mechanism-panel" data-entity="source" id="mech-original">
                     <h2 class="mechanism-title">Original Groups</h2>
                     <div id="mech-original-content" class="mech-two-group"></div>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">→</div>
-                <div class="mechanism-panel" id="mech-resample">
+                <div class="mechanism-panel" data-entity="draw" id="mech-resample">
                     <h2 class="mechanism-title">Resampled Groups</h2>
                     <div id="mech-resample-content" class="mech-two-group"></div>
                 </div>
@@ -136,7 +136,7 @@
         <section id="chart-and-results" aria-label="Chart and results">
             <div class="app-body">
                 <div class="app-main" id="chart" aria-label="Bootstrap distribution">
-                    <div id="chart-container"></div>
+                    <div id="chart-container" data-entity="distribution"></div>
                 </div>
                 <div class="app-sidebar" id="results">
                     <div id="result-summary" tabindex="-1">

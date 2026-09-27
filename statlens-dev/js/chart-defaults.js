@@ -8,6 +8,7 @@
  */
 
 import * as d3Scale from 'd3-scale';
+import { gridCentredOn } from './grid.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
@@ -31,6 +32,20 @@ export const DOTPLOT_MAX_BINS = 40;
  */
 export const DISCRETE_BAR_MAX = 40;
 
+/**
+ * Most columns a discrete dotplot may span before it stops being a dotplot.
+ *
+ * The grid of a discrete statistic is the set of values it can take, and that
+ * set gets finer as the sample grows: a single proportion spans roughly
+ * 8·√(p(1−p)·n) achievable values across its null distribution — about 20 at
+ * n = 62, 58 at n = 200, 127 at n = 1000. A plot about 680px wide cannot draw
+ * 127 separate columns; below ~6px apart they render wider than their own slot
+ * and merge into a solid block that only looks like a histogram. So past this
+ * many columns 'auto' draws an actual histogram, which bins whole outcomes
+ * together and says so, instead of a dotplot pretending it still resolves them.
+ */
+export const DISCRETE_COLUMN_MAX = 60;
+
 /** Default max bins for histograms (Sturges' cap). */
 export const HIST_MAX_BINS = 50;
 
@@ -44,13 +59,41 @@ export const DOMAIN_PADDING = 0.05;
 
 /**
  * Determine the active chart type, resolving 'auto'.
+ *
+ * Dots, then bins. A dotplot is the shape students meet first and the one that
+ * shows the mechanism — one shuffle, one dot — so 'auto' opens there and bins
+ * only when the run outgrows it. The spike view stays an expert choice: it is
+ * the exact picture of a discrete statistic, but it is also an unfamiliar one,
+ * and a dotplot whose grid sits on the achievable values (see sim-app's
+ * discreteGridStep) is exact too, while still looking like a dotplot.
+ *
+ * Reasoning-mode figures are the exception — they hide the toggle, so they pick
+ * separately in reasoningChartType below.
+ *
  * @param {number} n - Number of data points / simulated stats
  * @param {string} userChoice - 'auto', 'dotplot', 'histogram', or 'spike'
+ * @param {object} [opts]
+ * @param {number} [opts.discreteColumns] - Achievable values the data spans, for a discrete statistic
  * @returns {'dotplot'|'histogram'|'spike'}
  */
-export function resolveChartType(n, userChoice) {
+export function resolveChartType(n, userChoice, opts = {}) {
   if (userChoice && userChoice !== 'auto') return /** @type {any} */ (userChoice);
+  // Too many outcomes to draw as separate columns — bin them (DISCRETE_COLUMN_MAX).
+  if (opts.discreteColumns && opts.discreteColumns > DISCRETE_COLUMN_MAX) return 'histogram';
   return n <= DOTPLOT_AUTO_THRESHOLD ? 'dotplot' : 'histogram';
+}
+
+/**
+ * How many achievable values a discrete statistic's realised range spans — the
+ * number of columns a dotplot on that grid would have to draw.
+ *
+ * @param {number[]} stats
+ * @param {number|null|undefined} step - distance between achievable values
+ * @returns {number}
+ */
+export function discreteColumnSpan(stats, step) {
+  if (!step || !(step > 0)) return 0;
+  return gridCentredOn(step, 0).columnSpan(stats);
 }
 
 /**
@@ -222,7 +265,7 @@ export function createChartToggle(container, opts) {
 /**
  * @typedef {object} BinAdjusterControl
  * @property {HTMLLabelElement} element - The label element
- * @property {(mode: 'dotplot'|'histogram') => void} setMode - Update label text for chart type
+ * @property {(mode: 'dotplot'|'histogram'|'spike') => void} setMode - Update label text for chart type
  * @property {(value: number) => void} setValue - Set the input value programmatically
  */
 
@@ -262,6 +305,9 @@ export function createBinAdjuster(parent, opts) {
   return {
     element: label,
     setMode: (mode) => {
+      // The spike view draws one bar per achievable value, so there is nothing
+      // to count bins of — hide the control rather than leave it inert.
+      label.hidden = mode === 'spike';
       labelSpan.textContent = mode === 'dotplot' ? 'Stacks:' : 'Bins:';
     },
     setValue: (value) => {

@@ -7,6 +7,7 @@
  */
 
 import { quartiles, median } from './stats.js';
+import { gridCentredOn, gridEdgedOn } from './grid.js';
 import { getQuartileMethod } from './quartile-method.js';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
@@ -1688,13 +1689,25 @@ export function drawMiniDotplot(container, values, options = {}) {
   const range = dHi - dLo || 1;
   const x = (/** @type {number} */ v) => padX + ((v - dLo) / range) * (width - 2 * padX);
 
-  // Bin values into stacks (snap to nearest pixel)
+  // Bin values into stacks (snap to nearest pixel).
+  //
+  // The grid is anchored on the mean marker, not on the left edge of the panel.
+  // The mechanism strip slides this whole distribution sideways — observed data
+  // onto μ₀ — and an edge-anchored grid stays put while the data moves across
+  // it, so the stacks regroup and the shape appears to change when nothing about
+  // the sample has. Anchoring on a marker that travels with the data keeps every
+  // value's offset from the grid fixed, so the picture translates instead.
+  // (Todd Will, 2026-09-26: "the bars change shape due to binning".)
   const dotR = Math.min(4, Math.max(2, (width - 2 * padX) / (values.length * 2.5)));
   const binWidth = dotR * 2.2;
+  const anchorPx = (meanValue != null && Number.isFinite(meanValue)) ? x(meanValue) : 0;
+  // In pixel space, but the same rule as everywhere else: the grid is anchored
+  // on a marker that travels with the data (js/grid.js).
+  const grid = gridCentredOn(binWidth, anchorPx);
   /** @type {Map<number, number[]>} */
   const stacks = new Map();
   for (const v of sorted) {
-    const bin = Math.round(x(v) / binWidth) * binWidth;
+    const bin = grid.centerOf(x(v));
     if (!stacks.has(bin)) stacks.set(bin, []);
     /** @type {number[]} */ (stacks.get(bin)).push(v);
   }
@@ -1776,28 +1789,40 @@ export function drawMiniHistogram(container, values, options = {}) {
   const range = dHi - dLo || 1;
   const x = (/** @type {number} */ v) => padX + ((v - dLo) / range) * (width - 2 * padX);
 
-  // Build bins
+  // Build bins, anchored on the mean marker rather than the panel's left edge —
+  // see the note in drawMiniDotplot. The strip slides this distribution onto μ₀,
+  // and edges fixed to the container would re-cut the data as it passed under
+  // them, changing the shape of a sample that never changed.
   const binW = range / numBins;
-  /** @type {number[]} */
-  const counts = new Array(numBins).fill(0);
+  const anchor = (meanValue != null && Number.isFinite(meanValue)) ? meanValue : dLo;
+  // An EDGE on the marker (js/grid.js), which is what this chart has always
+  // drawn; the grid authority just states it rather than re-deriving it.
+  const grid = gridEdgedOn(binW, anchor);
+  // A bin is identified by its centre — the grid's own name for it — rather than
+  // by an index into a separately derived origin, which is the arithmetic that
+  // used to be repeated (differently) in four places. Values outside the drawn
+  // domain fold into the edge bins, as before.
+  /** @type {Map<number, number>} */
+  const counts = new Map();
   for (const v of sorted) {
-    let idx = Math.floor((v - dLo) / binW);
-    if (idx >= numBins) idx = numBins - 1;
-    if (idx < 0) idx = 0;
-    counts[idx]++;
+    const c = grid.centerOf(Math.min(Math.max(v, dLo), dHi));
+    counts.set(c, (counts.get(c) ?? 0) + 1);
   }
+  const bins = [...counts.entries()].sort((a, b) => a[0] - b[0]);
 
-  const maxCount = Math.max(...counts, 1);
+  const maxCount = Math.max(...counts.values(), 1);
   const barH = (/** @type {number} */ c) => (c / maxCount) * (plotH - 2);
 
   let svg = `<svg class="mech-minichart" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" aria-label="${label}">`;
 
-  // Bars
-  for (let i = 0; i < numBins; i++) {
-    if (counts[i] === 0) continue;
-    const bx = x(dLo + i * binW);
-    const bw = x(dLo + (i + 1) * binW) - bx;
-    const bh = barH(counts[i]);
+  // Bars. The anchored grid can start just left of the domain, so clamp each bar
+  // into the plot area rather than letting it bleed into the padding.
+  const xMinPx = padX, xMaxPx = width - padX;
+  for (const [centre, count] of bins) {
+    const bx = Math.max(x(centre - binW / 2), xMinPx);
+    const bw = Math.min(x(centre + binW / 2), xMaxPx) - bx;
+    if (bw <= 0) continue;
+    const bh = barH(count);
     const by = plotH - bh;
     svg += `<rect class="mc-bar" x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${Math.max(bw - 0.5, 0.5).toFixed(1)}" height="${bh.toFixed(1)}" fill="${color}" fill-opacity="0.5" stroke="${color}" stroke-width="0.5"/>`;
   }

@@ -5,10 +5,15 @@
  * Always right-tailed (χ² ≥ 0).
  */
 
-import { createRng, shuffle } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+
+/** These pages break an association by permuting one side of it. */
+const words = wordsFor('permuteAssociation');
+import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { chisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -40,7 +45,9 @@ const controlsSection = document.getElementById('controls');
 
 // Add expert toggle link next to generate bar
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);
@@ -329,7 +336,7 @@ function generateSimulations(count) {
   let lastChisq = 0;
 
   for (let i = 0; i < count; i++) {
-    const shuffled = shuffle([...groups], rng);
+    const shuffled = shufflePairing(groups, rng).values;
     const table = rowLabels.map(g =>
       colLabels.map(o => {
         let ct = 0;
@@ -420,7 +427,7 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Chi-Square Statistic (χ²)',
-    titleText: 'Null Distribution',
+    titleText: words.distribution,
     observedStat: observed,
     direction: 'right',
     domain,

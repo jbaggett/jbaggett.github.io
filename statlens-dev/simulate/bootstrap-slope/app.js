@@ -6,12 +6,13 @@
  */
 
 import { createRng } from '../../js/prng.js';
+import { resampleIndices } from '../../js/mechanisms/draws.js';
 import { linreg, mean, sd, detectPrecision, formatStat } from '../../js/stats.js';
 import { bootstrapCI } from '../../js/sim-engine.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
 import { computeBins } from '../../js/histogram.js';
 import { parseCSV } from '../../js/csv-parser.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType, createChartToggle, computeDomain } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
 import {
@@ -51,7 +52,9 @@ const controlsSection = document.getElementById('controls');
 
 // Add expert toggle link next to generate bar
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);
@@ -323,11 +326,9 @@ function generateResamples(count) {
   let lastReg = { slope: 0, intercept: 0 };
 
   for (let i = 0; i < count; i++) {
-    /** @type {number[]} */
-    const indices = [];
-    for (let j = 0; j < n; j++) {
-      indices.push(Math.floor(rng() * n));
-    }
+    // The unit here is a ROW, not a number: a regression bootstrap resamples
+    // (x, y) pairs, so the draw is the set of rows taken (js/mechanisms/draws.js).
+    const indices = resampleIndices(n, rng);
     const xBoot = indices.map(k => xData[k]);
     const yBoot = indices.map(k => yData[k]);
     const reg = linreg(xBoot, yBoot);

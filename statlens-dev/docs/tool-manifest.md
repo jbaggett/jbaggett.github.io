@@ -971,7 +971,7 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 
 **Path:** `inference/mlr/`
 **Category:** Inference
-**Description:** Fit Y = β₀ + β₁x₁ + … + βₖxₖ by ordinary least squares on a bundled or uploaded dataset. Shows the coefficient table (estimate, SE, t, p, 95% CI) matching `summary(lm)`, the model ANOVA F-test, R² / adjusted R² / residual SE, diagnostics (residuals-vs-fitted, residual histogram, Cook's-distance high-influence flag), and a pairwise scatterplot matrix of the predictors. Expert mode adds VIF.
+**Description:** Fit Y = β₀ + β₁x₁ + … + βₖxₖ by ordinary least squares on a bundled or uploaded dataset. Shows the coefficient table (estimate, SE, t, p, 95% CI) matching `summary(lm)`, the model ANOVA F-test, R² / adjusted R² / residual SE, diagnostics (residuals-vs-fitted, residual histogram, Cook's-distance high-influence flag), and a pairwise scatterplot matrix of the predictors. **Show: Detailed** adds VIF.
 **Concepts:** Multiple regression, least squares, coefficient inference, model F-test, R² and adjusted R², residual diagnostics, leverage / Cook's distance, multicollinearity (pairwise scatterplots + VIF)
 
 **URL Parameters:**
@@ -1091,7 +1091,7 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 **Settings.** A **cobble beach** (wave-sorted stones; clusters are transects walked from the water up, or quadrats tossed on the shingle — field ecologists use both); an **apple orchard** (three variety blocks, apples clumped on visible trees; the cluster is a tree); and Todd's original **buried rocks** (cross-section, depth strata; the only cheap unit is a hole). The settings differ in *which clusters are convenient*, which is the point: a cluster is whatever unit is cheap to collect whole, and you don't choose what's inside it. Measured intracluster correlations: orchard trees 0.86 (cluster sampling runs ~4× simple random's spread — the usual case), beach quadrats 0.76 (~3.7×), beach transects −0.001 (0.78×, i.e. clustering *helps*) and buried holes −0.002. **Convenience** is everything within arm's reach of where you arrived — the stones by the car, the trees by the gate — so it is localised as well as biased (Todd Will's suggestion); underground, where there is nowhere to park, it falls back to scraping the surface.
 
-**Default view is Chapter 2 material only** — the scene, the five designs, the estimate against the truth, and the cost (clusters opened, items measured). **More options** reveals *Run 500 of each design*: five sampling distributions on one axis plus a table of bias, SD, spread relative to simple random, and mean cost. That split is deliberate — standard errors are a later course's question.
+**Default view is Chapter 2 material only** — the scene, the five designs, the estimate against the truth, and the cost (clusters opened, items measured). **Show: Detailed** reveals *Run 500 of each design*: five sampling distributions on one axis plus a table of bias, SD, spread relative to simple random, and mean cost. That split is deliberate — standard errors are a later course's question.
 **Concepts:** Sampling designs, simple random vs stratified vs cluster vs multistage, convenience sampling and bias, cost of data collection, accuracy vs precision; (expert) design effect, intracluster correlation, why cluster sampling usually costs precision.
 
 **URL Parameters:**

@@ -39,6 +39,52 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-09-27<span class="cl-tag tool">Improved</span></div>
+            <h2>One control for how much a tool shows</h2>
+            <p>The advanced controls &mdash; chart type, bin count, statistic selector, confidence
+               level, the theoretical curve &mdash; used to sit behind a checkbox in the settings gear,
+               with a second, differently worded <em>More options</em> button inside the generate bar.
+               Both failed, in opposite ways. A gear is a <em>setting</em>, and settings are invisible:
+               instructors reviewing the tools never found it. The inline button was worse than
+               invisible, it was <em>ambiguous</em> &mdash; sitting next to the word <em>Shuffles</em>,
+               it read as more options for shuffles.</p>
+            <p>Both are now one control in the page header, top right: <strong>Show: Simple |
+               Detailed</strong>. It appears only on pages that have something to reveal, it shows
+               its own state, and your choice is remembered. Links using
+               <code>?expert=true</code> work exactly as before.</p>
+            <p class="hint">Also on the simulation pages: the one-sample tests now report the
+               <strong>Monte&#8209;Carlo margin</strong> on the p&#8209;value, as the two-group tests
+               always have &mdash; when it stops shrinking, more clicking will not change your
+               conclusion. The mean mechanism draws individual values up to
+               <strong>n&nbsp;=&nbsp;80</strong> (was 40), and no longer changes shape when it slides
+               the sample onto the null. Reported by Todd Will.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-09-26<span class="cl-tag tool">Improved</span></div>
+            <h2>Proportion dotplots now sit on the values the statistic can reach</h2>
+            <p>A difference in proportions can only land on certain values &mdash; the step is set by
+               the two group sizes &mdash; but the dotplot laid its own grid over the top of that one,
+               built from a rounded sample size. About 1% off per step, which is invisible once and
+               obvious after ten: columns drifted off the achievable values, and on the yawn data one
+               gap came out twice as wide as the rest &mdash; an outcome that <em>can</em> happen,
+               drawn as though it could not, with the observed line stranded in the empty space beside
+               it. Todd Will caught the same defect from the other end: a dotplot and a histogram
+               disagreeing about how many shuffles beat the observed value.</p>
+            <p>The grid is now the achievable values themselves, so every column is one outcome, the
+               observed statistic has a column of its own, and the shuffles that tie with it stand on
+               the line where they belong. Dots are drawn a little slimmer on a discrete statistic,
+               because the space between columns is the point. The result also now says how many
+               shuffles came out <strong>exactly</strong> as extreme as the data &mdash; on a discrete
+               statistic those ties can be most of the p&#8209;value, 84% of it in the
+               sex&#8209;discrimination study.
+               <a href="../simulate/randomization-diff-props/?dataset=yawn">See it &rarr;</a></p>
+            <p class="hint">Means and slopes are unchanged. Under <strong>More options</strong> the
+               chart toggle also offers a <strong>Spike</strong> view &mdash; the same picture drawn as
+               bare lines &mdash; now on the one-proportion pages too.</p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-09-12<span class="cl-tag tool">New tool</span></div>
             <h2>Sampling Designs &mdash; five ways to sample, three places to do it</h2>
             <p>Chapter 2 finally has a tool. Five designs &mdash; <strong>simple random</strong>,

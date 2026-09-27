@@ -5,9 +5,13 @@
  */
 
 import { parseParams } from './url-params.js';
+import { applyRequestedLayout } from './mechanisms/layout.js';
+import { wordsFor } from './mechanisms/vocabulary.js';
+import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
+import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
-import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat, quartiles } from './stats.js';
+import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles } from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -19,13 +23,13 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
-import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
+import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
-import { createMeanMechanism } from './mean-mechanism.js';
+import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -93,8 +97,16 @@ export function initSimPage(config) {
   const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
   // B1: one-sample mean bootstrap — animated dotplot resampling for small samples
   // (the non-summary view). Large samples keep the histogram.
-  const MEAN_DOT_MAX = 40;
-  const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
+  // Shared with the one-sample engine — a second copy of this number is how the
+  // two engines drift apart (see the chart-type decision, 2026-09-25).
+  const MEAN_DOT_MAX = MEAN_DOT_MAX_SHARED;
+  // Which of the three entities this page names how (js/mechanisms/vocabulary.js).
+  const words = wordsFor(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
+  // Opt-in second layout (?layout=tiers). Applied here, before anything is
+  // drawn: charts measure the box they land in, so moving one afterwards means
+  // re-rendering it. Default is unchanged.
+  applyRequestedLayout(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
+    const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   /** True when the animated mean-dotplot mechanism should be used right now. */
   const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
     && resampleViewMode !== 'summary';
@@ -222,7 +234,9 @@ export function initSimPage(config) {
 
   // Add expert toggle link next to generate bar
   const generateBar = controlsSection?.querySelector('.generate-bar');
-  if (generateBar) createExpertToggle(generateBar);
+  // The old inline "More options" button lived here, beside "Shuffles", where it
+  // read as more options FOR shuffles. It is now the Simple | Detailed control in
+  // the page header (js/page-utils.js initDisplayToggle).
 
   /**
    * Snapshot the current tool configuration as a shareable URL state.
@@ -319,6 +333,9 @@ export function initSimPage(config) {
   }
   /** @type {number[]} */
   let lastResample = [];
+  /** Which observations the last resample drew, when it was drawn by index. */
+  /** @type {number[]|null} */
+  let lastResampleIndices = null;
   /** Last shuffled/resampled two-group grouping — lets the Bars/Cards toggle
    *  re-render the resample panel without re-running the simulation. */
   /** @type {number[]} */
@@ -417,7 +434,7 @@ export function initSimPage(config) {
     const toggle = createChartToggle(chartContainer, {
       onChange: (type) => {
         chartType = type;
-        if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (type));
+        if (binAdjuster) binAdjuster.setMode(type);
         if (allStats.length > 0) {
           lastStatIndex = -1;
           batchHighlightIndices = null;
@@ -477,8 +494,12 @@ export function initSimPage(config) {
     });
   }
 
-  /** Get the currently active chart type (resolving 'auto'). */
-  function getActiveChartType() {
+  /**
+   * Get the active chart type for a set of simulated stats, resolving 'auto'.
+   * @param {number[]} [stats] - defaults to every stat currently on screen
+   * @returns {'dotplot'|'histogram'|'spike'}
+   */
+  function getActiveChartType(stats = allStats) {
     // Reasoning-mode figures (plot=only / readout=false) hide the chart toggle,
     // so pick a shape that reads well without controls: discrete spike bars for
     // a small/moderate-n proportion (the honest "possible k/n" picture), binning
@@ -486,9 +507,12 @@ export function initSimPage(config) {
     // a histogram for continuous statistics. (readout=false keeps the toggle, so
     // the student can still switch.)
     if ((plotOnly || !showReadout) && chartType === 'auto') {
-      return reasoningChartType(allStats, { proportion: !!config.proportion });
+      return reasoningChartType(stats, { proportion: !!config.proportion });
     }
-    return resolveChartType(allStats.length, chartType);
+    // A discrete grid gets finer as the sample grows; past a point its columns
+    // can no longer be drawn apart, and a histogram is the honest shape.
+    return resolveChartType(stats.length, chartType,
+      { discreteColumns: discreteColumnSpan(stats, discreteGridStep()) });
   }
 
   /**
@@ -593,9 +617,21 @@ export function initSimPage(config) {
     const types = isDiscrete
       ? [['dotplot', 'Dotplot'], ['spike', 'Spike'], ['histogram', 'Histogram']]
       : [['dotplot', 'Dotplot'], ['histogram', 'Histogram']];
-    const selected = (chartType === 'auto' ? 'dotplot' : chartType);
+    // Highlight whatever 'auto' would actually draw, not a guess.
+    const selected = chartType === 'auto'
+      ? resolveChartType(allStats.length, 'auto')
+      : chartType;
     // Remove existing chart type buttons but keep non-button children (theory toggle, bin adjuster)
     toggleFieldset.querySelectorAll('button[data-value]').forEach(b => b.remove());
+    // ...which orphans the closure createChartToggle handed back: its setSelected
+    // still points at the buttons just removed, so pressing Spike or Histogram
+    // updated detached nodes and "Dotplot" stayed highlighted however many times
+    // you switched (Todd Will, 2026-09-25). Re-point it at the live buttons.
+    setToggleSelected = (/** @type {string} */ type) => {
+      for (const b of toggleFieldset.querySelectorAll('button[data-value]')) {
+        b.setAttribute('aria-pressed', String(b.getAttribute('data-value') === type));
+      }
+    };
     // Insert new segmented buttons at the start
     const refChild = toggleFieldset.firstChild;
     for (const [value, label] of types) {
@@ -607,7 +643,7 @@ export function initSimPage(config) {
       btn.addEventListener('click', () => {
         chartType = value;
         if (setToggleSelected) setToggleSelected(value);
-        if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (value));
+        if (binAdjuster) binAdjuster.setMode(value);
         if (allStats.length > 0) {
           lastStatIndex = -1;
           batchHighlightIndices = null;
@@ -1108,29 +1144,41 @@ export function initSimPage(config) {
   function renderEmptyChart() {
     const PRE_SIM_N = 2000;
     const TRIM = 5; // 5/2000 = 0.25th percentile — captures extreme tails
-    const preRng = createRng('presim-' + Date.now());
+    // Seeded from the page's seed, not the wall clock. This pilot fixes the
+    // axis limits AND the dotplot's bin grid, so a clock seed made the same
+    // ?seed= link draw a visibly different chart on every load — different
+    // axis range, different bins, different shape — while the statistics
+    // underneath were perfectly reproducible. url-api.md promises this
+    // parameter is "critical for graded assessments where reproducibility is
+    // required"; half of it was. (Found 2026-09-27 while trying to build a
+    // no-visual-change guard and discovering nothing on these pages could be
+    // stable run to run.)
+    const preRng = createRng('presim-' + seed);
     const preStats = [];
 
     if (config.mode === 'bootstrap') {
       const statFn = getBootstrapStat().fn;
       if (config.paired && data2.length > 0) {
         const diffs = data2.map((v, i) => v - data1[i]);
-        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resample(diffs, preRng)));
+        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(diffs, preRng).values));
       } else if (config.twoGroup && data2.length > 0) {
-        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resample(data1, preRng)) - statFn(resample(data2, preRng)));
+        for (let i = 0; i < PRE_SIM_N; i++) {
+          const g = resampleGroups(data1, data2, preRng);
+          preStats.push(statFn(g.first.values) - statFn(g.second.values));
+        }
       } else {
-        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resample(data1, preRng)));
+        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(data1, preRng).values));
       }
     } else if (config.paired && data2.length > 0) {
       // Paired randomization: sign-flip pre-sim
       const diffs = data2.map((v, i) => v - data1[i]);
       for (let i = 0; i < PRE_SIM_N; i++) {
-        const flipped = diffs.map(d => preRng() < 0.5 ? d : -d);
+        const flipped = signFlip(diffs, preRng).values;
         preStats.push(mean(flipped));
       }
     } else if (config.testStat) {
       for (let i = 0; i < PRE_SIM_N; i++) {
-        const [g1, g2] = permute(data1, data2, preRng);
+        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, preRng);
         preStats.push(config.testStat(g1, g2));
       }
     }
@@ -1144,18 +1192,12 @@ export function initSimPage(config) {
     const pad = (hi - lo) * 0.1 || 0.5;
     preSimDomain = [lo - pad, hi + pad];
 
-    // Lock the dotplot bin grid so dots don't shift as domain grows
-    // For two-group proportions, use same effective sample size as renderChart
-    const gridNumBins = config.proportion
-      ? (config.twoGroup && data2.length > 0
-          ? Math.round(data1.length * data2.length / (data1.length + data2.length))
-          : data1.length)
-      : (userBinCount ?? 40);
-    // For proportions, use natural 1/n step size (not domain_range/n) so dots
-    // are sized correctly relative to the visible bins, not the full 0-1 range.
-    const gridBinWidth = config.proportion
-      ? 1 / gridNumBins
-      : (preSimDomain[1] - preSimDomain[0]) / gridNumBins;
+    // Lock the dotplot bin grid so dots don't shift as domain grows. For a
+    // discrete statistic the grid is not a choice — it is the set of values the
+    // statistic can actually take (see discreteGridStep).
+    const gridNumBins = userBinCount ?? 40;
+    const gridBinWidth = discreteGridStep()
+      ?? (preSimDomain[1] - preSimDomain[0]) / gridNumBins;
     lockedDotGrid = { binWidth: gridBinWidth, binOrigin: preSimDomain[0] };
 
     // Render empty chart (no observed stat line — just axes)
@@ -1474,11 +1516,15 @@ export function initSimPage(config) {
       let lastResampleValues = [];
 
       if (config.paired && data2.length > 0) {
-        // Paired bootstrap: resample the differences
+        // Paired bootstrap: resample the differences.
+        // Drawn by INDEX so the mechanism panel can say which observations were
+        // taken. Identical PRNG consumption to resample(), so seeded links are
+        // unaffected — see sampleIndicesWithReplacement.
         const diffs = data2.map((v, i) => v - data1[i]);
         for (let i = 0; i < count; i++) {
-          const rs = resample(diffs, rng);
+          const { values: rs, indices: idx } = resamplePairedDiffs(data1, data2, rng);
           lastResampleValues = rs;
+          lastResampleIndices = idx ?? null;
           allStats.push(statFn(rs));
         }
       } else if (config.twoGroup && data2.length > 0) {
@@ -1486,8 +1532,9 @@ export function initSimPage(config) {
         /** @type {number[]} */ let lastRs1 = [];
         /** @type {number[]} */ let lastRs2 = [];
         for (let i = 0; i < count; i++) {
-          const rs1 = resample(data1, rng);
-          const rs2 = resample(data2, rng);
+          const { first, second } = resampleGroups(data1, data2, rng);
+          const rs1 = first.values;
+          const rs2 = second.values;
           lastRs1 = rs1;
           lastRs2 = rs2;
           const stat = statFn(rs1) - statFn(rs2);
@@ -1495,10 +1542,11 @@ export function initSimPage(config) {
         }
         twoGroupMorphMs = showTwoGroupMechanism(lastRs1, lastRs2, false, count === 1);
       } else {
-        // One-sample bootstrap
+        // One-sample bootstrap — by index, for the same reason.
         for (let i = 0; i < count; i++) {
-          const rs = resample(data1, rng);
+          const { values: rs, indices: idx } = resampleOne(data1, rng);
           lastResampleValues = rs;
+          lastResampleIndices = idx ?? null;
           allStats.push(statFn(rs));
         }
       }
@@ -1539,11 +1587,9 @@ export function initSimPage(config) {
         }
         /** @type {[number,number]} */
         const fullDomain = [lo, hi];
-        const histSampleSize = (config.twoGroup && config.proportion && data2.length > 0)
-          ? Math.round(data1.length * data2.length / (data1.length + data2.length))
-          : data1.length;
         const histThresholds = config.proportion
-          ? snappedPropThresholds(histSampleSize, fullDomain, allStats.length)
+          ? snappedPropThresholds(0, fullDomain, allStats.length,
+              { step: discreteGridStep(), anchor: lastObserved })
           : undefined;
         const { bins: fullBins } = computeBins(allStats, {
           domain: fullDomain, thresholds: histThresholds,
@@ -1608,7 +1654,7 @@ export function initSimPage(config) {
 
       /** @type {number[]} */ let lastFlipped = [];
       for (let i = 0; i < count; i++) {
-        const flipped = centeredDiffs.map(d => rng() < 0.5 ? d : -d);
+        const flipped = signFlip(centeredDiffs, rng).values;
         lastFlipped = flipped;
         allStats.push(mean(flipped));
       }
@@ -1673,7 +1719,7 @@ export function initSimPage(config) {
       /** @type {number[]} */ let lastG1 = [];
       /** @type {number[]} */ let lastG2 = [];
       for (let i = 0; i < count; i++) {
-        const [g1, g2] = permute(data1, data2, rng);
+        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, rng);
         lastG1 = g1;
         lastG2 = g2;
         const stat = config.testStat(g1, g2);
@@ -1705,11 +1751,9 @@ export function initSimPage(config) {
         }
         /** @type {[number,number]} */
         const rDomain = [rLo, rHi];
-        const rHistSampleSize = (config.twoGroup && config.proportion && data2.length > 0)
-          ? Math.round(data1.length * data2.length / (data1.length + data2.length))
-          : data1.length;
         const rThresholds = config.proportion
-          ? snappedPropThresholds(rHistSampleSize, rDomain, allStats.length)
+          ? snappedPropThresholds(0, rDomain, allStats.length,
+              { step: discreteGridStep(), anchor: lastObserved })
           : undefined;
         // Bin the FULL dataset first to lock in bin edges
         // Pass same numBins as renderChart to ensure identical bin edges
@@ -2502,21 +2546,14 @@ export function initSimPage(config) {
         mechanismDescEl.textContent =
           `Resample with replacement · successes changed by ${sign}${diff}`;
       } else {
-        /** @type {Map<number, number>} */
-        const counts = new Map();
-        for (const v of resampleValues) {
-          counts.set(v, (counts.get(v) ?? 0) + 1);
-        }
-        const uniqueOriginal = new Set(data1);
         let notSelected = 0;
         let repeated = 0;
-        for (const v of uniqueOriginal) {
-          const c = counts.get(v) ?? 0;
-          if (c === 0) notSelected++;
-          if (c > 1) repeated++;
+        for (const { drawn } of allocateDrawCounts(resampleSourceValues(), resampleValues)) {
+          if (drawn === 0) notSelected++;
+          if (drawn > 1) repeated++;
         }
         mechanismDescEl.textContent =
-          `Resample with replacement · ${repeated} value${repeated !== 1 ? 's' : ''} repeated · ${notSelected} not selected`;
+          `Resample with replacement · ${repeated} drawn more than once · ${notSelected} not selected`;
       }
       mechanismDescEl.hidden = false;
     }
@@ -2530,6 +2567,67 @@ export function initSimPage(config) {
    * @param {boolean} [stagger=false] - Animate chips appearing sequentially (+1 only)
    * @returns {number} Total animation duration in ms (0 if no animation)
    */
+  /**
+   * The values a resample is actually drawn from.
+   *
+   * On a paired page that is the differences, not `data1` — `data1` holds one
+   * of the two raw variables, which the resample never touches. Three readouts
+   * needed this and only one had it, so a 200-pair dataset reported "30 not
+   * selected, 0 selected once, 0 selected twice": 30 being the number of
+   * distinct read-scores, none of which appear among the resampled differences,
+   * so every lookup missed. (Todd Will, 2026-09-27.)
+   *
+   * @returns {number[]}
+   */
+  function resampleSourceValues() {
+    return (config.paired && data2.length > 0)
+      ? data2.map((v, i) => v - data1[i])
+      : data1;
+  }
+
+  /**
+   * How many times each ORIGINAL OBSERVATION was drawn.
+   *
+   * `resample()` returns values, not indices, so when a value appears in
+   * several observations there is no fact about which of them was drawn. The
+   * chips settle it by allocating a value's draws evenly across the positions
+   * holding it, and this returns exactly that allocation so the chips, the
+   * text tally and the caption all describe the same picture — and so the
+   * tally sums to n, which counting distinct VALUES did not.
+   *
+   * @param {number[]} origValues
+   * @param {number[]} resampleValues
+   * @returns {{ value: number, drawn: number }[]} sorted ascending by value
+   */
+  function allocateDrawCounts(origValues, resampleValues) {
+    // When the draw recorded WHICH observations it took, there is nothing to
+    // allocate — count them. The order matches the chips, which sort ascending.
+    if (lastResampleIndices && lastResampleIndices.length === resampleValues.length) {
+      const drawn = new Array(origValues.length).fill(0);
+      for (const j of lastResampleIndices) {
+        if (j >= 0 && j < drawn.length) drawn[j]++;
+      }
+      return origValues
+        .map((value, i) => ({ value, drawn: drawn[i] }))
+        .sort((a, b) => a.value - b.value);
+    }
+    /** @type {Map<number, number>} */
+    const remaining = new Map();
+    for (const v of resampleValues) remaining.set(v, (remaining.get(v) ?? 0) + 1);
+    const sorted = [...origValues].sort((a, b) => a - b);
+    /** @type {Map<number, number>} */
+    const positionsLeft = new Map();
+    for (const v of sorted) positionsLeft.set(v, (positionsLeft.get(v) ?? 0) + 1);
+    return sorted.map((v) => {
+      const rem = remaining.get(v) ?? 0;
+      const pLeft = positionsLeft.get(v) ?? 1;
+      const drawn = Math.ceil(rem / pLeft);
+      remaining.set(v, rem - drawn);
+      positionsLeft.set(v, pLeft - 1);
+      return { value: v, drawn };
+    });
+  }
+
   function showResampleSummary(resampleValues, stagger = false) {
     resampleContentEl.innerHTML = '';
 
@@ -2538,16 +2636,7 @@ export function initSimPage(config) {
       return showResamplePropBar(resampleValues, stagger);
     }
 
-    /** @type {Map<number, number>} */
-    const counts = new Map();
-    for (const v of resampleValues) {
-      counts.set(v, (counts.get(v) ?? 0) + 1);
-    }
-
-    // For paired data, the "original" values are the differences, not data1
-    const origValues = (config.paired && data2.length > 0)
-      ? data2.map((v, i) => v - data1[i])
-      : data1;
+    const origValues = resampleSourceValues();
 
     // Should we animate the stagger? Only for small n on +1, with motion allowed
     const shouldStagger = stagger && origValues.length <= CHIP_THRESHOLD && !prefersReducedMotion();
@@ -2562,23 +2651,16 @@ export function initSimPage(config) {
       container.className = 'sample-dots';
       container.setAttribute('role', 'img');
       container.setAttribute('aria-label', 'Bootstrap resample values');
-      const sorted = [...origValues].sort((a, b) => a - b);
-      const remaining = new Map(counts);
-      // Pre-count how many positions remain for each value (for fair allocation)
-      /** @type {Map<number, number>} */
-      const positionsLeft = new Map();
-      for (const v of sorted) positionsLeft.set(v, (positionsLeft.get(v) ?? 0) + 1);
+      // The same allocation the text tally and the caption use, so all three
+      // describe one picture.
+      const alloc = allocateDrawCounts(origValues, resampleValues);
 
       /** @type {{dot: HTMLElement, chipIdx: number}[]} */
       const drawnChips = [];
       /** @type {HTMLElement[]} */
       const notDrawnChips = [];
-      for (let chipIdx = 0; chipIdx < sorted.length; chipIdx++) {
-        const v = sorted[chipIdx];
-        const rem = remaining.get(v) ?? 0;
-        const pLeft = positionsLeft.get(v) ?? 1;
-        // Allocate draws fairly across chip positions for this value
-        const allocated = Math.ceil(rem / pLeft);
+      for (let chipIdx = 0; chipIdx < alloc.length; chipIdx++) {
+        const { value: v, drawn: allocated } = alloc[chipIdx];
         const dot = document.createElement('span');
         dot.className = 'sample-dot';
         if (config.proportion) {
@@ -2608,8 +2690,6 @@ export function initSimPage(config) {
           notDrawnChips.push(dot);
         }
         container.appendChild(dot);
-        remaining.set(v, rem - allocated);
-        positionsLeft.set(v, pLeft - 1);
       }
       resampleContentEl.appendChild(container);
 
@@ -2671,12 +2751,10 @@ export function initSimPage(config) {
       return 0;
     } else {
       let notSelected = 0, once = 0, twice = 0, threeOrMore = 0;
-      const uniqueOriginal = new Set(data1);
-      for (const v of uniqueOriginal) {
-        const c = counts.get(v) ?? 0;
-        if (c === 0) notSelected++;
-        else if (c === 1) once++;
-        else if (c === 2) twice++;
+      for (const { drawn } of allocateDrawCounts(origValues, resampleValues)) {
+        if (drawn === 0) notSelected++;
+        else if (drawn === 1) once++;
+        else if (drawn === 2) twice++;
         else threeOrMore++;
       }
       const summary = document.createElement('div');
@@ -3462,34 +3540,59 @@ export function initSimPage(config) {
   }
 
   /**
-   * Re-phase the dot grid so a bin BOUNDARY lands on the observed statistic.
+   * The step between values a discrete statistic can actually take, or `null`
+   * when the statistic is continuous.
+   *
+   * A single proportion moves in steps of `1/n`. A difference of two moves in
+   * steps of `1/n₁ + 1/n₂`: under the null a shuffle takes one success out of
+   * one group and puts it in the other, so both proportions move at once.
+   *
+   * This used to be derived as `1 / round(n₁n₂/(n₁+n₂))`. The reciprocal of that
+   * harmonic mean *is* `1/n₁ + 1/n₂` — exactly — but the rounding threw the
+   * identity away: on 34 vs 16 it gives 1/11 = 0.0909 against a true step of
+   * 0.0919, about 1% short. One bin off by 1% is invisible; eleven of them slip
+   * an eighth of a bin, which is enough that some bins swallow two achievable
+   * values and their neighbours catch none — the uneven gaps Jeff spotted on the
+   * yawn data (2026-09-26). So: no rounding.
+   *
+   * @returns {number|null}
+   */
+  function discreteGridStep() {
+    if (!config.proportion) return null;
+    return proportionStep(data1.length, config.twoGroup ? data2.length : 0);
+  }
+
+  /**
+   * Phase the dot grid against the observed statistic.
    *
    * `computeDots` snaps each value to the nearest bin CENTRE, and the grid's
-   * origin is the pilot domain's left edge — nothing ties it to the observed.
-   * So a shuffle just past the observed can round down into a bin whose centre
-   * draws to the LEFT of the line, and the dots a student counts beyond it
-   * disagree with the p-value. Todd Will counted one dot past the line where
-   * the p-value said 16.
+   * origin was the pilot domain's left edge — nothing tied it to the observed,
+   * or to anything else meaningful. So a shuffle just past the observed could
+   * round down into a bin whose centre draws to the LEFT of the line, and the
+   * dots a student counts beyond it disagreed with the p-value. Todd Will
+   * counted one dot past the line where the p-value said 16.
    *
-   * Centres sit at `origin + k·w`, so boundaries sit at `origin + (k+0.5)·w`;
-   * putting a boundary on `observed` means the origin is a half-width below it.
-   * Only the phase changes — the bin width, and so every dot's size, is
-   * untouched.
+   * For a **discrete** statistic the fix is not a phase trick: the bin width is
+   * the step between achievable values, so putting a centre on the observed —
+   * itself achievable — lands every centre on an achievable value. One column
+   * per outcome. Nothing straddles the line because nothing lies between the
+   * outcomes, ties stand in their own column on the line, and the note under
+   * the p-value says they count. This also fixes column mode, which colours by
+   * bin centre: the centre is now a value the statistic can actually take.
    *
-   * **Two-group pages only.** On a single-proportion grid the width is 1/n and
-   * the origin is itself an achievable p̂, so centres already sit ON the
-   * achievable values, which is the correct alignment there. Re-phasing by half
-   * a bin would leave every dot sitting exactly on a boundary and shift the
-   * whole plot sideways.
+   * For a **continuous** two-group statistic there is no such grid, so the best
+   * available is a bin BOUNDARY on the observed — centres sit at `origin + k·w`,
+   * so a boundary sits there when the origin is a half-width below. No bin can
+   * then hold values from both sides. Only the phase changes; the width, and so
+   * every dot's size, is untouched.
    *
-   * Ties matter and are not left to chance. A shuffle exactly equal to the
-   * observed sits precisely on the boundary, where `Math.round` decides it — and
-   * at that point floating point decides: `(0.5 - 0.4) / 0.2` is 0.4999999…,
+   * In that continuous case ties are not left to chance. A value exactly equal
+   * to the observed sits precisely on the boundary, where `Math.round` decides
+   * it — and there floating point decides: `(0.5 - 0.4) / 0.2` is 0.4999999…,
    * which rounds DOWN, putting a tie on the non-extreme side for no reason
-   * anyone could see. Shuffled proportions hit their observed value often, so
-   * this is not a rare corner. The phase is therefore nudged a fraction of a bin
-   * so ties land on the side the p-value counts them: above for a right-tailed
-   * or two-sided test, below for a left-tailed one.
+   * anyone could see. The phase is therefore nudged a fraction of a bin so ties
+   * land on the side the p-value counts them: above for a right-tailed or
+   * two-sided test, below for a left-tailed one.
    *
    * @param {number|undefined} observed
    * @param {string|undefined} direction
@@ -3499,7 +3602,18 @@ export function initSimPage(config) {
     const w = lockedDotGrid?.binWidth;
     const origin = lockedDotGrid?.binOrigin;
     if (!w || origin === undefined) return origin;
-    if (!config.twoGroup || !Number.isFinite(observed)) return origin;
+    if (!Number.isFinite(observed)) return origin;
+    // Discrete statistic: put a bin CENTRE on the observed value. The observed
+    // value is itself achievable, and the bin width is the step between
+    // achievable values, so every centre then lands on one — each column is one
+    // outcome, and none of them is a value the statistic could not produce.
+    // Shuffles equal to the observed get their own column, sitting on the line
+    // where they belong, and the note under the p-value says they count.
+    if (discreteGridStep() != null) return /** @type {number} */ (observed);
+    if (!config.twoGroup) return origin;
+    // Continuous statistic: there is no achievable grid to land on, so the best
+    // available is a bin BOUNDARY on the observed — no bin can then hold values
+    // from both sides of the line.
     // Left tail: ties are extreme on the low side, so tip them below the line.
     const tieNudge = direction === 'less' ? w * 1e-9 : -w * 1e-9;
     return /** @type {number} */ (observed) - w / 2 + tieNudge;
@@ -3539,7 +3653,7 @@ export function initSimPage(config) {
     // Both are dashed — the colour is what says which method drew them.
     const ciLineColor = (ciMethod === 'se') ? NORMAL_CI_COLOR : PERCENTILE_CI_COLOR;
     ci = shownCI;
-    const titleText = `${config.mode === 'bootstrap' ? 'Bootstrap' : 'Randomization'} Distribution`;
+    const titleText = words.distribution;
     let xLabel;
     if (config.mode === 'bootstrap') {
       if (config.proportion) {
@@ -3580,29 +3694,31 @@ export function initSimPage(config) {
     // Highlight new dots in dotplot mode
     const highlightIndex = lastStatIndex >= 0 ? lastStatIndex : -1;
     const highlightIndices = batchHighlightIndices ?? undefined;
-    // For two-group proportions, the step between possible difference values
-    // is 1/n₁ + 1/n₂ (not 1/n). Use harmonic mean so snappedPropThresholds
-    // produces bins aligned to the actual discrete grid.
+    // A rough column count, used only to size dots when nothing better is
+    // available. The GRID itself comes from discreteGridStep(), which does not
+    // round — rounding here is why the columns used to drift off the outcomes.
     const sampleSize = (config.twoGroup && config.proportion && data2.length > 0)
       ? Math.round(data1.length * data2.length / (data1.length + data2.length))
       : data1.length;
 
-    // For proportion histogram: snap bin edges to k/n grid so bars touch
+    // Snap the histogram's bin edges to the achievable grid too, anchored on the
+    // observed statistic: whole outcomes per bar, and the observed opens its own
+    // bin instead of sitting inside one where the shaded tail would disagree
+    // with the p-value.
     /** @type {number[]|undefined} */
     let propThresholds;
     if (config.proportion && domain) {
-      propThresholds = snappedPropThresholds(sampleSize, domain, n);
+      propThresholds = snappedPropThresholds(0, domain, n,
+        { step: discreteGridStep(), anchor: observedStat });
     }
 
-    // Determine which chart type to render (reasoning mode picks spike-vs-
-    // histogram by the statistic's discreteness — see getActiveChartType).
-    const activeChart = ((plotOnly || !showReadout) && chartType === 'auto')
-      ? reasoningChartType(stats, { proportion: !!config.proportion })
-      : resolveChartType(n, chartType);
+    // One decision point for the chart type, shared with the toggle — these used
+    // to be two copies of the same rule, which is how they came apart.
+    const activeChart = getActiveChartType(stats);
 
     // Sync toggle radios and bin adjuster label to reflect actual chart type
     if (setToggleSelected) setToggleSelected(activeChart);
-    if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (activeChart));
+    if (binAdjuster) binAdjuster.setMode(activeChart);
     // Build region-of-interest predicate
     // Randomization: extreme values (tail) are the region of interest
     // Bootstrap CI: values inside the CI are the region of interest
@@ -3641,13 +3757,16 @@ export function initSimPage(config) {
         animate: false,
         domain,
         numBins: config.proportion ? sampleSize : userBinCount,
-        binWidth: lockedDotGrid?.binWidth ?? (config.proportion ? 1 / sampleSize : undefined),
+        binWidth: lockedDotGrid?.binWidth ?? discreteGridStep() ?? undefined,
         binOrigin: dotGridOrigin(observedStat, direction),
         highlightIndex,
         highlightIndices,
         precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
         baseFill: dotBaseFill,
         extremeFill: dotExtremeFill,
+        // Slimmer dots on a discrete grid: the gap between columns is the point,
+        // since between two achievable values there is nothing to draw.
+        dotRadiusScale: discreteGridStep() != null ? 0.8 : 1,
       });
       chartResult = r.frame;
       chartXScale = r.xScale;
@@ -3923,6 +4042,19 @@ export function initSimPage(config) {
     // re-runs don't look arbitrary (REQ-031). And present the p-value *by
     // construction* — it IS the fraction of shuffles at least as extreme.
     const mcMargin = 1.96 * Math.sqrt(Math.max(pValue * (1 - pValue), 0) / N);
+    // Discrete statistics land exactly on the observed value, often a lot: on
+    // sex_discrimination those ties are 84% of the p-value, so a student who
+    // counts only what is PAST the line reads 0.004 where the answer is 0.025.
+    // The chart already colours that spike as extreme and `isExtreme` already
+    // uses >=; what was missing is anyone saying so. Shown only when ties exist,
+    // which is exactly the discrete case — a continuous statistic never repeats
+    // its observed value, so this line never appears there.
+    const tieCount = stats.filter(v => Math.abs(v - observedStat) < 1e-9).length;
+    const tieNote = tieCount > 0
+      ? `<p class="hint tie-note"><strong>${tieCount} of those ${extremeCount}</strong> came out
+           <em>exactly</em> as extreme as the observed value — the column sitting on the line.
+           They count: “at least as extreme” includes equal.</p>`
+      : '';
     const pLine = extremeCount === 0
       ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
       : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
@@ -3939,11 +4071,15 @@ export function initSimPage(config) {
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
       <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). The “±” is the 95% Monte-Carlo margin — <strong>more shuffles → a tighter estimate</strong>.</p>
+      ${tieNote}
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     ` : `
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed value is marked on the distribution. Hover (or focus) the bars to read each bin's count, then find the fraction of the ${N} shuffles that are at least as extreme as the observed value (${dirLabel}).</p>
+      ${tieCount > 0 ? `<p class="hint tie-note">Some shuffles landed <em>exactly</em> on the
+           observed value — the column on the line. Count those in: “at least as extreme”
+           includes equal.</p>` : ''}
     `;
   }
 

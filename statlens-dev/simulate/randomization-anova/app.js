@@ -5,11 +5,16 @@
  * Always right-tailed (F ≥ 0).
  */
 
-import { createRng, shuffle } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+
+/** These pages break an association by permuting one side of it. */
+const words = wordsFor('permuteAssociation');
+import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { fStat, mean, sd, formatStat, detectPrecision } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawBoxplot } from '../../js/boxplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, initHelp, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, initHelp, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 
@@ -43,7 +48,9 @@ const controlsSection = document.getElementById('controls');
 
 // Add expert toggle link next to generate bar
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);
@@ -358,7 +365,7 @@ function generateSimulations(count) {
 
   for (let i = 0; i < count; i++) {
     // Shuffle the group labels, keeping values fixed
-    const shuffledLabels = shuffle([...groupLabels], rng);
+    const shuffledLabels = shufflePairing(groupLabels, rng).values;
 
     // Reconstruct groups from shuffled labels
     /** @type {number[][]} */
@@ -449,7 +456,7 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'F Statistic',
-    titleText: 'Null Distribution',
+    titleText: words.distribution,
     observedStat: observed,
     direction: 'right',
     domain,

@@ -36,7 +36,7 @@ import { scaleLinear } from 'd3-scale';
 import { axisBottom } from 'd3-axis';
 import { mean } from '../../js/stats.js';
 import { createRng } from '../../js/prng.js';
-import { initHelp, announce, createExpertToggle } from '../../js/page-utils.js';
+import { initHelp, announce } from '../../js/page-utils.js';
 import { scenarioById, buildPopulation, clusterGroups } from './scenarios.js';
 
 initHelp();
@@ -615,7 +615,9 @@ for (const b of designBar.querySelectorAll('button[data-design]')) {
   b.setAttribute('aria-pressed', String(b.getAttribute('data-design') === design));
 }
 el('scenario-blurb').textContent = scenario.blurb;
-createExpertToggle(/** @type {HTMLElement} */ (document.querySelector('.generate-bar')));
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 if (qs.get('n')) targetInput.value = String(parseInt(qs.get('n') ?? '60', 10));
 targetN = Math.max(12, Math.min(200, parseInt(targetInput.value, 10) || 60));
 rebuild();

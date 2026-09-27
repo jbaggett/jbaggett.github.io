@@ -8,7 +8,11 @@
  *   initOneSamplePage({ mode: 'one-mean' })
  */
 
-import { createRng, sampleWithReplacement } from './prng.js';
+import { createRng } from './prng.js';
+import { applyRequestedLayout } from './mechanisms/layout.js';
+import { wordsFor } from './mechanisms/vocabulary.js';
+import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
+import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot, computeDots } from './dotplot.js';
@@ -16,12 +20,12 @@ import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink, reportInputProblem } from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink, reportInputProblem } from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
-import { resolveChartType, reasoningChartType, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
+import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, dotplotBins, histogramThresholds, renderSimChart, createBinAdjuster } from './chart-defaults.js';
 
 
 /**
@@ -35,6 +39,10 @@ import { resolveChartType, reasoningChartType, createChartToggle, displayPrecisi
  */
 export function initOneSamplePage(config) {
   const isProp = config.mode === 'one-prop';
+  // These pages simulate against a stated null value, so the source panel is
+  // the data moved onto the null rather than the data as observed.
+  const words = wordsFor('nullWorld');
+  applyRequestedLayout('nullWorld');
 
   // ─── DOM elements ───
 
@@ -60,7 +68,9 @@ export function initOneSamplePage(config) {
 
   // Add expert toggle link next to generate bar
   const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-  if (generateBar) createExpertToggle(generateBar);
+  // The old inline "More options" button lived here, beside "Shuffles", where it
+  // read as more options FOR shuffles. It is now the Simple | Detailed control in
+  // the page header (js/page-utils.js initDisplayToggle).
 
   /**
    * Snapshot the current configuration as a shareable URL state: data source
@@ -142,9 +152,14 @@ export function initOneSamplePage(config) {
 
   if (chartContainer) {
     const toggle = createChartToggle(chartContainer, {
+      // p̂ is discrete, so this page offers the spike view — and 'auto' picks it.
+      // Without the button the toggle could not show the view being drawn.
+      types: isProp
+        ? [['dotplot', 'Dotplot'], ['spike', 'Spike'], ['histogram', 'Histogram']]
+        : undefined,
       onChange: (type) => {
         chartType = type;
-        if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (type));
+        if (binAdjuster) binAdjuster.setMode(type);
         if (allStats.length > 0) {
           renderChart(allStats, observedStat, getDirection());
         }
@@ -367,14 +382,21 @@ export function initOneSamplePage(config) {
     return /** @type {const} */ ('both');
   }
 
-  function getActiveChartType() {
+  /**
+   * @param {number[]} [stats] - defaults to every stat currently on screen
+   * @returns {'dotplot'|'histogram'|'spike'}
+   */
+  function getActiveChartType(stats = allStats) {
     // Reasoning-mode figures (plot=only / readout=false) hide the chart toggle:
     // discrete spike bars for a small/moderate-n proportion, binning to a
     // histogram only once the k/n values would crowd (see sim-app.js note).
     if ((plotOnly || !showReadout) && chartType === 'auto') {
-      return reasoningChartType(allStats, { proportion: isProp });
+      return reasoningChartType(stats, { proportion: isProp });
     }
-    return resolveChartType(allStats.length, chartType);
+    // p̂ moves in steps of 1/n, so a big sample spans more achievable values
+    // than a dotplot can draw apart — bin them rather than overlap them.
+    return resolveChartType(stats.length, chartType,
+      { discreteColumns: isProp ? discreteColumnSpan(stats, proportionStep(sampleN) ?? 0) : 0 });
   }
 
   function syncAltNullValue() {
@@ -420,7 +442,16 @@ export function initOneSamplePage(config) {
   function computePreSimDomain() {
     const PRE_N = 2000;
     const TRIM = 5;
-    const preRng = createRng('presim-' + Date.now());
+    // Seeded from the page's seed, not the wall clock. This pilot fixes the
+    // axis limits AND the dotplot's bin grid, so a clock seed made the same
+    // ?seed= link draw a visibly different chart on every load — different
+    // axis range, different bins, different shape — while the statistics
+    // underneath were perfectly reproducible. url-api.md promises this
+    // parameter is "critical for graded assessments where reproducibility is
+    // required"; half of it was. (Found 2026-09-27 while trying to build a
+    // no-visual-change guard and discovering nothing on these pages could be
+    // stable run to run.)
+    const preRng = createRng('presim-' + seed);
     const preStats = [];
     const p0 = getNullValue();
 
@@ -437,8 +468,7 @@ export function initOneSamplePage(config) {
       const shift = p0 - observedStat;
       const shifted = sampleData.map(v => v + shift);
       for (let i = 0; i < PRE_N; i++) {
-        const rs = sampleWithReplacement(shifted, sampleN, preRng);
-        preStats.push(mean(rs));
+        preStats.push(mean(drawFromShiftedNull(shifted, preRng).values));
       }
     }
 
@@ -808,8 +838,20 @@ export function initOneSamplePage(config) {
   let meanViewBtns = null;
   /** Add a Summary | Dotplot toggle next to "This Simulation" (one-mean, small n). */
   function ensureMeanViewToggle() {
-    if (meanViewBtns || isProp || !simTitleEl) return;
-    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) return;
+    if (isProp || !simTitleEl) return;
+    // Reconcile, don't just create-once. A sample too big for tiles or dots
+    // renders the mechanism as mini histograms, which this control cannot
+    // switch between — so it has to go. Loading a small dataset and then a
+    // large one used to leave it sitting there doing nothing (Jeff,
+    // 2026-09-26). sim-app has dropped its own stale copy this way since the
+    // card mechanism shipped; this is the same move.
+    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) {
+      document.querySelector('.mech-view-toggle')?.remove();
+      meanViewBtns = null;
+      return;
+    }
+    if (meanViewBtns && document.contains(meanViewBtns[0])) return;
+    meanViewBtns = null;
     const wrap = document.createElement('div');
     wrap.className = 'seg-control mech-view-toggle';
     wrap.setAttribute('role', 'group');
@@ -867,7 +909,7 @@ export function initOneSamplePage(config) {
       const nullFailures = sampleN - nullSuccesses;
 
       // Change title
-      if (mechObservedTitle) mechObservedTitle.textContent = 'Null Distribution';
+      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
 
       // Find existing prop bar fill and morph it
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
@@ -897,7 +939,7 @@ export function initOneSamplePage(config) {
       return 0;
     } else {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
-      if (mechObservedTitle) mechObservedTitle.textContent = 'Null Distribution';
+      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
 
       // Stat line doubles as the PERSISTENT explanation of how this null
       // distribution was made (every value shifted by the same constant).
@@ -956,7 +998,7 @@ export function initOneSamplePage(config) {
    */
   function revertToObserved() {
     nullShown = false;
-    if (mechObservedTitle) mechObservedTitle.textContent = 'Observed Data';
+    if (mechObservedTitle) mechObservedTitle.textContent = words.beforeShift ?? words.source;
 
     if (isProp) {
       // Re-render with observed proportion
@@ -1053,7 +1095,7 @@ export function initOneSamplePage(config) {
     const prevLength = allStats.length;
 
     if (simTitleEl) {
-      simTitleEl.textContent = count === 1 ? 'This Simulation' : 'Last Simulation';
+      simTitleEl.textContent = count === 1 ? words.draw : words.drawLatest;
     }
 
     lastSimStat = 0;
@@ -1069,10 +1111,7 @@ export function initOneSamplePage(config) {
       const n = sampleN;
       let lastSuccesses = 0;
       for (let i = 0; i < count; i++) {
-        let successes = 0;
-        for (let j = 0; j < n; j++) {
-          if (rng() < p0) successes++;
-        }
+        const successes = drawBernoulliCount(n, p0, rng);
         lastSuccesses = successes;
         allStats.push(successes / n);
       }
@@ -1097,8 +1136,8 @@ export function initOneSamplePage(config) {
       // Shifted bootstrap
       const n = shiftedData.length;
       for (let i = 0; i < count; i++) {
-        const resampleArr = sampleWithReplacement(shiftedData, n, rng);
-        const simMean = mean(/** @type {number[]} */ (resampleArr));
+        const resampleArr = drawFromShiftedNull(shiftedData, rng).values;
+        const simMean = mean(resampleArr);
         lastSimStat = simMean;
         lastResampleArr = /** @type {number[]} */ (resampleArr);
         allStats.push(simMean);
@@ -1148,7 +1187,8 @@ export function initOneSamplePage(config) {
     // Thresholds: snapped for proportions, default for means
     // Pass numBins to match renderChart so delta bars align correctly
     const thresholdOpts = isProp
-      ? { domain: hlDomain, thresholds: snappedPropThresholds(sampleN, hlDomain, allStats.length) }
+      ? { domain: hlDomain, thresholds: snappedPropThresholds(sampleN, hlDomain, allStats.length,
+          { anchor: observedStat }) }
       : { domain: hlDomain, numBins: userBinCount };
     const { bins: fullBins } = computeBins(allStats, thresholdOpts);
     const lockedThresholds = fullBins.slice(1).map(b => b.x0);
@@ -1203,9 +1243,9 @@ export function initOneSamplePage(config) {
     /** @type {[number, number]} */
     const domain = hlDomain || [cLo, cHi];
 
-    const activeChart = getActiveChartType();
+    const activeChart = getActiveChartType(stats);
     if (setToggleSelected) setToggleSelected(activeChart);
-    if (binAdjuster) binAdjuster.setMode(/** @type {'dotplot'|'histogram'} */ (activeChart));
+    if (binAdjuster) binAdjuster.setMode(activeChart);
 
     lastHistResult = null;
     lastDotResult = null;
@@ -1218,7 +1258,7 @@ export function initOneSamplePage(config) {
       chartType: activeChart,
       id: 'sim-chart',
       xLabel,
-      titleText: 'Null Distribution',
+      titleText: words.distribution,
       domain,
       observedStat: observed,
       direction,
@@ -1228,7 +1268,9 @@ export function initOneSamplePage(config) {
       prevBinCounts,
       thresholds: hlThresholds || histogramThresholds({ proportion: isProp, sampleN, domain, dataLength: n }),
       numBins: isProp ? undefined : userBinCount,
-      binWidth: isProp ? 1 / sampleN : undefined,
+      // p̂ moves in steps of 1/n, and 0 is an achievable p̂, so a grid centred
+      // there puts every column on a value the statistic can take (js/grid.js).
+      binWidth: isProp ? (proportionStep(sampleN) ?? undefined) : undefined,
       binOrigin: isProp ? 0 : undefined,
       precision,
       // Reasoning / figure-only mode: no tail shading or p-value pills — the
@@ -1335,13 +1377,27 @@ export function initOneSamplePage(config) {
     const nullDesc = datasetContext.nullClaim || defaultNull;
     const pFmt = formatStat(pValue, 0, 'pvalue');
     const pDisplay = pFmt.startsWith('p') ? pFmt : `p-value: ${pFmt}`;
+    // The p-value is itself an estimate from N simulations, with Monte-Carlo
+    // SE = √(p(1−p)/N). The two-group and bootstrap pages have shown that
+    // margin since REQ-031; these one-sample pages never did — which is the
+    // inconsistency Todd Will noticed (2026-09-26), and he is right that it is
+    // the thing that tells a student when more clicking stops helping. It was
+    // never behind expert mode on either engine; it simply was not here.
+    const N = stats.length;
+    const mcMargin = 1.96 * Math.sqrt(Math.max(pValue * (1 - pValue), 0) / N);
+    const pLine = extremeCount === 0
+      ? `<strong>p-value = 0/${N} ≈ 0</strong> — none of ${N} simulations were this extreme`
+      : `<strong>${pDisplay} ± ${mcMargin.toFixed(3)}</strong>`;
 
     resultDiv.innerHTML = `
-      <p><strong>Null Distribution</strong> (${stats.length} simulations, ${nullParam} = ${nullVal})</p>
+      <p><strong>Null Distribution</strong> (${N} simulations, ${nullParam} = ${nullVal})</p>
       <p>Observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span></p>
-      <p>Extreme count: ${extremeCount} of ${stats.length} (${dirLabel})</p>
-      <p><strong>${pDisplay}</strong></p>
-      <p class="interpretation">${extremeCount} of ${stats.length} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
+      <p>Extreme count: ${extremeCount} of ${N} (${dirLabel})</p>
+      <p>${pLine}</p>
+      ${extremeCount === 0 ? '' : `<p class="hint">The “±” is the 95% Monte-Carlo margin on
+         this estimate — <strong>more simulations → a tighter one</strong>. Once it stops
+         shrinking usefully, more clicking will not change your conclusion.</p>`}
+      <p class="interpretation">${extremeCount} of ${N} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
     `;
   }
 

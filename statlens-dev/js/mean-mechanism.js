@@ -13,12 +13,23 @@
  */
 
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
+import { createSharedScale } from './mechanisms/entities.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { drawMiniChart } from './chart-utils.js';
 import { computeDots } from './dotplot.js';
 
-/** Dotplot view applies up to this n; tiles up to CHIP_MAX; above → histogram. */
-export const MEAN_DOT_MAX = 40;
+/**
+ * Dotplot view applies up to this n; tiles up to CHIP_MAX; above → histogram.
+ *
+ * Raised from 40 on 2026-09-27. Todd Will works at n ≈ 50 and was landing just
+ * past the old cap, so the mechanism fell back to a pair of mini histograms —
+ * the least informative of the three views, for a sample small enough to show
+ * every value. The panels are ~220px wide, so what runs out first is stack
+ * height rather than width, and drawDotplot falls back to filled columns when a
+ * stack overflows; that degrades gracefully where a histogram simply throws the
+ * individual observations away.
+ */
+export const MEAN_DOT_MAX = 80;
 
 /**
  * @param {{ formatValue?: (v:number)=>string, initialView?: 'summary'|'dotplot' }} [config]
@@ -28,7 +39,12 @@ export function createMeanMechanism(config = {}) {
   let view = config.initialView === 'dotplot' ? 'dotplot' : 'summary';
   /** @type {any} */ let bag = null;        // drawDotplot result (dotplot view)
   /** @type {HTMLElement[]} */ let bagChips = []; // chip elements (tiles view)
-  let sizingMax = 0;                         // shared bag/resample stack capacity
+  // The bag and the resample must agree on dot size, or the eye reads two
+  // differently-scaled pictures as comparable. That agreement used to hold
+  // because both renders happened in this one closure — true by construction,
+  // and only for as long as they stayed together. Stated now, so the two panels
+  // can be placed anywhere and still line up (js/mechanisms/entities.js).
+  const scale = createSharedScale();
 
   /** Tiles only for small n in tiles view. */
   const useCards = (/** @type {number} */ n) => n >= 2 && n <= CHIP_MAX && view === 'summary';
@@ -36,7 +52,7 @@ export function createMeanMechanism(config = {}) {
   const useDots = (/** @type {number} */ n) => n >= 2 && n <= MEAN_DOT_MAX && !useCards(n);
 
   /** Reset the dot-sizing on a new dataset so the radius is recomputed. */
-  function resetSizing() { sizingMax = 0; }
+  function resetSizing() { scale.reset(); }
 
   /**
    * Render the "bag" panel. `values` already reflect observed-vs-null (the caller
@@ -53,9 +69,11 @@ export function createMeanMechanism(config = {}) {
       bagChips = renderBagChips(el, values, { formatValue, label: opts.label });
     } else if (useDots(values.length)) {
       bagChips = [];
-      if (!sizingMax) sizingMax = computeDots(values, { domain: opts.domain }).maxStack + 3;
+      if (!scale.sizingMaxStack) {
+        scale.fit(computeDots(values, { domain: opts.domain }).maxStack + 3, opts.domain);
+      }
       bag = drawMechDotplot(el, values, {
-        domain: opts.domain, mean: meanVal, meanLabel: opts.meanLabel || 'x̄', sizingMaxStack: sizingMax,
+        domain: opts.domain, mean: meanVal, meanLabel: opts.meanLabel || 'x̄', sizingMaxStack: scale.sizingMaxStack,
       });
     } else {
       bag = null; bagChips = [];
@@ -80,7 +98,7 @@ export function createMeanMechanism(config = {}) {
     }
     if (useDots(resample.length) && bag) {
       return showResampleDotplot(el, bag, resample, {
-        domain: opts.domain, mean: stat, meanLabel: opts.meanLabel || 'x̄*', sizingMaxStack: sizingMax, animate,
+        domain: opts.domain, mean: stat, meanLabel: opts.meanLabel || 'x̄*', sizingMaxStack: scale.sizingMaxStack, animate,
       });
     }
     drawMiniChart(el, resample, {

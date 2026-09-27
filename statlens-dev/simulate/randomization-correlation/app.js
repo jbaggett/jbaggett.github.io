@@ -5,11 +5,16 @@
  * Supports two-sided, right-tail, and left-tail alternatives.
  */
 
-import { createRng, shuffle } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+
+/** These pages break an association by permuting one side of it. */
+const words = wordsFor('permuteAssociation');
+import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { cor, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, getTabHintText, getActiveTabId, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -35,7 +40,9 @@ const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
 // Controls section (for expert toggle)
 const controlsSection = document.getElementById('controls');
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);
@@ -256,7 +263,7 @@ function generateSimulations(count) {
   let lastR = 0;
 
   for (let i = 0; i < count; i++) {
-    const shuffledY = shuffle([...yValues], rng);
+    const shuffledY = shufflePairing(yValues, rng).values;
     const r = cor(xValues, shuffledY);
     allStats.push(r);
     lastShuffledY = shuffledY;
@@ -356,7 +363,7 @@ function renderChart(stats, observed, direction, highlightIndex = -1, highlightI
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Correlation (r)',
-    titleText: 'Null Distribution',
+    titleText: words.distribution,
     observedStat: observed,
     direction,
     nullCenter: 0,
