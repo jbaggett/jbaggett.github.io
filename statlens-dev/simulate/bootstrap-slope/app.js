@@ -6,6 +6,7 @@
  */
 
 import { createRng } from '../../js/prng.js';
+import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 import { resampleIndices } from '../../js/mechanisms/draws.js';
 import { linreg, mean, sd, detectPrecision, formatStat } from '../../js/stats.js';
 import { bootstrapCI } from '../../js/sim-engine.js';
@@ -20,6 +21,9 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from '../../js/ci-method.js';
+
+// Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
+applyRequestedLayout('bootstrap');
 
 // ─── DOM ───
 

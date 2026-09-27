@@ -8,9 +8,12 @@
 
 import { createRng } from '../../js/prng.js';
 import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 
 /** These pages break an association by permuting one side of it. */
 const words = wordsFor('permuteAssociation');
+// Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
+applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';

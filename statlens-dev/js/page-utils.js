@@ -2376,47 +2376,6 @@ async function copyToClipboard(text) {
   } catch { return false; }
 }
 
-/**
- * Mount a "Copy link" button that captures the page's CURRENT configuration as a
- * shareable URL (current path + query string built from `getState()`), and copies
- * it to the clipboard. Include the active `seed` in the state so a recipient
- * reproduces the same result — turning "share config" into "share result".
- *
- * @param {Element|null} mountEl - where to append the button
- * @param {() => { dataset?: string|null, data?: number[]|null, params?: Record<string, any> }} getState
- *   Returns the live configuration; read controls at click time, not load time.
- * @returns {HTMLButtonElement|null}
- */
-export function initShareLink(mountEl, getState) {
-  if (!mountEl) return null;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'share-link-btn';
-  const idle = '<span aria-hidden="true">🔗</span> Copy link';
-  btn.innerHTML = idle;
-  btn.title = 'Copy a link to this exact configuration (for a lesson, problem, or to share your result)';
-  mountEl.appendChild(btn);
-
-  /** @type {ReturnType<typeof setTimeout>|undefined} */
-  let resetTimer;
-  btn.addEventListener('click', async () => {
-    const st = getState() || {};
-    const qp = new URLSearchParams();
-    if (st.dataset) qp.set('dataset', st.dataset);
-    else if (st.data && st.data.length > 0 && st.data.length <= 2000) qp.set('data', st.data.join(','));
-    for (const [k, v] of Object.entries(st.params || {})) {
-      if (v != null && v !== '') qp.set(k, String(v));
-    }
-    const qs = qp.toString();
-    const url = location.origin + location.pathname + (qs ? `?${qs}` : '');
-    const ok = await copyToClipboard(url);
-    btn.textContent = ok ? '✓ Link copied' : 'Press Ctrl/⌘-C';
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => { btn.innerHTML = idle; }, 2000);
-    if (!ok) { try { window.prompt('Copy this link:', url); } catch { /* ignore */ } }
-  });
-  return btn;
-}
 
 /**
  * Store data for cross-page transfer via sessionStorage.

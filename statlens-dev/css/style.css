@@ -2310,23 +2310,6 @@ body[data-hide-interpretations="true"] .interpretation { display: none !importan
 }
 @media print { .display-toggle { display: none; } }
 
-/* "Copy link" button — share the exact tool configuration + seed */
-.share-link-btn {
-  margin-left: auto;
-  font-size: 0.8rem;
-  font-family: var(--font-mono);
-  color: var(--ims-dark, #114B5F);
-  background: none;
-  border: 1px solid var(--ims-border, #c9d6dc);
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 0.25rem 0.55rem;
-  white-space: nowrap;
-}
-.share-link-btn:hover {
-  background: var(--ims-blue-tint, #eef5f9);
-  border-color: var(--ims-blue, #569BBD);
-}
 .share-link-btn:focus-visible {
   outline: 2px solid var(--ims-blue, #569BBD);
   outline-offset: 2px;
@@ -5461,3 +5444,63 @@ body[data-mech-layout="tiers"] .app-body,
 body[data-mech-layout="split"] .app-body { display: block; }
 body[data-mech-layout="tiers"] .app-sidebar,
 body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
+
+/* ===== Pinned QR =====
+   Stays on screen so a class can scan whenever they look up, instead of the
+   instructor waiting at the front for thirty scans before starting. Follows the
+   live URL, so a late scanner lands where the class is. */
+.qr-pin {
+  position: fixed;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 60;
+  background: #fff;
+  border: 1px solid var(--ims-blue, #569BBD);
+  border-radius: 8px;
+  padding: 0.5rem 0.5rem 0.35rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+.qr-pin-code svg { display: block; width: 116px; height: 116px; }
+.qr-pin--big .qr-pin-code svg { width: 260px; height: 260px; }
+.qr-pin-caption {
+  margin: 0.3rem 0 0.2rem;
+  font-size: 0.7rem;
+  color: var(--ims-gray-text, #555);
+  max-width: 116px;
+}
+.qr-pin--big .qr-pin-caption { max-width: 260px; font-size: 0.85rem; }
+.qr-pin-bigger {
+  font-size: 0.7rem;
+  background: none;
+  border: none;
+  color: var(--accent, #3A7CA5);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+}
+.qr-pin-close {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--ims-blue, #569BBD);
+  background: #fff;
+  color: var(--ims-dark, #114B5F);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.qr-pin-bigger:focus-visible,
+.qr-pin-close:focus-visible { outline: 2px solid var(--ims-green, #114B5F); outline-offset: 2px; }
+@media (max-width: 600px) {
+  /* A phone is the thing being scanned TO, not from — and the panel would sit
+     over the controls. Keep it reachable but out of the way. */
+  .qr-pin { right: 0.4rem; bottom: 0.4rem; padding: 0.35rem; }
+  .qr-pin-code svg { width: 84px; height: 84px; }
+  .qr-pin-caption { max-width: 84px; font-size: 0.62rem; }
+  .qr-pin-close { width: 30px; height: 30px; }
+}
+@media print { .qr-pin { display: none; } }

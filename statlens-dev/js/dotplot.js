@@ -17,6 +17,17 @@ import { sturgesBins } from './histogram.js';
 /** Default dot fill — IMS blue. */
 const DOT_FILL = '#569BBD';
 
+/**
+ * The colour a distribution of a statistic is drawn in, everywhere in StatLens.
+ *
+ * Exported because it was being re-typed as a literal (or diverged from) in
+ * pages that draw their own: the Sampling Distribution Lab drew its sampling
+ * distribution in amber whenever the statistic was a proportion, so the same
+ * entity changed colour depending on what was being measured. Which statistic
+ * it is belongs on the axis, not in the hue.
+ */
+export const STATISTIC_FILL = DOT_FILL;
+
 /** Extreme dot fill (in tail) — same bold IMS blue. */
 const EXTREME_FILL = '#569BBD';
 
