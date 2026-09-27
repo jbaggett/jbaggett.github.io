@@ -8,7 +8,7 @@
 import { createRng, shuffle } from '../../js/prng.js';
 import { chisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -40,7 +40,9 @@ const controlsSection = document.getElementById('controls');
 
 // Add expert toggle link next to generate bar
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);

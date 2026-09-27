@@ -276,13 +276,6 @@ export function initSettings() {
     </div>
     <div class="setting-row">
       <div>
-        <label for="set-expert" class="setting-label">Expert mode</label>
-        <p class="setting-hint">Show advanced controls: statistic selector, CI level, chart type toggle, bin adjuster, theory overlay.</p>
-      </div>
-      <input type="checkbox" id="set-expert" ${s.expertMode ? 'checked' : ''}>
-    </div>
-    <div class="setting-row">
-      <div>
         <label for="set-interpret" class="setting-label">Show interpretations</label>
         <p class="setting-hint">Show auto-generated conclusions and interpretations. Turn off for calculator-only mode.</p>
       </div>
@@ -348,15 +341,9 @@ export function initSettings() {
     });
   }
 
-  // Expert mode checkbox — toggles visibility of advanced controls
-  const expertCheck = /** @type {HTMLInputElement|null} */ (document.getElementById('set-expert'));
-  if (expertCheck) {
-    expertCheck.addEventListener('change', () => {
-      setSettings({ expertMode: expertCheck.checked });
-      applySettings();
-      updateExpertBadge();
-    });
-  }
+  // Expert mode has no row here any more — it is the Simple | Detailed control
+  // in the page header (see initDisplayToggle). Two switches for one state is
+  // worse than one hidden switch.
 
   // Interpretations toggle
   const interpretCheck = /** @type {HTMLInputElement|null} */ (document.getElementById('set-interpret'));
@@ -409,8 +396,9 @@ export function initSettings() {
     gearBtn.addEventListener('click', () => dialog.showModal());
   }
 
-  // Reflect a remembered expert mode on arrival, not only when it is toggled.
-  updateExpertBadge();
+  // The header control reflects a remembered choice on arrival, and is the one
+  // place this state is set from.
+  initDisplayToggle();
 }
 
 /**
@@ -993,61 +981,94 @@ function renderDatasetInfo(panel, ds) {
  * @param {HTMLElement} container - Element to append the toggle to
  */
 /**
- * The badge that makes persistent expert mode safe.
+ * The Simple | Detailed control in the page header.
  *
- * Expert mode is remembered across visits now, which is what instructors need —
- * but a mode that persists invisibly is how someone ends up confused weeks
- * later by controls they don't remember enabling, or (Todd Will, 2026-09-25)
- * by controls that vanish when it resets. So while it is on, it says so, and
- * says how to stop: one click, no dialog, no hunting through the gear.
+ * Expert mode used to live behind the settings gear, with a second, differently
+ * worded entry point ("More options") sitting inside the generate bar. Both
+ * failed, in opposite ways. The gear is a *setting*, and settings are invisible:
+ * Todd Will — a mathematician and the most engaged reviewer this project has —
+ * never found it, and so never saw the Monte-Carlo margins or the chart
+ * controls. The inline button was worse than invisible, it was ambiguous:
+ * parked next to the word "Shuffles" it read as more options *for shuffles*,
+ * which is exactly how Todd ended up reporting a chart bug as a shuffle bug.
  *
- * Deliberately not `.expert-only` — it must be visible precisely when expert
- * mode is, which is the opposite of what that class does.
+ * So: one control, in one place, visibly showing its own state, on every page
+ * that has anything to reveal. It says what the *page* shows rather than what
+ * the *user* is — "Expert" describes the reader and warns them off, and the
+ * person who needs these controls most is the instructor who would read that
+ * word and assume it was not for them.
+ *
+ * The stored setting, the `.expert-only` class and `?expert=true` are all
+ * unchanged — this replaces the entry point, not the mechanism. `?expert=true`
+ * is a published URL parameter and cannot move.
+ *
+ * @param {ParentNode} [root] - where to look for `.expert-only` (default: document)
  */
-export function updateExpertBadge() {
-  if (typeof document === 'undefined' || !document.body) return;
-  const on = getExpertMode();
-  let badge = document.getElementById('expert-badge');
+export function initDisplayToggle(root = document) {
+  // Upper right, beside the StatLens wordmark — away from the Home/Share/Help
+  // cluster on the left, which is already five items wide and whose members all
+  // *leave* or *explain* the page rather than change it. Falls back to that
+  // cluster on any page without the brand mark.
+  const brand = document.querySelector('.site-brand');
+  const actions = brand?.parentElement ?? document.querySelector('.header-actions');
+  if (!actions || document.querySelector('.display-toggle')) return;
+  // Nothing to reveal on this page, so no control. Checked against the DOM
+  // rather than a per-page list, which would rot as pages change.
+  //
+  // Most of those controls do not exist yet at init: the page chrome is wired
+  // before the tool builds its hypothesis line, chart toggle and bin adjuster,
+  // and some appear only once a dataset has loaded. So if none is present, wait
+  // and look again — and stop watching once one turns up, or once it is clear
+  // none will.
+  if (!root.querySelector('.expert-only')) {
+    if (root !== document || typeof MutationObserver === 'undefined') return;
+    const obs = new MutationObserver(() => {
+      if (!document.querySelector('.expert-only')) return;
+      obs.disconnect();
+      initDisplayToggle(document);
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => obs.disconnect(), 15000);
+    return;
+  }
 
-  if (!on) { badge?.remove(); return; }
-  if (badge) return;
+  const wrap = document.createElement('span');
+  wrap.className = 'display-toggle';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'How much detail to show');
+  wrap.innerHTML = '<span class="display-toggle-label" aria-hidden="true">Show:</span>'
+    + '<span class="seg-control">'
+    + '<button type="button" data-detail="simple" title="Just the essentials">Simple</button>'
+    + '<button type="button" data-detail="full" title="Every control this tool offers">Detailed</button>'
+    + '</span>';
 
-  badge = document.createElement('button');
-  badge.id = 'expert-badge';
-  badge.type = 'button';
-  badge.className = 'expert-badge';
-  badge.innerHTML = '<span aria-hidden="true">\u2699</span> Expert mode on'
-    + ' <span class="expert-badge-off">turn off</span>';
-  badge.title = 'Expert mode is on — click to turn it off';
-  badge.setAttribute('aria-label', 'Expert mode is on. Click to turn it off.');
-  badge.addEventListener('click', () => {
-    setSettings({ expertMode: false });
-    applySettings();
-    updateExpertBadge();   // removes this badge: expert mode is off now
-    // Keep the settings dialog honest if it happens to be open behind this.
-    const box = /** @type {HTMLInputElement|null} */ (document.getElementById('set-expert'));
-    if (box) box.checked = false;
-    announce('Expert mode turned off.');
-  });
-  document.body.appendChild(badge);
+  const btns = /** @type {NodeListOf<HTMLButtonElement>} */ (wrap.querySelectorAll('button'));
+  const sync = () => {
+    const full = getExpertMode();
+    for (const b of btns) {
+      b.setAttribute('aria-pressed', String((b.dataset.detail === 'full') === full));
+    }
+  };
+  for (const b of btns) {
+    b.addEventListener('click', () => {
+      const wantFull = b.dataset.detail === 'full';
+      if (wantFull === getExpertMode()) return;
+      setSettings({ expertMode: wantFull });
+      applySettings();
+      sync();
+      announce(wantFull ? 'Showing every control.' : 'Showing the essentials.');
+    });
+  }
+  sync();
+  if (brand) actions.insertBefore(wrap, brand);
+  else {
+    // Ahead of Help and Settings, so the control that changes the page comes
+    // before the ones that only describe or configure it.
+    const help = actions.querySelector('.help-btn');
+    if (help) actions.insertBefore(wrap, help); else actions.appendChild(wrap);
+  }
 }
 
-export function createExpertToggle(container) {
-  if (container.querySelector('.expert-toggle')) return;
-
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'expert-toggle';
-  btn.textContent = getExpertMode() ? 'Fewer options' : 'More options';
-  btn.addEventListener('click', () => {
-    const nowExpert = !getExpertMode();
-    setSettings({ expertMode: nowExpert });
-    applySettings();
-    updateExpertBadge();
-    btn.textContent = nowExpert ? 'Fewer options' : 'More options';
-  });
-  container.appendChild(btn);
-}
 
 /**
  * Populate a <select> with dataset entries, optionally grouped via <optgroup>.

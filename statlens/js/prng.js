@@ -83,6 +83,39 @@ export function shuffle(arr, rng) {
  * @returns {Array<*>} New array of length n
  * @throws {RangeError} If arr is empty or n < 0
  */
+/**
+ * Draw `size` indices into an array of `n` elements, with replacement.
+ *
+ * The provenance of a resample: WHICH observations were drawn, not just which
+ * values came out. When several observations share a value there is no fact
+ * about which of them a value-level resample drew, and a display that has to
+ * guess will guess wrong in a specific direction — spreading draws evenly over
+ * the tied positions, which understates both "not selected" and "selected
+ * twice". On 200 paired differences sharing 38 distinct values that showed ~31
+ * observations untouched where the truth is ~73. (Todd Will, 2026-09-27.)
+ *
+ * Consumes the PRNG in exactly the same order as sampleWithReplacement, so a
+ * seeded link produces the same numbers either way.
+ *
+ * @param {number} n - size of the array being indexed
+ * @param {number} size - how many indices to draw
+ * @param {() => number} rng - PRNG function
+ * @returns {number[]}
+ */
+export function sampleIndicesWithReplacement(n, size, rng) {
+    if (n === 0 && size > 0) {
+        throw new RangeError('Cannot sample from empty array');
+    }
+    if (size < 0) {
+        throw new RangeError('size must be non-negative');
+    }
+    const result = new Array(size);
+    for (let i = 0; i < size; i++) {
+        result[i] = (rng() * n) | 0;
+    }
+    return result;
+}
+
 export function sampleWithReplacement(arr, n, rng) {
     if (arr.length === 0 && n > 0) {
         throw new RangeError('Cannot sample from empty array');

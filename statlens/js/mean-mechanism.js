@@ -17,8 +17,18 @@ import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.j
 import { drawMiniChart } from './chart-utils.js';
 import { computeDots } from './dotplot.js';
 
-/** Dotplot view applies up to this n; tiles up to CHIP_MAX; above → histogram. */
-export const MEAN_DOT_MAX = 40;
+/**
+ * Dotplot view applies up to this n; tiles up to CHIP_MAX; above → histogram.
+ *
+ * Raised from 40 on 2026-09-27. Todd Will works at n ≈ 50 and was landing just
+ * past the old cap, so the mechanism fell back to a pair of mini histograms —
+ * the least informative of the three views, for a sample small enough to show
+ * every value. The panels are ~220px wide, so what runs out first is stack
+ * height rather than width, and drawDotplot falls back to filled columns when a
+ * stack overflows; that degrades gracefully where a histogram simply throws the
+ * individual observations away.
+ */
+export const MEAN_DOT_MAX = 80;
 
 /**
  * @param {{ formatValue?: (v:number)=>string, initialView?: 'summary'|'dotplot' }} [config]

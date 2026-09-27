@@ -520,11 +520,6 @@ main {
   .btn-primary, .btn-secondary, .btn-sm {
     min-height: 44px;
   }
-  .generate-bar .expert-toggle {
-    flex-basis: 100%;
-    text-align: right;
-    order: 11;
-  }
 }
 
 
@@ -650,25 +645,6 @@ main {
   .ds-filters .control-label { flex-basis: 100%; margin-bottom: -0.25rem; }
 }
 
-/* Expert-mode badge — visible exactly while expert mode is on, which is the
-   opposite of .expert-only. Bottom-left so it never collides with the Share /
-   settings cluster top-right, and quiet enough to ignore while teaching. */
-.expert-badge {
-  position: fixed; left: 0.75rem; bottom: 0.75rem; z-index: 60;
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  padding: 0.35rem 0.7rem; border-radius: 999px;
-  border: 1px solid var(--ims-blue, #569BBD); background: #fff;
-  color: var(--ims-green, #114B5F); font: inherit; font-size: 0.8rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); cursor: pointer;
-}
-.expert-badge:hover { background: var(--bg-alt, #f5f5f5); }
-.expert-badge:focus-visible { outline: 2px solid var(--ims-green, #114B5F); outline-offset: 2px; }
-.expert-badge-off { text-decoration: underline; color: var(--accent, #3A7CA5); }
-@media (max-width: 600px) {
-  /* 44px target, and out of the way of a bottom sheet's handle. */
-  .expert-badge { min-height: 44px; bottom: 0.5rem; left: 0.5rem; font-size: 0.75rem; }
-}
-@media print { .expert-badge { display: none; } }
 
 /* Quartile-method control (expert-only) + the note that outlives expert mode. */
 .quartile-method { margin: 0.6rem 0 0; }
@@ -1037,10 +1013,6 @@ input[aria-invalid="true"] {
   .seg-control button {
     padding: 0.3rem 0.6rem;
     min-height: 44px;
-  }
-  .expert-toggle {
-    font-size: 0.9rem;
-    padding: 0.3rem 0;
   }
 }
 .hypothesis-display input[type="number"] {
@@ -2305,21 +2277,38 @@ body[data-expert="true"] .standard-only { display: none !important; }
 /* Hide auto-generated interpretations when toggled off */
 body[data-hide-interpretations="true"] .interpretation { display: none !important; }
 
-/* On-page "More options" / "Fewer options" toggle link */
-.expert-toggle {
-  font-size: 0.85rem;
-  color: var(--ims-gray-text);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.1rem 0;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 2px;
+/* Simple | Detailed — the one control for how much the page shows.
+   It sits in the header with Help and Settings, because a page-level control
+   belongs with the page, not beside whichever widget it happened to be built
+   next to. See initDisplayToggle in js/page-utils.js for why. */
+.display-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
 }
-.expert-toggle:hover {
-  color: var(--accent);
+.display-toggle-label {
+  color: var(--ims-gray-text, #555);
+  font-weight: 400;
 }
+.display-toggle .seg-control button {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 400;
+}
+@media (max-width: 720px) {
+  /* The label is the first thing to go; the two words carry the meaning. */
+  .display-toggle-label { display: none; }
+}
+@media (max-width: 600px) {
+  /* The brand mark is hidden at this width, so the toggle would otherwise sit
+     where it used to be — off the right edge. Let the header wrap and give the
+     control its own row, at a 44px touch target. */
+  h1 { flex-wrap: wrap; }
+  .display-toggle { order: 99; margin-left: auto; }
+  .display-toggle .seg-control button { min-height: 44px; padding: 0.3rem 0.7rem; }
+}
+@media print { .display-toggle { display: none; } }
 
 /* "Copy link" button — share the exact tool configuration + seed */
 .share-link-btn {
@@ -4222,7 +4211,7 @@ body[data-plot="only"] #data-panel,
 body[data-plot="only"] #settings,
 body[data-plot="only"] .coverage-controls,
 body[data-plot="only"] .app-sidebar,
-body[data-plot="only"] .expert-toggle,
+body[data-plot="only"] .display-toggle,
 body[data-plot="only"] .theory-toggle,
 body[data-plot="only"] .bin-adjuster,
 body[data-plot="only"] .chart-save-btn,
@@ -4303,7 +4292,7 @@ body[data-chrome="minimal"] #hypothesis-display,
 body[data-chrome="minimal"] #success-selector,
 body[data-chrome="minimal"] #seed-notice,
 body[data-chrome="minimal"] .share-link-btn,
-body[data-chrome="minimal"] .expert-toggle,
+body[data-chrome="minimal"] .display-toggle,
 body[data-chrome="minimal"] .mech-view-toggle,
 /* Minimal chrome also strips the stat / confidence-level / tail control row —
    the piece an activity would otherwise reveal. (Interactive activities keep it;

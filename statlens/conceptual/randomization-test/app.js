@@ -10,6 +10,7 @@
  */
 
 import { drawHistogram, snappedPropThresholds } from '../../js/histogram.js';
+import { proportionStep } from '../../js/grid.js';
 import { drawDotplot } from '../../js/dotplot.js';
 import { renderSimPills } from '../../js/chart-utils.js';
 import { resolveChartType, createChartToggle } from '../../js/chart-defaults.js';
@@ -222,9 +223,10 @@ async function loadDataset(id) {
   const p2 = countSuccess(group2) / group2.length;
   observedDiff = +(p1 - p2).toFixed(6);
 
-  // Discrete step: when total successes are fixed and one moves from group1 to group2,
-  // the difference changes by 1/n1 + 1/n2
-  discreteStep = 1 / group1.length + 1 / group2.length;
+  // When total successes are fixed and one moves from group1 to group2, the
+  // difference changes by 1/n1 + 1/n2 — the grid authority owns that rule
+  // (js/grid.js), because a local copy is how it got rounded here before.
+  discreteStep = proportionStep(group1.length, group2.length) ?? 0;
 
   renderStep1(group1, group2);
   renderStep2();

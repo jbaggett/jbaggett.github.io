@@ -7,6 +7,7 @@
  */
 
 import * as d3Array from 'd3-array';
+import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
@@ -104,15 +105,12 @@ export function snappedPropThresholds(sampleSize, domain, dataLength, opts = {})
 
   const thresholds = [];
   if (opts.anchor != null && Number.isFinite(opts.anchor)) {
-    // Walk the grid out from the anchor in both directions.
-    const first = opts.anchor - step / 2;
-    let edge = first - Math.ceil((first - domain[0]) / binWidth) * binWidth;
-    while (edge <= domain[0]) edge += binWidth;
-    while (edge < domain[1]) {
-      thresholds.push(edge);
-      edge += binWidth;
-    }
-    return thresholds;
+    // The grid authority walks the edges out from the anchor (js/grid.js).
+    // The anchor is a CENTRE on the fine grid of achievable values, so an edge
+    // sits half a step below it — which is what opens the anchor's own bin when
+    // several outcomes share one bar.
+    return gridCentredOn(binWidth, opts.anchor - step / 2 + binWidth / 2)
+      .edgesWithin(domain);
   }
   // Start from the nearest k/n value at or below domain[0]
   const startK = Math.floor(domain[0] / step);

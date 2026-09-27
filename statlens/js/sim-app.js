@@ -5,8 +5,9 @@
  */
 
 import { parseParams } from './url-params.js';
+import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
-import { createRng } from './prng.js';
+import { createRng, sampleIndicesWithReplacement} from './prng.js';
 import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat, quartiles } from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
@@ -19,13 +20,13 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, createExpertToggle, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, initShareLink, reportInputProblem } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
-import { createMeanMechanism } from './mean-mechanism.js';
+import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initLayoutVariants } from './layout-variants.js';
 import { initCoaching } from './coaching.js';
@@ -93,7 +94,9 @@ export function initSimPage(config) {
   const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
   // B1: one-sample mean bootstrap — animated dotplot resampling for small samples
   // (the non-summary view). Large samples keep the histogram.
-  const MEAN_DOT_MAX = 40;
+  // Shared with the one-sample engine — a second copy of this number is how the
+  // two engines drift apart (see the chart-type decision, 2026-09-25).
+  const MEAN_DOT_MAX = MEAN_DOT_MAX_SHARED;
   const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   /** True when the animated mean-dotplot mechanism should be used right now. */
   const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
@@ -222,7 +225,9 @@ export function initSimPage(config) {
 
   // Add expert toggle link next to generate bar
   const generateBar = controlsSection?.querySelector('.generate-bar');
-  if (generateBar) createExpertToggle(generateBar);
+  // The old inline "More options" button lived here, beside "Shuffles", where it
+  // read as more options FOR shuffles. It is now the Simple | Detailed control in
+  // the page header (js/page-utils.js initDisplayToggle).
 
   /**
    * Snapshot the current tool configuration as a shareable URL state.
@@ -319,6 +324,9 @@ export function initSimPage(config) {
   }
   /** @type {number[]} */
   let lastResample = [];
+  /** Which observations the last resample drew, when it was drawn by index. */
+  /** @type {number[]|null} */
+  let lastResampleIndices = null;
   /** Last shuffled/resampled two-group grouping — lets the Bars/Cards toggle
    *  re-render the resample panel without re-running the simulation. */
   /** @type {number[]} */
@@ -1487,11 +1495,16 @@ export function initSimPage(config) {
       let lastResampleValues = [];
 
       if (config.paired && data2.length > 0) {
-        // Paired bootstrap: resample the differences
+        // Paired bootstrap: resample the differences.
+        // Drawn by INDEX so the mechanism panel can say which observations were
+        // taken. Identical PRNG consumption to resample(), so seeded links are
+        // unaffected — see sampleIndicesWithReplacement.
         const diffs = data2.map((v, i) => v - data1[i]);
         for (let i = 0; i < count; i++) {
-          const rs = resample(diffs, rng);
+          const idx = sampleIndicesWithReplacement(diffs.length, diffs.length, rng);
+          const rs = idx.map(j => diffs[j]);
           lastResampleValues = rs;
+          lastResampleIndices = idx;
           allStats.push(statFn(rs));
         }
       } else if (config.twoGroup && data2.length > 0) {
@@ -1508,10 +1521,12 @@ export function initSimPage(config) {
         }
         twoGroupMorphMs = showTwoGroupMechanism(lastRs1, lastRs2, false, count === 1);
       } else {
-        // One-sample bootstrap
+        // One-sample bootstrap — by index, for the same reason.
         for (let i = 0; i < count; i++) {
-          const rs = resample(data1, rng);
+          const idx = sampleIndicesWithReplacement(data1.length, data1.length, rng);
+          const rs = idx.map(j => data1[j]);
           lastResampleValues = rs;
+          lastResampleIndices = idx;
           allStats.push(statFn(rs));
         }
       }
@@ -2511,21 +2526,14 @@ export function initSimPage(config) {
         mechanismDescEl.textContent =
           `Resample with replacement · successes changed by ${sign}${diff}`;
       } else {
-        /** @type {Map<number, number>} */
-        const counts = new Map();
-        for (const v of resampleValues) {
-          counts.set(v, (counts.get(v) ?? 0) + 1);
-        }
-        const uniqueOriginal = new Set(data1);
         let notSelected = 0;
         let repeated = 0;
-        for (const v of uniqueOriginal) {
-          const c = counts.get(v) ?? 0;
-          if (c === 0) notSelected++;
-          if (c > 1) repeated++;
+        for (const { drawn } of allocateDrawCounts(resampleSourceValues(), resampleValues)) {
+          if (drawn === 0) notSelected++;
+          if (drawn > 1) repeated++;
         }
         mechanismDescEl.textContent =
-          `Resample with replacement · ${repeated} value${repeated !== 1 ? 's' : ''} repeated · ${notSelected} not selected`;
+          `Resample with replacement · ${repeated} drawn more than once · ${notSelected} not selected`;
       }
       mechanismDescEl.hidden = false;
     }
@@ -2539,6 +2547,67 @@ export function initSimPage(config) {
    * @param {boolean} [stagger=false] - Animate chips appearing sequentially (+1 only)
    * @returns {number} Total animation duration in ms (0 if no animation)
    */
+  /**
+   * The values a resample is actually drawn from.
+   *
+   * On a paired page that is the differences, not `data1` — `data1` holds one
+   * of the two raw variables, which the resample never touches. Three readouts
+   * needed this and only one had it, so a 200-pair dataset reported "30 not
+   * selected, 0 selected once, 0 selected twice": 30 being the number of
+   * distinct read-scores, none of which appear among the resampled differences,
+   * so every lookup missed. (Todd Will, 2026-09-27.)
+   *
+   * @returns {number[]}
+   */
+  function resampleSourceValues() {
+    return (config.paired && data2.length > 0)
+      ? data2.map((v, i) => v - data1[i])
+      : data1;
+  }
+
+  /**
+   * How many times each ORIGINAL OBSERVATION was drawn.
+   *
+   * `resample()` returns values, not indices, so when a value appears in
+   * several observations there is no fact about which of them was drawn. The
+   * chips settle it by allocating a value's draws evenly across the positions
+   * holding it, and this returns exactly that allocation so the chips, the
+   * text tally and the caption all describe the same picture — and so the
+   * tally sums to n, which counting distinct VALUES did not.
+   *
+   * @param {number[]} origValues
+   * @param {number[]} resampleValues
+   * @returns {{ value: number, drawn: number }[]} sorted ascending by value
+   */
+  function allocateDrawCounts(origValues, resampleValues) {
+    // When the draw recorded WHICH observations it took, there is nothing to
+    // allocate — count them. The order matches the chips, which sort ascending.
+    if (lastResampleIndices && lastResampleIndices.length === resampleValues.length) {
+      const drawn = new Array(origValues.length).fill(0);
+      for (const j of lastResampleIndices) {
+        if (j >= 0 && j < drawn.length) drawn[j]++;
+      }
+      return origValues
+        .map((value, i) => ({ value, drawn: drawn[i] }))
+        .sort((a, b) => a.value - b.value);
+    }
+    /** @type {Map<number, number>} */
+    const remaining = new Map();
+    for (const v of resampleValues) remaining.set(v, (remaining.get(v) ?? 0) + 1);
+    const sorted = [...origValues].sort((a, b) => a - b);
+    /** @type {Map<number, number>} */
+    const positionsLeft = new Map();
+    for (const v of sorted) positionsLeft.set(v, (positionsLeft.get(v) ?? 0) + 1);
+    return sorted.map((v) => {
+      const rem = remaining.get(v) ?? 0;
+      const pLeft = positionsLeft.get(v) ?? 1;
+      const drawn = Math.ceil(rem / pLeft);
+      remaining.set(v, rem - drawn);
+      positionsLeft.set(v, pLeft - 1);
+      return { value: v, drawn };
+    });
+  }
+
   function showResampleSummary(resampleValues, stagger = false) {
     resampleContentEl.innerHTML = '';
 
@@ -2547,16 +2616,7 @@ export function initSimPage(config) {
       return showResamplePropBar(resampleValues, stagger);
     }
 
-    /** @type {Map<number, number>} */
-    const counts = new Map();
-    for (const v of resampleValues) {
-      counts.set(v, (counts.get(v) ?? 0) + 1);
-    }
-
-    // For paired data, the "original" values are the differences, not data1
-    const origValues = (config.paired && data2.length > 0)
-      ? data2.map((v, i) => v - data1[i])
-      : data1;
+    const origValues = resampleSourceValues();
 
     // Should we animate the stagger? Only for small n on +1, with motion allowed
     const shouldStagger = stagger && origValues.length <= CHIP_THRESHOLD && !prefersReducedMotion();
@@ -2571,23 +2631,16 @@ export function initSimPage(config) {
       container.className = 'sample-dots';
       container.setAttribute('role', 'img');
       container.setAttribute('aria-label', 'Bootstrap resample values');
-      const sorted = [...origValues].sort((a, b) => a - b);
-      const remaining = new Map(counts);
-      // Pre-count how many positions remain for each value (for fair allocation)
-      /** @type {Map<number, number>} */
-      const positionsLeft = new Map();
-      for (const v of sorted) positionsLeft.set(v, (positionsLeft.get(v) ?? 0) + 1);
+      // The same allocation the text tally and the caption use, so all three
+      // describe one picture.
+      const alloc = allocateDrawCounts(origValues, resampleValues);
 
       /** @type {{dot: HTMLElement, chipIdx: number}[]} */
       const drawnChips = [];
       /** @type {HTMLElement[]} */
       const notDrawnChips = [];
-      for (let chipIdx = 0; chipIdx < sorted.length; chipIdx++) {
-        const v = sorted[chipIdx];
-        const rem = remaining.get(v) ?? 0;
-        const pLeft = positionsLeft.get(v) ?? 1;
-        // Allocate draws fairly across chip positions for this value
-        const allocated = Math.ceil(rem / pLeft);
+      for (let chipIdx = 0; chipIdx < alloc.length; chipIdx++) {
+        const { value: v, drawn: allocated } = alloc[chipIdx];
         const dot = document.createElement('span');
         dot.className = 'sample-dot';
         if (config.proportion) {
@@ -2617,8 +2670,6 @@ export function initSimPage(config) {
           notDrawnChips.push(dot);
         }
         container.appendChild(dot);
-        remaining.set(v, rem - allocated);
-        positionsLeft.set(v, pLeft - 1);
       }
       resampleContentEl.appendChild(container);
 
@@ -2680,12 +2731,10 @@ export function initSimPage(config) {
       return 0;
     } else {
       let notSelected = 0, once = 0, twice = 0, threeOrMore = 0;
-      const uniqueOriginal = new Set(data1);
-      for (const v of uniqueOriginal) {
-        const c = counts.get(v) ?? 0;
-        if (c === 0) notSelected++;
-        else if (c === 1) once++;
-        else if (c === 2) twice++;
+      for (const { drawn } of allocateDrawCounts(origValues, resampleValues)) {
+        if (drawn === 0) notSelected++;
+        else if (drawn === 1) once++;
+        else if (drawn === 2) twice++;
         else threeOrMore++;
       }
       const summary = document.createElement('div');
@@ -3490,10 +3539,7 @@ export function initSimPage(config) {
    */
   function discreteGridStep() {
     if (!config.proportion) return null;
-    if (!data1.length) return null;
-    return (config.twoGroup && data2.length > 0)
-      ? 1 / data1.length + 1 / data2.length
-      : 1 / data1.length;
+    return proportionStep(data1.length, config.twoGroup ? data2.length : 0);
   }
 
   /**

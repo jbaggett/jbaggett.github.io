@@ -7,6 +7,7 @@
  */
 
 import * as d3Array from 'd3-array';
+import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
@@ -103,11 +104,15 @@ export function computeDots(values, options = {}) {
   // Use the bin origin from the locked grid if provided, else from domain
   const binOrigin = options.binOrigin ?? domain[0];
 
-  // Stack: group values by bin center, assign stack indices
+  // Stack: group values by bin center, assign stack indices.
+  // The grid authority owns the snap (js/grid.js) — the caller has already
+  // chosen the width and the origin, and the origin belongs to the data, not to
+  // this container.
+  const grid = gridCentredOn(binWidth, binOrigin);
   /** @type {Map<number, number>} */
   const stackCounts = new Map();
   const dots = values.map(v => {
-    const binCenter = Math.round((v - binOrigin) / binWidth) * binWidth + binOrigin;
+    const binCenter = grid.centerOf(v);
     const stackIndex = stackCounts.get(binCenter) ?? 0;
     stackCounts.set(binCenter, stackIndex + 1);
     return { value: v, binCenter, stackIndex };

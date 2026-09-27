@@ -9,7 +9,7 @@ import { createRng, shuffle } from '../../js/prng.js';
 import { cor, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, createExpertToggle, getTabHintText, getActiveTabId, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -35,7 +35,9 @@ const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
 // Controls section (for expert toggle)
 const controlsSection = document.getElementById('controls');
 const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-if (generateBar) createExpertToggle(generateBar);
+// The inline "More options" button used to go here. It now lives in the page
+// header as Simple | Detailed (js/page-utils.js initDisplayToggle), where it
+// cannot be mistaken for an option belonging to the control beside it.
 
 initTabs({ hintTarget: resultDiv, hintAction: 'run a simulation to see results' });
 initKeyboardShortcuts(genBtns, resetBtn);

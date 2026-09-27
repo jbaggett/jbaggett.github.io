@@ -8,6 +8,7 @@
  */
 
 import * as d3Scale from 'd3-scale';
+import { gridCentredOn } from './grid.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
@@ -91,10 +92,8 @@ export function resolveChartType(n, userChoice, opts = {}) {
  * @returns {number}
  */
 export function discreteColumnSpan(stats, step) {
-  if (!step || !(step > 0) || stats.length === 0) return 0;
-  let lo = stats[0], hi = stats[0];
-  for (const v of stats) { if (v < lo) lo = v; if (v > hi) hi = v; }
-  return Math.round((hi - lo) / step) + 1;
+  if (!step || !(step > 0)) return 0;
+  return gridCentredOn(step, 0).columnSpan(stats);
 }
 
 /**

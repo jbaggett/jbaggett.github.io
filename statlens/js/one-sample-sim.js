@@ -9,6 +9,7 @@
  */
 
 import { createRng, sampleWithReplacement } from './prng.js';
+import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot, computeDots } from './dotplot.js';
@@ -16,7 +17,7 @@ import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, createExpertToggle, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink, reportInputProblem } from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink, reportInputProblem } from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -60,7 +61,9 @@ export function initOneSamplePage(config) {
 
   // Add expert toggle link next to generate bar
   const generateBar = /** @type {HTMLElement|null} */ (controlsSection?.querySelector('.generate-bar'));
-  if (generateBar) createExpertToggle(generateBar);
+  // The old inline "More options" button lived here, beside "Shuffles", where it
+  // read as more options FOR shuffles. It is now the Simple | Detailed control in
+  // the page header (js/page-utils.js initDisplayToggle).
 
   /**
    * Snapshot the current configuration as a shareable URL state: data source
@@ -386,7 +389,7 @@ export function initOneSamplePage(config) {
     // p̂ moves in steps of 1/n, so a big sample spans more achievable values
     // than a dotplot can draw apart — bin them rather than overlap them.
     return resolveChartType(stats.length, chartType,
-      { discreteColumns: isProp && sampleN > 0 ? discreteColumnSpan(stats, 1 / sampleN) : 0 });
+      { discreteColumns: isProp ? discreteColumnSpan(stats, proportionStep(sampleN) ?? 0) : 0 });
   }
 
   function syncAltNullValue() {
@@ -820,8 +823,20 @@ export function initOneSamplePage(config) {
   let meanViewBtns = null;
   /** Add a Summary | Dotplot toggle next to "This Simulation" (one-mean, small n). */
   function ensureMeanViewToggle() {
-    if (meanViewBtns || isProp || !simTitleEl) return;
-    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) return;
+    if (isProp || !simTitleEl) return;
+    // Reconcile, don't just create-once. A sample too big for tiles or dots
+    // renders the mechanism as mini histograms, which this control cannot
+    // switch between — so it has to go. Loading a small dataset and then a
+    // large one used to leave it sitting there doing nothing (Jeff,
+    // 2026-09-26). sim-app has dropped its own stale copy this way since the
+    // card mechanism shipped; this is the same move.
+    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) {
+      document.querySelector('.mech-view-toggle')?.remove();
+      meanViewBtns = null;
+      return;
+    }
+    if (meanViewBtns && document.contains(meanViewBtns[0])) return;
+    meanViewBtns = null;
     const wrap = document.createElement('div');
     wrap.className = 'seg-control mech-view-toggle';
     wrap.setAttribute('role', 'group');
@@ -1241,7 +1256,9 @@ export function initOneSamplePage(config) {
       prevBinCounts,
       thresholds: hlThresholds || histogramThresholds({ proportion: isProp, sampleN, domain, dataLength: n }),
       numBins: isProp ? undefined : userBinCount,
-      binWidth: isProp ? 1 / sampleN : undefined,
+      // p̂ moves in steps of 1/n, and 0 is an achievable p̂, so a grid centred
+      // there puts every column on a value the statistic can take (js/grid.js).
+      binWidth: isProp ? (proportionStep(sampleN) ?? undefined) : undefined,
       binOrigin: isProp ? 0 : undefined,
       precision,
       // Reasoning / figure-only mode: no tail shading or p-value pills — the
@@ -1348,13 +1365,27 @@ export function initOneSamplePage(config) {
     const nullDesc = datasetContext.nullClaim || defaultNull;
     const pFmt = formatStat(pValue, 0, 'pvalue');
     const pDisplay = pFmt.startsWith('p') ? pFmt : `p-value: ${pFmt}`;
+    // The p-value is itself an estimate from N simulations, with Monte-Carlo
+    // SE = √(p(1−p)/N). The two-group and bootstrap pages have shown that
+    // margin since REQ-031; these one-sample pages never did — which is the
+    // inconsistency Todd Will noticed (2026-09-26), and he is right that it is
+    // the thing that tells a student when more clicking stops helping. It was
+    // never behind expert mode on either engine; it simply was not here.
+    const N = stats.length;
+    const mcMargin = 1.96 * Math.sqrt(Math.max(pValue * (1 - pValue), 0) / N);
+    const pLine = extremeCount === 0
+      ? `<strong>p-value = 0/${N} ≈ 0</strong> — none of ${N} simulations were this extreme`
+      : `<strong>${pDisplay} ± ${mcMargin.toFixed(3)}</strong>`;
 
     resultDiv.innerHTML = `
-      <p><strong>Null Distribution</strong> (${stats.length} simulations, ${nullParam} = ${nullVal})</p>
+      <p><strong>Null Distribution</strong> (${N} simulations, ${nullParam} = ${nullVal})</p>
       <p>Observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span></p>
-      <p>Extreme count: ${extremeCount} of ${stats.length} (${dirLabel})</p>
-      <p><strong>${pDisplay}</strong></p>
-      <p class="interpretation">${extremeCount} of ${stats.length} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
+      <p>Extreme count: ${extremeCount} of ${N} (${dirLabel})</p>
+      <p>${pLine}</p>
+      ${extremeCount === 0 ? '' : `<p class="hint">The “±” is the 95% Monte-Carlo margin on
+         this estimate — <strong>more simulations → a tighter one</strong>. Once it stops
+         shrinking usefully, more clicking will not change your conclusion.</p>`}
+      <p class="interpretation">${extremeCount} of ${N} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
     `;
   }
 
