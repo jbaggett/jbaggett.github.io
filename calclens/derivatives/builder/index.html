@@ -45,11 +45,13 @@
   #h-wrap { display: block; margin-top: 0.6rem; }
   [data-secant][hidden] { display: none; }
 
-  /* The same quantity, written on both graphs. f′'s colour on purpose, even on
-     the plot of f — an orange number beside a crimson tangent says "this slope
-     is an f′ value". The white halo keeps it legible over the gridlines. */
+  /* Crimson is "the slope at the current x", in both its guises: the tangent
+     line above, and the measured height below. Orange stays with f′ as a
+     function — the traced dots and the revealed curve. The white halo keeps the
+     number legible over the gridlines. */
+  .bd-height { stroke: var(--tangent); stroke-width: 3; stroke-linecap: round; }
   .bd-value {
-    fill: var(--curve-df); font-weight: 700; font-size: var(--chart-text);
+    fill: var(--tangent); font-weight: 700; font-size: var(--chart-text);
     paint-order: stroke; stroke: var(--bg); stroke-width: 3.5px; stroke-linejoin: round;
   }
   .bd-unit path { stroke: var(--ims-gray); stroke-width: 1.5; stroke-dasharray: 4 3; }
@@ -142,15 +144,16 @@
       <b>Top:</b> <i>f</i>, with the tangent at the point.
       <b>Bottom:</b> every slope you have visited, plotted as a height.
       The dashed line marks the same <i>x</i> on both, and
-      <span style="color:var(--curve-df); font-weight:700;">the orange number</span>
-      is written twice on purpose: the <b>steepness</b> of <i>f</i> up there and the
-      <b>height</b> of <i>f</i>′ down here are one quantity. Drag on
+      <span style="color:var(--tangent); font-weight:700;">the red number</span>
+      is written twice on purpose: the <b>steepness</b> of the red tangent up
+      there and the <b>length</b> of the red segment down here are one quantity. Drag on
       <b>either</b> graph to move it.
     </p>
 
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2"/></svg> tangent</span>
+      <span><svg viewBox="0 0 26 10"><line x1="13" y1="1" x2="13" y2="9" stroke="#C2185B" stroke-width="3"/></svg> that slope, as a height</span>
       <span data-secant hidden><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant</span>
       <span><svg viewBox="0 0 26 10"><circle cx="13" cy="5" r="3.5" fill="#C05E10"/></svg> slopes you traced</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5" stroke-dasharray="7 4"/></svg> true f′(x)</span>
@@ -176,15 +179,16 @@
      <i>f</i>′.</p>
 
   <h3>The slope, written twice</h3>
-  <p>The orange <span class="ll-math" id="help-tex3"></span> appears on
-     <em>both</em> graphs at once — beside the tangent on <i>f</i>, and beside
-     the point on <i>f</i>′. It is the same string and the same colour in both
-     places because it is the same number: the <b>steepness</b> up there and the
-     <b>height</b> down here are one quantity, which is the whole idea the pair
-     of graphs exists to carry.</p>
-  <p>Orange is <i>f</i>′'s colour, used deliberately even on the graph of
-     <i>f</i> — an orange number beside a crimson tangent says <em>this slope is
-     an f′ value</em>.</p>
+  <p><span class="ll-math" id="help-tex3"></span> appears on <em>both</em>
+     graphs at once — beside the tangent on <i>f</i>, and beside a short red
+     segment on <i>f</i>′ that runs from the axis up to the point. Same string,
+     same colour, same <i>x</i>: the <b>steepness</b> of that line up there and
+     the <b>length</b> of that segment down here are one quantity, which is the
+     whole idea the pair of graphs exists to carry.</p>
+  <p>Red means <em>the slope at the point you are on</em>, in both of its
+     guises — the tangent embodies it above, the segment measures it below.
+     Orange is kept for <i>f</i>′ as a <em>function</em>: the dots you have
+     traced and the true curve when you reveal it.</p>
   <p><code>?unitrun=true</code> adds a slope triangle with a run of exactly 1,
      so the rise <em>is</em> the slope. It is drawn only when that rise fits the
      window: a steep slope against a shallow <i>y</i>-range would send it off

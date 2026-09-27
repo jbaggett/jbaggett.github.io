@@ -103,7 +103,7 @@ function render() {
     if (state.unitRun && Number.isFinite(slope)) {
       unitRunTriangle(chartF, xs, ys, x, fx, slope, yDom);
     }
-    if (Number.isFinite(slope)) valueLabel(chartF, xs(x), ys(fx), slopeLabel(slope), slope);
+    if (Number.isFinite(slope)) valueLabel(chartF, xs(x), ys(fx), slopeLabel(slope), { slope });
   }
   markerLine(chartF, xs(x));
   addDragTarget(chartF, xs, xs(x));
@@ -131,9 +131,22 @@ function render() {
   // the case worth being able to line up.
   markerLine(chartD, scalesD.xs(x));
   if (Number.isFinite(slope)) {
+    // The height, drawn as a measured segment from the axis up to the point, in
+    // the TANGENT's colour. That is the identification the pair of graphs is
+    // for: this length down here is that line's steepness up there. Crimson now
+    // means "the slope at the current x" in both plots — the tangent embodies
+    // it above, this segment measures it below — while orange stays with f′ as
+    // a function, the traced dots and the revealed curve.
+    const px = scalesD.xs(x);
+    chartD.gOver.append('line').attr('class', 'bd-height')
+      .attr('x1', px).attr('x2', px)
+      .attr('y1', scalesD.ys(0)).attr('y2', scalesD.ys(slope));
     chartD.gOver.append('circle').attr('class', 'll-point')
-      .attr('cx', scalesD.xs(x)).attr('cy', scalesD.ys(slope)).attr('r', 6);
-    valueLabel(chartD, scalesD.xs(x), scalesD.ys(slope), slopeLabel(slope));
+      .attr('cx', px).attr('cy', scalesD.ys(slope)).attr('r', 6);
+    // Beside the segment, level with its middle, so the number reads as the
+    // length of that segment rather than as a note about the dot.
+    valueLabel(chartD, px, (scalesD.ys(0) + scalesD.ys(slope)) / 2,
+      slopeLabel(slope), { dy: 0, middle: true });
   }
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
@@ -152,7 +165,8 @@ function render() {
  * number beside a crimson tangent says *this slope is an f′ value*, which is
  * the sentence the tool exists to make.
  */
-function valueLabel(chart, px, py, text, slope) {
+function valueLabel(chart, px, py, text, opts = {}) {
+  const { slope, dy = -12, middle = false } = opts;
   // Sit on the side the tangent is NOT using: a rising tangent occupies up-and-
   // right of the point, so the label goes up-and-left, and vice versa. Falls
   // back to whichever side has room near a frame edge.
@@ -161,10 +175,11 @@ function valueLabel(chart, px, py, text, slope) {
   let right = slope === undefined ? roomRight : slope < 0;
   if (right && !roomRight) right = false;
   if (!right && !roomLeft) right = true;
-  chart.gOver.append('text').attr('class', 'bd-value')
-    .attr('x', right ? px + 9 : px - 9).attr('y', py - 12)
+  const t = chart.gOver.append('text').attr('class', 'bd-value')
+    .attr('x', right ? px + 9 : px - 9).attr('y', py + dy)
     .attr('text-anchor', right ? 'start' : 'end')
     .text(text);
+  if (middle) t.attr('dominant-baseline', 'middle');
 }
 
 /**
