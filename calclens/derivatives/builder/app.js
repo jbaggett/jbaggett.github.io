@@ -93,7 +93,7 @@ function render() {
       .attr('cx', xs(x)).attr('cy', ys(fx)).attr('r', 6);
   }
   markerLine(chartF, xs(x));
-  addDragTarget(chartF, xs);
+  addDragTarget(chartF, xs, xs(x));
 
   /* ---- bottom: the traced slopes ---- */
   const dDom = traceDomain();
@@ -121,7 +121,7 @@ function render() {
     chartD.gOver.append('circle').attr('class', 'll-point')
       .attr('cx', scalesD.xs(x)).attr('cy', scalesD.ys(slope)).attr('r', 6);
   }
-  addDragTarget(chartD, scalesD.xs);
+  addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
   updateText(x, fx, slope, secantSlope);
 }
@@ -138,6 +138,12 @@ function markerLine(chart, px) {
   chart.gOver.append('line').attr('class', 'll-marker-line')
     .attr('x1', px).attr('x2', px)
     .attr('y1', chart.margin.top).attr('y2', chart.height - chart.margin.bottom);
+  // A grip at the top, so the line reads as something you can take hold of.
+  // Decorative only — the drag surface above it does the hit-testing.
+  chart.gOver.append('rect').attr('class', 'll-marker-grip')
+    .attr('x', px - 4).attr('y', chart.margin.top - 1)
+    .attr('width', 8).attr('height', 12).attr('rx', 3)
+    .attr('fill', '#fff').attr('stroke', '#444').attr('stroke-width', 1.2);
 }
 
 /** Keep the f′ axis steady while tracing, so dots do not jump as the range grows. */
@@ -158,22 +164,73 @@ function traceDomain() {
   return [lo - pad, hi + pad];
 }
 
-function addDragTarget(chart, xs) {
-  chart.svg.selectAll('rect.ll-drag').remove();
-  const rect = chart.svg.append('rect').attr('class', 'll-drag')
+/** How close a press has to be to the line to GRAB it rather than jump. */
+const GRAB_PX = 10;
+const GRAB_TOUCH_PX = 22;
+
+/**
+ * The drag surface over a plot.
+ *
+ * **Built once and kept.** It used to be removed and re-appended on every
+ * render, which broke dragging completely: `setX` renders, the render deleted
+ * the very element holding the pointer capture, and every subsequent
+ * `pointermove` failed its `hasPointerCapture` guard. Exactly one move ever
+ * landed — the one inside `pointerdown` — so the line appeared to teleport to
+ * each click and then refuse to follow the mouse. Only the scales and the
+ * line's position change per render, so those ride on the node.
+ *
+ * Pressing ON the line **grabs** it, keeping its offset from the cursor so it
+ * does not jump out from under the pointer. Pressing away from the line still
+ * jumps there, which is the quickest way across a wide graph.
+ */
+function addDragTarget(chart, xs, px) {
+  let rect = chart.svg.select('rect.ll-drag');
+  const fresh = rect.empty();
+  if (fresh) rect = chart.svg.append('rect').attr('class', 'll-drag');
+
+  rect
     .attr('x', chart.margin.left).attr('y', chart.margin.top)
     .attr('width', chart.innerWidth).attr('height', chart.innerHeight)
-    .attr('fill', 'transparent').style('cursor', 'ew-resize').style('touch-action', 'none');
-  const move = (/** @type {PointerEvent} */ ev) => {
+    .attr('fill', 'transparent').style('touch-action', 'none');
+
+  const node = rect.node();
+  node.__xs = xs;          // the current scale
+  node.__px = px;          // where the line is, in pixels
+  if (!fresh) return;      // handlers are already bound, and close over `chart`
+
+  const pointerX = (/** @type {PointerEvent} */ ev) => {
     const box = chart.svg.node().getBoundingClientRect();
-    setX(xs.invert(((ev.clientX - box.left) / box.width) * chart.width));
+    return ((ev.clientX - box.left) / box.width) * chart.width;
   };
+  const tolerance = (/** @type {PointerEvent} */ ev) =>
+    (ev.pointerType === 'touch' ? GRAB_TOUCH_PX : GRAB_PX);
+
   rect.on('pointerdown', function (ev) {
-    ev.preventDefault(); stopSweep(); this.setPointerCapture(ev.pointerId); move(ev);
+    ev.preventDefault();
+    stopSweep();
+    this.setPointerCapture(ev.pointerId);
+    const p = pointerX(ev);
+    this.__grab = Math.abs(p - this.__px) <= tolerance(ev) ? this.__px - p : 0;
+    this.style.cursor = 'grabbing';
+    setX(this.__xs.invert(p + this.__grab));
   });
+
   rect.on('pointermove', function (ev) {
-    if (this.hasPointerCapture?.(ev.pointerId)) move(ev);
+    if (this.hasPointerCapture?.(ev.pointerId)) {
+      setX(this.__xs.invert(pointerX(ev) + (this.__grab || 0)));
+      return;
+    }
+    // Not dragging: say whether a press here would grab the line or jump.
+    this.style.cursor = Math.abs(pointerX(ev) - this.__px) <= GRAB_PX ? 'grab' : 'ew-resize';
   });
+
+  const release = function (/** @type {PointerEvent} */ ev) {
+    this.__grab = 0;
+    this.style.cursor = 'grab';
+    this.releasePointerCapture?.(ev.pointerId);
+  };
+  rect.on('pointerup', release);
+  rect.on('pointercancel', release);
 }
 
 const clampX = (/** @type {number} */ v) => Math.min(state.xMax, Math.max(state.xMin, v));
