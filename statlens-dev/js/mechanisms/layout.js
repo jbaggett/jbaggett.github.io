@@ -16,11 +16,15 @@
  * - **`strip`** (default) — what every simulation page ships today. Source and
  *   draw side by side with an arrow between them, in a collapsible strip; the
  *   distribution further down the page in its own section.
- * - **`tiers`** — the Sampling Distribution Lab's arrangement, applied to a
- *   simulation tool: all three stacked, each labelled with its role, so the
- *   *sequence* is the picture. Population → sample → sampling distribution is
- *   the same shape as source → resample → bootstrap distribution, and a student
- *   meeting both has currently no way to see that.
+ * - **`tiers`** — all three stacked in order, each labelled with its role, so
+ *   the *sequence* is the picture. Population → sample → sampling distribution
+ *   is the same shape as source → resample → bootstrap distribution, and a
+ *   student meeting both currently has no way to see that.
+ * - **`split`** — what the Sampling Distribution Lab actually does on a wide
+ *   screen, which is not a stack: steps 1 and 2 share a narrow left column and
+ *   step 3 takes a wider right one (`0.82fr / 1.18fr` above 820px, one column
+ *   below, `main` widened to 1180px). The two inputs sit beside the thing they
+ *   build, and the draw travels sideways into it rather than downward past it.
  *
  * The point of building it is to be able to look at the two side by side rather
  * than argue about them. Whether a bootstrap should look like the Lab is a
@@ -35,7 +39,7 @@
 import { resolveEntities } from './entities.js';
 import { wordsFor } from './vocabulary.js';
 
-/** @typedef {'strip'|'tiers'} LayoutMode */
+/** @typedef {'strip'|'tiers'|'split'} LayoutMode */
 
 /**
  * The layout asked for in the URL. Anything unrecognised is the default, so a
@@ -47,7 +51,7 @@ import { wordsFor } from './vocabulary.js';
 export function requestedLayout(search) {
   const raw = new URLSearchParams(
     search ?? (typeof location === 'undefined' ? '' : location.search)).get('mech');
-  return raw === 'tiers' ? 'tiers' : 'strip';
+  return (raw === 'tiers' || raw === 'split') ? raw : 'strip';
 }
 
 /**
@@ -58,9 +62,10 @@ export function requestedLayout(search) {
  *
  * @param {string} mechanismKind - which vocabulary to label the tiers with
  * @param {Document} [doc]
+ * @param {'tiers'|'split'} [mode] - stacked, or the Lab's two columns
  * @returns {boolean} whether the layout was applied
  */
-export function applyTierLayout(mechanismKind, doc = document) {
+export function applyTierLayout(mechanismKind, doc = document, mode = 'tiers') {
   if (doc.querySelector('.mech-tiers')) return false;
   const { source, draw, distribution } = resolveEntities(doc);
   if (!source || !draw || !distribution) return false;
@@ -71,8 +76,23 @@ export function applyTierLayout(mechanismKind, doc = document) {
   if (!host) return false;
 
   const tiers = doc.createElement('section');
-  tiers.className = 'mech-tiers';
+  tiers.className = mode === 'split' ? 'mech-tiers mech-tiers--split' : 'mech-tiers';
   tiers.setAttribute('aria-label', 'How this simulation works, step by step');
+
+  // In split, steps 1 and 2 share a left column and step 3 takes the right —
+  // the Lab's own grid. The tiers themselves are identical either way; only
+  // where they are placed differs, which is the whole point of Stage 3.
+  const left = doc.createElement('div');
+  const right = doc.createElement('div');
+  if (mode === 'split') {
+    left.className = 'mech-col-left';
+    right.className = 'mech-col-right';
+    tiers.appendChild(left);
+    tiers.appendChild(right);
+  }
+  /** @param {string} role */
+  const columnFor = (role) => mode !== 'split' ? tiers
+    : (role === 'distribution' ? right : left);
 
   /**
    * Wrap an entity in a tier, keeping the entity element itself intact — its
@@ -93,7 +113,7 @@ export function applyTierLayout(mechanismKind, doc = document) {
     // heading says it, so the inner one would say it twice.
     el.querySelectorAll('.mechanism-title').forEach(t => { t.hidden = true; });
     tier.appendChild(el);
-    tiers.appendChild(tier);
+    columnFor(role).appendChild(tier);
   };
 
   // The order IS the argument: this, then one of these, then all of them.
@@ -115,7 +135,7 @@ export function applyTierLayout(mechanismKind, doc = document) {
   // `strip.hidden = false` when the mechanism initialises, which would reveal
   // an empty box under the tiers. A body attribute drives a CSS rule instead —
   // its own attribute, since `data-layout` belongs to the layout variants.
-  doc.body.setAttribute('data-mech-layout', 'tiers');
+  doc.body.setAttribute('data-mech-layout', mode);
   return true;
 }
 
@@ -141,6 +161,6 @@ function panelTitle(el) {
  */
 export function applyRequestedLayout(mechanismKind) {
   const mode = requestedLayout();
-  if (mode === 'tiers') applyTierLayout(mechanismKind);
+  if (mode !== 'strip') applyTierLayout(mechanismKind, document, mode);
   return mode;
 }
