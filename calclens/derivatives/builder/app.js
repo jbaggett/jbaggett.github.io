@@ -53,6 +53,7 @@ const state = {
   reveal: false,
   secant: false,
   unitRun: false,
+  layout: 'stacked',
   /** @type {Map<number, number>} slope traced at each grid position */
   trace: new Map(),
 };
@@ -151,6 +152,7 @@ function render() {
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
   updateText(x, fx, slope, secantSlope);
+  alignSlider();
 }
 
 /**
@@ -213,6 +215,37 @@ function unitRunTriangle(chart, xs, ys, x, fx, slope, yDom) {
   return true;
 }
 
+/** How wide the thumb is, in CSS px. The stylesheet must agree. */
+const THUMB_PX = 18;
+
+/**
+ * Make the slider's thumb sit at the same place as x on the graphs.
+ *
+ * The premise of `?layout=slider` is that the control IS the marker, so this
+ * has to be exact — a marker that is a few pixels out is worse than no marker,
+ * because it quietly misreports which x you are looking at.
+ *
+ * Two corrections. The chart is an SVG scaled to its container, so the plotting
+ * area's edges are measured, not assumed. And a native range thumb travels
+ * inset by half its width at each end, so the track is widened by a whole thumb
+ * and shifted left by half of one; the thumb's CENTRE then runs exactly from
+ * the left edge of the plot to the right edge.
+ */
+function alignSlider() {
+  const wrap = $('#x-wrap');
+  const slider = $('#x-slider');
+  if (state.layout !== 'slider' || !chartF) return;
+  const svg = chartF.svg.node();
+  const r = svg.getBoundingClientRect();
+  if (!r.width) return;
+  const scale = r.width / chartF.width;
+  const left = r.left + chartF.margin.left * scale;
+  const right = r.left + (chartF.width - chartF.margin.right) * scale;
+  const base = wrap.getBoundingClientRect();
+  slider.style.width = `${right - left + THUMB_PX}px`;
+  slider.style.marginLeft = `${left - base.left - THUMB_PX / 2}px`;
+}
+
 /**
  * The dashed line at the current x, drawn identically on both plots.
  *
@@ -222,6 +255,8 @@ function unitRunTriangle(chart, xs, ys, x, fx, slope, yDom) {
  * same pixel column in both — without that the line would be a lie.
  */
 function markerLine(chart, px) {
+  // With the slider between the plots, the slider is the marker.
+  if (state.layout === 'slider') return;
   chart.gOver.append('line').attr('class', 'll-marker-line')
     .attr('x1', px).attr('x2', px)
     .attr('y1', chart.margin.top).attr('y2', chart.height - chart.margin.bottom);
@@ -447,6 +482,15 @@ initPage({
     // `?h=` implies the secant, so an older link that set a gap still shows one.
     state.secant = q.get('secant') === 'true' || q.has('h');
     state.unitRun = q.get('unitrun') === 'true';
+    if (q.get('layout') === 'slider') {
+      state.layout = 'slider';
+      const wrap = $('#x-wrap');
+      wrap.classList.add('bd-between');
+      // Between the two chart frames, so it reads as the axis they share.
+      $('#chart-d').closest('.ll-chart').before(wrap);
+      // The caption has to stop describing a line that is no longer drawn.
+      $('#key-marker').innerHTML = 'The slider between them marks the same <i>x</i> on both';
+    }
     if (q.has('h')) {
       const hv = Number(q.get('h'));
       if (Number.isFinite(hv)) { state.h = hv; $('#h-slider').value = String(hv); $('#h-out').textContent = fmt(hv, 2); }
@@ -469,6 +513,7 @@ initPage({
     // A chart's geometry is frozen at build time, so rotating a phone (or
     // flipping Chrome's device toolbar) would otherwise leave a desktop viewBox
     // squeezed into a phone-sized box with six-pixel labels.
+    window.addEventListener('resize', () => alignSlider());
     onBreakpointChange(() => { chartF = createChart('#chart-f', { height: 290, label: 'Graph of f' });
       chartD = createChart('#chart-d', { height: 290, label: 'Slopes traced so far' }); render(); });
     setWindow($('#window-select').value);

@@ -38,6 +38,35 @@
   #charts .ll-chart:first-of-type { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   #chart-key { margin: 0.5rem 0 0; }
 
+  /* ?layout=slider — the slider sits BETWEEN the plots and doubles as the x
+     marker, so its track has to span exactly the plotting area and its thumb
+     has to travel exactly from xMin to xMax. A native thumb is inset by half
+     its width at each end, so the width and offset are computed at runtime from
+     the measured chart; the only thing CSS has to guarantee is that the thumb
+     really is THUMB_PX across in every browser. */
+  #x-wrap.bd-between { margin: 2px 0; }
+  #x-wrap.bd-between > span { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                              clip-path: inset(50%); white-space: nowrap; }
+  #x-wrap.bd-between #x-slider {
+    -webkit-appearance: none; appearance: none;
+    display: block; height: 20px; background: transparent; margin: 0;
+  }
+  #x-wrap.bd-between #x-slider::-webkit-slider-runnable-track {
+    height: 3px; background: var(--border); border-radius: 2px;
+  }
+  #x-wrap.bd-between #x-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7.5px;
+    border-radius: 50%; background: var(--tangent); border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--tangent);
+  }
+  #x-wrap.bd-between #x-slider::-moz-range-track {
+    height: 3px; background: var(--border); border-radius: 2px;
+  }
+  #x-wrap.bd-between #x-slider::-moz-range-thumb {
+    width: 18px; height: 18px; border: 2px solid var(--bg); border-radius: 50%;
+    background: var(--tangent); box-shadow: 0 0 0 1px var(--tangent);
+  }
+
   /* The secant is opt-in (?secant=true). Both of its elements carry a `display`
      that would beat the browser's bare [hidden] rule — one inline, one from
      .ll-legend span — so say it explicitly rather than let them stay on screen.
@@ -124,7 +153,7 @@
   </section>
 
   <section class="ll-panel" aria-label="Point on the curve">
-    <label for="x-slider" style="display:block;">
+    <label for="x-slider" id="x-wrap" style="display:block;">
       <span>Point at <i>x</i> = <output id="x-out" for="x-slider">0.00</output></span>
       <input type="range" id="x-slider" min="-3" max="3" step="0.02" value="-3">
     </label>
@@ -147,7 +176,7 @@
     <p class="ll-hint" id="chart-key">
       <b>Top:</b> <i>f</i>, with the tangent at the point.
       <b>Bottom:</b> every slope you have visited, plotted as a height.
-      The dashed line marks the same <i>x</i> on both, and
+      <span id="key-marker">The dashed line marks the same <i>x</i> on both</span>, and
       <span style="color:var(--tangent); font-weight:700;">the red number</span>
       is written twice on purpose — <b>slope</b> up there, <b>height</b> down
       here, the same <i>f</i>′ and the same number. Drag on
