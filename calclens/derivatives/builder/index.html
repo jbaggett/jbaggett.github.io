@@ -54,6 +54,10 @@
     fill: var(--tangent); font-weight: 700; font-size: var(--chart-text);
     paint-order: stroke; stroke: var(--bg); stroke-width: 3.5px; stroke-linejoin: round;
   }
+  /* The role word is muted so the crimson "f ′ = #" stays the matching part:
+     identical string, identical colour, on both graphs — while the grey word in
+     front names what that quantity is called on the graph you are looking at. */
+  .bd-role { fill: var(--ims-gray-text); font-weight: 600; }
   .bd-unit path { stroke: var(--ims-gray); stroke-width: 1.5; stroke-dasharray: 4 3; }
   .bd-unit-label {
     fill: var(--ims-gray-text); font-size: calc(var(--chart-text) * 0.88);
@@ -145,8 +149,8 @@
       <b>Bottom:</b> every slope you have visited, plotted as a height.
       The dashed line marks the same <i>x</i> on both, and
       <span style="color:var(--tangent); font-weight:700;">the red number</span>
-      is written twice on purpose: the <b>steepness</b> of the red tangent up
-      there and the <b>length</b> of the red segment down here are one quantity. Drag on
+      is written twice on purpose — <b>slope</b> up there, <b>height</b> down
+      here, the same <i>f</i>′ and the same number. Drag on
       <b>either</b> graph to move it.
     </p>
 
@@ -179,12 +183,17 @@
      <i>f</i>′.</p>
 
   <h3>The slope, written twice</h3>
-  <p><span class="ll-math" id="help-tex3"></span> appears on <em>both</em>
-     graphs at once — beside the tangent on <i>f</i>, and beside a short red
-     segment on <i>f</i>′ that runs from the axis up to the point. Same string,
-     same colour, same <i>x</i>: the <b>steepness</b> of that line up there and
-     the <b>length</b> of that segment down here are one quantity, which is the
-     whole idea the pair of graphs exists to carry.</p>
+  <p>The same number is written on <em>both</em> graphs at once — beside the
+     tangent on <i>f</i> as <b>slope&nbsp;= <i>f</i>′ = …</b>, and beside a
+     short red segment on <i>f</i>′ as <b>height&nbsp;= <i>f</i>′ = …</b>. The
+     grey word says what the quantity is called on the graph you are looking at;
+     the red <span class="ll-math" id="help-tex3"></span> is identical in both
+     places because it is the same quantity. That is the whole idea the pair of
+     graphs exists to carry.</p>
+  <p>It is written as an equation rather than run together, because
+     "slope&nbsp;<i>f</i>′" can be read as <em>the slope of f′</em> — which is
+     <i>f</i>″, and confusing those two is a live error in this course. The
+     equals sign forbids that reading.</p>
   <p>Red means <em>the slope at the point you are on</em>, in both of its
      guises — the tangent embodies it above, the segment measures it below.
      Orange is kept for <i>f</i>′ as a <em>function</em>: the dots you have

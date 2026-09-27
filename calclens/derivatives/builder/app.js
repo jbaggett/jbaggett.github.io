@@ -103,7 +103,7 @@ function render() {
     if (state.unitRun && Number.isFinite(slope)) {
       unitRunTriangle(chartF, xs, ys, x, fx, slope, yDom);
     }
-    if (Number.isFinite(slope)) valueLabel(chartF, xs(x), ys(fx), slopeLabel(slope), { slope });
+    if (Number.isFinite(slope)) valueLabel(chartF, xs(x), ys(fx), 'slope', slopeLabel(slope), { slope });
   }
   markerLine(chartF, xs(x));
   addDragTarget(chartF, xs, xs(x));
@@ -146,7 +146,7 @@ function render() {
     // Beside the segment, level with its middle, so the number reads as the
     // length of that segment rather than as a note about the dot.
     valueLabel(chartD, px, (scalesD.ys(0) + scalesD.ys(slope)) / 2,
-      slopeLabel(slope), { dy: 0, middle: true });
+      'height', slopeLabel(slope), { dy: 0, middle: true });
   }
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
@@ -165,7 +165,7 @@ function render() {
  * number beside a crimson tangent says *this slope is an f′ value*, which is
  * the sentence the tool exists to make.
  */
-function valueLabel(chart, px, py, text, opts = {}) {
+function valueLabel(chart, px, py, role, text, opts = {}) {
   const { slope, dy = -12, middle = false } = opts;
   // Sit on the side the tangent is NOT using: a rising tangent occupies up-and-
   // right of the point, so the label goes up-and-left, and vice versa. Falls
@@ -177,8 +177,13 @@ function valueLabel(chart, px, py, text, opts = {}) {
   if (!right && !roomLeft) right = true;
   const t = chart.gOver.append('text').attr('class', 'bd-value')
     .attr('x', right ? px + 9 : px - 9).attr('y', py + dy)
-    .attr('text-anchor', right ? 'start' : 'end')
-    .text(text);
+    .attr('text-anchor', right ? 'start' : 'end');
+  // Written as an equation — "slope = f ′ = 9.00" — not as a juxtaposition.
+  // "slope f ′" can be read as a compound noun meaning the slope OF f ′, which
+  // is f ″, and confusing those two is a live error in this course. The `=`
+  // forbids that reading and, better, states the identity the tool is about.
+  t.append('tspan').attr('class', 'bd-role').text(`${role} = `);
+  t.append('tspan').text(text);
   if (middle) t.attr('dominant-baseline', 'middle');
 }
 
