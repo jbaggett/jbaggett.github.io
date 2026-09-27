@@ -5366,19 +5366,83 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   max-width: 116px;
 }
 .qr-pin--big .qr-pin-caption { max-width: 260px; font-size: 0.85rem; }
-.qr-pin-bigger {
-  font-size: 0.7rem;
+.qr-pin-links {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.15rem;
+}
+.qr-pin-bigger,
+.qr-pin-more {
+  font-size: 0.72rem;
   background: none;
   border: none;
   color: var(--accent, #3A7CA5);
   text-decoration: underline;
   cursor: pointer;
-  padding: 0.15rem 0.3rem;
+  padding: 0.15rem 0.2rem;
 }
+/* More options: the link, what it carries, and the SVG download. Kept out of
+   the way until asked for — the code is what a class needs. */
+.qr-pin-options {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border, #e0e0e0);
+  text-align: left;
+  max-width: 260px;
+}
+.qr-pin--big .qr-pin-options { max-width: 300px; }
+.qr-pin-options .share-toggle {
+  /* The panel centres its contents; this row must not inherit that. */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  margin-bottom: 0.35rem;
+}
+.qr-pin-options .share-toggle input[type="checkbox"] { flex: none; margin: 0; }
+.qr-pin-options .share-toggle span { font-weight: 400; }
+.qr-pin-options .share-url-row { display: flex; gap: 0.3rem; margin: 0.35rem 0; }
+.qr-pin-options .share-url-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  padding: 0.2rem 0.3rem;
+}
+.qr-pin-options .share-copy-btn,
+.qr-pin-options .share-download-btn {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--ims-blue, #569BBD);
+  background: #fff;
+  color: var(--ims-dark, #114B5F);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.qr-pin-options .share-download-btn { width: 100%; margin-top: 0.2rem; }
+.qr-pin-options .share-download-btn[disabled] { opacity: 0.5; cursor: default; }
+.qr-pin-options .share-param-table {
+  font-size: 0.68rem;
+  border-collapse: collapse;
+  width: 100%;
+}
+.qr-pin-options .share-param-key { color: var(--ims-gray-text, #555); padding-right: 0.4rem; }
+.qr-pin-options .share-param-val { font-family: var(--font-mono); word-break: break-all; }
+.qr-pin-options .share-param-hint { font-size: 0.68rem; color: var(--ims-gray-text, #555); margin: 0; }
+.qr-pin-toolong { font-size: 0.72rem; color: var(--ims-gray-text, #555); max-width: 240px; margin: 0; }
+/* Open, the panel can get tall — never taller than the window. */
+.qr-pin--open { max-height: calc(100vh - 1.5rem); overflow-y: auto; }
 .qr-pin-close {
   position: absolute;
-  top: -0.5rem;
-  right: -0.5rem;
+  /* Inside the panel, not straddling its corner: at the screen edge the old
+     placement was clipped by the viewport and nearly unhittable. */
+  top: 0.2rem;
+  right: 0.2rem;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -5390,6 +5454,7 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   cursor: pointer;
 }
 .qr-pin-bigger:focus-visible,
+.qr-pin-more:focus-visible,
 .qr-pin-close:focus-visible { outline: 2px solid var(--ims-green, #114B5F); outline-offset: 2px; }
 @media (max-width: 600px) {
   /* A phone is the thing being scanned TO, not from — and the panel would sit
@@ -5400,3 +5465,28 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   .qr-pin-close { width: 30px; height: 30px; }
 }
 @media print { .qr-pin { display: none; } }
+
+/* ===== Resample draw animation (?draw=) =====
+   Marks left on the SOURCE dotplot while a resample is drawn from it. The two
+   facts that make a bootstrap a bootstrap: some observations get taken more
+   than once, and some are never taken at all. */
+.dpr-untaken {
+  opacity: 0.28;
+  transition: opacity 0.3s ease-out;
+}
+@keyframes dpr-pick {
+  0%   { r: var(--dpr-r, 5); fill: #E07020; }
+  45%  { r: calc(var(--dpr-r, 5) * 1.9); fill: #E07020; }
+  100% { r: var(--dpr-r, 5); }
+}
+.dpr-picked { animation: dpr-pick 340ms ease-out; }
+.dpr-badge {
+  font-size: 9px;
+  font-weight: 700;
+  fill: #E07020;
+  font-family: var(--font-mono, monospace);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dpr-picked { animation: none; }
+}

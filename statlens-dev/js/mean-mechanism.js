@@ -89,7 +89,7 @@ export function createMeanMechanism(config = {}) {
    * @param {number[]} resample
    * @param {number} stat - the resample's statistic (x̄*)
    * @param {boolean} animate
-   * @param {{ domain?: [number,number], label?: string, meanLabel?: string }} [opts]
+   * @param {{ domain?: [number,number], label?: string, meanLabel?: string, indices?: number[] }} [opts]
    */
   function renderResample(el, originalValues, resample, stat, animate, opts = {}) {
     if (!el || !resample || resample.length < 2) return 0;
@@ -99,6 +99,9 @@ export function createMeanMechanism(config = {}) {
     if (useDots(resample.length) && bag) {
       return showResampleDotplot(el, bag, resample, {
         domain: opts.domain, mean: stat, meanLabel: opts.meanLabel || 'x̄*', sizingMaxStack: scale.sizingMaxStack, animate,
+        // Which observations this draw actually took — the animation cannot be
+        // honest about repeats or misses without it (js/mechanisms/draws.js).
+        indices: opts.indices,
       });
     }
     drawMiniChart(el, resample, {

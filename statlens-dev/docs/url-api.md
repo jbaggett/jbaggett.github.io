@@ -42,6 +42,7 @@ These parameters are accepted by all or most pages. They are parsed by `js/url-p
 > nobody asked to pin, and kill "reload for a fresh sample". A reset clears it
 > again. Parameters the tool does not own (`embed`, `activity`, `mech`, `mode`,
 > `chrome`, `plot`, `layout`) are preserved, never overwritten.
+| `draw` | string | `classic` | **Dev preview, bootstrap-mean only.** Which resample animation to use: `classic` (what ships), `sequence` (one draw at a time — you watch a dot get picked, and picked again), `burst` (all at once, repeats labelled ×N, misses dimmed) or `sweep` (ordered by where each value lands, so the resample builds across the axis). For comparing the styles; not a student-facing setting. | `?draw=sequence` |
 | `mech` | string | _(the **Resampling layout** setting, default `strip`)_ | **Preview, not yet stable.** How the mechanism is laid out. `strip` (default) is today's arrangement — source and one draw side by side, distribution further down the page. `tiers` stacks all three in order, labelled Step 1/2/3. `split` is what the Sampling Distribution Lab actually does on a wide screen: steps 1 and 2 in a narrow left column, step 3 in a wider right one, collapsing to one column below 820px. Anything unrecognised falls back to `strip`. Available on all 15 simulation pages. Opt-in only — a URL without `mech` is unchanged — so it ships to production without anyone seeing it who did not ask. | `?mech=split` |
 
 ### `conceptual/sampling-designs/`

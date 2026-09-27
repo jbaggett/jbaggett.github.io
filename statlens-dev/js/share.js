@@ -1,10 +1,19 @@
 /**
- * share.js — Share button with URL + SVG QR code dialog.
+ * share.js — the share panel: a QR code, and the link behind it.
  *
- * Loaded by page-number.js on every page. Adds a share icon to .header-actions.
- * On click, opens a dialog with two sharing modes:
- *   - "Include current settings" ON  → full URL with all query params (dataset, ci, seed, etc.)
- *   - "Include current settings" OFF → bare tool URL (just the page path)
+ * Loaded by page-number.js on every page. Adds a share icon to
+ * .header-actions; clicking it opens a panel in the bottom-right corner
+ * showing the code at full size. It stays until dismissed with the ×, so an
+ * instructor can start the lesson while the room scans rather than standing at
+ * the front waiting for thirty phones.
+ *
+ * **More options** expands the panel to show the link itself, a Copy button, a
+ * summary of what the link carries, and a Download SVG button. "Include
+ * current settings" off gives the bare tool URL, for a class starting clean.
+ *
+ * This replaced a modal dialog (2026-09-27). The modal showed the same code and
+ * the same link, but had to be dismissed before anyone could watch you use the
+ * page — the opposite of what a demo wants.
  *
  * QR code includes the StatLens logo (EC level H for 30% recovery).
  * QR library (qrcode-generator) is lazy-loaded from CDN on first use.
@@ -41,13 +50,22 @@ const SHARE_SCRIPT_SRC = document.currentScript
     actions.appendChild(btn);
   }
 
-  // ─── Dialog ───
-  const dialog = document.createElement('dialog');
-  dialog.className = 'share-dialog';
-  dialog.setAttribute('aria-label', 'Share this page');
-  document.body.appendChild(dialog);
-
-  btn.addEventListener('click', () => showShareDialog());
+  // Sharing is one surface now: the panel in the corner. Clicking Share opens
+  // it; the × closes it. There is no modal in between, because the modal only
+  // ever existed to show the same code and the same link — and a modal has to
+  // be dismissed before the class can watch you do anything, which is the
+  // opposite of what a lesson wants. (Jeff, 2026-09-27.)
+  btn.addEventListener('click', () => {
+    if (isPinned()) {
+      // Already up: bring the code back to full size rather than doing nothing.
+      setBig(true);
+      const panel = document.getElementById('qr-pin');
+      if (panel) { panel.classList.add('qr-pin--big'); syncSizeButton(panel, true); }
+      return;
+    }
+    setBig(true);
+    setPinned(true);
+  });
 
   /** @type {boolean} */
   let qrLibLoaded = false;
@@ -187,88 +205,6 @@ const SHARE_SCRIPT_SRC = document.currentScript
     renderPin();
   }
 
-  /** Guards renderPin against itself — see the note below. */
-  let pinRendering = false;
-
-  /**
-   * Draw, update or remove the pinned panel to match the stored preference.
-   *
-   * Re-entrant by nature: a page that loads with the pin set calls this once on
-   * load and again on the first URL sync, and both await the QR library. Without
-   * the flag both calls got past the "does a panel exist?" check while the
-   * import was in flight, and both appended one — two stacked QR codes sharing
-   * an id. Found 2026-09-27 by a test that could not tell which of two svgs it
-   * meant.
-   */
-  async function renderPin() {
-    if (pinRendering) return;
-    let panel = document.getElementById('qr-pin');
-    if (!isPinned()) { panel?.remove(); return; }
-    if (!qrLibLoaded) {
-      pinRendering = true;
-      try { await loadQrLib(); } catch { return; }   // CDN down: no pin, page fine
-      finally { pinRendering = false; }
-      // Anything could have happened while that was in flight.
-      if (!isPinned()) return;
-      panel = document.getElementById('qr-pin');
-    }
-
-    if (!panel) {
-      panel = document.createElement('aside');
-      panel.id = 'qr-pin';
-      panel.className = 'qr-pin';
-      panel.setAttribute('aria-label', 'Scan to open this page');
-      panel.innerHTML = '<div class="qr-pin-code"></div>'
-        + '<p class="qr-pin-caption">Scan to open this page</p>'
-        + '<button type="button" class="qr-pin-bigger">Smaller</button>'
-        + '<button type="button" class="qr-pin-close" aria-label="Remove pinned QR code">\u00d7</button>';
-      panel.querySelector('.qr-pin-close')?.addEventListener('click', () => setPinned(false));
-      panel.querySelector('.qr-pin-bigger')?.addEventListener('click', (e) => {
-        const big = panel.classList.toggle('qr-pin--big');
-        setBig(big);
-        const b = /** @type {HTMLElement} */ (e.currentTarget);
-        b.setAttribute('aria-pressed', String(big));
-        b.textContent = big ? 'Smaller' : 'Bigger';
-      });
-      // Big by default, and whatever was chosen last time after that.
-      const big = isBig();
-      panel.classList.toggle('qr-pin--big', big);
-      const sizeBtn = /** @type {HTMLElement|null} */ (panel.querySelector('.qr-pin-bigger'));
-      if (sizeBtn) {
-        sizeBtn.setAttribute('aria-pressed', String(big));
-        sizeBtn.textContent = big ? 'Smaller' : 'Bigger';
-      }
-      document.body.appendChild(panel);
-    }
-
-    const url = liveUrl();
-    if (panel.dataset.url === url) return;   // nothing moved
-    panel.dataset.url = url;
-    const code = panel.querySelector('.qr-pin-code');
-    const svg = generateQrSvg(url);
-    if (code) {
-      code.innerHTML = svg
-        || '<p class="hint">This link is too long for a QR code.</p>';
-    }
-  }
-
-  /** The URL a share should point at: the tool's live state, else the address bar. */
-  function liveUrl() {
-    try {
-      const f = /** @type {any} */ (window).__statlensShareUrl;
-      if (typeof f === 'function') return f() || location.href;
-    } catch { /* fall through */ }
-    return location.href;
-  }
-
-  // The address bar is kept in step with the tool (js/share-state.js), which
-  // announces each change — replaceState fires no event of its own.
-  window.addEventListener('statlens:urlchange', () => { renderPin(); });
-  // And restore the pin on load, for the instructor who set it last lesson.
-  if (isPinned()) renderPin();
-
-  // ─── QR generation ───
-
   /**
    * A QR for this text, or null when there is no such QR.
    *
@@ -395,130 +331,105 @@ const SHARE_SCRIPT_SRC = document.currentScript
     return svg;
   }
 
-  // ─── Dialog ───
+  /** Guards renderPanel against itself — see the note below. */
+  let pinRendering = false;
 
-  async function showShareDialog() {
-    const urlParams = getUrlParams();
-    const hasParams = urlParams.length > 0;
+  /** Is the options section open? Panel-lifetime only; not worth remembering. */
+  let optionsOpen = false;
 
-    dialog.innerHTML = `
-      <h2>Share this page</h2>
-      ${hasParams ? `
-        <label class="share-toggle">
-          <input type="checkbox" class="share-settings-cb" checked>
-          <span>Include current settings</span>
-        </label>
-        <div class="share-param-summary"></div>
-      ` : ''}
-      <div class="share-url-row">
-        <input type="text" class="share-url-input" readonly>
-        <button type="button" class="share-copy-btn" title="Copy URL">Copy</button>
-      </div>
-      <div class="share-qr-container">
-        <p class="share-qr-loading">Generating QR code...</p>
-      </div>
-      <div class="share-actions">
-        <button type="button" class="share-pin-btn">Keep QR on screen</button>
-        <button type="button" class="share-download-btn" disabled>Download SVG</button>
-        <button type="button" class="share-close-btn">Close</button>
-      </div>
-    `;
-
-    dialog.showModal();
-
-    const urlInput = /** @type {HTMLInputElement} */ (dialog.querySelector('.share-url-input'));
-    const copyBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector('.share-copy-btn'));
-    const qrContainer = /** @type {HTMLElement} */ (dialog.querySelector('.share-qr-container'));
-    const downloadBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector('.share-download-btn'));
-    const settingsCb = /** @type {HTMLInputElement|null} */ (dialog.querySelector('.share-settings-cb'));
-    const pinBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector('.share-pin-btn'));
-    pinBtn.textContent = isPinned() ? 'Remove pinned QR' : 'Keep QR on screen';
-    pinBtn.addEventListener('click', () => {
-      setPinned(!isPinned());
-      pinBtn.textContent = isPinned() ? 'Remove pinned QR' : 'Keep QR on screen';
-    });
-    const paramSummary = dialog.querySelector('.share-param-summary');
-
-    /** Build the param summary HTML */
-    function renderParamSummary(includeSettings) {
-      if (!paramSummary || !hasParams) return;
-      if (!includeSettings) {
-        paramSummary.innerHTML = '<p class="share-param-hint">Students will arrive at the blank tool.</p>';
-        return;
-      }
-      let html = '<table class="share-param-table">';
-      for (const p of urlParams) {
-        // Truncate long values (e.g., inline data)
-        const displayVal = p.value.length > 40 ? p.value.slice(0, 37) + '...' : p.value;
-        html += `<tr><td class="share-param-key">${p.label}</td><td class="share-param-val">${escapeHtml(displayVal)}</td></tr>`;
-      }
-      html += '</table>';
-      paramSummary.innerHTML = html;
+  /**
+   * Draw, update or remove the share panel.
+   *
+   * Re-entrant by nature: a page that loads with the panel pinned calls this
+   * once on load and again on the first URL sync, and both await the QR
+   * library. Without the flag both calls got past the "does a panel exist?"
+   * check while the import was in flight, and both appended one — two stacked
+   * panels sharing an id.
+   */
+  async function renderPin() {
+    if (pinRendering) return;
+    let panel = document.getElementById('qr-pin');
+    if (!isPinned()) { panel?.remove(); return; }
+    if (!qrLibLoaded) {
+      pinRendering = true;
+      try { await loadQrLib(); } catch { return; }   // CDN down: no panel, page fine
+      finally { pinRendering = false; }
+      if (!isPinned()) return;
+      panel = document.getElementById('qr-pin');
     }
 
-    /** Get the URL to share based on toggle state */
-    function getShareUrl() {
-      if (settingsCb && !settingsCb.checked) return getBaseUrl();
-      // Prefer the tool's live state where a page publishes it. The address bar
-      // is kept in step with it (js/share-state.js), so these normally agree —
-      // but asking the tool directly means the dialog is right even in an embed
-      // where history.replaceState is blocked and the URL cannot be updated.
-      try {
-        const live = /** @type {any} */ (window).__statlensShareUrl;
-        if (typeof live === 'function') return live() || location.href;
-      } catch { /* fall through to the address bar */ }
-      return location.href;
+    if (!panel) {
+      panel = document.createElement('aside');
+      panel.id = 'qr-pin';
+      panel.className = 'qr-pin';
+      panel.setAttribute('aria-label', 'Share this page');
+      panel.innerHTML = `
+        <button type="button" class="qr-pin-close" aria-label="Close">\u00d7</button>
+        <div class="qr-pin-code"></div>
+        <p class="qr-pin-caption">Scan to open this page</p>
+        <div class="qr-pin-links">
+          <button type="button" class="qr-pin-bigger"></button>
+          <button type="button" class="qr-pin-more" aria-expanded="false">More options</button>
+        </div>
+        <div class="qr-pin-options" hidden>
+          <label class="share-toggle">
+            <input type="checkbox" class="share-settings-cb" checked>
+            <span>Include current settings</span>
+          </label>
+          <div class="share-param-summary"></div>
+          <div class="share-url-row">
+            <input type="text" class="share-url-input" readonly aria-label="Link to this page">
+            <button type="button" class="share-copy-btn" title="Copy link">Copy</button>
+          </div>
+          <button type="button" class="share-download-btn">Download SVG</button>
+        </div>`;
+      wirePanel(panel);
+      document.body.appendChild(panel);
+
+      const big = isBig();
+      panel.classList.toggle('qr-pin--big', big);
+      syncSizeButton(panel, big);
     }
 
-    /** Update URL input, QR, and download button */
-    async function updateShare() {
-      const url = getShareUrl();
-      const includeSettings = settingsCb ? settingsCb.checked : false;
+    drawPanel(panel);
+  }
 
-      urlInput.value = url;
-      renderParamSummary(includeSettings);
+  /** One-time wiring for a freshly built panel. */
+  function wirePanel(panel) {
+    panel.querySelector('.qr-pin-close')?.addEventListener('click', () => setPinned(false));
 
-      if (!qrLibLoaded) return; // QR not loaded yet, will be set on initial load
-
-      const svg = generateQrSvg(url);
-      if (svg) {
-        qrContainer.innerHTML = svg;
-        downloadBtn.disabled = false;
-      } else {
-        // A link carrying a few thousand pasted values has no scannable code.
-        // Say so, and leave the link itself copyable.
-        qrContainer.innerHTML = '<p class="hint" style="max-width:15rem;margin:0">'
-          + 'This link is too long for a QR code \u2014 it carries the data itself. '
-          + 'Copy the link instead, or host the data at a URL and load it from there.'
-          + '</p>';
-        downloadBtn.disabled = true;
-      }
-    }
-
-    // Wire toggle
-    if (settingsCb) {
-      settingsCb.addEventListener('change', () => updateShare());
-    }
-
-    // Wire copy button
-    copyBtn.addEventListener('click', () => {
-      const url = getShareUrl();
-      navigator.clipboard.writeText(url).then(() => {
-        copyBtn.textContent = 'Copied!';
-        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
-      }).catch(() => {
-        urlInput.select();
-      });
+    panel.querySelector('.qr-pin-bigger')?.addEventListener('click', () => {
+      const big = panel.classList.toggle('qr-pin--big');
+      setBig(big);
+      syncSizeButton(panel, big);
     });
 
-    // Wire close
-    dialog.querySelector('.share-close-btn')?.addEventListener('click', () => dialog.close());
+    const moreBtn = panel.querySelector('.qr-pin-more');
+    moreBtn?.addEventListener('click', () => {
+      optionsOpen = !optionsOpen;
+      const opts = panel.querySelector('.qr-pin-options');
+      if (opts) /** @type {HTMLElement} */ (opts).hidden = !optionsOpen;
+      moreBtn.textContent = optionsOpen ? 'Fewer options' : 'More options';
+      moreBtn.setAttribute('aria-expanded', String(optionsOpen));
+      panel.classList.toggle('qr-pin--open', optionsOpen);
+      drawPanel(panel);
+    });
 
-    // Wire download button
-    downloadBtn.addEventListener('click', () => {
-      const url = getShareUrl();
-      const svgStr = generateDownloadableSvg(url);
-      if (!svgStr) return;   // nothing to download; the dialog already says why
+    // "Include current settings" off — the bare tool, for a class starting clean.
+    panel.querySelector('.share-settings-cb')?.addEventListener('change', () => drawPanel(panel));
+
+    panel.querySelector('.share-copy-btn')?.addEventListener('click', (e) => {
+      const b = /** @type {HTMLElement} */ (e.currentTarget);
+      const input = /** @type {HTMLInputElement|null} */ (panel.querySelector('.share-url-input'));
+      navigator.clipboard.writeText(panelUrl(panel)).then(() => {
+        b.textContent = 'Copied!';
+        setTimeout(() => { b.textContent = 'Copy'; }, 2000);
+      }).catch(() => { input?.select(); });
+    });
+
+    panel.querySelector('.share-download-btn')?.addEventListener('click', () => {
+      const svgStr = generateDownloadableSvg(panelUrl(panel));
+      if (!svgStr) return;   // nothing to download; the panel already says why
       const blob = new Blob([svgStr], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -530,19 +441,84 @@ const SHARE_SCRIPT_SRC = document.currentScript
       a.click();
       URL.revokeObjectURL(a.href);
     });
+  }
 
-    // Set initial state
-    urlInput.value = getShareUrl();
-    renderParamSummary(hasParams);
+  /** @param {HTMLElement} panel @param {boolean} big */
+  function syncSizeButton(panel, big) {
+    const b = /** @type {HTMLElement|null} */ (panel.querySelector('.qr-pin-bigger'));
+    if (!b) return;
+    b.textContent = big ? 'Smaller' : 'Bigger';
+    b.setAttribute('aria-pressed', String(big));
+  }
 
-    // Load QR library and generate
-    try {
-      await loadQrLib();
-      await updateShare();
-    } catch {
-      qrContainer.innerHTML = '<p class="share-qr-error">Could not generate QR code (no internet?)</p>';
+  /** The URL this panel is currently offering. */
+  function panelUrl(panel) {
+    const cb = /** @type {HTMLInputElement|null} */ (panel.querySelector('.share-settings-cb'));
+    return (cb && !cb.checked) ? getBaseUrl() : liveUrl();
+  }
+
+  /** Redraw the code, the link and the parameter summary. */
+  function drawPanel(panel) {
+    const url = panelUrl(panel);
+    const code = panel.querySelector('.qr-pin-code');
+    const input = /** @type {HTMLInputElement|null} */ (panel.querySelector('.share-url-input'));
+    const dl = /** @type {HTMLButtonElement|null} */ (panel.querySelector('.share-download-btn'));
+    if (input) input.value = url;
+    if (panel.dataset.url !== url) {
+      const svg = generateQrSvg(url);
+      if (code) {
+        code.innerHTML = svg || '<p class="qr-pin-toolong">This link carries the data itself, '
+          + 'so it is too long for a QR code. Copy the link instead, or host the data at a URL.</p>';
+      }
+      if (dl) dl.disabled = !svg;
+      panel.dataset.url = url;
+    }
+    const summary = panel.querySelector('.share-param-summary');
+    if (summary && optionsOpen) {
+      const cb = /** @type {HTMLInputElement|null} */ (panel.querySelector('.share-settings-cb'));
+      renderParamSummary(/** @type {HTMLElement} */ (summary), !cb || cb.checked);
     }
   }
+
+  /**
+   * The table of what a shared link carries, so an instructor can see at a
+   * glance whether they are sending a configured tool or a blank one.
+   *
+   * @param {HTMLElement} into
+   * @param {boolean} includeSettings
+   */
+  function renderParamSummary(into, includeSettings) {
+    const params = getUrlParams();
+    if (!includeSettings || params.length === 0) {
+      into.innerHTML = '<p class="share-param-hint">'
+        + (includeSettings ? 'Nothing is set yet — this is the blank tool.'
+                           : 'Students will arrive at the blank tool.')
+        + '</p>';
+      return;
+    }
+    let html = '<table class="share-param-table">';
+    for (const p of params) {
+      const displayVal = p.value.length > 40 ? p.value.slice(0, 37) + '...' : p.value;
+      html += `<tr><td class="share-param-key">${p.label}</td><td class="share-param-val">${escapeHtml(displayVal)}</td></tr>`;
+    }
+    html += '</table>';
+    into.innerHTML = html;
+  }
+
+  /** The URL a share should point at: the tool's live state, else the address bar. */
+  function liveUrl() {
+    try {
+      const f = /** @type {any} */ (window).__statlensShareUrl;
+      if (typeof f === 'function') return f() || location.href;
+    } catch { /* fall through */ }
+    return location.href;
+  }
+
+  // The address bar is kept in step with the tool (js/share-state.js), which
+  // announces each change — replaceState fires no event of its own.
+  window.addEventListener('statlens:urlchange', () => { renderPin(); });
+  // And restore the panel on load, for the instructor who set it last lesson.
+  if (isPinned()) renderPin();
 
   /**
    * @param {string} str
@@ -552,8 +528,4 @@ const SHARE_SCRIPT_SRC = document.currentScript
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  // Close on backdrop click
-  dialog.addEventListener('click', (e) => {
-    if (e.target === dialog) dialog.close();
-  });
 })();

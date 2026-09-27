@@ -845,15 +845,29 @@ export function initOneSamplePage(config) {
   /** Add a Summary | Dotplot toggle next to "This Simulation" (one-mean, small n). */
   function ensureMeanViewToggle() {
     if (isProp || !simTitleEl) return;
-    // Reconcile, don't just create-once. A sample too big for tiles or dots
-    // renders the mechanism as mini histograms, which this control cannot
-    // switch between — so it has to go. Loading a small dataset and then a
-    // large one used to leave it sitting there doing nothing (Jeff,
-    // 2026-09-26). sim-app has dropped its own stale copy this way since the
-    // card mechanism shipped; this is the same move.
-    if (sampleData.length < 2 || sampleData.length > MEAN_DOT_MAX) {
+    // Offer exactly the views this sample size can actually be drawn as, and
+    // nothing else. The mechanism has three:
+    //
+    //   tiles      one chip per observation, up to CHIP_MAX
+    //   dotplot    one dot per observation, up to MEAN_DOT_MAX
+    //   histogram  beyond that — not a choice, a consequence
+    //
+    // The toggle used to appear for anything up to MEAN_DOT_MAX and always
+    // offer both, so between CHIP_MAX and MEAN_DOT_MAX it advertised Tiles and
+    // then did nothing when clicked: the mechanism fell through to dots
+    // whatever the button said. Measured at n = 50, 73 and 75 — click Tiles,
+    // get dots. (Jeff, 2026-09-27.) A control with one option is not a choice
+    // either, so below it disappears rather than sitting there pressed.
+    const n = sampleData.length;
+    const views = [];
+    if (n >= 2 && n <= CHIP_MAX) views.push(['summary', 'Tiles']);
+    if (n >= 2 && n <= MEAN_DOT_MAX) views.push(['dotplot', 'Dotplots']);
+    if (views.length < 2) {
       document.querySelector('.mech-view-toggle')?.remove();
       meanViewBtns = null;
+      // Whatever it was set to, only one view is drawable — make the mechanism
+      // agree, so a remembered 'summary' does not fight a sample too big for it.
+      if (views.length === 1 && mech.view !== views[0][0]) mech.setView(views[0][0]);
       return;
     }
     if (meanViewBtns && document.contains(meanViewBtns[0])) return;
@@ -862,9 +876,9 @@ export function initOneSamplePage(config) {
     wrap.className = 'seg-control mech-view-toggle';
     wrap.setAttribute('role', 'group');
     wrap.setAttribute('aria-label', 'Resample view');
-    wrap.innerHTML =
-      `<button type="button" data-mview="summary" aria-pressed="${String(mech.view === 'summary')}">Tiles</button>`
-      + `<button type="button" data-mview="dotplot" aria-pressed="${String(mech.view === 'dotplot')}">Dotplots</button>`;
+    wrap.innerHTML = views.map(([v, label]) =>
+      `<button type="button" data-mview="${v}" aria-pressed="${String(mech.view === v)}">${label}</button>`
+    ).join('');
     // Place it in a full-width bottom bar next to the "Resample N values…" caption
     // so it reads as applying to the whole mechanism (not just the right plot).
     const strip = document.getElementById('mechanism-strip');

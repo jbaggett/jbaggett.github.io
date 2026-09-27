@@ -36,8 +36,12 @@
 
 /** @typedef {{ dataset?: string, data?: number[], params?: Record<string, any> }} ShareState */
 
-/** Params that belong to the page, not to the tool's configuration. */
-const NOT_OURS = new Set(['embed', 'activity', 'mech', 'layout', 'mode', 'chrome', 'plot']);
+/**
+ * Params the tool owns regardless of whether it is producing one right now, so
+ * a control that has been turned off clears its parameter rather than leaving
+ * it stranded in the URL.
+ */
+const ALWAYS_OURS = new Set(['dataset', 'data', 'seed']);
 
 /**
  * Inline `?data=` beyond this many values makes a URL nobody can scan or paste.
@@ -97,9 +101,18 @@ export function shareableUrl({ ambient = false } = {}) {
   let st;
   try { st = provider() || {}; } catch { return null; }
   const qp = new URLSearchParams(location.search);
-  // Drop what we own, keep what we do not.
+  // Drop what we own; keep everything else.
+  //
+  // This used to work the other way round — keep a named list, delete the rest —
+  // which meant any parameter nobody had thought of was silently destroyed on
+  // the first interaction. `?draw=burst` vanished before the page could read
+  // it, and the feature simply appeared not to work. (Found 2026-09-27 while
+  // building the resample animations.) A URL the tool does not understand
+  // belongs to someone else: an embed, an activity, an experiment, a future
+  // feature. Leave it alone.
+  const ours = new Set([...ALWAYS_OURS, ...Object.keys(st.params || {})]);
   for (const key of [...qp.keys()]) {
-    if (!NOT_OURS.has(key)) qp.delete(key);
+    if (ours.has(key)) qp.delete(key);
   }
   if (st.dataset) qp.set('dataset', st.dataset);
   else if (st.data && st.data.length > 0

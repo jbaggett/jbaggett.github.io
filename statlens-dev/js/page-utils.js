@@ -298,18 +298,6 @@ export function initSettings() {
       </div>
       <input type="checkbox" id="set-coaching" ${s.coaching ? 'checked' : ''}>
     </div>
-    <div class="setting-row">
-      <div>
-        <label for="set-layout" class="setting-label">Layout (experimental)</label>
-        <p class="setting-hint">Prototype layouts for simulation pages — saving space vertically. Changing reloads the page.</p>
-      </div>
-      <select id="set-layout">
-        <option value="current"${s.layout === 'current' ? ' selected' : ''}>Current</option>
-        <option value="tight"${s.layout === 'tight' ? ' selected' : ''}>A · Tight</option>
-        <option value="rail"${s.layout === 'rail' ? ' selected' : ''}>B · Side rail</option>
-        <option value="focus"${s.layout === 'focus' ? ' selected' : ''}>C · Progressive focus</option>
-      </select>
-    </div>
     <div class="reset-row">
       <button type="button" class="reset-link" id="set-reset">Reset to defaults</button>
     </div>
@@ -393,18 +381,6 @@ export function initSettings() {
   if (coachingCheck) {
     coachingCheck.addEventListener('change', () => {
       setSettings({ coaching: coachingCheck.checked });
-      applySettings();
-      if (window.parent === window) {
-        location.reload();
-      }
-    });
-  }
-
-  // Layout variant (experimental) — reload since rail/focus need JS re-init
-  const layoutSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('set-layout'));
-  if (layoutSelect) {
-    layoutSelect.addEventListener('change', () => {
-      setSettings({ layout: layoutSelect.value });
       applySettings();
       if (window.parent === window) {
         location.reload();
