@@ -53,7 +53,7 @@ const state = {
   reveal: false,
   secant: false,
   unitRun: false,
-  layout: 'stacked',
+  layout: 'slider',
   /** @type {Map<number, number>} slope traced at each grid position */
   trace: new Map(),
 };
@@ -486,13 +486,15 @@ initPage({
     // `?h=` implies the secant, so an older link that set a gap still shows one.
     state.secant = q.get('secant') === 'true' || q.has('h');
     state.unitRun = q.get('unitrun') === 'true';
-    if (q.get('layout') === 'slider') {
-      state.layout = 'slider';
+    // The slider lives BETWEEN the plots and doubles as the shared x marker.
+    // `?layout=stacked` puts it back in the controls panel with the dashed
+    // lines, for anything that wants the older arrangement.
+    if (q.get('layout') === 'stacked') {
+      state.layout = 'stacked';
+    } else {
       const wrap = $('#x-wrap');
       wrap.classList.add('bd-between');
-      // Between the two chart frames, so it reads as the axis they share.
       $('#chart-d').closest('.ll-chart').before(wrap);
-      // The caption has to stop describing a line that is no longer drawn.
       $('#key-marker').innerHTML = 'The slider between them marks the same <i>x</i> on both';
     }
     if (q.has('h')) {
