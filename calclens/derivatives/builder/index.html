@@ -44,53 +44,35 @@
      its width at each end, so the width and offset are computed at runtime from
      the measured chart; the only thing CSS has to guarantee is that the thumb
      really is THUMB_PX across in every browser. */
-  #x-wrap.bd-between { margin: 2px 0; }
+  #x-wrap.bd-between { margin: 3px 0; }
   #x-wrap.bd-between > span { position: absolute; width: 1px; height: 1px; overflow: hidden;
                               clip-path: inset(50%); white-space: nowrap; }
+
+  /* The SAME blue slider, moved — not a new control. The kit gets its blue from
+     `accent-color`, which leaves the thumb a browser-chosen size; the alignment
+     here needs that size known, so the thumb is drawn explicitly at THUMB_PX in
+     the kit's blue rather than tinted natively. It should be indistinguishable
+     from every other slider on the page. */
   #x-wrap.bd-between #x-slider {
     -webkit-appearance: none; appearance: none;
-    display: block; height: 20px; background: transparent; margin: 0;
+    display: block; background: transparent; margin: 0;
   }
   #x-wrap.bd-between #x-slider::-webkit-slider-runnable-track {
-    height: 3px; background: var(--border); border-radius: 2px;
+    height: 4px; background: var(--ims-lgray); border-radius: 3px;
   }
   #x-wrap.bd-between #x-slider::-webkit-slider-thumb {
-    -webkit-appearance: none; width: 18px; height: 18px; margin-top: -7.5px;
-    border-radius: 50%; background: var(--tangent); border: 2px solid var(--bg);
-    box-shadow: 0 0 0 1px var(--tangent);
+    -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
+    border-radius: 50%; background: var(--ims-blue-text); border: none;
+  }
+  #x-wrap.bd-between #x-slider:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid var(--accent); outline-offset: 2px;
   }
   #x-wrap.bd-between #x-slider::-moz-range-track {
-    height: 3px; background: var(--border); border-radius: 2px;
+    height: 4px; background: var(--ims-lgray); border-radius: 3px;
   }
   #x-wrap.bd-between #x-slider::-moz-range-thumb {
-    width: 18px; height: 18px; border: 2px solid var(--bg); border-radius: 50%;
-    background: var(--tangent); box-shadow: 0 0 0 1px var(--tangent);
-  }
-
-  /* The secant is opt-in (?secant=true). Both of its elements carry a `display`
-     that would beat the browser's bare [hidden] rule — one inline, one from
-     .ll-legend span — so say it explicitly rather than let them stay on screen.
-     Scoped by id and by data attribute, not by redefining a kit class. */
-  #h-wrap { display: block; margin-top: 0.6rem; }
-  [data-secant][hidden] { display: none; }
-
-  /* Crimson is "the slope at the current x", in both its guises: the tangent
-     line above, and the measured height below. Orange stays with f′ as a
-     function — the traced dots and the revealed curve. The white halo keeps the
-     number legible over the gridlines. */
-  .bd-height { stroke: var(--tangent); stroke-width: 3; stroke-linecap: round; }
-  .bd-value {
-    fill: var(--tangent); font-weight: 700; font-size: var(--chart-text);
-    paint-order: stroke; stroke: var(--bg); stroke-width: 3.5px; stroke-linejoin: round;
-  }
-  /* The role word is muted so the crimson "f ′ = #" stays the matching part:
-     identical string, identical colour, on both graphs — while the grey word in
-     front names what that quantity is called on the graph you are looking at. */
-  .bd-role { fill: var(--ims-gray-text); font-weight: 600; }
-  .bd-unit path { stroke: var(--ims-gray); stroke-width: 1.5; stroke-dasharray: 4 3; }
-  .bd-unit-label {
-    fill: var(--ims-gray-text); font-size: calc(var(--chart-text) * 0.88);
-    paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round;
+    width: 16px; height: 16px; border: none; border-radius: 50%;
+    background: var(--ims-blue-text);
   }
 </style>
 </head>

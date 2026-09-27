@@ -145,9 +145,13 @@ function render() {
     chartD.gOver.append('circle').attr('class', 'll-point')
       .attr('cx', px).attr('cy', scalesD.ys(slope)).attr('r', 6);
     // Beside the segment, level with its middle, so the number reads as the
-    // length of that segment rather than as a note about the dot.
-    valueLabel(chartD, px, (scalesD.ys(0) + scalesD.ys(slope)) / 2,
-      'height', slopeLabel(slope), { dy: 0, middle: true });
+    // length of that segment rather than as a note about the dot. Except when
+    // the slope is near zero: the segment is then a few pixels long and its
+    // middle is right on the axis, where it would sit across the x tick labels.
+    const y0 = scalesD.ys(0), y1 = scalesD.ys(slope);
+    const short = Math.abs(y0 - y1) < 26;
+    valueLabel(chartD, px, short ? y1 : (y0 + y1) / 2, 'height', slopeLabel(slope),
+      short ? { dy: slope < 0 ? 20 : -14 } : { dy: 0, middle: true });
   }
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
@@ -216,7 +220,7 @@ function unitRunTriangle(chart, xs, ys, x, fx, slope, yDom) {
 }
 
 /** How wide the thumb is, in CSS px. The stylesheet must agree. */
-const THUMB_PX = 18;
+const THUMB_PX = 16;
 
 /**
  * Make the slider's thumb sit at the same place as x on the graphs.
