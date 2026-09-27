@@ -266,6 +266,16 @@ export function initSettings() {
     </div>
     <div class="setting-row">
       <div>
+        <label for="set-resampling-layout" class="setting-label">Resampling layout</label>
+        <p class="setting-hint">How the simulation pages show the mechanism. Legacy: the source and one draw side by side, with the distribution below. Split: the source and one draw stacked on the left, the distribution on the right.</p>
+      </div>
+      <select id="set-resampling-layout">
+        <option value="legacy"${s.resamplingLayout !== 'split' ? ' selected' : ''}>Legacy</option>
+        <option value="split"${s.resamplingLayout === 'split' ? ' selected' : ''}>Split</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
         <label for="set-mode" class="setting-label">Activity mode</label>
         <p class="setting-hint">Discovery: guided with questions. Presentation: all steps visible.</p>
       </div>
@@ -287,18 +297,6 @@ export function initSettings() {
         <p class="setting-hint">Step-by-step prompts for students new to a tool: highlights the next action and explains what to look at.</p>
       </div>
       <input type="checkbox" id="set-coaching" ${s.coaching ? 'checked' : ''}>
-    </div>
-    <div class="setting-row">
-      <div>
-        <label for="set-layout" class="setting-label">Layout (experimental)</label>
-        <p class="setting-hint">Prototype layouts for simulation pages — saving space vertically. Changing reloads the page.</p>
-      </div>
-      <select id="set-layout">
-        <option value="current"${s.layout === 'current' ? ' selected' : ''}>Current</option>
-        <option value="tight"${s.layout === 'tight' ? ' selected' : ''}>A · Tight</option>
-        <option value="rail"${s.layout === 'rail' ? ' selected' : ''}>B · Side rail</option>
-        <option value="focus"${s.layout === 'focus' ? ' selected' : ''}>C · Progressive focus</option>
-      </select>
     </div>
     <div class="reset-row">
       <button type="button" class="reset-link" id="set-reset">Reset to defaults</button>
@@ -341,6 +339,30 @@ export function initSettings() {
     });
   }
 
+  // Resampling layout. Unlike the other settings this cannot be applied live:
+  // the mechanism is assembled once, before anything is drawn, because charts
+  // measure the box they are rendered into. So save and reload.
+  const layoutSel = /** @type {HTMLSelectElement|null} */ (document.getElementById('set-resampling-layout'));
+  if (layoutSel) {
+    layoutSel.addEventListener('change', () => {
+      setSettings({ resamplingLayout: layoutSel.value });
+      applySettings();
+      // Drop any `?mech=` first. It is a per-link preview override and it beats
+      // the setting by design — but the address bar PRESERVES it across
+      // navigation, so anyone who had once opened a preview link found this
+      // control doing nothing at all, silently, forever. Choosing here is the
+      // more explicit act, so it wins. (Reported by Jeff, 2026-09-27: "both
+      // legacy and split seem to give the new split layout".)
+      const url = new URL(location.href);
+      if (url.searchParams.has('mech')) {
+        url.searchParams.delete('mech');
+        location.replace(url.toString());
+      } else {
+        location.reload();
+      }
+    });
+  }
+
   // Expert mode has no row here any more — it is the Simple | Detailed control
   // in the page header (see initDisplayToggle). Two switches for one state is
   // worse than one hidden switch.
@@ -359,18 +381,6 @@ export function initSettings() {
   if (coachingCheck) {
     coachingCheck.addEventListener('change', () => {
       setSettings({ coaching: coachingCheck.checked });
-      applySettings();
-      if (window.parent === window) {
-        location.reload();
-      }
-    });
-  }
-
-  // Layout variant (experimental) — reload since rail/focus need JS re-init
-  const layoutSelect = /** @type {HTMLSelectElement|null} */ (document.getElementById('set-layout'));
-  if (layoutSelect) {
-    layoutSelect.addEventListener('change', () => {
-      setSettings({ layout: layoutSelect.value });
       applySettings();
       if (window.parent === window) {
         location.reload();
@@ -2376,47 +2386,6 @@ async function copyToClipboard(text) {
   } catch { return false; }
 }
 
-/**
- * Mount a "Copy link" button that captures the page's CURRENT configuration as a
- * shareable URL (current path + query string built from `getState()`), and copies
- * it to the clipboard. Include the active `seed` in the state so a recipient
- * reproduces the same result — turning "share config" into "share result".
- *
- * @param {Element|null} mountEl - where to append the button
- * @param {() => { dataset?: string|null, data?: number[]|null, params?: Record<string, any> }} getState
- *   Returns the live configuration; read controls at click time, not load time.
- * @returns {HTMLButtonElement|null}
- */
-export function initShareLink(mountEl, getState) {
-  if (!mountEl) return null;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'share-link-btn';
-  const idle = '<span aria-hidden="true">🔗</span> Copy link';
-  btn.innerHTML = idle;
-  btn.title = 'Copy a link to this exact configuration (for a lesson, problem, or to share your result)';
-  mountEl.appendChild(btn);
-
-  /** @type {ReturnType<typeof setTimeout>|undefined} */
-  let resetTimer;
-  btn.addEventListener('click', async () => {
-    const st = getState() || {};
-    const qp = new URLSearchParams();
-    if (st.dataset) qp.set('dataset', st.dataset);
-    else if (st.data && st.data.length > 0 && st.data.length <= 2000) qp.set('data', st.data.join(','));
-    for (const [k, v] of Object.entries(st.params || {})) {
-      if (v != null && v !== '') qp.set(k, String(v));
-    }
-    const qs = qp.toString();
-    const url = location.origin + location.pathname + (qs ? `?${qs}` : '');
-    const ok = await copyToClipboard(url);
-    btn.textContent = ok ? '✓ Link copied' : 'Press Ctrl/⌘-C';
-    clearTimeout(resetTimer);
-    resetTimer = setTimeout(() => { btn.innerHTML = idle; }, 2000);
-    if (!ok) { try { window.prompt('Copy this link:', url); } catch { /* ignore */ } }
-  });
-  return btn;
-}
 
 /**
  * Store data for cross-page transfer via sessionStorage.

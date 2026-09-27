@@ -47,10 +47,15 @@ const DEFAULTS = {
   // interpretation text so students produce their own (calculator vs tutor mode)
   showInterpretations: false,
 
-  // TEMPORARY: simulation-page layout variant for A/B/C comparison.
-  // 'current' (today), 'tight' (condensed), 'rail' (mechanism in side rail),
-  // 'focus' (tight + mechanism auto-collapses on mass sim). Remove once chosen.
-  layout: 'current',
+  // How the resampling mechanism is laid out on the simulation pages.
+  //   'legacy' — source and one draw side by side in a horizontal strip, with
+  //              the distribution further down the page (what has always shipped)
+  //   'split'  — steps 1 and 2 in a narrow left column, step 3 in a wider right
+  //              one, the way the Sampling Distribution Lab does it
+  // Persisted, so an instructor sets it once. Expected to become the default
+  // (Jeff, 2026-09-27) — when it does, this line is the whole change.
+  // `?mech=` overrides it per link; see js/mechanisms/layout.js.
+  resamplingLayout: 'legacy',
 
   // Which quartile convention the descriptive tools display. Session-only, like
   // expertMode: a fresh page always shows the course's rule, so a student can
@@ -180,6 +185,21 @@ export function getExpertMode() {
 }
 
 /**
+ * How the resampling mechanism is laid out: `'legacy'` (the horizontal strip
+ * that has always shipped) or `'split'` (steps 1 and 2 left, step 3 right).
+ *
+ * A `?mech=` parameter wins, because a link is a deliberate act and should show
+ * what it says regardless of whose machine opens it. Otherwise the saved
+ * preference, which an instructor sets once.
+ *
+ * @returns {'legacy'|'split'}
+ */
+export function getResamplingLayout() {
+  const saved = getSetting('resamplingLayout');
+  return saved === 'split' ? 'split' : 'legacy';
+}
+
+/**
  * Get whether interpretations should be shown, respecting URL param override.
  * URL param ?interpret=false hides auto-generated conclusions.
  * @returns {boolean}
@@ -197,13 +217,6 @@ export function getShowInterpretations() {
  * TEMPORARY — remove with the rest of the layout-variant prototype.
  * @returns {'current'|'tight'|'rail'|'focus'}
  */
-export function getLayout() {
-  const allowed = ['current', 'tight', 'rail', 'focus'];
-  const urlLayout = new URLSearchParams(window.location.search).get('layout');
-  if (urlLayout && allowed.includes(urlLayout)) return /** @type {any} */ (urlLayout);
-  const saved = getSetting('layout');
-  return allowed.includes(saved) ? saved : 'current';
-}
 
 /**
  * Get whether coaching hints are active, respecting URL param override.
@@ -227,7 +240,6 @@ export function applySettings() {
   const root = document.documentElement;
 
   // TEMPORARY: layout variant → data attribute on body (CSS drives the rest)
-  document.body?.setAttribute('data-layout', getLayout());
 
   // Coaching → data attribute on body (CSS + coaching.js drive the hints)
   if (getCoaching()) document.body?.setAttribute('data-coach', 'true');

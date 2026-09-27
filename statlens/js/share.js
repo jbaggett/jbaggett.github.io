@@ -145,7 +145,143 @@ const SHARE_SCRIPT_SRC = document.currentScript
     return result;
   }
 
+  // ─── Pinned QR ───────────────────────────────────────────────────────
+  //
+  // An instructor demoing in class wants students to open the tool on their
+  // phones and follow along, but does not want to stand at the front waiting
+  // for thirty scans before starting. A QR that stays on screen lets him begin
+  // immediately and lets students scan whenever they look up.
+  //
+  // It follows the live URL rather than freezing one. That is the point: a
+  // student who scans at minute five lands where the class IS, not where it
+  // began. A frozen link would strand late scanners at the start, which is the
+  // problem restated.
+  //
+  // What a link cannot carry is the accumulated run — a scanner gets the same
+  // dataset and seed with an empty chart, and clicks +1000 to catch up. With
+  // the seed pinned (see share-state.js) their numbers match the projector's.
+
+  const PIN_KEY = 'statlens:qr-pinned';
+  /**
+   * Pinned codes start BIG (Jeff, 2026-09-27). The pin exists to be scanned
+   * from across a room while the instructor gets on with the lesson, and a
+   * 116px code on a projector is not scannable from row three. Smaller is one
+   * click away, and remembered for whoever prefers it on a laptop.
+   */
+  const SIZE_KEY = 'statlens:qr-pin-size';
+
+  function isBig() {
+    try { return localStorage.getItem(SIZE_KEY) !== 'small'; } catch { return true; }
+  }
+
+  function setBig(big) {
+    try { localStorage.setItem(SIZE_KEY, big ? 'big' : 'small'); } catch { /* private mode */ }
+  }
+
+  function isPinned() {
+    try { return localStorage.getItem(PIN_KEY) === '1'; } catch { return false; }
+  }
+
+  function setPinned(on) {
+    try { localStorage.setItem(PIN_KEY, on ? '1' : '0'); } catch { /* private mode */ }
+    renderPin();
+  }
+
+  /** Guards renderPin against itself — see the note below. */
+  let pinRendering = false;
+
+  /**
+   * Draw, update or remove the pinned panel to match the stored preference.
+   *
+   * Re-entrant by nature: a page that loads with the pin set calls this once on
+   * load and again on the first URL sync, and both await the QR library. Without
+   * the flag both calls got past the "does a panel exist?" check while the
+   * import was in flight, and both appended one — two stacked QR codes sharing
+   * an id. Found 2026-09-27 by a test that could not tell which of two svgs it
+   * meant.
+   */
+  async function renderPin() {
+    if (pinRendering) return;
+    let panel = document.getElementById('qr-pin');
+    if (!isPinned()) { panel?.remove(); return; }
+    if (!qrLibLoaded) {
+      pinRendering = true;
+      try { await loadQrLib(); } catch { return; }   // CDN down: no pin, page fine
+      finally { pinRendering = false; }
+      // Anything could have happened while that was in flight.
+      if (!isPinned()) return;
+      panel = document.getElementById('qr-pin');
+    }
+
+    if (!panel) {
+      panel = document.createElement('aside');
+      panel.id = 'qr-pin';
+      panel.className = 'qr-pin';
+      panel.setAttribute('aria-label', 'Scan to open this page');
+      panel.innerHTML = '<div class="qr-pin-code"></div>'
+        + '<p class="qr-pin-caption">Scan to open this page</p>'
+        + '<button type="button" class="qr-pin-bigger">Smaller</button>'
+        + '<button type="button" class="qr-pin-close" aria-label="Remove pinned QR code">\u00d7</button>';
+      panel.querySelector('.qr-pin-close')?.addEventListener('click', () => setPinned(false));
+      panel.querySelector('.qr-pin-bigger')?.addEventListener('click', (e) => {
+        const big = panel.classList.toggle('qr-pin--big');
+        setBig(big);
+        const b = /** @type {HTMLElement} */ (e.currentTarget);
+        b.setAttribute('aria-pressed', String(big));
+        b.textContent = big ? 'Smaller' : 'Bigger';
+      });
+      // Big by default, and whatever was chosen last time after that.
+      const big = isBig();
+      panel.classList.toggle('qr-pin--big', big);
+      const sizeBtn = /** @type {HTMLElement|null} */ (panel.querySelector('.qr-pin-bigger'));
+      if (sizeBtn) {
+        sizeBtn.setAttribute('aria-pressed', String(big));
+        sizeBtn.textContent = big ? 'Smaller' : 'Bigger';
+      }
+      document.body.appendChild(panel);
+    }
+
+    const url = liveUrl();
+    if (panel.dataset.url === url) return;   // nothing moved
+    panel.dataset.url = url;
+    const code = panel.querySelector('.qr-pin-code');
+    const svg = generateQrSvg(url);
+    if (code) {
+      code.innerHTML = svg
+        || '<p class="hint">This link is too long for a QR code.</p>';
+    }
+  }
+
+  /** The URL a share should point at: the tool's live state, else the address bar. */
+  function liveUrl() {
+    try {
+      const f = /** @type {any} */ (window).__statlensShareUrl;
+      if (typeof f === 'function') return f() || location.href;
+    } catch { /* fall through */ }
+    return location.href;
+  }
+
+  // The address bar is kept in step with the tool (js/share-state.js), which
+  // announces each change — replaceState fires no event of its own.
+  window.addEventListener('statlens:urlchange', () => { renderPin(); });
+  // And restore the pin on load, for the instructor who set it last lesson.
+  if (isPinned()) renderPin();
+
   // ─── QR generation ───
+
+  /**
+   * A QR for this text, or null when there is no such QR.
+   *
+   * Too long to encode is a real answer, not an error: a link with a few
+   * thousand pasted values cannot be scanned by anyone, and the honest response
+   * is to say so and still offer the link to copy.
+   *
+   * @param {string} text
+   * @returns {ReturnType<typeof makeQr>|null}
+   */
+  function tryMakeQr(text) {
+    try { return makeQr(text); } catch { return null; }
+  }
 
   /**
    * Core QR module renderer (shared by display and download versions).
@@ -156,6 +292,10 @@ const SHARE_SCRIPT_SRC = document.currentScript
     // @ts-ignore — qrcode is loaded dynamically
     const qr = qrcode(0, 'H');
     qr.addData(text);
+    // Throws when the text exceeds what a version-40 code can hold — about 1270
+    // bytes at error-correction level H. A URL carrying inline `?data=` reaches
+    // that easily (2000 values is ~8000 characters), and both call sites used to
+    // let it escape, so the dialog broke instead of saying it could not draw one.
     qr.make();
 
     const count = qr.getModuleCount();
@@ -216,7 +356,8 @@ const SHARE_SCRIPT_SRC = document.currentScript
    * @returns {string}
    */
   function generateQrSvg(text) {
-    const q = makeQr(text);
+    const q = tryMakeQr(text);
+    if (!q) return null;
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${q.size} ${q.size}" width="${q.size}" height="${q.size}" shape-rendering="crispEdges">`;
     svg += `<rect width="${q.size}" height="${q.size}" fill="#fff"/>`;
     svg += renderModules(q);
@@ -235,7 +376,8 @@ const SHARE_SCRIPT_SRC = document.currentScript
    * @returns {string}
    */
   function generateDownloadableSvg(text) {
-    const q = makeQr(text);
+    const q = tryMakeQr(text);
+    if (!q) return null;
     let svg = `<?xml version="1.0" encoding="UTF-8"?>\n`;
     svg += `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${q.size} ${q.size}" width="${q.size}" height="${q.size}" shape-rendering="crispEdges">`;
     svg += `<rect width="${q.size}" height="${q.size}" fill="#fff"/>`;
@@ -276,6 +418,7 @@ const SHARE_SCRIPT_SRC = document.currentScript
         <p class="share-qr-loading">Generating QR code...</p>
       </div>
       <div class="share-actions">
+        <button type="button" class="share-pin-btn">Keep QR on screen</button>
         <button type="button" class="share-download-btn" disabled>Download SVG</button>
         <button type="button" class="share-close-btn">Close</button>
       </div>
@@ -288,6 +431,12 @@ const SHARE_SCRIPT_SRC = document.currentScript
     const qrContainer = /** @type {HTMLElement} */ (dialog.querySelector('.share-qr-container'));
     const downloadBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector('.share-download-btn'));
     const settingsCb = /** @type {HTMLInputElement|null} */ (dialog.querySelector('.share-settings-cb'));
+    const pinBtn = /** @type {HTMLButtonElement} */ (dialog.querySelector('.share-pin-btn'));
+    pinBtn.textContent = isPinned() ? 'Remove pinned QR' : 'Keep QR on screen';
+    pinBtn.addEventListener('click', () => {
+      setPinned(!isPinned());
+      pinBtn.textContent = isPinned() ? 'Remove pinned QR' : 'Keep QR on screen';
+    });
     const paramSummary = dialog.querySelector('.share-param-summary');
 
     /** Build the param summary HTML */
@@ -310,6 +459,14 @@ const SHARE_SCRIPT_SRC = document.currentScript
     /** Get the URL to share based on toggle state */
     function getShareUrl() {
       if (settingsCb && !settingsCb.checked) return getBaseUrl();
+      // Prefer the tool's live state where a page publishes it. The address bar
+      // is kept in step with it (js/share-state.js), so these normally agree —
+      // but asking the tool directly means the dialog is right even in an embed
+      // where history.replaceState is blocked and the URL cannot be updated.
+      try {
+        const live = /** @type {any} */ (window).__statlensShareUrl;
+        if (typeof live === 'function') return live() || location.href;
+      } catch { /* fall through to the address bar */ }
       return location.href;
     }
 
@@ -323,8 +480,19 @@ const SHARE_SCRIPT_SRC = document.currentScript
 
       if (!qrLibLoaded) return; // QR not loaded yet, will be set on initial load
 
-      qrContainer.innerHTML = generateQrSvg(url);
-      downloadBtn.disabled = false;
+      const svg = generateQrSvg(url);
+      if (svg) {
+        qrContainer.innerHTML = svg;
+        downloadBtn.disabled = false;
+      } else {
+        // A link carrying a few thousand pasted values has no scannable code.
+        // Say so, and leave the link itself copyable.
+        qrContainer.innerHTML = '<p class="hint" style="max-width:15rem;margin:0">'
+          + 'This link is too long for a QR code \u2014 it carries the data itself. '
+          + 'Copy the link instead, or host the data at a URL and load it from there.'
+          + '</p>';
+        downloadBtn.disabled = true;
+      }
     }
 
     // Wire toggle
@@ -350,6 +518,7 @@ const SHARE_SCRIPT_SRC = document.currentScript
     downloadBtn.addEventListener('click', () => {
       const url = getShareUrl();
       const svgStr = generateDownloadableSvg(url);
+      if (!svgStr) return;   // nothing to download; the dialog already says why
       const blob = new Blob([svgStr], { type: 'image/svg+xml' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);

@@ -9,6 +9,7 @@
  */
 
 import { createRng } from './prng.js';
+import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forgetSeed } from './share-state.js';
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
@@ -20,7 +21,7 @@ import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initShareLink, reportInputProblem } from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem } from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -107,7 +108,12 @@ export function initOneSamplePage(config) {
     return state;
   }
 
-  if (generateBar) initShareLink(generateBar, getShareState);
+  // The address bar carries the shareable state, so Share, the QR and a
+  // straight copy out of the browser all agree (js/share-state.js). This
+  // replaced a "Copy link" button that was the only thing doing it correctly,
+  // and existed on two pages out of seventy-one.
+  registerShareState(getShareState);
+  syncUrlOnInteraction();
 
   // Mechanism strip
   const mechanismStrip = document.getElementById('mechanism-strip');
@@ -1214,6 +1220,8 @@ export function initOneSamplePage(config) {
       renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
     }
     announce(`Generated ${count} simulation${count > 1 ? 's' : ''}. Total: ${allStats.length}`);
+    // Something has been generated, so the link is worthless without the seed.
+    markGenerated();
   }
 
   // ─── Chart rendering ───
@@ -1411,6 +1419,8 @@ export function initOneSamplePage(config) {
   }
 
   function resetSimulation() {
+    // A reset means "give me a clean tool", which includes a clean address bar.
+    forgetSeed();
     allStats = [];
     rng = null;
     mechanismInitialized = false;

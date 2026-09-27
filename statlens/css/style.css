@@ -2310,23 +2310,6 @@ body[data-hide-interpretations="true"] .interpretation { display: none !importan
 }
 @media print { .display-toggle { display: none; } }
 
-/* "Copy link" button — share the exact tool configuration + seed */
-.share-link-btn {
-  margin-left: auto;
-  font-size: 0.8rem;
-  font-family: var(--font-mono);
-  color: var(--ims-dark, #114B5F);
-  background: none;
-  border: 1px solid var(--ims-border, #c9d6dc);
-  border-radius: 5px;
-  cursor: pointer;
-  padding: 0.25rem 0.55rem;
-  white-space: nowrap;
-}
-.share-link-btn:hover {
-  background: var(--ims-blue-tint, #eef5f9);
-  border-color: var(--ims-blue, #569BBD);
-}
 .share-link-btn:focus-visible {
   outline: 2px solid var(--ims-blue, #569BBD);
   outline-offset: 2px;
@@ -4936,110 +4919,6 @@ body[data-chrome="minimal"] .control-row {
   cursor: not-allowed;
 }
 
-/* ════════════════════════════════════════════════════════════════════════
-   TEMP LAYOUT VARIANTS  (experimental — remove once a layout is chosen)
-   Driven by body[data-layout="…"] set in settings.js. Behavior for rail/focus
-   lives in js/layout-variants.js. Variants: tight / rail / focus.
-   ════════════════════════════════════════════════════════════════════════ */
-
-/* ─── A: TIGHT (also the base for FOCUS) ───
-   Condense the stacked bands and cap the chart height so the whole page fits
-   a ~768px laptop window without scrolling. */
-body[data-layout="tight"] h1,
-body[data-layout="focus"] h1 { margin-bottom: 0.4rem; }
-
-body[data-layout="tight"] .app-body,
-body[data-layout="focus"] .app-body { margin: 0.3rem 0; }
-
-body[data-layout="tight"] #chart-container,
-body[data-layout="focus"] #chart-container { margin: 0.35rem 0; }
-
-body[data-layout="tight"] .mechanism-strip,
-body[data-layout="focus"] .mechanism-strip {
-  margin: 0.4rem 0;
-  padding: 0.35rem 0.6rem;
-}
-
-/* Collapse the two control rows (H0 / Ha) and the generate bar onto fewer lines */
-body[data-layout="tight"] #controls,
-body[data-layout="focus"] #controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 1.25rem;
-}
-body[data-layout="tight"] .hypothesis-display,
-body[data-layout="focus"] .hypothesis-display {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 1.25rem;
-  margin: 0;
-}
-body[data-layout="tight"] .hypothesis-row,
-body[data-layout="focus"] .hypothesis-row { margin: 0; }
-
-/* When hypotheses and run-controls share a row, group the generate bar into a
-   pill with a blue left-accent so it reads as a distinct "run the simulation"
-   zone, separated from the hypothesis setup. Wrap-safe at any width. */
-body[data-layout="tight"] #controls > .generate-bar,
-body[data-layout="focus"] #controls > .generate-bar {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--ims-blue);
-  border-radius: 6px;
-  padding: 0.2rem 0.55rem;
-  gap: 0.3rem;
-}
-/* "Run:" label leading the pill — decorative; the group already has an
-   aria-label ("Generate shuffles") for screen readers. */
-body[data-layout="tight"] #controls > .generate-bar::before,
-body[data-layout="focus"] #controls > .generate-bar::before {
-  content: "Run:";
-  font-weight: 700;
-  font-size: 0.85rem;
-  color: var(--ims-blue-text);
-  margin-right: 0.15rem;
-}
-
-/* Cap chart height: constrain the chart column width so the viewBox (600×371)
-   scales down proportionally. ~540px wide → ~334px tall. */
-@media (min-width: 768px) {
-  body[data-layout="tight"] .app-main,
-  body[data-layout="focus"] .app-main {
-    max-width: 540px;
-  }
-}
-
-/* Tighten the mechanism strip internals */
-body[data-layout="tight"] .mechanism-title,
-body[data-layout="focus"] .mechanism-title { margin-bottom: 0.1rem; }
-body[data-layout="tight"] .mechanism-collapse-bar,
-body[data-layout="focus"] .mechanism-collapse-bar { margin-bottom: 0.1rem; }
-body[data-layout="tight"] .mech-card-display,
-body[data-layout="focus"] .mech-card-display { gap: 0.4rem; }
-
-/* ─── B: SIDE RAIL ───
-   Mechanism strip is moved into the right rail (by js/layout-variants.js); orient
-   it vertically there and let the chart use the full main column. */
-@media (min-width: 768px) {
-  body[data-layout="rail"] main:has(.app-body) { max-width: 1180px; }
-  body[data-layout="rail"] .app-body { grid-template-columns: 1fr 360px; }
-}
-body[data-layout="rail"] .app-sidebar .mechanism-strip {
-  margin: 0.75rem 0 0;
-}
-body[data-layout="rail"] .app-sidebar .mechanism-panels {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.4rem;
-}
-body[data-layout="rail"] .app-sidebar .mechanism-arrow {
-  align-self: center;
-  transform: rotate(90deg);
-}
-/* Cards/bars get the full rail width when stacked */
-body[data-layout="rail"] .app-sidebar .mech-card-display { justify-content: flex-start; }
 
 /* ─── C: PROGRESSIVE FOCUS ───
    Inherits TIGHT. The mechanism strip auto-collapses on mass simulation
@@ -5461,3 +5340,63 @@ body[data-mech-layout="tiers"] .app-body,
 body[data-mech-layout="split"] .app-body { display: block; }
 body[data-mech-layout="tiers"] .app-sidebar,
 body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
+
+/* ===== Pinned QR =====
+   Stays on screen so a class can scan whenever they look up, instead of the
+   instructor waiting at the front for thirty scans before starting. Follows the
+   live URL, so a late scanner lands where the class is. */
+.qr-pin {
+  position: fixed;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  z-index: 60;
+  background: #fff;
+  border: 1px solid var(--ims-blue, #569BBD);
+  border-radius: 8px;
+  padding: 0.5rem 0.5rem 0.35rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  text-align: center;
+}
+.qr-pin-code svg { display: block; width: 116px; height: 116px; }
+.qr-pin--big .qr-pin-code svg { width: 260px; height: 260px; }
+.qr-pin-caption {
+  margin: 0.3rem 0 0.2rem;
+  font-size: 0.7rem;
+  color: var(--ims-gray-text, #555);
+  max-width: 116px;
+}
+.qr-pin--big .qr-pin-caption { max-width: 260px; font-size: 0.85rem; }
+.qr-pin-bigger {
+  font-size: 0.7rem;
+  background: none;
+  border: none;
+  color: var(--accent, #3A7CA5);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+}
+.qr-pin-close {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--ims-blue, #569BBD);
+  background: #fff;
+  color: var(--ims-dark, #114B5F);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.qr-pin-bigger:focus-visible,
+.qr-pin-close:focus-visible { outline: 2px solid var(--ims-green, #114B5F); outline-offset: 2px; }
+@media (max-width: 600px) {
+  /* A phone is the thing being scanned TO, not from — and the panel would sit
+     over the controls. Keep it reachable but out of the way. */
+  .qr-pin { right: 0.4rem; bottom: 0.4rem; padding: 0.35rem; }
+  .qr-pin-code svg { width: 84px; height: 84px; }
+  .qr-pin-caption { max-width: 84px; font-size: 0.62rem; }
+  .qr-pin-close { width: 30px; height: 30px; }
+}
+@media print { .qr-pin { display: none; } }

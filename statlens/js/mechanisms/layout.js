@@ -6,14 +6,17 @@
  * name. This is the first thing to take advantage of that: a second layout,
  * chosen by `?mech=`, with no change to the default.
  *
- * Not `?layout=`, which the plan proposed and which is already taken:
- * `js/layout-variants.js` uses it for the current/tight/rail/focus prototypes,
- * and `settings.js` writes `body[data-layout]` from it — so an earlier draft of
- * this module had its attribute silently overwritten, leaving an emptied strip
- * visible beneath the tiers on whichever pages happened to apply settings last.
- * Hence `data-mech-layout`.
+ * Named `mech` rather than `layout` because `?layout=` was taken at the time by
+ * a current/tight/rail/focus page-layout experiment, which wrote
+ * `body[data-layout]` and silently overwrote an earlier draft of this module's
+ * attribute. That experiment has since been removed (2026-09-27) and the name
+ * is free again, but `mech` is the better one anyway: this lays out the
+ * mechanism, not the page.
  *
- * - **`strip`** (default) — what every simulation page ships today. Source and
+ * Chosen by `?mech=` on a single link, or by the **Resampling layout** setting
+ * (`legacy` / `split`) for every page on this machine. The parameter wins.
+ *
+ * - **`strip`** (the `legacy` setting, and today's default) — what every simulation page ships today. Source and
  *   draw side by side with an arrow between them, in a collapsible strip; the
  *   distribution further down the page in its own section.
  * - **`tiers`** — all three stacked in order, each labelled with its role, so
@@ -38,6 +41,7 @@
 
 import { resolveEntities } from './entities.js';
 import { wordsFor } from './vocabulary.js';
+import { getResamplingLayout } from '../settings.js';
 
 /** @typedef {'strip'|'tiers'|'split'} LayoutMode */
 
@@ -51,7 +55,16 @@ import { wordsFor } from './vocabulary.js';
 export function requestedLayout(search) {
   const raw = new URLSearchParams(
     search ?? (typeof location === 'undefined' ? '' : location.search)).get('mech');
-  return (raw === 'tiers' || raw === 'split') ? raw : 'strip';
+  // An explicit `?mech=` wins, including `strip`: a link is a deliberate act and
+  // should show what it says whoever opens it, whatever they have saved.
+  if (raw === 'tiers' || raw === 'split' || raw === 'strip') return raw;
+  // Otherwise the saved preference. 'legacy' is the strip, named for what it is
+  // to a reader of the settings dialog rather than for what the CSS calls it.
+  try {
+    return getResamplingLayout() === 'split' ? 'split' : 'strip';
+  } catch {
+    return 'strip';
+  }
 }
 
 /**
