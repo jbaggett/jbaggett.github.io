@@ -22,6 +22,8 @@
   --curve-f: #114B5F;               /* the function itself: solid, darkest */
   --curve-df: #C05E10;              /* the derivative: dashed, warm */
   --curve-accum: #7B2D8E;           /* the accumulation function: solid violet */
+  --curve-d2f: #7B2D8E;             /* the second derivative — the same violet, which is
+                                       safe because the two never share a view */
   --tangent: #C2185B;               /* tangent / secant lines */
   --area-pos: rgba(86, 155, 189, 0.38);
   --area-neg: rgba(192, 94, 16, 0.30);

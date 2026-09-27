@@ -44,6 +44,9 @@ const TRACE_STEP = 0.02;
 const state = {
   node: null,
   dNode: null,
+  d2Node: null,
+  d2f: null,
+  second: false,
   /** @type {(x:number)=>number} */ f: () => NaN,
   /** @type {(x:number)=>number} */ df: () => NaN,
   x: -3,
@@ -58,6 +61,7 @@ const state = {
   trace: new Map(),
 };
 
+let chartS = null;
 let chartF = createChart('#chart-f', { height: 290, label: 'Graph of f with a tangent line at the moving point' });
 let chartD = createChart('#chart-d', { height: 290, label: 'Slopes traced so far, forming the graph of f prime' });
 
@@ -154,6 +158,8 @@ function render() {
       short ? { dy: slope < 0 ? 20 : -14 } : { dy: 0, middle: true });
   }
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
+
+  if (state.second) drawSecond(x);
 
   updateText(x, fx, slope, secantSlope);
   alignSlider();
@@ -259,8 +265,10 @@ function alignSlider() {
  * same pixel column in both — without that the line would be a lie.
  */
 function markerLine(chart, px) {
-  // With the slider between the plots, the slider is the marker.
-  if (state.layout === 'slider') return;
+  // With the slider between the plots it IS the marker — but it can only sit on
+  // one seam, and three plots have two. So as soon as f ″ is showing, the
+  // dashed line comes back: it is the only thing that can link all three.
+  if (state.layout === 'slider' && !state.second) return;
   chart.gOver.append('line').attr('class', 'll-marker-line')
     .attr('x1', px).attr('x2', px)
     .attr('y1', chart.margin.top).attr('y2', chart.height - chart.margin.bottom);
@@ -274,6 +282,41 @@ function markerLine(chart, px) {
 
 /** The one string that appears on both graphs. */
 const slopeLabel = (/** @type {number} */ slope) => `f \u2032 = ${fmt(slope, 2)}`;
+
+/**
+ * The third plot: f ″, with the same crimson height at the same x.
+ *
+ * Its own y-scale, like the others — the three functions have nothing to do
+ * with each other numerically, and forcing a shared axis would flatten whichever
+ * one happens to be small. What ties the plots together is the x position, which
+ * every chart here shares by construction.
+ */
+function drawSecond(x) {
+  if (!chartS) {
+    chartS = createChart('#chart-2', { height: 290, label: 'Graph of the second derivative' });
+  }
+  const dom = [state.xMin, state.xMax];
+  const yDom = autoYDomain(state.d2f, dom[0], dom[1], { minSpan: 2 });
+  const { xs, ys } = makeScales(chartS, dom, yDom);
+  drawAxes(chartS, { xs, ys, xLabel: 'x', yLabel: 'f \u2033(x)' });
+  chartS.plot.selectAll('*').remove();
+  chartS.gOver.selectAll('*').remove();
+  drawCurve(chartS.plot, state.d2f, { xs, ys, className: 'bd-d2f' });
+  markerLine(chartS, xs(x));
+
+  const v = state.d2f(x);
+  if (Number.isFinite(v)) {
+    chartS.gOver.append('line').attr('class', 'bd-height')
+      .attr('x1', xs(x)).attr('x2', xs(x)).attr('y1', ys(0)).attr('y2', ys(v));
+    chartS.gOver.append('circle').attr('class', 'll-point')
+      .attr('cx', xs(x)).attr('cy', ys(v)).attr('r', 6);
+    const short = Math.abs(ys(0) - ys(v)) < 26;
+    valueLabel(chartS, xs(x), short ? ys(v) : (ys(0) + ys(v)) / 2,
+      'height', `f \u2033 = ${fmt(v, 2)}`,
+      short ? { dy: v < 0 ? 20 : -14 } : { dy: 0, middle: true });
+  }
+  addDragTarget(chartS, xs, xs(x));
+}
 
 /** Keep the f′ axis steady while tracing, so dots do not jump as the range grows. */
 function traceDomain() {
@@ -385,7 +428,8 @@ function updateText(x, fx, slope, secantSlope) {
     <span><b>x</b> ${fmt(x, 2)}</span>
     <span><b>f(x)</b> ${fmt(fx, 3)}</span>`
     + (state.secant ? `<span><b>secant slope</b> ${fmt(secantSlope, 3)}</span>` : '')
-    + `<span><b>f ′(x)</b> ${fmt(slope, 3)}</span>`;
+    + `<span><b>f ′(x)</b> ${fmt(slope, 3)}</span>`
+    + (state.second ? `<span><b>f ″(x)</b> ${fmt(state.d2f(x), 3)}</span>` : '');
 
   const gap = Math.abs(secantSlope - slope);
   const direction = slope > 0.005 ? 'rising' : slope < -0.005 ? 'falling' : 'level';
@@ -534,8 +578,10 @@ initPage({
       onChange(node, src) {
         state.node = node;
         state.dNode = derivative(node);
+        state.d2Node = derivative(state.dNode);
         state.f = compile(node);
         state.df = compile(state.dNode);
+        state.d2f = compile(state.d2Node);
         state.trace.clear();
         state.x = state.xMin;
         updateUrl({ f: src });
@@ -555,6 +601,30 @@ initPage({
       $('#h-out').textContent = fmt(state.h, 2);
       render();
     });
+    $('#second-btn').addEventListener('click', () => {
+      state.second = !state.second;
+      $('#wrap-2').hidden = !state.second;
+      $('#key-d2f').hidden = !state.second;
+      $('#second-btn').setAttribute('aria-pressed', String(state.second));
+      $('#second-btn').innerHTML = state.second ? 'Hide <i>f</i> \u2033' : 'Show <i>f</i> \u2033';
+      // Hiding the wrapper leaves whatever was drawn inside it; clear it, so a
+      // hidden chart never holds a stale marker from the last time it was open.
+      if (!state.second && chartS) {
+        chartS.plot.selectAll('*').remove();
+        chartS.gOver.selectAll('*').remove();
+      }
+      // With three plots the slider can only be on one seam, so the caption has
+      // to stop claiming it marks x "on both".
+      $('#key-marker').innerHTML = state.second
+        ? 'The dashed line marks the same <i>x</i> on all three'
+        : 'The slider between them marks the same <i>x</i> on both';
+      render();
+      announce(state.second
+        ? 'Second derivative shown as a third graph. The dashed line now links all three.'
+        : 'Second derivative hidden.');
+    });
+    if (q.get('second') === 'true') $('#second-btn').click();
+
     $('#clear-btn').addEventListener('click', () => {
       state.trace.clear(); render();
       announce('Trace cleared.', 100);
