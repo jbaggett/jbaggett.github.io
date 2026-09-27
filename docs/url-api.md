@@ -383,6 +383,7 @@ way a hand sketch goes astray.
 | `readout` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
 | `secant` | `true`/`false` | **off** | The dashed secant, its *h* slider, and the secant slope in the readout. Off by default: secant-to-tangent is a different question with two tools of its own, and here it competed with the tangent for the same line through the same point. |
 | `h` | number | `1` | The secant gap. Giving it implies `secant=true`, so older links still show a secant. |
+| `unitrun` | `true`/`false` | **off** | A slope triangle with a run of exactly 1, so the rise *is* the slope. Drawn only when the rise fits the window — with a steep slope against a shallow *y*-range it would leave the frame, and it is omitted rather than drawn clipped. |
 
 ## CalcLens — Sketch from Conditions
 

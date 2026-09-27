@@ -44,6 +44,19 @@
      Scoped by id and by data attribute, not by redefining a kit class. */
   #h-wrap { display: block; margin-top: 0.6rem; }
   [data-secant][hidden] { display: none; }
+
+  /* The same quantity, written on both graphs. f′'s colour on purpose, even on
+     the plot of f — an orange number beside a crimson tangent says "this slope
+     is an f′ value". The white halo keeps it legible over the gridlines. */
+  .bd-value {
+    fill: var(--curve-df); font-weight: 700; font-size: var(--chart-text);
+    paint-order: stroke; stroke: var(--bg); stroke-width: 3.5px; stroke-linejoin: round;
+  }
+  .bd-unit path { stroke: var(--ims-gray); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .bd-unit-label {
+    fill: var(--ims-gray-text); font-size: calc(var(--chart-text) * 0.88);
+    paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round;
+  }
 </style>
 </head>
 <body>
@@ -128,7 +141,10 @@
     <p class="ll-hint" id="chart-key">
       <b>Top:</b> <i>f</i>, with the tangent at the point.
       <b>Bottom:</b> every slope you have visited, plotted as a height.
-      The dashed line marks the same <i>x</i> on both — drag on
+      The dashed line marks the same <i>x</i> on both, and
+      <span style="color:var(--curve-df); font-weight:700;">the orange number</span>
+      is written twice on purpose: the <b>steepness</b> of <i>f</i> up there and the
+      <b>height</b> of <i>f</i>′ down here are one quantity. Drag on
       <b>either</b> graph to move it.
     </p>
 
@@ -158,6 +174,22 @@
      line. The <em>slope</em> of that tangent is plotted on the bottom graph as a
      <em>height</em>. Sweep across and the bottom graph fills in: that is
      <i>f</i>′.</p>
+
+  <h3>The slope, written twice</h3>
+  <p>The orange <span class="ll-math" id="help-tex3"></span> appears on
+     <em>both</em> graphs at once — beside the tangent on <i>f</i>, and beside
+     the point on <i>f</i>′. It is the same string and the same colour in both
+     places because it is the same number: the <b>steepness</b> up there and the
+     <b>height</b> down here are one quantity, which is the whole idea the pair
+     of graphs exists to carry.</p>
+  <p>Orange is <i>f</i>′'s colour, used deliberately even on the graph of
+     <i>f</i> — an orange number beside a crimson tangent says <em>this slope is
+     an f′ value</em>.</p>
+  <p><code>?unitrun=true</code> adds a slope triangle with a run of exactly 1,
+     so the rise <em>is</em> the slope. It is drawn only when that rise fits the
+     window: a steep slope against a shallow <i>y</i>-range would send it off
+     the frame, and it is left out rather than drawn clipped and lying about its
+     height.</p>
 
   <h3>The secant gap <i>h</i> <span class="ll-hint">(off by default)</span></h3>
   <p>Secant-to-tangent is a different question, and it has two tools of its own:

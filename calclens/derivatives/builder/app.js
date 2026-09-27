@@ -52,6 +52,7 @@ const state = {
   xMax: 3,
   reveal: false,
   secant: false,
+  unitRun: false,
   /** @type {Map<number, number>} slope traced at each grid position */
   trace: new Map(),
 };
@@ -99,6 +100,10 @@ function render() {
     }
     chartF.gOver.append('circle').attr('class', 'll-point')
       .attr('cx', xs(x)).attr('cy', ys(fx)).attr('r', 6);
+    if (state.unitRun && Number.isFinite(slope)) {
+      unitRunTriangle(chartF, xs, ys, x, fx, slope, yDom);
+    }
+    if (Number.isFinite(slope)) valueLabel(chartF, xs(x), ys(fx), slopeLabel(slope), slope);
   }
   markerLine(chartF, xs(x));
   addDragTarget(chartF, xs, xs(x));
@@ -128,10 +133,64 @@ function render() {
   if (Number.isFinite(slope)) {
     chartD.gOver.append('circle').attr('class', 'll-point')
       .attr('cx', scalesD.xs(x)).attr('cy', scalesD.ys(slope)).attr('r', 6);
+    valueLabel(chartD, scalesD.xs(x), scalesD.ys(slope), slopeLabel(slope));
   }
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
   updateText(x, fx, slope, secantSlope);
+}
+
+/**
+ * The same number, in the same words and the same colour, on both plots.
+ *
+ * This is the whole point of the pair: the STEEPNESS of f at x and the HEIGHT
+ * of f′ at x are one quantity. Saying it in the prose underneath is weaker than
+ * writing it twice in the picture, once on each graph, identically.
+ *
+ * Colour is never the only cue — the text is the same string in both places —
+ * but the colour is f′'s, deliberately, including on the upper plot. An orange
+ * number beside a crimson tangent says *this slope is an f′ value*, which is
+ * the sentence the tool exists to make.
+ */
+function valueLabel(chart, px, py, text, slope) {
+  // Sit on the side the tangent is NOT using: a rising tangent occupies up-and-
+  // right of the point, so the label goes up-and-left, and vice versa. Falls
+  // back to whichever side has room near a frame edge.
+  const roomRight = chart.width - chart.margin.right - px > 96;
+  const roomLeft = px - chart.margin.left > 96;
+  let right = slope === undefined ? roomRight : slope < 0;
+  if (right && !roomRight) right = false;
+  if (!right && !roomLeft) right = true;
+  chart.gOver.append('text').attr('class', 'bd-value')
+    .attr('x', right ? px + 9 : px - 9).attr('y', py - 12)
+    .attr('text-anchor', right ? 'start' : 'end')
+    .text(text);
+}
+
+/**
+ * The rise over a run of exactly 1, so the rise IS the slope.
+ *
+ * Off by default. It only works when the rise fits the window: with x³ − 3x on
+ * [−3, 3] the slope reaches 24 against a y-range of about ±20, so the triangle
+ * would leave the frame. It is drawn when it fits and omitted when it does not,
+ * rather than drawn clipped and lying about its height.
+ */
+function unitRunTriangle(chart, xs, ys, x, fx, slope, yDom) {
+  const x1 = x + 1;
+  const top = fx + slope;
+  if (x1 > xs.domain()[1] || top > yDom[1] || top < yDom[0]) return false;
+  const g = chart.gOver.append('g').attr('class', 'bd-unit');
+  g.append('path')
+    .attr('d', `M${xs(x)},${ys(fx)} L${xs(x1)},${ys(fx)} L${xs(x1)},${ys(top)}`)
+    .attr('fill', 'none');
+  g.append('text').attr('class', 'bd-unit-label')
+    .attr('x', (xs(x) + xs(x1)) / 2).attr('y', ys(fx) + 14).attr('text-anchor', 'middle')
+    .text('run 1');
+  g.append('text').attr('class', 'bd-unit-label')
+    .attr('x', xs(x1) + 6).attr('y', (ys(fx) + ys(top)) / 2)
+    .attr('dominant-baseline', 'middle')
+    .text(`rise ${fmt(slope, 2)}`);
+  return true;
 }
 
 /**
@@ -153,6 +212,9 @@ function markerLine(chart, px) {
     .attr('width', 8).attr('height', 12).attr('rx', 3)
     .attr('fill', '#fff').attr('stroke', '#444').attr('stroke-width', 1.2);
 }
+
+/** The one string that appears on both graphs. */
+const slopeLabel = (/** @type {number} */ slope) => `f \u2032 = ${fmt(slope, 2)}`;
 
 /** Keep the f′ axis steady while tracing, so dots do not jump as the range grows. */
 function traceDomain() {
@@ -364,6 +426,7 @@ initPage({
     // shows one.
     // `?h=` implies the secant, so an older link that set a gap still shows one.
     state.secant = q.get('secant') === 'true' || q.has('h');
+    state.unitRun = q.get('unitrun') === 'true';
     if (q.has('h')) {
       const hv = Number(q.get('h'));
       if (Number.isFinite(hv)) { state.h = hv; $('#h-slider').value = String(hv); $('#h-out').textContent = fmt(hv, 2); }
@@ -375,6 +438,7 @@ initPage({
 
     setTex($('#help-tex1'), '(x,\\,f(x))\\ \\text{and}\\ (x+h,\\,f(x+h))');
     setTex($('#help-tex2'), '\\frac{f(x+h)-f(x)}{h}');
+    setTex($('#help-tex3'), "f\\,' = m");
 
 
     // Preset labels are typeset from the very expression they insert, so the
