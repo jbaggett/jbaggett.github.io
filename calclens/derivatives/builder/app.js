@@ -47,6 +47,8 @@ const state = {
   d2Node: null,
   d2f: null,
   second: false,
+  reveal2: false,
+  /** @type {Map<number, number>} */ trace2: new Map(),
   /** @type {(x:number)=>number} */ f: () => NaN,
   /** @type {(x:number)=>number} */ df: () => NaN,
   x: -3,
@@ -156,6 +158,20 @@ function render() {
     const short = Math.abs(y0 - y1) < 26;
     valueLabel(chartD, px, short ? y1 : (y0 + y1) / 2, 'height', slopeLabel(slope),
       short ? { dy: slope < 0 ? 20 : -14 } : { dy: 0, middle: true });
+
+    // The cascade. Exactly the picture from the plot above, one level down: a
+    // tangent whose slope is the height on the next graph. Green, because two
+    // crimson relationships on one screen would be a puzzle rather than a
+    // pattern — and green is never the only cue, since the label names f ″.
+    const curv = state.second ? state.d2f(x) : NaN;
+    if (Number.isFinite(curv)) {
+      const half = (state.xMax - state.xMin) * 0.22;
+      chartD.gOver.append('line').attr('class', 'bd-casc')
+        .attr('x1', scalesD.xs(x - half)).attr('y1', scalesD.ys(slope - curv * half))
+        .attr('x2', scalesD.xs(x + half)).attr('y2', scalesD.ys(slope + curv * half));
+      valueLabel(chartD, px, scalesD.ys(slope), 'slope', `f \u2033 = ${fmt(curv, 2)}`,
+        { slope: curv, dy: curv < 0 ? 26 : -30, cls: 'bd-value-2' });
+    }
   }
   addDragTarget(chartD, scalesD.xs, scalesD.xs(x));
 
@@ -178,7 +194,7 @@ function render() {
  * the sentence the tool exists to make.
  */
 function valueLabel(chart, px, py, role, text, opts = {}) {
-  const { slope, dy = -12, middle = false } = opts;
+  const { slope, dy = -12, middle = false, cls = '' } = opts;
   // Sit on the side the tangent is NOT using: a rising tangent occupies up-and-
   // right of the point, so the label goes up-and-left, and vice versa. Falls
   // back to whichever side has room near a frame edge.
@@ -187,8 +203,13 @@ function valueLabel(chart, px, py, role, text, opts = {}) {
   let right = slope === undefined ? roomRight : slope < 0;
   if (right && !roomRight) right = false;
   if (!right && !roomLeft) right = true;
-  const t = chart.gOver.append('text').attr('class', 'bd-value')
-    .attr('x', right ? px + 9 : px - 9).attr('y', py + dy)
+  // Kept inside the frame vertically as well as horizontally: near the top of a
+  // plot the cascade label was being cut in half by the chart's own edge.
+  const top = chart.margin.top + 13;
+  const bottom = chart.height - chart.margin.bottom - 4;
+  const y = Math.min(bottom, Math.max(top, py + dy));
+  const t = chart.gOver.append('text').attr('class', `bd-value ${cls}`.trim())
+    .attr('x', right ? px + 9 : px - 9).attr('y', y)
     .attr('text-anchor', right ? 'start' : 'end');
   // Written as an equation — "slope = f ′ = 9.00" — not as a juxtaposition.
   // "slope f ′" can be read as a compound noun meaning the slope OF f ′, which
@@ -293,40 +314,51 @@ const slopeLabel = (/** @type {number} */ slope) => `f \u2032 = ${fmt(slope, 2)}
  */
 function drawSecond(x) {
   if (!chartS) {
-    chartS = createChart('#chart-2', { height: 290, label: 'Graph of the second derivative' });
+    chartS = createChart('#chart-2', { height: 290, label: 'The slopes of f prime, traced, forming f double prime' });
   }
   const dom = [state.xMin, state.xMax];
-  const yDom = autoYDomain(state.d2f, dom[0], dom[1], { minSpan: 2 });
+  const yDom = traceDomainOf(state.trace2, state.d2f, state.reveal2);
   const { xs, ys } = makeScales(chartS, dom, yDom);
   drawAxes(chartS, { xs, ys, xLabel: 'x', yLabel: 'f \u2033(x)' });
   chartS.plot.selectAll('*').remove();
   chartS.gOver.selectAll('*').remove();
-  drawCurve(chartS.plot, state.d2f, { xs, ys, className: 'bd-d2f' });
+
+  // Dots you traced, and the true curve only on request — the same bargain the
+  // f′ plot strikes, one level down.
+  if (state.reveal2) drawCurve(chartS.plot, state.d2f, { xs, ys, className: 'bd-d2f' });
+  for (const [k, v] of state.trace2) {
+    chartS.plot.append('circle').attr('r', 2.6).attr('fill', 'var(--curve-d2f)')
+      .attr('cx', xs(k * TRACE_STEP)).attr('cy', ys(v));
+  }
   markerLine(chartS, xs(x));
 
   const v = state.d2f(x);
   if (Number.isFinite(v)) {
-    chartS.gOver.append('line').attr('class', 'bd-height')
+    chartS.gOver.append('line').attr('class', 'bd-casc-h')
       .attr('x1', xs(x)).attr('x2', xs(x)).attr('y1', ys(0)).attr('y2', ys(v));
-    chartS.gOver.append('circle').attr('class', 'll-point')
-      .attr('cx', xs(x)).attr('cy', ys(v)).attr('r', 6);
+    chartS.gOver.append('circle').attr('cx', xs(x)).attr('cy', ys(v)).attr('r', 6)
+      .attr('fill', 'var(--tangent-2)').attr('stroke', '#fff').attr('stroke-width', 1.6);
     const short = Math.abs(ys(0) - ys(v)) < 26;
     valueLabel(chartS, xs(x), short ? ys(v) : (ys(0) + ys(v)) / 2,
       'height', `f \u2033 = ${fmt(v, 2)}`,
-      short ? { dy: v < 0 ? 20 : -14 } : { dy: 0, middle: true });
+      short ? { dy: v < 0 ? 20 : -14, cls: 'bd-value-2' } : { dy: 0, middle: true, cls: 'bd-value-2' });
   }
   addDragTarget(chartS, xs, xs(x));
 }
 
 /** Keep the f′ axis steady while tracing, so dots do not jump as the range grows. */
 function traceDomain() {
-  const vals = [...state.trace.values()].filter(Number.isFinite);
+  return traceDomainOf(state.trace, state.df, state.reveal);
+}
+
+function traceDomainOf(trace, fn, revealed) {
+  const vals = [...trace.values()].filter(Number.isFinite);
   const probe = [];
   for (let i = 0; i <= 60; i++) {
-    const v = state.df(state.xMin + ((state.xMax - state.xMin) * i) / 60);
+    const v = fn(state.xMin + ((state.xMax - state.xMin) * i) / 60);
     if (Number.isFinite(v)) probe.push(v);
   }
-  const all = (state.reveal || vals.length === 0) ? probe.concat(vals) : vals.concat(probe);
+  const all = (revealed || vals.length === 0) ? probe.concat(vals) : vals.concat(probe);
   if (!all.length) return [-5, 5];
   all.sort((a, b) => a - b);
   const q = (/** @type {number} */ p) => all[Math.min(all.length - 1, Math.floor(p * (all.length - 1)))];
@@ -413,6 +445,8 @@ function setX(v, opts = {}) {
   // A non-finite slope leaves a genuine hole in the trace — |x| at 0 must not
   // quietly acquire a tangent it does not have.
   if (Number.isFinite(slope)) state.trace.set(Math.round(state.x / TRACE_STEP), slope);
+  const curv = state.d2f ? state.d2f(state.x) : NaN;
+  if (Number.isFinite(curv)) state.trace2.set(Math.round(state.x / TRACE_STEP), curv);
   $('#x-slider').value = String(state.x);
   $('#x-out').textContent = fmt(state.x, 2);
   render();
@@ -488,8 +522,9 @@ function startSweep() {
       const from = state.xMin + ((state.xMax - state.xMin) * (i - 1)) / 12;
       const to = state.xMin + ((state.xMax - state.xMin) * i) / 12;
       for (let t = from; t < to; t += TRACE_STEP) {
-        const s = state.df(t);
+        const s = state.df(t), c = state.d2f(t);
         if (Number.isFinite(s)) state.trace.set(Math.round(t / TRACE_STEP), s);
+        if (Number.isFinite(c)) state.trace2.set(Math.round(t / TRACE_STEP), c);
       }
       setX(to, { quiet: true });
       if (i >= 12) stopSweep();
@@ -605,6 +640,8 @@ initPage({
       state.second = !state.second;
       $('#wrap-2').hidden = !state.second;
       $('#key-d2f').hidden = !state.second;
+      $('#key-casc').hidden = !state.second;
+      $('#reveal-slot-2').hidden = !state.second;
       $('#second-btn').setAttribute('aria-pressed', String(state.second));
       $('#second-btn').innerHTML = state.second ? 'Hide <i>f</i> \u2033' : 'Show <i>f</i> \u2033';
       // Hiding the wrapper leaves whatever was drawn inside it; clear it, so a
@@ -626,7 +663,7 @@ initPage({
     if (q.get('second') === 'true') $('#second-btn').click();
 
     $('#clear-btn').addEventListener('click', () => {
-      state.trace.clear(); render();
+      state.trace.clear(); state.trace2.clear(); render();
       announce('Trace cleared.', 100);
     });
     initReveal({
@@ -635,6 +672,14 @@ initPage({
       hidden: revealHidden(q, false),
       prompt: 'Sketch what you think f ′ looks like first',
       onChange(shown) { state.reveal = shown; render(); },
+    });
+    initReveal({
+      mount: $('#reveal-slot-2'),
+      label: 'the true f \u2033',
+      hidden: true,
+      hotkey: 't',
+      prompt: 'Sweep to trace it first',
+      onChange(shown) { state.reveal2 = shown; render(); },
     });
     $('#play-btn').addEventListener('click', () => (sweepHandle === null ? startSweep() : stopSweep()));
 

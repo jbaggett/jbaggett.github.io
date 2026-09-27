@@ -25,6 +25,11 @@
   --curve-d2f: #7B2D8E;             /* the second derivative — the same violet, which is
                                        safe because the two never share a view */
   --tangent: #C2185B;               /* tangent / secant lines */
+  --tangent-2: #2E7D32;             /* the SECOND relationship, f′ → f″, where a tool
+                                       shows both cascading at once. Never the only cue:
+                                       it is always paired with a label naming f″, and it
+                                       never takes the same role on the same plot as
+                                       --tangent, so red/green vision is not load-bearing */
   --area-pos: rgba(86, 155, 189, 0.38);
   --area-neg: rgba(192, 94, 16, 0.30);
 

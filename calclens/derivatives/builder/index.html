@@ -60,7 +60,11 @@
   }
   /* The role word is muted so the crimson "f ′ = #" stays the matching part. */
   .bd-role { fill: var(--ims-gray-text); font-weight: 600; }
-  .bd-d2f { stroke: var(--curve-d2f); stroke-width: 2.5; fill: none; }
+  .bd-d2f { stroke: var(--curve-d2f); stroke-width: 2.5; stroke-dasharray: 7 4; fill: none; }
+  .bd-casc { stroke: var(--tangent-2); stroke-width: 2.4; fill: none; }
+  .bd-casc-h { stroke: var(--tangent-2); stroke-width: 3; stroke-linecap: round; }
+  .bd-value-2 { fill: var(--tangent-2); }
+  #key-casc[hidden] { display: none; }
   /* .ll-legend span carries display:inline-flex, which beats the bare [hidden]. */
   #key-d2f[hidden] { display: none; }
   .bd-unit path { stroke: var(--ims-gray); stroke-width: 1.5; stroke-dasharray: 4 3; }
@@ -174,6 +178,7 @@
       <button type="button" id="clear-btn">Clear trace</button>
       <button type="button" id="second-btn" aria-pressed="false">Show <i>f</i> ″</button>
       <div id="reveal-slot"></div>
+      <div id="reveal-slot-2" hidden></div>
     </div>
   </section>
 
@@ -196,7 +201,8 @@
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2"/></svg> tangent</span>
       <span><svg viewBox="0 0 26 10"><line x1="13" y1="1" x2="13" y2="9" stroke="#C2185B" stroke-width="3"/></svg> that slope, as a height</span>
-      <span id="key-d2f" hidden><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#7B2D8E" stroke-width="2.5"/></svg> <i>f</i> ″(x)</span>
+      <span id="key-d2f" hidden><svg viewBox="0 0 26 10"><circle cx="13" cy="5" r="3.5" fill="#7B2D8E"/></svg> <i>f</i> ″ you traced</span>
+      <span id="key-casc" hidden><svg viewBox="0 0 26 10"><line x1="1" y1="8" x2="25" y2="2" stroke="#2E7D32" stroke-width="2"/></svg> slope of <i>f</i> ′, as a height on <i>f</i> ″</span>
       <span data-secant hidden><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant</span>
       <span><svg viewBox="0 0 26 10"><circle cx="13" cy="5" r="3.5" fill="#C05E10"/></svg> slopes you traced</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5" stroke-dasharray="7 4"/></svg> true f′(x)</span>
