@@ -47,6 +47,16 @@ const DEFAULTS = {
   // interpretation text so students produce their own (calculator vs tutor mode)
   showInterpretations: false,
 
+  // How the resampling mechanism is laid out on the simulation pages.
+  //   'legacy' — source and one draw side by side in a horizontal strip, with
+  //              the distribution further down the page (what has always shipped)
+  //   'split'  — steps 1 and 2 in a narrow left column, step 3 in a wider right
+  //              one, the way the Sampling Distribution Lab does it
+  // Persisted, so an instructor sets it once. Expected to become the default
+  // (Jeff, 2026-09-27) — when it does, this line is the whole change.
+  // `?mech=` overrides it per link; see js/mechanisms/layout.js.
+  resamplingLayout: 'legacy',
+
   // TEMPORARY: simulation-page layout variant for A/B/C comparison.
   // 'current' (today), 'tight' (condensed), 'rail' (mechanism in side rail),
   // 'focus' (tight + mechanism auto-collapses on mass sim). Remove once chosen.
@@ -197,6 +207,21 @@ export function getShowInterpretations() {
  * TEMPORARY — remove with the rest of the layout-variant prototype.
  * @returns {'current'|'tight'|'rail'|'focus'}
  */
+/**
+ * How the resampling mechanism is laid out: `'legacy'` (the horizontal strip
+ * that has always shipped) or `'split'` (steps 1 and 2 left, step 3 right).
+ *
+ * A `?mech=` parameter wins, because a link is a deliberate act and should show
+ * what it says regardless of whose machine opens it. Otherwise the saved
+ * preference, which an instructor sets once.
+ *
+ * @returns {'legacy'|'split'}
+ */
+export function getResamplingLayout() {
+  const saved = getSetting('resamplingLayout');
+  return saved === 'split' ? 'split' : 'legacy';
+}
+
 export function getLayout() {
   const allowed = ['current', 'tight', 'rail', 'focus'];
   const urlLayout = new URLSearchParams(window.location.search).get('layout');

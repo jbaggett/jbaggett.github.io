@@ -266,6 +266,16 @@ export function initSettings() {
     </div>
     <div class="setting-row">
       <div>
+        <label for="set-resampling-layout" class="setting-label">Resampling layout</label>
+        <p class="setting-hint">How the simulation pages show the mechanism. Legacy: the source and one draw side by side, with the distribution below. Split: the source and one draw stacked on the left, the distribution on the right.</p>
+      </div>
+      <select id="set-resampling-layout">
+        <option value="legacy"${s.resamplingLayout !== 'split' ? ' selected' : ''}>Legacy</option>
+        <option value="split"${s.resamplingLayout === 'split' ? ' selected' : ''}>Split</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <div>
         <label for="set-mode" class="setting-label">Activity mode</label>
         <p class="setting-hint">Discovery: guided with questions. Presentation: all steps visible.</p>
       </div>
@@ -338,6 +348,18 @@ export function initSettings() {
       if (window.parent === window) {
         location.reload();
       }
+    });
+  }
+
+  // Resampling layout. Unlike the other settings this cannot be applied live:
+  // the mechanism is assembled once, before anything is drawn, because charts
+  // measure the box they are rendered into. So save and reload.
+  const layoutSel = /** @type {HTMLSelectElement|null} */ (document.getElementById('set-resampling-layout'));
+  if (layoutSel) {
+    layoutSel.addEventListener('change', () => {
+      setSettings({ resamplingLayout: layoutSel.value });
+      applySettings();
+      location.reload();
     });
   }
 

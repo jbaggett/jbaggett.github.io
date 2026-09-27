@@ -13,7 +13,10 @@
  * visible beneath the tiers on whichever pages happened to apply settings last.
  * Hence `data-mech-layout`.
  *
- * - **`strip`** (default) — what every simulation page ships today. Source and
+ * Chosen by `?mech=` on a single link, or by the **Resampling layout** setting
+ * (`legacy` / `split`) for every page on this machine. The parameter wins.
+ *
+ * - **`strip`** (the `legacy` setting, and today's default) — what every simulation page ships today. Source and
  *   draw side by side with an arrow between them, in a collapsible strip; the
  *   distribution further down the page in its own section.
  * - **`tiers`** — all three stacked in order, each labelled with its role, so
@@ -38,6 +41,7 @@
 
 import { resolveEntities } from './entities.js';
 import { wordsFor } from './vocabulary.js';
+import { getResamplingLayout } from '../settings.js';
 
 /** @typedef {'strip'|'tiers'|'split'} LayoutMode */
 
@@ -51,7 +55,16 @@ import { wordsFor } from './vocabulary.js';
 export function requestedLayout(search) {
   const raw = new URLSearchParams(
     search ?? (typeof location === 'undefined' ? '' : location.search)).get('mech');
-  return (raw === 'tiers' || raw === 'split') ? raw : 'strip';
+  // An explicit `?mech=` wins, including `strip`: a link is a deliberate act and
+  // should show what it says whoever opens it, whatever they have saved.
+  if (raw === 'tiers' || raw === 'split' || raw === 'strip') return raw;
+  // Otherwise the saved preference. 'legacy' is the strip, named for what it is
+  // to a reader of the settings dialog rather than for what the CSS calls it.
+  try {
+    return getResamplingLayout() === 'split' ? 'split' : 'strip';
+  } catch {
+    return 'strip';
+  }
 }
 
 /**
