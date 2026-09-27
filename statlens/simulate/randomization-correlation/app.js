@@ -5,7 +5,15 @@
  * Supports two-sided, right-tail, and left-tail alternatives.
  */
 
-import { createRng, shuffle } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
+
+/** These pages break an association by permuting one side of it. */
+const words = wordsFor('permuteAssociation');
+// Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
+applyRequestedLayout('permuteAssociation');
+import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { cor, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
@@ -258,7 +266,7 @@ function generateSimulations(count) {
   let lastR = 0;
 
   for (let i = 0; i < count; i++) {
-    const shuffledY = shuffle([...yValues], rng);
+    const shuffledY = shufflePairing(yValues, rng).values;
     const r = cor(xValues, shuffledY);
     allStats.push(r);
     lastShuffledY = shuffledY;
@@ -358,7 +366,7 @@ function renderChart(stats, observed, direction, highlightIndex = -1, highlightI
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Correlation (r)',
-    titleText: 'Null Distribution',
+    titleText: words.distribution,
     observedStat: observed,
     direction,
     nullCenter: 0,

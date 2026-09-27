@@ -103,13 +103,13 @@
         <!-- Mechanism strip: observed counts → one simulated sample drawn under H0 -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Simulation mechanism" hidden>
             <div class="mechanism-panels">
-                <div class="mechanism-panel">
+                <div class="mechanism-panel" data-entity="source">
                     <h2 class="mechanism-title">Observed Counts</h2>
                     <div id="mech-observed"></div>
                     <p class="mechanism-stat">&chi;&sup2; = <span id="mech-observed-chisq">&mdash;</span></p>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">&rarr;</div>
-                <div class="mechanism-panel">
+                <div class="mechanism-panel" data-entity="draw">
                     <h2 class="mechanism-title" id="sim-title">One Sample under H<sub>0</sub></h2>
                     <div id="mech-simulated"></div>
                     <p class="mechanism-stat">&chi;&sup2; = <span id="mech-simulated-chisq">&mdash;</span></p>
@@ -121,7 +121,7 @@
         <section id="chart-and-results" aria-label="Chart and results">
             <div class="app-body">
                 <div class="app-main" id="chart" aria-label="Null distribution of the chi-square statistic">
-                    <div id="chart-container"></div>
+                    <div id="chart-container" data-entity="distribution"></div>
                 </div>
                 <div class="app-sidebar" id="results">
                     <div id="result-summary" tabindex="-1">

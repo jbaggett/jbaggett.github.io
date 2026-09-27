@@ -8,7 +8,7 @@
 import { createRng, randNormal } from '../../js/prng.js';
 import { mean, sd } from '../../js/stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
-import { drawDotplot, computeDots } from '../../js/dotplot.js';
+import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
 import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart } from '../../js/page-utils.js';
 import { resolveChartType } from '../../js/chart-defaults.js';
@@ -90,10 +90,18 @@ const CAT_SPIKE_STACK = 40;
 // Proportion colours (Okabe-Ito, CVD-safe) live in CSS as .cat-success (amber
 // #C08700, hatched) and .cat-failure (blue #0072B2) — shared by the population
 // square, the scooped sample marbles, and the flying dots.
-/** Success amber — also colours the p̂ sampling distribution, since p̂ is the
- *  proportion of successes (ties the whole proportion view to "successes" and
- *  avoids clashing with the neutral blue used for the means distribution). */
-const SUCCESS_AMBER = '#C08700';
+/**
+ * The sampling distribution is drawn in StatLens's statistic colour whatever
+ * the statistic is — a proportion's sampling distribution is still a sampling
+ * distribution, and which statistic it is belongs on the axis, not in the hue.
+ *
+ * It used to be success-amber here, on the reasoning that p̂ is the proportion
+ * of successes. That tied the panel to the *ingredient* rather than to what the
+ * panel is, and made the same entity change colour between the Lab and every
+ * other tool. Amber stays where it means something: a success, in the
+ * population square and the scooped sample. (Jeff, 2026-09-27.)
+ */
+const SAMPLING_FILL = STATISTIC_FILL;
 
 /**
  * @param {string} shape
@@ -1017,7 +1025,7 @@ function renderComparisonLive() {
     showExport: false,
     ...(isCat() && {
       thresholds: snappedPropThresholds(n, unionSamplingDomain(), sampleMeans.length),
-      fillColor: SUCCESS_AMBER, // p̂ is the proportion of successes
+      fillColor: SAMPLING_FILL,
     }),
   });
   if (liveLabel) {
@@ -1173,7 +1181,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
         ...truthMarker(),
         animate: false,
         domain,
-        color: SUCCESS_AMBER, // p̂ is the proportion of successes
+        color: SAMPLING_FILL,
       });
       if (showNormalCheckbox?.checked && n >= 10) {
         overlayNormalOnSpike(spikeResult, sampleMeans, binWidth);
@@ -1190,7 +1198,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
         domain,
         binWidth,
         binOrigin: 0,
-        fillColor: SUCCESS_AMBER, // p̂ is the proportion of successes
+        fillColor: SAMPLING_FILL,
         // The newest dot is orange; against the amber pile that's too close for
         // CVD, so give it a persistent dark border as a non-colour cue.
         highlightStroke: '#1A1A1A',

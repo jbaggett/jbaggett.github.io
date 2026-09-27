@@ -113,12 +113,12 @@
         <!-- Mechanism strip: shifted bootstrap -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Simulation mechanism" hidden>
             <div class="mechanism-panels">
-                <div class="mechanism-panel" id="mech-observed">
+                <div class="mechanism-panel" data-entity="source" id="mech-observed">
                     <h2 class="mechanism-title">Observed Data</h2>
                     <p class="mechanism-stat" id="mech-observed-stat"></p>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">&#8594;</div>
-                <div class="mechanism-panel" id="mech-simulation">
+                <div class="mechanism-panel" data-entity="draw" id="mech-simulation">
                     <h2 class="mechanism-title" id="sim-title">This Simulation</h2>
                     <p class="mechanism-stat" id="mech-sim-stat"></p>
                 </div>
@@ -130,7 +130,7 @@
             <div class="app-body">
                 <div class="app-main" id="chart" aria-label="Randomization distribution">
                     <figure>
-                        <div id="chart-container"></div>
+                        <div id="chart-container" data-entity="distribution"></div>
                     </figure>
                 </div>
                 <div class="app-sidebar" id="results">

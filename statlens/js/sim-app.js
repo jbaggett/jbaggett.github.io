@@ -5,10 +5,13 @@
  */
 
 import { parseParams } from './url-params.js';
+import { applyRequestedLayout } from './mechanisms/layout.js';
+import { wordsFor } from './mechanisms/vocabulary.js';
+import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
-import { createRng, sampleIndicesWithReplacement} from './prng.js';
-import { mean, median, sd, quantile, resample, permute, detectPrecision, formatStat, quartiles } from './stats.js';
+import { createRng } from './prng.js';
+import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles } from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -97,7 +100,13 @@ export function initSimPage(config) {
   // Shared with the one-sample engine — a second copy of this number is how the
   // two engines drift apart (see the chart-type decision, 2026-09-25).
   const MEAN_DOT_MAX = MEAN_DOT_MAX_SHARED;
-  const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
+  // Which of the three entities this page names how (js/mechanisms/vocabulary.js).
+  const words = wordsFor(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
+  // Opt-in second layout (?layout=tiers). Applied here, before anything is
+  // drawn: charts measure the box they land in, so moving one afterwards means
+  // re-rendering it. Default is unchanged.
+  applyRequestedLayout(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
+    const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   /** True when the animated mean-dotplot mechanism should be used right now. */
   const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
     && resampleViewMode !== 'summary';
@@ -1135,29 +1144,41 @@ export function initSimPage(config) {
   function renderEmptyChart() {
     const PRE_SIM_N = 2000;
     const TRIM = 5; // 5/2000 = 0.25th percentile — captures extreme tails
-    const preRng = createRng('presim-' + Date.now());
+    // Seeded from the page's seed, not the wall clock. This pilot fixes the
+    // axis limits AND the dotplot's bin grid, so a clock seed made the same
+    // ?seed= link draw a visibly different chart on every load — different
+    // axis range, different bins, different shape — while the statistics
+    // underneath were perfectly reproducible. url-api.md promises this
+    // parameter is "critical for graded assessments where reproducibility is
+    // required"; half of it was. (Found 2026-09-27 while trying to build a
+    // no-visual-change guard and discovering nothing on these pages could be
+    // stable run to run.)
+    const preRng = createRng('presim-' + seed);
     const preStats = [];
 
     if (config.mode === 'bootstrap') {
       const statFn = getBootstrapStat().fn;
       if (config.paired && data2.length > 0) {
         const diffs = data2.map((v, i) => v - data1[i]);
-        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resample(diffs, preRng)));
+        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(diffs, preRng).values));
       } else if (config.twoGroup && data2.length > 0) {
-        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resample(data1, preRng)) - statFn(resample(data2, preRng)));
+        for (let i = 0; i < PRE_SIM_N; i++) {
+          const g = resampleGroups(data1, data2, preRng);
+          preStats.push(statFn(g.first.values) - statFn(g.second.values));
+        }
       } else {
-        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resample(data1, preRng)));
+        for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(data1, preRng).values));
       }
     } else if (config.paired && data2.length > 0) {
       // Paired randomization: sign-flip pre-sim
       const diffs = data2.map((v, i) => v - data1[i]);
       for (let i = 0; i < PRE_SIM_N; i++) {
-        const flipped = diffs.map(d => preRng() < 0.5 ? d : -d);
+        const flipped = signFlip(diffs, preRng).values;
         preStats.push(mean(flipped));
       }
     } else if (config.testStat) {
       for (let i = 0; i < PRE_SIM_N; i++) {
-        const [g1, g2] = permute(data1, data2, preRng);
+        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, preRng);
         preStats.push(config.testStat(g1, g2));
       }
     }
@@ -1501,10 +1522,9 @@ export function initSimPage(config) {
         // unaffected — see sampleIndicesWithReplacement.
         const diffs = data2.map((v, i) => v - data1[i]);
         for (let i = 0; i < count; i++) {
-          const idx = sampleIndicesWithReplacement(diffs.length, diffs.length, rng);
-          const rs = idx.map(j => diffs[j]);
+          const { values: rs, indices: idx } = resamplePairedDiffs(data1, data2, rng);
           lastResampleValues = rs;
-          lastResampleIndices = idx;
+          lastResampleIndices = idx ?? null;
           allStats.push(statFn(rs));
         }
       } else if (config.twoGroup && data2.length > 0) {
@@ -1512,8 +1532,9 @@ export function initSimPage(config) {
         /** @type {number[]} */ let lastRs1 = [];
         /** @type {number[]} */ let lastRs2 = [];
         for (let i = 0; i < count; i++) {
-          const rs1 = resample(data1, rng);
-          const rs2 = resample(data2, rng);
+          const { first, second } = resampleGroups(data1, data2, rng);
+          const rs1 = first.values;
+          const rs2 = second.values;
           lastRs1 = rs1;
           lastRs2 = rs2;
           const stat = statFn(rs1) - statFn(rs2);
@@ -1523,10 +1544,9 @@ export function initSimPage(config) {
       } else {
         // One-sample bootstrap — by index, for the same reason.
         for (let i = 0; i < count; i++) {
-          const idx = sampleIndicesWithReplacement(data1.length, data1.length, rng);
-          const rs = idx.map(j => data1[j]);
+          const { values: rs, indices: idx } = resampleOne(data1, rng);
           lastResampleValues = rs;
-          lastResampleIndices = idx;
+          lastResampleIndices = idx ?? null;
           allStats.push(statFn(rs));
         }
       }
@@ -1634,7 +1654,7 @@ export function initSimPage(config) {
 
       /** @type {number[]} */ let lastFlipped = [];
       for (let i = 0; i < count; i++) {
-        const flipped = centeredDiffs.map(d => rng() < 0.5 ? d : -d);
+        const flipped = signFlip(centeredDiffs, rng).values;
         lastFlipped = flipped;
         allStats.push(mean(flipped));
       }
@@ -1699,7 +1719,7 @@ export function initSimPage(config) {
       /** @type {number[]} */ let lastG1 = [];
       /** @type {number[]} */ let lastG2 = [];
       for (let i = 0; i < count; i++) {
-        const [g1, g2] = permute(data1, data2, rng);
+        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, rng);
         lastG1 = g1;
         lastG2 = g2;
         const stat = config.testStat(g1, g2);
@@ -3633,7 +3653,7 @@ export function initSimPage(config) {
     // Both are dashed — the colour is what says which method drew them.
     const ciLineColor = (ciMethod === 'se') ? NORMAL_CI_COLOR : PERCENTILE_CI_COLOR;
     ci = shownCI;
-    const titleText = `${config.mode === 'bootstrap' ? 'Bootstrap' : 'Randomization'} Distribution`;
+    const titleText = words.distribution;
     let xLabel;
     if (config.mode === 'bootstrap') {
       if (config.proportion) {

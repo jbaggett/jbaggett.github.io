@@ -5371,3 +5371,93 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 .header-toggle-row { margin-top: 0.5rem; }
 .header-toggle-note { margin: 0.2rem 0 0; }
 .header-toggle-note[hidden] { display: none; }
+
+/* ===== Mechanism tiers (?layout=tiers) =====
+   The Sampling Distribution Lab's arrangement, applied to a simulation tool:
+   source, one draw, and the accumulated distribution stacked in that order, so
+   the SEQUENCE is the picture. Opt-in only — the default layout is unchanged.
+   Accent colours match the Lab's, so the two read as the same idea. */
+.mech-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0.75rem 0 1rem;
+}
+.mech-tier {
+  border: 1px solid var(--border, #d8d8d8);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  position: relative;
+}
+.mech-tier--source       { border-left: 4px solid var(--ims-blue, #569BBD); }
+.mech-tier--draw         { border-left: 4px solid var(--ims-highlight, #E07020); }
+.mech-tier--distribution { border-left: 4px solid var(--ims-dark, #114B5F); }
+.mech-tier-head {
+  font-size: 0.85rem;
+  margin: 0 0 0.25rem;
+  color: var(--ims-gray-text, #555);
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.mech-tier-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fff;
+  padding: 0.05rem 0.4rem;
+  border-radius: 3px;
+  flex: none;
+}
+.mech-tier--source .mech-tier-tag       { background: var(--ims-blue, #569BBD); }
+.mech-tier--draw .mech-tier-tag         { background: var(--ims-highlight, #E07020); }
+.mech-tier--distribution .mech-tier-tag { background: var(--ims-dark, #114B5F); }
+/* The entities were laid out as flex children of the strip; in a tier each one
+   owns its full width. */
+.mech-tier > .mechanism-panel { flex: none; width: 100%; }
+@media print { .mech-tier { break-inside: avoid; } }
+/* In tiers the strip is an empty shell, and the engines set `hidden = false` on
+   it when the mechanism initialises. Take it out of the flow for good. */
+body[data-mech-layout="tiers"] #mechanism-strip,
+body[data-mech-layout="split"] #mechanism-strip { display: none !important; }
+
+/* ?mech=split — the Sampling Distribution Lab's actual wide-screen arrangement,
+   not a stack: steps 1 and 2 share a narrow left column, step 3 takes a wider
+   right one. Ratios, breakpoint and page width copied from the Lab
+   (conceptual/sampling-lab/index.html) so the two read as the same layout. One
+   column below the breakpoint. */
+.mech-tiers--split { display: grid; grid-template-columns: 1fr; gap: 0.6rem; }
+.mech-col-left { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.mech-col-right { min-width: 0; }
+@media (min-width: 820px) {
+  .mech-tiers--split { grid-template-columns: 0.82fr 1.18fr; align-items: start; }
+  /* main is 800px by default, which would squeeze the right column to nothing. */
+  body[data-mech-layout="split"] main { max-width: 1180px; }
+}
+/* The mini charts in steps 1 and 2 were sized for a half-width strip panel;
+   in a full-width tier they float in the middle of a lot of nothing. Keep them
+   left-aligned against the accent bar so the three steps read as a column. */
+body[data-mech-layout="tiers"] .mech-tier--source .mechanism-panel,
+body[data-mech-layout="tiers"] .mech-tier--draw .mechanism-panel,
+body[data-mech-layout="split"] .mech-tier--source .mechanism-panel,
+body[data-mech-layout="split"] .mech-tier--draw .mechanism-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+body[data-mech-layout="tiers"] .mech-tier--source .mech-minichart,
+body[data-mech-layout="tiers"] .mech-tier--draw .mech-minichart,
+body[data-mech-layout="split"] .mech-tier--source .mech-minichart,
+body[data-mech-layout="split"] .mech-tier--draw .mech-minichart { margin-left: 0; }
+/* Moving the distribution into a tier empties the chart column, which left the
+   results panel floating beside a blank half-page. */
+body[data-mech-layout="tiers"] #chart figure:empty,
+body[data-mech-layout="tiers"] .app-main:empty,
+body[data-mech-layout="split"] #chart figure:empty,
+body[data-mech-layout="split"] .app-main:empty { display: none; }
+body[data-mech-layout="tiers"] .app-body,
+body[data-mech-layout="split"] .app-body { display: block; }
+body[data-mech-layout="tiers"] .app-sidebar,
+body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }

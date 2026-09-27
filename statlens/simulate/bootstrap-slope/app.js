@@ -6,6 +6,8 @@
  */
 
 import { createRng } from '../../js/prng.js';
+import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
+import { resampleIndices } from '../../js/mechanisms/draws.js';
 import { linreg, mean, sd, detectPrecision, formatStat } from '../../js/stats.js';
 import { bootstrapCI } from '../../js/sim-engine.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
@@ -19,6 +21,9 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from '../../js/ci-method.js';
+
+// Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
+applyRequestedLayout('bootstrap');
 
 // ─── DOM ───
 
@@ -325,11 +330,9 @@ function generateResamples(count) {
   let lastReg = { slope: 0, intercept: 0 };
 
   for (let i = 0; i < count; i++) {
-    /** @type {number[]} */
-    const indices = [];
-    for (let j = 0; j < n; j++) {
-      indices.push(Math.floor(rng() * n));
-    }
+    // The unit here is a ROW, not a number: a regression bootstrap resamples
+    // (x, y) pairs, so the draw is the set of rows taken (js/mechanisms/draws.js).
+    const indices = resampleIndices(n, rng);
     const xBoot = indices.map(k => xData[k]);
     const yBoot = indices.map(k => yData[k]);
     const reg = linreg(xBoot, yBoot);

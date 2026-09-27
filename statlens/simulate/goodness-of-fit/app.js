@@ -6,7 +6,15 @@
  * distribution. The observed χ² is marked; the p-value is the right-tail fraction.
  */
 
-import { createRng, sampleMultinomial } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { wordsFor } from '../../js/mechanisms/vocabulary.js';
+import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
+
+/** These pages break an association by permuting one side of it. */
+const words = wordsFor('permuteAssociation');
+// Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
+applyRequestedLayout('permuteAssociation');
+import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { fetchDataset, loadDatasetIndex, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
@@ -253,7 +261,7 @@ function generateSimulations(count) {
   /** @type {number[]} */ let lastSample = [];
   let lastChisq = 0;
   for (let i = 0; i < count; i++) {
-    const sample = sampleMultinomial(totalN, p0, rng);
+    const sample = drawMultinomial(totalN, p0, rng);
     const chi2 = gofChisqStat(sample, p0);
     allStats.push(chi2);
     lastSample = sample;
@@ -311,7 +319,7 @@ function renderChart(stats, observedStat, highlightIndex = -1, highlightIndices,
     chartType: resolveChartType(stats.length, 'auto'),
     id: 'sim-chart',
     xLabel: 'Chi-Square Statistic (χ²)',
-    titleText: 'Null Distribution',
+    titleText: words.distribution,
     observedStat,
     direction: 'right',
     domain,

@@ -8,7 +8,10 @@
  *   initOneSamplePage({ mode: 'one-mean' })
  */
 
-import { createRng, sampleWithReplacement } from './prng.js';
+import { createRng } from './prng.js';
+import { applyRequestedLayout } from './mechanisms/layout.js';
+import { wordsFor } from './mechanisms/vocabulary.js';
+import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -36,6 +39,10 @@ import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartTo
  */
 export function initOneSamplePage(config) {
   const isProp = config.mode === 'one-prop';
+  // These pages simulate against a stated null value, so the source panel is
+  // the data moved onto the null rather than the data as observed.
+  const words = wordsFor('nullWorld');
+  applyRequestedLayout('nullWorld');
 
   // ─── DOM elements ───
 
@@ -435,7 +442,16 @@ export function initOneSamplePage(config) {
   function computePreSimDomain() {
     const PRE_N = 2000;
     const TRIM = 5;
-    const preRng = createRng('presim-' + Date.now());
+    // Seeded from the page's seed, not the wall clock. This pilot fixes the
+    // axis limits AND the dotplot's bin grid, so a clock seed made the same
+    // ?seed= link draw a visibly different chart on every load — different
+    // axis range, different bins, different shape — while the statistics
+    // underneath were perfectly reproducible. url-api.md promises this
+    // parameter is "critical for graded assessments where reproducibility is
+    // required"; half of it was. (Found 2026-09-27 while trying to build a
+    // no-visual-change guard and discovering nothing on these pages could be
+    // stable run to run.)
+    const preRng = createRng('presim-' + seed);
     const preStats = [];
     const p0 = getNullValue();
 
@@ -452,8 +468,7 @@ export function initOneSamplePage(config) {
       const shift = p0 - observedStat;
       const shifted = sampleData.map(v => v + shift);
       for (let i = 0; i < PRE_N; i++) {
-        const rs = sampleWithReplacement(shifted, sampleN, preRng);
-        preStats.push(mean(rs));
+        preStats.push(mean(drawFromShiftedNull(shifted, preRng).values));
       }
     }
 
@@ -894,7 +909,7 @@ export function initOneSamplePage(config) {
       const nullFailures = sampleN - nullSuccesses;
 
       // Change title
-      if (mechObservedTitle) mechObservedTitle.textContent = 'Null Distribution';
+      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
 
       // Find existing prop bar fill and morph it
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
@@ -924,7 +939,7 @@ export function initOneSamplePage(config) {
       return 0;
     } else {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
-      if (mechObservedTitle) mechObservedTitle.textContent = 'Null Distribution';
+      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
 
       // Stat line doubles as the PERSISTENT explanation of how this null
       // distribution was made (every value shifted by the same constant).
@@ -983,7 +998,7 @@ export function initOneSamplePage(config) {
    */
   function revertToObserved() {
     nullShown = false;
-    if (mechObservedTitle) mechObservedTitle.textContent = 'Observed Data';
+    if (mechObservedTitle) mechObservedTitle.textContent = words.beforeShift ?? words.source;
 
     if (isProp) {
       // Re-render with observed proportion
@@ -1080,7 +1095,7 @@ export function initOneSamplePage(config) {
     const prevLength = allStats.length;
 
     if (simTitleEl) {
-      simTitleEl.textContent = count === 1 ? 'This Simulation' : 'Last Simulation';
+      simTitleEl.textContent = count === 1 ? words.draw : words.drawLatest;
     }
 
     lastSimStat = 0;
@@ -1096,10 +1111,7 @@ export function initOneSamplePage(config) {
       const n = sampleN;
       let lastSuccesses = 0;
       for (let i = 0; i < count; i++) {
-        let successes = 0;
-        for (let j = 0; j < n; j++) {
-          if (rng() < p0) successes++;
-        }
+        const successes = drawBernoulliCount(n, p0, rng);
         lastSuccesses = successes;
         allStats.push(successes / n);
       }
@@ -1124,8 +1136,8 @@ export function initOneSamplePage(config) {
       // Shifted bootstrap
       const n = shiftedData.length;
       for (let i = 0; i < count; i++) {
-        const resampleArr = sampleWithReplacement(shiftedData, n, rng);
-        const simMean = mean(/** @type {number[]} */ (resampleArr));
+        const resampleArr = drawFromShiftedNull(shiftedData, rng).values;
+        const simMean = mean(resampleArr);
         lastSimStat = simMean;
         lastResampleArr = /** @type {number[]} */ (resampleArr);
         allStats.push(simMean);
@@ -1246,7 +1258,7 @@ export function initOneSamplePage(config) {
       chartType: activeChart,
       id: 'sim-chart',
       xLabel,
-      titleText: 'Null Distribution',
+      titleText: words.distribution,
       domain,
       observedStat: observed,
       direction,
