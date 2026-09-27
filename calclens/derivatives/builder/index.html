@@ -44,6 +44,28 @@
      its width at each end, so the width and offset are computed at runtime from
      the measured chart; the only thing CSS has to guarantee is that the thumb
      really is THUMB_PX across in every browser. */
+  /* The secant is opt-in (?secant=true). Both of its elements carry a `display`
+     that beats the browser's bare [hidden] rule — one on #h-wrap, one from
+     .ll-legend span — so say it explicitly. */
+  #h-wrap { display: block; margin-top: 0.6rem; }
+  [data-secant][hidden] { display: none; }
+
+  /* Crimson is "the slope at the current x", in both its guises: the tangent
+     line above, and the measured height below. Orange stays with f′ as a
+     function — the traced dots and the revealed curve. */
+  .bd-height { stroke: var(--tangent); stroke-width: 3; stroke-linecap: round; }
+  .bd-value {
+    fill: var(--tangent); font-weight: 700; font-size: var(--chart-text);
+    paint-order: stroke; stroke: var(--bg); stroke-width: 3.5px; stroke-linejoin: round;
+  }
+  /* The role word is muted so the crimson "f ′ = #" stays the matching part. */
+  .bd-role { fill: var(--ims-gray-text); font-weight: 600; }
+  .bd-unit path { stroke: var(--ims-gray); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .bd-unit-label {
+    fill: var(--ims-gray-text); font-size: calc(var(--chart-text) * 0.88);
+    paint-order: stroke; stroke: var(--bg); stroke-width: 3px; stroke-linejoin: round;
+  }
+
   #x-wrap.bd-between { margin: 3px 0; }
   #x-wrap.bd-between > span { position: absolute; width: 1px; height: 1px; overflow: hidden;
                               clip-path: inset(50%); white-space: nowrap; }
