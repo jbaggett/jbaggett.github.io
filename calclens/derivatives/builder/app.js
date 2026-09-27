@@ -8,7 +8,14 @@
  * move, repeated. The symbolic f′ is revealed only on request, as confirmation
  * of something already drawn.
  *
- * The secant slider carries the definition. At h = 1 the dashed secant is
+ * The secant is OFF by default. Secant-to-tangent is a different question with
+ * two tools of its own — `derivatives/secant/` for the picture and
+ * `limits/difference-quotient/` for the algebra — and here it competed for the
+ * same crimson line through the same point as the tangent. This tool asks one
+ * thing: how a slope on the upper graph becomes a height on the lower one.
+ * `?secant=true` brings it back for anyone who wants both at once.
+ *
+ * When shown, the secant slider carries the definition. At h = 1 the dashed secant is
  * visibly not the tangent and the difference quotient is visibly not f′(x);
  * dragging h to 0 collapses both gaps at once.
  *
@@ -44,6 +51,7 @@ const state = {
   xMin: -3,
   xMax: 3,
   reveal: false,
+  secant: false,
   /** @type {Map<number, number>} slope traced at each grid position */
   trace: new Map(),
 };
@@ -65,7 +73,7 @@ function render() {
   drawCurve(chartF.plot, f, { xs, ys });
 
   chartF.gOver.selectAll('*').remove();
-  const h = state.h;
+  const h = state.secant ? state.h : 0;
   const fxh = f(x + h);
   const secantSlope = h > 1e-9 ? (fxh - fx) / h : slope;
 
@@ -77,7 +85,7 @@ function render() {
         .attr('x1', xs(x - half)).attr('y1', ys(fx - slope * half))
         .attr('x2', xs(x + half)).attr('y2', ys(fx + slope * half));
     }
-    if (h > 1e-9 && Number.isFinite(fxh)) {
+    if (state.secant && h > 1e-9 && Number.isFinite(fxh)) {
       chartF.gOver.append('line').attr('class', 'll-secant')
         .attr('x1', xs(x)).attr('y1', ys(fx))
         .attr('x2', xs(x + h)).attr('y2', ys(fxh));
@@ -254,9 +262,9 @@ function setX(v, opts = {}) {
 function updateText(x, fx, slope, secantSlope) {
   $('#readout').innerHTML = `
     <span><b>x</b> ${fmt(x, 2)}</span>
-    <span><b>f(x)</b> ${fmt(fx, 3)}</span>
-    <span><b>secant slope</b> ${fmt(secantSlope, 3)}</span>
-    <span><b>f ′(x)</b> ${fmt(slope, 3)}</span>`;
+    <span><b>f(x)</b> ${fmt(fx, 3)}</span>`
+    + (state.secant ? `<span><b>secant slope</b> ${fmt(secantSlope, 3)}</span>` : '')
+    + `<span><b>f ′(x)</b> ${fmt(slope, 3)}</span>`;
 
   const gap = Math.abs(secantSlope - slope);
   const direction = slope > 0.005 ? 'rising' : slope < -0.005 ? 'falling' : 'level';
@@ -271,12 +279,13 @@ function updateText(x, fx, slope, secantSlope) {
       `At <i>x</i> = ${fmt(x, 2)}, <i>f</i> is <b>${direction}</b> with slope `
       + `<b>${fmt(slope, 3)}</b>, so the dot lands <b>${where}</b> the axis on the `
       + `lower graph. `
-      + (state.h > 1e-9
-        ? `The secant across a gap of <i>h</i> = ${fmt(state.h, 2)} gives `
-          + `<b>${fmt(secantSlope, 3)}</b> — off by ${fmt(gap, 3)}. `
-          + `Shrink <i>h</i> and that error shrinks with it.`
-        : `With <i>h</i> = 0 the secant <em>is</em> the tangent: the difference `
-          + `quotient has reached its limit.`);
+      + (!state.secant ? ''
+        : state.h > 1e-9
+          ? `The secant across a gap of <i>h</i> = ${fmt(state.h, 2)} gives `
+            + `<b>${fmt(secantSlope, 3)}</b> — off by ${fmt(gap, 3)}. `
+            + `Shrink <i>h</i> and that error shrinks with it.`
+          : `With <i>h</i> = 0 the secant <em>is</em> the tangent: the difference `
+            + `quotient has reached its limit.`);
   }
 
   // The formula is part of the payoff: printing it while the curve is hidden
@@ -349,6 +358,20 @@ initPage({
     const q = getParams().raw;
     const params = getParams();
     if (params.f) $('#fn-input').value = params.f;
+
+    // Settled before anything renders: the first frame has to know whether the
+    // secant exists. `?h=` implies it, so an older link that set a gap still
+    // shows one.
+    // `?h=` implies the secant, so an older link that set a gap still shows one.
+    state.secant = q.get('secant') === 'true' || q.has('h');
+    if (q.has('h')) {
+      const hv = Number(q.get('h'));
+      if (Number.isFinite(hv)) { state.h = hv; $('#h-slider').value = String(hv); $('#h-out').textContent = fmt(hv, 2); }
+    }
+    for (const el of document.querySelectorAll('[data-secant]')) {
+      /** @type {HTMLElement} */ (el).hidden = !state.secant;
+    }
+
 
     setTex($('#help-tex1'), '(x,\\,f(x))\\ \\text{and}\\ (x+h,\\,f(x+h))');
     setTex($('#help-tex2'), '\\frac{f(x+h)-f(x)}{h}');

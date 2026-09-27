@@ -37,6 +37,13 @@
   #charts .ll-chart + .ll-chart { margin-top: 2px; border-top-left-radius: 0; border-top-right-radius: 0; }
   #charts .ll-chart:first-of-type { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   #chart-key { margin: 0.5rem 0 0; }
+
+  /* The secant is opt-in (?secant=true). Both of its elements carry a `display`
+     that would beat the browser's bare [hidden] rule — one inline, one from
+     .ll-legend span — so say it explicitly rather than let them stay on screen.
+     Scoped by id and by data attribute, not by redefining a kit class. */
+  #h-wrap { display: block; margin-top: 0.6rem; }
+  [data-secant][hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -97,12 +104,12 @@
     </div>
   </section>
 
-  <section class="ll-panel" aria-label="Point and secant controls">
+  <section class="ll-panel" aria-label="Point on the curve">
     <label for="x-slider" style="display:block;">
       <span>Point at <i>x</i> = <output id="x-out" for="x-slider">0.00</output></span>
       <input type="range" id="x-slider" min="-3" max="3" step="0.02" value="-3">
     </label>
-    <label for="h-slider" style="display:block; margin-top:0.6rem;">
+    <label for="h-slider" id="h-wrap" data-secant hidden>
       <span>Secant gap <i>h</i> = <output id="h-out" for="h-slider">1.00</output>
         <span class="ll-hint">(drag toward 0 to watch the secant become the tangent)</span></span>
       <input type="range" id="h-slider" min="0" max="1.5" step="0.01" value="1">
@@ -119,7 +126,7 @@
     <div class="ll-chart"><div id="chart-d"></div></div>
 
     <p class="ll-hint" id="chart-key">
-      <b>Top:</b> <i>f</i>, with the secant and the tangent at the point.
+      <b>Top:</b> <i>f</i>, with the tangent at the point.
       <b>Bottom:</b> every slope you have visited, plotted as a height.
       The dashed line marks the same <i>x</i> on both — drag on
       <b>either</b> graph to move it.
@@ -128,7 +135,7 @@
     <div class="ll-legend" aria-hidden="true">
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2"/></svg> tangent</span>
-      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant</span>
+      <span data-secant hidden><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C2185B" stroke-width="2" stroke-dasharray="6 3"/></svg> secant</span>
       <span><svg viewBox="0 0 26 10"><circle cx="13" cy="5" r="3.5" fill="#C05E10"/></svg> slopes you traced</span>
       <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#C05E10" stroke-width="2.5" stroke-dasharray="7 4"/></svg> true f′(x)</span>
     </div>
@@ -152,7 +159,13 @@
      <em>height</em>. Sweep across and the bottom graph fills in: that is
      <i>f</i>′.</p>
 
-  <h3>The secant gap <i>h</i></h3>
+  <h3>The secant gap <i>h</i> <span class="ll-hint">(off by default)</span></h3>
+  <p>Secant-to-tangent is a different question, and it has two tools of its own:
+     <a href="../secant/">Secant to Tangent</a> for the picture and
+     <a href="../../limits/difference-quotient/">Derivative from the Definition</a>
+     for the algebra. Here it competed with the tangent for the same line through
+     the same point, so it is hidden unless you ask for it with
+     <code>?secant=true</code>.</p>
   <p>The dashed secant joins <span class="ll-math" id="help-tex1"></span>. Its
      slope is the difference quotient
      <span class="ll-math" id="help-tex2"></span>. Drag <i>h</i> toward 0 and

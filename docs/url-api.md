@@ -381,6 +381,8 @@ way a hand sketch goes astray.
 |---|---|---|---|
 | `f` | expression | `x^3 - 3x` | The function. |
 | `readout` | `true`/`false` | **off** | The true *f*′ curve *and* its formula. Off by default — the tool is "trace it yourself", and printing the formula would give the answer away in words. |
+| `secant` | `true`/`false` | **off** | The dashed secant, its *h* slider, and the secant slope in the readout. Off by default: secant-to-tangent is a different question with two tools of its own, and here it competed with the tangent for the same line through the same point. |
+| `h` | number | `1` | The secant gap. Giving it implies `secant=true`, so older links still show a secant. |
 
 ## CalcLens — Sketch from Conditions
 
