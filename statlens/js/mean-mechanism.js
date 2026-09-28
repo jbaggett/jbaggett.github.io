@@ -12,7 +12,7 @@
  * `values` to hand `renderBag`. This module never knows about the shift.
  */
 
-import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
+import { drawMechDotplot, showResampleDotplot, mechDisplayWidth } from './dotplot-resample.js';
 import { createSharedScale } from './mechanisms/entities.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { drawMiniChart } from './chart-utils.js';
@@ -72,8 +72,15 @@ export function createMeanMechanism(config = {}) {
       if (!scale.sizingMaxStack) {
         scale.fit(computeDots(values, { domain: opts.domain }).maxStack + 3, opts.domain);
       }
+      // Measure HERE, on the source panel, and hand the number to the resample.
+      // The resample's own panel is `hidden` until the first draw and measures
+      // zero, so measuring per-panel would give the two plots different scales
+      // on the very first render — the one render where they are side by side
+      // and being compared.
+      scale.width = mechDisplayWidth(el.parentElement);
       bag = drawMechDotplot(el, values, {
         domain: opts.domain, mean: meanVal, meanLabel: opts.meanLabel || 'x̄', sizingMaxStack: scale.sizingMaxStack,
+        displayWidth: scale.width,
       });
     } else {
       bag = null; bagChips = [];
@@ -99,6 +106,7 @@ export function createMeanMechanism(config = {}) {
     if (useDots(resample.length) && bag) {
       return showResampleDotplot(el, bag, resample, {
         domain: opts.domain, mean: stat, meanLabel: opts.meanLabel || 'x̄*', sizingMaxStack: scale.sizingMaxStack, animate,
+        displayWidth: scale.width,
         // Which observations this draw actually took — the animation cannot be
         // honest about repeats or misses without it (js/mechanisms/draws.js).
         indices: opts.indices,

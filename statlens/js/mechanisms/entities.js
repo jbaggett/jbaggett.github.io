@@ -80,7 +80,16 @@ export function resolveEntities(root = document) {
  * `reset()` exists because a new dataset invalidates the fit: sizing computed
  * for 20 values makes 200 unreadable.
  *
- * @returns {{ sizingMaxStack: number, domain: [number, number]|null,
+ * **Width belongs here too.** The mechanism dotplots used to be pinned to a
+ * fixed 300px so dots came out the same size on every page — which left ~190px
+ * of white space in the strip layout and ~135px in the tiers, on a plot people
+ * are being asked to read individual dots off. The panels can be measured
+ * instead, but only the SOURCE can be measured reliably: the draw panel is
+ * `hidden` until the first draw and reports a width of zero. So the source
+ * measures once, and the draw is handed the same number — which is the whole
+ * reason this object exists.
+ *
+ * @returns {{ sizingMaxStack: number, domain: [number, number]|null, width: number,
  *   fit: (stack: number, domain?: [number, number]|null) => void, reset: () => void }}
  */
 export function createSharedScale() {
@@ -88,6 +97,8 @@ export function createSharedScale() {
     sizingMaxStack: 0,
     /** @type {[number, number]|null} */
     domain: null,
+    /** Display width both panels draw at, in px. 0 until the source measures. */
+    width: 0,
     /**
      * Widen the scale to hold what it has been asked to show. Only ever grows
      * within a dataset, so a later draw cannot shrink the picture under an
@@ -104,6 +115,7 @@ export function createSharedScale() {
     reset() {
       scale.sizingMaxStack = 0;
       scale.domain = null;
+      scale.width = 0;
     },
   };
   return scale;
