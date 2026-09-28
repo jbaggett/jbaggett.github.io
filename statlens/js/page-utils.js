@@ -698,9 +698,20 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     ty = dotRect.top + dotRect.height / 2;
   }
 
-  // Sanity check: target should be below source (chart is below mechanism strip)
-  // If coordinates look wrong (target at 0,0 or above source), bail out
-  if (tx === 0 && ty === 0) { abort(); return; }
+  // Sanity check: the target has to be somewhere IN the chart.
+  //
+  // This used to test for exactly (0, 0), which let through the case that
+  // actually happens: a measurement taken microseconds after the chart was
+  // rebuilt, giving x ≈ 0 with a plausible y. The dot then flew to the left
+  // edge of the window and sat there. (Jeff, 2026-09-28: switch from a 54-point
+  // dataset to a 16-point one, press +1.) A landing spot outside the chart's
+  // own box is never right, whatever produced it — so check against the box
+  // rather than against one magic coordinate.
+  const chartBox = chartContainer.getBoundingClientRect();
+  const inChart = chartBox.width > 0
+    && tx >= chartBox.left - 4 && tx <= chartBox.right + 4
+    && ty >= chartBox.top - 4 && ty <= chartBox.bottom + 4;
+  if (!inChart) { abort(); return; }
 
   // Hide the SVG highlight until the flying dot arrives
   const origOpacity = highlightDot.getAttribute('opacity');

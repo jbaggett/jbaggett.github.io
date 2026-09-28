@@ -9,6 +9,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
+import { dismissAirborneStat, clearDrawMarks } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
@@ -3497,6 +3498,28 @@ export function initSimPage(config) {
     if (mechanismDescEl) mechanismDescEl.hidden = true;
     // Hide mechanism strip (will re-show on next first generate)
     if (mechanismStrip) mechanismStrip.hidden = true;
+
+    // …and the SOURCE side, which used to survive a reset.
+    //
+    // Switching datasets calls this. The resample panel was cleared and the
+    // strip hidden, but the source panel kept the previous dataset's plot and
+    // the mean mechanism kept its `bag` — a drawDotplot result pointing at an
+    // SVG that was about to be replaced — along with the dot sizing and the
+    // measured width fitted to the old sample. So the first +1 on the new
+    // dataset animated from stale geometry: it drew from the old plot's dots
+    // and the merged statistic flew off the left of the screen.
+    // (Jeff, 2026-09-28, mammals n=54 → amtrak n=16.)
+    if (originalContentEl) originalContentEl.innerHTML = '';
+    if (resampleContentEl) resampleContentEl.innerHTML = '';
+    meanMech.resetSizing();
+    mechG1.resetSizing();
+    mechG2.resetSizing();
+    lastResample = [];
+    lastResampleIndices = null;
+    meanDomain = null;
+    // Anything still in the air belongs to the sample that just went away.
+    dismissAirborneStat();
+    clearDrawMarks(document);
   }
 
   // ─── Chart rendering ───
