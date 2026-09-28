@@ -438,17 +438,42 @@ function pulse(circle) {
   circle.classList.add('dpr-picked');
 }
 
-/** "×3" beside a dot taken more than once. */
+/**
+ * How many times this observation was taken, written INSIDE its dot.
+ *
+ * It used to hang "×N" up and to the right of the dot in orange. On a dense
+ * sample that is a second cloud of marks floating between the stacks, and it
+ * reads as an annotation *about* the plot rather than as a property *of* the
+ * dot. (Jeff, 2026-09-28.)
+ *
+ * The count goes in the middle of the dot, and the dot darkens to carry it: a
+ * digit on the normal blue is about 2.6:1 against white, which is not a
+ * contrast you can ask anyone to read a number off. Dark fill and white text is
+ * ~8:1, and the darkening is a second, redundant signal that this dot was taken
+ * more than once. The × is dropped — it doubles the width for no information
+ * once the number is sitting in the thing it counts.
+ *
+ * @param {Element} circle
+ * @param {number} n
+ */
 function badge(circle, n) {
   if (!circle) return;
   const svg = /** @type {SVGGraphicsElement} */ (circle).ownerSVGElement;
   const parent = circle.parentNode;
   if (!svg || !parent) return;
+  const el = /** @type {SVGElement} */ (circle);
+  const r = Number(circle.getAttribute('r')) || 5;
+  el.classList.add('dpr-counted');
+
   const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   t.setAttribute('class', 'dpr-badge');
-  t.setAttribute('x', String(Number(circle.getAttribute('cx')) + 5));
-  t.setAttribute('y', String(Number(circle.getAttribute('cy')) - 4));
-  t.textContent = `×${n}`;
+  t.setAttribute('x', circle.getAttribute('cx') || '0');
+  t.setAttribute('y', circle.getAttribute('cy') || '0');
+  // Scale with the dot, so it fits whether the panel is 300px or 520px wide,
+  // with a floor that keeps a two-digit count from disappearing.
+  t.setAttribute('font-size', String(Math.max(7, Math.round(r * 1.7))));
+  t.textContent = String(n);
+  // After the dot, so it is painted over it rather than under.
   parent.appendChild(t);
 }
 
@@ -458,6 +483,7 @@ export function clearDrawMarks(root) {
   root.querySelectorAll('.dpr-untaken').forEach(el => el.classList.remove('dpr-untaken'));
   root.querySelectorAll('.dpr-picked').forEach(el => el.classList.remove('dpr-picked'));
   root.querySelectorAll('.dpr-badge').forEach(el => el.remove());
+  root.querySelectorAll('.dpr-counted').forEach(el => el.classList.remove('dpr-counted'));
   // The ghosted styles leave marks of their own: the outline class, the shade
   // written onto the element, and one ring per repeat draw. A source that keeps
   // last draw's rings is a source that lies about this one.

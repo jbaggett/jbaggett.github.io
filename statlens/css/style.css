@@ -5480,11 +5480,18 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   100% { r: var(--dpr-r, 5); }
 }
 .dpr-picked { animation: dpr-pick 340ms ease-out; }
+/* The repeat count sits INSIDE its dot. The dot darkens to carry it: a digit on
+   the normal blue is ~2.6:1 against white, which is not a contrast to ask
+   anyone to read a number off. Dark fill + white text is ~8:1, and the
+   darkening says "taken more than once" a second time without relying on the
+   number being legible at all. */
+.dpr-counted { fill: #114B5F; }
 .dpr-badge {
-  font-size: 9px;
   font-weight: 700;
-  fill: #E07020;
+  fill: #fff;
   font-family: var(--font-mono, monospace);
+  text-anchor: middle;
+  dominant-baseline: central;
   pointer-events: none;
 }
 /* The ghosted styles (?draw=shade|rings): the source starts as outlines and

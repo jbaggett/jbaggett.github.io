@@ -17,10 +17,30 @@
 
 import { drawDotplot, computeDots } from './dotplot.js';
 import { animateResampleDraw, drawStyleFromUrl, clearDrawMarks } from './mechanisms/draw-animation.js';
-import { prefersReducedMotion } from './chart-utils.js';
+import { prefersReducedMotion, isPhoneChart } from './chart-utils.js';
 import * as d3Selection from 'd3-selection';
 
 const COMPACT = { showExport: false, animate: false, labels: 'none' };
+
+/**
+ * Balanced side margins for a plot that has no y-axis.
+ *
+ * The chart default reserves 60px on the left for y-axis tick labels (80 on a
+ * phone) against 20 on the right. A mechanism dotplot draws `labels: 'none'`,
+ * so nothing is ever put there — the plot just sat 40px right of centre inside
+ * its own card, which is what you see as the plot looking off-centre. Balancing
+ * the two also hands those 40px back to the plot area. Bottom is left alone:
+ * the x tick labels are real and do need the room.
+ *
+ * @returns {{top:number,right:number,bottom:number,left:number}}
+ */
+function mechMargin() {
+  const phone = isPhoneChart();
+  // Enough that the outermost tick label, which is centred on its tick, still
+  // has half of itself inside the box.
+  const side = phone ? 30 : 24;
+  return { top: phone ? 30 : 28, right: side, bottom: phone ? 60 : 50, left: side };
+}
 const FLY_COLOR = '#E07020';   // orange flyer (matches the Sampling Lab)
 // Common display width for every mechanism dotplot, so dots are the SAME size on
 // every page regardless of how wide the host panel is (the CI and randomization
@@ -62,7 +82,7 @@ export function mechDisplayWidth(panel) {
  * @param {{ id?: string, domain?: [number,number], binWidth?: number, binOrigin?: number,
  *   dotRadius?: number, sizingMaxStack?: number, mean?: number, meanLabel?: string,
  *   xLabel?: string, viewHeight?: number, viewWidth?: number, displayWidth?: number,
- *   fillColor?: string }} [opts]
+ *   margin?: {top:number,right:number,bottom:number,left:number}, fillColor?: string }} [opts]
  */
 export function drawMechDotplot(container, values, opts = {}) {
   if (container) container.innerHTML = ''; // drawDotplot/createChart appends — clear first
@@ -77,6 +97,7 @@ export function drawMechDotplot(container, values, opts = {}) {
   const binOrigin = opts.binOrigin ?? (values.length ? Math.min(...values) : undefined);
   const frame = drawDotplot(container, values, {
     ...COMPACT,
+    margin: opts.margin ?? mechMargin(),
     forceDotMode: true,
     id: opts.id,
     domain: opts.domain,

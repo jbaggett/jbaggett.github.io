@@ -688,6 +688,10 @@ export function fitYLabel(frame, yLabel) {
  * Detect if phone margins should be used.
  * @returns {boolean}
  */
+export function isPhoneChart() {
+  return detectPhoneMargin();
+}
+
 function detectPhoneMargin() {
   if (typeof globalThis.matchMedia !== 'function') return false;
   return globalThis.matchMedia('(max-width: 480px)').matches;
