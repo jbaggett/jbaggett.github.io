@@ -2896,6 +2896,7 @@ export function initSimPage(config) {
       meanMech.setView('dotplot');
       return meanMech.renderResample(resampleContentEl, data1, resampleValues, mean(resampleValues), morph, {
         domain: meanDomain ?? computeMeanDomain() ?? undefined, meanLabel: 'x̄',
+        indices: lastResampleIndices ?? undefined,
       });
     }
 

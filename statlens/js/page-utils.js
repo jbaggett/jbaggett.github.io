@@ -175,11 +175,13 @@ export function initHelp() {
   const closeBtn = helpDialog.querySelector('button');
   if (closeBtn) closeBtn.addEventListener('click', () => helpDialog.close());
 
-  // Also init settings and steppers on every page
-  initSettings();
-  autoWrapSteppers();
-
-  // Add site branding to header (upper right)
+  // Branding first, because the Show: Simple | Detailed control is placed
+  // relative to it (initDisplayToggle) and initSettings builds that control.
+  // With settings first, a page whose `.expert-only` markup is static placed
+  // the toggle before the brand existed and fell back to the left-hand icon
+  // cluster, while a page whose controls appear later got it on the right —
+  // the same control landing in two different places depending on when the
+  // page happened to build its widgets. (Jeff, 2026-09-27.)
   const h1 = document.querySelector('h1');
   if (h1 && !h1.querySelector('.site-brand')) {
     const homeHref = document.querySelector('.home-btn')?.getAttribute('href') || '/';
@@ -190,6 +192,10 @@ export function initHelp() {
     brand.innerHTML = `<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#569BBD"/><path d="M4 24 C4 24, 8 23, 10 20 C12 17, 13 8, 16 8 C19 8, 20 17, 22 20 C24 23, 28 24, 28 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M4 24 C4 24, 8 23, 10 20 L10 24 Z" fill="#ffffff60"/></svg> StatLens`;
     h1.appendChild(brand);
   }
+
+  // Also init settings and steppers on every page
+  initSettings();
+  autoWrapSteppers();
 }
 
 /**
@@ -1015,12 +1021,12 @@ function renderDatasetInfo(panel, ds) {
  * @param {ParentNode} [root] - where to look for `.expert-only` (default: document)
  */
 export function initDisplayToggle(root = document) {
-  // Upper right, beside the StatLens wordmark — away from the Home/Share/Help
-  // cluster on the left, which is already five items wide and whose members all
-  // *leave* or *explain* the page rather than change it. Falls back to that
-  // cluster on any page without the brand mark.
+  // Upper right, after the title — away from the Home/Share/Help cluster on the
+  // left, whose members all *leave* or *explain* the page rather than change
+  // it. The h1 is the anchor rather than the wordmark, so the control lands in
+  // the same place whether or not the wordmark has been built yet.
   const brand = document.querySelector('.site-brand');
-  const actions = brand?.parentElement ?? document.querySelector('.header-actions');
+  const actions = document.querySelector('h1') ?? document.querySelector('.header-actions');
   if (!actions || document.querySelector('.display-toggle')) return;
   // Nothing to reveal on this page, so no control. Checked against the DOM
   // rather than a per-page list, which would rot as pages change.

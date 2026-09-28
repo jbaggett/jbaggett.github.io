@@ -16,6 +16,7 @@
  */
 
 import { drawDotplot, computeDots } from './dotplot.js';
+import { animateResampleDraw, drawStyleFromUrl, clearDrawMarks } from './mechanisms/draw-animation.js';
 import { prefersReducedMotion } from './chart-utils.js';
 import * as d3Selection from 'd3-selection';
 
@@ -247,5 +248,22 @@ export function showResampleDotplot(container, bag, resample, opts) {
     meanLabel: opts.meanLabel,
   });
   if (!opts.animate || prefersReducedMotion()) return 0;
+
+  // `?draw=` picks one of the styles under comparison. They use the draw's
+  // INDICES, so a dot taken twice is seen being taken twice and a dot never
+  // taken is marked as such — neither of which the value-matching below can
+  // know. Default stays the shipped animation. (js/mechanisms/draw-animation.js)
+  const style = drawStyleFromUrl();
+  const sourceSvg = bag?.frame?.inner?.ownerSVGElement;
+  clearDrawMarks(sourceSvg);
+  if (style !== 'classic' && opts.indices && sourceSvg) {
+    const sourceCircles = Array.from(sourceSvg.querySelectorAll('.data circle'));
+    const targetSvg = target?.frame?.inner?.ownerSVGElement;
+    const targetDots = targetSvg ? Array.from(targetSvg.querySelectorAll('.data circle')) : [];
+    const ms = animateResampleDraw({
+      sourceCircles, targetDots, indices: opts.indices, style, targetSvg,
+    });
+    if (ms) return ms;
+  }
   return animateDrawInto(target, resample, bagSource(bag));
 }
