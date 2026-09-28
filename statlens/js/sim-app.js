@@ -1481,9 +1481,20 @@ export function initSimPage(config) {
         initMechanismCollapse(mechanismStrip);
         if (useNewPropMech) ensurePropStyleToggle();
         renderOriginalSample();
-        // Auto-default to histogram view for large numeric samples (unless user explicitly chose)
-        // Proportions use proportion bars in both views, so no need to switch
-        if (!resampleViewExplicit && !config.proportion && data1.length > CHIP_THRESHOLD) {
+        // The non-tiles view is the default for numeric data.
+        //
+        // It used to be tiles below 30 observations and a histogram above, which
+        // meant a 16-value sample — the size where you can actually watch a
+        // resample happen — showed two rows of numbered tiles and never the
+        // dotplot. Tiles say WHICH values were drawn and how often; the dotplot
+        // says what the resample looks like and hands its mean to the
+        // distribution. The second is the thing being taught, so it leads, and
+        // Tiles stays one click away. (Jeff, 2026-09-27.)
+        //
+        // Above MEAN_DOT_MAX this same mode is a histogram, which is why the
+        // condition is about the data being numeric rather than about its size.
+        // Proportions use proportion bars in both views, so they are left alone.
+        if (!resampleViewExplicit && !config.proportion) {
           setResampleViewMode('histogram');
         }
       } else if (config.twoGroup) {
@@ -3274,11 +3285,18 @@ export function initSimPage(config) {
     // caption (bottom-right) — the same UI as the one-mean randomization test.
     const strip = document.getElementById('mechanism-strip');
     if (strip && mechanismDescEl) {
-      let bar = strip.querySelector('.mech-bottom-bar');
+      // Anchor the bar to the CAPTION, not to the strip. The tier layouts
+      // (?mech=tiers|split) move the caption into the draw tier and hide the
+      // strip, and this bar was built afterwards — so appending it to the strip
+      // put the Tiles/Dotplots toggle inside a hidden element and left those
+      // layouts with no way to switch views at all. (Jeff, 2026-09-27.)
+      const host = mechanismDescEl.parentElement ?? strip;
+      let bar = host.querySelector('.mech-bottom-bar')
+        ?? strip.querySelector('.mech-bottom-bar');
       if (!bar) {
         bar = document.createElement('div');
         bar.className = 'mech-bottom-bar';
-        strip.appendChild(bar);
+        host.insertBefore(bar, mechanismDescEl);
       }
       bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
       bar.appendChild(seg);

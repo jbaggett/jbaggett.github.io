@@ -293,8 +293,18 @@ export function initOneSamplePage(config) {
   // observed or null-shifted values, and animate the shift ourselves.
   /** Chip text honouring the data precision. */
   const fmtChip = (/** @type {number} */ v) => (Number.isInteger(v) ? String(v) : formatStat(v, dataPrecision));
-  const initialView = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase() === 'dotplot'
-    ? 'dotplot' : 'summary';
+  // The dotplot leads for numeric data, matching bootstrap-mean: at the sample
+  // sizes where you can watch a resample happen, tiles showed two rows of
+  // numbers and the dotplot never appeared unless you found the toggle. Tiles
+  // say WHICH values were drawn and how often; the dotplot says what the sample
+  // looks like and hands its statistic to the distribution — the thing being
+  // taught. `?mechview=tiles` still asks for the other one, and the toggle is
+  // one click away. Proportions are unaffected: they have their own mechanism.
+  // (Jeff, 2026-09-27.)
+  const mechviewParam = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase();
+  const initialView = mechviewParam === 'dotplot' ? 'dotplot'
+    : (mechviewParam === 'tiles' || mechviewParam === 'summary') ? 'summary'
+    : (isProp ? 'summary' : 'dotplot');
   const mech = createMeanMechanism({ formatValue: fmtChip, initialView });
   /** Hold the observed sample on the very first shift so it's clear what we start from. */
   let firstShiftDone = false;

@@ -101,11 +101,26 @@ export function computeDots(values, options = {}) {
   const xMin = d3Array.min(values);
   const xMax = d3Array.max(values);
 
-  // Single-value edge case
+  // Single-value edge case.
+  //
+  // `binWidth: 1` used to be returned here, which is not a width in the data's
+  // units — it is the number one. On a chart with its own domain (every
+  // simulation page passes one) that poisons the dot SIZE downstream:
+  // drawDotplot derives its bin count as span/binWidth, so a bootstrap
+  // distribution spanning 170 units reported 170 bins for its single dot and
+  // drew it at the minimum radius. The first dot of every simulation came out
+  // a quarter the size of the second one. (Jeff, 2026-09-27.)
+  //
+  // The width is whatever the caller locked, else the domain split the same way
+  // the normal path splits it. Dots stay AT their value rather than snapping to
+  // that grid: with one observation there is nothing to stack, and snapping
+  // would move it before the real grid arrives on the next render.
   if (xMin === xMax) {
     const domain = options.domain ?? /** @type {[number, number]} */ ([xMin - 0.5, xMax + 0.5]);
     const dots = values.map((v, i) => ({ value: v, binCenter: v, stackIndex: i }));
-    return { dots, binWidth: 1, maxStack: n, domain };
+    const binWidth = options.binWidth
+      ?? (domain[1] - domain[0]) / (options.numBins ?? dotplotBins(values));
+    return { dots, binWidth, maxStack: n, domain };
   }
 
   const domain = options.domain ?? /** @type {[number, number]} */ ([xMin, xMax]);
