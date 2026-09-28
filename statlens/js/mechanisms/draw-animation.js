@@ -37,6 +37,67 @@ import { prefersReducedMotion } from '../settings.js';
 /** Matches the existing resample flyer, so the styles differ in motion only. */
 const FLY_COLOR = '#E07020';
 
+/**
+ * The combined statistic, parked after the resample's dots merge into it and
+ * held for `animateDropToChart` to fly into the distribution.
+ *
+ * Module-level rather than handed along, because the two halves of one journey
+ * are started by different modules a few hundred milliseconds apart: the merge
+ * finishes inside the mechanism, and the flight cannot begin until the page has
+ * rendered the chart and knows where the new dot landed. There is at most one.
+ *
+ * @type {HTMLElement|null}
+ */
+let airborne = null;
+/** @type {ReturnType<typeof setTimeout>|undefined} */
+let airborneTimer;
+
+/**
+ * How long a parked statistic waits to be claimed before it gives up and fades.
+ *
+ * The claim normally arrives within the settle, ~240ms. This is the safety net
+ * for the cases where no flight follows at all — the chart found nothing to
+ * land on, the user hit reset, a second draw started — so that a dot is never
+ * left sitting on the screen with nowhere to go.
+ */
+const AIRBORNE_TTL = 3000;
+
+/** Park the merged statistic and start its safety timer. */
+function hold(/** @type {HTMLElement} */ el) {
+  dismissAirborneStat();
+  el.classList.add('dpr-airborne');
+  airborne = el;
+  airborneTimer = setTimeout(() => dismissAirborneStat(), AIRBORNE_TTL);
+}
+
+/**
+ * Claim the parked statistic, if one is waiting. The caller then owns the
+ * element — including removing it.
+ *
+ * @returns {HTMLElement|null}
+ */
+export function takeAirborneStat() {
+  const el = airborne;
+  airborne = null;
+  clearTimeout(airborneTimer);
+  return el?.isConnected ? el : null;
+}
+
+/**
+ * Fade out a statistic that will not be flown after all — either one that was
+ * claimed and could not be used, or whatever is currently parked.
+ *
+ * @param {HTMLElement|null} [el]
+ */
+export function dismissAirborneStat(el) {
+  const target = el ?? airborne;
+  if (el == null) { airborne = null; clearTimeout(airborneTimer); }
+  if (!target) return;
+  target.style.transition = 'opacity 200ms ease-out';
+  target.style.opacity = '0';
+  setTimeout(() => target.remove(), 220);
+}
+
 /** @typedef {'classic'|'sequence'|'burst'|'sweep'} DrawStyle */
 
 /**
@@ -86,6 +147,9 @@ function timing(style, order, total) {
 export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone }) {
   if (prefersReducedMotion() || !indices?.length || !targetDots.length) return 0;
   if (indices.length !== targetDots.length) return 0;
+  // A draw already in the air belongs to the previous click. Clear it, or a
+  // rapid +1 +1 leaves last time's statistic parked over this one's.
+  dismissAirborneStat();
 
   // How many times each observation was taken. This is the thing the old
   // value-matching could not know.
@@ -232,13 +296,16 @@ function combineInto(els, overlays, dur, settle, onDone) {
     if (merged) {
       merged.style.transition = `transform ${settle}ms ease-out, opacity ${settle}ms ease-out`;
       merged.style.transform = 'scale(1.6)';
+      // This dot IS the statistic — the student has just watched it being
+      // computed. It used to fade out here, and a *second* dot was spawned
+      // beneath the panel to make the trip to the distribution, so the thing
+      // that was computed vanished and something unrelated travelled. Park it
+      // instead, and let the drop animation fly this one. (Jeff, 2026-09-27.)
+      hold(merged);
     }
     /** @type {SVGElement} */ (overlays).style.transition = 'opacity 220ms ease-in';
     /** @type {SVGElement} */ (overlays).style.removeProperty('opacity');
-    setTimeout(() => {
-      if (merged) { merged.style.opacity = '0'; setTimeout(() => merged.remove(), settle); }
-      onDone?.();
-    }, settle);
+    setTimeout(() => { onDone?.(); }, settle);
   }
   requestAnimationFrame(step);
 }
