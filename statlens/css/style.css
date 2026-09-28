@@ -5487,6 +5487,27 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   font-family: var(--font-mono, monospace);
   pointer-events: none;
 }
+/* The ghosted styles (?draw=shade|rings): the source starts as outlines and
+   fills in as it is drawn from, so "never taken" is what is LEFT rather than
+   what has been dimmed. An outline, not a fade — a washed-out fill alone drops
+   under the 3:1 that graphical elements need, and this dot is carrying
+   information. */
+.dpr-ghost {
+  fill: #EAF4F9;
+  stroke: #7FA9BE;
+  stroke-width: 1.2;
+  transition: fill 0.25s ease-out, stroke 0.25s ease-out;
+}
+/* One ring per repeat draw: a count you can read without separating two blues.
+   Drawn behind its dot, so the dot is never hidden by its own tally. */
+.dpr-ring {
+  fill: none;
+  stroke: #2A5A75;
+  stroke-width: 1.3;
+  opacity: 0.75;
+  pointer-events: none;
+}
 @media (prefers-reduced-motion: reduce) {
   .dpr-picked { animation: none; }
+  .dpr-ghost { transition: none; }
 }

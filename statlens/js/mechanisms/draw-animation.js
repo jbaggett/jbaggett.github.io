@@ -98,7 +98,32 @@ export function dismissAirborneStat(el) {
   setTimeout(() => target.remove(), 220);
 }
 
-/** @typedef {'classic'|'sequence'|'burst'|'sweep'} DrawStyle */
+/** @typedef {'classic'|'sequence'|'burst'|'sweep'|'shade'|'rings'} DrawStyle */
+
+/**
+ * Styles that start with the source EMPTY and fill it in as it is drawn from.
+ *
+ * The others mark the never-taken observations up front, which announces the
+ * answer before the question: a third of the dots are dimmed before a single
+ * draw has happened. Here every observation starts as an outline, each pick
+ * fills one in, and whatever is still an outline at the end was never taken —
+ * the same fact, arrived at rather than asserted. (Jeff, 2026-09-28.)
+ */
+const GHOSTED = new Set(['shade', 'rings']);
+
+/**
+ * How many times an observation has been taken, as depth of colour.
+ *
+ * Deepens on the second and third pick, so a dot taken twice is seen getting
+ * darker rather than being labelled afterwards. Colour alone would not be
+ * enough (it fails for anyone who cannot separate these blues), so `shade`
+ * keeps the ×N badges as well — the shade is the glance, the badge is the
+ * number.
+ */
+const SHADE = ['#569BBD', '#3E7A99', '#2A5A75', '#114B5F'];
+
+/** Ring spacing for the `rings` style, in px of radius. */
+const RING_GAP = 3.5;
 
 /**
  * Which style the URL asked for. `classic` is the animation that shipped, kept
@@ -110,7 +135,8 @@ export function dismissAirborneStat(el) {
 export function drawStyleFromUrl(search) {
   const raw = new URLSearchParams(
     search ?? (typeof location === 'undefined' ? '' : location.search)).get('draw');
-  return (raw === 'sequence' || raw === 'burst' || raw === 'sweep') ? raw : 'classic';
+  return (raw === 'sequence' || raw === 'burst' || raw === 'sweep'
+    || raw === 'shade' || raw === 'rings') ? raw : 'classic';
 }
 
 /**
@@ -127,6 +153,12 @@ function timing(style, order, total) {
     // minute, so the gap shrinks as the sample grows.
     const gap = total <= 20 ? 140 : total <= 40 ? 100 : 70;
     return { delay: order * gap, fly: 340 };
+  }
+  if (style === 'shade' || style === 'rings') {
+    // One at a time, like `sequence` — the encoding only reads if you can see
+    // which dot is being filled in when.
+    const gap = total <= 20 ? 150 : total <= 40 ? 105 : 72;
+    return { delay: order * gap, fly: 330 };
   }
   if (style === 'sweep') return { delay: order * 26, fly: 520 };
   return { delay: order * 10, fly: 600 };   // burst
@@ -164,7 +196,7 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     order.sort((a, b) => x(a) - x(b));
   }
 
-  /** @type {Array<{el: HTMLElement, sx:number, sy:number, ex:number, ey:number, dot: Element, src: Element|null, delay:number, fly:number}>} */
+  /** @type {Array<{el: HTMLElement, sx:number, sy:number, ex:number, ey:number, dot: Element, src: Element|null, index:number, delay:number, fly:number}>} */
   const flyers = [];
   order.forEach((i, rank) => {
     const dot = targetDots[i];
@@ -186,20 +218,31 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     document.body.appendChild(el);
     /** @type {SVGElement} */ (dot).style.opacity = '0';
     const t = timing(style, rank, targetDots.length);
-    flyers.push({ el, sx, sy, ex, ey, dot, src, delay: t.delay, fly: t.fly });
+    flyers.push({ el, sx, sy, ex, ey, dot, src, index: indices[i], delay: t.delay, fly: t.fly });
   });
 
-  // Never taken: say so. On a real sample this is roughly a third of the dots,
-  // and it is half of what "with replacement" means.
-  sourceCircles.forEach((c, j) => {
-    if (takenCount[j] === 0) /** @type {SVGElement} */ (c).classList.add('dpr-untaken');
-  });
+  if (GHOSTED.has(style)) {
+    // Empty the source. Each pick fills one in (see `reveal`), so what is still
+    // an outline when the draw finishes is what was never taken — nothing has
+    // to be dimmed to say it.
+    for (const c of sourceCircles) ghost(c);
+  } else {
+    // Never taken: say so. On a real sample this is roughly a third of the dots,
+    // and it is half of what "with replacement" means.
+    sourceCircles.forEach((c, j) => {
+      if (takenCount[j] === 0) /** @type {SVGElement} */ (c).classList.add('dpr-untaken');
+    });
+  }
 
   // Taken more than once: say that too. Burst has no time to show a dot being
-  // picked twice, so it labels instead.
-  if (style === 'burst') {
+  // picked twice, so it labels instead. `shade` labels too, because a depth of
+  // blue is a colour-only signal and the count is worth stating exactly.
+  if (style === 'burst' || style === 'shade') {
     takenCount.forEach((n, j) => { if (n > 1) badge(sourceCircles[j], n); });
   }
+
+  /** How many times each observation has been drawn SO FAR, for the encodings. */
+  const seen = new Array(sourceCircles.length).fill(0);
 
   // The resample's mean is the POINT of the resample, so it should arrive as a
   // result rather than be sitting there before the dots have landed. Hidden
@@ -232,6 +275,10 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
         f.el.style.opacity = '1';
         // A pick is worth seeing at its source, not only at its destination.
         if (f.src && style !== 'burst') pulse(f.src);
+        // …and in the ghosted styles the pick is also what fills the dot in.
+        if (f.src && GHOSTED.has(style) && f.index >= 0) {
+          reveal(f.src, ++seen[f.index], style);
+        }
       }
       const e = ease(t);
       f.el.style.left = `${f.sx + (f.ex - f.sx) * e - f.el.offsetWidth / 2}px`;
@@ -310,8 +357,74 @@ function combineInto(els, overlays, dur, settle, onDone) {
   requestAnimationFrame(step);
 }
 
+/**
+ * Empty a source dot: an outline where a filled dot was.
+ *
+ * Outline rather than "faded", so the dot is still a perceivable shape. A
+ * washed-out fill alone drops below the 3:1 contrast that graphical elements
+ * need, and "never taken" is information the reader has to be able to see —
+ * it is half of what makes a bootstrap a bootstrap.
+ *
+ * @param {Element} circle
+ */
+function ghost(circle) {
+  const el = /** @type {SVGElement} */ (circle);
+  if (!el.dataset.dprFill) el.dataset.dprFill = el.getAttribute('fill') || '';
+  el.classList.add('dpr-ghost');
+}
+
+/**
+ * Fill a source dot in, encoded by how many times it has now been taken.
+ *
+ * @param {Element} circle
+ * @param {number} count - times taken so far, 1 on the first pick
+ * @param {DrawStyle} style
+ */
+function reveal(circle, count, style) {
+  const el = /** @type {SVGElement} */ (circle);
+  el.classList.remove('dpr-ghost');
+  if (style === 'shade') {
+    el.style.fill = SHADE[Math.min(count, SHADE.length) - 1];
+    return;
+  }
+  // rings: the dot itself goes back to its own colour, and every pick after the
+  // first leaves a ring around it. Three rings means four draws — a count you
+  // can read without relying on telling two blues apart.
+  el.style.removeProperty('fill');
+  if (count > 1) addRing(el, count - 1);
+}
+
+/**
+ * One more ring around a dot that has been drawn again.
+ *
+ * @param {SVGElement} circle
+ * @param {number} nth - 1 for the first extra ring
+ */
+function addRing(circle, nth) {
+  // Into the OVERLAYS group, not in among the data. Four places count
+  // `.data circle` to line source dots up with draw indices, and a tally mark
+  // sitting in that list would shift every index after it — the exact class of
+  // bug this animation exists to have fixed. Overlays share the data's
+  // coordinate space, so cx/cy carry over unchanged.
+  const svg = /** @type {SVGGraphicsElement} */ (circle).ownerSVGElement;
+  const host = svg?.querySelector('.overlays') ?? circle.parentNode;
+  if (!host) return;
+  const r = Number(circle.getAttribute('r')) || 5;
+  const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  ring.setAttribute('class', 'dpr-ring');
+  ring.setAttribute('cx', circle.getAttribute('cx') || '0');
+  ring.setAttribute('cy', circle.getAttribute('cy') || '0');
+  ring.setAttribute('r', String(r + nth * RING_GAP));
+  host.appendChild(ring);
+}
+
 /** A brief flash at a source dot as it is drawn from. */
 function pulse(circle) {
+  // The keyframes swell to `calc(var(--dpr-r) * 1.9)` and back. Nothing ever
+  // set --dpr-r, so every dot snapped to the 5px fallback for the length of the
+  // pulse whatever its real radius was. It is right here on the element.
+  const r = Number(circle.getAttribute('r'));
+  if (r > 0) /** @type {SVGElement} */ (circle).style.setProperty('--dpr-r', String(r));
   circle.classList.remove('dpr-picked');
   // Reflow, so a second pick on the same dot restarts the animation rather than
   // being swallowed — which is exactly the case worth seeing.
@@ -339,4 +452,13 @@ export function clearDrawMarks(root) {
   root.querySelectorAll('.dpr-untaken').forEach(el => el.classList.remove('dpr-untaken'));
   root.querySelectorAll('.dpr-picked').forEach(el => el.classList.remove('dpr-picked'));
   root.querySelectorAll('.dpr-badge').forEach(el => el.remove());
+  // The ghosted styles leave marks of their own: the outline class, the shade
+  // written onto the element, and one ring per repeat draw. A source that keeps
+  // last draw's rings is a source that lies about this one.
+  root.querySelectorAll('.dpr-ghost').forEach(el => el.classList.remove('dpr-ghost'));
+  root.querySelectorAll('.dpr-ring').forEach(el => el.remove());
+  root.querySelectorAll('[data-dpr-fill]').forEach((el) => {
+    /** @type {SVGElement} */ (el).style.removeProperty('fill');
+    delete /** @type {SVGElement} */ (el).dataset.dprFill;
+  });
 }
