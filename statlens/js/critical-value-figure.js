@@ -145,6 +145,13 @@ export function mountCriticalValueFigure(container, opts) {
     partner.line.attr('x1', partnerPx).attr('x2', partnerPx);
     partner.handle.attr('x', partnerPx - 22);
     updateShadeAndLabels();
+    // The percent box and the preset pills are showing the OLD level until this
+    // runs. setLevel() has always done it; this path did not, so dragging a
+    // critical value moved the figure, recomputed the interval, and left the
+    // box reading 95 — on a page whose own caption says "or drag the critical
+    // values on the figure". (2026-09-28: the spec that caught this had been
+    // failing for long enough to be mistaken for test rot.)
+    syncControls();
     if (onChange) onChange(level, invFn(1 - (1 - level) / 2) - center);
   }
 

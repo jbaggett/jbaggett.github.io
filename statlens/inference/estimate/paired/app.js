@@ -319,7 +319,7 @@ function renderResults(tStar) {
 
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel} is
-        between <strong>${formatStat(lower, d)}</strong> and <strong>${formatStat(upper, d)}</strong>.</p>
+        between <strong data-ci="lower">${formatStat(lower, d)}</strong> and <strong data-ci="upper">${formatStat(upper, d)}</strong>.</p>
       <p>${straddlesZero
         ? 'The interval <strong>contains 0</strong>, so a difference of zero is among the plausible values.'
         : 'The interval <strong>does not contain 0</strong>, so zero is not among the plausible values for the mean difference.'}</p>

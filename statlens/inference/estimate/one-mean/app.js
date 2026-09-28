@@ -362,7 +362,7 @@ function renderResults(tStar) {
 
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel} is
-        between <strong>${formatStat(lower, d)}</strong> and <strong>${formatStat(upper, d)}</strong>${unit}.</p>
+        between <strong data-ci="lower">${formatStat(lower, d)}</strong> and <strong data-ci="upper">${formatStat(upper, d)}</strong>${unit}.</p>
       <p class="hint">Raise the confidence level and the interval grows; lower it and the interval shrinks —
         the critical value <em>t*</em> on the plot is what sets the width.</p>
     </div>
