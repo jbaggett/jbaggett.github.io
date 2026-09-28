@@ -79,10 +79,11 @@ function timing(style, order, total) {
  * @param {Element[]} opts.targetDots - the resample's dots, in draw order
  * @param {number[]} opts.indices - which observation each draw took
  * @param {DrawStyle} opts.style
+ * @param {SVGElement|null} [opts.targetSvg] - for the combine phase's mean marker
  * @param {() => void} [opts.onDone]
  * @returns {number} total duration in ms, 0 if it declined to run
  */
-export function animateResampleDraw({ sourceCircles, targetDots, indices, style, onDone }) {
+export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone }) {
   if (prefersReducedMotion() || !indices?.length || !targetDots.length) return 0;
   if (indices.length !== targetDots.length) return 0;
 
@@ -136,7 +137,15 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     takenCount.forEach((n, j) => { if (n > 1) badge(sourceCircles[j], n); });
   }
 
-  const total = Math.max(...flyers.map(f => f.delay + f.fly)) + 120;
+  // The resample's mean is the POINT of the resample, so it should arrive as a
+  // result rather than be sitting there before the dots have landed. Hidden
+  // with opacity rather than display, so its position stays measurable.
+  const overlays = targetSvg?.querySelector('.overlays');
+  if (overlays) /** @type {SVGElement} */ (overlays).style.opacity = '0';
+
+  const COMBINE_HOLD = 160, COMBINE = 520, SETTLE = 240;
+  const flightMs = Math.max(...flyers.map(f => f.delay + f.fly)) + 120;
+  const total = flightMs + (overlays ? COMBINE_HOLD + COMBINE + SETTLE : 0);
   const t0 = performance.now();
   const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -147,10 +156,11 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
       const t = (elapsed - f.delay) / f.fly;
       if (t < 0) { running = true; continue; }
       if (t >= 1) {
-        if (f.el.isConnected) {
-          /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
-          f.el.remove();
-        }
+        // Reveal the dot it landed on, but KEEP the flyer: the combine phase
+        // gathers these same flyers into the mean. Removing them here left it
+        // nothing to gather.
+        /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
+        if (!overlays && f.el.isConnected) f.el.remove();
         continue;
       }
       running = true;
@@ -164,14 +174,73 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
       f.el.style.top = `${f.sy + (f.ey - f.sy) * e - f.el.offsetHeight / 2}px`;
     }
     if (running) { requestAnimationFrame(step); return; }
-    for (const f of flyers) {
-      /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
-      f.el.remove();
+    for (const f of flyers) /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
+    // Landed flyers sit exactly on the revealed dots; dim them so the resample
+    // reads as blue dots until they lift off again to be combined.
+    if (overlays) for (const f of flyers) f.el.style.opacity = '0.55';
+    if (overlays) {
+      setTimeout(() => combineInto(flyers.map(f => f.el), overlays, COMBINE, SETTLE, onDone),
+        COMBINE_HOLD);
+    } else {
+      for (const f of flyers) f.el.remove();
+      onDone?.();
     }
-    onDone?.();
   }
   requestAnimationFrame(step);
   return total;
+}
+
+/**
+ * Gather the landed flyers into the resample's mean, then reveal it.
+ *
+ * The same move the Sampling Distribution Lab makes after a draw: the dots slide
+ * to the statistic's position and pile into one, so the statistic is seen being
+ * *computed from* the sample rather than appearing beside it. Costs about a
+ * second, which is the point — it is the step a student is being asked to
+ * understand.
+ *
+ * @param {HTMLElement[]} els - the landed flyers
+ * @param {Element} overlays - the target's overlay group, holding the mean marker
+ * @param {number} dur
+ * @param {number} settle
+ * @param {(() => void)} [onDone]
+ */
+function combineInto(els, overlays, dur, settle, onDone) {
+  const line = overlays.querySelector('line');
+  const box = (line ?? overlays).getBoundingClientRect();
+  const targetX = box.left + box.width / 2;
+  const starts = els.map(el => ({
+    x: parseFloat(el.style.left) + el.offsetWidth / 2,
+    y: parseFloat(el.style.top) + el.offsetHeight / 2,
+  }));
+  const targetY = starts.reduce((s, p) => s + p.y, 0) / starts.length;
+  const t0 = performance.now();
+
+  function step(now) {
+    const t = Math.min((now - t0) / dur, 1);
+    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    els.forEach((el, i) => {
+      const sz = el.offsetWidth;
+      el.style.left = `${starts[i].x + (targetX - starts[i].x) * e - sz / 2}px`;
+      el.style.top = `${starts[i].y + (targetY - starts[i].y) * e - sz / 2}px`;
+      // Everything but the first fades as it merges, so one dot is left.
+      if (i > 0) el.style.opacity = String(1 - e);
+    });
+    if (t < 1) { requestAnimationFrame(step); return; }
+    for (let i = 1; i < els.length; i++) els[i].remove();
+    const merged = els[0];
+    if (merged) {
+      merged.style.transition = `transform ${settle}ms ease-out, opacity ${settle}ms ease-out`;
+      merged.style.transform = 'scale(1.6)';
+    }
+    /** @type {SVGElement} */ (overlays).style.transition = 'opacity 220ms ease-in';
+    /** @type {SVGElement} */ (overlays).style.removeProperty('opacity');
+    setTimeout(() => {
+      if (merged) { merged.style.opacity = '0'; setTimeout(() => merged.remove(), settle); }
+      onDone?.();
+    }, settle);
+  }
+  requestAnimationFrame(step);
 }
 
 /** A brief flash at a source dot as it is drawn from. */

@@ -261,7 +261,7 @@ export function showResampleDotplot(container, bag, resample, opts) {
     const targetSvg = target?.frame?.inner?.ownerSVGElement;
     const targetDots = targetSvg ? Array.from(targetSvg.querySelectorAll('.data circle')) : [];
     const ms = animateResampleDraw({
-      sourceCircles, targetDots, indices: opts.indices, style,
+      sourceCircles, targetDots, indices: opts.indices, style, targetSvg,
     });
     if (ms) return ms;
   }
