@@ -358,6 +358,8 @@ function renderSimChart_() {
     chartType,
     id: 'psychic-sim',
     xLabel: 'Number correct out of ' + NUM_TRIALS,
+    // A score is a whole number of correct guesses.
+    precision: 0,
     titleText: 'Simulated Random Guessers',
     observedStat: playerScore,
     direction: 'right',

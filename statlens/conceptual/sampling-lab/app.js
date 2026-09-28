@@ -71,6 +71,17 @@ const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
 let popType = 'quant';
 const isCat = () => popType === 'cat';
 
+/**
+ * Decimal places for values shown to the reader on the statistic's axis.
+ *
+ * The page already prints the sample statistic two ways — `x̄ = 12.34` and
+ * `p̂ = 7/20 = 0.350` — and a tooltip on the sampling distribution is the same
+ * quantity, so it reads the same way. Without this the dot tooltips showed the
+ * raw float (12.336666666666666) and the histogram's bin edges showed four
+ * significant digits, neither of which matches what is printed beside them.
+ */
+const statPrecision = () => (isCat() ? 3 : 2);
+
 /** Per-mode display labels (plain text — for chart options, not KaTeX). */
 function lab() {
   return isCat()
@@ -399,6 +410,8 @@ function renderPopulation() {
   const result = drawHistogram(popContainer, population, {
     id: 'pop-hist',
     xLabel: lab().valueAxis,
+    // Same value axis as the sample panel below it, so it reads the same way.
+    precision: statPrecision(),
     yLabel: '',
     titleText: 'Population Distribution',
     ...truthMarker(),
@@ -437,6 +450,10 @@ function renderCurrentSample(showMean = true) {
     id: 'current-sample',
     xLabel: lab().valueAxis,
     titleText: 'Current sample',
+    // The observations and the x̄ printed under them are the same quantity on
+    // the same axis, so they read the same way. (The population is generated,
+    // so the exact value is a float tail, not something anyone typed.)
+    precision: statPrecision(),
     ...(showMean && { observedStat: m, observedLabel: lab().stat }),
     animate: false,
     domain: popDisplayDomain || undefined,
@@ -990,6 +1007,7 @@ function renderFrozen() {
   drawHistogram(frozenContainer, frozen.means, {
     id: 'frozen-dist',
     xLabel: lab().statAxis,
+    precision: statPrecision(),
     titleText: '',
     ...truthMarker(),
     animate: false,
@@ -1015,6 +1033,7 @@ function renderComparisonLive() {
   drawHistogram(samplingContainer, sampleMeans, {
     id: 'sampling-dist',
     xLabel: lab().statAxis,
+    precision: statPrecision(),
     titleText: '',
     ...truthMarker(),
     animate: false,
@@ -1177,6 +1196,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       const spikeResult = drawSpike(samplingContainer, sampleMeans, {
         id: 'sampling-dist',
         xLabel: lab().statAxis,
+        precision: statPrecision(),
         titleText: lab().samplingTitle,
         ...truthMarker(),
         animate: false,
@@ -1190,6 +1210,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       const result = drawDotplot(samplingContainer, sampleMeans, {
         id: 'sampling-dist',
         xLabel: lab().statAxis,
+        precision: statPrecision(),
         titleText: lab().samplingTitle,
         ...truthMarker(),
         animate: false,
@@ -1215,6 +1236,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
     const result = drawDotplot(samplingContainer, sampleMeans, {
       id: 'sampling-dist',
       xLabel: lab().statAxis,
+      precision: statPrecision(),
       titleText: lab().samplingTitle,
       ...truthMarker(),
       animate: false,
@@ -1231,6 +1253,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
     const result = drawHistogram(samplingContainer, sampleMeans, {
       id: 'sampling-dist',
       xLabel: lab().statAxis,
+      precision: statPrecision(),
       titleText: lab().samplingTitle,
       ...truthMarker(),
       animate: false,

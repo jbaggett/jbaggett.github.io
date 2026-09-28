@@ -430,6 +430,8 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Chi-Square Statistic (χ²)',
+    // Match the page's own readout: formatStat(observedChisq, 2) = 3 decimals.
+    precision: 3,
     titleText: words.distribution,
     observedStat: observed,
     direction: 'right',

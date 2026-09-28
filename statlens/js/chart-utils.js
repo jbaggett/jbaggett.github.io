@@ -182,6 +182,32 @@ export function formatTick(value) {
 }
 
 /**
+ * How to print a data VALUE inside a chart — a tooltip, a bin range, a label a
+ * screen reader will read out.
+ *
+ * `formatTick` is right for an axis, where the job is to label a position
+ * compactly and 4 significant digits is a good compromise. It is wrong for a
+ * (re)sampling distribution, where the value under the cursor is the same
+ * quantity the page prints beside the chart: the tooltip would say `0.4667`
+ * while the readout says `p̂ = 0.467`, or say `130.4` while the readout says
+ * `x̄ = 130.43`. Two numbers for one thing, and on the reasoning-mode figures
+ * (`?readout=false`) the tooltip is what the student reads the answer off.
+ *
+ * So when a caller knows the statistic's display precision it passes it, and
+ * values print to that many places — the same `formatStat(v, d)` convention the
+ * readouts use. When it does not (the explore pages, raw data of unknown
+ * magnitude) this falls back to `formatTick`, which is what they had.
+ *
+ * @param {number} [precision] - decimal places, or undefined for the axis format
+ * @returns {(value: number) => string}
+ */
+export function valueFormat(precision) {
+  if (!Number.isFinite(precision)) return formatTick;
+  const p = Math.max(0, Math.min(20, Math.round(/** @type {number} */ (precision))));
+  return (value) => (Number.isFinite(value) ? value.toFixed(p) : String(value));
+}
+
+/**
  * Check if SVG text elements overlap horizontally (with a small gap).
  * @param {SVGTextElement[]} nodes
  * @returns {boolean}

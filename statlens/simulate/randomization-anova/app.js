@@ -459,6 +459,8 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'F Statistic',
+    // Match the page's own readout: formatStat(observedF, 2) = 3 decimals.
+    precision: 3,
     titleText: words.distribution,
     observedStat: observed,
     direction: 'right',

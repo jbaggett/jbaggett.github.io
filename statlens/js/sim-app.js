@@ -3807,6 +3807,9 @@ export function initSimPage(config) {
         ciColor: ciLineColor,
         animate: false,
         domain,
+        // Each spike is one achievable value of the statistic, so the tooltip
+        // should read the way the page prints that statistic.
+        precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
       });
       chartResult = r.frame;
       chartXScale = r.xScale;

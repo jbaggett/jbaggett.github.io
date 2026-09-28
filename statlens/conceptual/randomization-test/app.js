@@ -736,6 +736,9 @@ function updateChart() {
     const highlightIndex = lastStatIndex >= 0 ? lastStatIndex : -1;
     const r = drawDotplot(container, nullDiffs, {
       id: 'null-dist',
+      // The page prints this difference as a percentage to one decimal
+      // ((p1−p2)×100).toFixed(1), which is three decimals on the axis’ own scale.
+      precision: 3,
       xLabel,
       titleText: '',
       isExtreme,
@@ -762,6 +765,9 @@ function updateChart() {
       xLabel,
       titleText: '',
       id: 'null-dist',
+      // The page prints this difference as a percentage to one decimal
+      // ((p1−p2)×100).toFixed(1), which is three decimals on the axis’ own scale.
+      precision: 3,
       isTail: isExtreme,
       observedStat: observedDiff,
       animate: false,

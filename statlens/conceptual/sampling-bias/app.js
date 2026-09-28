@@ -175,6 +175,8 @@ function renderChart(containerId, vals, fill) {
   drawDotplot(el, vals, {
     id: containerId,
     xLabel: 'Sample mean word length',
+    // The page prints these means to two places (m.toFixed(2)).
+    precision: 2,
     titleText: '',
     observedStat: POP_MEAN,
     observedLabel: 'μ',
