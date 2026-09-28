@@ -115,10 +115,14 @@ const GHOSTED = new Set(['shade', 'rings']);
  * How many times an observation has been taken, as depth of colour.
  *
  * Deepens on the second and third pick, so a dot taken twice is seen getting
- * darker rather than being labelled afterwards. Colour alone would not be
- * enough (it fails for anyone who cannot separate these blues), so `shade`
- * keeps the ×N badges as well — the shade is the glance, the badge is the
- * number.
+ * darker rather than being labelled afterwards — no ×N anywhere, so what you
+ * are judging is the shade itself.
+ *
+ * ⚠ That makes it colour-only, which does not meet the accessibility bar on its
+ * own: anyone who cannot separate these four blues cannot read the count. It is
+ * fine for a style being compared against `rings`; if `shade` is the one that
+ * gets promoted it needs a non-colour partner first — the badges it had, or
+ * size, or the rings themselves.
  */
 const SHADE = ['#569BBD', '#3E7A99', '#2A5A75', '#114B5F'];
 
@@ -235,9 +239,11 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
   }
 
   // Taken more than once: say that too. Burst has no time to show a dot being
-  // picked twice, so it labels instead. `shade` labels too, because a depth of
-  // blue is a colour-only signal and the count is worth stating exactly.
-  if (style === 'burst' || style === 'shade') {
+  // picked twice, so it labels instead. `shade` deliberately does NOT — it is
+  // the pure colour-depth encoding, kept clean so it can be judged on its own
+  // against `rings` (Jeff, 2026-09-28). If it wins, it needs a non-colour
+  // partner before it becomes the default.
+  if (style === 'burst') {
     takenCount.forEach((n, j) => { if (n > 1) badge(sourceCircles[j], n); });
   }
 
