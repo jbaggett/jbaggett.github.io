@@ -534,137 +534,212 @@ export function clearDrawMarks(root) {
 /**
  * Watching a resample happen when the sample is too big to draw as dots.
  *
- * Past 80 observations the mechanism falls back to a pair of mini histograms,
- * and the animation had nothing to say: two static pictures and a caption doing
- * all the work ("170 drawn more than once · 240 not selected"). You cannot
- * address individual observations at that size — but you can address BINS, and
- * the same four things burst says about dots have bin-level analogues:
+ * Past 80 observations the mechanism is a pair of histograms. The first attempt
+ * at animating that flew each SOURCE bar to the matching resample bar — which
+ * Jeff called cute and not resampling, and he was right about why. One bar to
+ * one bar reads as the histogram *deforming*, and it implies a correspondence
+ * that does not exist: resample bin 3 was not made *from* source bin 3 as a
+ * block. It was filled by individual draws that each happened to land there. A
+ * transformation of the whole, where the truth is an accumulation of parts.
  *
- * - the resample is drawn FROM the source → every bar begins as a ghost of the
- *   source's bar and travels to the resample panel
- * - some values come up more often than they did → a bar lands TALLER than it
- *   left; one that lands shorter was drawn less often than its share
- * - a bin nothing was drawn from collapses to the baseline and fades
- * - the statistic is computed FROM the resample → the bars gather into the mean
+ * Resampling has four facts and bars-flying-to-bars carried none of them:
+ * draws happen ONE AT A TIME, each takes ONE observation, the bag NEVER
+ * EMPTIES, and the new sample is BUILT UP to the same n. So:
  *
- * It solidifies as it flies: pale at the source, full colour on arrival, so
- * "this is a copy of that" and "this is now its own sample" are the same
- * gesture. (Jeff's design, 2026-09-28.)
+ * - the resample panel starts as bare axes — no bars at all
+ * - draws stream out of the source one at a time, each leaving from a random
+ *   point inside the bar it came from
+ * - each landing grows its bar by one increment, so the second histogram is
+ *   built rather than delivered
+ * - the source bar pulses as the draw leaves and **stays exactly as tall**,
+ *   which is the most direct picture of "with replacement" available here: you
+ *   draw from it over and over and it never runs down
+ * - a counter runs up to n, because the resample being the same size as the
+ *   sample is the part that gets missed
  *
- * Both panels must be cut on the same bin grid or bar k in one is not bar k in
- * the other — see `binAnchor` in drawMiniHistogram.
+ * Draws are allocated to bars from the resample's OWN bin counts rather than
+ * sampled here, so the stream ends on exactly the histogram that was computed,
+ * and a bin that drew more than its share is seen firing more often than its
+ * height would suggest — which is the bootstrap's variability, visible.
+ *
+ * At n = 648 you cannot fly 648 particles, so the stream is a fixed budget and
+ * each particle carries several draws. The counter names the real n throughout.
  *
  * @param {object} opts
- * @param {Element|null} opts.sourceSvg - the bag's mini histogram
+ * @param {Element|null} opts.sourceSvg - the bag's histogram
  * @param {Element|null} opts.targetSvg - the resample's, already drawn
+ * @param {number} [opts.n] - draws in the resample, for the counter
  * @param {() => void} [opts.onDone]
  * @returns {number} total duration in ms, 0 if it declined to run
  */
-export function animateHistogramDraw({ sourceSvg, targetSvg, onDone }) {
+export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
   if (prefersReducedMotion() || !sourceSvg || !targetSvg) return 0;
   // Two renderers draw these panels: the compact `.mc-bar` mini histogram and
-  // the full drawHistogram, whose bars are rects inside `.data`. Both are
-  // "the sample as bars", so both animate.
+  // the full drawHistogram, whose bars are rects inside `.data`.
   const BAR_SEL = '.mc-bar, .data rect';
   const srcBars = [...sourceSvg.querySelectorAll(BAR_SEL)];
   const tgtBars = [...targetSvg.querySelectorAll(BAR_SEL)];
   if (!srcBars.length || !tgtBars.length) return 0;
   dismissAirborneStat();
 
-  /** Bars are matched by where they sit, since a bin nobody drew has no rect. */
-  const keyOf = (/** @type {Element} */ bar) => {
-    const b = bar.getBoundingClientRect();
-    return Math.round(b.left + b.width / 2);
-  };
-  // The two panels sit side by side, so the source's x needs shifting into the
-  // target's frame before the keys can be compared.
   const srcBox = sourceSvg.getBoundingClientRect();
   const tgtBox = targetSvg.getBoundingClientRect();
   const shift = tgtBox.left - srcBox.left;
-  /** @type {Map<number, Element>} */
-  const byKey = new Map();
-  for (const bar of tgtBars) byKey.set(keyOf(bar), bar);
-  /** Nearest target bar within half a bar's width — grids can round apart. */
-  const matchFor = (/** @type {number} */ k, /** @type {number} */ tol) => {
-    let best = null, bestD = tol + 1;
-    for (const [tk, bar] of byKey) {
-      const d = Math.abs(tk - k);
-      if (d < bestD) { bestD = d; best = bar; }
-    }
-    return bestD <= tol ? best : null;
+  const centre = (/** @type {Element} */ bar) => {
+    const b = bar.getBoundingClientRect();
+    return b.left + b.width / 2;
   };
 
-  for (const bar of tgtBars) /** @type {SVGElement} */ (bar).style.opacity = '0';
+  /** Each resample bar, with the source bar it draws from and its final size. */
+  const slots = tgtBars.map((bar) => {
+    const box = bar.getBoundingClientRect();
+    const want = centre(bar);
+    let src = null, bestD = Infinity;
+    for (const sb of srcBars) {
+      const d = Math.abs(centre(sb) + shift - want);
+      if (d < bestD) { bestD = d; src = sb; }
+    }
+    const tol = Math.max(6, box.width * 0.75);
+    return {
+      bar, src: bestD <= tol ? src : null, box,
+      finalY: Number(bar.getAttribute('y')) || 0,
+      finalH: Number(bar.getAttribute('height')) || 0,
+      landed: 0, share: 0,
+    };
+  });
+  const totalH = slots.reduce((t, s) => t + s.box.height, 0);
+  if (!(totalH > 0)) return 0;
 
-  const FLY = 620, STAGGER = 26, HOLD = 140, GATHER = 560, SETTLE = 240;
-  const baselineY = tgtBox.top + (tgtBars[0]?.getBoundingClientRect().bottom - tgtBox.top);
-  /** @type {{el: HTMLElement, from: DOMRect, to: {x:number,y:number,w:number,h:number},
-   *   bar: Element|null, delay: number}[]} */
-  const flyers = [];
-  const ordered = [...srcBars].sort((a, b) => keyOf(a) - keyOf(b));
-  ordered.forEach((bar, i) => {
-    const from = bar.getBoundingClientRect();
-    const tol = Math.max(6, from.width * 0.75);
-    const match = matchFor(keyOf(bar) + shift, tol);
-    const tb = match?.getBoundingClientRect();
-    const el = document.createElement('div');
-    el.className = 'dpr-bar-flyer';
-    el.style.cssText = `position:fixed;left:${from.left}px;top:${from.top}px;`
-      + `width:${from.width}px;height:${from.height}px;z-index:1000;pointer-events:none;`;
-    document.body.appendChild(el);
-    if (tb) el.classList.add(tb.height > from.height ? 'dpr-bar-grew' : 'dpr-bar-shrank');
-    flyers.push({
-      el, from,
-      // No match means nothing was drawn from this bin: it collapses onto the
-      // baseline rather than landing, which is the histogram's way of saying
-      // "never selected".
-      to: tb
-        ? { x: tb.left, y: tb.top, w: tb.width, h: tb.height }
-        : { x: from.left + shift, y: baselineY, w: from.width, h: 0 },
-      bar: match,
-      delay: i * STAGGER,
-    });
+  // A fixed budget of particles, allocated across bars by largest remainder so
+  // the counts are exact and every drawn-from bin fires at least once.
+  const BUDGET = Math.max(24, Math.min(110, Math.round(n || 110)));
+  const exact = slots.map(s => (s.box.height / totalH) * BUDGET);
+  slots.forEach((s, i) => { s.share = Math.floor(exact[i]); });
+  let left = BUDGET - slots.reduce((t, s) => t + s.share, 0);
+  const order = slots.map((s, i) => i).sort((a, c) => (exact[c] - slots[c].share) - (exact[a] - slots[a].share));
+  for (const i of order) { if (left <= 0) break; slots[i].share++; left--; }
+  for (const s of slots) if (s.box.height > 0 && s.share === 0) s.share = 1;
+
+  // Hide the resample: bare axes, nothing drawn.
+  for (const s of slots) {
+    /** @type {SVGElement} */ (s.bar).style.opacity = '0';
+    s.bar.setAttribute('height', '0');
+    s.bar.setAttribute('y', String(s.finalY + s.finalH));
+  }
+
+  /** The launch order: interleaved, so the stream reads as random draws. */
+  /** @type {typeof slots} */
+  const queue = [];
+  for (const s of slots) for (let k = 0; k < s.share; k++) queue.push(s);
+  for (let i = queue.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [queue[i], queue[j]] = [queue[j], queue[i]];
+  }
+
+  const STREAM = 2100, FLY = 430, HOLD = 220, GATHER = 560, SETTLE = 240;
+  const gap = queue.length > 1 ? STREAM / queue.length : 0;
+  const drawsPer = (n || queue.length) / (queue.length || 1);
+
+  const counter = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  counter.setAttribute('class', 'dpr-draw-counter');
+  counter.setAttribute('x', String(tgtBox.width - 6));
+  counter.setAttribute('y', '10');
+  counter.setAttribute('text-anchor', 'end');
+  counter.textContent = `0 / ${n ?? ''}`.trim();
+  if (n) targetSvg.appendChild(counter);
+
+  /** @type {{el: HTMLElement, slot: typeof slots[0], sx:number, sy:number, at:number, launched:boolean}[]} */
+  const parts = queue.map((slot, i) => {
+    // From a random point INSIDE the bar it came from — the draw takes one
+    // observation out of that bin, not the bin itself.
+    const from = (slot.src ?? slot.bar).getBoundingClientRect();
+    return {
+      el: /** @type {HTMLElement} */ (document.createElement('div')),
+      slot,
+      sx: from.left + Math.random() * from.width,
+      sy: from.top + Math.random() * Math.max(from.height, 2),
+      at: i * gap,
+      launched: false,
+    };
   });
 
-  const flightMs = Math.max(...flyers.map(f => f.delay)) + FLY + 80;
-  const total = flightMs + HOLD + GATHER + SETTLE;
   const t0 = performance.now();
-  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const total = STREAM + FLY + HOLD + GATHER + SETTLE;
+  let landedCount = 0;
 
   function step(now) {
     const elapsed = now - t0;
     let running = false;
-    for (const f of flyers) {
-      const t = (elapsed - f.delay) / FLY;
+    for (const pt of parts) {
+      const t = (elapsed - pt.at) / FLY;
       if (t < 0) { running = true; continue; }
+      if (!pt.launched) {
+        pt.launched = true;
+        pt.el.className = 'dpr-draw';
+        pt.el.style.cssText = `position:fixed;left:${pt.sx - 3}px;top:${pt.sy - 3}px;`
+          + `width:6px;height:6px;border-radius:50%;background:${FLY_COLOR};`
+          + `z-index:1000;pointer-events:none;`;
+        document.body.appendChild(pt.el);
+        // The bar it came from flashes — and stays exactly as tall as it was.
+        if (pt.slot.src) pulseBar(pt.slot.src);
+      }
       if (t >= 1) {
-        if (f.bar) /** @type {SVGElement} */ (f.bar).style.removeProperty('opacity');
-        if (f.el.isConnected) f.el.remove();
+        if (pt.el.isConnected) {
+          pt.el.remove();
+          landedCount++;
+          grow(pt.slot);
+          if (n) counter.textContent = `${Math.min(n, Math.round(landedCount * drawsPer))} / ${n}`;
+        }
         continue;
       }
       running = true;
-      const e = ease(t);
-      f.el.style.left = `${f.from.left + (f.to.x - f.from.left) * e}px`;
-      f.el.style.top = `${f.from.top + (f.to.y - f.from.top) * e}px`;
-      f.el.style.width = `${f.from.width + (f.to.w - f.from.width) * e}px`;
-      f.el.style.height = `${f.from.height + (f.to.h - f.from.height) * e}px`;
-      // Solidifying is the whole point: a ghost of the source becomes a bar of
-      // the resample over the course of the journey.
-      f.el.style.opacity = String(0.9 - 0.15 * e);
-      f.el.style.setProperty('--dpr-solid', String(e));
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      // Lands on the CURRENT top of its bar, which is where the next draw piles.
+      const ex = pt.slot.box.left + pt.slot.box.width / 2;
+      const ey = targetTop(pt.slot);
+      pt.el.style.left = `${pt.sx + (ex - pt.sx) * e - 3}px`;
+      pt.el.style.top = `${pt.sy + (ey - pt.sy) * e - 3}px`;
     }
     if (running) { requestAnimationFrame(step); return; }
-    for (const f of flyers) f.el.remove();
-    // EVERY target bar, not just the matched ones. Matching is by position with
-    // a tolerance, and three of twenty-one bars were narrow enough to miss —
-    // they stayed invisible for good, because the only thing that revealed a
-    // bar was a flyer arriving on it. The flight is the story; the resample is
-    // the fact, and it has to end up fully drawn either way.
-    for (const bar of tgtBars) /** @type {SVGElement} */ (bar).style.removeProperty('opacity');
-    setTimeout(() => gatherBars(targetSvg, tgtBars, GATHER, SETTLE, onDone), HOLD);
+    // Settle on the exact computed histogram, whatever rounding the stream did.
+    for (const s of slots) {
+      s.bar.setAttribute('y', String(s.finalY));
+      s.bar.setAttribute('height', String(s.finalH));
+      /** @type {SVGElement} */ (s.bar).style.removeProperty('opacity');
+    }
+    if (n) counter.textContent = `${n} / ${n}`;
+    setTimeout(() => {
+      counter.remove();
+      gatherBars(targetSvg, tgtBars, GATHER, SETTLE, onDone);
+    }, HOLD);
   }
+
+  /** Grow a bar by one landed draw. */
+  function grow(slot) {
+    slot.landed++;
+    const frac = Math.min(1, slot.landed / Math.max(1, slot.share));
+    const h = slot.finalH * frac;
+    slot.bar.setAttribute('height', String(h));
+    slot.bar.setAttribute('y', String(slot.finalY + slot.finalH - h));
+    /** @type {SVGElement} */ (slot.bar).style.removeProperty('opacity');
+  }
+
+  /** Screen y of a bar's current top — where the next draw piles on. */
+  function targetTop(slot) {
+    const frac = Math.min(1, slot.landed / Math.max(1, slot.share));
+    return slot.box.bottom - slot.box.height * frac;
+  }
+
   requestAnimationFrame(step);
   return total;
+}
+
+/** A source bar flashes as a draw leaves it — and keeps its height. */
+function pulseBar(bar) {
+  bar.classList.remove('dpr-bar-drawn');
+  void /** @type {HTMLElement} */ (bar).getBoundingClientRect();
+  bar.classList.add('dpr-bar-drawn');
+  setTimeout(() => bar.classList.remove('dpr-bar-drawn'), 260);
 }
 
 /**

@@ -3032,7 +3032,7 @@ export function initSimPage(config) {
     const srcSvg = originalContentEl?.querySelector('svg') ?? null;
     const tgtSvg = container.querySelector('svg');
     if (srcSvg && tgtSvg) {
-      const ms = animateHistogramDraw({ sourceSvg: srcSvg, targetSvg: tgtSvg });
+      const ms = animateHistogramDraw({ sourceSvg: srcSvg, targetSvg: tgtSvg, n: resampleValues.length });
       if (ms) {
         if (meanLineGroup) {
           setTimeout(() => { /** @type {SVGElement} */ (meanLineGroup).style.opacity = '1'; }, ms - 700);

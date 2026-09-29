@@ -5505,6 +5505,30 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   stroke-width: 1.2;
   transition: fill 0.25s ease-out, stroke 0.25s ease-out;
 }
+/* A single draw, in flight from the source histogram to the resample. */
+.dpr-draw { will-change: left, top; }
+/* The bar a draw was taken from flashes — and keeps its height. Drawing from it
+   over and over never runs it down, which is what "with replacement" means. */
+@keyframes dpr-bar-flash {
+  /* Darken rather than recolour. Animating `fill` needs an end value, and
+     `inherit` resolves against the parent <g> — which turned the bar BLACK for
+     the length of the flash. A filter leaves the bar's own fill alone. */
+  0%   { filter: brightness(0.7) saturate(1.5); }
+  70%  { filter: brightness(0.7) saturate(1.5); }
+  100% { filter: none; }
+}
+.dpr-bar-drawn { animation: dpr-bar-flash 260ms ease-out; }
+.dpr-draw-counter {
+  font-size: 8px;
+  font-family: var(--font-mono, monospace);
+  fill: #555;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dpr-bar-drawn { animation: none; }
+  .dpr-draw { display: none; }
+}
+
 /* A bar of the source histogram, in flight to the resample panel. It leaves as
    a ghost and arrives solid: --dpr-solid runs 0 → 1 over the journey, so the
    fill deepens and the outline firms up as it goes. */
