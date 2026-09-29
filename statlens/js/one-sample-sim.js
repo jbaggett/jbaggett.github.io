@@ -315,6 +315,9 @@ export function initOneSamplePage(config) {
   let lastSimStat = 0;
   /** @type {number[]|null} */
   let lastResampleArr = null;
+  /** Which observation each draw took — the animation is blind without it. */
+  /** @type {number[]|null} */
+  let lastResampleIdx = null;
 
   const obsChartEl = () => /** @type {HTMLElement|null} */ (document.getElementById('mech-obs-chart'));
 
@@ -337,6 +340,7 @@ export function initOneSamplePage(config) {
     return mech.renderResample(el, shiftedData, lastResampleArr, lastSimStat, animate, {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
       label: 'Simulated resample from null distribution',
+      indices: lastResampleIdx ?? undefined,
     });
   }
 
@@ -1134,6 +1138,7 @@ export function initOneSamplePage(config) {
 
     const isSingle = count === 1;
     lastResampleArr = null;
+    lastResampleIdx = null;
 
     if (isProp) {
       // Bernoulli(p₀) simulation
@@ -1166,10 +1171,16 @@ export function initOneSamplePage(config) {
       // Shifted bootstrap
       const n = shiftedData.length;
       for (let i = 0; i < count; i++) {
-        const resampleArr = drawFromShiftedNull(shiftedData, rng).values;
+        // Keep the INDICES, not just the values. Without them the draw
+        // animation cannot say which observation was taken twice or never —
+        // this page showed dots flying with no marks at all, while
+        // bootstrap-mean (which kept them) showed both. (2026-09-28.)
+        const draw = drawFromShiftedNull(shiftedData, rng);
+        const resampleArr = draw.values;
         const simMean = mean(resampleArr);
         lastSimStat = simMean;
         lastResampleArr = /** @type {number[]} */ (resampleArr);
+        lastResampleIdx = draw.indices ?? null;
         allStats.push(simMean);
       }
       const hlClass = isSingle ? ' highlight-last' : '';

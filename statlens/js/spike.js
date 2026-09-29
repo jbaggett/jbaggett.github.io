@@ -10,7 +10,7 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, formatTick, valueFormat, attachTooltip } from './chart-utils.js';
+import { createChart, addAxes, formatTick, valueFormat, setLabelText, attachTooltip } from './chart-utils.js';
 
 /** Default spike color (IMS blue) — used when no isTail predicate. */
 const SPIKE_COLOR = '#569BBD';
@@ -239,5 +239,7 @@ function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, d
     .attr('x', x).attr('y', -4)
     .attr('text-anchor', 'middle')
     .attr('fill', color)
-    .text(prefix + value.toFixed(precision));
+    .each(function () {
+      setLabelText(/** @type {SVGTextElement} */ (this), prefix + value.toFixed(precision));
+    });
 }

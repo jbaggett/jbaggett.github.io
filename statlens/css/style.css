@@ -5505,6 +5505,30 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   stroke-width: 1.2;
   transition: fill 0.25s ease-out, stroke 0.25s ease-out;
 }
+/* A bar of the source histogram, in flight to the resample panel. It leaves as
+   a ghost and arrives solid: --dpr-solid runs 0 → 1 over the journey, so the
+   fill deepens and the outline firms up as it goes. */
+.dpr-bar-flyer {
+  background: rgba(86, 155, 189, calc(0.18 + 0.42 * var(--dpr-solid, 0)));
+  border: 1px solid rgba(86, 155, 189, calc(0.35 + 0.65 * var(--dpr-solid, 0)));
+  box-sizing: border-box;
+  will-change: left, top, width, height;
+}
+/* A bar that lands taller than it left was drawn from more often than its
+   share; one that lands shorter, less. The in-place morph said this with
+   colour, and the travelling version keeps saying it. */
+.dpr-bar-flyer.dpr-bar-grew {
+  background: rgba(42, 100, 150, calc(0.18 + 0.5 * var(--dpr-solid, 0)));
+  border-color: rgba(42, 100, 150, calc(0.4 + 0.6 * var(--dpr-solid, 0)));
+}
+.dpr-bar-flyer.dpr-bar-shrank {
+  background: rgba(184, 212, 232, calc(0.25 + 0.55 * var(--dpr-solid, 0)));
+  border-color: rgba(120, 170, 200, calc(0.4 + 0.6 * var(--dpr-solid, 0)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .dpr-bar-flyer { display: none; }
+}
+
 /* One ring per repeat draw: a count you can read without separating two blues.
    Drawn behind its dot, so the dot is never hidden by its own tally. */
 .dpr-ring {

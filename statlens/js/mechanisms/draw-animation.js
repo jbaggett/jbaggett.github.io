@@ -130,8 +130,26 @@ const SHADE = ['#569BBD', '#3E7A99', '#2A5A75', '#114B5F'];
 const RING_GAP = 3.5;
 
 /**
- * Which style the URL asked for. `classic` is the animation that shipped, kept
- * as the baseline to compare against.
+ * Smallest dot radius that can hold a legible numeral.
+ *
+ * The digit is drawn at 1.7 × the radius, so this is the point where it drops
+ * below about 8px — under that it is a smudge inside a dot rather than a
+ * number, and the count is better carried by colour depth.
+ */
+const COUNT_LEGIBLE_R = 5;
+
+/**
+ * Which style to draw with.
+ *
+ * **`burst` is the default** as of 2026-09-28 (Jeff's call, after comparing the
+ * five on bootstrap-mean). It is the one that states both facts at once — a
+ * count inside every repeated dot, dimming on every observation never taken —
+ * and it is the only one fast enough that a reader clicking +1 repeatedly is
+ * not waiting on it. Where the dots are too small to hold a numeral the count
+ * becomes depth of colour instead, so it degrades rather than failing.
+ *
+ * `classic` is the animation that shipped before, still reachable for
+ * comparison; the other three remain for the same reason.
  *
  * @param {string} [search]
  * @returns {DrawStyle}
@@ -139,8 +157,9 @@ const RING_GAP = 3.5;
 export function drawStyleFromUrl(search) {
   const raw = new URLSearchParams(
     search ?? (typeof location === 'undefined' ? '' : location.search)).get('draw');
-  return (raw === 'sequence' || raw === 'burst' || raw === 'sweep'
-    || raw === 'shade' || raw === 'rings') ? raw : 'classic';
+  if (raw === 'classic' || raw === 'sequence' || raw === 'sweep'
+    || raw === 'shade' || raw === 'rings' || raw === 'burst') return raw;
+  return 'burst';
 }
 
 /**
@@ -463,15 +482,27 @@ function badge(circle, n) {
   if (!svg || !parent) return;
   const el = /** @type {SVGElement} */ (circle);
   const r = Number(circle.getAttribute('r')) || 5;
-  el.classList.add('dpr-counted');
 
+  if (r < COUNT_LEGIBLE_R) {
+    // Too small to hold a digit. A skewed sample stacks deep, which is what
+    // shrinks the dots — on email50 the radius comes out at 3.8px and a 7px
+    // numeral inside it is a smudge, not a number. (Jeff, 2026-09-28.)
+    //
+    // So the count is carried by DEPTH instead: same ramp `shade` uses, so a
+    // dot taken twice is darker and one taken four times darker still. Less
+    // precise than a digit and completely readable, which is the better trade
+    // when the digit would not have been readable at all.
+    el.style.fill = SHADE[Math.min(n, SHADE.length) - 1];
+    return;
+  }
+
+  el.classList.add('dpr-counted');
   const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   t.setAttribute('class', 'dpr-badge');
   t.setAttribute('x', circle.getAttribute('cx') || '0');
   t.setAttribute('y', circle.getAttribute('cy') || '0');
-  // Scale with the dot, so it fits whether the panel is 300px or 520px wide,
-  // with a floor that keeps a two-digit count from disappearing.
-  t.setAttribute('font-size', String(Math.max(7, Math.round(r * 1.7))));
+  // Scale with the dot, so it fits whether the panel is 300px or 520px wide.
+  t.setAttribute('font-size', String(Math.round(r * 1.7)));
   t.textContent = String(n);
   // After the dot, so it is painted over it rather than under.
   parent.appendChild(t);
@@ -484,6 +515,11 @@ export function clearDrawMarks(root) {
   root.querySelectorAll('.dpr-picked').forEach(el => el.classList.remove('dpr-picked'));
   root.querySelectorAll('.dpr-badge').forEach(el => el.remove());
   root.querySelectorAll('.dpr-counted').forEach(el => el.classList.remove('dpr-counted'));
+  // The small-dot fallback writes the depth straight onto the element.
+  root.querySelectorAll('.data circle').forEach((el) => {
+    const st = /** @type {SVGElement} */ (el).style;
+    if (st.fill) st.removeProperty('fill');
+  });
   // The ghosted styles leave marks of their own: the outline class, the shade
   // written onto the element, and one ring per repeat draw. A source that keeps
   // last draw's rings is a source that lies about this one.
@@ -493,4 +529,199 @@ export function clearDrawMarks(root) {
     /** @type {SVGElement} */ (el).style.removeProperty('fill');
     delete /** @type {SVGElement} */ (el).dataset.dprFill;
   });
+}
+
+/**
+ * Watching a resample happen when the sample is too big to draw as dots.
+ *
+ * Past 80 observations the mechanism falls back to a pair of mini histograms,
+ * and the animation had nothing to say: two static pictures and a caption doing
+ * all the work ("170 drawn more than once · 240 not selected"). You cannot
+ * address individual observations at that size — but you can address BINS, and
+ * the same four things burst says about dots have bin-level analogues:
+ *
+ * - the resample is drawn FROM the source → every bar begins as a ghost of the
+ *   source's bar and travels to the resample panel
+ * - some values come up more often than they did → a bar lands TALLER than it
+ *   left; one that lands shorter was drawn less often than its share
+ * - a bin nothing was drawn from collapses to the baseline and fades
+ * - the statistic is computed FROM the resample → the bars gather into the mean
+ *
+ * It solidifies as it flies: pale at the source, full colour on arrival, so
+ * "this is a copy of that" and "this is now its own sample" are the same
+ * gesture. (Jeff's design, 2026-09-28.)
+ *
+ * Both panels must be cut on the same bin grid or bar k in one is not bar k in
+ * the other — see `binAnchor` in drawMiniHistogram.
+ *
+ * @param {object} opts
+ * @param {Element|null} opts.sourceSvg - the bag's mini histogram
+ * @param {Element|null} opts.targetSvg - the resample's, already drawn
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animateHistogramDraw({ sourceSvg, targetSvg, onDone }) {
+  if (prefersReducedMotion() || !sourceSvg || !targetSvg) return 0;
+  // Two renderers draw these panels: the compact `.mc-bar` mini histogram and
+  // the full drawHistogram, whose bars are rects inside `.data`. Both are
+  // "the sample as bars", so both animate.
+  const BAR_SEL = '.mc-bar, .data rect';
+  const srcBars = [...sourceSvg.querySelectorAll(BAR_SEL)];
+  const tgtBars = [...targetSvg.querySelectorAll(BAR_SEL)];
+  if (!srcBars.length || !tgtBars.length) return 0;
+  dismissAirborneStat();
+
+  /** Bars are matched by where they sit, since a bin nobody drew has no rect. */
+  const keyOf = (/** @type {Element} */ bar) => {
+    const b = bar.getBoundingClientRect();
+    return Math.round(b.left + b.width / 2);
+  };
+  // The two panels sit side by side, so the source's x needs shifting into the
+  // target's frame before the keys can be compared.
+  const srcBox = sourceSvg.getBoundingClientRect();
+  const tgtBox = targetSvg.getBoundingClientRect();
+  const shift = tgtBox.left - srcBox.left;
+  /** @type {Map<number, Element>} */
+  const byKey = new Map();
+  for (const bar of tgtBars) byKey.set(keyOf(bar), bar);
+  /** Nearest target bar within half a bar's width — grids can round apart. */
+  const matchFor = (/** @type {number} */ k, /** @type {number} */ tol) => {
+    let best = null, bestD = tol + 1;
+    for (const [tk, bar] of byKey) {
+      const d = Math.abs(tk - k);
+      if (d < bestD) { bestD = d; best = bar; }
+    }
+    return bestD <= tol ? best : null;
+  };
+
+  for (const bar of tgtBars) /** @type {SVGElement} */ (bar).style.opacity = '0';
+
+  const FLY = 620, STAGGER = 26, HOLD = 140, GATHER = 560, SETTLE = 240;
+  const baselineY = tgtBox.top + (tgtBars[0]?.getBoundingClientRect().bottom - tgtBox.top);
+  /** @type {{el: HTMLElement, from: DOMRect, to: {x:number,y:number,w:number,h:number},
+   *   bar: Element|null, delay: number}[]} */
+  const flyers = [];
+  const ordered = [...srcBars].sort((a, b) => keyOf(a) - keyOf(b));
+  ordered.forEach((bar, i) => {
+    const from = bar.getBoundingClientRect();
+    const tol = Math.max(6, from.width * 0.75);
+    const match = matchFor(keyOf(bar) + shift, tol);
+    const tb = match?.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'dpr-bar-flyer';
+    el.style.cssText = `position:fixed;left:${from.left}px;top:${from.top}px;`
+      + `width:${from.width}px;height:${from.height}px;z-index:1000;pointer-events:none;`;
+    document.body.appendChild(el);
+    if (tb) el.classList.add(tb.height > from.height ? 'dpr-bar-grew' : 'dpr-bar-shrank');
+    flyers.push({
+      el, from,
+      // No match means nothing was drawn from this bin: it collapses onto the
+      // baseline rather than landing, which is the histogram's way of saying
+      // "never selected".
+      to: tb
+        ? { x: tb.left, y: tb.top, w: tb.width, h: tb.height }
+        : { x: from.left + shift, y: baselineY, w: from.width, h: 0 },
+      bar: match,
+      delay: i * STAGGER,
+    });
+  });
+
+  const flightMs = Math.max(...flyers.map(f => f.delay)) + FLY + 80;
+  const total = flightMs + HOLD + GATHER + SETTLE;
+  const t0 = performance.now();
+  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  function step(now) {
+    const elapsed = now - t0;
+    let running = false;
+    for (const f of flyers) {
+      const t = (elapsed - f.delay) / FLY;
+      if (t < 0) { running = true; continue; }
+      if (t >= 1) {
+        if (f.bar) /** @type {SVGElement} */ (f.bar).style.removeProperty('opacity');
+        if (f.el.isConnected) f.el.remove();
+        continue;
+      }
+      running = true;
+      const e = ease(t);
+      f.el.style.left = `${f.from.left + (f.to.x - f.from.left) * e}px`;
+      f.el.style.top = `${f.from.top + (f.to.y - f.from.top) * e}px`;
+      f.el.style.width = `${f.from.width + (f.to.w - f.from.width) * e}px`;
+      f.el.style.height = `${f.from.height + (f.to.h - f.from.height) * e}px`;
+      // Solidifying is the whole point: a ghost of the source becomes a bar of
+      // the resample over the course of the journey.
+      f.el.style.opacity = String(0.9 - 0.15 * e);
+      f.el.style.setProperty('--dpr-solid', String(e));
+    }
+    if (running) { requestAnimationFrame(step); return; }
+    for (const f of flyers) f.el.remove();
+    // EVERY target bar, not just the matched ones. Matching is by position with
+    // a tolerance, and three of twenty-one bars were narrow enough to miss —
+    // they stayed invisible for good, because the only thing that revealed a
+    // bar was a flyer arriving on it. The flight is the story; the resample is
+    // the fact, and it has to end up fully drawn either way.
+    for (const bar of tgtBars) /** @type {SVGElement} */ (bar).style.removeProperty('opacity');
+    setTimeout(() => gatherBars(targetSvg, tgtBars, GATHER, SETTLE, onDone), HOLD);
+  }
+  requestAnimationFrame(step);
+  return total;
+}
+
+/**
+ * Gather the resample's bars into its mean.
+ *
+ * One token per bar, from the top of the bar, converging on the mean marker and
+ * merging into a single dot — the same move the dotplot's combine makes, so the
+ * two sizes of sample tell the same story. The merged token is then parked for
+ * `animateDropToChart` to fly into the distribution, exactly as a dot would be.
+ *
+ * @param {Element} svg
+ * @param {Element[]} bars
+ * @param {number} dur
+ * @param {number} settle
+ * @param {(() => void)} [onDone]
+ */
+function gatherBars(svg, bars, dur, settle, onDone) {
+  const meanLine = svg.querySelector('.mc-mean, .resample-mean-group line');
+  const box = svg.getBoundingClientRect();
+  const mb = meanLine?.getBoundingClientRect();
+  const targetX = mb ? mb.left + mb.width / 2 : box.left + box.width / 2;
+  const alive = bars.filter(b => b.isConnected);
+  if (!alive.length) { onDone?.(); return; }
+
+  const tokens = alive.map((bar) => {
+    const b = bar.getBoundingClientRect();
+    const el = document.createElement('div');
+    el.className = 'dpr-flyer';
+    const sz = 7;
+    el.style.cssText = `position:fixed;left:${b.left + b.width / 2 - sz / 2}px;top:${b.top - sz / 2}px;`
+      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${FLY_COLOR};`
+      + `z-index:1000;pointer-events:none;opacity:0.9;`;
+    document.body.appendChild(el);
+    return { el, sx: b.left + b.width / 2, sy: b.top };
+  });
+  const targetY = tokens.reduce((s, t) => s + t.sy, 0) / tokens.length;
+  const t0 = performance.now();
+
+  function step(now) {
+    const t = Math.min((now - t0) / dur, 1);
+    const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    tokens.forEach((tk, i) => {
+      const sz = tk.el.offsetWidth || 7;
+      tk.el.style.left = `${tk.sx + (targetX - tk.sx) * e - sz / 2}px`;
+      tk.el.style.top = `${tk.sy + (targetY - tk.sy) * e - sz / 2}px`;
+      if (i > 0) tk.el.style.opacity = String(0.9 * (1 - e));
+    });
+    if (t < 1) { requestAnimationFrame(step); return; }
+    for (let i = 1; i < tokens.length; i++) tokens[i].el.remove();
+    const merged = tokens[0]?.el;
+    if (merged) {
+      merged.style.transition = `transform ${settle}ms ease-out`;
+      merged.style.transform = 'scale(1.6)';
+      // Parked for the drop animation, the same as the dotplot's merged dot.
+      hold(merged);
+    }
+    setTimeout(() => onDone?.(), settle);
+  }
+  requestAnimationFrame(step);
 }

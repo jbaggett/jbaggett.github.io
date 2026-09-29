@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 import { sturgesBins } from './histogram.js';
 
 /** Default dot fill — IMS blue. */
@@ -347,15 +347,19 @@ export function drawDotplot(container, values, options = {}) {
     renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision);
   }
 
-  // Observed statistic line
+  // Observed statistic line. It and the two bounds share one line of text above
+  // the plot, so any that collide get lifted a row (js/chart-utils.js).
+  /** @type {SVGTextElement[]} */
+  const overlayLabels = [];
   const overlaysGroup = d3Selection.select(frame.inner).select('.overlays');
   if (observedStat != null && showObsMarker) {
-    renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel);
+    overlayLabels.push(renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel));
   }
   if (ciLines) {
-    renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor);
-    renderCILine(overlaysGroup, ciLines[1], xScale, frame.height, precision, ciColor);
+    overlayLabels.push(renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor));
+    overlayLabels.push(renderCILine(overlaysGroup, ciLines[1], xScale, frame.height, precision, ciColor));
   }
+  deoverlapLabels(overlayLabels);
 
   return {
     frame,
@@ -431,13 +435,16 @@ export function drawDotplot(container, values, options = {}) {
 
       const overlays = d3Selection.select(frame.inner).select('.overlays');
       overlays.selectAll('*').remove();
+      /** @type {SVGTextElement[]} */
+      const newLabels = [];
       if (newObserved != null) {
-        renderObservedLine(overlays, newObserved, xScale, frame.height, precision, opts.observedLabel ?? observedLabel);
+        newLabels.push(renderObservedLine(overlays, newObserved, xScale, frame.height, precision, opts.observedLabel ?? observedLabel));
       }
       if (newCiLines) {
-        renderCILine(overlays, newCiLines[0], xScale, frame.height, precision);
-        renderCILine(overlays, newCiLines[1], xScale, frame.height, precision);
+        newLabels.push(renderCILine(overlays, newCiLines[0], xScale, frame.height, precision));
+        newLabels.push(renderCILine(overlays, newCiLines[1], xScale, frame.height, precision));
       }
+      deoverlapLabels(newLabels);
     },
   };
 }
@@ -802,13 +809,16 @@ function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2,
   const labelText = `${label} = ${value.toFixed(precision)}`;
   const anchor = x < w * 0.15 ? 'start' : x > w * 0.85 ? 'end' : 'middle';
   const clampedX = Math.max(4, Math.min(w - 4, x));
-  overlays.append('text')
+  const labelEl = overlays.append('text')
     .attr('class', 'overlay-value observed-label')
     .attr('x', clampedX).attr('y', 10)
     .attr('text-anchor', anchor)
     .attr('fill', OBSERVED_COLOR)
-    .attr('font-weight', 700)
-    .text(labelText);
+    .attr('font-weight', 700);
+  // Via setLabelText, so an x̄ gets a rule over the x instead of a combining
+  // macron that SVG puts up and to the right of it.
+  setLabelText(/** @type {SVGTextElement} */ (labelEl.node()), labelText);
+  return /** @type {SVGTextElement} */ (labelEl.node());
 }
 
 /** CI line color (dark pink — distinct from purple observed stat). */
@@ -831,10 +841,11 @@ function renderCILine(overlays, value, xScale, innerHeight, precision = 2, color
     .attr('stroke-width', 2)
     .attr('stroke-dasharray', '6,3')
     .attr('aria-label', `CI bound: ${value.toFixed(precision)}`);
-  overlays.append('text')
+  const t = overlays.append('text')
     .attr('class', 'overlay-value')
     .attr('x', x).attr('y', -4)
     .attr('text-anchor', 'middle')
     .attr('fill', color)
     .text(value.toFixed(precision));
+  return /** @type {SVGTextElement} */ (t.node());
 }

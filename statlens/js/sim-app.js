@@ -9,7 +9,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
-import { dismissAirborneStat, clearDrawMarks } from './mechanisms/draw-animation.js';
+import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
@@ -342,6 +342,11 @@ export function initSimPage(config) {
   /** Which observations the last resample drew, when it was drawn by index. */
   /** @type {number[]|null} */
   let lastResampleIndices = null;
+  /** The same, per group, for the two-sample bootstrap. */
+  /** @type {number[]|null} */
+  let lastRsIdx1 = null;
+  /** @type {number[]|null} */
+  let lastRsIdx2 = null;
   /** Last shuffled/resampled two-group grouping — lets the Bars/Cards toggle
    *  re-render the resample panel without re-running the simulation. */
   /** @type {number[]} */
@@ -1477,6 +1482,13 @@ export function initSimPage(config) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         renderOriginalSample();
+        // NOT switched to the non-tiles view the way the one-sample bootstrap
+        // below is. Paired has its own bespoke panels — sorted chips, or a mini
+        // histogram past 30 — and does not go through createMeanMechanism at
+        // all, so flipping the view here trades readable tiles for a mini
+        // histogram and gains no animation. Wiring paired onto the mean
+        // mechanism (its differences ARE a one-sample bootstrap) is the real
+        // fix and is its own piece of work. (2026-09-28.)
       } else if (config.mode === 'bootstrap' && !config.twoGroup && originalContentEl) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
@@ -1554,6 +1566,11 @@ export function initSimPage(config) {
           const rs2 = second.values;
           lastRs1 = rs1;
           lastRs2 = rs2;
+          // Each group is its own draw with replacement, so each panel gets its
+          // own indices — without them the two-group animation flew dots with
+          // no marks on either side. (2026-09-28.)
+          lastRsIdx1 = first.indices ?? null;
+          lastRsIdx2 = second.indices ?? null;
           const stat = statFn(rs1) - statFn(rs2);
           allStats.push(stat);
         }
@@ -2294,8 +2311,8 @@ export function initSimPage(config) {
       const c1 = document.getElementById('mech-dot-resamp-1');
       const c2 = document.getElementById('mech-dot-resamp-2');
       let ms = 0;
-      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group1Name}` }));
-      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group2Name}` }));
+      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group1Name}`, indices: lastRsIdx1 ?? undefined }));
+      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group2Name}`, indices: lastRsIdx2 ?? undefined }));
       return ms;
     }
 
@@ -3003,6 +3020,33 @@ export function initSimPage(config) {
 
     if (!shouldMorph || !result || !origHistCache) return 0;
 
+    // Past the dot limit the resample is bars, so the draw is animated as bars:
+    // every bar of the SOURCE leaves as a ghost, travels to the resample panel
+    // (which starts blank), solidifies on the way, and lands at the height the
+    // resample actually gave that bin — taller if it came up more often than
+    // its share, shorter if less. Then the bars gather into x̄*, which is handed
+    // to the same drop animation a dot would be. (Jeff's design, 2026-09-28.)
+    //
+    // This replaces the in-place morph below, which grew the bars from the
+    // original heights without anything travelling between the two panels.
+    const srcSvg = originalContentEl?.querySelector('svg') ?? null;
+    const tgtSvg = container.querySelector('svg');
+    if (srcSvg && tgtSvg) {
+      const ms = animateHistogramDraw({ sourceSvg: srcSvg, targetSvg: tgtSvg });
+      if (ms) {
+        if (meanLineGroup) {
+          setTimeout(() => { /** @type {SVGElement} */ (meanLineGroup).style.opacity = '1'; }, ms - 700);
+        }
+        const statEl = resampleMeanEl?.closest('.mechanism-stat');
+        if (statEl) {
+          /** @type {HTMLElement} */ (statEl).style.opacity = '0';
+          /** @type {HTMLElement} */ (statEl).style.transition = 'opacity 250ms ease';
+          setTimeout(() => { /** @type {HTMLElement} */ (statEl).style.opacity = '1'; }, ms - 500);
+        }
+        return ms;
+      }
+    }
+
     // Hide the resample stat text during morph — it will be revealed after bars finish
     const mechStatEl = resampleMeanEl?.closest('.mechanism-stat');
     if (mechStatEl) {
@@ -3516,6 +3560,8 @@ export function initSimPage(config) {
     mechG2.resetSizing();
     lastResample = [];
     lastResampleIndices = null;
+    lastRsIdx1 = null;
+    lastRsIdx2 = null;
     meanDomain = null;
     // Anything still in the air belongs to the sample that just went away.
     dismissAirborneStat();

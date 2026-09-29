@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, valueFormat, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 
 /** Default bar fill (IMS blue at 50% opacity) — used when no isTail predicate. */
 const BAR_FILL = '#569BBD80';
@@ -308,18 +308,23 @@ export function drawHistogram(container, values, options = {}) {
     renderSingleHighlight(dataGroup, bins, xScale, yScale, frame.height, highlightValue);
   }
 
-  // Overlay lines
+  // Overlay lines. The observed statistic and the two bounds share one line of
+  // text above the chart; when the interval is narrow they run into each other,
+  // so any that collide are lifted a row (js/chart-utils.js).
   const overlays = d3Selection.select(frame.inner).select('.overlays');
+  /** @type {SVGTextElement[]} */
+  const overlayLabels = [];
   if (obsForChart != null) {
-    renderOverlayLine(overlays, obsForChart, xScale, frame.height,
-      '#7B2D8E', observedLabel, precision, observedLabel);
+    overlayLabels.push(renderOverlayLine(overlays, obsForChart, xScale, frame.height,
+      '#7B2D8E', observedLabel, precision, observedLabel));
   }
   if (ciLines) {
-    renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
-      ciColor, 'CI lower bound', precision, undefined, true);
-    renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
-      ciColor, 'CI upper bound', precision, undefined, true);
+    overlayLabels.push(renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
+      ciColor, 'CI lower bound', precision, undefined, true));
+    overlayLabels.push(renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
+      ciColor, 'CI upper bound', precision, undefined, true));
   }
+  deoverlapLabels(overlayLabels);
 
   return {
     frame,
@@ -628,19 +633,22 @@ function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, p
   const anchor = x < w * 0.15 ? 'start' : x > w * 0.85 ? 'end' : 'middle';
   const clampedX = Math.max(4, Math.min(w - 4, x));
   if (microLabel) {
-    overlays.append('text')
+    const t = overlays.append('text')
       .attr('class', 'overlay-value observed-label')
       .attr('x', clampedX).attr('y', 10)
       .attr('text-anchor', anchor)
       .attr('fill', color)
       .attr('font-weight', 700)
-      .text(`${microLabel} = ${value.toFixed(precision)}`);
-  } else {
-    overlays.append('text')
-      .attr('class', 'overlay-value')
-      .attr('x', clampedX).attr('y', 10)
-      .attr('text-anchor', anchor)
-      .attr('fill', color)
-      .text(value.toFixed(precision));
+      .each(function () {
+        setLabelText(/** @type {SVGTextElement} */ (this), `${microLabel} = ${value.toFixed(precision)}`);
+      });
+    return /** @type {SVGTextElement} */ (t.node());
   }
+  const t = overlays.append('text')
+    .attr('class', 'overlay-value')
+    .attr('x', clampedX).attr('y', 10)
+    .attr('text-anchor', anchor)
+    .attr('fill', color)
+    .text(value.toFixed(precision));
+  return /** @type {SVGTextElement} */ (t.node());
 }

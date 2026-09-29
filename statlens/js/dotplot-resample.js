@@ -69,7 +69,24 @@ const MECH_DISPLAY_MAX = 520;
  * @returns {number}
  */
 export function mechDisplayWidth(panel) {
-  const w = panel?.getBoundingClientRect?.().width ?? 0;
+  // Measure the PANEL, found by walking up, not whatever was handed in.
+  //
+  // The panels are flex columns with `align-items: flex-start`, so the box
+  // immediately around the chart shrinks to fit the chart — measuring it asks
+  // the plot how wide the plot is. It worked on bootstrap-mean only because the
+  // element passed in happened to be one level below the panel;
+  // randomization-one-mean nests one deeper and stayed pinned at 300px inside a
+  // 436px panel. Walking up to the thing with a real width fixes both.
+  // (2026-09-28.)
+  const host = /** @type {Element|null} */ (
+    panel?.closest?.('.mechanism-panel, .mech-tier') ?? panel ?? null);
+  const box = host?.getBoundingClientRect?.();
+  if (!box) return MECH_DISPLAY_W;
+  let w = box.width;
+  try {
+    const cs = getComputedStyle(host);
+    w -= (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  } catch { /* non-browser */ }
   if (!(w > MECH_DISPLAY_W)) return MECH_DISPLAY_W;
   return Math.round(Math.min(w, MECH_DISPLAY_MAX));
 }
