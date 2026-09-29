@@ -23,7 +23,7 @@
  * so |x| at 0 reports a genuine break rather than a plausible-looking 0.
  */
 
-import { createChart, makeScales, drawAxes, onBreakpointChange } from 'kit/chart.js';
+import { createChart, makeScales, drawAxes, onBreakpointChange, alignRangeToPlot } from 'kit/chart.js';
 import { drawCurve, autoYDomain } from 'kit/curve.js';
 import { initPage, announce, prefersReducedMotion } from 'kit/page.js';
 import { getParams, updateUrl } from 'kit/url.js';
@@ -249,32 +249,10 @@ function unitRunTriangle(chart, xs, ys, x, fx, slope, yDom) {
 /** How wide the thumb is, in CSS px. The stylesheet must agree. */
 const THUMB_PX = 16;
 
-/**
- * Make the slider's thumb sit at the same place as x on the graphs.
- *
- * The premise of `?layout=slider` is that the control IS the marker, so this
- * has to be exact — a marker that is a few pixels out is worse than no marker,
- * because it quietly misreports which x you are looking at.
- *
- * Two corrections. The chart is an SVG scaled to its container, so the plotting
- * area's edges are measured, not assumed. And a native range thumb travels
- * inset by half its width at each end, so the track is widened by a whole thumb
- * and shifted left by half of one; the thumb's CENTRE then runs exactly from
- * the left edge of the plot to the right edge.
- */
+/** The slider between the plots doubles as the x marker, so it must be exact. */
 function alignSlider() {
-  const wrap = $('#x-wrap');
-  const slider = $('#x-slider');
   if (state.layout !== 'slider' || !chartF) return;
-  const svg = chartF.svg.node();
-  const r = svg.getBoundingClientRect();
-  if (!r.width) return;
-  const scale = r.width / chartF.width;
-  const left = r.left + chartF.margin.left * scale;
-  const right = r.left + (chartF.width - chartF.margin.right) * scale;
-  const base = wrap.getBoundingClientRect();
-  slider.style.width = `${right - left + THUMB_PX}px`;
-  slider.style.marginLeft = `${left - base.left - THUMB_PX / 2}px`;
+  alignRangeToPlot(chartF, $('#x-slider'), $('#x-wrap'), THUMB_PX);
 }
 
 /**
@@ -587,7 +565,7 @@ initPage({
 
     setTex($('#help-tex1'), '(x,\\,f(x))\\ \\text{and}\\ (x+h,\\,f(x+h))');
     setTex($('#help-tex2'), '\\frac{f(x+h)-f(x)}{h}');
-    setTex($('#help-tex3'), "f\\,' = m");
+    setTex($('#help-tex3'), "f' = m");
 
 
     // Preset labels are typeset from the very expression they insert, so the

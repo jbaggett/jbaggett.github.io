@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tilt and Bend | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  /* The slider sits directly under the first plot, so when the residual panel
+     opens beneath it the slider is already on the seam and never moves. */
+  #charts .ll-chart + .ll-chart { margin-top: 2px; }
+  #x-wrap { margin: 3px 0; }
+  #x-wrap > span { position: absolute; width: 1px; height: 1px; overflow: hidden;
+                   clip-path: inset(50%); white-space: nowrap; }
+  #x-wrap #x-slider {
+    -webkit-appearance: none; appearance: none;
+    display: block; background: transparent; margin: 0;
+  }
+  #x-wrap #x-slider::-webkit-slider-runnable-track {
+    height: 4px; background: var(--ims-lgray); border-radius: 3px;
+  }
+  #x-wrap #x-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; margin-top: -6px;
+    border-radius: 50%; background: var(--ims-blue-text); border: none;
+  }
+  #x-wrap #x-slider::-moz-range-track {
+    height: 4px; background: var(--ims-lgray); border-radius: 3px;
+  }
+  #x-wrap #x-slider::-moz-range-thumb {
+    width: 16px; height: 16px; border: none; border-radius: 50%;
+    background: var(--ims-blue-text);
+  }
+
+  /* Crimson is the tilt, green is the bend — the same two colours the
+     Derivative Builder uses for f′ and f″, so the pair of tools teach one
+     palette rather than two. */
+  .tb-tangent { stroke: var(--tangent); stroke-width: 2; fill: none; }
+  .tb-parab   { stroke: var(--tangent-2); stroke-width: 2.4; fill: none; }
+  .tb-resid   { stroke: var(--curve-f); stroke-width: 2.5; fill: none; }
+  .tb-model   { stroke: var(--tangent-2); stroke-width: 2.4; stroke-dasharray: 7 4; fill: none; }
+  .tb-mark    { stroke: #444; stroke-width: 1; stroke-dasharray: 3 3; }
+  .tb-note    { margin: 0.35rem 0 0; }
+  #resid-wrap[hidden] { display: none; }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the function</a>
+  <a href="#charts">Skip to the graphs</a>
+</nav>
+
+<main>
+  <h1>Tilt and Bend
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    The tangent line is the best straight-line copy of a curve at a point — it
+    gets the <b>tilt</b> right. It cannot bend, so it is wrong the moment the
+    curve does. Add one more term and you get the best <em>parabola</em>, which
+    gets the tilt <em>and</em> the <b>bend</b>. That extra term is where
+    <i>f</i>″ lives.
+    <span class="ll-hint">Slide the point. Watch the red line keep the tilt and
+    the green parabola keep the bend as well.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="Function and point">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 280px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="x^3 - 3x" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+      </label>
+      <label for="window-select" data-control="window">
+        <span>Window</span>
+        <select id="window-select">
+          <option value="-2,2">−2 to 2</option>
+          <option value="-3,3" selected>−3 to 3</option>
+          <option value="-6.283,6.283">−2π to 2π</option>
+        </select>
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+    <p class="ll-hint" id="fn-syntax" data-control="f">
+      Try <code>x^3-3x</code>, <code>sin(x)</code>, <code>x^2</code>,
+      <code>e^x</code>, <code>ln(x)</code>, <code>1/x</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example functions" data-control="f">
+      <button type="button" class="preset" data-f="x^3 - 3x">x^3 - 3x</button>
+      <button type="button" class="preset" data-f="x^2">x^2</button>
+      <button type="button" class="preset" data-f="sin(x)">sin(x)</button>
+      <button type="button" class="preset" data-f="e^x">e^x</button>
+      <button type="button" class="preset" data-f="1/x">1/x</button>
+    </div>
+    <div class="ll-row" style="gap:0.5rem; margin-top:0.7rem; flex-wrap:wrap;" data-control="layers">
+      <button type="button" id="parab-btn" class="ll-primary" aria-pressed="true">Hide the parabola</button>
+      <button type="button" id="resid-btn" aria-pressed="false">Show what's left over</button>
+    </div>
+  </section>
+
+  <section id="charts" aria-label="Graphs">
+    <div class="ll-chart"><div id="chart-f"></div></div>
+    <label for="x-slider" id="x-wrap">
+      <span>Point at <i>x</i> = <output id="x-out" for="x-slider">0.00</output></span>
+      <input type="range" id="x-slider" min="-3" max="3" step="0.02" value="1">
+    </label>
+    <div class="ll-chart" id="resid-wrap" hidden><div id="chart-r"></div></div>
+
+    <p class="ll-hint" id="resid-note" hidden>
+      <b>What's left over</b> is <span class="ll-math" id="note-tex"></span> — the
+      curve with its tangent line subtracted away, so only the bending remains.
+      It touches zero at the point and opens <b>upward where <i>f</i>″ &gt; 0</b>,
+      downward where <i>f</i>″ &lt; 0. <b>Mind the vertical scale:</b> this panel
+      has its own, and it is usually far finer than the one above.
+    </p>
+
+    <div class="ll-legend" aria-hidden="true">
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#114B5F" stroke-width="2.5"/></svg> f(x)</span>
+      <span><svg viewBox="0 0 26 10"><line x1="1" y1="8" x2="25" y2="2" stroke="#C2185B" stroke-width="2"/></svg> tangent — the tilt</span>
+      <span id="key-parab"><svg viewBox="0 0 26 10"><path d="M1 9 Q13 -3 25 9" stroke="#2E7D32" stroke-width="2.4" fill="none"/></svg> best parabola — tilt and bend</span>
+    </div>
+
+    <div class="ll-readout" id="readout"></div>
+  </section>
+
+  <section class="ll-panel" aria-label="What the numbers say">
+    <h3 style="margin-top:0">What the numbers say</h3>
+    <p id="story"></p>
+    <p id="formula" class="tb-note"></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Tilt and Bend</h2>
+  <p>The tangent line is the best straight-line copy of a curve at a point. A
+     straight line has no bend, so as soon as the curve bends the line is wrong.
+     Adding one more term gives the best <em>parabola</em> at that point:</p>
+  <p class="ll-math" id="help-tex1"></p>
+  <p>The linear part is the tilt and carries <i>f</i>′. The squared part is the
+     bend and carries <i>f</i>″ — its coefficient is exactly
+     <span class="ll-math" id="help-tex2"></span>.</p>
+
+  <h3>What's left over</h3>
+  <p>Subtract the tangent line from the curve and only the bending is left:</p>
+  <p class="ll-math" id="help-tex3"></p>
+  <p>That is the sharpest picture of <i>f</i>″ there is. It touches zero at the
+     point — the tangent gets both the height and the tilt exactly right — and
+     then peels away, <b>upward</b> when <i>f</i>″ &gt; 0 and <b>downward</b>
+     when <i>f</i>″ &lt; 0, faster the bigger |<i>f</i>″|.</p>
+  <p><b>Read the vertical axis.</b> That panel scales itself, and near the point
+     the leftover is tiny, so its axis is usually much finer than the one above.
+     The bend is not as violent as it looks.</p>
+
+  <h3>The other half of the story</h3>
+  <p>This page says what <i>f</i>″ does to the graph of <i>f</i>. For the other
+     reading — that <i>f</i>″ is the <em>slope of f</em>′ — use the
+     <a href="../builder/">Derivative Builder</a> and turn on <i>f</i>″. The
+     colours match on purpose: crimson is the tilt, green is the bend, in both
+     tools.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Move the point (focus the slider first)</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

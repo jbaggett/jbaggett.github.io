@@ -373,6 +373,25 @@ being merely wrong: "you chose rising, but it ends lower than it starts". That
 mismatch — the shape and the numbers telling different stories — is the usual
 way a hand sketch goes astray.
 
+## CalcLens — Tilt and Bend
+
+`calclens/derivatives/bending/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `x^3 - 3x` | The function. |
+| `a` | number | `1` | Where the point sits. |
+| `window` | `lo,hi` | `-3,3` | Horizontal window; must match one of the three offered. |
+| `parabola` | `false` | on | Hide the best-fitting parabola, leaving just the tangent. |
+| `residual` | `true` | **off** | Open the second panel: *f* with its tangent subtracted away, overlaid with ½*f*″(a)(x−a)². |
+| `controls` | list | all | `f`, `window`, `layers`. |
+
+The page never says *Taylor* or *osculating*: second-order Taylor is Stewart
+ch 11 and the picture needs none of that machinery. The residual panel carries
+its own *y*-scale, which is usually far finer than the graph above it — the note
+under the panel says so, because a reader who misses the change of scale reads
+the bend as enormous.
+
 ## CalcLens — Derivative Builder
 
 `calclens/derivatives/builder/`

@@ -88,6 +88,39 @@ export function afterLayout(cb) {
 }
 
 /**
+ * Line a range input's thumb up with the plotting area of a chart.
+ *
+ * For a slider that doubles as the x marker this has to be exact — a marker a
+ * few pixels out is worse than none, because it quietly misreports which x the
+ * reader is looking at.
+ *
+ * Two corrections. The chart is an SVG scaled to its container, so the plot's
+ * edges are measured rather than assumed. And a native range thumb travels
+ * inset by half its width at each end, so the track is widened by a whole thumb
+ * and shifted left by half of one; the thumb's CENTRE then runs exactly from
+ * the left edge of the plot to the right.
+ *
+ * The caller's stylesheet must actually draw the thumb at `thumbPx`. A thumb
+ * left to `accent-color` is a browser-chosen size and cannot be aligned.
+ *
+ * @param {ReturnType<typeof createChart>} chart
+ * @param {HTMLElement} slider  the range input
+ * @param {HTMLElement} wrap    whatever the slider's offset is measured against
+ * @param {number} thumbPx
+ */
+export function alignRangeToPlot(chart, slider, wrap, thumbPx) {
+  if (!chart || !slider || !wrap) return;
+  const r = chart.svg.node().getBoundingClientRect();
+  if (!r.width) return;
+  const scale = r.width / chart.width;
+  const left = r.left + chart.margin.left * scale;
+  const right = r.left + (chart.width - chart.margin.right) * scale;
+  const base = wrap.getBoundingClientRect();
+  slider.style.width = `${right - left + thumbPx}px`;
+  slider.style.marginLeft = `${left - base.left - thumbPx / 2}px`;
+}
+
+/**
  * Re-run `cb` after the window settles at a new size.
  *
  * `onBreakpointChange` only fires when the phone/desktop line is crossed, but a
