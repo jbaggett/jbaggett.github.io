@@ -13,6 +13,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
+import { propBarHTML } from './prop-bootstrap-mech.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -554,10 +555,7 @@ export function initOneSamplePage(config) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
         mechObservedStat.innerHTML = `${sampleSuccesses} of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          <div class="mech-prop-bar" aria-label="${sampleSuccesses} successes, ${obsFailures} failures" style="margin-top:4px">
-            <div class="mech-prop-fill" style="width:${obsPct}%"></div>
-            <span class="mech-prop-label">${sampleSuccesses} S / ${obsFailures} F</span>
-          </div>`;
+          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
       }
       computePreSimDomain();
       scrollToControls();
@@ -653,10 +651,7 @@ export function initOneSamplePage(config) {
           const obsPct = n > 0 ? (k / n * 100) : 0;
           const obsFail = n - k;
           mechObservedStat.innerHTML = `${k} of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-            <div class="mech-prop-bar" aria-label="${k} successes, ${obsFail} failures" style="margin-top:4px">
-              <div class="mech-prop-fill" style="width:${obsPct}%"></div>
-              <span class="mech-prop-label">${k} S / ${obsFail} F</span>
-            </div>`;
+            ${propBarHTML(k, obsFail, { style: 'margin-top:4px' })}`;
         }
         propDataApi.triggerPostLoad();
         setPageTitle(baseTitle, currentSourceName, { n });
@@ -1040,10 +1035,7 @@ export function initOneSamplePage(config) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
         mechObservedStat.innerHTML = `${sampleSuccesses} of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          <div class="mech-prop-bar" aria-label="${sampleSuccesses} successes, ${obsFailures} failures" style="margin-top:4px">
-            <div class="mech-prop-fill" style="width:${obsPct}%"></div>
-            <span class="mech-prop-label">${sampleSuccesses} S / ${obsFailures} F</span>
-          </div>`;
+          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
       }
     } else {
       // One-mean: slide the dots back from the null-shifted positions to the
@@ -1158,10 +1150,7 @@ export function initOneSamplePage(config) {
 
       // Proportion bar for visual
       lastSimDetail += `
-        <div class="mech-prop-bar" aria-label="${lastSuccesses} successes, ${lastFailures} failures" style="margin-top:4px">
-          <div class="mech-prop-fill" style="width:${pct}%"></div>
-          <span class="mech-prop-label">${lastSuccesses} S / ${lastFailures} F</span>
-        </div>`;
+        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
 
       if (mechanismDescEl) {
         mechanismDescEl.textContent = `Simulate ${n} trials from null distribution (p\u2080 = ${p0})`;

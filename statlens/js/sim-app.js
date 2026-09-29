@@ -30,7 +30,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
+import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
@@ -1992,16 +1992,10 @@ export function initSimPage(config) {
       html += `
         <div class="mech-group-row"><span class="mech-group-name">${group1Name}:</span>
           <span class="mech-group-stat">n = ${g1.length}, ${statSymbol} = ${formatStat(s1, dataPrecision, fmtType)}</span></div>
-        <div class="mech-prop-bar" aria-label="${succ1} successes, ${fail1} failures">
-          <div class="mech-prop-fill" style="width:${pct1}%"></div>
-          <span class="mech-prop-label">${succ1} S / ${fail1} F</span>
-        </div>
+        ${propBarHTML(succ1, fail1)}
         <div class="mech-group-row"><span class="mech-group-name">${group2Name}:</span>
           <span class="mech-group-stat">n = ${g2.length}, ${statSymbol} = ${formatStat(s2, dataPrecision, fmtType)}</span></div>
-        <div class="mech-prop-bar" aria-label="${succ2} successes, ${fail2} failures">
-          <div class="mech-prop-fill" style="width:${pct2}%"></div>
-          <span class="mech-prop-label">${succ2} S / ${fail2} F</span>
-        </div>`;
+        ${propBarHTML(succ2, fail2)}`;
     } else if (twoMeanDotActive()) {
       // B3: side-by-side dotplot bags — the resample plucks-and-flies per group.
       const tag = isOriginal ? 'orig' : 'resamp';
@@ -2363,7 +2357,9 @@ export function initSimPage(config) {
       // Ghost: fade resample panel to low opacity
       const propBars = mechResampleContent.querySelectorAll('.mech-prop-fill');
       const statSpans = mechResampleContent.querySelectorAll('.mech-group-stat');
-      const propLabels = mechResampleContent.querySelectorAll('.mech-prop-label');
+      // `.mech-prop-count` since the counts moved inside their own regions;
+      // the aside is the below-bar fallback for a region too narrow to hold one.
+      const propLabels = mechResampleContent.querySelectorAll('.mech-prop-count, .mech-prop-aside');
       const diffSpan = mechResampleContent.querySelector('.mech-stat-value');
 
       propBars.forEach(b => { /** @type {HTMLElement} */ (b).style.opacity = '0.25'; });
@@ -2386,23 +2382,13 @@ export function initSimPage(config) {
         const s1 = statFn(g1);
         const s2 = statFn(g2);
 
-        // Animate prop bar widths
-        const fills = mechResampleContent.querySelectorAll('.mech-prop-fill');
-        const labels = mechResampleContent.querySelectorAll('.mech-prop-label');
-        if (fills[0]) {
-          /** @type {HTMLElement} */ (fills[0]).style.transition = 'width 400ms ease, opacity 300ms ease';
-          /** @type {HTMLElement} */ (fills[0]).style.width = `${pct1}%`;
-          /** @type {HTMLElement} */ (fills[0]).style.opacity = '1';
-        }
-        if (fills[1]) {
-          /** @type {HTMLElement} */ (fills[1]).style.transition = 'width 400ms ease, opacity 300ms ease';
-          /** @type {HTMLElement} */ (fills[1]).style.width = `${pct2}%`;
-          /** @type {HTMLElement} */ (fills[1]).style.opacity = '1';
-        }
-
-        // Update labels
-        if (labels[0]) { labels[0].textContent = `${succ1} S / ${fail1} F`; /** @type {HTMLElement} */ (labels[0]).style.transition = 'opacity 250ms ease'; /** @type {HTMLElement} */ (labels[0]).style.opacity = '1'; }
-        if (labels[1]) { labels[1].textContent = `${succ2} S / ${fail2} F`; /** @type {HTMLElement} */ (labels[1]).style.transition = 'opacity 250ms ease'; /** @type {HTMLElement} */ (labels[1]).style.opacity = '1'; }
+        // Animate the bar widths and move the counts with them. The counts live
+        // inside their own regions now, so they cannot be patched by index —
+        // updatePropBar owns both, including gaining or losing the below-bar
+        // fallback when a region crosses the too-narrow threshold.
+        const bars = mechResampleContent.querySelectorAll('.mech-prop-bar');
+        updatePropBar(bars[0], succ1, fail1, { animate: true });
+        updatePropBar(bars[1], succ2, fail2, { animate: true });
 
         // Update stat text
         if (statSpans[0]) { statSpans[0].innerHTML = `n = ${g1.length}, ${statSymbol} = ${formatStat(s1, dataPrecision, fmtType)}`; }

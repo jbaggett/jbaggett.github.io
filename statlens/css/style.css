@@ -1843,6 +1843,35 @@ input[aria-invalid="true"] {
   pointer-events: none;
   text-shadow: 0 0 3px rgba(0,0,0,0.5);
 }
+/* Each count sits inside the region it counts, centred. One string across both
+   regions made the separator read as a fraction bar — 84 over 116, a number
+   that does not exist here. Being on opposite sides of the division is what
+   says they are two tallies that sum to n. */
+.mech-prop-count {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* White on #3A7CA5 is 4.56:1, so it carries its own weight — no text-shadow. */
+.mech-prop-count.is-success { left: 0; color: #fff; }
+/* Near-black on #D9D9D9 is 12.3:1. */
+.mech-prop-count.is-failure { right: 0; color: #1A1A1A; }
+/* Both counts, below the bar, for when one region is too narrow to hold its
+   own. A middle dot, never a slash. */
+.mech-prop-aside {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text, #333);
+  margin: -4px 0 6px;
+}
 /* Larger proportion bar for one-sample mechanism strip */
 .mech-prop-bar-lg {
   height: 28px;
