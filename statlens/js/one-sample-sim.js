@@ -13,7 +13,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML } from './prop-bootstrap-mech.js';
+import { propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -554,7 +554,7 @@ export function initOneSamplePage(config) {
       if (mechObservedStat) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
-        mechObservedStat.innerHTML = `${sampleSuccesses} of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
+        mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
           ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
       }
       computePreSimDomain();
@@ -650,7 +650,7 @@ export function initOneSamplePage(config) {
         if (mechObservedStat) {
           const obsPct = n > 0 ? (k / n * 100) : 0;
           const obsFail = n - k;
-          mechObservedStat.innerHTML = `${k} of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
+          mechObservedStat.innerHTML = `<span class="obs-success-count">${k}</span> of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
             ${propBarHTML(k, obsFail, { style: 'margin-top:4px' })}`;
         }
         propDataApi.triggerPostLoad();
@@ -942,11 +942,19 @@ export function initOneSamplePage(config) {
 
       // Find existing prop bar fill and morph it
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
-      const label = mechObservedStat.querySelector('.mech-prop-label');
+      const bar = mechObservedStat.querySelector('.mech-prop-bar');
       if (fill && !prefersReducedMotion()) {
+        // The whole panel has to move to the null, not just the bar's width.
+        // It used to write one label reading "p₀ = 0.5" across the bar; when
+        // the counts moved inside their own regions that label stopped
+        // existing, so the bar slid to 50% while still saying "24 S / 10 F" —
+        // the OBSERVED counts under a null-shaped bar. (Jeff, 2026-09-29.)
+        // Under p₀ with n = 34 the null model is 17 and 17, and that is what
+        // the bar now says, along with the "17 of 34" in front of it.
         /** @type {HTMLElement} */ (fill).style.transition = 'width 700ms ease-out';
-        /** @type {HTMLElement} */ (fill).style.width = `${nullPct}%`;
-        if (label) label.textContent = `p₀ = ${p0}`;
+        updatePropBar(bar, nullSuccesses, nullFailures);
+        const lead = mechObservedStat.querySelector('.obs-success-count');
+        if (lead) lead.textContent = String(nullSuccesses);
         // Update stat text
         mechObservedStat.querySelector('.observed-highlight')?.replaceWith(
           Object.assign(document.createElement('span'), {
@@ -958,12 +966,8 @@ export function initOneSamplePage(config) {
         return 700;
       }
       // Fallback: instant update
-      const obsFailures = sampleN - nullSuccesses;
-      mechObservedStat.innerHTML = `Null model: p₀ = ${p0}
-        <div class="mech-prop-bar" aria-label="Null distribution: p₀ = ${p0}" style="margin-top:4px">
-          <div class="mech-prop-fill" style="width:${nullPct}%"></div>
-          <span class="mech-prop-label">p₀ = ${p0}</span>
-        </div>`;
+      mechObservedStat.innerHTML = `<span class="obs-success-count">${nullSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u2080 = ${p0}</span>)
+        ${propBarHTML(nullSuccesses, nullFailures, { style: 'margin-top:4px' })}`;
       syncNullToggle();
       return 0;
     } else {
@@ -1034,7 +1038,7 @@ export function initOneSamplePage(config) {
       if (mechObservedStat) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
-        mechObservedStat.innerHTML = `${sampleSuccesses} of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
+        mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
           ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
       }
     } else {
