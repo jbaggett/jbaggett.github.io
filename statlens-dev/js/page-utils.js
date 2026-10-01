@@ -10,6 +10,7 @@ import { renderDatasetActions, icon } from './dataset-actions.js';
 import { getSettings, setSettings, resetSettings, applySettings, getActivityMode, getExpertMode, prefersReducedMotion } from './settings.js';
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
+import { takeAirborneStat, dismissAirborneStat } from './mechanisms/draw-animation.js';
 
 /**
  * Resolve the path to the data/ directory from any page.
@@ -601,14 +602,22 @@ export function flyDataStream(fromEl, toEl, opts = {}) {
  * @param {number} [opts.duration] - Animation duration in ms (default 450)
  */
 export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
+  // If the resample just merged its dots into a statistic, THAT dot is the
+  // thing that should arrive in the distribution. Claim it and continue its
+  // flight rather than fading it and spawning a second dot beneath the panel.
+  // Null on the pages and styles where no merge happens, which is the old path.
+  const handoff = takeAirborneStat();
+  /** Nothing to fly to — don't leave the claimed dot parked mid-air. */
+  const abort = () => { if (handoff) dismissAirborneStat(handoff); };
+
   // Respect reduced-motion preference (settings-aware, not just OS)
-  if (prefersReducedMotion()) return;
+  if (prefersReducedMotion()) { abort(); return; }
 
   const duration = opts.duration ?? 450;
 
   // Find the highlighted dot (orange fill) in the chart SVG
   const svg = chartContainer.querySelector('svg');
-  if (!svg || !sourceEl) return;
+  if (!svg || !sourceEl) { abort(); return; }
 
   // Find the highlighted element — look for orange fill or stroke.
   // Check both exact hex and case variations since browsers may normalize.
@@ -619,24 +628,34 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     || svg.querySelector('line[stroke="#e07020"]')
     || svg.querySelector('rect[fill="#E07020"]')
     || svg.querySelector('rect[fill="#e07020"]');
-  if (!highlightEl) return;
+  if (!highlightEl) { abort(); return; }
   const highlightDot = /** @type {SVGElement} */ (highlightEl);
 
   // Get screen coordinates for source and target.
-  // If the source element is hidden (e.g. mechanism strip collapsed), use the
-  // collapsed summary element as the visual origin instead.
-  let effectiveSource = sourceEl;
-  const sourceRect = sourceEl.getBoundingClientRect();
-  if (sourceRect.width === 0 && sourceRect.height === 0) {
-    const strip = sourceEl.closest('.mechanism-strip');
-    const summary = strip?.querySelector('.mechanism-collapsed-summary');
-    // Prefer the highlighted value span inside the summary (matches detailed view)
-    const hlSpan = summary?.querySelector('.highlight-last');
-    effectiveSource = /** @type {HTMLElement} */ (hlSpan || summary || effectiveSource);
+  // A claimed statistic starts wherever it is — inside the resample, on its
+  // mean — so the flight begins at the dot the student is already looking at.
+  // Otherwise: the mechanism's mean readout, or, if the strip is collapsed and
+  // that readout has no box, the collapsed summary standing in for it.
+  let sx = 0;
+  let sy = 0;
+  if (handoff) {
+    const r = handoff.getBoundingClientRect();
+    sx = r.left + r.width / 2;
+    sy = r.top + r.height / 2;
+  } else {
+    let effectiveSource = sourceEl;
+    const sourceRect = sourceEl.getBoundingClientRect();
+    if (sourceRect.width === 0 && sourceRect.height === 0) {
+      const strip = sourceEl.closest('.mechanism-strip');
+      const summary = strip?.querySelector('.mechanism-collapsed-summary');
+      // Prefer the highlighted value span inside the summary (matches detailed view)
+      const hlSpan = summary?.querySelector('.highlight-last');
+      effectiveSource = /** @type {HTMLElement} */ (hlSpan || summary || effectiveSource);
+    }
+    const finalRect = effectiveSource.getBoundingClientRect();
+    sx = finalRect.left + finalRect.width / 2;
+    sy = finalRect.top + finalRect.height / 2;
   }
-  const finalRect = effectiveSource.getBoundingClientRect();
-  const sx = finalRect.left + finalRect.width / 2;
-  const sy = finalRect.top + finalRect.height / 2;
 
   // Target: use getScreenCTM for precise SVG→screen coordinate mapping
   /** @type {number} */
@@ -679,33 +698,66 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     ty = dotRect.top + dotRect.height / 2;
   }
 
-  // Sanity check: target should be below source (chart is below mechanism strip)
-  // If coordinates look wrong (target at 0,0 or above source), bail out
-  if (tx === 0 && ty === 0) return;
+  // Sanity check: the target has to be somewhere IN the chart.
+  //
+  // This used to test for exactly (0, 0), which let through the case that
+  // actually happens: a measurement taken microseconds after the chart was
+  // rebuilt, giving x ≈ 0 with a plausible y. The dot then flew to the left
+  // edge of the window and sat there. (Jeff, 2026-09-28: switch from a 54-point
+  // dataset to a 16-point one, press +1.) A landing spot outside the chart's
+  // own box is never right, whatever produced it — so check against the box
+  // rather than against one magic coordinate.
+  const chartBox = chartContainer.getBoundingClientRect();
+  const inChart = chartBox.width > 0
+    && tx >= chartBox.left - 4 && tx <= chartBox.right + 4
+    && ty >= chartBox.top - 4 && ty <= chartBox.bottom + 4;
+  if (!inChart) { abort(); return; }
 
   // Hide the SVG highlight until the flying dot arrives
   const origOpacity = highlightDot.getAttribute('opacity');
   highlightDot.setAttribute('opacity', '0');
 
-  // Create the flying dot
-  const dot = document.createElement('div');
-  dot.setAttribute('aria-hidden', 'true');
-  dot.style.cssText = `
-    position: fixed;
-    left: ${sx}px;
-    top: ${sy}px;
-    width: 12px;
-    height: 12px;
-    margin-left: -6px;
-    margin-top: -6px;
-    border-radius: 50%;
-    background: #E07020;
-    border: 1.5px solid #000;
-    z-index: 9999;
-    pointer-events: none;
-    will-change: transform, opacity;
-  `;
-  document.body.appendChild(dot);
+  // The flying dot: the claimed statistic, or a fresh one.
+  //
+  // A claimed dot keeps its own size and colour — it is the resample's own dot,
+  // and restyling it mid-flight would break the continuity that is the whole
+  // point. It only needs re-anchoring: the frame loop below writes left/top as
+  // the dot's CENTRE, so give it the negative margins that make that true.
+  /** @type {HTMLElement} */
+  let dot;
+  /** Where the scale starts — a claimed dot is still popped from the merge. */
+  let startScale = 1;
+  if (handoff) {
+    dot = handoff;
+    const m = /^matrix\(\s*([\d.]+)/.exec(getComputedStyle(dot).transform || '');
+    if (m) startScale = parseFloat(m[1]) || 1;
+    dot.style.transition = 'none';
+    dot.style.marginLeft = `${-dot.offsetWidth / 2}px`;
+    dot.style.marginTop = `${-dot.offsetHeight / 2}px`;
+    dot.style.left = `${sx}px`;
+    dot.style.top = `${sy}px`;
+    dot.style.zIndex = '9999';
+    dot.style.willChange = 'transform, opacity';
+  } else {
+    dot = document.createElement('div');
+    dot.setAttribute('aria-hidden', 'true');
+    dot.style.cssText = `
+      position: fixed;
+      left: ${sx}px;
+      top: ${sy}px;
+      width: 12px;
+      height: 12px;
+      margin-left: -6px;
+      margin-top: -6px;
+      border-radius: 50%;
+      background: #E07020;
+      border: 1.5px solid #000;
+      z-index: 9999;
+      pointer-events: none;
+      will-change: transform, opacity;
+    `;
+    document.body.appendChild(dot);
+  }
 
   // Animate using requestAnimationFrame for a curved path
   const dx = tx - sx;
@@ -731,8 +783,12 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     dot.style.left = x + 'px';
     dot.style.top = y + 'px';
 
-    // Scale: start at 1, peak at 1.3 midway, end at 1
-    const scale = 1 + 0.3 * Math.sin(ease * Math.PI);
+    // Scale. A fresh dot swells midway, to be seen travelling. A claimed one
+    // is already swollen from the merge, so it shrinks back to dot size on the
+    // way — the statistic condensing as it goes to join the others.
+    const scale = handoff
+      ? startScale + (1 - startScale) * ease
+      : 1 + 0.3 * Math.sin(ease * Math.PI);
     dot.style.transform = `scale(${scale})`;
 
     if (t < 1) {

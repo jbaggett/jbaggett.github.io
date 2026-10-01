@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, drawHorizontalGridlines, formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 import { sturgesBins } from './histogram.js';
 
 /** Default dot fill — IMS blue. */
@@ -101,11 +101,26 @@ export function computeDots(values, options = {}) {
   const xMin = d3Array.min(values);
   const xMax = d3Array.max(values);
 
-  // Single-value edge case
+  // Single-value edge case.
+  //
+  // `binWidth: 1` used to be returned here, which is not a width in the data's
+  // units — it is the number one. On a chart with its own domain (every
+  // simulation page passes one) that poisons the dot SIZE downstream:
+  // drawDotplot derives its bin count as span/binWidth, so a bootstrap
+  // distribution spanning 170 units reported 170 bins for its single dot and
+  // drew it at the minimum radius. The first dot of every simulation came out
+  // a quarter the size of the second one. (Jeff, 2026-09-27.)
+  //
+  // The width is whatever the caller locked, else the domain split the same way
+  // the normal path splits it. Dots stay AT their value rather than snapping to
+  // that grid: with one observation there is nothing to stack, and snapping
+  // would move it before the real grid arrives on the next render.
   if (xMin === xMax) {
     const domain = options.domain ?? /** @type {[number, number]} */ ([xMin - 0.5, xMax + 0.5]);
     const dots = values.map((v, i) => ({ value: v, binCenter: v, stackIndex: i }));
-    return { dots, binWidth: 1, maxStack: n, domain };
+    const binWidth = options.binWidth
+      ?? (domain[1] - domain[0]) / (options.numBins ?? dotplotBins(values));
+    return { dots, binWidth, maxStack: n, domain };
   }
 
   const domain = options.domain ?? /** @type {[number, number]} */ ([xMin, xMax]);
@@ -178,7 +193,9 @@ export function computeDotRadius(innerWidth, innerHeight, maxStack, numBins) {
  * @param {number} [options.binOrigin] - Locked bin origin for stable grid alignment
  * @param {number} [options.highlightIndex] - Index of single newest dot to highlight (yellow pulse)
  * @param {Set<number>} [options.highlightIndices] - Indices of batch-added dots to highlight (accent pulse)
- * @param {number} [options.precision] - Decimal places for overlay value labels (default: 2)
+ * @param {number} [options.precision] - Decimal places for values shown to the reader:
+ *   overlay labels (default 2), and, when supplied, dot/column values in tooltips
+ *   and screen-reader labels (otherwise the exact value / compact axis format)
  * @param {boolean} [options.forceColumns] - Force filled-column mode even if dots would fit (for consistent grouped rendering)
  * @param {string} [options.fillColor] - Override default dot fill color (hex, sets both base and extreme)
  * @param {string} [options.baseFill] - Override non-extreme dot fill (when isExtreme returns false)
@@ -212,7 +229,10 @@ export function drawDotplot(container, values, options = {}) {
     binOrigin: lockedBinOrigin,
     highlightIndex = -1,
     highlightIndices,
-    precision = 2,
+    // No default: supplying it means "print values the way this page prints
+    // this statistic", which now reaches tooltips and screen-reader labels.
+    // Overlay labels keep their own fallback of 2.
+    precision,
     forceColumns = false,
     fillColor,
     baseFill: optBaseFill,
@@ -322,20 +342,24 @@ export function drawDotplot(container, values, options = {}) {
   const dataGroup = d3Selection.select(frame.inner).select('.data');
   const tooltipNode = labels === 'none' ? undefined : frame.inner;
   if (wouldOverflow) {
-    renderColumns(dataGroup, dots, xScale, /** @type {d3Scale.ScaleLinear<number,number>} */ (yScale), frame.height, isExtreme, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill);
+    renderColumns(dataGroup, dots, xScale, /** @type {d3Scale.ScaleLinear<number,number>} */ (yScale), frame.height, isExtreme, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, precision);
   } else {
-    renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, highlightStroke);
+    renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision);
   }
 
-  // Observed statistic line
+  // Observed statistic line. It and the two bounds share one line of text above
+  // the plot, so any that collide get lifted a row (js/chart-utils.js).
+  /** @type {SVGTextElement[]} */
+  const overlayLabels = [];
   const overlaysGroup = d3Selection.select(frame.inner).select('.overlays');
   if (observedStat != null && showObsMarker) {
-    renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel);
+    overlayLabels.push(renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel));
   }
   if (ciLines) {
-    renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor);
-    renderCILine(overlaysGroup, ciLines[1], xScale, frame.height, precision, ciColor);
+    overlayLabels.push(renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor));
+    overlayLabels.push(renderCILine(overlaysGroup, ciLines[1], xScale, frame.height, precision, ciColor));
   }
+  deoverlapLabels(overlayLabels);
 
   return {
     frame,
@@ -380,7 +404,7 @@ export function drawDotplot(container, values, options = {}) {
         axes.selectAll('*').remove();
         addAxes(frame, xAxis, yAxisFn, xLabel, 'Frequency');
 
-        renderColumns(dataGroup, newResult.dots, xScale, yScale, frame.height, newIsExtreme, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill);
+        renderColumns(dataGroup, newResult.dots, xScale, yScale, frame.height, newIsExtreme, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill, precision);
       } else {
         // Dot mode — remove y-axis if it was added
         if (yScale) {
@@ -406,18 +430,21 @@ export function drawDotplot(container, values, options = {}) {
 
         const newRadius = Math.max(SCALED_MIN_RADIUS, computeDotRadius(
           frame.width, frame.height, newResult.maxStack, newEffectiveBins) * dotRadiusScale);
-        renderDots(dataGroup, newResult.dots, xScale, frame.height, newRadius, newIsExtreme, animate, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill, highlightStroke);
+        renderDots(dataGroup, newResult.dots, xScale, frame.height, newRadius, newIsExtreme, animate, newHighlight, newHighlightSet, tooltipNode, undefined, optBaseFill, optExtremeFill, highlightStroke, precision);
       }
 
       const overlays = d3Selection.select(frame.inner).select('.overlays');
       overlays.selectAll('*').remove();
+      /** @type {SVGTextElement[]} */
+      const newLabels = [];
       if (newObserved != null) {
-        renderObservedLine(overlays, newObserved, xScale, frame.height, precision, opts.observedLabel ?? observedLabel);
+        newLabels.push(renderObservedLine(overlays, newObserved, xScale, frame.height, precision, opts.observedLabel ?? observedLabel));
       }
       if (newCiLines) {
-        renderCILine(overlays, newCiLines[0], xScale, frame.height, precision);
-        renderCILine(overlays, newCiLines[1], xScale, frame.height, precision);
+        newLabels.push(renderCILine(overlays, newCiLines[0], xScale, frame.height, precision));
+        newLabels.push(renderCILine(overlays, newCiLines[1], xScale, frame.height, precision));
       }
+      deoverlapLabels(newLabels);
     },
   };
 }
@@ -441,7 +468,13 @@ let pendingHighlightTimers = [];
  * @param {Set<number>} [highlightIndices] - Batch new dots (+10): accent pulse
  * @param {SVGGElement} [innerNode] - chart-inner node for custom tooltips
  */
-function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, highlightStroke) {
+function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision) {
+  // A dot on an explore page IS an observation, so its exact value is the right
+  // thing to show and stays the fallback. A dot on a (re)sampling distribution
+  // is a computed statistic, where the exact value is a float tail nobody wants
+  // to read (130.43333333333334) and the page has already said how it prints
+  // this quantity — so honour that when it is supplied.
+  const fmtValue = Number.isFinite(precision) ? valueFormat(precision) : (/** @type {number} */ v) => String(v);
   // Cancel any pending highlight timers from previous render
   for (const t of pendingHighlightTimers) clearTimeout(t);
   pendingHighlightTimers = [];
@@ -465,12 +498,12 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
     .attr('stroke', normalFill)
     .attr('stroke-width', 1)
     .attr('role', 'listitem')
-    .attr('aria-label', d => String(d.value));
+    .attr('aria-label', d => fmtValue(d.value));
 
   // Hover/focus tooltip: show original value
   if (innerNode) {
     attachTooltip(circles, innerNode, (d) => ({
-      lines: [String(d.value)],
+      lines: [fmtValue(d.value)],
       x: xScale(d.binCenter),
       y: innerHeight - (d.stackIndex + 0.5) * radius * 2 - radius,
     }));
@@ -547,7 +580,10 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
  * @param {Set<number>} [highlightIndices] - Indices of batch-added dots
  * @param {SVGGElement} [innerNode]
  */
-function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill) {
+function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, precision) {
+  // A column's centre is a value; print it the way the page prints this
+  // statistic, else the compact axis format it used before.
+  const fmtValue = valueFormat(precision);
   // Cancel any pending highlight timers from previous render
   for (const t of pendingHighlightTimers) clearTimeout(t);
   pendingHighlightTimers = [];
@@ -594,7 +630,7 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     .attr('stroke-width', colWidth)
     .attr('stroke-linecap', 'round')
     .attr('role', 'listitem')
-    .attr('aria-label', d => `${formatTick(d.center)}: ${d.count}`);
+    .attr('aria-label', d => `${fmtValue(d.center)}: ${d.count}`);
 
   // Highlight only the NEW portion of columns that received new dots
   if (highlightIndex >= 0 || (highlightIndices && highlightIndices.size > 0)) {
@@ -655,7 +691,7 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
   // Tooltips
   if (innerNode) {
     attachTooltip(lines, innerNode, (d) => ({
-      lines: [`${formatTick(d.center)}`, `Frequency: ${d.count}`],
+      lines: [`${fmtValue(d.center)}`, `Frequency: ${d.count}`],
       x: xScale(d.center),
       y: yScale(d.count),
     }));
@@ -768,18 +804,21 @@ function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2,
     .attr('y2', innerHeight)
     .attr('stroke', OBSERVED_COLOR)
     .attr('stroke-width', 2.5)
-    .attr('aria-label', `${label}: ${value}`);
+    .attr('aria-label', `${label}: ${value.toFixed(precision)}`);
   // Clamp label so it doesn't clip at chart edges
   const labelText = `${label} = ${value.toFixed(precision)}`;
   const anchor = x < w * 0.15 ? 'start' : x > w * 0.85 ? 'end' : 'middle';
   const clampedX = Math.max(4, Math.min(w - 4, x));
-  overlays.append('text')
+  const labelEl = overlays.append('text')
     .attr('class', 'overlay-value observed-label')
     .attr('x', clampedX).attr('y', 10)
     .attr('text-anchor', anchor)
     .attr('fill', OBSERVED_COLOR)
-    .attr('font-weight', 700)
-    .text(labelText);
+    .attr('font-weight', 700);
+  // Via setLabelText, so an x̄ gets a rule over the x instead of a combining
+  // macron that SVG puts up and to the right of it.
+  setLabelText(/** @type {SVGTextElement} */ (labelEl.node()), labelText);
+  return /** @type {SVGTextElement} */ (labelEl.node());
 }
 
 /** CI line color (dark pink — distinct from purple observed stat). */
@@ -801,11 +840,12 @@ function renderCILine(overlays, value, xScale, innerHeight, precision = 2, color
     .attr('stroke', color)
     .attr('stroke-width', 2)
     .attr('stroke-dasharray', '6,3')
-    .attr('aria-label', `CI bound: ${value}`);
-  overlays.append('text')
+    .attr('aria-label', `CI bound: ${value.toFixed(precision)}`);
+  const t = overlays.append('text')
     .attr('class', 'overlay-value')
     .attr('x', x).attr('y', -4)
     .attr('text-anchor', 'middle')
     .attr('fill', color)
     .text(value.toFixed(precision));
+  return /** @type {SVGTextElement} */ (t.node());
 }

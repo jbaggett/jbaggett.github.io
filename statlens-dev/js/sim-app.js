@@ -9,6 +9,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
+import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
@@ -29,7 +30,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, renderPropResample, showPropResample } from './prop-bootstrap-mech.js';
+import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
@@ -82,7 +83,11 @@ export function initSimPage(config) {
   // Cards only read well for small samples; past this many in either group the
   // grid is an unreadable wall, so the toggle/card view is suppressed (size is
   // only known once data loads, so this is checked at data-load via cardsAllowed).
-  const CARD_MAX_GROUP = 50;
+  // 75 per group. Opportunity Cost is exactly 75 and was refused by a cap of
+  // 50, so the coursepack promised a shuffle the tool declined to draw and said
+  // nothing about why (Todd Will, REQ-068 C). Cards shrink from 50 upward
+  // (js/sim-card-mechanism.js cardWidth) so the piles still fit.
+  const CARD_MAX_GROUP = 75;
   /** @returns {boolean} Whether card view is allowed given the loaded sample sizes. */
   function cardsAllowed() {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
@@ -341,6 +346,11 @@ export function initSimPage(config) {
   /** Which observations the last resample drew, when it was drawn by index. */
   /** @type {number[]|null} */
   let lastResampleIndices = null;
+  /** The same, per group, for the two-sample bootstrap. */
+  /** @type {number[]|null} */
+  let lastRsIdx1 = null;
+  /** @type {number[]|null} */
+  let lastRsIdx2 = null;
   /** Last shuffled/resampled two-group grouping — lets the Bars/Cards toggle
    *  re-render the resample panel without re-running the simulation. */
   /** @type {number[]} */
@@ -932,6 +942,22 @@ export function initSimPage(config) {
   const loadSummaryBtn = document.getElementById('load-summary');
   if (loadSummaryBtn && config.proportion) {
     loadSummaryBtn.addEventListener('click', () => {
+      // Summary stats are a NEW problem, so the old study goes with them.
+      //
+      // This handler used to set the group names and re-render, leaving
+      // `datasetContext` and the source name untouched — so after loading
+      // heart_transplant and then typing an unrelated 30/100 vs 45/120, the
+      // summary line still read "Heart Transplant Survival: …" and the
+      // plain-language null still read "survival rate is the same regardless of
+      // whether a transplant was received", over numbers from another study.
+      // (Todd Will, REQ-068 B.)
+      //
+      // The paste/file loader has always cleared the context, and the
+      // dataset→dataset path was fixed on 2026-09-25; summary entry was the one
+      // loader that never did. All three clear it now.
+      datasetContext = {};
+      currentSourceName = '';
+      selectedVarName = '';
       resetSimulation();
       reportInputProblem(loadSummaryBtn, '');   // clear any previous refusal
 
@@ -1476,14 +1502,32 @@ export function initSimPage(config) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         renderOriginalSample();
+        // NOT switched to the non-tiles view the way the one-sample bootstrap
+        // below is. Paired has its own bespoke panels — sorted chips, or a mini
+        // histogram past 30 — and does not go through createMeanMechanism at
+        // all, so flipping the view here trades readable tiles for a mini
+        // histogram and gains no animation. Wiring paired onto the mean
+        // mechanism (its differences ARE a one-sample bootstrap) is the real
+        // fix and is its own piece of work. (2026-09-28.)
       } else if (config.mode === 'bootstrap' && !config.twoGroup && originalContentEl) {
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         if (useNewPropMech) ensurePropStyleToggle();
         renderOriginalSample();
-        // Auto-default to histogram view for large numeric samples (unless user explicitly chose)
-        // Proportions use proportion bars in both views, so no need to switch
-        if (!resampleViewExplicit && !config.proportion && data1.length > CHIP_THRESHOLD) {
+        // The non-tiles view is the default for numeric data.
+        //
+        // It used to be tiles below 30 observations and a histogram above, which
+        // meant a 16-value sample — the size where you can actually watch a
+        // resample happen — showed two rows of numbered tiles and never the
+        // dotplot. Tiles say WHICH values were drawn and how often; the dotplot
+        // says what the resample looks like and hands its mean to the
+        // distribution. The second is the thing being taught, so it leads, and
+        // Tiles stays one click away. (Jeff, 2026-09-27.)
+        //
+        // Above MEAN_DOT_MAX this same mode is a histogram, which is why the
+        // condition is about the data being numeric rather than about its size.
+        // Proportions use proportion bars in both views, so they are left alone.
+        if (!resampleViewExplicit && !config.proportion) {
           setResampleViewMode('histogram');
         }
       } else if (config.twoGroup) {
@@ -1542,6 +1586,11 @@ export function initSimPage(config) {
           const rs2 = second.values;
           lastRs1 = rs1;
           lastRs2 = rs2;
+          // Each group is its own draw with replacement, so each panel gets its
+          // own indices — without them the two-group animation flew dots with
+          // no marks on either side. (2026-09-28.)
+          lastRsIdx1 = first.indices ?? null;
+          lastRsIdx2 = second.indices ?? null;
           const stat = statFn(rs1) - statFn(rs2);
           allStats.push(stat);
         }
@@ -1963,16 +2012,10 @@ export function initSimPage(config) {
       html += `
         <div class="mech-group-row"><span class="mech-group-name">${group1Name}:</span>
           <span class="mech-group-stat">n = ${g1.length}, ${statSymbol} = ${formatStat(s1, dataPrecision, fmtType)}</span></div>
-        <div class="mech-prop-bar" aria-label="${succ1} successes, ${fail1} failures">
-          <div class="mech-prop-fill" style="width:${pct1}%"></div>
-          <span class="mech-prop-label">${succ1} S / ${fail1} F</span>
-        </div>
+        ${propBarHTML(succ1, fail1)}
         <div class="mech-group-row"><span class="mech-group-name">${group2Name}:</span>
           <span class="mech-group-stat">n = ${g2.length}, ${statSymbol} = ${formatStat(s2, dataPrecision, fmtType)}</span></div>
-        <div class="mech-prop-bar" aria-label="${succ2} successes, ${fail2} failures">
-          <div class="mech-prop-fill" style="width:${pct2}%"></div>
-          <span class="mech-prop-label">${succ2} S / ${fail2} F</span>
-        </div>`;
+        ${propBarHTML(succ2, fail2)}`;
     } else if (twoMeanDotActive()) {
       // B3: side-by-side dotplot bags — the resample plucks-and-flies per group.
       const tag = isOriginal ? 'orig' : 'resamp';
@@ -2282,8 +2325,8 @@ export function initSimPage(config) {
       const c1 = document.getElementById('mech-dot-resamp-1');
       const c2 = document.getElementById('mech-dot-resamp-2');
       let ms = 0;
-      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group1Name}` }));
-      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group2Name}` }));
+      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group1Name}`, indices: lastRsIdx1 ?? undefined }));
+      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group2Name}`, indices: lastRsIdx2 ?? undefined }));
       return ms;
     }
 
@@ -2334,7 +2377,9 @@ export function initSimPage(config) {
       // Ghost: fade resample panel to low opacity
       const propBars = mechResampleContent.querySelectorAll('.mech-prop-fill');
       const statSpans = mechResampleContent.querySelectorAll('.mech-group-stat');
-      const propLabels = mechResampleContent.querySelectorAll('.mech-prop-label');
+      // `.mech-prop-count` since the counts moved inside their own regions;
+      // the aside is the below-bar fallback for a region too narrow to hold one.
+      const propLabels = mechResampleContent.querySelectorAll('.mech-prop-count, .mech-prop-aside');
       const diffSpan = mechResampleContent.querySelector('.mech-stat-value');
 
       propBars.forEach(b => { /** @type {HTMLElement} */ (b).style.opacity = '0.25'; });
@@ -2357,23 +2402,13 @@ export function initSimPage(config) {
         const s1 = statFn(g1);
         const s2 = statFn(g2);
 
-        // Animate prop bar widths
-        const fills = mechResampleContent.querySelectorAll('.mech-prop-fill');
-        const labels = mechResampleContent.querySelectorAll('.mech-prop-label');
-        if (fills[0]) {
-          /** @type {HTMLElement} */ (fills[0]).style.transition = 'width 400ms ease, opacity 300ms ease';
-          /** @type {HTMLElement} */ (fills[0]).style.width = `${pct1}%`;
-          /** @type {HTMLElement} */ (fills[0]).style.opacity = '1';
-        }
-        if (fills[1]) {
-          /** @type {HTMLElement} */ (fills[1]).style.transition = 'width 400ms ease, opacity 300ms ease';
-          /** @type {HTMLElement} */ (fills[1]).style.width = `${pct2}%`;
-          /** @type {HTMLElement} */ (fills[1]).style.opacity = '1';
-        }
-
-        // Update labels
-        if (labels[0]) { labels[0].textContent = `${succ1} S / ${fail1} F`; /** @type {HTMLElement} */ (labels[0]).style.transition = 'opacity 250ms ease'; /** @type {HTMLElement} */ (labels[0]).style.opacity = '1'; }
-        if (labels[1]) { labels[1].textContent = `${succ2} S / ${fail2} F`; /** @type {HTMLElement} */ (labels[1]).style.transition = 'opacity 250ms ease'; /** @type {HTMLElement} */ (labels[1]).style.opacity = '1'; }
+        // Animate the bar widths and move the counts with them. The counts live
+        // inside their own regions now, so they cannot be patched by index —
+        // updatePropBar owns both, including gaining or losing the below-bar
+        // fallback when a region crosses the too-narrow threshold.
+        const bars = mechResampleContent.querySelectorAll('.mech-prop-bar');
+        updatePropBar(bars[0], succ1, fail1, { animate: true });
+        updatePropBar(bars[1], succ2, fail2, { animate: true });
 
         // Update stat text
         if (statSpans[0]) { statSpans[0].innerHTML = `n = ${g1.length}, ${statSymbol} = ${formatStat(s1, dataPrecision, fmtType)}`; }
@@ -2991,6 +3026,33 @@ export function initSimPage(config) {
 
     if (!shouldMorph || !result || !origHistCache) return 0;
 
+    // Past the dot limit the resample is bars, so the draw is animated as bars:
+    // every bar of the SOURCE leaves as a ghost, travels to the resample panel
+    // (which starts blank), solidifies on the way, and lands at the height the
+    // resample actually gave that bin — taller if it came up more often than
+    // its share, shorter if less. Then the bars gather into x̄*, which is handed
+    // to the same drop animation a dot would be. (Jeff's design, 2026-09-28.)
+    //
+    // This replaces the in-place morph below, which grew the bars from the
+    // original heights without anything travelling between the two panels.
+    const srcSvg = originalContentEl?.querySelector('svg') ?? null;
+    const tgtSvg = container.querySelector('svg');
+    if (srcSvg && tgtSvg) {
+      const ms = animateHistogramDraw({ sourceSvg: srcSvg, targetSvg: tgtSvg, n: resampleValues.length });
+      if (ms) {
+        if (meanLineGroup) {
+          setTimeout(() => { /** @type {SVGElement} */ (meanLineGroup).style.opacity = '1'; }, ms - 700);
+        }
+        const statEl = resampleMeanEl?.closest('.mechanism-stat');
+        if (statEl) {
+          /** @type {HTMLElement} */ (statEl).style.opacity = '0';
+          /** @type {HTMLElement} */ (statEl).style.transition = 'opacity 250ms ease';
+          setTimeout(() => { /** @type {HTMLElement} */ (statEl).style.opacity = '1'; }, ms - 500);
+        }
+        return ms;
+      }
+    }
+
     // Hide the resample stat text during morph — it will be revealed after bars finish
     const mechStatEl = resampleMeanEl?.closest('.mechanism-stat');
     if (mechStatEl) {
@@ -3274,11 +3336,18 @@ export function initSimPage(config) {
     // caption (bottom-right) — the same UI as the one-mean randomization test.
     const strip = document.getElementById('mechanism-strip');
     if (strip && mechanismDescEl) {
-      let bar = strip.querySelector('.mech-bottom-bar');
+      // Anchor the bar to the CAPTION, not to the strip. The tier layouts
+      // (?mech=tiers|split) move the caption into the draw tier and hide the
+      // strip, and this bar was built afterwards — so appending it to the strip
+      // put the Tiles/Dotplots toggle inside a hidden element and left those
+      // layouts with no way to switch views at all. (Jeff, 2026-09-27.)
+      const host = mechanismDescEl.parentElement ?? strip;
+      let bar = host.querySelector('.mech-bottom-bar')
+        ?? strip.querySelector('.mech-bottom-bar');
       if (!bar) {
         bar = document.createElement('div');
         bar.className = 'mech-bottom-bar';
-        strip.appendChild(bar);
+        host.insertBefore(bar, mechanismDescEl);
       }
       bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
       bar.appendChild(seg);
@@ -3479,6 +3548,30 @@ export function initSimPage(config) {
     if (mechanismDescEl) mechanismDescEl.hidden = true;
     // Hide mechanism strip (will re-show on next first generate)
     if (mechanismStrip) mechanismStrip.hidden = true;
+
+    // …and the SOURCE side, which used to survive a reset.
+    //
+    // Switching datasets calls this. The resample panel was cleared and the
+    // strip hidden, but the source panel kept the previous dataset's plot and
+    // the mean mechanism kept its `bag` — a drawDotplot result pointing at an
+    // SVG that was about to be replaced — along with the dot sizing and the
+    // measured width fitted to the old sample. So the first +1 on the new
+    // dataset animated from stale geometry: it drew from the old plot's dots
+    // and the merged statistic flew off the left of the screen.
+    // (Jeff, 2026-09-28, mammals n=54 → amtrak n=16.)
+    if (originalContentEl) originalContentEl.innerHTML = '';
+    if (resampleContentEl) resampleContentEl.innerHTML = '';
+    meanMech.resetSizing();
+    mechG1.resetSizing();
+    mechG2.resetSizing();
+    lastResample = [];
+    lastResampleIndices = null;
+    lastRsIdx1 = null;
+    lastRsIdx2 = null;
+    meanDomain = null;
+    // Anything still in the air belongs to the sample that just went away.
+    dismissAirborneStat();
+    clearDrawMarks(document);
   }
 
   // ─── Chart rendering ───
@@ -3807,6 +3900,9 @@ export function initSimPage(config) {
         ciColor: ciLineColor,
         animate: false,
         domain,
+        // Each spike is one achievable value of the statistic, so the tooltip
+        // should read the way the page prints that statistic.
+        precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
       });
       chartResult = r.frame;
       chartXScale = r.xScale;

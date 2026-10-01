@@ -383,7 +383,7 @@ function renderResults(tStar) {
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel}
         (${escapeHTML(group1Name)} − ${escapeHTML(group2Name)}) is
-        between <strong>${formatStat(lower, d)}</strong> and <strong>${formatStat(upper, d)}</strong>.</p>
+        between <strong data-ci="lower">${formatStat(lower, d)}</strong> and <strong data-ci="upper">${formatStat(upper, d)}</strong>.</p>
       <p>${straddlesZero
         ? 'The interval <strong>contains 0</strong>, so "no difference" is among the plausible values.'
         : `The interval <strong>does not contain 0</strong> — every plausible value points the same way, toward ${lower > 0 ? escapeHTML(group1Name) : escapeHTML(group2Name)} having the larger mean.`}</p>

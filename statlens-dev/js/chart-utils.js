@@ -182,6 +182,124 @@ export function formatTick(value) {
 }
 
 /**
+ * How to print a data VALUE inside a chart — a tooltip, a bin range, a label a
+ * screen reader will read out.
+ *
+ * `formatTick` is right for an axis, where the job is to label a position
+ * compactly and 4 significant digits is a good compromise. It is wrong for a
+ * (re)sampling distribution, where the value under the cursor is the same
+ * quantity the page prints beside the chart: the tooltip would say `0.4667`
+ * while the readout says `p̂ = 0.467`, or say `130.4` while the readout says
+ * `x̄ = 130.43`. Two numbers for one thing, and on the reasoning-mode figures
+ * (`?readout=false`) the tooltip is what the student reads the answer off.
+ *
+ * So when a caller knows the statistic's display precision it passes it, and
+ * values print to that many places — the same `formatStat(v, d)` convention the
+ * readouts use. When it does not (the explore pages, raw data of unknown
+ * magnitude) this falls back to `formatTick`, which is what they had.
+ *
+ * @param {number} [precision] - decimal places, or undefined for the axis format
+ * @returns {(value: number) => string}
+ */
+export function valueFormat(precision) {
+  if (!Number.isFinite(precision)) return formatTick;
+  const p = Math.max(0, Math.min(20, Math.round(/** @type {number} */ (precision))));
+  return (value) => (Number.isFinite(value) ? value.toFixed(p) : String(value));
+}
+
+/**
+ * Lift labels off each other when they collide.
+ *
+ * The observed statistic and the two confidence bounds are all written on the
+ * same line above the chart, each centred on its own vertical rule. When the
+ * interval is narrow the three run together — "8.290observed = 11.59815.403"
+ * — which is how it reached Jeff on 2026-09-28. They cannot simply be moved
+ * sideways, because each one names the line it sits on, so a collision is
+ * resolved by raising one of them a row.
+ *
+ * Walks left to right and lifts a label only when it actually overlaps the one
+ * before it, so the common case — an interval wide enough for all three — is
+ * left exactly as it was.
+ *
+ * @param {SVGTextElement[]} labels - in any order; sorted by x here
+ * @param {number} [rowHeight] - px to lift by, in the SVG's own units
+ */
+export function deoverlapLabels(labels, rowHeight = 13) {
+  const MIN_LABEL_GAP = 10;
+  const live = labels.filter(Boolean).filter(el => el.isConnected);
+  if (live.length < 2) return;
+  /** @type {{el: SVGTextElement, box: DOMRect, row: number}[]} */
+  const placed = [];
+  for (const el of live) {
+    let box;
+    try { box = el.getBoundingClientRect(); } catch { continue; }
+    if (!box.width) continue;
+    placed.push({ el, box, row: 0 });
+  }
+  placed.sort((a, b) => a.box.left - b.box.left);
+  for (let i = 1; i < placed.length; i++) {
+    const prev = placed[i - 1];
+    const cur = placed[i];
+    // Real air between them, not merely "not overlapping". What reached Jeff
+    // was an 8px gap, which reads as one run of text — "8.290observed = 11.598"
+    // — so anything tighter than this counts as a collision. Measured typical
+    // gaps when the three fit comfortably are 27–35px, well clear of it.
+    if (cur.box.left < prev.box.right + MIN_LABEL_GAP) {
+      cur.row = prev.row + 1;
+      const y = Number(cur.el.getAttribute('y')) || 0;
+      cur.el.setAttribute('y', String(y - cur.row * rowHeight));
+    }
+  }
+}
+
+/** Combining macron — the bar in x̄ (and d̄). */
+const MACRON = '\u0304';
+
+/**
+ * Write a label into an SVG <text>, drawing x̄ as a letter with a rule over it.
+ *
+ * `x̄` is two codepoints: `x` followed by U+0304 COMBINING MACRON. HTML composes
+ * that acceptably; SVG text does not, and in Atkinson Hyperlegible the bar
+ * lands up and to the RIGHT of the x, where it reads as a minus sign and
+ * collides with whatever follows — "x⁻= 11.60". Jeff has called this a frequent
+ * problem, and the page's own HTML readouts sidestep it with a
+ * `<span class="x-bar">` that draws the bar in CSS. This is the SVG equivalent:
+ * the letter goes in a tspan with `text-decoration: overline`, which puts a
+ * full-width rule exactly over it and does not depend on the font having a
+ * usable combining mark.
+ *
+ * Anything without a macron is set as plain text, so this is safe to call on
+ * every label.
+ *
+ * @param {SVGTextElement} textEl
+ * @param {string} str
+ */
+export function setLabelText(textEl, str) {
+  while (textEl.firstChild) textEl.removeChild(textEl.firstChild);
+  if (!str.includes(MACRON)) { textEl.textContent = str; return; }
+  const NS = 'http://www.w3.org/2000/svg';
+  let plain = '';
+  const flush = () => {
+    if (!plain) return;
+    textEl.appendChild(textEl.ownerDocument.createTextNode(plain));
+    plain = '';
+  };
+  for (let i = 0; i < str.length; i++) {
+    if (str[i + 1] === MACRON) {
+      flush();
+      const span = textEl.ownerDocument.createElementNS(NS, 'tspan');
+      span.setAttribute('text-decoration', 'overline');
+      span.textContent = str[i];
+      textEl.appendChild(span);
+      i++;                    // skip the mark itself
+    } else if (str[i] !== MACRON) {
+      plain += str[i];
+    }
+  }
+  flush();
+}
+
+/**
  * Check if SVG text elements overlap horizontally (with a small gap).
  * @param {SVGTextElement[]} nodes
  * @returns {boolean}
@@ -662,6 +780,10 @@ export function fitYLabel(frame, yLabel) {
  * Detect if phone margins should be used.
  * @returns {boolean}
  */
+export function isPhoneChart() {
+  return detectPhoneMargin();
+}
+
 function detectPhoneMargin() {
   if (typeof globalThis.matchMedia !== 'function') return false;
   return globalThis.matchMedia('(max-width: 480px)').matches;
@@ -1794,7 +1916,13 @@ export function drawMiniHistogram(container, values, options = {}) {
   // and edges fixed to the container would re-cut the data as it passed under
   // them, changing the shape of a sample that never changed.
   const binW = range / numBins;
-  const anchor = (meanValue != null && Number.isFinite(meanValue)) ? meanValue : dLo;
+  // `binAnchor` lets a caller pin BOTH panels to one grid. Without it the source
+  // anchors on x̄ and the resample on x̄*, so the two histograms are cut at
+  // different places and bin k in one is not bin k in the other — which makes
+  // comparing them, or animating one into the other, a lie. (2026-09-28.)
+  const anchor = (options.binAnchor != null && Number.isFinite(options.binAnchor))
+    ? options.binAnchor
+    : (meanValue != null && Number.isFinite(meanValue)) ? meanValue : dLo;
   // An EDGE on the marker (js/grid.js), which is what this chart has always
   // drawn; the grid authority just states it rather than re-deriving it.
   const grid = gridEdgedOn(binW, anchor);

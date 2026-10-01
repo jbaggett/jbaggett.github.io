@@ -10,7 +10,7 @@ import * as d3Array from 'd3-array';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, formatTick, attachTooltip } from './chart-utils.js';
+import { createChart, addAxes, formatTick, valueFormat, setLabelText, attachTooltip } from './chart-utils.js';
 
 /** Default spike color (IMS blue) — used when no isTail predicate. */
 const SPIKE_COLOR = '#569BBD';
@@ -62,6 +62,8 @@ function countValues(values, precision = 8) {
  * @param {{top:number,right:number,bottom:number,left:number}} [options.margin]
  * @param {number[]} [options.prevCounts] - Previous counts per value for delta highlight
  * @param {string} [options.color] - Base spike/cap colour (default IMS blue); ignored where isTail applies
+ * @param {number} [options.precision] - Decimal places for values in tooltips and
+ *   screen-reader labels; omit for the compact axis format
  * @returns {{ frame: ChartFrame, xScale: d3Scale.ScaleLinear<number,number>, yScale: d3Scale.ScaleLinear<number,number>, counts: Map<number, number> }}
  */
 export function drawSpike(container, values, options = {}) {
@@ -84,7 +86,15 @@ export function drawSpike(container, values, options = {}) {
     observedLabel,
     color,
     showObservedMarker,
+    // Decimal places for the values shown to the reader. A spike plot is the
+    // discrete picture of a statistic (each spike is one achievable k/n), so
+    // the value under the cursor should read the same as the page's own p̂.
+    precision,
   } = options;
+  const fmtValue = valueFormat(precision);
+  // The marker labels had a hardcoded 2 places, so an observed 209.420 was
+  // drawn as 209.42 next to a readout saying 209.420. Keep 2 as the fallback.
+  const overlayPrecision = Number.isFinite(precision) ? precision : 2;
   // Reasoning-mode `?observed=off` hides the observed-statistic marker so a
   // student must place the cutoff line at the value given in the problem text.
   const showObsMarker = showObservedMarker ?? (
@@ -150,7 +160,7 @@ export function drawSpike(container, values, options = {}) {
     })
     .attr('stroke-width', 2)
     .attr('role', 'listitem')
-    .attr('aria-label', d => `${d.value}: ${d.count}`);
+    .attr('aria-label', d => `${fmtValue(d.value)}: ${d.count}`);
 
   // Caps (small circles at top)
   dataGroup.selectAll('.spike-cap')
@@ -167,7 +177,7 @@ export function drawSpike(container, values, options = {}) {
 
   // Tooltips (mouse + keyboard)
   attachTooltip(dataGroup.selectAll('.spike-line'), frame.inner, (d) => ({
-    lines: [formatTick(d.value), `Frequency: ${d.count}`],
+    lines: [fmtValue(d.value), `Frequency: ${d.count}`],
     x: xScale(d.value),
     y: yScale(d.count),
   }));
@@ -193,13 +203,14 @@ export function drawSpike(container, values, options = {}) {
   const overlays = d3Selection.select(frame.inner).select('.overlays');
   if (observedStat != null && showObsMarker) {
     renderOverlayLine(overlays, observedStat, xScale, frame.height,
-      '#7B2D8E', 'Observed statistic', false, observedLabel ? `${observedLabel} = ` : '');
+      '#7B2D8E', 'Observed statistic', false, observedLabel ? `${observedLabel} = ` : '',
+      overlayPrecision);
   }
   if (ciLines) {
     renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
-      ciColor, 'CI lower bound', true);
+      ciColor, 'CI lower bound', true, '', overlayPrecision);
     renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
-      ciColor, 'CI upper bound', true);
+      ciColor, 'CI upper bound', true, '', overlayPrecision);
   }
 
   return { frame, xScale, yScale, counts };
@@ -214,19 +225,21 @@ export function drawSpike(container, values, options = {}) {
  * @param {string} color
  * @param {string} label
  */
-function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, dashed = false, prefix = '') {
+function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, dashed = false, prefix = '', precision = 2) {
   const x = xScale(value);
   const line = overlays.append('line')
     .attr('x1', x).attr('x2', x)
     .attr('y1', 0).attr('y2', innerHeight)
     .attr('stroke', color)
     .attr('stroke-width', dashed ? 2 : 2.5)
-    .attr('aria-label', `${label}: ${value}`);
+    .attr('aria-label', `${label}: ${value.toFixed(precision)}`);
   if (dashed) line.attr('stroke-dasharray', '6,3');
   overlays.append('text')
     .attr('class', 'overlay-value')
     .attr('x', x).attr('y', -4)
     .attr('text-anchor', 'middle')
     .attr('fill', color)
-    .text(prefix + value.toFixed(2));
+    .each(function () {
+      setLabelText(/** @type {SVGTextElement} */ (this), prefix + value.toFixed(precision));
+    });
 }

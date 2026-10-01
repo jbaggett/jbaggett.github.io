@@ -17,15 +17,79 @@
 
 import { drawDotplot, computeDots } from './dotplot.js';
 import { animateResampleDraw, drawStyleFromUrl, clearDrawMarks } from './mechanisms/draw-animation.js';
-import { prefersReducedMotion } from './chart-utils.js';
+import { prefersReducedMotion, isPhoneChart } from './chart-utils.js';
 import * as d3Selection from 'd3-selection';
 
 const COMPACT = { showExport: false, animate: false, labels: 'none' };
+
+/**
+ * Balanced side margins for a plot that has no y-axis.
+ *
+ * The chart default reserves 60px on the left for y-axis tick labels (80 on a
+ * phone) against 20 on the right. A mechanism dotplot draws `labels: 'none'`,
+ * so nothing is ever put there — the plot just sat 40px right of centre inside
+ * its own card, which is what you see as the plot looking off-centre. Balancing
+ * the two also hands those 40px back to the plot area. Bottom is left alone:
+ * the x tick labels are real and do need the room.
+ *
+ * @returns {{top:number,right:number,bottom:number,left:number}}
+ */
+function mechMargin() {
+  const phone = isPhoneChart();
+  // Enough that the outermost tick label, which is centred on its tick, still
+  // has half of itself inside the box.
+  const side = phone ? 30 : 24;
+  return { top: phone ? 30 : 28, right: side, bottom: phone ? 60 : 50, left: side };
+}
 const FLY_COLOR = '#E07020';   // orange flyer (matches the Sampling Lab)
 // Common display width for every mechanism dotplot, so dots are the SAME size on
 // every page regardless of how wide the host panel is (the CI and randomization
 // strips have different panel widths). Centered within the panel.
 const MECH_DISPLAY_W = 300;
+/**
+ * How wide a mechanism dotplot may grow when its panel has the room.
+ *
+ * The 300px floor above was chosen for the side-by-side strip, where two panels
+ * share the width. It then applied everywhere, so a plot sat at 300px inside a
+ * 491px panel (strip) or a 436px one (tiers) — a third of the space empty, on
+ * the one plot whose job is to let you pick out individual dots. Measured and
+ * clamped now; the ceiling keeps a very wide screen from stretching a 54-dot
+ * sample across half a metre. (Jeff, 2026-09-28.)
+ */
+const MECH_DISPLAY_MAX = 520;
+
+/**
+ * The width a mechanism dotplot should draw at inside `panel`.
+ *
+ * Returns the floor when the panel cannot be measured — which is the normal
+ * case for a panel that is still `hidden`, so callers that have a better number
+ * (the shared scale) should pass it rather than measure a hidden box.
+ *
+ * @param {Element|null|undefined} panel
+ * @returns {number}
+ */
+export function mechDisplayWidth(panel) {
+  // Measure the PANEL, found by walking up, not whatever was handed in.
+  //
+  // The panels are flex columns with `align-items: flex-start`, so the box
+  // immediately around the chart shrinks to fit the chart — measuring it asks
+  // the plot how wide the plot is. It worked on bootstrap-mean only because the
+  // element passed in happened to be one level below the panel;
+  // randomization-one-mean nests one deeper and stayed pinned at 300px inside a
+  // 436px panel. Walking up to the thing with a real width fixes both.
+  // (2026-09-28.)
+  const host = /** @type {Element|null} */ (
+    panel?.closest?.('.mechanism-panel, .mech-tier') ?? panel ?? null);
+  const box = host?.getBoundingClientRect?.();
+  if (!box) return MECH_DISPLAY_W;
+  let w = box.width;
+  try {
+    const cs = getComputedStyle(host);
+    w -= (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  } catch { /* non-browser */ }
+  if (!(w > MECH_DISPLAY_W)) return MECH_DISPLAY_W;
+  return Math.round(Math.min(w, MECH_DISPLAY_MAX));
+}
 
 /**
  * Draw a compact mechanism dotplot (bag, sample, or resample) via drawDotplot.
@@ -34,17 +98,23 @@ const MECH_DISPLAY_W = 300;
  * @param {number[]} values
  * @param {{ id?: string, domain?: [number,number], binWidth?: number, binOrigin?: number,
  *   dotRadius?: number, sizingMaxStack?: number, mean?: number, meanLabel?: string,
- *   xLabel?: string, viewHeight?: number, fillColor?: string }} [opts]
+ *   xLabel?: string, viewHeight?: number, viewWidth?: number, displayWidth?: number,
+ *   margin?: {top:number,right:number,bottom:number,left:number}, fillColor?: string }} [opts]
  */
 export function drawMechDotplot(container, values, opts = {}) {
   if (container) container.innerHTML = ''; // drawDotplot/createChart appends — clear first
-  const viewWidth = opts.viewWidth ?? 320;
+  // The viewBox tracks the display width, so the plot is genuinely BIGGER
+  // rather than a small plot scaled up: same 1:1 mapping, more room for the dot
+  // grid, and drawDotplot's radius cap (innerWidth / bins) loosens with it.
+  const displayWidth = opts.displayWidth ?? MECH_DISPLAY_W;
+  const viewWidth = opts.viewWidth ?? displayWidth + 20;
   // Anchor the bin grid to the DATA's own min (not the fixed domain), so a uniform
   // shift of the values (observed → null) preserves the exact stacking — it just
   // translates. A fixed-domain grid would re-bin and change the apparent shape.
   const binOrigin = opts.binOrigin ?? (values.length ? Math.min(...values) : undefined);
   const frame = drawDotplot(container, values, {
     ...COMPACT,
+    margin: opts.margin ?? mechMargin(),
     forceDotMode: true,
     id: opts.id,
     domain: opts.domain,
@@ -59,14 +129,20 @@ export function drawMechDotplot(container, values, opts = {}) {
     // A narrow, taller viewBox so the dotplot fills the ~300px mechanism panel at
     // close to 1:1 (a 600-wide viewBox displayed in a 300px panel halves the dots).
     viewWidth,
-    viewHeight: opts.viewHeight ?? 150,
+    viewHeight: opts.viewHeight ?? 210,
   });
   // Cap the display width to the viewBox width so the dotplot renders ~1:1 and dots
   // are the SAME size regardless of how wide the host panel is (the CI and the
   // randomization-test strips have different panel widths). Centered.
   const svg = frame?.frame?.inner?.ownerSVGElement;
   if (svg) {
-    svg.style.maxWidth = `${MECH_DISPLAY_W}px`;
+    // An explicit width, not just a cap. The tier layouts put this panel in a
+    // `flex-direction: column; align-items: flex-start` box, so its container
+    // shrinks to fit its content while the SVG sizes itself from its container
+    // — the two agree on the 300px default and the max-width never binds. Say
+    // the number. `max-width: 100%` keeps it shrinking on a narrow phone.
+    svg.style.width = `${displayWidth}px`;
+    svg.style.maxWidth = '100%';
     svg.style.margin = '0 auto';
     svg.style.display = 'block';
   }
@@ -235,7 +311,7 @@ function stampFootprints(flyers) {
  * @param {ReturnType<typeof drawDotplot>} bag
  * @param {number[]} resample
  * @param {{ domain:[number,number], mean?:number, meanLabel?:string, animate?:boolean,
- *   sizingMaxStack?:number }} opts
+ *   sizingMaxStack?:number, displayWidth?:number, indices?:number[] }} opts
  */
 export function showResampleDotplot(container, bag, resample, opts) {
   const target = drawMechDotplot(container, resample, {
@@ -246,6 +322,9 @@ export function showResampleDotplot(container, bag, resample, opts) {
     sizingMaxStack: opts.sizingMaxStack,
     mean: opts.mean,
     meanLabel: opts.meanLabel,
+    // The source measured this; drawing the two panels at different widths
+    // would put the same value at two different x positions.
+    displayWidth: opts.displayWidth,
   });
   if (!opts.animate || prefersReducedMotion()) return 0;
 

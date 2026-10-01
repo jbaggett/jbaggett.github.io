@@ -215,3 +215,101 @@ function animateEndsFill(resampleEl, bagEl, resample, data, style) {
 
   return FILL_WINDOW + FLY + 80;
 }
+
+// ─── The counts on a proportion bar ─────────────────────────────────────
+
+/**
+ * How narrow a region can get before its count stops fitting inside it.
+ *
+ * The bars run ~300–490px and a count is two or three characters, so ~18% is
+ * where "84" starts touching the edges. Below that the pair moves out of the
+ * bar rather than being squeezed or clipped.
+ */
+const MIN_REGION_PCT = 18;
+
+/**
+ * The bar, with its success and failure counts.
+ *
+ * Both counts used to be written as one centred string — `84 S / 116 F` —
+ * straddling the boundary between the two regions. The slash then reads as a
+ * fraction bar: 84 over 116, which is not a number that exists here. They are
+ * two counts that sum to n. (Jeff, 2026-09-29.)
+ *
+ * So each count goes inside the region it counts, centred: white on the fill
+ * (4.56:1 against #3A7CA5, so it stands on its own without the text-shadow it
+ * used to lean on) and near-black on the grey remainder (12.3:1). Being on
+ * opposite sides of the division is what says they are two separate tallies.
+ *
+ * When one region is too narrow to hold its count, both move below the bar and
+ * are joined with a middle dot rather than a slash — still two counts, still
+ * not a fraction.
+ *
+ * @param {number} successes
+ * @param {number} failures
+ * @param {{ className?: string, style?: string }} [opts]
+ * @returns {string}
+ */
+export function propBarHTML(successes, failures, opts = {}) {
+  const n = successes + failures;
+  const pct = n > 0 ? (successes / n) * 100 : 0;
+  const cls = opts.className ? ` ${opts.className}` : '';
+  const style = opts.style ? ` style="${opts.style}"` : '';
+  const aria = `${successes} successes, ${failures} failures`;
+  const bar = `<div class="mech-prop-bar${cls}" aria-label="${aria}"${style}>`
+    + `<div class="mech-prop-fill" style="width:${pct}%"></div>`
+    + countsHTML(successes, failures, pct)
+    + '</div>';
+  return roomInside(pct) ? bar : bar + asideHTML(successes, failures);
+}
+
+/** Whether both regions can hold their own count. */
+function roomInside(/** @type {number} */ pct) {
+  return pct >= MIN_REGION_PCT && pct <= 100 - MIN_REGION_PCT;
+}
+
+function countsHTML(/** @type {number} */ s, /** @type {number} */ f, /** @type {number} */ pct) {
+  if (!roomInside(pct)) return '';
+  return `<span class="mech-prop-count is-success" style="width:${pct}%">${s} S</span>`
+    + `<span class="mech-prop-count is-failure" style="left:${pct}%">${f} F</span>`;
+}
+
+function asideHTML(/** @type {number} */ s, /** @type {number} */ f) {
+  return `<div class="mech-prop-aside">${s} S &middot; ${f} F</div>`;
+}
+
+/**
+ * Update a bar in place — the resample animates its width rather than being
+ * rebuilt, so the counts have to follow without the markup being replaced.
+ *
+ * @param {Element|null} barEl - the `.mech-prop-bar`
+ * @param {number} successes
+ * @param {number} failures
+ * @param {{ animate?: boolean }} [opts]
+ */
+export function updatePropBar(barEl, successes, failures, opts = {}) {
+  if (!barEl) return;
+  const n = successes + failures;
+  const pct = n > 0 ? (successes / n) * 100 : 0;
+  barEl.setAttribute('aria-label', `${successes} successes, ${failures} failures`);
+  const fill = /** @type {HTMLElement|null} */ (barEl.querySelector('.mech-prop-fill'));
+  if (fill) {
+    if (opts.animate) fill.style.transition = 'width 400ms ease, opacity 300ms ease';
+    fill.style.width = `${pct}%`;
+    fill.style.opacity = '1';
+  }
+  barEl.querySelectorAll('.mech-prop-count').forEach(el => el.remove());
+  barEl.insertAdjacentHTML('beforeend', countsHTML(successes, failures, pct));
+  // The out-of-bar fallback is a SIBLING, so it is managed here too — a bar
+  // that crosses the threshold in either direction has to gain or lose it.
+  const aside = barEl.nextElementSibling?.classList.contains('mech-prop-aside')
+    ? barEl.nextElementSibling : null;
+  if (roomInside(pct)) aside?.remove();
+  else if (aside) aside.innerHTML = `${successes} S &middot; ${failures} F`;
+  else barEl.insertAdjacentHTML('afterend', asideHTML(successes, failures));
+  if (opts.animate) {
+    barEl.querySelectorAll('.mech-prop-count').forEach((el) => {
+      /** @type {HTMLElement} */ (el).style.transition = 'opacity 250ms ease';
+      /** @type {HTMLElement} */ (el).style.opacity = '1';
+    });
+  }
+}

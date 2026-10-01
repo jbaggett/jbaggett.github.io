@@ -28,7 +28,33 @@
  * @returns {string}
  */
 export function cardGroupsHTML(g1, g2, opts) {
-  return groupHTML(opts.group1Name, g1, opts) + groupHTML(opts.group2Name, g2, opts);
+  // Cards shrink as the piles grow, so the metaphor survives a bigger study
+  // instead of being withdrawn at a cliff. Both groups get the SAME size, from
+  // whichever is larger — two piles drawn at different scales could not be
+  // compared, which is the one thing this panel exists to let you do.
+  return `<div class="card-sizes" style="--card-w:${cardWidth(Math.max(g1.length, g2.length))}px">`
+    + groupHTML(opts.group1Name, g1, opts)
+    + groupHTML(opts.group2Name, g2, opts)
+    + '</div>';
+}
+
+/**
+ * Card width for a pile of `n`.
+ *
+ * Full size up to 50 — the size everything was drawn at before — then down to
+ * 10px at 75, which is where the cap now sits. Below 10px a card stops reading
+ * as a card and the metaphor is gone anyway, which is the honest place to stop
+ * rather than shrink indefinitely. (Prototype for Jeff, REQ-068 C: Opportunity
+ * Cost is 75 per group and was refused by a cap of 50.)
+ *
+ * @param {number} n - the larger group's size
+ * @returns {number} width in px; height follows in CSS
+ */
+export function cardWidth(n) {
+  const FULL = 15, MIN = 10, FROM = 50, TO = 75;
+  if (n <= FROM) return FULL;
+  if (n >= TO) return MIN;
+  return Math.round((FULL - (FULL - MIN) * ((n - FROM) / (TO - FROM))) * 10) / 10;
 }
 
 /**

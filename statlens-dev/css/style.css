@@ -1609,19 +1609,23 @@ input[aria-invalid="true"] {
   color: var(--ims-dark, #114B5F);
 }
 .mech-card-count { font-weight: 400; color: #595959; }
+.mech-card-display .card-sizes { display: contents; }
 .mech-card-display .cards {
   /* A fixed-track grid rather than wrapping flex: with equal group widths both
-     piles fit the same number of 15px columns, so equal n always draws the
-     same shape — and unequal n differs by whole rows, which is the comparison
-     the panel exists to make. */
+     piles fit the same number of columns, so equal n always draws the same
+     shape — and unequal n differs by whole rows, which is the comparison the
+     panel exists to make.
+     The track width comes from --card-w, set once per draw from the larger
+     pile, so both groups are always drawn at one scale. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, 15px);
+  grid-template-columns: repeat(auto-fill, var(--card-w, 15px));
   gap: 3px;
   justify-content: center;
 }
 .mech-card-display .card {
-  width: 15px;
-  height: 19px;
+  width: var(--card-w, 15px);
+  /* 19/15 — a card keeps its shape as it shrinks. */
+  height: calc(var(--card-w, 15px) * 1.267);
   border-radius: 2px;
   border: 1px solid #999;
 }
@@ -1842,6 +1846,35 @@ input[aria-invalid="true"] {
   color: #fff;
   pointer-events: none;
   text-shadow: 0 0 3px rgba(0,0,0,0.5);
+}
+/* Each count sits inside the region it counts, centred. One string across both
+   regions made the separator read as a fraction bar — 84 over 116, a number
+   that does not exist here. Being on opposite sides of the division is what
+   says they are two tallies that sum to n. */
+.mech-prop-count {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+}
+/* White on #3A7CA5 is 4.56:1, so it carries its own weight — no text-shadow. */
+.mech-prop-count.is-success { left: 0; color: #fff; }
+/* Near-black on #D9D9D9 is 12.3:1. */
+.mech-prop-count.is-failure { right: 0; color: #1A1A1A; }
+/* Both counts, below the bar, for when one region is too narrow to hold its
+   own. A middle dot, never a slash. */
+.mech-prop-aside {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text, #333);
+  margin: -4px 0 6px;
 }
 /* Larger proportion bar for one-sample mechanism strip */
 .mech-prop-bar-lg {
@@ -5480,13 +5513,89 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   100% { r: var(--dpr-r, 5); }
 }
 .dpr-picked { animation: dpr-pick 340ms ease-out; }
+/* The repeat count sits INSIDE its dot. The dot darkens to carry it: a digit on
+   the normal blue is ~2.6:1 against white, which is not a contrast to ask
+   anyone to read a number off. Dark fill + white text is ~8:1, and the
+   darkening says "taken more than once" a second time without relying on the
+   number being legible at all. */
+.dpr-counted { fill: #114B5F; }
 .dpr-badge {
-  font-size: 9px;
   font-weight: 700;
-  fill: #E07020;
+  fill: #fff;
   font-family: var(--font-mono, monospace);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+/* The ghosted styles (?draw=shade|rings): the source starts as outlines and
+   fills in as it is drawn from, so "never taken" is what is LEFT rather than
+   what has been dimmed. An outline, not a fade — a washed-out fill alone drops
+   under the 3:1 that graphical elements need, and this dot is carrying
+   information. */
+.dpr-ghost {
+  fill: #EAF4F9;
+  stroke: #7FA9BE;
+  stroke-width: 1.2;
+  transition: fill 0.25s ease-out, stroke 0.25s ease-out;
+}
+/* A single draw, in flight from the source histogram to the resample. */
+.dpr-draw { will-change: left, top; }
+/* The bar a draw was taken from flashes — and keeps its height. Drawing from it
+   over and over never runs it down, which is what "with replacement" means. */
+@keyframes dpr-bar-flash {
+  /* Darken rather than recolour. Animating `fill` needs an end value, and
+     `inherit` resolves against the parent <g> — which turned the bar BLACK for
+     the length of the flash. A filter leaves the bar's own fill alone. */
+  0%   { filter: brightness(0.7) saturate(1.5); }
+  70%  { filter: brightness(0.7) saturate(1.5); }
+  100% { filter: none; }
+}
+.dpr-bar-drawn { animation: dpr-bar-flash 260ms ease-out; }
+.dpr-draw-counter {
+  font-size: 8px;
+  font-family: var(--font-mono, monospace);
+  fill: #555;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dpr-bar-drawn { animation: none; }
+  .dpr-draw { display: none; }
+}
+
+/* A bar of the source histogram, in flight to the resample panel. It leaves as
+   a ghost and arrives solid: --dpr-solid runs 0 → 1 over the journey, so the
+   fill deepens and the outline firms up as it goes. */
+.dpr-bar-flyer {
+  background: rgba(86, 155, 189, calc(0.18 + 0.42 * var(--dpr-solid, 0)));
+  border: 1px solid rgba(86, 155, 189, calc(0.35 + 0.65 * var(--dpr-solid, 0)));
+  box-sizing: border-box;
+  will-change: left, top, width, height;
+}
+/* A bar that lands taller than it left was drawn from more often than its
+   share; one that lands shorter, less. The in-place morph said this with
+   colour, and the travelling version keeps saying it. */
+.dpr-bar-flyer.dpr-bar-grew {
+  background: rgba(42, 100, 150, calc(0.18 + 0.5 * var(--dpr-solid, 0)));
+  border-color: rgba(42, 100, 150, calc(0.4 + 0.6 * var(--dpr-solid, 0)));
+}
+.dpr-bar-flyer.dpr-bar-shrank {
+  background: rgba(184, 212, 232, calc(0.25 + 0.55 * var(--dpr-solid, 0)));
+  border-color: rgba(120, 170, 200, calc(0.4 + 0.6 * var(--dpr-solid, 0)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .dpr-bar-flyer { display: none; }
+}
+
+/* One ring per repeat draw: a count you can read without separating two blues.
+   Drawn behind its dot, so the dot is never hidden by its own tally. */
+.dpr-ring {
+  fill: none;
+  stroke: #2A5A75;
+  stroke-width: 1.3;
+  opacity: 0.75;
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .dpr-picked { animation: none; }
+  .dpr-ghost { transition: none; }
 }

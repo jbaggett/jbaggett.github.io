@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
 
 /** Default bar fill (IMS blue at 50% opacity) — used when no isTail predicate. */
 const BAR_FILL = '#569BBD80';
@@ -206,7 +206,9 @@ export function computeBins(values, options = {}) {
  * @param {number[]} [options.thresholds] - Explicit bin threshold values (overrides numBins)
  * @param {number[]} [options.prevBinCounts] - Previous bin counts for stacked delta highlight
  * @param {number} [options.highlightValue] - Single new value to highlight (flashes the receiving bin)
- * @param {number} [options.precision] - Decimal places for overlay value labels (default: 2)
+ * @param {number} [options.precision] - Decimal places for values shown to the reader:
+ *   overlay labels (default 2), and, when supplied, bin ranges in tooltips and
+ *   screen-reader labels (otherwise the compact axis format)
  * @param {boolean} [options.relativeFrequency] - Show relative frequency (proportion) on y-axis instead of count
  * @param {string} [options.fillColor] - Override default bar fill color (hex, will be used at 50% opacity)
  * @param {number} [options.viewHeight] - Override default viewBox height (for compact stacked charts)
@@ -235,7 +237,10 @@ export function drawHistogram(container, values, options = {}) {
     thresholds,
     prevBinCounts,
     highlightValue,
-    precision = 2,
+    // No default: an explicit precision means "print values the way the page
+    // prints this statistic" and reaches the tooltips too, while leaving it out
+    // keeps the axis format they had. Overlay labels still fall back to 2.
+    precision,
     relativeFrequency = false,
     fillColor,
     viewHeight,
@@ -291,7 +296,7 @@ export function drawHistogram(container, values, options = {}) {
   // drawHorizontalGridlines(frame); // disabled — bars are readable without gridlines (theme_classic style)
 
   const dataGroup = d3Selection.select(frame.inner).select('.data');
-  renderBars(dataGroup, bins, xScale, yScale, frame.height, isTail, animate, frame.inner, obsForChart, ciLines, relativeFrequency, totalN, fillColor, labels);
+  renderBars(dataGroup, bins, xScale, yScale, frame.height, isTail, animate, frame.inner, obsForChart, ciLines, relativeFrequency, totalN, fillColor, labels, precision);
 
   // Stacked delta highlight: show new portions of bars in orange
   if (prevBinCounts) {
@@ -303,18 +308,23 @@ export function drawHistogram(container, values, options = {}) {
     renderSingleHighlight(dataGroup, bins, xScale, yScale, frame.height, highlightValue);
   }
 
-  // Overlay lines
+  // Overlay lines. The observed statistic and the two bounds share one line of
+  // text above the chart; when the interval is narrow they run into each other,
+  // so any that collide are lifted a row (js/chart-utils.js).
   const overlays = d3Selection.select(frame.inner).select('.overlays');
+  /** @type {SVGTextElement[]} */
+  const overlayLabels = [];
   if (obsForChart != null) {
-    renderOverlayLine(overlays, obsForChart, xScale, frame.height,
-      '#7B2D8E', observedLabel, precision, observedLabel);
+    overlayLabels.push(renderOverlayLine(overlays, obsForChart, xScale, frame.height,
+      '#7B2D8E', observedLabel, precision, observedLabel));
   }
   if (ciLines) {
-    renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
-      ciColor, 'CI lower bound', precision, undefined, true);
-    renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
-      ciColor, 'CI upper bound', precision, undefined, true);
+    overlayLabels.push(renderOverlayLine(overlays, ciLines[0], xScale, frame.height,
+      ciColor, 'CI lower bound', precision, undefined, true));
+    overlayLabels.push(renderOverlayLine(overlays, ciLines[1], xScale, frame.height,
+      ciColor, 'CI upper bound', precision, undefined, true));
   }
+  deoverlapLabels(overlayLabels);
 
   return {
     frame,
@@ -342,7 +352,7 @@ export function drawHistogram(container, values, options = {}) {
 
       // Re-render bars
       dataGroup.selectAll('rect').remove();
-      renderBars(dataGroup, result.bins, xScale, yScale, frame.height, newIsTail, animate, frame.inner, newObserved, newCiLines, relativeFrequency, newValues.length || 1, undefined, labels);
+      renderBars(dataGroup, result.bins, xScale, yScale, frame.height, newIsTail, animate, frame.inner, newObserved, newCiLines, relativeFrequency, newValues.length || 1, undefined, labels, precision);
 
       // Re-render overlays
       overlays.selectAll('*').remove();
@@ -471,7 +481,10 @@ function renderSingleHighlight(group, bins, xScale, yScale, innerHeight, value) 
  * @param {number} [observedStat] - Observed stat value for split-bar rendering
  * @param {[number, number]} [ciLines] - CI bounds for split-bar rendering
  */
-function renderBars(group, bins, xScale, yScale, innerHeight, isTail, animate, innerNode, observedStat, ciLines, relativeFrequency = false, totalN = 1, fillColor, labels = 'full') {
+function renderBars(group, bins, xScale, yScale, innerHeight, isTail, animate, innerNode, observedStat, ciLines, relativeFrequency = false, totalN = 1, fillColor, labels = 'full', precision) {
+  // A bin range is a pair of VALUES, so it prints the way the page prints this
+  // statistic when the caller has said what that is (see valueFormat).
+  const fmtValue = valueFormat(precision);
   const shouldAnimate = animate && !prefersReducedMotion() && hasD3Transition();
 
   // Collect all boundary values that can split bars
@@ -534,7 +547,7 @@ function renderBars(group, bins, xScale, yScale, innerHeight, isTail, animate, i
       return w < 4 ? 0.5 : 1;
     })
     .attr('role', 'listitem')
-    .attr('aria-label', d => `${d.x0} to ${d.x1}: ${d.length}`);
+    .attr('aria-label', d => `${fmtValue(d.x0)} to ${fmtValue(d.x1)}: ${d.length}`);
 
   if (shouldAnimate) {
     bars
@@ -555,7 +568,7 @@ function renderBars(group, bins, xScale, yScale, innerHeight, isTail, animate, i
     attachTooltip(bars, innerNode, (d) => {
       if (labels === 'names') {
         return {
-          lines: [`${formatTick(d.x0)} to ${formatTick(d.x1)}`],
+          lines: [`${fmtValue(d.x0)} to ${fmtValue(d.x1)}`],
           x: (xScale(d.x0) + xScale(d.x1)) / 2,
           y: yScale(d.length),
         };
@@ -564,7 +577,7 @@ function renderBars(group, bins, xScale, yScale, innerHeight, isTail, animate, i
         ? `Proportion: ${(d.length / totalN).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')}`
         : `Frequency: ${d.length}`;
       return {
-        lines: [`${formatTick(d.x0)} to ${formatTick(d.x1)}`, valLabel],
+        lines: [`${fmtValue(d.x0)} to ${fmtValue(d.x1)}`, valLabel],
         x: (xScale(d.x0) + xScale(d.x1)) / 2,
         y: yScale(d.length),
       };
@@ -614,25 +627,28 @@ function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, p
     .attr('y1', 14).attr('y2', innerHeight)
     .attr('stroke', color)
     .attr('stroke-width', dashed ? 2 : 2.5)
-    .attr('aria-label', `${label}: ${value}`);
+    .attr('aria-label', `${label}: ${value.toFixed(precision)}`);
   if (dashed) line.attr('stroke-dasharray', '6,3');
   // Clamp label so it doesn't clip at chart edges
   const anchor = x < w * 0.15 ? 'start' : x > w * 0.85 ? 'end' : 'middle';
   const clampedX = Math.max(4, Math.min(w - 4, x));
   if (microLabel) {
-    overlays.append('text')
+    const t = overlays.append('text')
       .attr('class', 'overlay-value observed-label')
       .attr('x', clampedX).attr('y', 10)
       .attr('text-anchor', anchor)
       .attr('fill', color)
       .attr('font-weight', 700)
-      .text(`${microLabel} = ${value.toFixed(precision)}`);
-  } else {
-    overlays.append('text')
-      .attr('class', 'overlay-value')
-      .attr('x', clampedX).attr('y', 10)
-      .attr('text-anchor', anchor)
-      .attr('fill', color)
-      .text(value.toFixed(precision));
+      .each(function () {
+        setLabelText(/** @type {SVGTextElement} */ (this), `${microLabel} = ${value.toFixed(precision)}`);
+      });
+    return /** @type {SVGTextElement} */ (t.node());
   }
+  const t = overlays.append('text')
+    .attr('class', 'overlay-value')
+    .attr('x', clampedX).attr('y', 10)
+    .attr('text-anchor', anchor)
+    .attr('fill', color)
+    .text(value.toFixed(precision));
+  return /** @type {SVGTextElement} */ (t.node());
 }

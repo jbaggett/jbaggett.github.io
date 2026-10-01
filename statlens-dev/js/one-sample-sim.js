@@ -13,6 +13,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
+import { propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -293,8 +294,18 @@ export function initOneSamplePage(config) {
   // observed or null-shifted values, and animate the shift ourselves.
   /** Chip text honouring the data precision. */
   const fmtChip = (/** @type {number} */ v) => (Number.isInteger(v) ? String(v) : formatStat(v, dataPrecision));
-  const initialView = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase() === 'dotplot'
-    ? 'dotplot' : 'summary';
+  // The dotplot leads for numeric data, matching bootstrap-mean: at the sample
+  // sizes where you can watch a resample happen, tiles showed two rows of
+  // numbers and the dotplot never appeared unless you found the toggle. Tiles
+  // say WHICH values were drawn and how often; the dotplot says what the sample
+  // looks like and hands its statistic to the distribution — the thing being
+  // taught. `?mechview=tiles` still asks for the other one, and the toggle is
+  // one click away. Proportions are unaffected: they have their own mechanism.
+  // (Jeff, 2026-09-27.)
+  const mechviewParam = (new URLSearchParams(location.search).get('mechview') || '').toLowerCase();
+  const initialView = mechviewParam === 'dotplot' ? 'dotplot'
+    : (mechviewParam === 'tiles' || mechviewParam === 'summary') ? 'summary'
+    : (isProp ? 'summary' : 'dotplot');
   const mech = createMeanMechanism({ formatValue: fmtChip, initialView });
   /** Hold the observed sample on the very first shift so it's clear what we start from. */
   let firstShiftDone = false;
@@ -305,6 +316,9 @@ export function initOneSamplePage(config) {
   let lastSimStat = 0;
   /** @type {number[]|null} */
   let lastResampleArr = null;
+  /** Which observation each draw took — the animation is blind without it. */
+  /** @type {number[]|null} */
+  let lastResampleIdx = null;
 
   const obsChartEl = () => /** @type {HTMLElement|null} */ (document.getElementById('mech-obs-chart'));
 
@@ -327,6 +341,7 @@ export function initOneSamplePage(config) {
     return mech.renderResample(el, shiftedData, lastResampleArr, lastSimStat, animate, {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
       label: 'Simulated resample from null distribution',
+      indices: lastResampleIdx ?? undefined,
     });
   }
 
@@ -539,11 +554,8 @@ export function initOneSamplePage(config) {
       if (mechObservedStat) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
-        mechObservedStat.innerHTML = `${sampleSuccesses} of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          <div class="mech-prop-bar" aria-label="${sampleSuccesses} successes, ${obsFailures} failures" style="margin-top:4px">
-            <div class="mech-prop-fill" style="width:${obsPct}%"></div>
-            <span class="mech-prop-label">${sampleSuccesses} S / ${obsFailures} F</span>
-          </div>`;
+        mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
+          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
       }
       computePreSimDomain();
       scrollToControls();
@@ -625,6 +637,12 @@ export function initOneSamplePage(config) {
           return;
         }
         reportInputProblem(loadSummaryBtn, '');
+        // A new problem, so the old study goes with it — same gap as sim-app's
+        // summary handler (Todd Will, REQ-068 B): the dataset's name and its
+        // `nullClaim` sentence used to survive summary entry and sit over
+        // numbers from somewhere else.
+        datasetContext = {};
+        currentSourceName = '';
         sampleN = n;
         sampleSuccesses = k;
         observedStat = k / n;
@@ -638,11 +656,8 @@ export function initOneSamplePage(config) {
         if (mechObservedStat) {
           const obsPct = n > 0 ? (k / n * 100) : 0;
           const obsFail = n - k;
-          mechObservedStat.innerHTML = `${k} of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-            <div class="mech-prop-bar" aria-label="${k} successes, ${obsFail} failures" style="margin-top:4px">
-              <div class="mech-prop-fill" style="width:${obsPct}%"></div>
-              <span class="mech-prop-label">${k} S / ${obsFail} F</span>
-            </div>`;
+          mechObservedStat.innerHTML = `<span class="obs-success-count">${k}</span> of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
+            ${propBarHTML(k, obsFail, { style: 'margin-top:4px' })}`;
         }
         propDataApi.triggerPostLoad();
         setPageTitle(baseTitle, currentSourceName, { n });
@@ -933,11 +948,19 @@ export function initOneSamplePage(config) {
 
       // Find existing prop bar fill and morph it
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
-      const label = mechObservedStat.querySelector('.mech-prop-label');
+      const bar = mechObservedStat.querySelector('.mech-prop-bar');
       if (fill && !prefersReducedMotion()) {
+        // The whole panel has to move to the null, not just the bar's width.
+        // It used to write one label reading "p₀ = 0.5" across the bar; when
+        // the counts moved inside their own regions that label stopped
+        // existing, so the bar slid to 50% while still saying "24 S / 10 F" —
+        // the OBSERVED counts under a null-shaped bar. (Jeff, 2026-09-29.)
+        // Under p₀ with n = 34 the null model is 17 and 17, and that is what
+        // the bar now says, along with the "17 of 34" in front of it.
         /** @type {HTMLElement} */ (fill).style.transition = 'width 700ms ease-out';
-        /** @type {HTMLElement} */ (fill).style.width = `${nullPct}%`;
-        if (label) label.textContent = `p₀ = ${p0}`;
+        updatePropBar(bar, nullSuccesses, nullFailures);
+        const lead = mechObservedStat.querySelector('.obs-success-count');
+        if (lead) lead.textContent = String(nullSuccesses);
         // Update stat text
         mechObservedStat.querySelector('.observed-highlight')?.replaceWith(
           Object.assign(document.createElement('span'), {
@@ -949,12 +972,8 @@ export function initOneSamplePage(config) {
         return 700;
       }
       // Fallback: instant update
-      const obsFailures = sampleN - nullSuccesses;
-      mechObservedStat.innerHTML = `Null model: p₀ = ${p0}
-        <div class="mech-prop-bar" aria-label="Null distribution: p₀ = ${p0}" style="margin-top:4px">
-          <div class="mech-prop-fill" style="width:${nullPct}%"></div>
-          <span class="mech-prop-label">p₀ = ${p0}</span>
-        </div>`;
+      mechObservedStat.innerHTML = `<span class="obs-success-count">${nullSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u2080 = ${p0}</span>)
+        ${propBarHTML(nullSuccesses, nullFailures, { style: 'margin-top:4px' })}`;
       syncNullToggle();
       return 0;
     } else {
@@ -1025,11 +1044,8 @@ export function initOneSamplePage(config) {
       if (mechObservedStat) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
-        mechObservedStat.innerHTML = `${sampleSuccesses} of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          <div class="mech-prop-bar" aria-label="${sampleSuccesses} successes, ${obsFailures} failures" style="margin-top:4px">
-            <div class="mech-prop-fill" style="width:${obsPct}%"></div>
-            <span class="mech-prop-label">${sampleSuccesses} S / ${obsFailures} F</span>
-          </div>`;
+        mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
+          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
       }
     } else {
       // One-mean: slide the dots back from the null-shifted positions to the
@@ -1124,6 +1140,7 @@ export function initOneSamplePage(config) {
 
     const isSingle = count === 1;
     lastResampleArr = null;
+    lastResampleIdx = null;
 
     if (isProp) {
       // Bernoulli(p₀) simulation
@@ -1143,10 +1160,7 @@ export function initOneSamplePage(config) {
 
       // Proportion bar for visual
       lastSimDetail += `
-        <div class="mech-prop-bar" aria-label="${lastSuccesses} successes, ${lastFailures} failures" style="margin-top:4px">
-          <div class="mech-prop-fill" style="width:${pct}%"></div>
-          <span class="mech-prop-label">${lastSuccesses} S / ${lastFailures} F</span>
-        </div>`;
+        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
 
       if (mechanismDescEl) {
         mechanismDescEl.textContent = `Simulate ${n} trials from null distribution (p\u2080 = ${p0})`;
@@ -1156,10 +1170,16 @@ export function initOneSamplePage(config) {
       // Shifted bootstrap
       const n = shiftedData.length;
       for (let i = 0; i < count; i++) {
-        const resampleArr = drawFromShiftedNull(shiftedData, rng).values;
+        // Keep the INDICES, not just the values. Without them the draw
+        // animation cannot say which observation was taken twice or never —
+        // this page showed dots flying with no marks at all, while
+        // bootstrap-mean (which kept them) showed both. (2026-09-28.)
+        const draw = drawFromShiftedNull(shiftedData, rng);
+        const resampleArr = draw.values;
         const simMean = mean(resampleArr);
         lastSimStat = simMean;
         lastResampleArr = /** @type {number[]} */ (resampleArr);
+        lastResampleIdx = draw.indices ?? null;
         allStats.push(simMean);
       }
       const hlClass = isSingle ? ' highlight-last' : '';

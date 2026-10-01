@@ -392,7 +392,7 @@ function renderResults(zStar) {
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel}
         (${escapeHTML(label1)} − ${escapeHTML(label2)}) is
-        between <strong>${pf(lower)}</strong> and <strong>${pf(upper)}</strong>.</p>
+        between <strong data-ci="lower">${pf(lower)}</strong> and <strong data-ci="upper">${pf(upper)}</strong>.</p>
       <p>${straddlesZero
         ? 'The interval <strong>contains 0</strong>, so "no difference" is among the plausible values.'
         : `The interval <strong>does not contain 0</strong> — every plausible value points the same way, toward ${lower > 0 ? escapeHTML(label1) : escapeHTML(label2)} having the larger proportion.`}</p>

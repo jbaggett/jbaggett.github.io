@@ -12,7 +12,8 @@
  * `values` to hand `renderBag`. This module never knows about the shift.
  */
 
-import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
+import { drawMechDotplot, showResampleDotplot, mechDisplayWidth } from './dotplot-resample.js';
+import { animateHistogramDraw } from './mechanisms/draw-animation.js';
 import { createSharedScale } from './mechanisms/entities.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { drawMiniChart } from './chart-utils.js';
@@ -39,6 +40,8 @@ export function createMeanMechanism(config = {}) {
   let view = config.initialView === 'dotplot' ? 'dotplot' : 'summary';
   /** @type {any} */ let bag = null;        // drawDotplot result (dotplot view)
   /** @type {HTMLElement[]} */ let bagChips = []; // chip elements (tiles view)
+  /** @type {HTMLElement|null} */ let bagMiniEl = null;  // the bag's mini histogram host
+  /** @type {number|null} */ let bagAnchor = null;       // the grid both panels are cut on
   // The bag and the resample must agree on dot size, or the eye reads two
   // differently-scaled pictures as comparable. That agreement used to hold
   // because both renders happened in this one closure — true by construction,
@@ -52,7 +55,7 @@ export function createMeanMechanism(config = {}) {
   const useDots = (/** @type {number} */ n) => n >= 2 && n <= MEAN_DOT_MAX && !useCards(n);
 
   /** Reset the dot-sizing on a new dataset so the radius is recomputed. */
-  function resetSizing() { scale.reset(); }
+  function resetSizing() { scale.reset(); bagMiniEl = null; bagAnchor = null; }
 
   /**
    * Render the "bag" panel. `values` already reflect observed-vs-null (the caller
@@ -72,12 +75,26 @@ export function createMeanMechanism(config = {}) {
       if (!scale.sizingMaxStack) {
         scale.fit(computeDots(values, { domain: opts.domain }).maxStack + 3, opts.domain);
       }
+      // Measure HERE, on the source panel, and hand the number to the resample.
+      // The resample's own panel is `hidden` until the first draw and measures
+      // zero, so measuring per-panel would give the two plots different scales
+      // on the very first render — the one render where they are side by side
+      // and being compared.
+      scale.width = mechDisplayWidth(el.parentElement);
       bag = drawMechDotplot(el, values, {
         domain: opts.domain, mean: meanVal, meanLabel: opts.meanLabel || 'x̄', sizingMaxStack: scale.sizingMaxStack,
+        displayWidth: scale.width,
       });
     } else {
       bag = null; bagChips = [];
-      drawMiniChart(el, values, { meanValue: meanVal, domain: opts.domain, label: opts.label || 'Sample distribution' });
+      // Remember where the bag's mini chart is, and the grid it was cut on, so
+      // the resample can be cut the same way and animated out of it.
+      bagMiniEl = el;
+      bagAnchor = meanVal;
+      drawMiniChart(el, values, {
+        meanValue: meanVal, domain: opts.domain, label: opts.label || 'Sample distribution',
+        binAnchor: meanVal,
+      });
     }
   }
 
@@ -99,6 +116,7 @@ export function createMeanMechanism(config = {}) {
     if (useDots(resample.length) && bag) {
       return showResampleDotplot(el, bag, resample, {
         domain: opts.domain, mean: stat, meanLabel: opts.meanLabel || 'x̄*', sizingMaxStack: scale.sizingMaxStack, animate,
+        displayWidth: scale.width,
         // Which observations this draw actually took — the animation cannot be
         // honest about repeats or misses without it (js/mechanisms/draws.js).
         indices: opts.indices,
@@ -106,8 +124,15 @@ export function createMeanMechanism(config = {}) {
     }
     drawMiniChart(el, resample, {
       domain: opts.domain, meanValue: stat, highlightMean: animate, label: opts.label || 'Resample',
+      // Same cut as the bag, or bar k here is not bar k there and the animation
+      // between them would be matching up bins that do not correspond.
+      binAnchor: bagAnchor ?? undefined,
     });
-    return 0;
+    if (!animate) return 0;
+    return animateHistogramDraw({
+      sourceSvg: bagMiniEl?.querySelector('svg.mech-minichart') ?? null,
+      targetSvg: el.querySelector('svg.mech-minichart'),
+    });
   }
 
   return {

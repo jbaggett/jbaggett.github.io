@@ -316,7 +316,7 @@ function renderResults(zStar) {
 
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel} is
-        between <strong>${p(lower)}</strong> and <strong>${p(upper)}</strong>.</p>
+        between <strong data-ci="lower">${p(lower)}</strong> and <strong data-ci="upper">${p(upper)}</strong>.</p>
       <p class="hint">Raise the confidence level and the interval grows; lower it and the interval shrinks —
         the critical value <em>z*</em> on the plot is what sets the width.</p>
     </div>

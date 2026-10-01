@@ -336,7 +336,7 @@ function renderResults(tStar) {
 
     <div class="interpretation" aria-live="polite">
       <p>We are <strong>${confPct}%</strong> confident that ${paramLabel} is
-        between <strong>${formatStat(lower, d)}</strong> and <strong>${formatStat(upper, d)}</strong> —
+        between <strong data-ci="lower">${formatStat(lower, d)}</strong> and <strong data-ci="upper">${formatStat(upper, d)}</strong> —
         that is, each 1-unit increase in ${escapeHTML(xName)} is associated with a change in
         ${escapeHTML(yName)} somewhere in that range.</p>
       <p>${straddlesZero
