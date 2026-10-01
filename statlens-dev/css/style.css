@@ -5356,9 +5356,20 @@ body[data-mech-layout="split"] .mech-tier--source .mechanism-panel,
 body[data-mech-layout="split"] .mech-tier--draw .mechanism-panel {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  /* `flex-start` here shrink-wrapped every child to its own content, so the
+     display inside a 436px panel drew itself at 225px and sat in the left
+     half — cards at 5 columns where 13 would fit, with a third of the panel
+     empty. The dotplots escaped it only because they were given an explicit
+     width. Stretch is what this always meant: the panel is the width, and the
+     display fills it. (Jeff, 2026-10-01.) */
+  align-items: stretch;
   gap: 0.2rem;
 }
+/* Text inside a stretched panel still reads from the left. */
+body[data-mech-layout="tiers"] .mech-tier--source .mechanism-panel > p,
+body[data-mech-layout="tiers"] .mech-tier--draw .mechanism-panel > p,
+body[data-mech-layout="split"] .mech-tier--source .mechanism-panel > p,
+body[data-mech-layout="split"] .mech-tier--draw .mechanism-panel > p { align-self: flex-start; }
 body[data-mech-layout="tiers"] .mech-tier--source .mech-minichart,
 body[data-mech-layout="tiers"] .mech-tier--draw .mech-minichart,
 body[data-mech-layout="split"] .mech-tier--source .mech-minichart,
