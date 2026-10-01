@@ -1483,33 +1483,35 @@ input[aria-invalid="true"] {
   border-color: var(--obs-success-edge);
 }
 
-/* Two stacks of dots (prototype, ?mechstyle=dots). Successes in one block,
-   failures in the other, so POSITION carries the outcome and the dot's darkness
-   is free to carry how many times it was drawn — see the note in
-   js/prop-bootstrap-mech.js for why colour alone cannot do both. */
-.pbm-stacks {
-  display: flex; gap: 1rem; justify-content: center; align-items: flex-start;
+/* One block of dots (prototype, ?mechstyle=dots): successes then failures,
+   CONTIGUOUS. Two separated stacks read as two groups being sampled
+   separately, and a one-proportion bootstrap draws from a single bag — so this
+   is the block the Sampling Distribution Lab uses for a population, split
+   amber/blue. Position still carries the outcome, which is what frees darkness
+   to carry the count; see the note in js/prop-bootstrap-mech.js. */
+.pbm-block {
   margin: 0.3rem auto;
   --mark-ratio: 1;
   --mark-radius: 50%;
   --mark-border: 0;
 }
-/* `flex: 1 1 0` so the two blocks SHARE the panel. Without it each one shrinks
-   to its content, which for a grid of auto-filled tracks means exactly one
-   column — 24 dots in a single 24-tall stripe. Third time today. */
-.pbm-stack { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.pbm-stack-count { font-size: 0.75rem; font-weight: 700; font-family: var(--font-mono, monospace); }
-.pbm-stack.is-success .pbm-stack-count { color: #7F5900; }
-.pbm-stack.is-failure .pbm-stack-count { color: #005D92; }
-.pbm-stack-body {
-  width: 100%;
+.pbm-block-counts {
+  text-align: center;
+  font-size: 0.75rem; font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  margin-bottom: 2px;
+}
+.pbm-block-counts .is-success { color: #7F5900; }
+.pbm-block-counts .is-failure { color: #005D92; }
+.pbm-block-counts .pbm-of { color: var(--ims-gray-text, #666); font-weight: 400; }
+.pbm-block-body {
   display: grid;
   grid-template-columns: repeat(auto-fill, var(--mark-w, 14px));
   gap: 2px; justify-content: center;
 }
 /* Each extra draw steps one down the ramp. Within a ramp the steps are ~1.4:1,
    enough to read as "darker" side by side; the OUTCOME is never carried by
-   darkness, only by which block the dot is in. */
+   darkness, only by where the dot sits in the block. */
 .pbm-dot { transition: background-color .25s ease-out; }
 .pbm-dot.pbm-success { background-image: none; }
 .pbm-dot.pbm-success[style*="--mark-depth: 2"],

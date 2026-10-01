@@ -197,9 +197,14 @@ function timing(style, order, total) {
  * @param {DrawStyle} opts.style
  * @param {SVGElement|null} [opts.targetSvg] - for the combine phase's mean marker
  * @param {() => void} [opts.onDone]
+ * @param {(el: Element) => void} [opts.onGhost] - empty one source mark
+ * @param {(el: Element, count: number) => void} [opts.onReveal] - fill one in,
+ *   given how many times it has now been taken. Supplying it makes the draw
+ *   ghosted and hands the whole "what a mark looks like" question to the caller.
  * @returns {number} total duration in ms, 0 if it declined to run
  */
-export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone }) {
+export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone,
+  onGhost, onReveal }) {
   if (prefersReducedMotion() || !indices?.length || !targetDots.length) return 0;
   if (indices.length !== targetDots.length) return 0;
   // A draw already in the air belongs to the previous click. Clear it, or a
@@ -235,8 +240,14 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     }
     const el = document.createElement('div');
     el.className = 'dpr-flyer';
+    // A flyer carries its source's own colour when the source has one. On the
+    // mean pages every dot is the same colour and this resolves to nothing, so
+    // they keep the orange. On the proportion stacks the mark's colour IS its
+    // outcome, and an orange dot landing in the blue stack would be saying
+    // something false about what was drawn. (2026-10-01.)
+    const fill = srcColour(src) || FLY_COLOR;
     el.style.cssText = `position:fixed;left:${sx - sz / 2}px;top:${sy - sz / 2}px;`
-      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${FLY_COLOR};`
+      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${fill};`
       + `z-index:1000;pointer-events:none;opacity:0;`;
     document.body.appendChild(el);
     /** @type {SVGElement} */ (dot).style.opacity = '0';
@@ -244,11 +255,16 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     flyers.push({ el, sx, sy, ex, ey, dot, src, index: indices[i], delay: t.delay, fly: t.fly });
   });
 
-  if (GHOSTED.has(style)) {
+  // A caller with its own vocabulary for "empty" and "filled in" supplies it.
+  // The proportion stacks do: their marks carry an outcome as well as a count,
+  // so the ramp they darken along depends on which stack the mark is in, which
+  // is not something this module should know. (2026-10-01.)
+  const ghosted = GHOSTED.has(style) || !!onReveal;
+  if (ghosted) {
     // Empty the source. Each pick fills one in (see `reveal`), so what is still
     // an outline when the draw finishes is what was never taken — nothing has
     // to be dimmed to say it.
-    for (const c of sourceCircles) ghost(c);
+    for (const c of sourceCircles) (onGhost ?? ghost)(c);
   } else {
     // Never taken: say so. On a real sample this is roughly a third of the dots,
     // and it is half of what "with replacement" means.
@@ -262,7 +278,7 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
   // the pure colour-depth encoding, kept clean so it can be judged on its own
   // against `rings` (Jeff, 2026-09-28). If it wins, it needs a non-colour
   // partner before it becomes the default.
-  if (style === 'burst') {
+  if (style === 'burst' && !onReveal) {
     takenCount.forEach((n, j) => { if (n > 1) badge(sourceCircles[j], n); });
   }
 
@@ -301,8 +317,10 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
         // A pick is worth seeing at its source, not only at its destination.
         if (f.src && style !== 'burst') pulse(f.src);
         // …and in the ghosted styles the pick is also what fills the dot in.
-        if (f.src && GHOSTED.has(style) && f.index >= 0) {
-          reveal(f.src, ++seen[f.index], style);
+        if (f.src && ghosted && f.index >= 0) {
+          const n = ++seen[f.index];
+          if (onReveal) onReveal(f.src, n);
+          else reveal(f.src, n, style);
         }
       }
       const e = ease(t);
@@ -732,6 +750,25 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
 
   requestAnimationFrame(step);
   return total;
+}
+
+/**
+ * The colour a flyer should be, taken from the mark it leaves.
+ *
+ * Only an HTML mark with a real background answers; an SVG circle carries its
+ * colour in `fill`, and on those pages every dot is the same colour anyway, so
+ * returning null there keeps the flyer orange as before.
+ *
+ * @param {Element|null} src
+ * @returns {string|null}
+ */
+function srcColour(src) {
+  if (!src || src.namespaceURI !== 'http://www.w3.org/1999/xhtml') return null;
+  try {
+    const bg = getComputedStyle(/** @type {HTMLElement} */ (src)).backgroundColor;
+    if (!bg || bg === 'transparent' || /rgba\(0, 0, 0, 0\)/.test(bg)) return null;
+    return bg;
+  } catch { return null; }
 }
 
 /** A source bar flashes as a draw leaves it — and keeps its height. */

@@ -16,6 +16,7 @@
  */
 
 import { prefersReducedMotion } from './chart-utils.js';
+import { animateResampleDraw } from './mechanisms/draw-animation.js';
 
 const MAX_MARBLES = 120;   // above this, the grid style falls back to bars
 const MAX_FLY = 60;        // cap flying clones per draw (large n fills the rest instantly)
@@ -40,23 +41,28 @@ function effStyle(style, n) {
   return (s !== 'bars') && n > MAX_MARBLES ? 'bars' : s;
 }
 
-// ── Two stacks of dots (prototype, ?mechstyle=dots) ──────────────────
+// ── One block of dots (prototype, ?mechstyle=dots) ───────────────────
 //
 // Jeff's idea: use DOTS for proportions, as the mean pages do, so the burst
-// vocabulary carries straight over — a dot darkens with the number of times it
-// was drawn, and what is never drawn stays pale.
+// vocabulary carries over — a dot darkens with the number of times it was
+// drawn, and what was never drawn stays pale.
 //
-// Why two stacks rather than the grid's one block. Darkening cannot carry the
-// count if colour is also carrying the outcome: measured on the Okabe-Ito pair,
-// amber-drawn-4× against blue-drawn-3× is a contrast of 1.03 — the same
-// luminance. Okabe-Ito is the CVD-safe pair precisely because it separates on
-// luminance as well as hue, so darkening spends the channel the safety rests
-// on. Splitting successes and failures into two blocks makes POSITION carry the
-// outcome; hue becomes redundant reinforcement, and darkness is free for the
-// count. It also shows p̂ as a height ratio and makes the successes countable.
+// ONE block, not two. The first version drew successes and failures as two
+// separated stacks, which Jeff rejected for a good reason: a gap between them
+// reads as two groups being sampled separately, and a one-proportion bootstrap
+// draws from a single bag of n. So the successes and failures are contiguous
+// regions of one grid, in the shape the Sampling Distribution Lab uses for a
+// population — a block split amber/blue.
+//
+// That still keeps POSITION carrying the outcome, which is what frees darkness
+// to carry the count: measured on the Okabe-Ito pair, amber-drawn-4× against
+// blue-drawn-3× is a contrast of 1.03, the same luminance. Okabe-Ito is the
+// CVD-safe pair precisely because it separates on luminance as well as hue, so
+// darkening spends the channel the safety rests on. A contiguous colour region
+// with a straight boundary says "which outcome" without relying on that.
 // (2026-10-01.)
 
-/** Dot diameter for a stack of n — a little larger than the marble grid's. */
+/** Dot diameter for a block of n — a little larger than the marble grid's. */
 function dotSize(n) {
   if (n <= 40) return 15;
   if (n <= 70) return 12;
@@ -65,7 +71,7 @@ function dotSize(n) {
 }
 
 /**
- * Two blocks of dots: successes, then failures.
+ * One block of dots: successes first, then failures, contiguous.
  *
  * @param {number[]} data binary (1 = success, 0 = failure)
  * @param {{label?: string}} [opts]
@@ -74,42 +80,48 @@ function dotSize(n) {
 function makeStacks(data, opts = {}) {
   const { s, f, n } = counts(data);
   const el = document.createElement('div');
-  el.className = 'pbm-stacks';
-  el.setAttribute('role', 'img');
-  if (opts.label) el.setAttribute('aria-label', `${opts.label}: ${s} successes, ${f} failures`);
+  el.className = 'pbm-block';
   el.style.setProperty('--mark-w', `${dotSize(n)}px`);
+
+  const head = document.createElement('div');
+  head.className = 'pbm-block-counts';
+  head.innerHTML = `<span class="is-success">${s}</span>`
+    + `<span class="pbm-of"> of ${n} </span>`
+    + `<span class="is-failure">${f}</span>`;
+
+  const body = document.createElement('div');
+  body.className = 'pbm-block-body';
+  // An explicit column count, roughly square, rather than filling the panel —
+  // one long wrapping row does not read as a population, and the amber/blue
+  // boundary lands mid-row. This is the marble grid's own shaping rule, which
+  // is what makes the block look like the Lab's population rectangle.
+  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3));
+  body.style.gridTemplateColumns = `repeat(${cols}, var(--mark-w, 14px))`;
+  body.setAttribute('role', 'img');
+  if (opts.label) body.setAttribute('aria-label', `${opts.label}: ${s} successes, ${f} failures`);
+
   /** @type {HTMLElement[]} */
   const slots = [];
-  // Index order is preserved ACROSS the two blocks — slot i is observation i —
-  // so a draw's index still names exactly one dot.
-  const blocks = { 1: stackEl('success', s), 0: stackEl('failure', f) };
-  for (let i = 0; i < n; i++) {
-    const v = data[i] === 1 ? 1 : 0;
+  // Index order is preserved: slot i is observation i, so a draw's index names
+  // exactly one dot. Successes are laid out first so the two colours form
+  // contiguous regions rather than a speckle.
+  const order = [];
+  for (let i = 0; i < n; i++) if (data[i] === 1) order.push(i);
+  for (let i = 0; i < n; i++) if (data[i] !== 1) order.push(i);
+  const byIndex = new Array(n);
+  for (const i of order) {
     const dot = document.createElement('span');
-    dot.className = `obs-mark pbm-dot ${v ? 'pbm-success' : 'pbm-failure'}`;
-    blocks[v].body.appendChild(dot);
-    slots.push(dot);
+    dot.className = `obs-mark pbm-dot ${data[i] === 1 ? 'pbm-success' : 'pbm-failure'}`;
+    body.appendChild(dot);
+    byIndex[i] = dot;
   }
-  el.appendChild(blocks[1].wrap);
-  el.appendChild(blocks[0].wrap);
+  for (let i = 0; i < n; i++) slots.push(byIndex[i]);
+
+  el.appendChild(head);
+  el.appendChild(body);
   return { el, slots };
 }
 
-/** One labelled block of a stack. */
-function stackEl(kind, count) {
-  const wrap = document.createElement('div');
-  wrap.className = `pbm-stack is-${kind}`;
-  const head = document.createElement('div');
-  head.className = 'pbm-stack-count';
-  head.textContent = String(count);
-  const body = document.createElement('div');
-  body.className = 'pbm-stack-body';
-  wrap.appendChild(head);
-  wrap.appendChild(body);
-  return { wrap, body };
-}
-
-// ── Slot builders (empty unless `data` given) ───────────────────────
 
 /**
  * Build a marble grid of n slots. Successes (amber) grouped first when filled.
@@ -247,27 +259,43 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
     d.classList.remove('pbm-untaken');
     d.style.removeProperty('--mark-depth');
   }
-  if (!bagDots.length) return 0;
+  // Without indices there is nothing honest to say about which observation went
+  // where, so the bag is left alone rather than marked by a guess.
+  if (!bagDots.length || !indices || !indices.length) return 0;
 
-  // How many times each observation was taken. Without indices there is nothing
-  // honest to say, so the bag is left alone rather than marked by a guess.
-  if (!indices || !indices.length) return 0;
-  const taken = new Array(bagDots.length).fill(0);
-  for (const j of indices) if (j >= 0 && j < taken.length) taken[j]++;
+  /** Empty a bag dot: an outline, so "not taken" stays a perceivable shape. */
+  const ghost = (/** @type {Element} */ el) => {
+    el.classList.add('pbm-untaken');
+    /** @type {HTMLElement} */ (el).style.removeProperty('--mark-depth');
+  };
+  /** Fill one in, darker each time it is taken again. */
+  const reveal = (/** @type {Element} */ el, /** @type {number} */ n) => {
+    el.classList.remove('pbm-untaken');
+    // 1 → the mark's own colour; each further draw steps down its ramp. Which
+    // ramp is decided by the stack the dot is in, which is why this lives here.
+    if (n > 1) /** @type {HTMLElement} */ (el).style.setProperty('--mark-depth', String(Math.min(n, 4)));
+  };
 
-  const MARK_MS = animate ? 520 : 0;
-  taken.forEach((k, j) => {
-    const dot = bagDots[j];
-    if (!dot) return;
-    const apply = () => {
-      if (k === 0) dot.classList.add('pbm-untaken');
-      // 1 → no darkening; each further draw goes one step down the ramp.
-      else dot.style.setProperty('--mark-depth', String(Math.min(k, 4)));
-    };
-    if (!animate) apply();
-    else setTimeout(apply, (j / bagDots.length) * MARK_MS);
+  if (!animate) {
+    const taken = new Array(bagDots.length).fill(0);
+    for (const j of indices) if (j >= 0 && j < taken.length) taken[j]++;
+    taken.forEach((k, j) => { if (k === 0) ghost(bagDots[j]); else reveal(bagDots[j], k); });
+    return 0;
+  }
+
+  // The DRAW itself, by the same animation the mean pages use — each dot flies
+  // from the observation it was actually taken from, and that observation fills
+  // in as it goes. Reusing it rather than writing a second one is the point:
+  // one animation, two kinds of data. (Jeff, 2026-10-01.)
+  // `built.slots` is in OBSERVATION order — slot i is draw i — which is exactly
+  // what the animation wants, since `indices[i]` is where draw i came from.
+  const slots = built.slots.filter(Boolean);
+
+  const ms = animateResampleDraw({
+    sourceCircles: bagDots, targetDots: slots, indices, style: 'burst',
+    onGhost: ghost, onReveal: reveal,
   });
-  return MARK_MS + 160;
+  return ms || 0;
 }
 
 /**
