@@ -42,10 +42,10 @@ export function cardGroupsHTML(g1, g2, opts) {
  * Card width for a pile of `n`.
  *
  * Full size up to 50 — the size everything was drawn at before — then down to
- * 10px at 75, which is where the cap now sits. Below 10px a card stops reading
- * as a card and the metaphor is gone anyway, which is the honest place to stop
- * rather than shrink indefinitely. (Prototype for Jeff, REQ-068 C: Opportunity
- * Cost is 75 per group and was refused by a cap of 50.)
+ * 10px at 75, and no smaller. Below 10px a card stops reading as a card and the
+ * metaphor is the point, so past 75 the pile grows in ROWS instead: at the
+ * 105-per-group cap that is seven rows of fifteen. (Jeff, 2026-10-01, after
+ * looking at the 75 case on dev — REQ-068 C.)
  *
  * @param {number} n - the larger group's size
  * @returns {number} width in px; height follows in CSS

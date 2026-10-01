@@ -83,11 +83,15 @@ export function initSimPage(config) {
   // Cards only read well for small samples; past this many in either group the
   // grid is an unreadable wall, so the toggle/card view is suppressed (size is
   // only known once data loads, so this is checked at data-load via cardsAllowed).
-  // 75 per group. Opportunity Cost is exactly 75 and was refused by a cap of
-  // 50, so the coursepack promised a shuffle the tool declined to draw and said
-  // nothing about why (Todd Will, REQ-068 C). Cards shrink from 50 upward
-  // (js/sim-card-mechanism.js cardWidth) so the piles still fit.
-  const CARD_MAX_GROUP = 75;
+  // 105 per group — seven rows of fifteen at the size cards settle to.
+  //
+  // Was 50, which refused Opportunity Cost at exactly 75: the coursepack
+  // promised a shuffle the tool declined to draw and said nothing about why
+  // (Todd Will, REQ-068 C). Cards shrink from 50 up to 10px at 75
+  // (js/sim-card-mechanism.js cardWidth) and then hold that size, so past 75
+  // the pile grows in ROWS rather than getting smaller — a card below 10px
+  // stops reading as a card, and the metaphor is the point. (Jeff, 2026-10-01.)
+  const CARD_MAX_GROUP = 105;
   /** @returns {boolean} Whether card view is allowed given the loaded sample sizes. */
   function cardsAllowed() {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
@@ -3561,6 +3565,13 @@ export function initSimPage(config) {
     // (Jeff, 2026-09-28, mammals n=54 → amtrak n=16.)
     if (originalContentEl) originalContentEl.innerHTML = '';
     if (resampleContentEl) resampleContentEl.innerHTML = '';
+    // …and the TWO-GROUP source panel, which has its own id and was missed when
+    // the one-sample panels were cleared on 2026-09-28. On the two-proportion
+    // randomization test the strip is shown at data-load rather than deferred,
+    // so switching to a dataset that path cannot handle left the previous
+    // study's groups on screen — 11/50 and 14/40 still sitting under an Avandia
+    // summary line — until a shuffle rebuilt them. (Jeff, 2026-10-01.)
+    if (mechOriginalContent) mechOriginalContent.innerHTML = '';
     meanMech.resetSizing();
     mechG1.resetSizing();
     mechG2.resetSizing();
