@@ -62,13 +62,28 @@ function effStyle(style, n) {
 // with a straight boundary says "which outcome" without relying on that.
 // (2026-10-01.)
 
-/** Dot diameter for a block of n — a little larger than the marble grid's. */
+/**
+ * Dot diameter for a block of n — a little larger than the marble grid's.
+ *
+ * A small sample has room to spare, so it gets dots big enough to hold a
+ * numeral: at n = 20 the block is 6 columns wide and would occupy a third of
+ * the panel at 15px. Above `DIGIT_MIN_W` the repeat count is printed inside
+ * the dot, the way the mean pages do it; below it the colour ramp carries the
+ * count alone. (Jeff, 2026-10-01.)
+ */
 function dotSize(n) {
-  if (n <= 40) return 15;
-  if (n <= 70) return 12;
+  if (n <= 24) return 22;
+  if (n <= 45) return 17;
+  if (n <= 70) return 13;
   if (n <= 100) return 10;
   return 8;
 }
+
+/** Below this diameter a digit inside the dot is a smudge, not a number. */
+const DIGIT_MIN_W = 13;
+
+/** How long the whole sample sits empty before the first draw leaves it. */
+const GHOST_HOLD_MS = 550;
 
 /**
  * One block of dots: successes first, then failures, contiguous.
@@ -257,15 +272,19 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
   const bagDots = /** @type {HTMLElement[]} */ (Array.from(bagEl.querySelectorAll('.pbm-dot')));
   for (const d of bagDots) {
     d.classList.remove('pbm-untaken');
+    d.textContent = '';
     d.style.removeProperty('--mark-depth');
   }
   // Without indices there is nothing honest to say about which observation went
   // where, so the bag is left alone rather than marked by a guess.
   if (!bagDots.length || !indices || !indices.length) return 0;
 
+  const digits = dotSize(data.length) >= DIGIT_MIN_W;
+
   /** Empty a bag dot: an outline, so "not taken" stays a perceivable shape. */
   const ghost = (/** @type {Element} */ el) => {
     el.classList.add('pbm-untaken');
+    el.textContent = '';
     /** @type {HTMLElement} */ (el).style.removeProperty('--mark-depth');
   };
   /** Fill one in, darker each time it is taken again. */
@@ -274,6 +293,13 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
     // 1 → the mark's own colour; each further draw steps down its ramp. Which
     // ramp is decided by the stack the dot is in, which is why this lives here.
     if (n > 1) /** @type {HTMLElement} */ (el).style.setProperty('--mark-depth', String(Math.min(n, 4)));
+    // …and when the dot is big enough, the count is also written in it, the
+    // way burst does on the mean pages. Both, not either: the digit is white,
+    // and white needs the darkened fill to clear 4.5:1 — on the undarkened
+    // amber it is 3.13:1. The darkening is what makes the number readable as
+    // well as a redundant signal that there is one. A bare numeral, no ×,
+    // matching `badge()`.
+    if (digits && n > 1) el.textContent = String(Math.min(n, 9));
   };
 
   if (!animate) {
@@ -293,7 +319,7 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
 
   const ms = animateResampleDraw({
     sourceCircles: bagDots, targetDots: slots, indices, style: 'burst',
-    onGhost: ghost, onReveal: reveal,
+    onGhost: ghost, onReveal: reveal, leadIn: GHOST_HOLD_MS,
   });
   return ms || 0;
 }

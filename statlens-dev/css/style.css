@@ -1514,6 +1514,20 @@ input[aria-invalid="true"] {
    darkness, only by where the dot sits in the block. */
 .pbm-dot { transition: background-color .25s ease-out; }
 .pbm-dot.pbm-success { background-image: none; }
+/* The repeat count, written inside the dot it counts, as burst does on the mean
+   pages (.dpr-badge). White on the DARKENED fill only: 4.46:1 on amber-2x and
+   7.05:1 on blue-2x, rising with each further step. The 1x colours are never
+   asked to hold a digit — a dot taken once has nothing to say — which matters,
+   because white on #C08700 is 3.13:1 and would fail as text. Small samples
+   only; js/prop-bootstrap-mech.js stops printing below DIGIT_MIN_W. */
+.pbm-dot:not(:empty) {
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  font-size: calc(var(--mark-w, 14px) * 0.62);
+  line-height: 1;
+  user-select: none;
+}
 .pbm-dot.pbm-success[style*="--mark-depth: 2"],
 .pbm-dot.pbm-success[style*="--mark-depth:2"] { background-color: #9D6F00; }
 .pbm-dot.pbm-success[style*="--mark-depth: 3"],

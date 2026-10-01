@@ -201,10 +201,15 @@ function timing(style, order, total) {
  * @param {(el: Element, count: number) => void} [opts.onReveal] - fill one in,
  *   given how many times it has now been taken. Supplying it makes the draw
  *   ghosted and hands the whole "what a mark looks like" question to the caller.
+ * @param {number} [opts.leadIn] - hold the whole source EMPTY for this many ms
+ *   before the first flyer launches. Only meaningful for a ghosted draw: the
+ *   emptying is instantaneous, so without a pause the first dots are already
+ *   filling back in before a reader has seen the sample go blank, and "every
+ *   dot starts untaken" never registers. (Jeff, 2026-10-01.)
  * @returns {number} total duration in ms, 0 if it declined to run
  */
 export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone,
-  onGhost, onReveal }) {
+  onGhost, onReveal, leadIn = 0 }) {
   if (prefersReducedMotion() || !indices?.length || !targetDots.length) return 0;
   if (indices.length !== targetDots.length) return 0;
   // A draw already in the air belongs to the previous click. Clear it, or a
@@ -223,6 +228,10 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     const x = (/** @type {number} */ i) => targetDots[i].getBoundingClientRect().left;
     order.sort((a, b) => x(a) - x(b));
   }
+
+  // The hold is worth nothing unless the source is actually being emptied, and
+  // a long one is just a stall, so it is bounded on both sides.
+  const lead = (GHOSTED.has(style) || !!onReveal) ? Math.min(Math.max(leadIn, 0), 1200) : 0;
 
   /** @type {Array<{el: HTMLElement, sx:number, sy:number, ex:number, ey:number, dot: Element, src: Element|null, index:number, delay:number, fly:number}>} */
   const flyers = [];
@@ -252,7 +261,7 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     document.body.appendChild(el);
     /** @type {SVGElement} */ (dot).style.opacity = '0';
     const t = timing(style, rank, targetDots.length);
-    flyers.push({ el, sx, sy, ex, ey, dot, src, index: indices[i], delay: t.delay, fly: t.fly });
+    flyers.push({ el, sx, sy, ex, ey, dot, src, index: indices[i], delay: t.delay + lead, fly: t.fly });
   });
 
   // A caller with its own vocabulary for "empty" and "filled in" supplies it.
