@@ -1526,11 +1526,22 @@ input[aria-invalid="true"] {
 .pbm-dot.pbm-failure[style*="--mark-depth:3"] { background-color: #004B75; }
 .pbm-dot.pbm-failure[style*="--mark-depth: 4"],
 .pbm-dot.pbm-failure[style*="--mark-depth:4"] { background-color: #003959; }
-/* Never drawn: an outline, not a fade — the same choice the ghosted draw styles
-   make, so "not selected" stays a perceivable shape rather than a faint one. */
-.pbm-dot.pbm-untaken {
+/* Never drawn: an outline, not a fade — so "not selected" stays a perceivable
+   shape rather than a faint one. The outline keeps the dot's OWN colour family:
+   an undrawn success is pale amber ringed in amber, an undrawn failure pale blue
+   ringed in blue. A single grey-blue ghost made undrawn successes look as if
+   they had changed sides. (Jeff, 2026-10-01.)
+   Both rings clear the 3:1 that graphical elements need — amber 3.13:1, blue
+   5.19:1 against the panel. The blue ring used to be #7FA9BE at 2.52:1, which
+   did not, so this fixes that too. */
+.pbm-dot.pbm-untaken { background-image: none !important; }
+.pbm-dot.pbm-success.pbm-untaken {
+  background-color: #F7EEDA !important;
+  box-shadow: inset 0 0 0 1.4px #C08700;
+}
+.pbm-dot.pbm-failure.pbm-untaken {
   background-color: #EAF4F9 !important;
-  box-shadow: inset 0 0 0 1.2px #7FA9BE;
+  box-shadow: inset 0 0 0 1.4px #0072B2;
 }
 
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
