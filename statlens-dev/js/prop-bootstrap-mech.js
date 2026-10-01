@@ -34,10 +34,79 @@ function marbleSize(n) {
   return 9;
 }
 
-/** Resolve the effective style (grid falls back to bars when n is too large). */
+/** Resolve the effective style (grid/dots fall back to bars when n is too large). */
 function effStyle(style, n) {
-  const s = style === 'bars' ? 'bars' : 'grid';
-  return s === 'grid' && n > MAX_MARBLES ? 'bars' : s;
+  const s = (style === 'bars' || style === 'dots') ? style : 'grid';
+  return (s !== 'bars') && n > MAX_MARBLES ? 'bars' : s;
+}
+
+// ── Two stacks of dots (prototype, ?mechstyle=dots) ──────────────────
+//
+// Jeff's idea: use DOTS for proportions, as the mean pages do, so the burst
+// vocabulary carries straight over — a dot darkens with the number of times it
+// was drawn, and what is never drawn stays pale.
+//
+// Why two stacks rather than the grid's one block. Darkening cannot carry the
+// count if colour is also carrying the outcome: measured on the Okabe-Ito pair,
+// amber-drawn-4× against blue-drawn-3× is a contrast of 1.03 — the same
+// luminance. Okabe-Ito is the CVD-safe pair precisely because it separates on
+// luminance as well as hue, so darkening spends the channel the safety rests
+// on. Splitting successes and failures into two blocks makes POSITION carry the
+// outcome; hue becomes redundant reinforcement, and darkness is free for the
+// count. It also shows p̂ as a height ratio and makes the successes countable.
+// (2026-10-01.)
+
+/** Dot diameter for a stack of n — a little larger than the marble grid's. */
+function dotSize(n) {
+  if (n <= 40) return 15;
+  if (n <= 70) return 12;
+  if (n <= 100) return 10;
+  return 8;
+}
+
+/**
+ * Two blocks of dots: successes, then failures.
+ *
+ * @param {number[]} data binary (1 = success, 0 = failure)
+ * @param {{label?: string}} [opts]
+ * @returns {{el: HTMLElement, slots: HTMLElement[]}}
+ */
+function makeStacks(data, opts = {}) {
+  const { s, f, n } = counts(data);
+  const el = document.createElement('div');
+  el.className = 'pbm-stacks';
+  el.setAttribute('role', 'img');
+  if (opts.label) el.setAttribute('aria-label', `${opts.label}: ${s} successes, ${f} failures`);
+  el.style.setProperty('--mark-w', `${dotSize(n)}px`);
+  /** @type {HTMLElement[]} */
+  const slots = [];
+  // Index order is preserved ACROSS the two blocks — slot i is observation i —
+  // so a draw's index still names exactly one dot.
+  const blocks = { 1: stackEl('success', s), 0: stackEl('failure', f) };
+  for (let i = 0; i < n; i++) {
+    const v = data[i] === 1 ? 1 : 0;
+    const dot = document.createElement('span');
+    dot.className = `obs-mark pbm-dot ${v ? 'pbm-success' : 'pbm-failure'}`;
+    blocks[v].body.appendChild(dot);
+    slots.push(dot);
+  }
+  el.appendChild(blocks[1].wrap);
+  el.appendChild(blocks[0].wrap);
+  return { el, slots };
+}
+
+/** One labelled block of a stack. */
+function stackEl(kind, count) {
+  const wrap = document.createElement('div');
+  wrap.className = `pbm-stack is-${kind}`;
+  const head = document.createElement('div');
+  head.className = 'pbm-stack-count';
+  head.textContent = String(count);
+  const body = document.createElement('div');
+  body.className = 'pbm-stack-body';
+  wrap.appendChild(head);
+  wrap.appendChild(body);
+  return { wrap, body };
 }
 
 // ── Slot builders (empty unless `data` given) ───────────────────────
@@ -96,9 +165,10 @@ function fillSlots(el, n, slotClass, data) {
 /** Build a filled (static) representation in the given style. */
 function makeFilled(data, style, label) {
   const n = data.length;
-  return (effStyle(style, n) === 'bars'
-    ? makeBar(n, { data, label })
-    : makeGrid(n, { data, label })).el;
+  const st = effStyle(style, n);
+  if (st === 'bars') return makeBar(n, { data, label }).el;
+  if (st === 'dots') return makeStacks(data, { label }).el;
+  return makeGrid(n, { data, label }).el;
 }
 
 // ── Public API ──────────────────────────────────────────────────────
@@ -133,15 +203,71 @@ export function renderPropResample(container, resample, opts = {}) {
  * @param {HTMLElement} bagEl
  * @param {number[]} resample
  * @param {number[]} data - original sample
- * @param {{style?: 'grid'|'bars', animate?: boolean}} [opts]
+ * @param {{style?: 'grid'|'bars'|'dots', animate?: boolean, indices?: number[]}} [opts]
  * @returns {number} animation duration in ms
  */
 export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   if (!resampleEl) return 0;
-  const style = opts.style === 'bars' ? 'bars' : 'grid';
+  const style = (opts.style === 'bars' || opts.style === 'dots') ? opts.style : 'grid';
   const animate = !!opts.animate && !prefersReducedMotion() && !!bagEl;
+  if (style === 'dots') {
+    return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
+  }
   if (!animate) { renderPropResample(resampleEl, resample, { style }); return 0; }
   return animateEndsFill(resampleEl, bagEl, resample, data, style);
+}
+
+/**
+ * The dots prototype: mark the BAG with what the draw actually did, and build
+ * the resample beside it.
+ *
+ * The grid animation picks its source cell by arithmetic on the destination
+ * slot — `(slotIdx * 7 + 3) % pool.length` — which walks every marble once
+ * before repeating anything, so it draws a picture of sampling WITHOUT
+ * replacement. With the real indices a dot can say how many times it was taken,
+ * by getting darker, and a dot never taken stays pale. That is the mean pages'
+ * vocabulary, unchanged. (2026-10-01.)
+ *
+ * @param {HTMLElement} resampleEl
+ * @param {HTMLElement} bagEl
+ * @param {number[]} resample
+ * @param {number[]} data
+ * @param {number[]|null} indices - which observation each draw took
+ * @param {boolean} animate
+ * @returns {number} duration ms
+ */
+function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
+  resampleEl.innerHTML = '';
+  const built = makeStacks(resample, { label: 'Resample' });
+  built.el.classList.add('pbm-resample');
+  resampleEl.appendChild(built.el);
+
+  const bagDots = /** @type {HTMLElement[]} */ (Array.from(bagEl.querySelectorAll('.pbm-dot')));
+  for (const d of bagDots) {
+    d.classList.remove('pbm-untaken');
+    d.style.removeProperty('--mark-depth');
+  }
+  if (!bagDots.length) return 0;
+
+  // How many times each observation was taken. Without indices there is nothing
+  // honest to say, so the bag is left alone rather than marked by a guess.
+  if (!indices || !indices.length) return 0;
+  const taken = new Array(bagDots.length).fill(0);
+  for (const j of indices) if (j >= 0 && j < taken.length) taken[j]++;
+
+  const MARK_MS = animate ? 520 : 0;
+  taken.forEach((k, j) => {
+    const dot = bagDots[j];
+    if (!dot) return;
+    const apply = () => {
+      if (k === 0) dot.classList.add('pbm-untaken');
+      // 1 → no darkening; each further draw goes one step down the ramp.
+      else dot.style.setProperty('--mark-depth', String(Math.min(k, 4)));
+    };
+    if (!animate) apply();
+    else setTimeout(apply, (j / bagDots.length) * MARK_MS);
+  });
+  return MARK_MS + 160;
 }
 
 /**

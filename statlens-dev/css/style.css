@@ -1483,6 +1483,54 @@ input[aria-invalid="true"] {
   border-color: var(--obs-success-edge);
 }
 
+/* Two stacks of dots (prototype, ?mechstyle=dots). Successes in one block,
+   failures in the other, so POSITION carries the outcome and the dot's darkness
+   is free to carry how many times it was drawn — see the note in
+   js/prop-bootstrap-mech.js for why colour alone cannot do both. */
+.pbm-stacks {
+  display: flex; gap: 1rem; justify-content: center; align-items: flex-start;
+  margin: 0.3rem auto;
+  --mark-ratio: 1;
+  --mark-radius: 50%;
+  --mark-border: 0;
+}
+/* `flex: 1 1 0` so the two blocks SHARE the panel. Without it each one shrinks
+   to its content, which for a grid of auto-filled tracks means exactly one
+   column — 24 dots in a single 24-tall stripe. Third time today. */
+.pbm-stack { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.pbm-stack-count { font-size: 0.75rem; font-weight: 700; font-family: var(--font-mono, monospace); }
+.pbm-stack.is-success .pbm-stack-count { color: #7F5900; }
+.pbm-stack.is-failure .pbm-stack-count { color: #005D92; }
+.pbm-stack-body {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--mark-w, 14px));
+  gap: 2px; justify-content: center;
+}
+/* Each extra draw steps one down the ramp. Within a ramp the steps are ~1.4:1,
+   enough to read as "darker" side by side; the OUTCOME is never carried by
+   darkness, only by which block the dot is in. */
+.pbm-dot { transition: background-color .25s ease-out; }
+.pbm-dot.pbm-success { background-image: none; }
+.pbm-dot.pbm-success[style*="--mark-depth: 2"],
+.pbm-dot.pbm-success[style*="--mark-depth:2"] { background-color: #9D6F00; }
+.pbm-dot.pbm-success[style*="--mark-depth: 3"],
+.pbm-dot.pbm-success[style*="--mark-depth:3"] { background-color: #7F5900; }
+.pbm-dot.pbm-success[style*="--mark-depth: 4"],
+.pbm-dot.pbm-success[style*="--mark-depth:4"] { background-color: #604400; }
+.pbm-dot.pbm-failure[style*="--mark-depth: 2"],
+.pbm-dot.pbm-failure[style*="--mark-depth:2"] { background-color: #005D92; }
+.pbm-dot.pbm-failure[style*="--mark-depth: 3"],
+.pbm-dot.pbm-failure[style*="--mark-depth:3"] { background-color: #004B75; }
+.pbm-dot.pbm-failure[style*="--mark-depth: 4"],
+.pbm-dot.pbm-failure[style*="--mark-depth:4"] { background-color: #003959; }
+/* Never drawn: an outline, not a fade — the same choice the ghosted draw styles
+   make, so "not selected" stays a perceivable shape rather than a faint one. */
+.pbm-dot.pbm-untaken {
+  background-color: #EAF4F9 !important;
+  box-shadow: inset 0 0 0 1.2px #7FA9BE;
+}
+
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
 /* Square, amber-and-blue. `.pbm-*` stay as the animation's handles. */
 .pbm-grid {

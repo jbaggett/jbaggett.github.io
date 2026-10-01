@@ -100,7 +100,11 @@ export function initSimPage(config) {
   // B2 prototype: one-proportion bootstrap mechanism. Source and target share a
   // representation — 'grid' (marble grids) or 'bars' (proportion bars).
   // Selectable via ?mechstyle= for A/B comparison on the dev site.
-  let propMechStyle = new URLSearchParams(location.search).get('mechstyle') === 'bars' ? 'bars' : 'grid';
+  let propMechStyle = (() => {
+    const v = new URLSearchParams(location.search).get('mechstyle');
+    // `dots` is the two-stack prototype (2026-10-01) — opt-in only.
+    return (v === 'bars' || v === 'dots') ? v : 'grid';
+  })();
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
   const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
@@ -2842,8 +2846,10 @@ export function initSimPage(config) {
     // B2 prototype: render the resample as marbles/dots; on +1, animate the
     // draw-with-replacement from the bag (marbles fill from the two ends).
     if (useNewPropMech && resampleContentEl) {
+      // The indices are what let the bag say which observations were drawn, and
+      // how many times. The grid animation never asked for them.
       return showPropResample(resampleContentEl, originalContentEl, resampleValues, data1,
-        { style: propMechStyle, animate });
+        { style: propMechStyle, animate, indices: lastResampleIndices ?? undefined });
     }
     const successes = resampleValues.filter(v => v === 1).length;
     const failures = resampleValues.length - successes;
