@@ -80,8 +80,13 @@ function fillSlots(el, n, slotClass, data) {
   const slots = [];
   for (let i = 0; i < n; i++) {
     const c = document.createElement('span');
-    if (s < 0) c.className = `${slotClass} pbm-empty`;
-    else c.className = `${slotClass} ` + (i < s ? 'pbm-success' : 'pbm-failure');
+    // `obs-mark` is the shared one-mark-per-observation component (geometry and
+    // colour, css/style.css). The `pbm-*` classes stay as the arc-fly
+    // animation's handles — only the marble grid takes the shared geometry; a
+    // bar cell is a slice of a bar, not a mark.
+    const base = slotClass === 'pbm-marble' ? `obs-mark ${slotClass}` : slotClass;
+    if (s < 0) c.className = `${base} pbm-empty`;
+    else c.className = `${base} ` + (i < s ? 'pbm-success' : 'pbm-failure');
     el.appendChild(c);
     slots.push(c);
   }

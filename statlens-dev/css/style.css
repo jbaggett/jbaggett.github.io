@@ -1432,15 +1432,66 @@ input[aria-invalid="true"] {
   .mech-bottom-bar { flex-direction: column; gap: 6px; }
 }
 
-/* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
-/* CVD-safe Okabe-Ito: success = amber (hatched), failure = blue. */
-.pbm-success { background-color: #C08700;
-  background-image: repeating-linear-gradient(45deg, #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px); }
-.pbm-failure { background-color: #0072B2; }
+/* ===== One mark per observation =====
 
-.pbm-grid { display: grid; gap: 2px; justify-content: center; margin: 0.3rem auto; }
-.pbm-marble { width: var(--pbm-marble, 14px); height: var(--pbm-marble, 14px);
-  border-radius: 3px; box-sizing: border-box; }
+   The marble grid and the shuffling cards are the same object drawn twice: one
+   mark per observation, success or failure. They arrived as two components with
+   two class families, two geometries and two colour schemes, so a reader meets
+   amber hatched squares on the bootstrap page and red cards on the
+   randomization test for the identical thing (measured 2026-09-30, see
+   docs/mechanism-survey-2026-09.md §3). What legitimately differs between those
+   pages is the MECHANISM — drawing with replacement vs re-allocating — and that
+   belongs in the animation, which already differs.
+
+   So geometry and colour both come from here now, and each context sets its own
+   values. Today they are set to what each page already looked like, so nothing
+   moves.
+
+   ┌─ FALL 2027: making them the same is THE `.mech-card-display` BLOCK BELOW ─┐
+   │ Delete its five `--obs-*` lines and the cards take the amber-and-blue     │
+   │ defaults from here — the CVD-safe Okabe-Ito pair, hatching as the         │
+   │ redundant non-colour cue. That is the colour change, and it is all of it. │
+   │                                                                          │
+   │ Its four `--mark-*` lines are SHAPE, not colour. Keep them and the cards  │
+   │ stay card-shaped in amber and blue; delete them too and both become the   │
+   │ grid's 15px square. Verified by deleting the rule in a live page: the     │
+   │ cards went to #C08700 hatched, and to 15×15 when the shape lines went     │
+   │ with it. Decide the shape separately from the colour. (Jeff, 2026-10-01.) │
+   └──────────────────────────────────────────────────────────────────────────┘ */
+:root {
+  --obs-success-bg: #C08700;
+  --obs-success-pattern: repeating-linear-gradient(45deg, #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px);
+  --obs-success-edge: transparent;
+  --obs-failure-bg: #0072B2;
+  --obs-failure-edge: transparent;
+}
+.obs-mark {
+  width: var(--mark-w, 14px);
+  height: calc(var(--mark-w, 14px) * var(--mark-ratio, 1));
+  border-radius: var(--mark-radius, 3px);
+  border: var(--mark-border, 0) solid transparent;
+  box-sizing: border-box;
+  background-color: var(--obs-failure-bg);
+  background-image: none;
+  border-color: var(--obs-failure-edge);
+}
+.obs-mark.is-success,
+.obs-mark.pbm-success,
+.obs-mark.card.is-success {
+  background-color: var(--obs-success-bg);
+  background-image: var(--obs-success-pattern);
+  border-color: var(--obs-success-edge);
+}
+
+/* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
+/* Square, amber-and-blue. `.pbm-*` stay as the animation's handles. */
+.pbm-grid {
+  display: grid; gap: 2px; justify-content: center; margin: 0.3rem auto;
+  --mark-w: var(--pbm-marble, 14px);
+  --mark-ratio: 1;
+  --mark-radius: 3px;
+  --mark-border: 0;
+}
 /* Empty resample slot: outline only, filled as marbles fly in */
 .pbm-empty { background: none; border: 1.5px dashed #b9c6cc; }
 
@@ -1451,6 +1502,10 @@ input[aria-invalid="true"] {
   margin: 0.4rem auto; border: 1px solid #b9c6cc; border-radius: 5px; overflow: hidden;
   background: #eef2f4; }
 .pbm-cell { flex: 1 1 0; min-width: 0; height: 100%; }
+/* A bar cell is a slice of a bar, not a mark, so it takes the colours without
+   the shared geometry. */
+.pbm-cell.pbm-success { background-color: var(--obs-success-bg); background-image: var(--obs-success-pattern); }
+.pbm-cell.pbm-failure { background-color: var(--obs-failure-bg); }
 .pbm-cell.pbm-empty { background: none; }
 
 /* Two-proportion bootstrap (B4): two stacked groups, each its own bag/resample */
@@ -1609,7 +1664,10 @@ input[aria-invalid="true"] {
   color: var(--ims-dark, #114B5F);
 }
 .mech-card-count { font-weight: 400; color: #595959; }
-.mech-card-display .card-sizes { display: contents; }
+/* `--card-w` is set inline HERE, per draw, from the larger pile — so the mark
+   width has to be read here too. Reading it on .mech-card-display (the parent)
+   silently fell back to 15px and undid the shrink at 75 cards. */
+.mech-card-display .card-sizes { display: contents; --mark-w: var(--card-w, 15px); }
 .mech-card-display .cards {
   /* A fixed-track grid rather than wrapping flex: with equal group widths both
      piles fit the same number of columns, so equal n always draws the same
@@ -1622,16 +1680,19 @@ input[aria-invalid="true"] {
   gap: 3px;
   justify-content: center;
 }
-.mech-card-display .card {
-  width: var(--card-w, 15px);
-  /* 19/15 — a card keeps its shape as it shrinks. */
-  height: calc(var(--card-w, 15px) * 1.267);
-  border-radius: 2px;
-  border: 1px solid #999;
+/* Card geometry and today's red/white, through the shared mark's variables.
+   Deleting this block in Fall 2027 is the whole colour change — see the box at
+   "One mark per observation". */
+.mech-card-display {
+  --mark-ratio: 1.267;   /* 19/15 — a card keeps its shape as it shrinks */
+  --mark-radius: 2px;
+  --mark-border: 1px;
+  --obs-success-bg: var(--ims-red, #F05133);
+  --obs-success-pattern: none;
+  --obs-success-edge: #999;
+  --obs-failure-bg: #f5f5f5;
+  --obs-failure-edge: #ccc;
 }
-/* Filled = success, outline = failure → distinct by fill, not colour alone */
-.mech-card-display .card.is-success { background: var(--ims-red, #F05133); }
-.mech-card-display .card.is-failure { background: #f5f5f5; border-color: #ccc; }
 .mech-card-legend {
   display: inline-flex;
   align-items: center;

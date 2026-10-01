@@ -67,7 +67,9 @@ function groupHTML(name, g, opts) {
   const succ = g.filter(v => v === 1).length;
   const successLabel = opts.successLabel || 'success';
   const cards = g
-    .map(v => `<div class="card ${v === 1 ? 'is-success' : 'is-failure'}"></div>`)
+    // `obs-mark` is the shared one-mark-per-observation component (geometry and
+    // colour, css/style.css); `card` stays as the shuffle animation's handle.
+    .map(v => `<div class="obs-mark card ${v === 1 ? 'is-success' : 'is-failure'}"></div>`)
     .join('');
   return `<div class="card-group">
       <h3>${name} <span class="mech-card-count">${succ}/${g.length}</span></h3>
