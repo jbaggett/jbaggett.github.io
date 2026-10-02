@@ -2307,7 +2307,12 @@ export function initSimPage(config) {
       } else {
         renderOriginalSample();
         if (lastResample.length && resampleContentEl) {
-          renderPropResample(resampleContentEl, lastResample, { style: propMechStyle });
+          renderPropResample(resampleContentEl, lastResample, {
+            style: propMechStyle,
+            // The aggregate view pins the observed proportion; a style switch
+            // has to carry it through or the reference line vanishes.
+            reference: data1.length ? mean(data1) : null,
+          });
         }
       }
     });

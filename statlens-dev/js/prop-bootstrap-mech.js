@@ -38,7 +38,15 @@ function marbleSize(n) {
 /** Resolve the effective style (grid/dots fall back to bars when n is too large). */
 function effStyle(style, n) {
   const s = (style === 'bars' || style === 'dots') ? style : 'grid';
-  return (s !== 'bars') && n > MAX_MARBLES ? 'bars' : s;
+  // Past the cap NO per-observation display survives, the cell bar included.
+  // It used to: `?mechstyle=bars` drew one span per observation at any n, so a
+  // sample of 5,000 built 5,000 DOM nodes to draw a picture with two regions in
+  // it. And at n = 224 the marks are 1.3px wide — a hatch, not a tally.
+  //
+  // Above the cap the display becomes the AGGREGATE: two regions and a
+  // boundary, which is scale-free. What is lost is the individual, and the
+  // individual stopped being legible well before this point. (2026-10-01.)
+  return n > MAX_MARBLES ? 'aggregate' : s;
 }
 
 // ── One block of dots (prototype, ?mechstyle=dots) ───────────────────
@@ -229,10 +237,70 @@ function fillSlots(el, n, slotClass, data) {
   return slots;
 }
 
+/**
+ * The aggregate display: two regions and a boundary, no per-observation marks.
+ *
+ * This is what a proportion IS, and it is the only display that does not get
+ * worse as n grows. Above `MAX_MARBLES` it replaces the grid, the block and the
+ * cell bar alike.
+ *
+ * On a resample it also carries a REFERENCE: the observed sample's boundary,
+ * pinned as a dashed line that does not move, with the change written under it.
+ * Without it a draw at n = 224 is a boundary shifting by 1.3% of the bar's
+ * width against nothing — "it's hard to track anything happening in the
+ * resamples since they don't change much" (Jeff, 2026-10-01). Measured against
+ * a line that stays put, the same 1.3% is a visible gap. The reference is the
+ * OBSERVED sample rather than the previous resample because that is what the
+ * bootstrap distribution is centred on and what the interval is built around.
+ *
+ * @param {number[]} data binary
+ * @param {string} [label]
+ * @param {number|null} [reference] observed proportion to pin, 0..1
+ * @returns {HTMLElement}
+ */
+function makeAggregate(data, label, reference = null) {
+  const { s, f, n } = counts(data);
+  const el = document.createElement('div');
+  el.className = 'pbm-aggregate';
+  el.innerHTML = propBarHTML(s, f, { className: 'pbm-aggbar' });
+  const bar = el.querySelector('.mech-prop-bar');
+  if (label && bar) bar.setAttribute('aria-label', `${label}: ${s} successes, ${f} failures`);
+  if (reference != null && bar && n > 0) {
+    const pct = Math.max(0, Math.min(1, reference)) * 100;
+    const ref = document.createElement('div');
+    ref.className = 'pbm-ref';
+    ref.style.left = `${pct}%`;
+    bar.appendChild(ref);
+    el.appendChild(deltaEl(s, n, reference));
+  }
+  return el;
+}
+
+/** "−3 successes · p̂ 0.147 → 0.134" — what moved, in counts and in the statistic. */
+function deltaEl(/** @type {number} */ s, /** @type {number} */ n, /** @type {number} */ reference) {
+  const was = Math.round(reference * n);
+  const d = s - was;
+  const el = document.createElement('div');
+  el.className = 'pbm-delta';
+  const sign = d > 0 ? '+' : d < 0 ? '\u2212' : '\u00B10';
+  const mag = d === 0 ? '' : String(Math.abs(d));
+  const word = Math.abs(d) === 1 ? 'success' : 'successes';
+  el.innerHTML = `<span class="pbm-delta-n">${sign}${mag} ${word}</span>`
+    + `<span class="pbm-delta-sep"> \u00B7 </span>`
+    + `<span class="pbm-delta-p">p\u0302 ${fmtProp(reference)} \u2192 ${fmtProp(s / n)}</span>`;
+  return el;
+}
+
+/** Three decimals, the precision these pages print a proportion at. */
+function fmtProp(/** @type {number} */ p) {
+  return p.toFixed(3);
+}
+
 /** Build a filled (static) representation in the given style. */
-function makeFilled(data, style, label, width = 0, layout = null) {
+function makeFilled(data, style, label, width = 0, layout = null, reference = null) {
   const n = data.length;
   const st = effStyle(style, n);
+  if (st === 'aggregate') return makeAggregate(data, label, reference);
   if (st === 'bars') return makeBar(n, { data, label }).el;
   if (st === 'dots') return makeStacks(data, { label, width, layout: layout ?? undefined }).el;
   return makeGrid(n, { data, label }).el;
@@ -270,7 +338,8 @@ export function renderPropBag(container, data, opts = {}) {
 export function renderPropResample(container, resample, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
-  const el = makeFilled(resample, opts.style, 'Resample', usableWidth(container), opts.layout ?? null);
+  const el = makeFilled(resample, opts.style, 'Resample', usableWidth(container),
+    opts.layout ?? null, opts.reference ?? null);
   el.classList.add('pbm-resample');
   container.appendChild(el);
 }
@@ -287,13 +356,68 @@ export function renderPropResample(container, resample, opts = {}) {
  */
 export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   if (!resampleEl) return 0;
-  const style = (opts.style === 'bars' || opts.style === 'dots') ? opts.style : 'grid';
+  // Through `effStyle`, as the bag is: it is what retires a per-mark display
+  // when n outgrows it. Branching on the raw style skipped that, so at n = 224
+  // the original sample drew a bar and the resample beside it drew 224 dots —
+  // the two panels of one comparison in two different languages.
+  // (Jeff, 2026-10-01.)
+  const style = effStyle(opts.style, resample.length);
   const animate = !!opts.animate && !prefersReducedMotion() && !!bagEl;
+  // The observed proportion, which the aggregate view pins as its reference.
+  const reference = data.length ? counts(data).s / data.length : null;
+  if (style === 'aggregate') {
+    return showAggregateDraw(resampleEl, resample, reference, animate);
+  }
   if (style === 'dots') {
     return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
   }
   if (!animate) { renderPropResample(resampleEl, resample, { style }); return 0; }
   return animateEndsFill(resampleEl, bagEl, resample, data, style);
+}
+
+/**
+ * The aggregate draw: the boundary leaves the pinned observed line and settles
+ * at the resample's proportion.
+ *
+ * It STARTS at the reference rather than at zero or at wherever the last
+ * resample left it. That is the whole of the animation's argument: this draw
+ * came from that sample, and here is how far it got. A width that simply
+ * appears says nothing about where it came from, and a width that grows from
+ * zero says something false — the resample was not built up from nothing.
+ *
+ * @param {HTMLElement} resampleEl
+ * @param {number[]} resample
+ * @param {number|null} reference observed proportion, 0..1
+ * @param {boolean} animate
+ * @returns {number} duration ms
+ */
+function showAggregateDraw(resampleEl, resample, reference, animate) {
+  const { s, n } = counts(resample);
+  resampleEl.innerHTML = '';
+  const el = makeAggregate(resample, 'Resample', reference);
+  el.classList.add('pbm-resample');
+  resampleEl.appendChild(el);
+  if (!animate || reference == null || n === 0) return 0;
+
+  const bar = el.querySelector('.mech-prop-bar');
+  const fill = /** @type {HTMLElement|null} */ (bar?.querySelector('.mech-prop-fill'));
+  if (!fill) return 0;
+
+  const AGG_MS = 620;
+  const from = Math.max(0, Math.min(1, reference)) * 100;
+  fill.style.transition = 'none';
+  fill.style.width = `${from}%`;
+  const delta = /** @type {HTMLElement|null} */ (el.querySelector('.pbm-delta'));
+  if (delta) { delta.style.opacity = '0'; delta.style.transition = `opacity 240ms ease ${AGG_MS - 180}ms`; }
+  // One frame at the reference, so the move is seen to START there.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      fill.style.transition = `width ${AGG_MS}ms cubic-bezier(.33,1,.68,1)`;
+      fill.style.width = `${(s / n) * 100}%`;
+      if (delta) delta.style.opacity = '1';
+    });
+  });
+  return AGG_MS + 120;
 }
 
 /**
