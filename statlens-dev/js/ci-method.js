@@ -219,10 +219,49 @@ export function ciMethodFromUrl() {
 }
 
 /**
+ * Split resamples into below / inside / above the interval — the same cut the
+ * chart uses to colour its dots, so what a pill claims is what a reader can
+ * count. Exported for tests.
+ *
+ * @param {number[]} stats
+ * @param {[number,number]} ci
+ * @returns {{leftProb: number, midProb: number, rightProb: number}}
+ */
+export function ciRegionMass(stats, ci) {
+  const n = stats.length;
+  if (n === 0) return { leftProb: 0, midProb: 0, rightProb: 0 };
+  const [lo, hi] = ci;
+  let left = 0, mid = 0, right = 0;
+  for (const v of stats) {
+    if (v < lo) left++;
+    else if (v > hi) right++;
+    else mid++;
+  }
+  return { leftProb: left / n, midProb: mid / n, rightProb: right / n };
+}
+
+/**
  * Three symmetric probability pills on a bootstrap distribution: the middle (blue)
  * is the fraction of resamples INSIDE the interval, each tail (gray) the fraction
  * beyond a bound. These report what actually happened, not the nominal level — in
  * ±SE mode that's the point (the shortcut lands near 95%, not exactly on it).
+ *
+ * The three regions are a PARTITION, cut the same way the chart colours its
+ * dots: the interval is closed, so a resample sitting exactly on a bound is
+ * inside it and blue. The tails used to be counted inclusively (`<=`, `>=`)
+ * while the shading was inclusive of the middle, with the middle taken as the
+ * leftover — so a spike landing exactly on a bound was counted in the tail and
+ * drawn blue at the same time. On a discrete statistic that is not an edge
+ * case but the normal case: at n = 62 with p-hat = 3/62 the lower bound comes
+ * out at exactly 0, and the 4.7% of resamples with no successes were being
+ * reported as a left tail with no grey dots anywhere to point at.
+ * (Jeff, 2026-10-01: "at the low end we have .0469, but there are no gray dots
+ * to point to".)
+ *
+ * The three now sum to 1 by construction, and every dot a pill counts is a dot
+ * the reader can find. The consequence is worth seeing rather than hiding: on a
+ * lumpy statistic a nominal 95% percentile interval really does hold ~99% of
+ * the resamples, because a whole atom sits inside the bound.
  *
  * @param {import('./chart-utils.js').ChartFrame} frame
  * @param {any} xScale
@@ -232,9 +271,7 @@ export function ciMethodFromUrl() {
 export function drawCiPills(frame, xScale, stats, ci) {
   const n = stats.length;
   if (n === 0) return;
-  const leftProb = stats.filter(v => v <= ci[0]).length / n;
-  const rightProb = stats.filter(v => v >= ci[1]).length / n;
-  const midProb = Math.max(0, 1 - leftProb - rightProb);
+  const { leftProb, midProb, rightProb } = ciRegionMass(stats, ci);
   const [dMin, dMax] = xScale.domain();
   const grp = d3Selection.select(frame.inner).select('.annotations');
   addProbPill(grp, frame, xScale, dMin, ci[0], leftProb, { isComplement: true });
