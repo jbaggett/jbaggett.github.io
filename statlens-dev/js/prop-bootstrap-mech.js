@@ -264,6 +264,7 @@ function makeAggregate(data, label, reference = null) {
   el.className = 'pbm-aggregate';
   el.innerHTML = propBarHTML(s, f, { className: 'pbm-aggbar' });
   const bar = el.querySelector('.mech-prop-bar');
+  if (bar) placeAggCounts(bar, s, f);
   if (label && bar) bar.setAttribute('aria-label', `${label}: ${s} successes, ${f} failures`);
   if (reference != null && bar && n > 0) {
     const pct = Math.max(0, Math.min(1, reference)) * 100;
@@ -274,6 +275,68 @@ function makeAggregate(data, label, reference = null) {
     el.appendChild(deltaEl(s, n, reference));
   }
   return el;
+}
+
+/**
+ * Each count at the OUTER end of its own region, and out of the bar only if its
+ * own region cannot hold it.
+ *
+ * `propBarHTML`'s rule is a percentage — a region narrower than 18% drops BOTH
+ * counts below the bar — which is right for the panels it was written for and
+ * wrong here. "Room" is pixels of text against pixels of region, and the
+ * aggregate bar is wide: at n = 224 a 14.7% success region is still ~70px,
+ * plenty for "33 S", yet the percentage rule exiled both counts to a grey line
+ * underneath. (Jeff, 2026-10-01: "there's plenty of room to show the counts
+ * inside the bars".)
+ *
+ * So the decision is made per region and in pixels, after layout. A count that
+ * does not fit moves below the bar at its own end — in its own colour rather
+ * than grey, which is the other half of what was asked for — and the other one
+ * stays inside regardless. Centring is dropped too: pushed to the outer ends,
+ * the two counts sit at the extremes of the thing they are counting and the
+ * boundary between them is left clear.
+ *
+ * Scoped to the aggregate; the bars on the randomization pages keep the
+ * placement settled on 2026-09-29.
+ *
+ * @param {Element} bar the `.mech-prop-bar`
+ * @param {number} s
+ * @param {number} f
+ */
+function placeAggCounts(bar, s, f) {
+  const n = s + f;
+  const pct = n > 0 ? (s / n) * 100 : 0;
+  bar.parentElement?.querySelector('.mech-prop-aside')?.remove();
+  bar.querySelectorAll('.mech-prop-count').forEach(el => el.remove());
+  // The text sits in its own span. The count itself is a clipped flex box, so
+  // its `scrollWidth` is just its own width — it reports the region, never the
+  // text — and a fit test built on it evicts everything. The inner span is a
+  // flex item that keeps its natural width, which is the number to compare.
+  bar.insertAdjacentHTML('beforeend',
+    `<span class="mech-prop-count pbm-count is-success" style="width:${pct}%">`
+    + `<span class="pbm-count-t">${s} S</span></span>`
+    + `<span class="mech-prop-count pbm-count is-failure" style="left:${pct}%;width:${100 - pct}%">`
+    + `<span class="pbm-count-t">${f} F</span></span>`);
+}
+
+/**
+ * Measure, then evict what does not fit. Separate from `placeAggCounts` because
+ * it can only run once the bar is in the document and has a width.
+ * @param {Element|null} bar
+ */
+function fitAggCounts(bar) {
+  const el = /** @type {HTMLElement|null} */ (bar);
+  if (!el || !el.isConnected) return;
+  const barW = el.getBoundingClientRect().width;
+  if (!barW) return;
+  for (const c of el.querySelectorAll('.pbm-count')) {
+    const span = /** @type {HTMLElement} */ (c);
+    span.classList.remove('is-outside');
+    const region = barW * (parseFloat(span.style.width) || 0) / 100;
+    const text = span.querySelector('.pbm-count-t');
+    const w = text ? text.getBoundingClientRect().width : span.scrollWidth;
+    if (w + 12 > region) span.classList.add('is-outside');
+  }
 }
 
 /** "−3 successes · p̂ 0.147 → 0.134" — what moved, in counts and in the statistic. */
@@ -332,6 +395,7 @@ export function renderPropBag(container, data, opts = {}) {
   const el = makeFilled(data, opts.style, opts.label || 'Original sample', usableWidth(container));
   el.classList.add('pbm-bag');
   container.appendChild(el);
+  fitAggCounts(el.querySelector('.mech-prop-bar'));
 }
 
 /** Render a resample statically (no animation). */
@@ -342,6 +406,7 @@ export function renderPropResample(container, resample, opts = {}) {
     opts.layout ?? null, opts.reference ?? null);
   el.classList.add('pbm-resample');
   container.appendChild(el);
+  fitAggCounts(el.querySelector('.mech-prop-bar'));
 }
 
 /**
@@ -397,6 +462,7 @@ function showAggregateDraw(resampleEl, bagEl, resample, reference, animate) {
   const el = makeAggregate(resample, 'Resample', reference);
   el.classList.add('pbm-resample');
   resampleEl.appendChild(el);
+  fitAggCounts(el.querySelector('.mech-prop-bar'));
   if (!animate || n === 0) return 0;
 
   const bar = /** @type {HTMLElement|null} */ (el.querySelector('.mech-prop-bar'));

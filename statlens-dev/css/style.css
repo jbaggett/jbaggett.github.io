@@ -1624,6 +1624,32 @@ input[aria-invalid="true"] {
   100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .pbm-fleck { display: none; } }
+/* Each count pushed to the OUTER end of its region, so the two sit at the
+   extremes of what they count and the boundary between them is left clear. */
+/* Solid behind the glyphs. The hatch is a fine diagonal and 12px text sitting
+   on it is read through stripes; painting the region's own colour behind the
+   text alone keeps the hatch everywhere it is doing its job (saying "success"
+   without relying on hue) and takes it out from under the one place it hurts. */
+.pbm-aggbar .pbm-count-t {
+  flex: 0 0 auto; white-space: nowrap;
+  padding: 0 3px; border-radius: 2px;
+}
+.pbm-aggbar .pbm-count.is-success .pbm-count-t { background: var(--obs-success-bg, #C08700); }
+.pbm-aggbar .pbm-count.is-outside .pbm-count-t { background: none; padding: 0; }
+.pbm-aggbar .pbm-count.is-success { justify-content: flex-start; padding-left: 6px; }
+.pbm-aggbar .pbm-count.is-failure { justify-content: flex-end; padding-right: 6px; }
+/* …and a count whose own region cannot hold it drops below the bar at that same
+   end, in its OWN colour rather than the grey line both used to share. The
+   darker tints are what clear 4.5:1 on the panel: #C08700 is 3.13:1 and would
+   fail as text, #7F5900 is 6.30:1 and #005D92 is 7.05:1. The same pair the dot
+   block's header uses. */
+.pbm-aggbar .pbm-count.is-outside {
+  top: 100%; bottom: auto; height: 1.2em; margin-top: 3px;
+  overflow: visible; padding: 0;
+}
+.pbm-aggbar .pbm-count.is-success.is-outside { color: #7F5900; justify-content: flex-start; }
+.pbm-aggbar .pbm-count.is-failure.is-outside { color: #005D92; justify-content: flex-end; }
+.pbm-aggregate:has(.pbm-count.is-outside) { padding-bottom: 1.2em; }
 .pbm-delta {
   margin-top: 6px; text-align: center;
   font-family: var(--font-mono, monospace); font-size: 0.8rem;
