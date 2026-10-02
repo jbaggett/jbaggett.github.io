@@ -1436,9 +1436,9 @@ export function initOneSamplePage(config) {
       <p>Observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span></p>
       <p>Extreme count: ${extremeCount} of ${N} (${dirLabel})</p>
       <p>${pLine}</p>
-      ${extremeCount === 0 ? '' : `<p class="hint">The “±” is the 95% Monte-Carlo margin on
-         this estimate — <strong>more simulations → a tighter one</strong>. Once it stops
-         shrinking usefully, more clicking will not change your conclusion.</p>`}
+      ${extremeCount === 0 ? '' : `<p class="hint">Run it again and the p-value would shift by
+         about <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More simulations → tighter.</strong>
+         Once it stops shrinking usefully, more clicking will not change your conclusion.</p>`}
       <p class="interpretation">${extremeCount} of ${N} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
     `;
   }

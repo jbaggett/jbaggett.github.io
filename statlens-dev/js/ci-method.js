@@ -101,7 +101,7 @@ export function bcaCI(stats, thetaHat, jack, ciLevel) {
   const B = stats.length;
   const alpha = (100 - ciLevel) / 100;
   const pct = () => /** @type {[number, number]} */ ([quantile(stats, alpha / 2), quantile(stats, 1 - alpha / 2)]);
-  if (B < 2 || !jack || jack.length < 3) return { ci: pct(), z0: NaN, a: NaN, fellBack: true };
+  if (B < 2 || !jack || jack.length < 3) return { ci: pct(), z0: NaN, a: NaN, fellBack: true, levels: null };
 
   // Bias correction (strict "<", matching scipy/R).
   let below = 0;
@@ -114,15 +114,18 @@ export function bcaCI(stats, thetaHat, jack, ciLevel) {
   for (const ji of jack) { const d = jbar - ji; num += d * d * d; den += d * d; }
   const a = den === 0 ? 0 : num / (6 * Math.pow(den, 1.5));
 
-  if (!isFinite(z0) || !isFinite(a)) return { ci: pct(), z0, a, fellBack: true };
+  if (!isFinite(z0) || !isFinite(a)) return { ci: pct(), z0, a, fellBack: true, levels: null };
 
   const zLo = invNorm(alpha / 2), zHi = invNorm(1 - alpha / 2);
   const adj = (/** @type {number} */ z) => { const t = z0 + z; return normCDF(z0 + t / (1 - a * t)); };
   let a1 = adj(zLo), a2 = adj(zHi);
-  if (!isFinite(a1) || !isFinite(a2) || a1 >= a2) return { ci: pct(), z0, a, fellBack: true };
+  if (!isFinite(a1) || !isFinite(a2) || a1 >= a2) return { ci: pct(), z0, a, fellBack: true, levels: null };
   a1 = Math.min(Math.max(a1, 1e-4), 1 - 1e-4);
   a2 = Math.min(Math.max(a2, 1e-4), 1 - 1e-4);
-  return { ci: [quantile(stats, a1), quantile(stats, a2)], z0, a, fellBack: false };
+  // The adjusted cutoffs go out with the interval: the Monte-Carlo margin is a
+  // statement about the quantile INDEX, so it needs the level each end actually
+  // came from, not the nominal one.
+  return { ci: [quantile(stats, a1), quantile(stats, a2)], z0, a, fellBack: false, levels: [a1, a2] };
 }
 
 /** z for a confidence level, with z = 2 exactly at 95% (the "±2 SE" rule of thumb). */
@@ -216,6 +219,82 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
 export function ciMethodFromUrl() {
   const m = (new URLSearchParams(location.search).get('ci_method') || '').toLowerCase();
   return (m === 'se' || m === 'both' || m === 'bca') ? m : 'percentile';
+}
+
+/**
+ * How far each end of the interval would move if you ran the whole simulation
+ * again — the Monte-Carlo margin, in the data's own units.
+ *
+ * The randomization pages have said this about the p-value since REQ-031
+ * (`p ± 1.96·sqrt(p(1−p)/N)`) and the bootstrap pages said nothing, so the same
+ * idea was taught on eight pages and silently dropped on five. It is one idea
+ * either way: **a count out of B resamples is binomial.** For a p-value it is
+ * the count of extreme resamples. For a CI bound it is the INDEX of the
+ * quantile — the 2.5th percentile is the 25th of 1000, and resampling noise
+ * puts that index at 25 ± 10, so the bound could have been anywhere from the
+ * 15th to the 35th smallest resample. Read those two off the sorted array and
+ * the margin is already in the right units. (Jeff, 2026-10-02.)
+ *
+ * It works from the LEVEL each end came from, not from where the bound value
+ * happens to sit. Looking the value up instead was the first version and it is
+ * wrong in exactly the case worth being right about: on a discrete statistic a
+ * bound often lands on an atom, and the lookup returns the atom's top edge
+ * rather than the quantile's own index. On 3 of 62 at B = 10,000 that reported
+ * ±0.008 where the truth is 0 — the bound is pinned and no number of resamples
+ * will move it. BCa passes its own adjusted cutoffs, so its shifted ends need
+ * no special case.
+ *
+ * ±z·SE is not a quantile at all. Its ends are `mean(stats) ± z·sd(stats)`, and
+ * BOTH of those move: Var ≈ σ²/B + z²σ²/(2B). Using only the SE term — the
+ * second version — came out a consistent 0.82× of the truth, which is exactly
+ * sqrt(1/2)/sqrt(1/2 + 1/z²·…) says it should be.
+ *
+ * Every branch is checked against brute force: the spread of the bound over 400
+ * independent bootstrap runs. See tests/unit/ci-mc-margin.test.js.
+ *
+ * Returns null below 100 resamples, where the order statistics clamp to the
+ * ends of the array and the number would be noise reported as precision.
+ *
+ * @param {number[]} stats bootstrap statistics
+ * @param {number} ciLevel e.g. 95
+ * @param {{method?: string, levels?: [number,number]|null}} [opts]
+ * @returns {{lo: number, hi: number}|null} 95% margin on each end
+ */
+export function ciMonteCarloMargin(stats, ciLevel, opts = {}) {
+  const B = stats?.length ?? 0;
+  if (B < 100) return null;
+
+  if (opts.method === 'se') {
+    const z = zFor(ciLevel);
+    const m = 1.96 * sd(stats) * Math.sqrt((1 + (z * z) / 2) / B);
+    return { lo: m, hi: m };
+  }
+
+  const alpha = (100 - ciLevel) / 100;
+  const levels = opts.levels ?? [alpha / 2, 1 - alpha / 2];
+  const sorted = [...stats].sort((a, b) => a - b);
+  return { lo: quantileMargin(sorted, levels[0]), hi: quantileMargin(sorted, levels[1]) };
+}
+
+/**
+ * The margin for one bound: half the spread between the order statistics 1.96
+ * binomial SDs either side of the quantile's index.
+ *
+ * When one repeated value covers that whole span the spread is zero — the right
+ * answer, and a useful one: more resamples will not move this bound. That is
+ * the ordinary case on a discrete statistic.
+ *
+ * @param {number[]} sorted
+ * @param {number} q
+ * @returns {number}
+ */
+function quantileMargin(sorted, q) {
+  const B = sorted.length;
+  const k = B * q;
+  const spread = 1.96 * Math.sqrt(B * q * (1 - q));
+  const at = (/** @type {number} */ x) =>
+    sorted[Math.max(0, Math.min(B - 1, Math.round(x) - 1))];
+  return Math.max(0, (at(k + spread) - at(k - spread)) / 2);
 }
 
 /**

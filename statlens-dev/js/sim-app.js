@@ -22,7 +22,7 @@ import { drawSpike } from './spike.js';
 import { renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
-  drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1,
+  drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
 } from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem } from './page-utils.js';
@@ -4203,6 +4203,29 @@ export function initSimPage(config) {
     const interpLo = ciMethod === 'se' ? seLo : ciMethod === 'bca' ? bcaLo : ciLo;
     const interpHi = ciMethod === 'se' ? seHi : ciMethod === 'bca' ? bcaHi : ciHi;
 
+    // How much the interval is a guess about ITSELF. The randomization pages
+    // have carried this for the p-value since REQ-031 and the bootstrap pages
+    // said nothing, so the same idea — your answer is an estimate from B draws,
+    // and more draws sharpen it — was taught on eight pages and dropped on
+    // five. One line, same voice, no control. (Jeff, 2026-10-02.)
+    const mcMethod = ciMethod === 'se' ? 'se' : ciMethod === 'bca' ? 'bca' : 'percentile';
+    const mcLevels = ciMethod === 'bca' ? (computeBcaResult(stats, ciLevel)?.levels ?? null) : null;
+    const mc = ciMonteCarloMargin(stats, ciLevel, { method: mcMethod, levels: mcLevels });
+    let mcLine = '';
+    if (mc) {
+      const lo = fmt(mc.lo), hi = fmt(mc.hi);
+      // Below the precision the bounds are printed at there is no honest number
+      // to quote, and "±0.000" would read as "exact". On a discrete statistic
+      // this is the ordinary case: the bound sits on a repeated resample value.
+      const tiny = Number(lo) === 0 && Number(hi) === 0;
+      mcLine = tiny
+        ? `<p class="hint">Run it again and the ends would barely move at this precision —
+             they are already steady. (The simulation’s own wobble, not the parameter’s.)</p>`
+        : `<p class="hint">Run it again and the ends would shift by about <strong>±${lo}</strong>
+             and <strong>±${hi}</strong>. <strong>More resamples → tighter.</strong>
+             (The simulation’s own wobble, not the parameter’s.)</p>`;
+    }
+
     resultDiv.innerHTML = showReadout ? `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
       <p>${paramLabel}: ${fmt(m)}</p>
@@ -4210,6 +4233,7 @@ export function initSimPage(config) {
       ${dataSpreadContrast}
       ${ciBlock}
       ${bothNote}
+      ${mcLine}
       <p class="interpretation">We are ${ciPct}% confident that the ${ctxParam}${popPhrase} is between ${interpLo}${unitSuffix} and ${interpHi}${unitSuffix}.</p>
       ${stats.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}
     ` : `
@@ -4286,7 +4310,7 @@ export function initSimPage(config) {
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
-      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). The “±” is the 95% Monte-Carlo margin — <strong>more shuffles → a tighter estimate</strong>.</p>
+      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it would shift by about <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More shuffles → tighter.</strong></p>
       ${tieNote}
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     ` : `
