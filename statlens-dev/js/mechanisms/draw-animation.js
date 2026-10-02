@@ -376,7 +376,13 @@ function combineInto(els, overlays, dur, settle, onDone) {
     x: parseFloat(el.style.left) + el.offsetWidth / 2,
     y: parseFloat(el.style.top) + el.offsetHeight / 2,
   }));
-  const targetY = starts.reduce((s, p) => s + p.y, 0) / starts.length;
+  // ON the mean marker, both ways. The x came from the line and the y was the
+  // AVERAGE HEIGHT OF THE FLYERS — which is not a position that means anything:
+  // it is wherever the draw happened to leave its dots. The statistic has a
+  // place in this plot, the marker is drawn at it, and that is where the dot
+  // the student is about to watch fly should be sitting. (Jeff, 2026-10-02:
+  // "the dot [originates] in the wrong place".)
+  const targetY = box.top + box.height / 2;
   const t0 = performance.now();
 
   function step(now) {

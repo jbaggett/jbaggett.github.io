@@ -644,7 +644,20 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     sy = r.top + r.height / 2;
   } else {
     let effectiveSource = sourceEl;
-    const sourceRect = sourceEl.getBoundingClientRect();
+    // No parked dot — the draw either did not animate, or took long enough
+    // that the safety timer let go of it. The caller hands us the mechanism's
+    // numeric readout, which on a dotplot panel sits BELOW the plot, so the
+    // statistic appeared to set off from under the picture rather than from
+    // the place in it that it marks. If the panel draws a mean marker, start
+    // there instead — the fallback should land in the same place the handoff
+    // would have. (Jeff, 2026-10-02.)
+    const panel = sourceEl.closest('.mechanism-panel, .mech-tier');
+    const marker = panel?.querySelector('.overlays line');
+    if (marker) {
+      const mr = marker.getBoundingClientRect();
+      if (mr.width || mr.height) effectiveSource = /** @type {HTMLElement} */ (marker);
+    }
+    const sourceRect = effectiveSource.getBoundingClientRect();
     if (sourceRect.width === 0 && sourceRect.height === 0) {
       const strip = sourceEl.closest('.mechanism-strip');
       const summary = strip?.querySelector('.mechanism-collapsed-summary');
