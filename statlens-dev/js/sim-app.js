@@ -130,9 +130,29 @@ export function initSimPage(config) {
   // re-rendering it. Default is unchanged.
   applyRequestedLayout(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
     const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
+  // ── View: Individual | Aggregate, for the quantitative pages ────────
+  //
+  // The same two roles the proportion pages already name: one mark per
+  // observation, or the shape with the individuals gone. They were here all
+  // along under other names — "Tiles | Dotplots" on the one-sample mean,
+  // "Tiles | Histogram" everywhere else — which asked a reader to pick between
+  // two PICTURES rather than between what they wanted to see, and gave the two
+  // families different words for the same decision. (Jeff, 2026-10-02.)
+  //
+  // On the one-sample mean the individual role has two renderings, the dotplot
+  // and the value tiles, so that choice gets its own control rather than being
+  // flattened into this one. Everywhere else the role IS the rendering.
+  /** @type {'individual'|'aggregate'} */
+  let meanRole = 'individual';
+  /** The n above which one mark per observation stops being drawable here. */
+  const individualMax = () => isMeanOneSample ? MEAN_DOT_MAX : CHIP_THRESHOLD;
+  /** Whether there is a choice of role to offer at all. */
+  const individualAvailable = () => !config.proportion
+    && data1.length >= 2 && data1.length <= individualMax();
+
   /** True when the animated mean-dotplot mechanism should be used right now. */
   const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
-    && resampleViewMode !== 'summary';
+    && meanRole === 'individual' && resampleViewMode !== 'summary';
   /** @type {[number,number]|null} */
   let meanDomain = null;
   // The CI-for-a-mean dotplot uses the SAME shared controller as the one-mean
@@ -367,6 +387,10 @@ export function initSimPage(config) {
     // auto-default for large n anyway.
     const mv = (new URLSearchParams(location.search).get('mview') || '').toLowerCase();
     if (mv === 'tiles' || mv === 'summary') { resampleViewMode = 'summary'; resampleViewExplicit = true; }
+    // …and the role, by its own name. `aggregate` is what `histogram` always
+    // meant here; it is spelled the way the control now spells it.
+    if (mv === 'aggregate') { meanRole = 'aggregate'; resampleViewMode = 'histogram'; resampleViewExplicit = true; }
+    if (mv === 'individual') { meanRole = 'individual'; resampleViewExplicit = true; }
   }
   /** @type {number[]} */
   let lastResample = [];
@@ -1888,7 +1912,8 @@ export function initSimPage(config) {
     // toggle is re-decided whenever the source panel is drawn. Switching
     // datasets hides the strip and defers the redraw to the first generate,
     // which is also exactly when the stale toggle would become visible again.
-    if (useNewPropMech) ensurePropStyleToggle();
+    ensurePropStyleToggle();
+    syncRenderingToggle();
     originalContentEl.innerHTML = '';
 
     if (config.paired && data2.length > 0) {
@@ -2314,7 +2339,12 @@ export function initSimPage(config) {
    * (609 + 1,391) has to take the toggle with it. (Jeff, 2026-10-02.)
    */
   function ensurePropStyleToggle() {
-    if ((!useNewPropMech && !useNewPropMech2) || !mechanismStrip) return;
+    const forProps = useNewPropMech || useNewPropMech2;
+    // One control, both families. The proportion pages flip which DISPLAY the
+    // mechanism draws; the quantitative ones flip which ROLE the resample panel
+    // shows. Same question, same words, same place — which is the whole point
+    // of doing this rather than leaving each family its own vocabulary.
+    if ((!forProps && config.proportion) || !mechanismStrip) return;
     // Where the control can actually be SEEN. The collapse bar lives inside the
     // mechanism strip, and the tier layouts hide the strip — so building it
     // there gave ?mech=split and ?mech=tiers a toggle that existed, reported
@@ -2330,7 +2360,8 @@ export function initSimPage(config) {
 
     const biggest = Math.max(data1?.length ?? 0, data2?.length ?? 0);
     const existing = document.querySelector('.pbm-style-toggle');
-    if (!hasIndividualView(biggest)) {
+    const haveChoice = forProps ? hasIndividualView(biggest) : individualAvailable();
+    if (!haveChoice) {
       existing?.remove();
       // The PREFERENCE is deliberately left alone. `effStyle` already resolves
       // it to the aggregate at this size, so forcing the variable as well only
@@ -2342,9 +2373,10 @@ export function initSimPage(config) {
 
     const seg = document.createElement('div');
     seg.className = 'pbm-style-toggle';
-    const pressed = (/** @type {string} */ v) =>
-      String(v === 'dots' ? propMechStyle === 'dots' || propMechStyle === 'grid'
-        : propMechStyle === 'aggregate' || propMechStyle === 'bars');
+    const individual = forProps
+      ? (propMechStyle === 'dots' || propMechStyle === 'grid')
+      : meanRole === 'individual';
+    const pressed = (/** @type {string} */ v) => String(v === 'dots' ? individual : !individual);
     // The label sits OUTSIDE the segmented control: inside its border it reads
     // as a third, dead position.
     seg.innerHTML =
@@ -2358,6 +2390,23 @@ export function initSimPage(config) {
       const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-pstyle]');
       if (!btn) return;
       const want = btn.getAttribute('data-pstyle') === 'aggregate' ? 'aggregate' : 'dots';
+      if (!forProps) {
+        const role = want === 'aggregate' ? 'aggregate' : 'individual';
+        if (role === meanRole) return;
+        meanRole = role;
+        resampleViewExplicit = true;
+        for (const b of seg.querySelectorAll('button')) {
+          b.setAttribute('aria-pressed', String(b.getAttribute('data-pstyle')
+            === (role === 'aggregate' ? 'aggregate' : 'dots')));
+        }
+        // Aggregate has one rendering, so the Dots | Tiles choice goes away
+        // with it rather than sitting there meaning nothing.
+        syncRenderingToggle();
+        setResampleViewMode(role === 'aggregate' ? 'histogram' : resampleViewMode);
+        if (role !== 'aggregate') { renderOriginalSample(); if (lastResample.length) showResample(lastResample, false, false); }
+        syncUrl();
+        return;
+      }
       if (want === propMechStyle) return;
       propMechStyle = want;
       for (const b of seg.querySelectorAll('button')) {
@@ -3398,6 +3447,7 @@ export function initSimPage(config) {
     resampleViewMode = mode;
     if (btnSummary) btnSummary.setAttribute('aria-pressed', String(mode === 'summary'));
     if (btnHistogram) btnHistogram.setAttribute('aria-pressed', String(mode === 'histogram'));
+    syncRenderingToggle();
     // B1: the mean dotplot view shows the original as a dotplot too — re-render it
     // so the bag/chips switch with the view.
     if (isMeanOneSample) renderOriginalSample();
@@ -3414,28 +3464,37 @@ export function initSimPage(config) {
   // have their own Grid | Bar toggle, which is the one that does something.
   // (Jeff, 2026-10-01: "we still have the tiles | histogram toggle that doesn't
   // seem wired to anything".)
-  const viewToggleIsLive = !config.proportion;
+  // The bottom-bar control is now ONLY the choice of rendering inside the
+  // individual role — Dots or Tiles — which exists on the one-sample mean and
+  // nowhere else. On every other quantitative page "Tiles | Histogram" was the
+  // ROLE choice wearing the names of its two pictures, and that has moved to
+  // the View control beside Step 1, where the proportion pages keep theirs.
+  // (Jeff, 2026-10-02.)
+  const viewToggleIsLive = isMeanOneSample;
+  /** Hide the rendering choice when the role it belongs to is not showing. */
+  let syncRenderingToggle = () => {};
   if (resampleToggle) {
     const seg = document.createElement('div');
     seg.className = 'seg-control';
     seg.setAttribute('role', 'group');
     seg.setAttribute('aria-label', 'Resample view');
 
+    btnHistogram = /** @type {HTMLButtonElement} */ (document.createElement('button'));
+    btnHistogram.type = 'button';
+    btnHistogram.textContent = 'Dots';
+    btnHistogram.setAttribute('aria-pressed', 'true');
+
     btnSummary = /** @type {HTMLButtonElement} */ (document.createElement('button'));
     btnSummary.type = 'button';
     btnSummary.textContent = 'Tiles';
-    btnSummary.setAttribute('aria-pressed', 'true');
-
-    btnHistogram = /** @type {HTMLButtonElement} */ (document.createElement('button'));
-    btnHistogram.type = 'button';
-    // One-sample mean bootstrap labels the non-tiles view "Dotplots" (small n
-    // shows the animated dotplot; large n falls back to a histogram).
-    btnHistogram.textContent = isMeanOneSample ? 'Dotplots' : 'Histogram';
-    btnHistogram.setAttribute('aria-pressed', 'false');
+    btnSummary.setAttribute('aria-pressed', 'false');
 
     if (viewToggleIsLive) {
-      seg.appendChild(btnSummary);
+      // Dots leads: it is what the resample looks like and what hands its mean
+      // to the distribution. Tiles say WHICH values were drawn and how often,
+      // which is the second question, so it is one click away. (2026-09-27.)
       seg.appendChild(btnHistogram);
+      seg.appendChild(btnSummary);
     }
     // NB: do NOT add the `mech-view-toggle` class — the data-load handler removes
     // that class for non-card datasets (it manages the prop Bars/Cards toggle).
@@ -3469,6 +3528,15 @@ export function initSimPage(config) {
     if (viewToggleIsLive) {
       btnSummary.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('summary'); });
       btnHistogram.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('histogram'); });
+      // Aggregate has one rendering, so this choice goes away with the role
+      // rather than sitting there meaning nothing.
+      syncRenderingToggle = () => {
+        const show = meanRole === 'individual' && individualAvailable();
+        seg.hidden = !show;
+        btnHistogram.setAttribute('aria-pressed', String(resampleViewMode !== 'summary'));
+        btnSummary.setAttribute('aria-pressed', String(resampleViewMode === 'summary'));
+      };
+      syncRenderingToggle();
     }
   }
 

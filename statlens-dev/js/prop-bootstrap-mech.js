@@ -41,22 +41,25 @@ function counts(data) {
   return { s, f: data.length - s, n: data.length };
 }
 
-/** Pick a marble size that keeps the whole grid visible for sample size n. */
-function marbleSize(n) {
-  if (n <= 40) return 16;
-  if (n <= 70) return 13;
-  if (n <= 100) return 11;
-  return 9;
-}
-
-/** Resolve the effective style (grid/dots fall back to bars when n is too large). */
+/**
+ * Which of the two displays to draw.
+ *
+ * There are two, one per role: the dot BLOCK (individual — one mark per
+ * observation, which can say which were drawn and how often) and the AGGREGATE
+ * bar (two regions and a boundary, which does not get worse as n grows).
+ *
+ * There used to be four. The marble grid did the block's job in a second visual
+ * language, and the cell bar drew the aggregate the expensive way — one span
+ * per observation for a picture with two regions in it. Neither was reachable
+ * from the UI any more, and keeping them meant every change to the mechanism
+ * had to be made, and tested, in two dialects. They are retired here, and
+ * `?mechstyle=grid` and `?mechstyle=bars` resolve to the survivor that does
+ * their job, so older links and activities keep working. (Jeff, 2026-10-02:
+ * "grid (which we should probably deprecate)".)
+ */
 function effStyle(style, n) {
-  // 'dots' and 'aggregate' are what the Individual | Aggregate toggle asks for.
-  // 'grid' (marbles) and 'bars' (one cell per observation) are the earlier
-  // displays, still reachable by ?mechstyle= and still used by activities and
-  // specs that name them.
-  if (style === 'aggregate') return 'aggregate';
-  const s = (style === 'bars' || style === 'dots') ? style : 'grid';
+  if (style === 'aggregate' || style === 'bars') return 'aggregate';
+  const s = 'dots';
   // Past the cap NO per-observation display survives, the cell bar included.
   // It used to: `?mechstyle=bars` drew one span per observation at any n, so a
   // sample of 5,000 built 5,000 DOM nodes to draw a picture with two regions in
@@ -241,57 +244,6 @@ function makeStacks(data, opts = {}) {
 
 
 /**
- * Build a marble grid of n slots. Successes (amber) grouped first when filled.
- * @param {number} n
- * @param {{label?: string, data?: number[]}} [opts]
- * @returns {{el: HTMLElement, slots: HTMLElement[]}}
- */
-function makeGrid(n, opts = {}) {
-  const el = document.createElement('div');
-  el.className = 'pbm-grid';
-  el.setAttribute('role', 'img');
-  if (opts.label) el.setAttribute('aria-label', opts.label);
-  el.style.setProperty('--pbm-marble', `${marbleSize(n)}px`);
-  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3)); // roughly square grid
-  el.style.gridTemplateColumns = `repeat(${cols}, var(--pbm-marble))`;
-  return { el, slots: fillSlots(el, n, 'pbm-marble', opts.data) };
-}
-
-/**
- * Build a proportion bar of n cells. Successes (amber) on the left when filled.
- * @param {number} n
- * @param {{label?: string, data?: number[]}} [opts]
- * @returns {{el: HTMLElement, slots: HTMLElement[]}}
- */
-function makeBar(n, opts = {}) {
-  const el = document.createElement('div');
-  el.className = 'pbm-fillbar';
-  el.setAttribute('role', 'img');
-  if (opts.label) el.setAttribute('aria-label', opts.label);
-  return { el, slots: fillSlots(el, n, 'pbm-cell', opts.data) };
-}
-
-/** Append n slot spans to `el`; colour them if `data` is provided (else empty). */
-function fillSlots(el, n, slotClass, data) {
-  const s = data ? counts(data).s : -1;
-  /** @type {HTMLElement[]} */
-  const slots = [];
-  for (let i = 0; i < n; i++) {
-    const c = document.createElement('span');
-    // `obs-mark` is the shared one-mark-per-observation component (geometry and
-    // colour, css/style.css). The `pbm-*` classes stay as the arc-fly
-    // animation's handles — only the marble grid takes the shared geometry; a
-    // bar cell is a slice of a bar, not a mark.
-    const base = slotClass === 'pbm-marble' ? `obs-mark ${slotClass}` : slotClass;
-    if (s < 0) c.className = `${base} pbm-empty`;
-    else c.className = `${base} ` + (i < s ? 'pbm-success' : 'pbm-failure');
-    el.appendChild(c);
-    slots.push(c);
-  }
-  return slots;
-}
-
-/**
  * The aggregate display: two regions and a boundary, no per-observation marks.
  *
  * This is what a proportion IS, and it is the only display that does not get
@@ -416,11 +368,9 @@ function fmtProp(/** @type {number} */ p) {
 /** Build a filled (static) representation in the given style. */
 function makeFilled(data, style, label, width = 0, layout = null, reference = null) {
   const n = data.length;
-  const st = effStyle(style, n);
-  if (st === 'aggregate') return makeAggregate(data, label, reference);
-  if (st === 'bars') return makeBar(n, { data, label }).el;
-  if (st === 'dots') return makeStacks(data, { label, width, layout: layout ?? undefined }).el;
-  return makeGrid(n, { data, label }).el;
+  return effStyle(style, n) === 'aggregate'
+    ? makeAggregate(data, label, reference)
+    : makeStacks(data, { label, width, layout: layout ?? undefined }).el;
 }
 
 /** Usable width of a panel, 0 while it is hidden or not yet laid out. */
@@ -487,11 +437,7 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   if (style === 'aggregate') {
     return showAggregateDraw(resampleEl, bagEl, resample, reference, animate);
   }
-  if (style === 'dots') {
-    return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
-  }
-  if (!animate) { renderPropResample(resampleEl, resample, { style }); return 0; }
-  return animateEndsFill(resampleEl, bagEl, resample, data, style);
+  return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
 }
 
 /**
@@ -725,83 +671,6 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
     onGhost: ghost, onReveal: reveal, leadIn: GHOST_HOLD_MS,
   });
   return ms || 0;
-}
-
-/**
- * Build an empty resample (grid or bar), then fill inward from the two ends as
- * squares fly in from matching slots in the bag (drawn with replacement).
- * @returns {number} duration ms
- */
-function animateEndsFill(resampleEl, bagEl, resample, data, style) {
-  const n = resample.length;
-  const built = effStyle(style, n) === 'bars'
-    ? makeBar(n, { label: 'Resample' })
-    : makeGrid(n, { label: 'Resample' });
-  built.el.classList.add('pbm-resample');
-  resampleEl.innerHTML = '';
-  resampleEl.appendChild(built.el);
-  const slots = built.slots;
-
-  const bagCells = /** @type {HTMLElement[]} */ (Array.from(bagEl.querySelectorAll('.pbm-marble, .pbm-cell')));
-  const sBag = counts(data).s;
-  const successSrc = bagCells.slice(0, sBag);
-  const failureSrc = bagCells.slice(sBag);
-
-  // Assign each draw to a slot, filling inward from the two ends.
-  let left = 0, right = n - 1;
-  const steps = resample.map((v) => {
-    const slotIdx = v === 1 ? left++ : right--;
-    const pool = v === 1 ? successSrc : failureSrc;
-    const src = pool.length ? pool[(slotIdx * 7 + 3) % pool.length] : null;
-    return { v, slotIdx, src };
-  });
-  // Interleave the two ends so both advance together (sort by distance from an end).
-  steps.sort((a, b) => Math.min(a.slotIdx, n - 1 - a.slotIdx) - Math.min(b.slotIdx, n - 1 - b.slotIdx));
-
-  const host = bagEl.closest('.mechanism-strip') || document.body;
-  const hostRect = host.getBoundingClientRect();
-  const FLY = 320;
-  // Bound the total fill time regardless of n: small samples stagger ~34ms/cell;
-  // large samples compress so the whole fill still finishes within FILL_WINDOW.
-  const FILL_WINDOW = Math.min(1000, Math.max(1, n - 1) * 34);
-  const per = n > 1 ? FILL_WINDOW / (n - 1) : 0;
-  // Spread ~MAX_FLY flying clones across the sequence (don't fly all n for large n).
-  const cloneEvery = Math.max(1, Math.ceil(n / MAX_FLY));
-
-  steps.forEach((step, i) => {
-    const slot = slots[step.slotIdx];
-    const cls = step.v === 1 ? 'pbm-success' : 'pbm-failure';
-    const fly = step.src && (i % cloneEvery === 0);
-    setTimeout(() => {
-      if (!fly) { slot.classList.remove('pbm-empty'); slot.classList.add(cls); return; }
-      step.src.classList.add('pbm-pulse');
-      setTimeout(() => step.src.classList.remove('pbm-pulse'), 260);
-      const sr = step.src.getBoundingClientRect();
-      const dr = slot.getBoundingClientRect();
-      const clone = document.createElement('span');
-      clone.className = 'pbm-flyer ' + cls;
-      clone.style.left = `${sr.left - hostRect.left + sr.width / 2}px`;
-      clone.style.top = `${sr.top - hostRect.top + sr.height / 2}px`;
-      host.appendChild(clone);
-      const dx = (dr.left + dr.width / 2) - (sr.left + sr.width / 2);
-      const dy = (dr.top + dr.height / 2) - (sr.top + sr.height / 2);
-      // Arc the flyer up over the gap between bag and resample so it's easy to
-      // track (a parabolic hop rather than a straight slide).
-      const arc = Math.min(60, 24 + Math.abs(dx) * 0.06);
-      clone.animate([
-        { transform: 'translate(0, 0)' },
-        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - arc}px)`, offset: 0.5 },
-        { transform: `translate(${dx}px, ${dy}px)` },
-      ], { duration: FLY, easing: 'cubic-bezier(.45,.05,.4,1)', fill: 'forwards' });
-      setTimeout(() => {
-        clone.remove();
-        slot.classList.remove('pbm-empty');
-        slot.classList.add(cls);
-      }, FLY);
-    }, i * per);
-  });
-
-  return FILL_WINDOW + FLY + 80;
 }
 
 // ─── The counts on a proportion bar ─────────────────────────────────────

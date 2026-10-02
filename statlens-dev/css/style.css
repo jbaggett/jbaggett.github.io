@@ -1677,43 +1677,20 @@ input[aria-invalid="true"] {
 }
 
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
-/* Square, amber-and-blue. `.pbm-*` stay as the animation's handles. */
-.pbm-grid {
-  display: grid; gap: 2px; justify-content: center; margin: 0.3rem auto;
-  --mark-w: var(--pbm-marble, 14px);
-  --mark-ratio: 1;
-  --mark-radius: 3px;
-  --mark-border: 0;
-}
-/* Empty resample slot: outline only, filled as marbles fly in */
-.pbm-empty { background: none; border: 1.5px dashed #b9c6cc; }
-
-/* Proportion-bar style: a row of n full-height cells (successes left, failures
-   right), built one draw at a time. Cells are contiguous (no gap) so filled
-   same-colour runs read as one solid bar; empty cells show the gray track. */
-.pbm-fillbar { display: flex; gap: 0; height: 40px; max-width: 340px;
-  margin: 0.4rem auto; border: 1px solid #b9c6cc; border-radius: 5px; overflow: hidden;
-  background: #eef2f4; }
-.pbm-cell { flex: 1 1 0; min-width: 0; height: 100%; }
-/* A bar cell is a slice of a bar, not a mark, so it takes the colours without
-   the shared geometry. */
-.pbm-cell.pbm-success { background-color: var(--obs-success-bg); background-image: var(--obs-success-pattern); }
-.pbm-cell.pbm-failure { background-color: var(--obs-failure-bg); }
-.pbm-cell.pbm-empty { background: none; }
+/* The marble grid, the cell bar and their arc-fly animation lived here until
+   2026-10-02. Two displays do the work now — the dot block and the aggregate
+   bar, one per role — and the retired pair was unreachable from the UI while
+   still costing every change to the mechanism a second dialect to make it in.
+   `?mechstyle=grid` and `?mechstyle=bars` resolve to the survivors. */
 
 /* Two-proportion bootstrap (B4): two stacked groups, each its own bag/resample */
 .pbm-twogroup { display: flex; flex-direction: column; gap: 0.5rem; }
 .pbm-group { display: flex; flex-direction: column; }
 
-/* Pulse a source cell when it's drawn */
-.pbm-pulse { animation: pbm-pulse 300ms ease; box-shadow: 0 0 0 2px #1A1A1A; }
-@keyframes pbm-pulse { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
-
-/* Flying clone during a draw */
-.pbm-flyer { position: absolute; width: 11px; height: 11px; border-radius: 3px;
-  transform: translate(-50%, -50%); pointer-events: none; z-index: 30; }
-
 /* Segmented control for resample view toggle */
+/* `display: inline-flex` beats the user-agent `[hidden] { display: none }`, so
+   a hidden segmented control stayed on screen. */
+.seg-control[hidden] { display: none !important; }
 .seg-control {
   display: inline-flex;
   border: 1px solid var(--border);
