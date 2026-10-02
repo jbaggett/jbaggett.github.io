@@ -4218,12 +4218,15 @@ export function initSimPage(config) {
       // to quote, and "±0.000" would read as "exact". On a discrete statistic
       // this is the ordinary case: the bound sits on a repeated resample value.
       const tiny = Number(lo) === 0 && Number(hi) === 0;
+      // "Could", not "would": it is what re-running might do, not a prediction
+      // that it will. And short — the parenthetical spelling out that this is
+      // the simulation's wobble rather than the parameter's was a third line of
+      // text for a point the sentence already makes by saying what shifts.
+      // (Jeff, 2026-10-02.)
       mcLine = tiny
-        ? `<p class="hint">Run it again and the ends would barely move at this precision —
-             they are already steady. (The simulation’s own wobble, not the parameter’s.)</p>`
-        : `<p class="hint">Run it again and the ends would shift by about <strong>±${lo}</strong>
-             and <strong>±${hi}</strong>. <strong>More resamples → tighter.</strong>
-             (The simulation’s own wobble, not the parameter’s.)</p>`;
+        ? `<p class="hint">Run it again and the ends could barely move at this precision — already steady.</p>`
+        : `<p class="hint">Run it again and the ends could shift <strong>±${lo}</strong> and
+             <strong>±${hi}</strong>. <strong>More resamples → tighter.</strong></p>`;
     }
 
     resultDiv.innerHTML = showReadout ? `
@@ -4310,7 +4313,7 @@ export function initSimPage(config) {
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
-      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it would shift by about <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More shuffles → tighter.</strong></p>
+      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it could shift <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More shuffles → tighter.</strong></p>
       ${tieNote}
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     ` : `
