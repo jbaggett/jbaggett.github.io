@@ -366,7 +366,7 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   // The observed proportion, which the aggregate view pins as its reference.
   const reference = data.length ? counts(data).s / data.length : null;
   if (style === 'aggregate') {
-    return showAggregateDraw(resampleEl, resample, reference, animate);
+    return showAggregateDraw(resampleEl, bagEl, resample, reference, animate);
   }
   if (style === 'dots') {
     return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
@@ -391,33 +391,132 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
  * @param {boolean} animate
  * @returns {number} duration ms
  */
-function showAggregateDraw(resampleEl, resample, reference, animate) {
-  const { s, n } = counts(resample);
+function showAggregateDraw(resampleEl, bagEl, resample, reference, animate) {
+  const { s, f, n } = counts(resample);
   resampleEl.innerHTML = '';
   const el = makeAggregate(resample, 'Resample', reference);
   el.classList.add('pbm-resample');
   resampleEl.appendChild(el);
-  if (!animate || reference == null || n === 0) return 0;
+  if (!animate || n === 0) return 0;
 
-  const bar = el.querySelector('.mech-prop-bar');
+  const bar = /** @type {HTMLElement|null} */ (el.querySelector('.mech-prop-bar'));
   const fill = /** @type {HTMLElement|null} */ (bar?.querySelector('.mech-prop-fill'));
-  if (!fill) return 0;
+  if (!bar || !fill) return 0;
 
-  const AGG_MS = 620;
-  const from = Math.max(0, Math.min(1, reference)) * 100;
+  const sPct = (s / n) * 100, fPct = (f / n) * 100;
+
+  // ── Beat 1: the draw ──────────────────────────────────────────────
+  // Both regions grow in from the ends and meet where the boundary belongs,
+  // with an "undrawn" gap closing between them. The bar sorts its outcomes, so
+  // growing from the ends is what accumulation looks like here — it is the
+  // language `animateEndsFill` already gave the cell bar, carried to a display
+  // that has no cells to fill.
+  const gap = document.createElement('div');
+  gap.className = 'pbm-undrawn';
+  gap.style.left = '0%';
+  gap.style.width = '100%';
+  bar.appendChild(gap);
   fill.style.transition = 'none';
-  fill.style.width = `${from}%`;
+  fill.style.width = '0%';
+
+  // …and flecks leave the bag while it happens, so the draw has a source. Not
+  // one per observation: at n = 224 that is noise, and the resample's own marks
+  // were retired for the same reason. A couple of dozen says "from there, with
+  // replacement" without pretending to show 224 flights. Their COLOURS are the
+  // resample's own split, and each leaves a random point inside the matching
+  // region of the bag — which is what a draw actually is.
+  const flecks = Math.max(6, Math.min(22, Math.round(n / 10)));
+  const amber = Math.round(flecks * (s / n));
+  const src = bagBarGeometry(bagEl);
+  const dst = bar.getBoundingClientRect();
+  if (src) {
+    for (let i = 0; i < flecks; i++) {
+      const isS = i < amber;
+      const sx = src.x0
+        + (isS ? Math.random() * src.split
+               : src.split + Math.random() * (src.x1 - src.x0 - src.split));
+      const ex = dst.left + dst.width
+        * (isS ? Math.random() * (sPct / 100)
+               : (sPct / 100) + Math.random() * (fPct / 100));
+      const delay = Math.round((i / flecks) * (DRAW_MS * 0.6));
+      // Built at launch, not up front: creating all of them at t = 0 left two
+      // dozen dots sitting on the bag waiting their turn, which read as part of
+      // the bag rather than as something leaving it.
+      setTimeout(() => {
+        const t = document.createElement('div');
+        t.className = 'pbm-fleck';
+        // A little vertical scatter: launched dead level they arrive as a
+        // dotted rule between the panels rather than as separate draws.
+        const jy = (Math.random() - 0.5) * (dst.height * 0.7);
+        t.style.cssText = `left:${sx}px;top:${src.y + jy}px;`
+          + `background:${isS ? 'var(--obs-success-bg,#C08700)' : 'var(--obs-failure-bg,#0072B2)'};`
+          + `animation:pbm-fleck ${FLECK_MS}ms ease forwards;`;
+        document.body.appendChild(t);
+        // The fade lives in the keyframes so it holds full strength for most of
+        // the flight; a transition on opacity made every fleck faint by the
+        // time it had got anywhere.
+        requestAnimationFrame(() => {
+          t.style.transition = `transform ${FLECK_MS}ms cubic-bezier(.4,0,.55,1)`;
+          t.style.transform =
+            `translate(${ex - sx}px, ${dst.top + dst.height / 2 - src.y - jy}px)`;
+        });
+        setTimeout(() => t.remove(), FLECK_MS + 60);
+      }, delay);
+    }
+  }
+
+  // ── Beat 2: how far it moved ──────────────────────────────────────
+  // The reference and the change arrive AFTER the draw. During the draw there
+  // is nothing yet to compare; once the boundary has settled, the line drops in
+  // and the gap between them is the whole point.
+  const ref = /** @type {HTMLElement|null} */ (el.querySelector('.pbm-ref'));
   const delta = /** @type {HTMLElement|null} */ (el.querySelector('.pbm-delta'));
-  if (delta) { delta.style.opacity = '0'; delta.style.transition = `opacity 240ms ease ${AGG_MS - 180}ms`; }
-  // One frame at the reference, so the move is seen to START there.
+  // Hidden with NO transition declared yet. Setting both at once meant the
+  // jump to 0 was itself a (delayed) transition, which the jump back to 1
+  // cancelled before it ever started — so the line and the delta were simply
+  // visible the whole time and the second beat never happened.
+  for (const node of [ref, delta]) { if (node) node.style.opacity = '0'; }
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      fill.style.transition = `width ${AGG_MS}ms cubic-bezier(.33,1,.68,1)`;
-      fill.style.width = `${(s / n) * 100}%`;
-      if (delta) delta.style.opacity = '1';
+      // Gentle at both ends. The first try used `cubic-bezier(.33,1,.68,1)`,
+      // which put most of the travel in the first 200ms — the gap did not close,
+      // it snapped, and an accumulation that snaps is not an accumulation.
+      const ease = `cubic-bezier(.45,.05,.35,1)`;
+      fill.style.transition = `width ${DRAW_MS}ms ${ease}`;
+      fill.style.width = `${sPct}%`;
+      gap.style.transition = `left ${DRAW_MS}ms ${ease}, width ${DRAW_MS}ms ${ease}`;
+      gap.style.left = `${sPct}%`;
+      gap.style.width = '0%';
+      for (const node of [ref, delta]) {
+        if (!node) continue;
+        node.style.transition = `opacity ${REVEAL_MS}ms ease ${DRAW_MS - 60}ms`;
+        node.style.opacity = '1';
+      }
     });
   });
-  return AGG_MS + 120;
+  setTimeout(() => gap.remove(), DRAW_MS + 80);
+  return DRAW_MS + REVEAL_MS + 80;
+}
+
+/** How long the two ends take to meet, and the comparison to arrive after. */
+const DRAW_MS = 1150;
+const REVEAL_MS = 320;
+const FLECK_MS = 460;
+
+/**
+ * Where the bag's bar is on screen, and where its amber ends — so a fleck can
+ * leave a random point inside the region that matches what it represents.
+ * @param {HTMLElement|null} bagEl
+ * @returns {{x0:number, x1:number, y:number, split:number}|null}
+ */
+function bagBarGeometry(bagEl) {
+  const bar = bagEl?.querySelector?.('.mech-prop-bar');
+  if (!bar) return null;
+  const r = bar.getBoundingClientRect();
+  const fill = bar.querySelector('.mech-prop-fill');
+  const w = fill ? fill.getBoundingClientRect().width : 0;
+  return { x0: r.left, x1: r.right, y: r.top + r.height / 2, split: w };
 }
 
 /**

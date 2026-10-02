@@ -3338,6 +3338,17 @@ export function initSimPage(config) {
     if (lastResample.length > 0) showResample(lastResample, false, lastWasSingle);
   }
 
+  // Proportions have nothing to toggle between. `showResampleSummary` and
+  // `showResampleHistogram` both hand a one-sample proportion to
+  // `showResamplePropBar`, and a two-group one to `showTwoPropResample`, so the
+  // control sat on the page changing an `aria-pressed` and re-rendering the
+  // identical panel. (The comment at the view default already said as much —
+  // "Proportions use proportion bars in both views, so they are left alone" —
+  // without anyone taking the next step and removing the control.) These pages
+  // have their own Grid | Bar toggle, which is the one that does something.
+  // (Jeff, 2026-10-01: "we still have the tiles | histogram toggle that doesn't
+  // seem wired to anything".)
+  const viewToggleIsLive = !config.proportion;
   if (resampleToggle) {
     const seg = document.createElement('div');
     seg.className = 'seg-control';
@@ -3356,8 +3367,10 @@ export function initSimPage(config) {
     btnHistogram.textContent = isMeanOneSample ? 'Dotplots' : 'Histogram';
     btnHistogram.setAttribute('aria-pressed', 'false');
 
-    seg.appendChild(btnSummary);
-    seg.appendChild(btnHistogram);
+    if (viewToggleIsLive) {
+      seg.appendChild(btnSummary);
+      seg.appendChild(btnHistogram);
+    }
     // NB: do NOT add the `mech-view-toggle` class — the data-load handler removes
     // that class for non-card datasets (it manages the prop Bars/Cards toggle).
 
@@ -3379,14 +3392,18 @@ export function initSimPage(config) {
         host.insertBefore(bar, mechanismDescEl);
       }
       bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
-      bar.appendChild(seg);
+      if (viewToggleIsLive) bar.appendChild(seg);
       resampleToggle.remove();
-    } else {
+    } else if (viewToggleIsLive) {
       resampleToggle.replaceWith(seg);
+    } else {
+      resampleToggle.remove();
     }
 
-    btnSummary.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('summary'); });
-    btnHistogram.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('histogram'); });
+    if (viewToggleIsLive) {
+      btnSummary.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('summary'); });
+      btnHistogram.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('histogram'); });
+    }
   }
 
   // Re-render when the confidence level changes (box typing, or a preset pill).
