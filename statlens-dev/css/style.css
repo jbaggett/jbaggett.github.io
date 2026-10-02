@@ -1668,6 +1668,9 @@ input[aria-invalid="true"] {
    control is absent, not disabled, when n is past the point where a mark per
    observation can be drawn: there is no choice to offer. (Jeff, 2026-10-02.) */
 .pbm-style-toggle { display: inline-flex; align-items: center; gap: 0.4rem; }
+/* In a tier heading it sits at the far end, so the step's name still reads
+   first and the control is where the thing it controls is. */
+.mech-tier-head .pbm-style-toggle { margin-left: auto; font-weight: 400; }
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);

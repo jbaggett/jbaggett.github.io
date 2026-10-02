@@ -89,6 +89,37 @@ function effStyle(style, n) {
 // with a straight boundary says "which outcome" without relying on that.
 // (2026-10-01.)
 
+/**
+ * The bag's dots in OBSERVATION order, which is not the order they are in.
+ *
+ * `makeStacks` lays successes out first so the two colours form contiguous
+ * regions, and keeps a separate index-ordered array for exactly that reason.
+ * `showStackDraw` has only the rendered bag, read it with `querySelectorAll`,
+ * and got DOM order — so `indices[i]`, which names an OBSERVATION, picked the
+ * i-th dot on screen instead. Every mark landed on the wrong dot.
+ *
+ * It looked plausible: the multipliers still summed to n and the colours were
+ * still right, so the bag looked like a bag. What gave it away was adding them
+ * up — on medical_consultant the three amber dots carried x1, x4 and x2, seven
+ * successes drawn, above a resample reading 0 S, 62 F. (Jeff, 2026-10-02.)
+ *
+ * @param {HTMLElement|null} bagEl
+ * @returns {HTMLElement[]}
+ */
+function bagDotsByObservation(bagEl) {
+  const els = /** @type {HTMLElement[]} */ (
+    Array.from(bagEl?.querySelectorAll?.('.pbm-dot') ?? []));
+  const out = new Array(els.length);
+  for (const el of els) {
+    const i = Number(el.dataset.obs);
+    // Anything without the attribute: hand back what is there rather than
+    // silently dropping dots on the floor.
+    if (!Number.isInteger(i) || i < 0 || i >= els.length) return els;
+    out[i] = el;
+  }
+  return out.every(Boolean) ? out : els;
+}
+
 /** Below this diameter a digit inside the dot is a smudge, not a number. */
 const DIGIT_MIN_W = 13;
 
@@ -194,6 +225,10 @@ function makeStacks(data, opts = {}) {
   for (const i of order) {
     const dot = document.createElement('span');
     dot.className = `obs-mark pbm-dot ${data[i] === 1 ? 'pbm-success' : 'pbm-failure'}`;
+    // Which observation this dot IS. The array below has it, but a caller
+    // holding only the rendered bag has to read it back off the DOM — and the
+    // DOM is in success-then-failure order, not observation order.
+    dot.dataset.obs = String(i);
     body.appendChild(dot);
     byIndex[i] = dot;
   }
@@ -635,7 +670,7 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
   built.el.classList.add('pbm-resample');
   resampleEl.appendChild(built.el);
 
-  const bagDots = /** @type {HTMLElement[]} */ (Array.from(bagEl.querySelectorAll('.pbm-dot')));
+  const bagDots = bagDotsByObservation(bagEl);
   for (const d of bagDots) {
     d.classList.remove('pbm-untaken');
     d.textContent = '';

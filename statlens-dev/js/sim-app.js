@@ -2315,11 +2315,21 @@ export function initSimPage(config) {
    */
   function ensurePropStyleToggle() {
     if ((!useNewPropMech && !useNewPropMech2) || !mechanismStrip) return;
-    const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
+    // Where the control can actually be SEEN. The collapse bar lives inside the
+    // mechanism strip, and the tier layouts hide the strip — so building it
+    // there gave ?mech=split and ?mech=tiers a toggle that existed, reported
+    // itself present to a spec, and had zero width on screen. That is the same
+    // trap the Tiles/Dotplots control fell into on 2026-09-27, in the same
+    // element; the comment left there did not stop the next control repeating
+    // it, so this one tests for visibility rather than existence.
+    // In a tier layout it belongs beside STEP 1's heading, because what it
+    // switches is how the source and the draw are drawn. (Jeff, 2026-10-02.)
+    const bar = document.querySelector('.mech-tier--source .mech-tier-head')
+      ?? mechanismStrip.querySelector('.mechanism-collapse-bar');
     if (!bar) return;
 
     const biggest = Math.max(data1?.length ?? 0, data2?.length ?? 0);
-    const existing = bar.querySelector('.pbm-style-toggle');
+    const existing = document.querySelector('.pbm-style-toggle');
     if (!hasIndividualView(biggest)) {
       existing?.remove();
       // The PREFERENCE is deliberately left alone. `effStyle` already resolves
@@ -2370,7 +2380,10 @@ export function initSimPage(config) {
       }
     });
 
-    bar.insertBefore(seg, bar.firstChild);
+    // In the strip it leads the collapse bar; in a tier heading it trails the
+    // title, so "STEP 1  Original Sample" still reads first.
+    if (bar.classList.contains('mech-tier-head')) bar.appendChild(seg);
+    else bar.insertBefore(seg, bar.firstChild);
   }
 
   /**
