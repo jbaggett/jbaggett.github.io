@@ -2551,6 +2551,31 @@ input[aria-invalid="true"] {
   flex-direction: column;
   gap: 0.75rem;
 }
+/* In the tier layouts the result is inside Step 3 rather than in a grid cell
+   beside the chart, so it takes the tier's width and sits under the chart it
+   belongs to. The empty shell it came from collapses. */
+.mech-tier--distribution > #results { width: auto; margin-top: 0.5rem; }
+/* …and it reads ACROSS rather than down. In the sidebar the result has a tall
+   narrow cell and one fact per line is right; under a chart it has a wide short
+   one, and four stacked lines spend 219px saying four short things — enough to
+   push the answer off a 1296x880 laptop screen, which is the whole complaint.
+   Wrapped into a row it is ~85px and the chart and the number you read off it
+   are on screen together, which is what the layout is for. */
+.mech-tier--distribution #result-summary {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 0.15rem 1.15rem;
+  padding: 0.55rem 0.8rem;
+}
+.mech-tier--distribution #result-summary > p { margin: 0; }
+/* The sentence is a sentence: it gets its own line. */
+.mech-tier--distribution #result-summary > p.interpretation,
+.mech-tier--distribution #result-summary > .result-note,
+.mech-tier--distribution #result-summary > ul,
+.mech-tier--distribution #result-summary > table { flex-basis: 100%; }
+body[data-mech-layout] #chart-and-results:empty,
+body[data-mech-layout] #chart-and-results .app-body:not(:has(> *:not(.app-main))) {
+  display: none;
+}
 
 /* ===== Expert Mode ===== */
 /* Hide advanced controls in simple mode (default for intro students) */
@@ -4383,6 +4408,17 @@ body[data-mode="discover"] .present-only { display: none !important; }
   from { opacity: 0; transform: translateX(-50%) translateY(1rem); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+/* …and the page can scroll clear of it.
+   The toast is fixed to the bottom centre. On a phone the generate bar is the
+   LAST thing on the page in the tier layouts, so at full scroll the toast sat
+   on top of it — and since the page was already scrolled as far as it goes,
+   there was no way to move it out from under: +1 / +100 could not be pressed
+   at all while the toast was up. Reserving its height at the foot of the body
+   gives the scroll somewhere to go. The toast is appended to `body` by an
+   inline script repeated in 63 pages, so this is the one place that can see it
+   for all of them. (Found 2026-10-02 by a phone test that started timing out
+   on a click, after a layout change moved the bar 72px further down.) */
+body:has(> .update-toast) { padding-bottom: 5.5rem; }
 
 /* ═══════════════════════════════════════════════════════════════ */
 /* Embed mode — compact layout for iframe embedding in LMS       */
