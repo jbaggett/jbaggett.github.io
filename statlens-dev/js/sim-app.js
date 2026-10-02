@@ -191,7 +191,13 @@ export function initSimPage(config) {
   // B3: two-means bootstrap — show the actual resampling as a pair of dotplots with
   // pluck-and-fly, one shared mean mechanism per group (reusing the one-mean
   // controller). Falls back to the mini-histogram pair for large groups.
-  const isMeanTwoGroup = config.mode === 'bootstrap' && config.twoGroup && !config.proportion;
+  // The two-group DISPLAY — stacked dotplots on one scale — is about the data,
+  // not about what the page does to it. It was gated to bootstrap, so the
+  // randomization test for a difference in means drew the histogram pair at any
+  // n, including n = 9 per group where every observation could have been a dot.
+  // What differs between the two pages is the DRAW, and that is decided
+  // separately below. (2026-10-02.)
+  const isMeanTwoGroup = config.twoGroup && !config.proportion;
   const twoMeanDotActive = () => isMeanTwoGroup && data2.length > 0
     && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
     && data2.length >= 2 && data2.length <= MEAN_DOT_MAX;
@@ -2618,15 +2624,22 @@ export function initSimPage(config) {
     // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
     if (useNewPropMech2) return showTwoPropResample(g1, g2, highlight);
 
-    // B3: two-means bootstrap — pluck-and-fly resample dotplot per group.
+    // B3: two stacked dotplots per group.
     if (twoMeanDotActive()) {
       mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, true, false);
       const domain = computeTwoMeanDomain();
       const c1 = document.getElementById('mech-dot-resamp-1');
       const c2 = document.getElementById('mech-dot-resamp-2');
+      // The bootstrap's pluck-and-fly says "this dot was drawn from that one,
+      // and some were drawn twice". A shuffle has no such facts — every
+      // observation appears exactly once, in one group or the other — so it
+      // renders statically until the pool-and-deal animation exists, rather
+      // than borrowing a picture that means something else. (2026-10-02.)
+      const drawn = config.mode === 'bootstrap' && highlight;
+      const verb = config.mode === 'bootstrap' ? 'Resampled' : 'Shuffled';
       let ms = 0;
-      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group1Name}`, indices: lastRsIdx1 ?? undefined }));
-      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), highlight, { domain, meanLabel: 'x̄*', label: `Resampled ${group2Name}`, indices: lastRsIdx2 ?? undefined }));
+      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group1Name}`, indices: config.mode === 'bootstrap' ? (lastRsIdx1 ?? undefined) : undefined }));
+      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group2Name}`, indices: config.mode === 'bootstrap' ? (lastRsIdx2 ?? undefined) : undefined }));
       return ms;
     }
 
