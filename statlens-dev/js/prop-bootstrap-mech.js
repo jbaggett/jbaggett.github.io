@@ -62,25 +62,58 @@ function effStyle(style, n) {
 // with a straight boundary says "which outcome" without relying on that.
 // (2026-10-01.)
 
-/**
- * Dot diameter for a block of n — a little larger than the marble grid's.
- *
- * A small sample has room to spare, so it gets dots big enough to hold a
- * numeral: at n = 20 the block is 6 columns wide and would occupy a third of
- * the panel at 15px. Above `DIGIT_MIN_W` the repeat count is printed inside
- * the dot, the way the mean pages do it; below it the colour ramp carries the
- * count alone. (Jeff, 2026-10-01.)
- */
-function dotSize(n) {
-  if (n <= 24) return 22;
-  if (n <= 45) return 17;
-  if (n <= 70) return 13;
-  if (n <= 100) return 10;
-  return 8;
-}
-
 /** Below this diameter a digit inside the dot is a smudge, not a number. */
 const DIGIT_MIN_W = 13;
+
+const DOT_GAP = 2;
+/** Dot diameters tried, largest first. Quantised so the bag and the resample
+ *  land on the same size even when their panels differ by a few pixels. */
+const DOT_STEPS = [24, 22, 20, 18, 16, 14, 13, 12, 11, 10, 9, 8];
+/** How tall the block is allowed to get. The panel is a strip, not a page. */
+const BLOCK_H = 168;
+
+/**
+ * How to lay a block of n out in a panel `availW` px wide.
+ *
+ * The first version fixed the dot size by a table of n and made the block
+ * roughly square (`cols = sqrt(n) * 1.3`). Both halves of that were wrong in
+ * the same direction: at n = 62 it drew a 10-wide block of 17px dots, 188px
+ * across in a panel more than twice that — small dots with most of the panel
+ * empty beside them. (Jeff, 2026-10-01: "we could make the dots bigger by
+ * making wider rows, we've got plenty of room here".)
+ *
+ * So the width decides instead. Take the largest dot size whose columns fit
+ * across and whose rows fit down, then balance the rows so the last one is not
+ * a stub. A wide rectangle is also the shape the Sampling Distribution Lab
+ * uses for a population, which is the thing this block is meant to echo.
+ *
+ * Exported for tests: the arithmetic is the whole of the behaviour, and the
+ * cases worth pinning (a panel 120px wide, n = 120) are ones no page produces.
+ *
+ * @param {number} n
+ * @param {number} availW usable width in px; 0 when the panel is not on screen
+ * @returns {{cols: number, size: number}}
+ */
+export function blockLayout(n, availW) {
+  // Not measurable yet (hidden strip, detached node): a desktop panel's width,
+  // which is also what the two-group pages give each half.
+  const W = Math.max(availW || 0, 150) - 4;
+  let size = DOT_STEPS[DOT_STEPS.length - 1];
+  let cols = Math.max(1, Math.min(n, Math.floor((W + DOT_GAP) / (size + DOT_GAP))));
+  // …but not a single line, however much room there is. A block 4 dots wide
+  // for every 1 tall still reads as a rectangle; 10 in a row reads as a queue.
+  const widest = Math.max(1, Math.ceil(Math.sqrt(n * 4)));
+  for (const s of DOT_STEPS) {
+    const maxCols = Math.max(1, Math.min(widest, Math.floor((W + DOT_GAP) / (s + DOT_GAP))));
+    const maxRows = Math.max(1, Math.floor((BLOCK_H + DOT_GAP) / (s + DOT_GAP)));
+    if (maxCols * maxRows < n) continue;
+    size = s;
+    // Balance: 62 in rows of 16 is 16/16/16/14, not 16/16/16/16/2.
+    cols = Math.min(n, Math.ceil(n / Math.ceil(n / maxCols)));
+    break;
+  }
+  return { cols, size };
+}
 
 /** How long the whole sample sits empty before the first draw leaves it. */
 const GHOST_HOLD_MS = 550;
@@ -89,29 +122,36 @@ const GHOST_HOLD_MS = 550;
  * One block of dots: successes first, then failures, contiguous.
  *
  * @param {number[]} data binary (1 = success, 0 = failure)
- * @param {{label?: string}} [opts]
+ * @param {{label?: string, width?: number, layout?: {cols:number,size:number}}} [opts]
  * @returns {{el: HTMLElement, slots: HTMLElement[]}}
  */
 function makeStacks(data, opts = {}) {
   const { s, f, n } = counts(data);
+  const layout = opts.layout ?? blockLayout(n, opts.width ?? 0);
   const el = document.createElement('div');
   el.className = 'pbm-block';
-  el.style.setProperty('--mark-w', `${dotSize(n)}px`);
+  el.style.setProperty('--mark-w', `${layout.size}px`);
+  // Published so the resample can match the bag exactly rather than measuring
+  // its own panel and landing a pixel off.
+  el.dataset.cols = String(layout.cols);
+  el.dataset.size = String(layout.size);
 
   const head = document.createElement('div');
   head.className = 'pbm-block-counts';
-  head.innerHTML = `<span class="is-success">${s}</span>`
-    + `<span class="pbm-of"> of ${n} </span>`
-    + `<span class="is-failure">${f}</span>`;
+  // Two labelled tallies, not "3 of 62 59" — which reads as one broken phrase
+  // with a stray number on the end, and leaves the 59 having to be guessed at.
+  // Same wording as the proportion bar's in-region counts, so the two displays
+  // say it the same way. n stays on the line under the block. (Jeff, 2026-10-01.)
+  head.innerHTML = `<span class="is-success">${s} S</span>`
+    + `<span class="pbm-of">, </span>`
+    + `<span class="is-failure">${f} F</span>`;
 
   const body = document.createElement('div');
   body.className = 'pbm-block-body';
-  // An explicit column count, roughly square, rather than filling the panel —
-  // one long wrapping row does not read as a population, and the amber/blue
-  // boundary lands mid-row. This is the marble grid's own shaping rule, which
-  // is what makes the block look like the Lab's population rectangle.
-  const cols = Math.max(1, Math.round(Math.sqrt(n) * 1.3));
-  body.style.gridTemplateColumns = `repeat(${cols}, var(--mark-w, 14px))`;
+  // An explicit column count rather than `auto-fill`: one long wrapping row
+  // does not read as a population, and the amber/blue boundary has to land
+  // somewhere predictable.
+  body.style.gridTemplateColumns = `repeat(${layout.cols}, var(--mark-w, 14px))`;
   body.setAttribute('role', 'img');
   if (opts.label) body.setAttribute('aria-label', `${opts.label}: ${s} successes, ${f} failures`);
 
@@ -190,12 +230,24 @@ function fillSlots(el, n, slotClass, data) {
 }
 
 /** Build a filled (static) representation in the given style. */
-function makeFilled(data, style, label) {
+function makeFilled(data, style, label, width = 0, layout = null) {
   const n = data.length;
   const st = effStyle(style, n);
   if (st === 'bars') return makeBar(n, { data, label }).el;
-  if (st === 'dots') return makeStacks(data, { label }).el;
+  if (st === 'dots') return makeStacks(data, { label, width, layout: layout ?? undefined }).el;
   return makeGrid(n, { data, label }).el;
+}
+
+/** Usable width of a panel, 0 while it is hidden or not yet laid out. */
+function usableWidth(container) {
+  return container ? Math.round(container.getBoundingClientRect().width) : 0;
+}
+
+/** The layout a already-rendered block chose, so another can match it. */
+function layoutOf(container) {
+  const el = container?.querySelector?.('.pbm-block');
+  const cols = Number(el?.dataset.cols), size = Number(el?.dataset.size);
+  return (cols > 0 && size > 0) ? { cols, size } : null;
 }
 
 // ── Public API ──────────────────────────────────────────────────────
@@ -204,12 +256,12 @@ function makeFilled(data, style, label) {
  * Render the original "bag".
  * @param {HTMLElement} container
  * @param {number[]} data binary (1 = success, 0 = failure)
- * @param {{style?: 'grid'|'bars', label?: string}} [opts]
+ * @param {{style?: 'grid'|'bars'|'dots', label?: string}} [opts]
  */
 export function renderPropBag(container, data, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
-  const el = makeFilled(data, opts.style, opts.label || 'Original sample');
+  const el = makeFilled(data, opts.style, opts.label || 'Original sample', usableWidth(container));
   el.classList.add('pbm-bag');
   container.appendChild(el);
 }
@@ -218,7 +270,7 @@ export function renderPropBag(container, data, opts = {}) {
 export function renderPropResample(container, resample, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
-  const el = makeFilled(resample, opts.style, 'Resample');
+  const el = makeFilled(resample, opts.style, 'Resample', usableWidth(container), opts.layout ?? null);
   el.classList.add('pbm-resample');
   container.appendChild(el);
 }
@@ -265,7 +317,13 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
  */
 function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
   resampleEl.innerHTML = '';
-  const built = makeStacks(resample, { label: 'Resample' });
+  // Match the bag's layout rather than measuring again: the two blocks sit side
+  // by side and a dot that flies between them should land the same size.
+  const built = makeStacks(resample, {
+    label: 'Resample',
+    width: usableWidth(resampleEl),
+    layout: layoutOf(bagEl) ?? undefined,
+  });
   built.el.classList.add('pbm-resample');
   resampleEl.appendChild(built.el);
 
@@ -279,7 +337,9 @@ function showStackDraw(resampleEl, bagEl, resample, data, indices, animate) {
   // where, so the bag is left alone rather than marked by a guess.
   if (!bagDots.length || !indices || !indices.length) return 0;
 
-  const digits = dotSize(data.length) >= DIGIT_MIN_W;
+  // Whatever size the bag actually came out at decides whether a numeral fits.
+  const bagSize = Number(layoutOf(bagEl)?.size) || 0;
+  const digits = bagSize >= DIGIT_MIN_W;
 
   /** Empty a bag dot: an outline, so "not taken" stays a perceivable shape. */
   const ghost = (/** @type {Element} */ el) => {

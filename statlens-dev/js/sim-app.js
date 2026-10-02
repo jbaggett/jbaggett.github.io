@@ -1964,7 +1964,13 @@ export function initSimPage(config) {
 
     if (origNEl) origNEl.textContent = String(data1.length);
     if (origMeanEl) {
-      if (config.proportion) {
+      if (config.proportion && !config.twoGroup) {
+        // …and the same arithmetic here, or the resample would be the only one
+        // showing its working and the two lines would stop rhyming.
+        const s = data1.filter(v => v === 1).length;
+        origMeanEl.textContent = `${s}/${data1.length} = `
+          + formatStat(mean(data1), dataPrecision, 'proportion');
+      } else if (config.proportion) {
         origMeanEl.textContent = formatStat(mean(data1), dataPrecision, 'proportion');
       } else {
         origMeanEl.textContent = formatStat(mean(data1), dataPrecision);
@@ -2568,8 +2574,16 @@ export function initSimPage(config) {
         symHTML = stat.label.replace('Sample ', '').toLowerCase();
       }
 
+      // A proportion shows its own arithmetic: p-hat = 7/62 = 0.113. The two
+      // counts are already on the block above, so the fraction is what ties
+      // them to the number that goes into the distribution — otherwise 0.113
+      // arrives from nowhere. Only for a single sample: a difference of two
+      // proportions has no one fraction to show. (Jeff, 2026-10-01.)
       const valText = config.proportion
-        ? formatStat(resampleVal, dataPrecision, 'proportion')
+        ? (config.twoGroup
+          ? formatStat(resampleVal, dataPrecision, 'proportion')
+          : `${resampleValues.filter(v => v === 1).length}/${resampleValues.length}`
+            + ` = ${formatStat(resampleVal, dataPrecision, 'proportion')}`)
         : formatStat(resampleVal, dataPrecision);
 
       // Update the value span with symbol + value, styled orange
