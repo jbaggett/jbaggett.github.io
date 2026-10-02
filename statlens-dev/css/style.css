@@ -1670,7 +1670,12 @@ input[aria-invalid="true"] {
 .pbm-style-toggle { display: inline-flex; align-items: center; gap: 0.4rem; }
 /* In a tier heading it sits at the far end, so the step's name still reads
    first and the control is where the thing it controls is. */
-.mech-tier-head .pbm-style-toggle { margin-left: auto; font-weight: 400; }
+.mech-tier-head .pbm-style-toggle,
+.mechanism-title .pbm-style-toggle { margin-left: auto; font-weight: 400; }
+/* The panel heading becomes a row so the control can sit at its far end. */
+.mechanism-panel .mechanism-title:has(.pbm-style-toggle) {
+  display: flex; align-items: center; gap: 0.5rem;
+}
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);
@@ -1691,9 +1696,17 @@ input[aria-invalid="true"] {
 /* `display: inline-flex` beats the user-agent `[hidden] { display: none }`, so
    a hidden segmented control stayed on screen. */
 .seg-control[hidden] { display: none !important; }
-/* The rendering choice, in the corner of the panel it changes. */
-.mech-panel-foot { display: flex; justify-content: flex-end; margin-top: 0.35rem; }
-.mech-panel-foot[hidden] { display: none !important; }
+/* A panel's closing line: the statistic, and whatever short thing goes with it
+   — the rendering choice on Step 1, the draw's caption on Step 2 — side by
+   side rather than stacked. */
+.mech-stat-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap;
+}
+.mech-stat-row .mechanism-stat { margin: 0; }
+.mech-stat-row .mechanism-desc { margin: 0; text-align: right; flex: 0 1 auto; }
+.mech-stat-row .seg-control { flex: none; font-size: 0.78rem; }
+.mech-stat-row .seg-control button { padding: 3px 9px; }
 .seg-control {
   display: inline-flex;
   border: 1px solid var(--border);
@@ -2331,8 +2344,11 @@ input[aria-invalid="true"] {
 
 .mini-chart svg {
   font-family: var(--font-body);
-  font-size: 10px;
-  max-height: 140px;
+  /* viewBox units, so the rendered size is this times the scale the panel
+     gives it. At 13 in a 614-wide view inside a ~490px panel that is ~10px on
+     screen; it was 10 units at a 0.38 scale, which is 4px. */
+  font-size: 13px;
+  max-height: 210px;
 }
 
 

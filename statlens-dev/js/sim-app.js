@@ -368,6 +368,8 @@ export function initSimPage(config) {
 
   /** Threshold: show individual chips below this, histogram above. */
   const CHIP_THRESHOLD = 30;
+  /** viewBox height for the strip's mini histograms — see the margin comment. */
+  const MINI_VIEW_H = 250;
   /** @type {'summary'|'histogram'} */
   let resampleViewMode = 'summary';
   /** Whether the view mode was explicitly chosen by the user (overrides auto-default). */
@@ -1607,7 +1609,25 @@ export function initSimPage(config) {
       const verb = config.mode === 'randomization'
         ? (datasetContext.mechanismVerb || 'Shuffle')
         : 'Resample';
-      resampleTitleEl.textContent = count === 1 ? `This ${verb}` : `Last ${verb}`;
+      // The bootstrap panel names the mechanism rather than pointing at the
+      // panel: "This Resample" told you which one you were looking at, which
+      // the STEP 2 tag beside it already does, and left the caption underneath
+      // to explain what a resample is. (Jeff, 2026-10-02.)
+      const title = config.mode === 'bootstrap'
+        ? 'Resample with Replacement'
+        : (count === 1 ? `This ${verb}` : `Last ${verb}`);
+      resampleTitleEl.textContent = title;
+      // The tier layouts copy this heading into their own at init, before the
+      // first draw has set it — so Step 2 kept whatever the HTML shipped with
+      // ("This Resample") while the strip said something else. The copy is
+      // kept in step instead of being a snapshot. (2026-10-02.)
+      const tierHead = document.querySelector('.mech-tier--draw .mech-tier-head');
+      if (tierHead) {
+        const tag = tierHead.querySelector('.mech-tier-tag');
+        tierHead.textContent = '';
+        if (tag) tierHead.appendChild(tag);
+        tierHead.appendChild(document.createTextNode(title));
+      }
     }
 
     if (config.mode === 'bootstrap') {
@@ -1914,6 +1934,7 @@ export function initSimPage(config) {
     // which is also exactly when the stale toggle would become visible again.
     ensurePropStyleToggle();
     syncRenderingToggle();
+    placeStatRows();
     originalContentEl.innerHTML = '';
 
     if (config.paired && data2.length > 0) {
@@ -1941,7 +1962,13 @@ export function initSimPage(config) {
           titleText: `Differences (${group2Name} − ${group1Name})`,
           numBins: Math.min(Math.ceil(Math.sqrt(diffs.length)), 40),
           animate: false,
-          margin: { top: 5, right: 10, bottom: 25, left: 35 },
+          margin: { top: 5, right: 12, bottom: 44, left: 48 },
+          // A 614x371 viewBox inside a box capped at 140px tall was letterboxed
+          // to 232px of drawing in a 491px panel — half the width thrown away,
+          // and the ticks rendered at 4px. A shorter view fills the panel
+          // instead, which is also what makes the labels legible: they scale
+          // with the drawing. (Jeff, 2026-10-02.)
+          viewHeight: MINI_VIEW_H,
           showExport: false,
         });
       }
@@ -2010,7 +2037,13 @@ export function initSimPage(config) {
         titleText: 'Original sample distribution',
         numBins: nBins,
         animate: false,
-        margin: { top: 5, right: 10, bottom: 25, left: 35 },
+        margin: { top: 5, right: 12, bottom: 44, left: 48 },
+          // A 614x371 viewBox inside a box capped at 140px tall was letterboxed
+          // to 232px of drawing in a 491px panel — half the width thrown away,
+          // and the ticks rendered at 4px. A shorter view fills the panel
+          // instead, which is also what makes the labels legible: they scale
+          // with the drawing. (Jeff, 2026-10-02.)
+          viewHeight: MINI_VIEW_H,
         showExport: false,
       });
       originalContentEl.appendChild(container);
@@ -2283,6 +2316,41 @@ export function initSimPage(config) {
     }
   }
 
+  /**
+   * Each panel's trailing line is ONE line.
+   *
+   * Step 1 ended with its statistic and then the Dots | Tiles control under it;
+   * Step 2 with its statistic and then a caption. Both are a short fact and a
+   * short aside, and both fit beside each other — which is two lines of panel
+   * height back, on a strip where height is what the chart is competing for.
+   * (Jeff, 2026-10-02: "I wonder if we can put the last two lines on step 1
+   * into one line … and the last two lines condensed into one".)
+   *
+   * Rebuilt rather than assumed, because the tier layouts reparent both the
+   * panels and the caption after this has run once.
+   *
+   * @param {HTMLElement} [trailer] the control to sit beside Step 1's statistic
+   */
+  function placeStatRows(trailer) {
+    /** @param {Element|null} panel @param {Element|null|undefined} tail */
+    const row = (panel, tail) => {
+      const stat = panel?.querySelector('.mechanism-stat');
+      if (!stat || !tail) return;
+      let r = panel.querySelector('.mech-stat-row');
+      if (!r) {
+        r = document.createElement('div');
+        r.className = 'mech-stat-row';
+        stat.parentElement?.insertBefore(r, stat);
+        r.appendChild(stat);
+      } else if (stat.parentElement !== r) {
+        r.insertBefore(stat, r.firstChild);
+      }
+      if (tail.parentElement !== r) r.appendChild(tail);
+    };
+    row(document.querySelector('[data-entity="source"]'), trailer);
+    row(document.querySelector('[data-entity="draw"]'), mechanismDescEl);
+  }
+
   /** Re-render both mechanism panels in the current view (Bars/Cards). No
    *  animation — this is a view switch, not a simulation step. */
   function rerenderMechanismView() {
@@ -2359,7 +2427,13 @@ export function initSimPage(config) {
     // it, so this one tests for visibility rather than existence.
     // In a tier layout it belongs beside STEP 1's heading, because what it
     // switches is how the source and the draw are drawn. (Jeff, 2026-10-02.)
+    // Step 1's own heading in every layout. It used to take the strip's shared
+    // collapse bar when there were no tiers, which put it hard against the
+    // draw panel's title — and once that title became "Resample with
+    // Replacement" the two ran into each other. Beside the thing it governs is
+    // both the right place and the one that does not collide.
     const bar = document.querySelector('.mech-tier--source .mech-tier-head')
+      ?? document.querySelector('[data-entity="source"] .mechanism-title')
       ?? mechanismStrip.querySelector('.mechanism-collapse-bar');
     if (!bar) return;
 
@@ -2437,8 +2511,8 @@ export function initSimPage(config) {
 
     // In the strip it leads the collapse bar; in a tier heading it trails the
     // title, so "STEP 1  Original Sample" still reads first.
-    if (bar.classList.contains('mech-tier-head')) bar.appendChild(seg);
-    else bar.insertBefore(seg, bar.firstChild);
+    if (bar.classList.contains('mechanism-collapse-bar')) bar.insertBefore(seg, bar.firstChild);
+    else bar.appendChild(seg);
   }
 
   /**
@@ -2737,8 +2811,7 @@ export function initSimPage(config) {
         const resampS = resampleValues.filter(v => v === 1).length;
         const diff = resampS - origS;
         const sign = diff > 0 ? '+' : '';
-        mechanismDescEl.textContent =
-          `Resample with replacement · successes changed by ${sign}${diff}`;
+        mechanismDescEl.textContent = `successes changed by ${sign}${diff}`;
       } else {
         let notSelected = 0;
         let repeated = 0;
@@ -2747,7 +2820,7 @@ export function initSimPage(config) {
           if (drawn > 1) repeated++;
         }
         mechanismDescEl.textContent =
-          `Resample with replacement · ${repeated} drawn more than once · ${notSelected} not selected`;
+          `${repeated} drawn more than once · ${notSelected} not selected`;
       }
       mechanismDescEl.hidden = false;
     }
@@ -3100,7 +3173,8 @@ export function initSimPage(config) {
       numBins: nBins,
       thresholds,
       animate: false,
-      margin: { top: 5, right: 10, bottom: 38, left: 35 },
+      margin: { top: 5, right: 12, bottom: 44, left: 48 },
+      viewHeight: MINI_VIEW_H,
       showExport: false,
     });
     resampleContentEl.appendChild(container);
@@ -3510,29 +3584,7 @@ export function initSimPage(config) {
     }
     // NB: do NOT add the `mech-view-toggle` class — the data-load handler removes
     // that class for non-card datasets (it manages the prop Bars/Cards toggle).
-
-    // Place the view toggle in a full-width bottom bar next to the mechanism
-    // caption (bottom-right) — the same UI as the one-mean randomization test.
-    const strip = document.getElementById('mechanism-strip');
-    if (strip && mechanismDescEl) {
-      // Anchor the bar to the CAPTION, not to the strip. The tier layouts
-      // (?mech=tiers|split) move the caption into the draw tier and hide the
-      // strip, and this bar was built afterwards — so appending it to the strip
-      // put the Tiles/Dotplots toggle inside a hidden element and left those
-      // layouts with no way to switch views at all. (Jeff, 2026-09-27.)
-      const host = mechanismDescEl.parentElement ?? strip;
-      let bar = host.querySelector('.mech-bottom-bar')
-        ?? strip.querySelector('.mech-bottom-bar');
-      if (!bar) {
-        bar = document.createElement('div');
-        bar.className = 'mech-bottom-bar';
-        host.insertBefore(bar, mechanismDescEl);
-      }
-      bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
-      resampleToggle.remove();
-    } else {
-      resampleToggle.remove();
-    }
+    resampleToggle.remove();
 
     if (viewToggleIsLive) {
       btnSummary.addEventListener('click', () => { resampleViewExplicit = true; setResampleViewMode('summary'); });
@@ -3540,25 +3592,9 @@ export function initSimPage(config) {
       // Aggregate has one rendering, so this choice goes away with the role
       // rather than sitting there meaning nothing.
       syncRenderingToggle = () => {
-        // In Step 1's own box, bottom right. It changes how the SAMPLE is
-        // drawn — both panels, but Step 1 is the one you read first — and it
-        // used to sit under Step 2 next to the caption, a long way from the
-        // thing it governs. Re-homed on every sync because the tier layouts
-        // move the panel. (Jeff, 2026-10-02.)
-        const panel = document.querySelector('[data-entity="source"]');
-        if (panel) {
-          let foot = panel.querySelector('.mech-panel-foot');
-          if (!foot) {
-            foot = document.createElement('div');
-            foot.className = 'mech-panel-foot';
-            panel.appendChild(foot);
-          }
-          if (seg.parentElement !== foot) foot.appendChild(seg);
-        }
+        placeStatRows(seg);
         const show = meanRole === 'individual' && individualAvailable();
         seg.hidden = !show;
-        const foot = seg.parentElement;
-        if (foot?.classList.contains('mech-panel-foot')) foot.hidden = !show;
         btnHistogram.setAttribute('aria-pressed', String(resampleViewMode !== 'summary'));
         btnSummary.setAttribute('aria-pressed', String(resampleViewMode === 'summary'));
       };
