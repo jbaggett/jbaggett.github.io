@@ -30,7 +30,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
+import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
@@ -97,13 +97,23 @@ export function initSimPage(config) {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
   }
   let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
-  // B2 prototype: one-proportion bootstrap mechanism. Source and target share a
-  // representation — 'grid' (marble grids) or 'bars' (proportion bars).
-  // Selectable via ?mechstyle= for A/B comparison on the dev site.
+  // The proportion mechanism's view. Two roles, as the mean pages have:
+  // INDIVIDUAL — one mark per observation, which can say which observations
+  // were drawn and how often — and AGGREGATE, which throws the individuals away
+  // and keeps the proportion. Individual leads, because the repeats and misses
+  // are the thing being taught; the aggregate is where it goes when n outgrows
+  // a mark per observation, and is the only view above MAX_MARBLES.
+  //
+  // `grid` (marbles) and `bars` (one cell per observation) are the earlier
+  // displays. They are still reachable by ?mechstyle= — activities and specs
+  // name them — but they are no longer offered in the UI: the marble grid and
+  // the dot block do the same job in two visual languages, and the cell bar is
+  // an aggregate drawn the expensive way. (Jeff, 2026-10-02.)
   let propMechStyle = (() => {
     const v = new URLSearchParams(location.search).get('mechstyle');
-    // `dots` is the two-stack prototype (2026-10-01) — opt-in only.
-    return (v === 'bars' || v === 'dots') ? v : 'grid';
+    if (v === 'individual') return 'dots';
+    if (v === 'aggregate' || v === 'bars' || v === 'dots' || v === 'grid') return v;
+    return 'dots';
   })();
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
@@ -277,6 +287,15 @@ export function initSimPage(config) {
     }
     // Card mechanism toggle (two-proportion randomization).
     if (cardMechanism) params.mechanism = 'cards';
+    // Individual | Aggregate, when it has been moved off the default AND the
+    // choice was the reader's. Above MAX_MARBLES the aggregate is forced by n,
+    // and pinning that in the link would carry it to a dataset small enough to
+    // have had the choice.
+    const biggestGroup = Math.max(data1?.length ?? 0, data2?.length ?? 0);
+    if ((useNewPropMech || useNewPropMech2) && propMechStyle !== 'dots'
+        && hasIndividualView(biggestGroup)) {
+      params.mechstyle = propMechStyle === 'aggregate' ? 'aggregate' : propMechStyle;
+    }
     // Editable null value (expert mode; omit the default 0).
     const nv = getNullValue();
     if (nv !== 0) params.null_value = nv;
@@ -1865,6 +1884,11 @@ export function initSimPage(config) {
 
   function renderOriginalSample() {
     if (!originalContentEl) return;
+    // Whether an Individual | Aggregate choice exists depends on n, so the
+    // toggle is re-decided whenever the source panel is drawn. Switching
+    // datasets hides the strip and defers the redraw to the first generate,
+    // which is also exactly when the stale toggle would become visible again.
+    if (useNewPropMech) ensurePropStyleToggle();
     originalContentEl.innerHTML = '';
 
     if (config.paired && data2.length > 0) {
@@ -2163,6 +2187,7 @@ export function initSimPage(config) {
   /** Render the two original group "bags". */
   function renderTwoPropBags() {
     if (!mechOriginalContent) return;
+    ensurePropStyleToggle();
     mechOriginalContent.innerHTML = twoPropPanelHTML('bag', data1, data2, false);
     renderPropBag(document.getElementById('pbm-bag-1'), data1, { style: propMechStyle, label: `${group1Name} sample` });
     renderPropBag(document.getElementById('pbm-bag-2'), data2, { style: propMechStyle, label: `${group2Name} sample` });
@@ -2279,28 +2304,56 @@ export function initSimPage(config) {
 
   /** Add the Grid/Bar segmented toggle for the one-proportion bootstrap
    *  mechanism (B2). Idempotent; flips bag + resample between representations. */
+  /**
+   * View: Individual | Aggregate, when there is a choice to make.
+   *
+   * Above MAX_MARBLES there is no individual view — one mark per observation
+   * stops being drawable — so the control is removed rather than left with one
+   * position that does nothing. It is rebuilt on every data load because the
+   * answer changes with the dataset: switching from cpr (40 + 50) to avandia
+   * (609 + 1,391) has to take the toggle with it. (Jeff, 2026-10-02.)
+   */
   function ensurePropStyleToggle() {
     if ((!useNewPropMech && !useNewPropMech2) || !mechanismStrip) return;
     const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
-    if (!bar || bar.querySelector('.pbm-style-toggle')) return;
+    if (!bar) return;
+
+    const biggest = Math.max(data1?.length ?? 0, data2?.length ?? 0);
+    const existing = bar.querySelector('.pbm-style-toggle');
+    if (!hasIndividualView(biggest)) {
+      existing?.remove();
+      // The PREFERENCE is deliberately left alone. `effStyle` already resolves
+      // it to the aggregate at this size, so forcing the variable as well only
+      // destroys what the reader picked: switch to a big dataset and back and
+      // you came back to Aggregate having never chosen it. (2026-10-02.)
+      return;
+    }
+    if (existing) return;
 
     const seg = document.createElement('div');
-    seg.className = 'seg-control pbm-style-toggle';
-    seg.setAttribute('role', 'group');
-    seg.setAttribute('aria-label', 'Mechanism view');
+    seg.className = 'pbm-style-toggle';
+    const pressed = (/** @type {string} */ v) =>
+      String(v === 'dots' ? propMechStyle === 'dots' || propMechStyle === 'grid'
+        : propMechStyle === 'aggregate' || propMechStyle === 'bars');
+    // The label sits OUTSIDE the segmented control: inside its border it reads
+    // as a third, dead position.
     seg.innerHTML =
-      `<button type="button" data-pstyle="grid" aria-pressed="${String(propMechStyle === 'grid')}">Grid</button>` +
-      `<button type="button" data-pstyle="bars" aria-pressed="${String(propMechStyle === 'bars')}">Bar</button>`;
+      '<span class="seg-label">View:</span>'
+      + '<div class="seg-control" role="group" aria-label="View">'
+      + `<button type="button" data-pstyle="dots" aria-pressed="${pressed('dots')}">Individual</button>`
+      + `<button type="button" data-pstyle="aggregate" aria-pressed="${pressed('aggregate')}">Aggregate</button>`
+      + '</div>';
 
     seg.addEventListener('click', (e) => {
       const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-pstyle]');
       if (!btn) return;
-      const want = btn.getAttribute('data-pstyle') === 'bars' ? 'bars' : 'grid';
+      const want = btn.getAttribute('data-pstyle') === 'aggregate' ? 'aggregate' : 'dots';
       if (want === propMechStyle) return;
       propMechStyle = want;
       for (const b of seg.querySelectorAll('button')) {
         b.setAttribute('aria-pressed', String(b.getAttribute('data-pstyle') === propMechStyle));
       }
+      syncUrl();
       // Re-render bag + current resample (static) in the new representation.
       if (useNewPropMech2) {
         rerenderMechanismView();

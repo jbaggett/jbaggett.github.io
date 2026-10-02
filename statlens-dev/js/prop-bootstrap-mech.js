@@ -18,7 +18,21 @@
 import { prefersReducedMotion } from './chart-utils.js';
 import { animateResampleDraw } from './mechanisms/draw-animation.js';
 
-const MAX_MARBLES = 120;   // above this, the grid style falls back to bars
+const MAX_MARBLES = 120;   // above this, no per-observation display survives
+
+/**
+ * Whether a sample of n can be drawn one mark per observation at all.
+ *
+ * The caller needs this to decide whether an Individual | Aggregate choice
+ * exists: above the cap there is only the aggregate, so a toggle would be a
+ * control with one working position. (Jeff, 2026-10-02.)
+ *
+ * @param {number} n
+ * @returns {boolean}
+ */
+export function hasIndividualView(n) {
+  return n > 0 && n <= MAX_MARBLES;
+}
 const MAX_FLY = 60;        // cap flying clones per draw (large n fills the rest instantly)
 
 /** Count successes (1s) in a binary array. */
@@ -37,6 +51,11 @@ function marbleSize(n) {
 
 /** Resolve the effective style (grid/dots fall back to bars when n is too large). */
 function effStyle(style, n) {
+  // 'dots' and 'aggregate' are what the Individual | Aggregate toggle asks for.
+  // 'grid' (marbles) and 'bars' (one cell per observation) are the earlier
+  // displays, still reachable by ?mechstyle= and still used by activities and
+  // specs that name them.
+  if (style === 'aggregate') return 'aggregate';
   const s = (style === 'bars' || style === 'dots') ? style : 'grid';
   // Past the cap NO per-observation display survives, the cell bar included.
   // It used to: `?mechstyle=bars` drew one span per observation at any n, so a
