@@ -2264,10 +2264,17 @@ export function initSimPage(config) {
   function showTwoPropResample(g1, g2, animateDraw) {
     if (!mechResampleContent) return 0;
     mechResampleContent.innerHTML = twoPropPanelHTML('rs', g1, g2, true);
+    // The indices are what let the dot block say which observations were drawn
+    // and how often — `showStackDraw` has nothing honest to animate without
+    // them and returns 0. The one-sample page has passed them since the block
+    // was built; these two never did, so the two-proportion CI drew its blocks
+    // and then simply sat there while the aggregate view beside it animated.
+    // `lastRsIdx1`/`lastRsIdx2` exist for exactly this. (Jeff, 2026-10-02:
+    // "two sample CIs should just double up these animations".)
     const ms1 = showPropResample(document.getElementById('pbm-rs-1'), document.getElementById('pbm-bag-1'),
-      g1, data1, { style: propMechStyle, animate: animateDraw });
+      g1, data1, { style: propMechStyle, animate: animateDraw, indices: lastRsIdx1 ?? undefined });
     const ms2 = showPropResample(document.getElementById('pbm-rs-2'), document.getElementById('pbm-bag-2'),
-      g2, data2, { style: propMechStyle, animate: animateDraw });
+      g2, data2, { style: propMechStyle, animate: animateDraw, indices: lastRsIdx2 ?? undefined });
     const ms = Math.max(ms1, ms2);
     const diffEl = mechResampleContent.querySelector('.mech-stat-value');
     const setDiff = () => {
