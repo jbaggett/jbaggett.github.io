@@ -2176,16 +2176,27 @@ export function initSimPage(config) {
           <span class="mech-group-stat">n = ${g2.length}, ${statSymbol} = ${formatStat(s2, dataPrecision, fmtType)}</span></div>
         ${propBarHTML(succ2, fail2)}`;
     } else if (twoMeanDotActive()) {
-      // B3: side-by-side dotplot bags — the resample plucks-and-flies per group.
+      // B3: the two groups STACKED on one scale, not side by side.
+      //
+      // They always shared a domain — `computeTwoMeanDomain` pools both groups
+      // — but sat in separate halves of the panel, so a value of 7.0 was at one
+      // screen position in the left plot and a different one in the right.
+      // Comparing two independently-placed dotplots means carrying a position
+      // across a gap by eye, which is the hard version of the only question the
+      // panel is asking. Stacked, the shift between the groups is simply
+      // visible, each group gets the full panel width instead of half, and a
+      // value sits at the same x in both rows — which is what lets the shuffle
+      // animation pool them without anything moving sideways.
+      // (Jeff, 2026-10-02.)
       const tag = isOriginal ? 'orig' : 'resamp';
       html += `
-        <div class="mech-hist-pair">
-          <div class="mech-hist-col">
+        <div class="mech-dot-stack">
+          <div class="mech-dot-row">
             <div class="mech-group-label">${group1Name}</div>
             <div id="mech-dot-${tag}-1" class="mech-dot-cell"></div>
             <div class="mech-group-stat-sm">n=${g1.length}, ${statSymbol}=${formatStat(s1, dataPrecision, fmtType)}</div>
           </div>
-          <div class="mech-hist-col">
+          <div class="mech-dot-row">
             <div class="mech-group-label">${group2Name}</div>
             <div id="mech-dot-${tag}-2" class="mech-dot-cell"></div>
             <div class="mech-group-stat-sm">n=${g2.length}, ${statSymbol}=${formatStat(s2, dataPrecision, fmtType)}</div>

@@ -2032,6 +2032,33 @@ input[aria-invalid="true"] {
   text-align: center;
   margin-top: 2px;
 }
+/* Two groups STACKED on one scale: each row gets the whole panel width, so a
+   value sits at the same x in both. The label and the per-group statistic sit
+   on the row rather than above and below it, which is most of the height the
+   second row costs. */
+/* ONE grid for both rows, not a grid per row. Per-row grids sized their own
+   columns, so "x-bar = -4.333" and "x-bar = 3.500" gave the two plots different
+   widths and the axes did not line up — which defeats the entire reason for
+   stacking them. `display: contents` puts both rows' cells in the one grid. */
+.mech-dot-stack {
+  display: grid;
+  grid-template-columns: minmax(4.5em, max-content) 1fr minmax(6.5em, max-content);
+  align-items: center;
+  gap: 0.1rem 0.5rem;
+}
+.mech-dot-row { display: contents; }
+.mech-dot-row .mech-group-label { text-align: right; margin: 0; }
+.mech-dot-row .mech-group-stat-sm { text-align: left; margin: 0; white-space: nowrap; }
+/* Shorter than a standalone dotplot: two of them share the height one used to
+   have, and the strip is a band rather than a page. */
+.mech-dot-stack .mech-dot-cell { min-width: 0; min-height: 0; }
+.mech-dot-stack .mech-dot-cell svg { max-height: 104px; }
+/* The axis labels, in viewBox units. d3-axis sets font-size as an ATTRIBUTE on
+   the axis group, which a size on the <svg> does not override — the text has to
+   be targeted directly. At a 0.64 scale, 16 units renders at ~10px; the
+   inherited 10 rendered at 5. */
+.mech-dot-stack .mech-dot-cell svg .tick text { font-size: 16px; }
+
 /* Side-by-side mini histograms in two-group mechanism strip */
 .mech-hist-pair {
   display: flex;
