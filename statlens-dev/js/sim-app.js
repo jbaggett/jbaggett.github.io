@@ -144,15 +144,34 @@ export function initSimPage(config) {
   // flattened into this one. Everywhere else the role IS the rendering.
   /** @type {'individual'|'aggregate'} */
   let meanRole = 'individual';
+  /** How the individual role was being drawn when it was last left. */
+  let individualMode = 'histogram';
   /** The n above which one mark per observation stops being drawable here. */
-  const individualMax = () => isMeanOneSample ? MEAN_DOT_MAX : CHIP_THRESHOLD;
+  const individualMax = () => usesMeanMech() ? MEAN_DOT_MAX : CHIP_THRESHOLD;
   /** Whether there is a choice of role to offer at all. */
-  const individualAvailable = () => !config.proportion
-    && data1.length >= 2 && data1.length <= individualMax();
+  const individualAvailable = () => {
+    if (config.proportion) return false;
+    const n = resampleSourceValues().length;
+    return n >= 2 && n <= individualMax();
+  };
 
+  /**
+   * Pages whose draw is "resample these numbers with replacement", which is
+   * what the mean mechanism animates.
+   *
+   * Paired belongs here: its DIFFERENCES are a one-sample bootstrap, and it
+   * had its own bespoke tiles and no animation at all because nobody had said
+   * so in code. `resampleSourceValues()` already hands back the differences.
+   * (Jeff, 2026-10-02: "route through one-mean mechanism".)
+   */
+  const usesMeanMech = () => config.mode === 'bootstrap' && !config.proportion && !config.twoGroup;
   /** True when the animated mean-dotplot mechanism should be used right now. */
-  const meanDotActive = () => isMeanOneSample && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
-    && meanRole === 'individual' && resampleViewMode !== 'summary';
+  const meanDotActive = () => {
+    if (!usesMeanMech()) return false;
+    const n = resampleSourceValues().length;
+    return n >= 2 && n <= MEAN_DOT_MAX
+      && meanRole === 'individual' && resampleViewMode !== 'summary';
+  };
   /** @type {[number,number]|null} */
   let meanDomain = null;
   // The CI-for-a-mean dotplot uses the SAME shared controller as the one-mean
@@ -162,8 +181,9 @@ export function initSimPage(config) {
   const meanMech = createMeanMechanism({ formatValue: formatChipValue });
   /** Shared dotplot domain from the original sample (with padding). */
   function computeMeanDomain() {
-    if (!data1.length) return null;
-    const lo = Math.min(...data1), hi = Math.max(...data1);
+    const vals = resampleSourceValues();
+    if (!vals.length) return null;
+    const lo = Math.min(...vals), hi = Math.max(...vals);
     const pad = (hi - lo) * 0.08 || 0.5;
     return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
   }
@@ -392,7 +412,10 @@ export function initSimPage(config) {
     // …and the role, by its own name. `aggregate` is what `histogram` always
     // meant here; it is spelled the way the control now spells it.
     if (mv === 'aggregate') { meanRole = 'aggregate'; resampleViewMode = 'histogram'; resampleViewExplicit = true; }
-    if (mv === 'individual') { meanRole = 'individual'; resampleViewExplicit = true; }
+    // The ROLE only. Pinning the rendering as well is what `tiles` is for, and
+    // doing it here made ?mview=individual mean "individual, drawn as tiles" —
+    // which on a page where Dots leads is not what it says.
+    if (mv === 'individual') meanRole = 'individual';
   }
   /** @type {number[]} */
   let lastResample = [];
@@ -1551,18 +1574,20 @@ export function initSimPage(config) {
     // Initialize mechanism strip on first generate (deferred from data load)
     if (!mechanismInitialized && mechanismStrip) {
       mechanismInitialized = true;
-      if (config.paired && originalContentEl) {
+      if (config.paired && config.mode !== 'bootstrap' && originalContentEl) {
+        // Randomization-paired keeps its tiles for now. Its draw is a SIGN
+        // FLIP, not a draw with replacement — nothing is taken twice and
+        // nothing is missed — so the mean mechanism's vocabulary would be
+        // saying something false about it. That one waits on the shuffle
+        // animation. (2026-10-02.)
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         renderOriginalSample();
-        // NOT switched to the non-tiles view the way the one-sample bootstrap
-        // below is. Paired has its own bespoke panels — sorted chips, or a mini
-        // histogram past 30 — and does not go through createMeanMechanism at
-        // all, so flipping the view here trades readable tiles for a mini
-        // histogram and gains no animation. Wiring paired onto the mean
-        // mechanism (its differences ARE a one-sample bootstrap) is the real
-        // fix and is its own piece of work. (2026-09-28.)
       } else if (config.mode === 'bootstrap' && !config.twoGroup && originalContentEl) {
+        // Bootstrap-paired comes through here now. The note that used to send
+        // it down the branch above said flipping the view "gains no animation,
+        // and wiring paired onto the mean mechanism is the real fix" — that is
+        // done, so the reason is gone. (2026-09-28 → 2026-10-02.)
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         if (useNewPropMech) ensurePropStyleToggle();
@@ -1926,6 +1951,24 @@ export function initSimPage(config) {
 
   // ─── Resample visualization ───
 
+  /**
+   * Set a panel heading's words without evicting what lives in it.
+   *
+   * The paired page's heading is `#orig-diff-title`, which is also the element
+   * the View toggle is appended to — so `textContent = …` silently took the
+   * control with it, and paired had the mechanism but no way to switch it.
+   * (2026-10-02.)
+   *
+   * @param {Element|null} el
+   * @param {string} text
+   */
+  function setPanelHeading(el, text) {
+    if (!el) return;
+    const keep = [...el.children];
+    el.textContent = text;
+    for (const child of keep) el.appendChild(child);
+  }
+
   function renderOriginalSample() {
     if (!originalContentEl) return;
     // Whether an Individual | Aggregate choice exists depends on n, so the
@@ -1937,8 +1980,12 @@ export function initSimPage(config) {
     placeStatRows();
     originalContentEl.innerHTML = '';
 
-    if (config.paired && data2.length > 0) {
-      // Paired data: show the differences (sorted for easier visual tracking)
+    if (config.paired && data2.length > 0 && !meanDotActive()) {
+      // Paired data: show the differences (sorted for easier visual tracking).
+      // Only when the dotplot is not what is wanted — the differences ARE a
+      // one-sample bootstrap, so they go through the mean mechanism below
+      // whenever it applies, and these tiles are the Tiles rendering and the
+      // large-n fallback rather than the only thing paired can show.
       const diffs = data2.map((v, i) => v - data1[i]);
       const sortedDiffs = [...diffs].sort((a, b) => a - b);
       const container = document.createElement('div');
@@ -1946,7 +1993,10 @@ export function initSimPage(config) {
       container.setAttribute('role', 'img');
       container.setAttribute('aria-label', `Paired differences (${group2Name} − ${group1Name})`);
 
-      if (diffs.length <= CHIP_THRESHOLD) {
+      // Tiles are an INDIVIDUAL display, here as everywhere: asking for
+      // Aggregate left Step 1 on tiles beside a Step 2 histogram, the same
+      // mismatch the one-sample page had. (2026-10-02.)
+      if (diffs.length <= CHIP_THRESHOLD && meanRole === 'individual') {
         for (const d of sortedDiffs) {
           const dot = document.createElement('span');
           dot.className = 'sample-dot';
@@ -1977,10 +2027,8 @@ export function initSimPage(config) {
       if (origNEl) origNEl.textContent = `${diffs.length} pairs`;
       if (origMeanEl) origMeanEl.textContent = formatStat(mean(diffs), dataPrecision);
       // Update title to show difference direction
-      const diffTitleEl = document.getElementById('orig-diff-title');
-      if (diffTitleEl) {
-        diffTitleEl.textContent = `Differences (${group2Name} \u2212 ${group1Name})`;
-      }
+      setPanelHeading(document.getElementById('orig-diff-title'),
+        `Differences (${group2Name} \u2212 ${group1Name})`);
       return;
     }
 
@@ -2000,7 +2048,17 @@ export function initSimPage(config) {
       meanDomain = computeMeanDomain();
       meanMech.setView('dotplot');
       meanMech.resetSizing();
-      meanMech.renderBag(originalContentEl, data1, mean(data1), { domain: meanDomain ?? undefined, meanLabel: 'x̄' });
+      // The values this page resamples — the sample itself, or the paired
+      // differences.
+      const vals = resampleSourceValues();
+      meanMech.renderBag(originalContentEl, vals, mean(vals), {
+        domain: meanDomain ?? undefined, meanLabel: config.paired ? 'd̄' : 'x̄' });
+      if (config.paired) {
+        if (origNEl) origNEl.textContent = `${vals.length} pairs`;
+        if (origMeanEl) origMeanEl.textContent = formatStat(mean(vals), dataPrecision);
+        setPanelHeading(document.getElementById('orig-diff-title'),
+          `Differences (${group2Name} \u2212 ${group1Name})`);
+      }
     } else if (data1.length <= CHIP_THRESHOLD && meanRole === 'individual') {
       // Value tiles are an INDIVIDUAL display — one mark per observation — so
       // they belong to that role and not to "n happens to be small". Asking for
@@ -2489,8 +2547,15 @@ export function initSimPage(config) {
         // with it rather than sitting there meaning nothing.
         syncRenderingToggle();
         // One static re-render for the role change, via the same path the
-        // rendering switch uses.
-        setResampleViewMode(role === 'aggregate' ? 'histogram' : resampleViewMode);
+        // rendering switch uses. Leaving Individual remembers how it was being
+        // drawn, so coming back restores it — without that, a page whose
+        // individual rendering is tiles went to the histogram and stayed
+        // there, because 'histogram' is what Aggregate had left behind.
+        if (role === 'aggregate') individualMode = resampleViewMode;
+        // Pages with no Dots | Tiles choice have one individual rendering, and
+        // it is the tiles one.
+        const back = viewToggleIsLive ? individualMode : 'summary';
+        setResampleViewMode(role === 'aggregate' ? 'histogram' : back);
         syncUrl();
         return;
       }
@@ -3163,10 +3228,12 @@ export function initSimPage(config) {
     // Small mean samples — animated dotplot resample, via the shared mechanism.
     if (meanDotActive()) {
       meanMech.setView('dotplot');
-      return meanMech.renderResample(resampleContentEl, data1, resampleValues, mean(resampleValues), morph, {
-        domain: meanDomain ?? computeMeanDomain() ?? undefined, meanLabel: 'x̄',
-        indices: lastResampleIndices ?? undefined,
-      });
+      return meanMech.renderResample(resampleContentEl, resampleSourceValues(), resampleValues,
+        mean(resampleValues), morph, {
+          domain: meanDomain ?? computeMeanDomain() ?? undefined,
+          meanLabel: config.paired ? 'd̄' : 'x̄',
+          indices: lastResampleIndices ?? undefined,
+        });
     }
 
     const container = document.createElement('div');
@@ -3539,9 +3606,15 @@ export function initSimPage(config) {
     if (btnSummary) btnSummary.setAttribute('aria-pressed', String(mode === 'summary'));
     if (btnHistogram) btnHistogram.setAttribute('aria-pressed', String(mode === 'histogram'));
     syncRenderingToggle();
-    // B1: the mean dotplot view shows the original as a dotplot too — re-render it
-    // so the bag/chips switch with the view.
-    if (isMeanOneSample) renderOriginalSample();
+    // B1: the mean dotplot view shows the original as a dotplot too — re-render
+    // it so the bag/tiles switch with the view. `usesMeanMech`, not
+    // `isMeanOneSample`: paired is on this mechanism now, and testing the
+    // narrower flag left it showing whatever Step 1 had rendered a moment
+    // before the view changed. (2026-10-02.)
+    // Unconditional: Step 1 changes with the role on every page that has one
+    // (paired's tiles become a histogram too), and the two-group pages have no
+    // `originalContentEl`, so this is a no-op there rather than a special case.
+    renderOriginalSample();
     // Statically. This passed `lastWasSingle`, so switching the view re-ran the
     // whole +1 animation — dots flying out of a panel nobody had asked to
     // resample, and a statistic setting off for the chart from geometry that
@@ -3567,7 +3640,7 @@ export function initSimPage(config) {
   // ROLE choice wearing the names of its two pictures, and that has moved to
   // the View control beside Step 1, where the proportion pages keep theirs.
   // (Jeff, 2026-10-02.)
-  const viewToggleIsLive = isMeanOneSample;
+  const viewToggleIsLive = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup;
   /** Hide the rendering choice when the role it belongs to is not showing. */
   let syncRenderingToggle = () => {};
   if (resampleToggle) {
