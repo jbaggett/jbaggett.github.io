@@ -1691,6 +1691,9 @@ input[aria-invalid="true"] {
 /* `display: inline-flex` beats the user-agent `[hidden] { display: none }`, so
    a hidden segmented control stayed on screen. */
 .seg-control[hidden] { display: none !important; }
+/* The rendering choice, in the corner of the panel it changes. */
+.mech-panel-foot { display: flex; justify-content: flex-end; margin-top: 0.35rem; }
+.mech-panel-foot[hidden] { display: none !important; }
 .seg-control {
   display: inline-flex;
   border: 1px solid var(--border);

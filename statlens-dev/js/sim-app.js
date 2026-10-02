@@ -1974,8 +1974,13 @@ export function initSimPage(config) {
       meanMech.setView('dotplot');
       meanMech.resetSizing();
       meanMech.renderBag(originalContentEl, data1, mean(data1), { domain: meanDomain ?? undefined, meanLabel: 'x̄' });
-    } else if (data1.length <= CHIP_THRESHOLD) {
-      // Small dataset: show individual value chips
+    } else if (data1.length <= CHIP_THRESHOLD && meanRole === 'individual') {
+      // Value tiles are an INDIVIDUAL display — one mark per observation — so
+      // they belong to that role and not to "n happens to be small". Asking for
+      // Aggregate used to leave Step 1 showing tiles beside a Step 2 histogram,
+      // two different pictures of the same switch; and the histogram draw
+      // animation needs a histogram to leave FROM, so it never ran at this
+      // size either. (Jeff, 2026-10-02.)
       const container = document.createElement('div');
       container.className = 'sample-dots';
       container.setAttribute('role', 'img');
@@ -2402,8 +2407,9 @@ export function initSimPage(config) {
         // Aggregate has one rendering, so the Dots | Tiles choice goes away
         // with it rather than sitting there meaning nothing.
         syncRenderingToggle();
+        // One static re-render for the role change, via the same path the
+        // rendering switch uses.
         setResampleViewMode(role === 'aggregate' ? 'histogram' : resampleViewMode);
-        if (role !== 'aggregate') { renderOriginalSample(); if (lastResample.length) showResample(lastResample, false, false); }
         syncUrl();
         return;
       }
@@ -3451,7 +3457,13 @@ export function initSimPage(config) {
     // B1: the mean dotplot view shows the original as a dotplot too — re-render it
     // so the bag/chips switch with the view.
     if (isMeanOneSample) renderOriginalSample();
-    if (lastResample.length > 0) showResample(lastResample, false, lastWasSingle);
+    // Statically. This passed `lastWasSingle`, so switching the view re-ran the
+    // whole +1 animation — dots flying out of a panel nobody had asked to
+    // resample, and a statistic setting off for the chart from geometry that
+    // had just been replaced, which is what sent it to the top-left corner.
+    // Changing how something is drawn is not an event in the simulation.
+    // (Jeff, 2026-10-02.)
+    if (lastResample.length > 0) showResample(lastResample, false, false, false);
   }
 
   // Proportions have nothing to toggle between. `showResampleSummary` and
@@ -3517,10 +3529,7 @@ export function initSimPage(config) {
         host.insertBefore(bar, mechanismDescEl);
       }
       bar.appendChild(mechanismDescEl); // caption (was inside the resample panel)
-      if (viewToggleIsLive) bar.appendChild(seg);
       resampleToggle.remove();
-    } else if (viewToggleIsLive) {
-      resampleToggle.replaceWith(seg);
     } else {
       resampleToggle.remove();
     }
@@ -3531,8 +3540,25 @@ export function initSimPage(config) {
       // Aggregate has one rendering, so this choice goes away with the role
       // rather than sitting there meaning nothing.
       syncRenderingToggle = () => {
+        // In Step 1's own box, bottom right. It changes how the SAMPLE is
+        // drawn — both panels, but Step 1 is the one you read first — and it
+        // used to sit under Step 2 next to the caption, a long way from the
+        // thing it governs. Re-homed on every sync because the tier layouts
+        // move the panel. (Jeff, 2026-10-02.)
+        const panel = document.querySelector('[data-entity="source"]');
+        if (panel) {
+          let foot = panel.querySelector('.mech-panel-foot');
+          if (!foot) {
+            foot = document.createElement('div');
+            foot.className = 'mech-panel-foot';
+            panel.appendChild(foot);
+          }
+          if (seg.parentElement !== foot) foot.appendChild(seg);
+        }
         const show = meanRole === 'individual' && individualAvailable();
         seg.hidden = !show;
+        const foot = seg.parentElement;
+        if (foot?.classList.contains('mech-panel-foot')) foot.hidden = !show;
         btnHistogram.setAttribute('aria-pressed', String(resampleViewMode !== 'summary'));
         btnSummary.setAttribute('aria-pressed', String(resampleViewMode === 'summary'));
       };
