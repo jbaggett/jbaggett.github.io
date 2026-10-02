@@ -9,7 +9,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
-import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw } from './mechanisms/draw-animation.js';
+import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
@@ -1879,7 +1879,12 @@ export function initSimPage(config) {
       /** @type {number[]} */ let lastG1 = [];
       /** @type {number[]} */ let lastG2 = [];
       for (let i = 0; i < count; i++) {
-        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, rng);
+        const { first, second } = shuffleLabels(data1, data2, rng);
+        const g1 = first.values, g2 = second.values;
+        // Which pooled observation landed in which group — what the deal
+        // animation flies, and what says how many crossed over.
+        lastRsIdx1 = first.indices ?? null;
+        lastRsIdx2 = second.indices ?? null;
         lastG1 = g1;
         lastG2 = g2;
         const stat = config.testStat(g1, g2);
@@ -2635,11 +2640,24 @@ export function initSimPage(config) {
       // observation appears exactly once, in one group or the other — so it
       // renders statically until the pool-and-deal animation exists, rather
       // than borrowing a picture that means something else. (2026-10-02.)
-      const drawn = config.mode === 'bootstrap' && highlight;
-      const verb = config.mode === 'bootstrap' ? 'Resampled' : 'Shuffled';
+      const isBoot = config.mode === 'bootstrap';
+      const drawn = isBoot && highlight;
+      const verb = isBoot ? 'Resampled' : 'Shuffled';
       let ms = 0;
-      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group1Name}`, indices: config.mode === 'bootstrap' ? (lastRsIdx1 ?? undefined) : undefined }));
-      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group2Name}`, indices: config.mode === 'bootstrap' ? (lastRsIdx2 ?? undefined) : undefined }));
+      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group1Name}`, indices: isBoot ? (lastRsIdx1 ?? undefined) : undefined }));
+      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group2Name}`, indices: isBoot ? (lastRsIdx2 ?? undefined) : undefined }));
+      // A shuffle pools both groups and deals them back out — the book's card
+      // shuffle, with dots. Only on +1: a hundred of these is a flicker.
+      if (!isBoot && highlight) {
+        const dots = (/** @type {Element|null} */ el) =>
+          [...(el?.querySelectorAll('svg .data circle') ?? [])];
+        const shuffleMs = animatePoolAndDeal({
+          sourceGroups: [dots(document.getElementById('mech-dot-orig-1')),
+                         dots(document.getElementById('mech-dot-orig-2'))],
+          targetGroups: [dots(c1), dots(c2)],
+        });
+        if (shuffleMs) ms = Math.max(ms, shuffleMs);
+      }
       return ms;
     }
 

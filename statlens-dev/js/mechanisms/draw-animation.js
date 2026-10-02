@@ -852,3 +852,140 @@ function gatherBars(svg, bars, dur, settle, onDone) {
   }
   requestAnimationFrame(step);
 }
+
+/** The two groups' shades during a shuffle — keyed to where a dot STARTED. */
+const POOL_SHADE = ['#569BBD', '#114B5F'];
+/** Pool, hold, deal, settle. */
+const POOL_MS = 720, POOL_HOLD = 380, DEAL_MS = 720, DEAL_SETTLE = 200;
+
+/**
+ * A shuffle, as the book draws it: gather both piles into one, deal back out.
+ *
+ * This is not a draw, and burst cannot be reused for it. Burst's whole
+ * vocabulary is repeats and misses — "this one was taken twice, that one never"
+ * — and a permutation has neither: every observation appears exactly once, in
+ * one group or the other, and the group sizes never change. What a shuffle has
+ * to say instead is that the VALUES did not change, only the labels did.
+ *
+ * So the dots pool on one scale and deal back out, and the deal moves them
+ * VERTICALLY only — a dot's x is its value, and a value that never moves
+ * sideways is a value that did not change. That is the whole argument of a
+ * randomization test, made a property of the picture rather than a sentence
+ * under it. (It is also why the two groups had to be stacked on one axis
+ * first; side by side, pooling moves everything sideways and the picture says
+ * the opposite.)
+ *
+ * Each flyer carries the shade of the group it STARTED in, so the pool visibly
+ * mixes and the dealt rows come out interleaved — otherwise pool-and-deal is
+ * dots going down and coming back up, with nothing to show that anything
+ * changed. The settled dots are uniform again; the shades belong to the act,
+ * not to the data.
+ *
+ * @param {object} opts
+ * @param {Element[][]} opts.sourceGroups - [group1, group2] circles, as drawn
+ * @param {Element[][]} opts.targetGroups - the same for the dealt panel
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
+  if (prefersReducedMotion()) return 0;
+  const src = [...(sourceGroups[0] ?? []), ...(sourceGroups[1] ?? [])];
+  const tgt = [...(targetGroups[0] ?? []), ...(targetGroups[1] ?? [])];
+  if (!src.length || src.length !== tgt.length) return 0;
+  dismissAirborneStat();
+
+  const centre = (/** @type {Element} */ c) => {
+    const r = c.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, size: Math.max(r.width, 7) };
+  };
+  // Pair each dealt dot with a source dot of the SAME VALUE. The permutation
+  // says which observation went where, but two observations with the same value
+  // are indistinguishable in this picture — matching on the value is both
+  // simpler and exactly as true, and it does not depend on the order the
+  // dotplot happens to put its circles in the DOM.
+  //
+  // On SCREEN position within its own plot, not on `cx`. The two rows' SVGs
+  // come out with slightly different viewBoxes, so one value is cx 62.80 in the
+  // top plot and 64.38 in the bottom — the same place on screen, a different
+  // number. Keying on `cx` paired only the dots whose groups happened to agree:
+  // 10 of 18. (2026-10-02.)
+  const relX = (/** @type {Element} */ c) => {
+    const own = /** @type {SVGGraphicsElement} */ (c).ownerSVGElement;
+    const r = c.getBoundingClientRect();
+    const o = own?.getBoundingClientRect();
+    return Math.round(r.left + r.width / 2 - (o?.left ?? 0));
+  };
+  const byValue = new Map();
+  src.forEach((c, i) => {
+    const k = relX(c);
+    if (!byValue.has(k)) byValue.set(k, []);
+    byValue.get(k).push({ c, group: i < (sourceGroups[0]?.length ?? 0) ? 0 : 1 });
+  });
+  /** Nearest key with anything left in it — rounding can leave a 1px gap. */
+  const claim = (/** @type {number} */ k) => {
+    for (const d of [0, 1, -1, 2, -2]) {
+      const bucket = byValue.get(k + d);
+      if (bucket?.length) return bucket.shift();
+    }
+    return null;
+  };
+
+  const n1 = targetGroups[0]?.length ?? 0;
+  /** @type {Array<{el: HTMLElement, from: {x:number,y:number}, pool: {x:number,y:number}, to: {x:number,y:number}}>} */
+  const flyers = [];
+  // The pool sits where the dealt panel's two rows meet, so the deal is the
+  // only vertical move that means anything.
+  const rowY = [targetGroups[0], targetGroups[1]].map(g => g?.length ? centre(g[0]).y : 0);
+  const poolY = (rowY[0] + rowY[1]) / 2;
+
+  tgt.forEach((dot, i) => {
+    const match = claim(relX(dot));
+    if (!match) return;
+    const from = centre(match.c);
+    const to = centre(dot);
+    const el = document.createElement('div');
+    el.className = 'dpr-flyer dpr-shuffle';
+    el.style.cssText = `position:fixed;left:${from.x - to.size / 2}px;top:${from.y - to.size / 2}px;`
+      + `width:${to.size}px;height:${to.size}px;border-radius:50%;`
+      + `background:${POOL_SHADE[match.group]};z-index:1000;pointer-events:none;`;
+    document.body.appendChild(el);
+    /** @type {SVGElement} */ (dot).style.opacity = '0';
+    flyers.push({ el, from, pool: { x: to.x, y: poolY }, to, dot, rank: i, group: i < n1 ? 0 : 1 });
+  });
+  if (!flyers.length) return 0;
+
+  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const total = POOL_MS + POOL_HOLD + DEAL_MS + DEAL_SETTLE;
+  const t0 = performance.now();
+
+  function step(now) {
+    const e = now - t0;
+    for (const f of flyers) {
+      let x, y;
+      if (e < POOL_MS) {
+        const t = ease(e / POOL_MS);
+        x = f.from.x + (f.pool.x - f.from.x) * t;
+        y = f.from.y + (f.pool.y - f.from.y) * t;
+      } else if (e < POOL_MS + POOL_HOLD) {
+        x = f.pool.x; y = f.pool.y;
+      } else {
+        // Vertical only: x is already the value's place in the dealt panel.
+        const t = ease(Math.min((e - POOL_MS - POOL_HOLD) / DEAL_MS, 1));
+        x = f.to.x;
+        y = f.pool.y + (f.to.y - f.pool.y) * t;
+      }
+      f.el.style.left = `${x - f.el.offsetWidth / 2}px`;
+      f.el.style.top = `${y - f.el.offsetHeight / 2}px`;
+    }
+    if (e < POOL_MS + POOL_HOLD + DEAL_MS) { requestAnimationFrame(step); return; }
+    for (const f of flyers) {
+      /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
+      f.el.style.transition = `opacity ${DEAL_SETTLE}ms ease-out`;
+      f.el.style.opacity = '0';
+      setTimeout(() => f.el.remove(), DEAL_SETTLE + 60);
+    }
+    setTimeout(() => onDone?.(), DEAL_SETTLE);
+  }
+  requestAnimationFrame(step);
+  return total;
+}
