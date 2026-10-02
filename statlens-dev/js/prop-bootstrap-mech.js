@@ -264,7 +264,7 @@ function makeStacks(data, opts = {}) {
  * @param {number|null} [reference] observed proportion to pin, 0..1
  * @returns {HTMLElement}
  */
-function makeAggregate(data, label, reference = null) {
+function makeAggregate(data, label, reference = null, withDelta = true) {
   const { s, f, n } = counts(data);
   const el = document.createElement('div');
   el.className = 'pbm-aggregate';
@@ -278,7 +278,12 @@ function makeAggregate(data, label, reference = null) {
     ref.className = 'pbm-ref';
     ref.style.left = `${pct}%`;
     bar.appendChild(ref);
-    el.appendChild(deltaEl(s, n, reference));
+    // The change, written out — unless the panel already says it. A one-sample
+    // page closes with "Resample p-hat = 1/62 = 0.016 · successes changed by
+    // −2" on the statistic's own line, and the delta underneath repeated both
+    // halves of that: four lines for one fact. The two-group panels have no
+    // such line, so each group still carries its own. (Jeff, 2026-10-02.)
+    if (withDelta) el.appendChild(deltaEl(s, n, reference));
   }
   return el;
 }
@@ -366,10 +371,10 @@ function fmtProp(/** @type {number} */ p) {
 }
 
 /** Build a filled (static) representation in the given style. */
-function makeFilled(data, style, label, width = 0, layout = null, reference = null) {
+function makeFilled(data, style, label, width = 0, layout = null, reference = null, withDelta = true) {
   const n = data.length;
   return effStyle(style, n) === 'aggregate'
-    ? makeAggregate(data, label, reference)
+    ? makeAggregate(data, label, reference, withDelta)
     : makeStacks(data, { label, width, layout: layout ?? undefined }).el;
 }
 
@@ -407,7 +412,7 @@ export function renderPropResample(container, resample, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
   const el = makeFilled(resample, opts.style, 'Resample', usableWidth(container),
-    opts.layout ?? null, opts.reference ?? null);
+    opts.layout ?? null, opts.reference ?? null, opts.delta !== false);
   el.classList.add('pbm-resample');
   container.appendChild(el);
   fitAggCounts(el.querySelector('.mech-prop-bar'));
@@ -435,7 +440,7 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   // The observed proportion, which the aggregate view pins as its reference.
   const reference = data.length ? counts(data).s / data.length : null;
   if (style === 'aggregate') {
-    return showAggregateDraw(resampleEl, bagEl, resample, reference, animate);
+    return showAggregateDraw(resampleEl, bagEl, resample, reference, animate, opts.delta !== false);
   }
   return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
 }
@@ -456,10 +461,10 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
  * @param {boolean} animate
  * @returns {number} duration ms
  */
-function showAggregateDraw(resampleEl, bagEl, resample, reference, animate) {
+function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, withDelta = true) {
   const { s, f, n } = counts(resample);
   resampleEl.innerHTML = '';
-  const el = makeAggregate(resample, 'Resample', reference);
+  const el = makeAggregate(resample, 'Resample', reference, withDelta);
   el.classList.add('pbm-resample');
   resampleEl.appendChild(el);
   fitAggCounts(el.querySelector('.mech-prop-bar'));

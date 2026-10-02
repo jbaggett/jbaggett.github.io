@@ -2504,6 +2504,9 @@ export function initSimPage(config) {
             // The aggregate view pins the observed proportion; a style switch
             // has to carry it through or the reference line vanishes.
             reference: data1.length ? mean(data1) : null,
+            // The panel's own closing line says what changed, so the display
+            // does not say it again underneath.
+            delta: false,
           });
         }
       }
@@ -2811,7 +2814,8 @@ export function initSimPage(config) {
         const resampS = resampleValues.filter(v => v === 1).length;
         const diff = resampS - origS;
         const sign = diff > 0 ? '+' : '';
-        mechanismDescEl.textContent = `successes changed by ${sign}${diff}`;
+        mechanismDescEl.textContent =
+          `successes changed by ${diff < 0 ? '\u2212' : sign}${Math.abs(diff)}`;
       } else {
         let notSelected = 0;
         let repeated = 0;
@@ -3062,7 +3066,7 @@ export function initSimPage(config) {
       // The indices are what let the bag say which observations were drawn, and
       // how many times. The grid animation never asked for them.
       return showPropResample(resampleContentEl, originalContentEl, resampleValues, data1,
-        { style: propMechStyle, animate, indices: lastResampleIndices ?? undefined });
+        { style: propMechStyle, animate, indices: lastResampleIndices ?? undefined, delta: false });
     }
     const successes = resampleValues.filter(v => v === 1).length;
     const failures = resampleValues.length - successes;
