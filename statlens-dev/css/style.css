@@ -2145,6 +2145,13 @@ input[aria-invalid="true"] {
   border: 2px solid #fff;
   outline: 1px solid rgba(30, 30, 30, 0.45);
 }
+/* …and the white has to WIN. A ghost carries `obs-mark pbm-dot pbm-success`
+   for its colour, and `.obs-mark.pbm-success { border-color: var(--obs-success-edge) }`
+   is two classes to the rule above's one — so successes were painted with a
+   transparent border and all you saw was the dark outer ring. Amber footprints
+   read as black-edged, blue ones as white-edged, for no reason a student could
+   discover. (Jeff, 2026-10-03: "leave all boundaries white for legibility.") */
+.scoop-ghost.obs-mark { border-color: #fff; }
 
 .mech-prop-fill {
   height: 100%;

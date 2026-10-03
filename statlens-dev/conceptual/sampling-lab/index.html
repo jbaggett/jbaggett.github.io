@@ -124,6 +124,9 @@
         .marble-grid {
             display: flex; flex-wrap: wrap; gap: 3px;
             padding: 0.6rem 0.3rem 0.2rem; align-content: flex-start;
+            /* Centred, like the dot block on the one-proportion randomization
+               test — the two sit a week apart in the course. */
+            justify-content: center;
         }
         .marble { width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; }
         .cat-failure { background: #0072B2; }
@@ -132,11 +135,21 @@
             background-image: repeating-linear-gradient(45deg,
                 #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px);
         }
-        /* Proportion population: a shaded square split left (success, amber) /
-           right (failure, blue). We sample uniform points on it. */
+        /* Proportion population: a shaded area split left (success, amber) /
+           right (failure, blue). We sample uniform points on it.
+
+           A wide board rather than the 150×140 square it was, to match the
+           one-proportion randomization test's null population exactly — same
+           height, same radius, same proportions of the panel it sits in. The
+           two pages run the same animation on the same mechanism (n draws from
+           a population with a known success fraction), and showing it on two
+           differently-shaped figures made a student work out that they were
+           the same thing. (Jeff, 2026-10-03: "it will be less confusing if the
+           animations are nearly identical.") The height is
+           `.mech-prop-bar.is-board`'s, in css/style.css. */
         .prop-square {
             position: relative;
-            display: flex; width: 150px; height: 140px; margin: 0.5rem auto 0;
+            display: flex; width: 100%; height: 56px; margin: 0.5rem auto 0;
             border: 1px solid #bbb; border-radius: 4px; overflow: hidden;
         }
         .prop-square .prop-region { height: 100%; flex: 0 0 auto; }

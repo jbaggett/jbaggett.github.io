@@ -372,7 +372,7 @@ export function initOneSamplePage(config) {
     const host = /** @type {HTMLElement|null} */ (mechSimStat?.querySelector('.mech-prop-draw'));
     if (!host) return 0;
     renderPropResample(host, trials, {
-      style: 'dots', label: 'This simulated sample', delta: false,
+      style: 'dots', label: 'This simulated sample', delta: false, wide: true,
     });
     if (!animate) return 0;
     // The board only exists while the null side is showing. Toggle back to the
@@ -605,7 +605,7 @@ export function initOneSamplePage(config) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
         mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
+          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px', board: true })}`;
       }
       computePreSimDomain();
       scrollToControls();
@@ -707,7 +707,7 @@ export function initOneSamplePage(config) {
           const obsPct = n > 0 ? (k / n * 100) : 0;
           const obsFail = n - k;
           mechObservedStat.innerHTML = `<span class="obs-success-count">${k}</span> of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-            ${propBarHTML(k, obsFail, { style: 'margin-top:4px' })}`;
+            ${propBarHTML(k, obsFail, { style: 'margin-top:4px', board: true })}`;
         }
         propDataApi.triggerPostLoad();
         setPageTitle(baseTitle, currentSourceName, { n });
@@ -1119,7 +1119,7 @@ export function initOneSamplePage(config) {
         const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
         const obsFailures = sampleN - sampleSuccesses;
         mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
+          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px', board: true })}`;
       }
     } else {
       // One-mean: slide the dots back from the null-shifted positions to the
@@ -1258,7 +1258,7 @@ export function initOneSamplePage(config) {
       lastPropDraw = Array.from({ length: n }, (_, i) => (i < lastSuccesses ? 1 : 0));
       lastSimDetail += propDots
         ? '<div class="mech-prop-draw"></div>'
-        : `\n        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
+        : `\n        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px', board: true })}`;
 
       if (mechanismDescEl) {
         // What the draw actually is: n independent trials, each a success with

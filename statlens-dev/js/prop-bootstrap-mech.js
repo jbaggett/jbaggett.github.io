@@ -155,7 +155,7 @@ const BLOCK_H = 168;
  * @param {number} availW usable width in px; 0 when the panel is not on screen
  * @returns {{cols: number, size: number}}
  */
-export function blockLayout(n, availW) {
+export function blockLayout(n, availW, opts = {}) {
   // Not measurable yet (hidden strip, detached node): a desktop panel's width,
   // which is also what the two-group pages give each half.
   const W = Math.max(availW || 0, 150) - 4;
@@ -163,7 +163,14 @@ export function blockLayout(n, availW) {
   let cols = Math.max(1, Math.min(n, Math.floor((W + DOT_GAP) / (size + DOT_GAP))));
   // …but not a single line, however much room there is. A block 4 dots wide
   // for every 1 tall still reads as a rectangle; 10 in a row reads as a queue.
-  const widest = Math.max(1, Math.ceil(Math.sqrt(n * 4)));
+  //
+  // `wide` lifts that cap for a panel showing ONE sample rather than a bag and
+  // its resample side by side. The Sampling Distribution Lab's scooped sample
+  // fills the width it is given, and the one-proportion draw sits beside it in
+  // the student's week — a queue there and a rectangle here is a difference
+  // with nothing behind it. (Jeff, 2026-10-03: "the grid of dots in Step 2 can
+  // be wider and centered.")
+  const widest = opts.wide ? n : Math.max(1, Math.ceil(Math.sqrt(n * 4)));
   for (const s of DOT_STEPS) {
     const maxCols = Math.max(1, Math.min(widest, Math.floor((W + DOT_GAP) / (s + DOT_GAP))));
     const maxRows = Math.max(1, Math.floor((BLOCK_H + DOT_GAP) / (s + DOT_GAP)));
@@ -417,8 +424,10 @@ export function renderPropBag(container, data, opts = {}) {
 export function renderPropResample(container, resample, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
+  const layout = opts.layout
+    ?? (opts.wide ? blockLayout(resample.length, usableWidth(container), { wide: true }) : null);
   const el = makeFilled(resample, opts.style, opts.label || 'Resample', usableWidth(container),
-    opts.layout ?? null, opts.reference ?? null, opts.delta !== false);
+    layout, opts.reference ?? null, opts.delta !== false);
   el.classList.add('pbm-resample');
   container.appendChild(el);
   fitAggCounts(el.querySelector('.mech-prop-bar'));
@@ -712,15 +721,20 @@ const MIN_REGION_PCT = 18;
  * are joined with a middle dot rather than a slash — still two counts, still
  * not a fraction.
  *
+ * `board: true` gives it the same height as the null population's board, so
+ * the Observed|Null toggle changes what the bar SAYS and not what it is. Two
+ * shapes for one quantity made the toggle look like a change of subject.
+ * (Jeff, 2026-10-03.)
+ *
  * @param {number} successes
  * @param {number} failures
- * @param {{ className?: string, style?: string }} [opts]
+ * @param {{ className?: string, style?: string, board?: boolean }} [opts]
  * @returns {string}
  */
 export function propBarHTML(successes, failures, opts = {}) {
   const n = successes + failures;
   const pct = n > 0 ? (successes / n) * 100 : 0;
-  const cls = opts.className ? ` ${opts.className}` : '';
+  const cls = (opts.board ? ' is-board' : '') + (opts.className ? ` ${opts.className}` : '');
   const style = opts.style ? ` style="${opts.style}"` : '';
   const aria = `${successes} successes, ${failures} failures`;
   const bar = `<div class="mech-prop-bar${cls}" aria-label="${aria}"${style}>`
