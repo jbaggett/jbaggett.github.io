@@ -131,6 +131,16 @@ export function initSimPage(config) {
   // drawn: charts measure the box they land in, so moving one afterwards means
   // re-rendering it. Default is unchanged.
   applyRequestedLayout(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
+  // Does this page's draw POOL the two groups? If it does, the two dotplots
+  // have to stay stacked on one axis whatever the layout: the shuffle's whole
+  // argument is that the dots move vertically only — a value that never moves
+  // sideways is a value that did not change — and side by side, every dealt dot
+  // crosses the gap between two differently-placed axes and says the opposite.
+  // The bootstrap pages resample each group on its own and have no such claim
+  // to protect, so they take the side-by-side tiers. (2026-10-03.)
+  if (config.mode !== 'bootstrap' && config.twoGroup && !config.proportion) {
+    document.body.setAttribute('data-mech-pools', 'true');
+  }
     const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   // ── View: Individual | Aggregate, for the quantitative pages ────────
   //

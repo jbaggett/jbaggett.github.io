@@ -2081,6 +2081,47 @@ input[aria-invalid="true"] {
    inherited 10 rendered at 5. */
 .mech-dot-stack .mech-dot-cell svg .tick text { font-size: 16px; }
 
+/* In a TIER, the two groups sit side by side.
+ *
+ * Stacked is right in the strip, where the two panels share a row and each one
+ * is half the page: a value then sits at the same x in both groups, and the
+ * shuffle can pool them without anything moving sideways. In a tier the panel
+ * is the whole page and stacking spends that width on nothing — two 199px
+ * dotplots make a 460px tier, two tiers make 920px, and Step 1 and Step 2
+ * cannot be seen together on a laptop. (Jeff, 2026-10-03: "step 1 and step 2
+ * get too big vertically here so we can't see them together.")
+ *
+ * The labels go ABOVE in Step 1 and BELOW in Step 2, so the two steps' PLOTS
+ * face each other across the tier boundary rather than being held apart by two
+ * rows of text — which is also the gap the draw animation has to cross.
+ *
+ * NOT on a page whose draw pools the two groups (`data-mech-pools`): there the
+ * stacking is load-bearing, because the shuffle moves its dots vertically only
+ * and side by side every dealt dot would cross between two differently-placed
+ * axes. See js/sim-app.js.
+ */
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier .mech-dot-stack,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-stack {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 0.15rem 0.8rem;
+}
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier .mech-dot-row,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-row {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier--draw .mech-dot-row,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier--draw .mech-dot-row {
+  flex-direction: column-reverse;
+}
+/* The key names the plot above or below it now, not the one beside it. */
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier .mech-dot-key,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-key {
+  text-align: center;
+}
+
 /* Side-by-side mini histograms in two-group mechanism strip */
 .mech-hist-pair {
   display: flex;
