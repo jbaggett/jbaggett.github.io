@@ -1673,9 +1673,11 @@ input[aria-invalid="true"] {
 .mech-tier-head .pbm-style-toggle,
 .mechanism-title .pbm-style-toggle { margin-left: auto; font-weight: 400; }
 /* The panel heading becomes a row so the control can sit at its far end. */
-.mechanism-panel .mechanism-title:has(.pbm-style-toggle) {
+.mechanism-panel .mechanism-title:has(.pbm-style-toggle),
+.mechanism-panel .mechanism-title:has(.mech-null-toggle) {
   display: flex; align-items: center; gap: 0.5rem;
 }
+.mechanism-title .mech-null-toggle { margin-left: auto; font-weight: 400; }
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);

@@ -825,6 +825,24 @@ export function initOneSamplePage(config) {
    * so an instructor can step between "the original sample" and "what it looks
    * like if H₀ is true" at their own pace instead of relying on the auto-morph.
    */
+  /**
+   * Set a panel heading's words without evicting what lives in it.
+   *
+   * The Observed | Null toggle sits INSIDE this heading now, and `textContent =`
+   * takes it with it — `morphToNull` rewrites the heading on the very first
+   * generate, so the control was built and destroyed in the same tick. (The
+   * paired page's heading had the identical problem on the other engine.)
+   *
+   * @param {Element|null} el
+   * @param {string} text
+   */
+  function setPanelHeading(el, text) {
+    if (!el) return;
+    const keep = [...el.children];
+    el.textContent = text;
+    for (const child of keep) el.appendChild(child);
+  }
+
   function ensureNullToggle() {
     if (nullToggleBtns) return;
     const panel = document.getElementById('mech-observed');
@@ -837,7 +855,10 @@ export function initOneSamplePage(config) {
     wrap.innerHTML =
       '<button type="button" data-view="observed" aria-pressed="true">Observed</button>'
       + '<button type="button" data-view="null" aria-pressed="false">Null</button>';
-    titleEl.after(wrap);
+    // Inside the heading, at its far end — it used to go AFTER the title, which
+    // put it on a row of its own under "Observed Data". Same placement as the
+    // View toggle on the bootstrap pages. (Jeff, 2026-10-02.)
+    titleEl.appendChild(wrap);
     nullToggleBtns = wrap.querySelectorAll('button');
     for (const b of nullToggleBtns) {
       b.addEventListener('click', () => {
@@ -944,7 +965,7 @@ export function initOneSamplePage(config) {
       const nullFailures = sampleN - nullSuccesses;
 
       // Change title
-      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
+      setPanelHeading(mechObservedTitle, words.source);
 
       // Find existing prop bar fill and morph it
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
@@ -978,7 +999,7 @@ export function initOneSamplePage(config) {
       return 0;
     } else {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
-      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
+      setPanelHeading(mechObservedTitle, words.source);
 
       // Stat line doubles as the PERSISTENT explanation of how this null
       // distribution was made (every value shifted by the same constant).
@@ -1037,7 +1058,7 @@ export function initOneSamplePage(config) {
    */
   function revertToObserved() {
     nullShown = false;
-    if (mechObservedTitle) mechObservedTitle.textContent = words.beforeShift ?? words.source;
+    setPanelHeading(mechObservedTitle, words.beforeShift ?? words.source);
 
     if (isProp) {
       // Re-render with observed proportion
@@ -1131,7 +1152,14 @@ export function initOneSamplePage(config) {
     const prevLength = allStats.length;
 
     if (simTitleEl) {
-      simTitleEl.textContent = count === 1 ? words.draw : words.drawLatest;
+      // The one-mean page draws WITH REPLACEMENT from the null-shifted sample,
+      // so it can say so, the way the bootstrap pages do — the STEP 2 tag
+      // beside it already says which panel it is. The one-prop page is left
+      // alone: its draw is a Bernoulli sample from p₀, not a resample of
+      // anything, and calling it one would be false. (Jeff, 2026-10-02.)
+      setPanelHeading(simTitleEl, isProp
+        ? (count === 1 ? words.draw : words.drawLatest)
+        : 'Resample with Replacement');
     }
 
     lastSimStat = 0;
