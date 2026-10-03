@@ -10,8 +10,8 @@ import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { createSharedScale } from './mechanisms/entities.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
-import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animateCombineStats }
-  from './mechanisms/draw-animation.js';
+import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animateCombineStats,
+  cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
@@ -1655,6 +1655,11 @@ export function initSimPage(config) {
   }
 
   function generateSamples(count) {
+    // A clean slate. Press +1 before the last draw has finished and two runs
+    // shared the screen — the old flyers still travelling, the old dots still
+    // hidden waiting for a finish that would arrive after the new ones landed.
+    // (Jeff, 2026-10-03.)
+    cancelDrawAnimations();
     // Detect auto-play: skip flying chip animation when play button is active
     const playBtn = document.querySelector('.play-btn');
     const isAutoPlay = playBtn?.getAttribute('aria-pressed') === 'true';

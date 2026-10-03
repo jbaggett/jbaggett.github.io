@@ -15,7 +15,7 @@ import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
 import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView }
   from './prop-bootstrap-mech.js';
-import { animateDartScoop } from './mechanisms/draw-animation.js';
+import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -1240,6 +1240,10 @@ export function initOneSamplePage(config) {
 
   /** @param {number} count */
   function generateSimulations(count) {
+    // A clean slate: see the note in js/sim-app.js. The dart scoop hides its
+    // target dots until the darts arrive, so an interrupted run would leave
+    // them invisible.
+    cancelDrawAnimations();
     if (!rng) rng = createRng(seed);
 
     // Show mechanism strip on first generate (deferred from data load)

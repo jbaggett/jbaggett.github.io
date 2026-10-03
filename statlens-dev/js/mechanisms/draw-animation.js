@@ -35,6 +35,54 @@
 import { prefersReducedMotion } from '../settings.js';
 
 /** Matches the existing resample flyer, so the styles differ in motion only. */
+/**
+ * Every animation currently in flight, and how to stop it.
+ *
+ * These animations run on requestAnimationFrame and clean up in their own last
+ * frame — which is correct right up until someone presses +1 again before that
+ * frame arrives. Then two runs share the screen: 64 flyers for a 48-dot
+ * mechanism, the first run's dots still hidden waiting for its own finish, and
+ * the second run's arriving on top of them. (Jeff, 2026-10-03: "the resample
+ * dots in Step 2 don't all disappear when we sample again. the animation needs
+ * a clean slate each time we press +1.")
+ *
+ * So each run registers how to abort itself, and starting a draw cancels
+ * whatever was still going. An aborted run must leave the DOM as if it had
+ * finished — flyers removed, hidden targets shown again — because the next
+ * render is about to draw over it either way.
+ *
+ * @type {Set<() => void>}
+ */
+const inFlight = new Set();
+
+/**
+ * Stop every animation still running and undo what it was mid-way through.
+ *
+ * Safe to call when nothing is running. Call it before starting a new draw.
+ */
+export function cancelDrawAnimations() {
+  for (const abort of [...inFlight]) {
+    try { abort(); } catch { /* a half-torn-down run is still better aborted */ }
+  }
+  inFlight.clear();
+}
+
+/**
+ * Register a run. Returns a `stopped()` predicate for its frame loop to check
+ * and a `finish()` to call when it ends normally.
+ *
+ * @param {() => void} undo - put the DOM back as a finished run would leave it
+ */
+function trackRun(undo) {
+  let dead = false;
+  const abort = () => { if (!dead) { dead = true; undo(); } };
+  inFlight.add(abort);
+  return {
+    stopped: () => dead,
+    finish: () => { dead = true; inFlight.delete(abort); },
+  };
+}
+
 const FLY_COLOR = '#E07020';
 
 /**
@@ -965,11 +1013,19 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
   });
   if (!flyers.length) return 0;
 
+  const run = trackRun(() => {
+    for (const f of flyers) {
+      f.el.remove();
+      /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
+    }
+  });
+
   const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
   const total = POOL_MS + POOL_HOLD + DEAL_MS + DEAL_SETTLE;
   const t0 = performance.now();
 
   function step(now) {
+    if (run.stopped()) return;
     const e = now - t0;
     for (const f of flyers) {
       let x, y;
@@ -989,6 +1045,7 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
       f.el.style.top = `${y - f.el.offsetHeight / 2}px`;
     }
     if (e < POOL_MS + POOL_HOLD + DEAL_MS) { requestAnimationFrame(step); return; }
+    run.finish();
     for (const f of flyers) {
       /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
       f.el.style.transition = `opacity ${DEAL_SETTLE}ms ease-out`;
@@ -1135,9 +1192,15 @@ export function animateDartScoop({ board, split, targets, successCount,
     el.style.height = `${sz}px`;
   };
 
+  const run = trackRun(() => {
+    for (const f of flyers) f.dot.remove();
+    targets.forEach(t => { t.style.removeProperty('visibility'); });
+  });
+
   let ghostsPlaced = false;
   const t0 = performance.now();
   function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
     const elapsed = now - t0;
     // The instant the darts lift off, stamp the footprints they leave.
     if (elapsed >= flyStart && !ghostsPlaced) {
@@ -1174,6 +1237,7 @@ export function animateDartScoop({ board, split, targets, successCount,
     }
     if (elapsed < total) requestAnimationFrame(step);
     else {
+      run.finish();
       targets.forEach(t => { t.style.removeProperty('visibility'); });
       flyers.forEach(f => f.dot.remove());
       done();
@@ -1235,8 +1299,11 @@ export function animateCombineStats({ sources, target, onDone }) {
     return { dot, sx, sy };
   });
 
+  const run = trackRun(() => { for (const f of flyers) f.dot.remove(); });
+
   const t0 = performance.now();
   function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
     const t = Math.min((now - t0) / COMBINE_STAT_MS, 1);
     // Ease out: they set off quickly and arrive together, which is what makes
     // the meeting read as one event rather than two arrivals.
@@ -1249,7 +1316,7 @@ export function animateCombineStats({ sources, target, onDone }) {
       if (t > 0.86) f.dot.style.opacity = String((1 - t) / 0.14);
     }
     if (t < 1) requestAnimationFrame(step);
-    else { flyers.forEach(f => f.dot.remove()); done(); }
+    else { run.finish(); flyers.forEach(f => f.dot.remove()); done(); }
   }
   requestAnimationFrame(step);
   return COMBINE_STAT_MS + COMBINE_STAT_SETTLE;
