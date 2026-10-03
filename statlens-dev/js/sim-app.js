@@ -10,7 +10,8 @@ import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { createSharedScale } from './mechanisms/entities.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
-import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal } from './mechanisms/draw-animation.js';
+import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animateCombineStats }
+  from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
@@ -1591,6 +1592,35 @@ export function initSimPage(config) {
    */
   /** @type {ReturnType<typeof setTimeout>|null} */
   let pendingChartTimer = null;
+  /**
+   * The two group means meet on the difference, then it flies to the chart.
+   *
+   * The number being plotted is not something either group has — it is what you
+   * get by taking one from the other — and the drop used to start at the
+   * difference as if it had simply appeared there. (Jeff, 2026-10-03.)
+   *
+   * Returns immediately with no combine step when there are no mean markers to
+   * leave from: proportions draw blocks rather than dotplots, and a large-n
+   * mean draws a histogram.
+   *
+   * @param {Element|null} dropSource - the difference readout
+   */
+  function combineThenDrop(dropSource) {
+    if (!dropSource || !chartContainer) return;
+    const marker = (/** @type {string} */ id) =>
+      document.getElementById(id)?.querySelector('.overlays line') ?? null;
+    const ms = animateCombineStats({
+      sources: [marker('mech-dot-resamp-1'), marker('mech-dot-resamp-2')],
+      target: dropSource,
+    });
+    if (!ms) {
+      animateDropToChart(/** @type {HTMLElement} */ (dropSource), chartContainer);
+      return;
+    }
+    setTimeout(() => animateDropToChart(
+      /** @type {HTMLElement} */ (dropSource), /** @type {HTMLElement} */ (chartContainer)), ms);
+  }
+
   function generateSamples(count) {
     // Detect auto-play: skip flying chip animation when play button is active
     const playBtn = document.querySelector('.play-btn');
@@ -1798,6 +1828,8 @@ export function initSimPage(config) {
           // Two-group boxplot morph duration (returned from showTwoGroupMechanism above)
           mechAnimMs = twoGroupMorphMs;
         }
+
+
         // For two-group, get the diff value element for drop animation
         const bootDiffEl = !showOneSampleMech
           ? document.querySelector('#mech-resample-content .mech-diff')
@@ -1809,9 +1841,7 @@ export function initSimPage(config) {
           pendingChartTimer = null;
           renderChart(allStats, ciForChart, computeObservedStat());
           const dropSource = bootDiffValueEl || bootDiffEl || resampleMeanEl;
-          if (dropSource && chartContainer) {
-            animateDropToChart(/** @type {HTMLElement} */ (dropSource), chartContainer);
-          }
+          combineThenDrop(dropSource);
         }, chartDelay);
       } else {
         lastWasSingle = false;
@@ -1970,9 +2000,7 @@ export function initSimPage(config) {
           pendingChartTimer = null;
           renderChart(allStats, null, observedStat, direction);
           const dropSourceEl = mechDiffEl || resampleMeanEl;
-          if (dropSourceEl && chartContainer) {
-            animateDropToChart(/** @type {HTMLElement} */ (dropSourceEl), chartContainer);
-          }
+          combineThenDrop(dropSourceEl);
         }, randDelay);
       } else {
         renderChart(allStats, null, observedStat, direction);

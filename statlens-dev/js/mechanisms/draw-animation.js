@@ -1182,3 +1182,75 @@ export function animateDartScoop({ board, split, targets, successCount,
   requestAnimationFrame(step);
   return total;
 }
+
+// ─── Two statistics becoming one ────────────────────────────────────────
+
+/** Converge, then let the result settle before it travels on. */
+const COMBINE_STAT_MS = 620, COMBINE_STAT_SETTLE = 180;
+
+/**
+ * Fly two group statistics together into the one they make.
+ *
+ * On a two-group page the difference used to appear in the readout and then
+ * set off for the distribution, which skips the step that matters: the number
+ * being plotted is not a thing either group has, it is what you get by taking
+ * one from the other. So the two means leave their own markers, meet on the
+ * difference, and only then does the difference fly to the chart.
+ * (Jeff, 2026-10-03: "say the sample means for each group first fly together to
+ * suggest taking the difference then having it fly to the resampling
+ * distribution.")
+ *
+ * Each flyer carries the colour of the marker it left, so the two arriving dots
+ * are visibly the two lines you were just looking at.
+ *
+ * @param {object} opts
+ * @param {Element[]} opts.sources - the markers the statistics leave from
+ * @param {Element} opts.target - where they meet (the difference readout)
+ * @param {() => void} [opts.onDone]
+ * @returns {number} ms before the result is ready to travel on, 0 if it declined
+ */
+export function animateCombineStats({ sources, target, onDone }) {
+  const done = () => { if (onDone) onDone(); };
+  const srcs = (sources ?? []).filter(Boolean);
+  if (prefersReducedMotion() || srcs.length < 2 || !target) { done(); return 0; }
+
+  const tb = target.getBoundingClientRect();
+  if (!tb.width && !tb.height) { done(); return 0; }
+  const tx = tb.left + tb.width / 2;
+  const ty = tb.top + tb.height / 2;
+
+  const flyers = srcs.map((el) => {
+    const r = el.getBoundingClientRect();
+    // A marker line has zero width; its centre is still where it is.
+    const sx = r.left + r.width / 2;
+    const sy = r.top + r.height / 2;
+    const colour = el.getAttribute?.('stroke') || '#7B2D8E';
+    const dot = document.createElement('div');
+    dot.className = 'stat-combine-flyer';
+    dot.style.cssText = 'position:fixed;width:12px;height:12px;border-radius:50%;'
+      + `background:${colour};z-index:1000;pointer-events:none;`
+      + 'box-shadow:0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4);'
+      + `left:${sx - 6}px;top:${sy - 6}px;`;
+    document.body.appendChild(dot);
+    return { dot, sx, sy };
+  });
+
+  const t0 = performance.now();
+  function step(/** @type {number} */ now) {
+    const t = Math.min((now - t0) / COMBINE_STAT_MS, 1);
+    // Ease out: they set off quickly and arrive together, which is what makes
+    // the meeting read as one event rather than two arrivals.
+    const e = 1 - Math.pow(1 - t, 3);
+    for (const f of flyers) {
+      f.dot.style.left = `${f.sx + (tx - f.sx) * e - 6}px`;
+      f.dot.style.top = `${f.sy + (ty - f.sy) * e - 6}px`;
+      // Fade only at the very end, so they are solid for the whole journey and
+      // vanish INTO the number rather than before reaching it.
+      if (t > 0.86) f.dot.style.opacity = String((1 - t) / 0.14);
+    }
+    if (t < 1) requestAnimationFrame(step);
+    else { flyers.forEach(f => f.dot.remove()); done(); }
+  }
+  requestAnimationFrame(step);
+  return COMBINE_STAT_MS + COMBINE_STAT_SETTLE;
+}
