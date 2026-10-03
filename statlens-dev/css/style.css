@@ -5734,6 +5734,18 @@ body[data-mech-layout="tiers"] .mech-tier--source .mechanism-panel > p,
 body[data-mech-layout="tiers"] .mech-tier--draw .mechanism-panel > p,
 body[data-mech-layout="split"] .mech-tier--source .mechanism-panel > p,
 body[data-mech-layout="split"] .mech-tier--draw .mechanism-panel > p { align-self: flex-start; }
+/* …but a stat paragraph that CARRIES the display is not text.
+   `<p class="mechanism-stat">` holds the proportion board and the block of
+   dots, so the rule above shrink-wrapped them to the width of the sentence
+   printed above them: a 359px board and a 6-column block inside a 1028px tier,
+   both hard against the left edge, while the distribution beside them used the
+   whole width. Stretch them and `.mechanism-stat`'s own `text-align: center`
+   does the rest — the same centred full-width display the strip layout has
+   always shown. (Jeff, 2026-10-03: "use the width and keep centered.") */
+body[data-mech-layout="tiers"] .mech-tier .mechanism-panel > p:has(.mech-prop-bar, .mech-prop-draw),
+body[data-mech-layout="split"] .mech-tier .mechanism-panel > p:has(.mech-prop-bar, .mech-prop-draw) {
+  align-self: stretch;
+}
 body[data-mech-layout="tiers"] .mech-tier--source .mech-minichart,
 body[data-mech-layout="tiers"] .mech-tier--draw .mech-minichart,
 body[data-mech-layout="split"] .mech-tier--source .mech-minichart,

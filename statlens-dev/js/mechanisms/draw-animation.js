@@ -1074,6 +1074,27 @@ export function animateDartScoop({ board, split, targets, successCount,
   const flyStart = (n - 1) * STAGGER + DART_THROW + DART_HOLD;
   const total = flyStart + DART_FLY;
 
+  // Throw them in a RANDOM order.
+  //
+  // A dart's destination is its dot, and the dots are sorted successes-first so
+  // the amber fraction is p̂ — which meant dart i launched in that order too, and
+  // every amber dart was thrown before any blue one. The picture said: first we
+  // draw the successes, then we draw the failures. The whole claim of the
+  // mechanism is that each observation is an independent draw, and watching the
+  // board fill left-to-right-by-outcome contradicts it.
+  //
+  // So the LAUNCH ORDER is shuffled while each dart keeps its own landing spot
+  // and its own dot. Nothing about the sample changes — only when each dart
+  // leaves. (Jeff, 2026-10-03.)
+  const order = targets.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+  /** slot[i] = when dart i is thrown, as a position in the cadence. */
+  const slot = new Array(n);
+  order.forEach((idx, pos) => { slot[idx] = pos; });
+
   const flyers = targets.map((mark, i) => {
     const isSuccess = i < successCount;    // targets are sorted: successes first
     // Landing spot: a uniform point inside the matching region of the board.
@@ -1094,7 +1115,7 @@ export function animateDartScoop({ board, split, targets, successCount,
       + 'box-shadow:0 0 0 1.5px #fff, 0 2px 4px rgba(0,0,0,.45);';
     document.body.appendChild(dot);
     return {
-      dot, isSuccess, launchTime: i * STAGGER, lx, ly, landSz, endSz,
+      dot, isSuccess, launchTime: slot[i] * STAGGER, lx, ly, landSz, endSz,
       // Launched from above the board with a little drift, so it reads as thrown.
       launchX: lx + (rand() - 0.5) * 50,
       launchY: bd.top - 70 - rand() * 40,
