@@ -130,7 +130,7 @@ export function initSimPage(config) {
   // Opt-in second layout (?layout=tiers). Applied here, before anything is
   // drawn: charts measure the box they land in, so moving one afterwards means
   // re-rendering it. Default is unchanged.
-  applyRequestedLayout(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
+  const mechLayout = applyRequestedLayout(config.mode === 'bootstrap' ? 'bootstrap' : 'shuffle');
   // Does this page's draw POOL the two groups? If it does, the two dotplots
   // have to stay stacked on one axis whatever the layout: the shuffle's whole
   // argument is that the dots move vertically only — a value that never moves
@@ -138,9 +138,32 @@ export function initSimPage(config) {
   // crosses the gap between two differently-placed axes and says the opposite.
   // The bootstrap pages resample each group on its own and have no such claim
   // to protect, so they take the side-by-side tiers. (2026-10-03.)
-  if (config.mode !== 'bootstrap' && config.twoGroup && !config.proportion) {
-    document.body.setAttribute('data-mech-pools', 'true');
-  }
+  const poolsGroups = config.mode !== 'bootstrap' && config.twoGroup && !config.proportion;
+  if (poolsGroups) document.body.setAttribute('data-mech-pools', 'true');
+
+  /**
+   * A shorter, tighter dotplot for a pooling page in a tier layout.
+   *
+   * Those pages keep their two groups stacked whatever the layout, because the
+   * shuffle's argument depends on it — so the only way to fit two tiers on a
+   * laptop is to make each plot shorter, and a shorter box IS smaller dots
+   * (computeDotRadius bounds the radius by innerHeight / (maxStack · 2.05)).
+   *
+   * The margins come down with it. At the default 210 they are 78 units — 37%
+   * of the box — so cutting height alone would spend most of the saving on
+   * whitespace and crush the dots to nothing. 34 still clears the x tick labels
+   * at their 16-unit font.
+   *
+   * 132 was picked by measuring, not by taste: it is the tallest box that still
+   * brings Step 2 above the fold on a 1296x880 laptop (856px; 140 gives 887 and
+   * misses). The dots land at r = 6 on screen, which is what the side-by-side
+   * tiers give too — so both tier treatments shrink a dot to the same size, by
+   * different routes. (Jeff, 2026-10-03: "for the diff means test, let's try
+   * smaller dots.")
+   */
+  const tierDotGeometry = () => (poolsGroups && mechLayout !== 'strip')
+    ? { viewHeight: 132, margin: { top: 20, right: 24, bottom: 34, left: 24 } }
+    : {};
     const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   // ── View: Individual | Aggregate, for the quantitative pages ────────
   //
@@ -2371,8 +2394,9 @@ export function initSimPage(config) {
       // the middle of its own box. Both groups take the same number, since they
       // share the column. (2026-10-02.)
       const cellW = Math.round((c1 ?? c2)?.getBoundingClientRect().width ?? 0) || undefined;
-      if (c1) mechG1.renderBag(c1, data1, mean(data1), { domain, meanLabel: 'x̄', label: `Observed ${group1Name}`, displayWidth: cellW });
-      if (c2) mechG2.renderBag(c2, data2, mean(data2), { domain, meanLabel: 'x̄', label: `Observed ${group2Name}`, displayWidth: cellW });
+      const geom = tierDotGeometry();
+      if (c1) mechG1.renderBag(c1, data1, mean(data1), { domain, meanLabel: 'x̄', label: `Observed ${group1Name}`, displayWidth: cellW, ...geom });
+      if (c2) mechG2.renderBag(c2, data2, mean(data2), { domain, meanLabel: 'x̄', label: `Observed ${group2Name}`, displayWidth: cellW, ...geom });
       return;
     }
     renderTwoGroupCharts(data1, data2, 'orig');
@@ -2718,8 +2742,9 @@ export function initSimPage(config) {
       const drawn = isBoot && highlight;
       const verb = isBoot ? 'Resampled' : 'Shuffled';
       let ms = 0;
-      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group1Name}`, indices: isBoot ? (lastRsIdx1 ?? undefined) : undefined }));
-      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group2Name}`, indices: isBoot ? (lastRsIdx2 ?? undefined) : undefined }));
+      const geom = tierDotGeometry();
+      if (c1) ms = Math.max(ms, mechG1.renderResample(c1, data1, g1, mean(g1), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group1Name}`, indices: isBoot ? (lastRsIdx1 ?? undefined) : undefined, ...geom }));
+      if (c2) ms = Math.max(ms, mechG2.renderResample(c2, data2, g2, mean(g2), drawn, { domain, meanLabel: 'x̄*', label: `${verb} ${group2Name}`, indices: isBoot ? (lastRsIdx2 ?? undefined) : undefined, ...geom }));
       // A shuffle pools both groups and deals them back out — the book's card
       // shuffle, with dots. Only on +1: a hundred of these is a flicker.
       if (!isBoot && highlight) {

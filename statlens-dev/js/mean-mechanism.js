@@ -70,7 +70,8 @@ export function createMeanMechanism(config = {}) {
    * @param {HTMLElement} el
    * @param {number[]} values
    * @param {number} meanVal - the stat to mark (x̄ or μ₀)
-   * @param {{ domain?: [number,number], label?: string, meanLabel?: string, displayWidth?: number }} [opts]
+   * @param {{ domain?: [number,number], label?: string, meanLabel?: string, displayWidth?: number,
+   *   viewHeight?: number, margin?: {top:number,right:number,bottom:number,left:number} }} [opts]
    */
   function renderBag(el, values, meanVal, opts = {}) {
     if (!el || values.length < 2) return;
@@ -98,6 +99,11 @@ export function createMeanMechanism(config = {}) {
       bag = drawMechDotplot(el, values, {
         domain: opts.domain, mean: meanVal, meanLabel: opts.meanLabel || 'x̄', sizingMaxStack: scale.sizingMaxStack,
         displayWidth: scale.width,
+        // A caller that has less vertical room than the default says so, and
+        // the radius follows: computeDotRadius takes innerHeight/(maxStack·2.05)
+        // as one of its bounds, so a shorter box IS smaller dots rather than
+        // the same dots in a letterboxed frame.
+        viewHeight: opts.viewHeight, margin: opts.margin,
       });
     } else {
       bag = null; bagChips = [];
@@ -131,6 +137,7 @@ export function createMeanMechanism(config = {}) {
       return showResampleDotplot(el, bag, resample, {
         domain: opts.domain, mean: stat, meanLabel: opts.meanLabel || 'x̄*', sizingMaxStack: scale.sizingMaxStack, animate,
         displayWidth: scale.width,
+        viewHeight: opts.viewHeight, margin: opts.margin,
         // Which observations this draw actually took — the animation cannot be
         // honest about repeats or misses without it (js/mechanisms/draws.js).
         indices: opts.indices,

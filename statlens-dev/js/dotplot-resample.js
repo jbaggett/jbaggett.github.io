@@ -325,6 +325,10 @@ export function showResampleDotplot(container, bag, resample, opts) {
     // The source measured this; drawing the two panels at different widths
     // would put the same value at two different x positions.
     displayWidth: opts.displayWidth,
+    // …and at different heights would make one plot's dots bigger than the
+    // other's, which is the comparison this panel exists to make.
+    viewHeight: opts.viewHeight,
+    margin: opts.margin,
   });
   if (!opts.animate || prefersReducedMotion()) return 0;
 
