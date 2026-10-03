@@ -2053,10 +2053,22 @@ input[aria-invalid="true"] {
    (Jeff, 2026-10-03: "moving diff = to the upper right on the same line at
    Step # XYZ we gain a bit of room for bigger dots without adding vertical
    height.") */
+/* The tier is the containing block, so the panel must not be a closer one.
+   `.mechanism-panel` is `position: relative`, which silently caught the
+   absolute diff and parked it at the top of the PANEL — under the heading
+   rather than on it. The diff is the only absolutely-positioned thing inside a
+   mechanism panel (checked on the live page), so standing the panel down here
+   costs nothing. */
+body[data-mech-layout="tiers"] .mech-tier .mechanism-panel,
+body[data-mech-layout="split"] .mech-tier .mechanism-panel {
+  position: static;
+}
 body[data-mech-layout="tiers"] .mech-tier .mech-diff,
 body[data-mech-layout="split"] .mech-tier .mech-diff {
   position: absolute;
-  top: 0.45rem;
+  /* The tier's own padding, so it lands flush with the right end of the STEP
+     heading's line rather than inset from it. */
+  top: 0.4rem;
   right: 0.6rem;
   margin: 0;
 }
