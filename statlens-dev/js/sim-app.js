@@ -21,7 +21,7 @@ import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
-import { renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
+import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
@@ -3061,7 +3061,7 @@ export function initSimPage(config) {
 
       // Update the value span with symbol + value, styled orange
       resampleMeanEl.innerHTML = `${symHTML} = ${valText}`;
-      resampleMeanEl.style.color = '#D35400';
+      resampleMeanEl.style.color = STAT_RESAMPLE_TEXT;
       resampleMeanEl.style.fontWeight = '700';
 
       // Orange highlight class for +1 (used by dot-drop animation source)
@@ -3475,7 +3475,7 @@ export function initSimPage(config) {
       g.append('line')
         .attr('x1', xPos).attr('x2', xPos)
         .attr('y1', 0).attr('y2', fh)
-        .attr('stroke', '#D35400')
+        .attr('stroke', STAT_RESAMPLE)
         .attr('stroke-width', 3)
         .attr('stroke-dasharray', '6,3');
       // Symbol label below x-axis, centered on the dashed line
@@ -3488,7 +3488,7 @@ export function initSimPage(config) {
           .attr('x', xPos).attr('y', labelY)
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'central')
-          .attr('fill', '#D35400')
+          .attr('fill', STAT_RESAMPLE_TEXT)
           .attr('stroke', 'white')
           .attr('stroke-width', 3)
           .attr('paint-order', 'stroke')
@@ -3506,7 +3506,7 @@ export function initSimPage(config) {
         g.append('line')
           .attr('x1', xPos - 6).attr('x2', xPos + 6)
           .attr('y1', barY).attr('y2', barY)
-          .attr('stroke', '#D35400')
+          .attr('stroke', STAT_RESAMPLE_TEXT)
           .attr('stroke-width', 2)
           .attr('stroke-linecap', 'round');
       } else {
@@ -3517,7 +3517,7 @@ export function initSimPage(config) {
           .attr('x', xPos).attr('y', labelY)
           .attr('text-anchor', 'middle')
           .attr('dominant-baseline', 'central')
-          .attr('fill', '#D35400')
+          .attr('fill', STAT_RESAMPLE_TEXT)
           .attr('stroke', 'white')
           .attr('stroke-width', 3)
           .attr('paint-order', 'stroke')
@@ -3780,7 +3780,7 @@ export function initSimPage(config) {
       const resampleVal = mean(flippedDiffs);
       const valText = formatStat(resampleVal, dataPrecision);
       resampleMeanEl.innerHTML = `<span class="x-bar">x</span> = ${valText}`;
-      resampleMeanEl.style.color = '#D35400';
+      resampleMeanEl.style.color = STAT_RESAMPLE_TEXT;
       resampleMeanEl.style.fontWeight = '700';
       resampleMeanEl.classList.remove('highlight-last');
       if (highlightStat) {

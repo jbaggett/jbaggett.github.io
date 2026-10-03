@@ -16,6 +16,7 @@
  */
 
 import { drawDotplot, computeDots } from './dotplot.js';
+import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT } from './chart-utils.js';
 import { animateResampleDraw, drawStyleFromUrl, clearDrawMarks } from './mechanisms/draw-animation.js';
 import { prefersReducedMotion, isPhoneChart } from './chart-utils.js';
 import * as d3Selection from 'd3-selection';
@@ -125,6 +126,11 @@ export function drawMechDotplot(container, values, opts = {}) {
     fillColor: opts.fillColor,
     observedStat: opts.mean,
     observedLabel: opts.meanLabel ?? 'x̄',
+    // Purple for the sample you observed, orange for one you resampled — the
+    // colour says which statistic it is, not which renderer drew it.
+    // (js/chart-utils.js: STAT_OBSERVED / STAT_RESAMPLE.)
+    observedColor: opts.observedColor,
+    observedTextColor: opts.observedTextColor,
     xLabel: opts.xLabel ?? '',
     // A narrow, taller viewBox so the dotplot fills the ~300px mechanism panel at
     // close to 1:1 (a 600-wide viewBox displayed in a 300px panel halves the dots).
@@ -329,6 +335,8 @@ export function showResampleDotplot(container, bag, resample, opts) {
     // other's, which is the comparison this panel exists to make.
     viewHeight: opts.viewHeight,
     margin: opts.margin,
+    observedColor: STAT_RESAMPLE,
+    observedTextColor: STAT_RESAMPLE_TEXT,
   });
   if (!opts.animate || prefersReducedMotion()) return 0;
 
@@ -339,14 +347,35 @@ export function showResampleDotplot(container, bag, resample, opts) {
   const style = drawStyleFromUrl();
   const sourceSvg = bag?.frame?.inner?.ownerSVGElement;
   clearDrawMarks(sourceSvg);
+
+  // The resample's mean waits for the resample.
+  //
+  // The marker is drawn with the panel, so it sat on an empty plot announcing
+  // the mean of a sample that had not arrived — the one thing in the picture
+  // that did not wait its turn. Same fix as the histogram handover's.
+  // (Jeff, 2026-10-03: "I don't think the purple bar in the resamples should
+  // appear until after the dots fly and the aggregation happens.")
+  const targetSvg = target?.frame?.inner?.ownerSVGElement;
+  const meanBits = /** @type {SVGElement[]} */
+    ([...(targetSvg?.querySelectorAll('.overlays line, .overlays text') ?? [])]);
+  for (const m of meanBits) m.style.opacity = '0';
+  /** @param {number} after */
+  const revealMean = (after) => setTimeout(() => {
+    for (const m of meanBits) {
+      m.style.transition = 'opacity 260ms ease-out';
+      m.style.opacity = '1';
+    }
+  }, Math.max(0, after));
+
   if (style !== 'classic' && opts.indices && sourceSvg) {
     const sourceCircles = Array.from(sourceSvg.querySelectorAll('.data circle'));
-    const targetSvg = target?.frame?.inner?.ownerSVGElement;
     const targetDots = targetSvg ? Array.from(targetSvg.querySelectorAll('.data circle')) : [];
     const ms = animateResampleDraw({
       sourceCircles, targetDots, indices: opts.indices, style, targetSvg,
     });
-    if (ms) return ms;
+    if (ms) { revealMean(ms * 0.78); return ms; }
   }
-  return animateDrawInto(target, resample, bagSource(bag));
+  const ms = animateDrawInto(target, resample, bagSource(bag));
+  revealMean(ms * 0.78);
+  return ms;
 }

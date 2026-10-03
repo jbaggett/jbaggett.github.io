@@ -35,7 +35,7 @@ const EXTREME_FILL = '#569BBD';
 const BODY_FILL = '#a0a0a0';
 
 /** Observed statistic line color (deep purple — distinct from orange highlight). */
-const OBSERVED_COLOR = '#7B2D8E';
+const OBSERVED_COLOR = '#7B2D8E';   // = STAT_OBSERVED in js/chart-utils.js
 
 /** Minimum dot radius. */
 const MIN_RADIUS = 3;
@@ -365,7 +365,8 @@ export function drawDotplot(container, values, options = {}) {
       (frame.height - k * 2 * dotRadius) < LABEL_BAND
         ? [{ x0: xScale(centre) - dotRadius, x1: xScale(centre) + dotRadius }]
         : []);
-    overlayLabels.push(renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel, obstacles));
+    overlayLabels.push(renderObservedLine(overlaysGroup, observedStat, xScale, frame.height,
+      precision, observedLabel, obstacles, options.observedColor, options.observedTextColor));
   }
   if (ciLines) {
     overlayLabels.push(renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor));
@@ -807,7 +808,7 @@ function animateDotRevert(el, targetFill, targetRadius, duration, targetStroke, 
  * @param {number} innerHeight
  */
 function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2, label = 'observed',
-    obstacles = []) {
+    obstacles = [], color = OBSERVED_COLOR, textColor = color) {
   const x = xScale(value);
   const w = xScale.range()[1];
   overlays.append('line')
@@ -815,7 +816,7 @@ function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2,
     .attr('x2', x)
     .attr('y1', 14)
     .attr('y2', innerHeight)
-    .attr('stroke', OBSERVED_COLOR)
+    .attr('stroke', color)
     .attr('stroke-width', 2.5)
     .attr('aria-label', `${label}: ${value.toFixed(precision)}`);
   // Clamp label so it doesn't clip at chart edges
@@ -824,7 +825,7 @@ function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2,
   const labelEl = overlays.append('text')
     .attr('class', 'overlay-value observed-label')
     .attr('x', clampedX).attr('y', 10)
-    .attr('fill', OBSERVED_COLOR)
+    .attr('fill', textColor)
     .attr('font-weight', 700);
   // Via setLabelText, so an x̄ gets a rule over the x instead of a combining
   // macron that SVG puts up and to the right of it.

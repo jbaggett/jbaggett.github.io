@@ -1861,7 +1861,7 @@ export function drawMiniDotplot(container, values, options = {}) {
   // Mean marker line (vertical, full height of plot area)
   if (meanValue !== undefined) {
     const mx = x(meanValue);
-    const mColor = MEAN_MARKER_COLOR;
+    const mColor = highlightMean ? STAT_RESAMPLE : STAT_OBSERVED;
     svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="2"/>`;
     // Small triangle at top
     svg += `<polygon class="mc-mean-tri" points="${mx - 3},0 ${mx + 3},0 ${mx},4" fill="${mColor}"/>`;
@@ -1968,7 +1968,7 @@ export function drawMiniHistogram(container, values, options = {}) {
   // Mean marker line
   if (meanValue !== undefined) {
     const mx = x(meanValue);
-    const mColor = MEAN_MARKER_COLOR;
+    const mColor = highlightMean ? STAT_RESAMPLE : STAT_OBSERVED;
     svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="2"/>`;
     svg += `<polygon class="mc-mean-tri" points="${mx - 3},0 ${mx + 3},0 ${mx},4" fill="${mColor}"/>`;
   }
@@ -2008,23 +2008,31 @@ export function drawMiniHistogram(container, values, options = {}) {
  * @returns {number}
  */
 /**
- * The mean marker on a mini chart: the SAME mark the mechanism dotplot draws.
+ * What colour a statistic's marker is, by ROLE rather than by renderer.
  *
- * These were two conventions for one quantity. A mini histogram drew its mean
- * crimson-dashed, or orange-dashed once it was the resample's; the mechanism
- * dotplot beside it in the course drew the same mean solid purple, 2.5px, and
- * labelled it. Which one a student saw depended only on whether the sample was
- * big enough to stop being dots — a fact about rendering, presented as a change
- * of meaning. (Jeff, 2026-10-03: "in these samples we use orange dashed lines
- * for the sample means, but we use purple solid lines in the randomization
- * tests. let's figure out how to make consistent pictures and animations.")
+ * These were two conventions for one quantity: a mini histogram drew its mean
+ * crimson-dashed and the mechanism dotplot beside it drew the same mean solid
+ * purple, so which a student met depended only on whether n was past the dot
+ * cap — a fact about rendering, presented as a change of meaning.
  *
- * Purple is the site's observed-statistic colour (`--observed-stat`), the same
- * one the big charts use for "observed = …". The "this one just happened"
- * emphasis that orange was carrying lives in the numeric readout instead, which
- * is where the dotplot pages already put it.
+ * The rule now is the one Jeff set (2026-10-03): "purple in the original plots
+ * and orange in the resample plots for the sample mean marker (to go with the
+ * orange flying dot)". So the colour says WHICH statistic it is:
+ *
+ *   purple  the statistic you observed — the same `--observed-stat` the big
+ *           charts use for "observed = …"
+ *   orange  a resampled one, exactly the colour of the dot that carries it to
+ *           the distribution (`--highlight-orange`, FLY_COLOR)
+ *
+ * ⚠ Two oranges, for one reason. `#E07020` is 3.23:1 on white — fine for a LINE
+ * (graphical elements need 3:1) and a fail for TEXT (4.5:1). The label takes
+ * `#C2410C` at 5.18:1, the same hue a shade down. Matching the flying dot is
+ * the whole point of the line, so the line is the one that keeps the exact
+ * value.
  */
-const MEAN_MARKER_COLOR = '#7B2D8E';
+export const STAT_OBSERVED = '#7B2D8E';
+export const STAT_RESAMPLE = '#E07020';
+export const STAT_RESAMPLE_TEXT = '#C2410C';
 
 function miniChartWidth(container) {
   const w = container?.getBoundingClientRect?.().width ?? 0;
@@ -2124,8 +2132,9 @@ export function morphMiniChart(container, newValues, options = {}) {
   // The marker's colour no longer depends on whose mean it is; see
   // MEAN_MARKER_COLOR. Kept as an explicit re-assert so a morph cannot leave a
   // stale colour behind from an older render.
-  if (meanLine) { meanLine.setAttribute('stroke', MEAN_MARKER_COLOR); }
-  if (meanTri) { meanTri.setAttribute('fill', MEAN_MARKER_COLOR); }
+  const mColor = options.highlightMean ? STAT_RESAMPLE : STAT_OBSERVED;
+  if (meanLine) { meanLine.setAttribute('stroke', mColor); }
+  if (meanTri) { meanTri.setAttribute('fill', mColor); }
 
   /** @param {number} now */
   function frame(now) {

@@ -791,6 +791,21 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
     sl.bar.setAttribute('height', '0');
     sl.bar.setAttribute('y', String(sl.finalY + sl.finalH));
   }
+  // …and its MEAN, which was the one thing on the panel that did not wait.
+  // A mean marker on an empty axis is a claim about a resample that does not
+  // exist yet; it should arrive when the thing it summarises does. (Jeff,
+  // 2026-10-03: "I don't think the purple bar in the resamples should appear
+  // until after the dots fly and the aggregation happens.")
+  const meanBits = /** @type {SVGElement[]} */ ([...targetSvg.querySelectorAll(
+    '.mc-mean, .mc-mean-tri, .resample-mean-group, .overlays line, .overlays text')]);
+  for (const m of meanBits) m.style.opacity = '0';
+  /** Put the mean back, however this run ends. */
+  const showMean = (/** @type {boolean} */ fade) => {
+    for (const m of meanBits) {
+      if (fade) m.style.transition = 'opacity 260ms ease-out';
+      m.style.opacity = '1';
+    }
+  };
 
   const counter = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   counter.setAttribute('class', 'dpr-draw-counter');
@@ -817,6 +832,7 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
       sl.bar.setAttribute('height', String(sl.finalH));
       /** @type {SVGElement} */ (sl.bar).style.removeProperty('opacity');
     }
+    showMean(false);
   });
 
   const place = (/** @type {typeof dots[0]} */ d, /** @type {number} */ x, /** @type {number} */ y) => {
@@ -872,10 +888,14 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
       /** @type {SVGElement} */ (sl.bar).style.removeProperty('opacity');
     }
     if (n) counter.textContent = `${n} / ${n}`;
+    // The histogram is built; NOW mark its mean. The gather that follows
+    // converges the bars onto it, so it has to be there — and arriving one beat
+    // before being converged on is exactly the right moment for it.
+    showMean(true);
     setTimeout(() => {
       counter.remove();
       gatherBars(targetSvg, tgtBars, GATHER, SETTLE, onDone);
-    }, 120);
+    }, 220);
   }
 
   /** Grow a bar by one dot's worth. */
