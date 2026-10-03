@@ -187,6 +187,21 @@
     "minGroupN": null
   },
   {
+    "id": "barking_deer",
+    "name": "Barking Deer Foraging Sites",
+    "description": "Barking deer forage-site habitats vs. available land proportions — a strong-preference goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 426,
+    "variables": [
+      "habitat"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 4
+  },
+  {
     "id": "baumann",
     "name": "Baumann Reading Methods",
     "description": "Reading-comprehension scores for 66 students randomized to three instruction methods (Ch. 22 ANOVA).",
@@ -331,6 +346,21 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "blood_types",
+    "name": "Blood Types (Illustrative)",
+    "description": "Small ABO blood-type sample (n=80) vs. the approximate US distribution — a goodness-of-fit where an expected count is below 5. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 80,
+    "variables": [
+      "blood_type"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 4
   },
   {
     "id": "bodytemp_gen",
@@ -559,8 +589,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 1877,
-    "minGroupN": 1
+    "groupLevels": 2,
+    "minGroupN": 1165
   },
   {
     "id": "county_2019",
@@ -1054,8 +1084,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 53,
-    "minGroupN": 1
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "friday_traffic",
@@ -1170,8 +1200,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 6,
-    "minGroupN": 1
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "homeownership",
@@ -1256,7 +1286,6 @@
     "id": "jury",
     "name": "Jury Racial Composition",
     "description": "Race of 275 jurors vs. the community distribution (72/7/12/9%) — goodness-of-fit. IMS Ch. 16.",
-    "type": "gof",
     "chapter": "IMS Ch. 16",
     "n": 275,
     "variables": [
@@ -1265,7 +1294,8 @@
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 4,
-    "minGroupN": 19
+    "minGroupN": 19,
+    "type": "gof"
   },
   {
     "id": "lizard_habitat",
@@ -1328,8 +1358,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 25,
-    "minGroupN": 1
+    "groupLevels": 3,
+    "minGroupN": 3
   },
   {
     "id": "loan50_amount",
@@ -1518,6 +1548,21 @@
     "hasCategorical": true,
     "groupLevels": 2,
     "minGroupN": 3
+  },
+  {
+    "id": "mendel_peas",
+    "name": "Mendel's Peas",
+    "description": "Phenotype counts from Mendel's dihybrid cross (n=556) vs. the 9:3:3:1 ratio — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 556,
+    "variables": [
+      "phenotype"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 32
   },
   {
     "id": "midterms_house",
@@ -1747,8 +1792,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 7,
-    "minGroupN": 7
+    "groupLevels": 2,
+    "minGroupN": 46
   },
   {
     "id": "possum_regression",
@@ -1948,8 +1993,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 2,
-    "minGroupN": 102
+    "groupLevels": 3,
+    "minGroupN": 41
   },
   {
     "id": "smallpox",
@@ -2033,6 +2078,21 @@
     "minGroupN": 33
   },
   {
+    "id": "stock_geometric",
+    "name": "Stock Streaks (Geometric Model)",
+    "description": "Days since a stock index last rose over 1,362 trading days vs. a geometric model — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 1362,
+    "variables": [
+      "streak"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 7,
+    "minGroupN": 10
+  },
+  {
     "id": "supreme_court",
     "name": "Supreme Court Approval",
     "description": "Poll of 976 Americans on approval of the US Supreme Court. IMS Ch. 2.",
@@ -2075,6 +2135,21 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "textbooks_format",
+    "name": "Textbook Format Preference",
+    "description": "Format used by 126 students vs. a predicted 60/25/15% split — goodness-of-fit. IMS Ch. 16.",
+    "type": "gof",
+    "chapter": "IMS Ch. 16",
+    "n": 126,
+    "variables": [
+      "format"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 3,
+    "minGroupN": 25
   },
   {
     "id": "transplant_survival",
@@ -2194,8 +2269,8 @@
     ],
     "hasNumeric": true,
     "hasCategorical": true,
-    "groupLevels": 50,
-    "minGroupN": 1
+    "groupLevels": 4,
+    "minGroupN": 11
   },
   {
     "id": "yawn",

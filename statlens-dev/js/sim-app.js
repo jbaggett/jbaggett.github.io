@@ -1244,20 +1244,22 @@ export function initSimPage(config) {
       mechanismStrip?.querySelector('.mech-view-toggle')?.remove();
     }
 
-    // Mechanism strip is normally deferred until the first generate click (see
-    // generateSamples) — except on small two-group proportion randomization
-    // pages, where we show the original groups immediately so the observed data
-    // is visible before any shuffle, the Bars/Cards toggle is available for
-    // demos, and (in card mode) the first +1 has cards to deal from.
-    if (cardsAllowed() && mechanismStrip && mechResampleContent) {
-      mechanismStrip.hidden = false;
-      // When cards were explicitly requested (an activity that points at them),
-      // open the strip even if a stale "collapsed" is remembered from another page.
-      initMechanismCollapse(mechanismStrip, { forceExpanded: cardMechanism });
-      renderTwoGroupOriginal();
-      // Blank until the first shuffle — don't seed the panel with the original.
-      mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
-      mechanismInitialized = true;
+    // The mechanism strip opens AS SOON AS THERE IS DATA, with the original
+    // sample already in it.
+    //
+    // It used to wait for the first +1 everywhere except small two-group
+    // proportion pages, which had been given this treatment on their own —
+    // "so the observed data is visible before any shuffle". That reason was
+    // never specific to those pages. A student who loads data met a chart area
+    // with nothing in it, and the panel that says what is about to happen
+    // appeared only after they had made it happen. (Todd's idea, via Jeff,
+    // 2026-10-03: "immediately show the original samples when the data is
+    // loaded instead of waiting for a +1".)
+    initMechanismStrip();
+    if (cardsAllowed() && mechanismStrip) {
+      // Cards asked for by name (an activity pointing at them) open the strip
+      // even if a stale "collapsed" is remembered from another page.
+      if (cardMechanism) initMechanismCollapse(mechanismStrip, { forceExpanded: true });
       ensureViewToggle();
       // Card legend (decodes filled vs outline) shows only in card view.
       updateMechCardLegend();
@@ -1660,6 +1662,71 @@ export function initSimPage(config) {
       /** @type {HTMLElement} */ (dropSource), /** @type {HTMLElement} */ (chartContainer)), ms);
   }
 
+  /**
+   * Show the mechanism strip, with the ORIGINAL sample already in it.
+   *
+   * This used to wait for the first +1 — so a student who loaded data met a
+   * page with a chart area and nothing in it, and the panel that says what is
+   * about to happen appeared only after they had made it happen. Todd's point,
+   * by way of Jeff (2026-10-03): show the original sample as soon as there is
+   * one. The draw panel keeps its placeholder until there is a draw, because
+   * seeding it with the original looked like a completed one.
+   *
+   * Idempotent: called on load and again on the first generate, so a page that
+   * somehow reaches +1 without a load still initialises.
+   */
+  function initMechanismStrip() {
+    if (mechanismInitialized || !mechanismStrip) return;
+    mechanismInitialized = true;
+    // Every one-sample mechanism: the mean, the proportion, and both paired
+    // pages. This briefly read `usesMeanMech()`, which excludes proportions —
+    // so bootstrap-prop stopped entering the branch that unhides the strip
+    // and nothing rendered at all. (2026-10-02.)
+    if ((config.mode === 'bootstrap' || config.paired) && !config.twoGroup && originalContentEl) {
+      // Both paired pages come through here. The note that used to send them
+      // down a branch of their own said flipping the view "gains no
+      // animation, and wiring paired onto the mean mechanism is the real
+      // fix" — that is done, so the reason is gone.
+      //
+      // The randomization one takes the DISPLAY and not the draw: its draw is
+      // a SIGN FLIP, where nothing is taken twice and nothing is missed, so
+      // burst's vocabulary would be saying something false about it. Same
+      // split as randomization-diff-means. (2026-09-28 → 2026-10-02.)
+      mechanismStrip.hidden = false;
+      initMechanismCollapse(mechanismStrip);
+      if (useNewPropMech) ensurePropStyleToggle();
+      renderOriginalSample();
+      // The non-tiles view is the default for numeric data.
+      //
+      // It used to be tiles below 30 observations and a histogram above, which
+      // meant a 16-value sample — the size where you can actually watch a
+      // resample happen — showed two rows of numbered tiles and never the
+      // dotplot. Tiles say WHICH values were drawn and how often; the dotplot
+      // says what the resample looks like and hands its mean to the
+      // distribution. The second is the thing being taught, so it leads, and
+      // Tiles stays one click away. (Jeff, 2026-09-27.)
+      //
+      // Above MEAN_DOT_MAX this same mode is a histogram, which is why the
+      // condition is about the data being numeric rather than about its size.
+      // Proportions use proportion bars in both views, so they are left alone.
+      if (!resampleViewExplicit && !config.proportion) {
+        setResampleViewMode('histogram');
+      }
+    } else if (config.twoGroup) {
+      mechanismStrip.hidden = false;
+      initMechanismCollapse(mechanismStrip);
+      if (useNewPropMech2) ensurePropStyleToggle();
+      renderTwoGroupOriginal();
+      // Blank until the first shuffle (was seeded with the original grouping,
+      // which looked like a completed shuffle).
+      if (mechResampleContent) {
+        mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
+      }
+    }
+    // Randomization: explain *why* we shuffle, right by the mechanism.
+    if (config.mode === 'randomization') renderMechanismNull();
+  }
+
   function generateSamples(count) {
     // A clean slate. Press +1 before the last draw has finished and two runs
     // shared the screen — the old flyers still travelling, the old dots still
@@ -1675,57 +1742,7 @@ export function initSimPage(config) {
     }
     if (!rng) rng = createRng(seed);
 
-    // Initialize mechanism strip on first generate (deferred from data load)
-    if (!mechanismInitialized && mechanismStrip) {
-      mechanismInitialized = true;
-      // Every one-sample mechanism: the mean, the proportion, and both paired
-      // pages. This briefly read `usesMeanMech()`, which excludes proportions —
-      // so bootstrap-prop stopped entering the branch that unhides the strip
-      // and nothing rendered at all. (2026-10-02.)
-      if ((config.mode === 'bootstrap' || config.paired) && !config.twoGroup && originalContentEl) {
-        // Both paired pages come through here. The note that used to send them
-        // down a branch of their own said flipping the view "gains no
-        // animation, and wiring paired onto the mean mechanism is the real
-        // fix" — that is done, so the reason is gone.
-        //
-        // The randomization one takes the DISPLAY and not the draw: its draw is
-        // a SIGN FLIP, where nothing is taken twice and nothing is missed, so
-        // burst's vocabulary would be saying something false about it. Same
-        // split as randomization-diff-means. (2026-09-28 → 2026-10-02.)
-        mechanismStrip.hidden = false;
-        initMechanismCollapse(mechanismStrip);
-        if (useNewPropMech) ensurePropStyleToggle();
-        renderOriginalSample();
-        // The non-tiles view is the default for numeric data.
-        //
-        // It used to be tiles below 30 observations and a histogram above, which
-        // meant a 16-value sample — the size where you can actually watch a
-        // resample happen — showed two rows of numbered tiles and never the
-        // dotplot. Tiles say WHICH values were drawn and how often; the dotplot
-        // says what the resample looks like and hands its mean to the
-        // distribution. The second is the thing being taught, so it leads, and
-        // Tiles stays one click away. (Jeff, 2026-09-27.)
-        //
-        // Above MEAN_DOT_MAX this same mode is a histogram, which is why the
-        // condition is about the data being numeric rather than about its size.
-        // Proportions use proportion bars in both views, so they are left alone.
-        if (!resampleViewExplicit && !config.proportion) {
-          setResampleViewMode('histogram');
-        }
-      } else if (config.twoGroup) {
-        mechanismStrip.hidden = false;
-        initMechanismCollapse(mechanismStrip);
-        if (useNewPropMech2) ensurePropStyleToggle();
-        renderTwoGroupOriginal();
-        // Blank until the first shuffle (was seeded with the original grouping,
-        // which looked like a completed shuffle).
-        if (mechResampleContent) {
-          mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
-        }
-      }
-      // Randomization: explain *why* we shuffle, right by the mechanism.
-      if (config.mode === 'randomization') renderMechanismNull();
-    }
+    initMechanismStrip();
 
     // Capture previous state for histogram delta highlight
     const prevLength = allStats.length;

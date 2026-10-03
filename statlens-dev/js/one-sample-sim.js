@@ -548,9 +548,33 @@ export function initOneSamplePage(config) {
   }
 
   /** Enable generate buttons and show hypothesis. */
+  /**
+   * Show the mechanism strip, with the source panel already in it.
+   *
+   * On load rather than on the first +1: a student who loads data should see
+   * what is about to be drawn from before they draw from it, not after. (Todd's
+   * idea, via Jeff, 2026-10-03.) Idempotent, and still called from the first
+   * generate so a page that reaches +1 another way still initialises.
+   */
+  function initMechanismStrip() {
+    if (mechanismInitialized || !mechanismStrip) return;
+    mechanismInitialized = true;
+    mechanismStrip.hidden = false;
+    initMechanismCollapse(mechanismStrip);
+    ensureNullToggle();
+    ensureMeanViewToggle();
+    // The proportion page's source is its null POPULATION, which exists as soon
+    // as H₀ does — so it can be drawn now. The mean page's source is the
+    // null-SHIFTED sample, and the shift is an animation the first +1 performs;
+    // seeding it here would play the morph to an empty room.
+    if (isProp) renderPropSource();
+    else renderMeanBagView();
+  }
+
   function enableControls() {
     if (hypothesisDisplay) hypothesisDisplay.hidden = false;
     for (const btn of genBtns) btn.disabled = false;
+    initMechanismStrip();
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
     // Figure-only embed: auto-run the largest batch once so the finished,
@@ -1246,14 +1270,7 @@ export function initOneSamplePage(config) {
     cancelDrawAnimations();
     if (!rng) rng = createRng(seed);
 
-    // Show mechanism strip on first generate (deferred from data load)
-    if (!mechanismInitialized && mechanismStrip) {
-      mechanismInitialized = true;
-      mechanismStrip.hidden = false;
-      initMechanismCollapse(mechanismStrip);
-      ensureNullToggle();
-      ensureMeanViewToggle();
-    }
+    initMechanismStrip();
 
     // On first generate, morph left panel from "Observed" to "Null Distribution"
     const nullMorphMs = morphToNull();
