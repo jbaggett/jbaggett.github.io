@@ -154,15 +154,15 @@ export function initSimPage(config) {
    * whitespace and crush the dots to nothing. 34 still clears the x tick labels
    * at their 16-unit font.
    *
-   * 132 was picked by measuring, not by taste: it is the tallest box that still
-   * brings Step 2 above the fold on a 1296x880 laptop (856px; 140 gives 887 and
-   * misses). The dots land at r = 6 on screen, which is what the side-by-side
-   * tiers give too — so both tier treatments shrink a dot to the same size, by
-   * different routes. (Jeff, 2026-10-03: "for the diff means test, let's try
-   * smaller dots.")
+   * The number is picked by measuring, not by taste: it is the tallest box that
+   * still brings Step 2 above the fold on a 1296x880 laptop. It was 132 (dots at
+   * r = 6) until the key column stopped printing a mean the plot already shows
+   * and the difference moved onto the STEP heading line; those two gave back
+   * ~24px of tier, which is spent here on 148 and r = 7.4 — the same height
+   * budget, bigger dots. (Jeff, 2026-10-03.)
    */
   const tierDotGeometry = () => (poolsGroups && mechLayout !== 'strip')
-    ? { viewHeight: 132, margin: { top: 20, right: 24, bottom: 34, left: 24 } }
+    ? { viewHeight: 148, margin: { top: 20, right: 24, bottom: 34, left: 24 } }
     : {};
     const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   // ── View: Individual | Aggregate, for the quantitative pages ────────
@@ -2290,10 +2290,16 @@ export function initSimPage(config) {
       // "who this row is" — so they stack in ONE column on the left and the
       // plot takes everything else. They used to flank the plot, costing it a
       // column on each side. (Jeff, 2026-10-02.)
+      // The key says WHO the row is and how many — and stops there. The mean is
+      // already drawn on the plot, labelled, in the colour that means "the
+      // statistic"; printing it again two inches to the left spent a whole
+      // column on a number the eye has already found. Without it the name is
+      // free to wrap over several short lines, so the column can be narrow and
+      // the plot gets the width back. (Jeff, 2026-10-03.)
       const key = (/** @type {string} */ name, /** @type {number} */ n, /** @type {number} */ stat) => `
             <div class="mech-dot-key">
               <div class="mech-group-label">${name}</div>
-              <div class="mech-group-stat-sm">n=${n}, ${statSymbol}=${formatStat(stat, dataPrecision, fmtType)}</div>
+              <div class="mech-group-stat-sm">n = ${n}</div>
             </div>`;
       html += `
         <div class="mech-dot-stack">

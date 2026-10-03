@@ -2011,6 +2011,21 @@ input[aria-invalid="true"] {
   color: var(--ims-green);
 }
 
+/* The difference sits at the BOTTOM RIGHT of its panel.
+ *
+ * It is where the two group means converge before the result flies to the
+ * distribution (js/mechanisms/draw-animation.js: animateCombineStats), and the
+ * mean markers sit in the middle-right of their plots — so left-aligned, the
+ * flyers crossed the whole panel to get to it. (Jeff, 2026-10-03: "move the
+ * diff = to the bottom right so dots don't have so far to fly.")
+ *
+ * WHICH corner depends on where it has to go next, which is a property of the
+ * layout — "or upper right. the position should depend on the layout":
+ *   - strip and tiers: the distribution is BELOW, so bottom right.
+ *   - split: the distribution is the column BESIDE it, and that column's
+ *     middle sits above Step 2 — so upper right, which is also the end of the
+ *     panel the mean markers are at.
+ */
 .mech-diff {
   font-family: var(--font-mono);
   font-weight: 700;
@@ -2019,10 +2034,33 @@ input[aria-invalid="true"] {
   font-size: 0.85rem;
   transition: color 0.3s;
   width: fit-content;
+  margin-left: auto;
 }
 .mech-diff.highlight-last {
   color: var(--highlight-orange);
 }
+/* Split: the distribution is beside these tiers, not below them, so the
+   difference moves to the TOP of its panel. `order` rather than markup, so the
+   reading order a screen reader gets does not change — the difference is still
+   announced after the groups it came from.
+   The flex container is the content div that HOLDS the difference; the panel
+   one level up is already flex, but `order` only acts on a direct parent. */
+/* In a tier the difference rides on the STEP heading's line, at its right end.
+   It is a one-line readout and it was taking a line of its own at the bottom of
+   a panel where vertical space is the whole problem; the heading row is already
+   there and half empty. Absolute, so it survives the panel's innerHTML being
+   rewritten on every draw, and `.mech-tier` is already positioned.
+   (Jeff, 2026-10-03: "moving diff = to the upper right on the same line at
+   Step # XYZ we gain a bit of room for bigger dots without adding vertical
+   height.") */
+body[data-mech-layout="tiers"] .mech-tier .mech-diff,
+body[data-mech-layout="split"] .mech-tier .mech-diff {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.6rem;
+  margin: 0;
+}
+
 .mech-box-container {
   margin: 2px 0 4px;
 }
@@ -2058,9 +2096,13 @@ input[aria-invalid="true"] {
    stacking them. `display: contents` puts both rows' cells in the one grid. */
 .mech-dot-stack {
   display: grid;
-  grid-template-columns: minmax(5em, max-content) 1fr;
+  /* A narrow key column that WRAPS rather than one sized to the longest group
+     name. "Western fence lizard" on one line cost the plot 150px; over three
+     short lines it costs 60, and the rows are tall enough to hold them because
+     a dotplot is taller than four lines of 11px text. (Jeff, 2026-10-03.) */
+  grid-template-columns: minmax(0, 6.5em) 1fr;
   align-items: center;
-  gap: 0.1rem 0.6rem;
+  gap: 0.1rem 0.5rem;
 }
 .mech-dot-row { display: contents; }
 /* Name and statistic together: one column saying who the row is, and the plot
@@ -2069,6 +2111,19 @@ input[aria-invalid="true"] {
 .mech-dot-key { text-align: right; line-height: 1.3; }
 .mech-dot-key .mech-group-label { margin: 0; }
 .mech-dot-key .mech-group-stat-sm { margin: 0; white-space: nowrap; display: block; }
+/* In the key column the name WRAPS instead of truncating. `.mech-group-label`
+   ellipsises by default, which is right where it labels a histogram column and
+   wrong here: "Western fence lizard" became "Western fenc…", so the narrow
+   column cost the reader the group's name — the one thing the column is for.
+   A dotplot row is tall enough for three or four lines of 12px text.
+   (Jeff, 2026-10-03: "we could put western fence lizard n = 22 on 4 lines.") */
+.mech-dot-key .mech-group-label {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  line-height: 1.15;
+}
 /* Shorter than a standalone dotplot: two of them share the height one used to
    have, and the strip is a band rather than a page. */
 .mech-dot-stack .mech-dot-cell { min-width: 0; min-height: 0; }

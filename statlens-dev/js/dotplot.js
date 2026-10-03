@@ -353,7 +353,19 @@ export function drawDotplot(container, values, options = {}) {
   const overlayLabels = [];
   const overlaysGroup = d3Selection.select(frame.inner).select('.overlays');
   if (observedStat != null && showObsMarker) {
-    overlayLabels.push(renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel));
+    // Which columns reach high enough to be in the label's way. A stack of k
+    // dots tops out at height − k·2r; the label band is the top ~15 units.
+    const LABEL_BAND = 15;
+    /** @type {Map<number, number>} */
+    const stackAt = new Map();
+    for (const d of dots) {
+      stackAt.set(d.binCenter, Math.max(stackAt.get(d.binCenter) ?? 0, d.stackIndex + 1));
+    }
+    const obstacles = wouldOverflow ? [] : [...stackAt].flatMap(([centre, k]) =>
+      (frame.height - k * 2 * dotRadius) < LABEL_BAND
+        ? [{ x0: xScale(centre) - dotRadius, x1: xScale(centre) + dotRadius }]
+        : []);
+    overlayLabels.push(renderObservedLine(overlaysGroup, observedStat, xScale, frame.height, precision, observedLabel, obstacles));
   }
   if (ciLines) {
     overlayLabels.push(renderCILine(overlaysGroup, ciLines[0], xScale, frame.height, precision, ciColor));
@@ -794,7 +806,8 @@ function animateDotRevert(el, targetFill, targetRadius, duration, targetStroke, 
  * @param {d3Scale.ScaleLinear<number, number>} xScale
  * @param {number} innerHeight
  */
-function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2, label = 'observed') {
+function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2, label = 'observed',
+    obstacles = []) {
   const x = xScale(value);
   const w = xScale.range()[1];
   overlays.append('line')
@@ -807,18 +820,49 @@ function renderObservedLine(overlays, value, xScale, innerHeight, precision = 2,
     .attr('aria-label', `${label}: ${value.toFixed(precision)}`);
   // Clamp label so it doesn't clip at chart edges
   const labelText = `${label} = ${value.toFixed(precision)}`;
-  const anchor = x < w * 0.15 ? 'start' : x > w * 0.85 ? 'end' : 'middle';
   const clampedX = Math.max(4, Math.min(w - 4, x));
   const labelEl = overlays.append('text')
     .attr('class', 'overlay-value observed-label')
     .attr('x', clampedX).attr('y', 10)
-    .attr('text-anchor', anchor)
     .attr('fill', OBSERVED_COLOR)
     .attr('font-weight', 700);
   // Via setLabelText, so an x̄ gets a rule over the x instead of a combining
   // macron that SVG puts up and to the right of it.
-  setLabelText(/** @type {SVGTextElement} */ (labelEl.node()), labelText);
-  return /** @type {SVGTextElement} */ (labelEl.node());
+  const node = /** @type {SVGTextElement} */ (labelEl.node());
+  setLabelText(node, labelText);
+
+  // Put the label where the dots are NOT.
+  //
+  // It used to sit centred on its own line, at the top of the plot — which is
+  // exactly where a tall stack near the mean reaches, so on the data that makes
+  // the mean interesting the label was printed over the dots. The edge rule
+  // below (start/end near the margins) was the only placement logic there was.
+  //
+  // `obstacles` are the x-spans of the columns tall enough to reach the label's
+  // band. Try centred, then left of the line, then right of it, and take the
+  // first that is clear; if the stacks block all three — a dense plot — keep
+  // centred, which is at least predictable. (Jeff, 2026-10-03: "let's make the
+  // placement of the purple observed values smart so they stay clear of the
+  // dots for legibility.")
+  let width = 0;
+  try { width = node.getComputedTextLength(); } catch { width = labelText.length * 6; }
+  const GAP = 3;
+  /** @param {number} x0 @param {number} x1 */
+  const clear = (x0, x1) => !obstacles.some(o => o.x1 > x0 && o.x0 < x1);
+  /** @type {Array<['middle'|'end'|'start', number, number]>} */
+  const options = [
+    ['middle', clampedX - width / 2, clampedX + width / 2],
+    ['end', clampedX - GAP - width, clampedX - GAP],
+    ['start', clampedX + GAP, clampedX + GAP + width],
+  ];
+  // The old edge rule still wins where it applies: a label hanging off the left
+  // or right of the plot is worse than one over a dot.
+  const forced = x < w * 0.15 ? 'start' : x > w * 0.85 ? 'end' : null;
+  const pick = forced
+    ? options.find(o => o[0] === forced)
+    : (options.find(o => o[1] >= 0 && o[2] <= w && clear(o[1], o[2])) ?? options[0]);
+  labelEl.attr('text-anchor', pick[0]);
+  return node;
 }
 
 /** CI line color (dark pink — distinct from purple observed stat). */
