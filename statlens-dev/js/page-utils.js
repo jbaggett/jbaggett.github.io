@@ -652,10 +652,21 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     // there instead — the fallback should land in the same place the handoff
     // would have. (Jeff, 2026-10-02.)
     const panel = sourceEl.closest('.mechanism-panel, .mech-tier');
-    const marker = panel?.querySelector('.overlays line');
-    if (marker) {
-      const mr = marker.getBoundingClientRect();
-      if (mr.width || mr.height) effectiveSource = /** @type {HTMLElement} */ (marker);
+    const markers = panel ? panel.querySelectorAll('.overlays line') : [];
+    // …but ONLY when the panel marks ONE statistic.
+    //
+    // On a two-group panel there are two markers and the statistic travelling
+    // to the distribution is neither of them — it is their DIFFERENCE, which
+    // the two means have just flown together to form (animateCombineStats).
+    // Taking the first marker made that difference set off from inside one of
+    // the resamples, undoing the journey the combine had just finished
+    // explaining. With two groups the caller's readout is the right origin,
+    // and it is the corner the two means arrived at. (Jeff, 2026-10-03: "the
+    // difference mean should fly from that corner … right now it originates
+    // from between the two resamples.")
+    if (markers.length === 1) {
+      const mr = markers[0].getBoundingClientRect();
+      if (mr.width || mr.height) effectiveSource = /** @type {HTMLElement} */ (markers[0]);
     }
     const sourceRect = effectiveSource.getBoundingClientRect();
     if (sourceRect.width === 0 && sourceRect.height === 0) {

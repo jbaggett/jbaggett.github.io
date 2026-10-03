@@ -1277,6 +1277,17 @@ export function animateCombineStats({ sources, target, onDone }) {
   const done = () => { if (onDone) onDone(); };
   const srcs = (sources ?? []).filter(Boolean);
   if (prefersReducedMotion() || srcs.length < 2 || !target) { done(); return 0; }
+  // Whatever a per-group draw parked is not what flies to the distribution.
+  //
+  // Each group's own resample animation parks its merged statistic on that
+  // group's mean marker, for `animateDropToChart` to pick up — right on a
+  // one-sample page, where that IS the statistic being plotted. Here it is one
+  // of the two values about to be combined, so leaving it parked made the
+  // DIFFERENCE set off from inside one of the resamples, undoing the journey
+  // this function has just finished explaining. (Jeff, 2026-10-03: "the
+  // difference mean should fly from that corner … right now it originates from
+  // between the two resamples.")
+  dismissAirborneStat();
 
   const tb = target.getBoundingClientRect();
   if (!tb.width && !tb.height) { done(); return 0; }
