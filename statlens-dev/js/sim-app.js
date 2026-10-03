@@ -2405,8 +2405,16 @@ export function initSimPage(config) {
     const cell2 = document.getElementById(`mech-hist-${tag}-2`);
     const prefix = tag === 'orig' ? 'Original' : 'Resampled';
     const opts = {
-      width: 180,
-      height: 70,
+      // No width/height: `drawMiniChart` measures the cell it is drawn into
+      // (`miniChartWidth`/`miniChartHeight`). These were pinned at 180x70, so
+      // the two-group panel opted out of the sizing every other mini chart got
+      // on 2026-10-03 and stayed small in a tier with room to spare. One more
+      // place where this path had quietly become its own implementation.
+      // (Jeff, 2026-10-03: "you've got room to make the histograms a little
+      // bigger here.") A floor, because the shared height formula is tuned for
+      // a wide one-sample panel and leaves a half-width cell squatter than the
+      // 70px it replaced.
+      minHeight: 88,
       domain: twoGroupChartDomain ?? undefined,
       numBins: twoGroupNumBins,
       highlightMean,
@@ -2925,7 +2933,7 @@ export function initSimPage(config) {
         if (svg2) { svg2.style.transition = 'opacity 400ms ease'; svg2.style.opacity = '1'; }
 
         const domainOpt = twoGroupChartDomain ?? undefined;
-        const chartOpts = { width: 180, height: 70, domain: domainOpt, numBins: twoGroupNumBins, highlightMean: true };
+        const chartOpts = { minHeight: 88, domain: domainOpt, numBins: twoGroupNumBins, highlightMean: true };
         if (cell1) morphMiniChart(cell1, g1, { ...chartOpts, meanValue: statFn(g1), label: `Resampled ${group1Name}` });
         if (cell2) morphMiniChart(cell2, g2, { ...chartOpts, meanValue: statFn(g2), label: `Resampled ${group2Name}` });
 

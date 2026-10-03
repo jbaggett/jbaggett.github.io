@@ -1795,7 +1795,7 @@ export function drawMiniDotplot(container, values, options = {}) {
     // the strip's other charts had. (Jeff, 2026-10-02: "plots in steps 1 and 2
     // can be bigger".)
     width = miniChartWidth(container),
-    height = miniChartHeight(container),
+    height = miniChartHeight(container, options.minHeight),
     meanValue,
     highlightMean = false,
     domain,
@@ -1861,8 +1861,8 @@ export function drawMiniDotplot(container, values, options = {}) {
   // Mean marker line (vertical, full height of plot area)
   if (meanValue !== undefined) {
     const mx = x(meanValue);
-    const mColor = highlightMean ? '#E07020' : '#D33';
-    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+    const mColor = MEAN_MARKER_COLOR;
+    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="2"/>`;
     // Small triangle at top
     svg += `<polygon class="mc-mean-tri" points="${mx - 3},0 ${mx + 3},0 ${mx},4" fill="${mColor}"/>`;
   }
@@ -1900,7 +1900,7 @@ export function drawMiniHistogram(container, values, options = {}) {
     // the strip's other charts had. (Jeff, 2026-10-02: "plots in steps 1 and 2
     // can be bigger".)
     width = miniChartWidth(container),
-    height = miniChartHeight(container),
+    height = miniChartHeight(container, options.minHeight),
     meanValue,
     highlightMean = false,
     domain,
@@ -1968,8 +1968,8 @@ export function drawMiniHistogram(container, values, options = {}) {
   // Mean marker line
   if (meanValue !== undefined) {
     const mx = x(meanValue);
-    const mColor = highlightMean ? '#E07020' : '#D33';
-    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+    const mColor = MEAN_MARKER_COLOR;
+    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="2"/>`;
     svg += `<polygon class="mc-mean-tri" points="${mx - 3},0 ${mx + 3},0 ${mx},4" fill="${mColor}"/>`;
   }
 
@@ -2007,6 +2007,25 @@ export function drawMiniHistogram(container, values, options = {}) {
  * @param {HTMLElement|null} container
  * @returns {number}
  */
+/**
+ * The mean marker on a mini chart: the SAME mark the mechanism dotplot draws.
+ *
+ * These were two conventions for one quantity. A mini histogram drew its mean
+ * crimson-dashed, or orange-dashed once it was the resample's; the mechanism
+ * dotplot beside it in the course drew the same mean solid purple, 2.5px, and
+ * labelled it. Which one a student saw depended only on whether the sample was
+ * big enough to stop being dots — a fact about rendering, presented as a change
+ * of meaning. (Jeff, 2026-10-03: "in these samples we use orange dashed lines
+ * for the sample means, but we use purple solid lines in the randomization
+ * tests. let's figure out how to make consistent pictures and animations.")
+ *
+ * Purple is the site's observed-statistic colour (`--observed-stat`), the same
+ * one the big charts use for "observed = …". The "this one just happened"
+ * emphasis that orange was carrying lives in the numeric readout instead, which
+ * is where the dotplot pages already put it.
+ */
+const MEAN_MARKER_COLOR = '#7B2D8E';
+
 function miniChartWidth(container) {
   const w = container?.getBoundingClientRect?.().width ?? 0;
   return w >= 160 ? Math.round(w) : 220;
@@ -2020,8 +2039,13 @@ function miniChartWidth(container) {
  * @param {HTMLElement|null} container
  * @returns {number}
  */
-function miniChartHeight(container) {
-  return Math.max(60, Math.min(120, Math.round(miniChartWidth(container) * 0.25)));
+function miniChartHeight(container, minHeight = 0) {
+  // Width x 0.25 suits a one-sample panel, which is wide and shallow. A
+  // two-group cell is half that width and the same formula made it SHORTER
+  // than the 70px it used to be pinned at — wider but squatter is not bigger.
+  // `minHeight` lets a caller raise the floor without pinning the size back.
+  // (2026-10-03.)
+  return Math.max(60, minHeight, Math.min(120, Math.round(miniChartWidth(container) * 0.25)));
 }
 
 export function drawMiniChart(container, values, options = {}) {
@@ -2097,10 +2121,11 @@ export function morphMiniChart(container, newValues, options = {}) {
   // Also update mean marker color immediately
   const meanLine = g.querySelector('.mc-mean');
   const meanTri = g.querySelector('.mc-mean-tri');
-  if (options.highlightMean) {
-    if (meanLine) { meanLine.setAttribute('stroke', '#E07020'); }
-    if (meanTri) { meanTri.setAttribute('fill', '#E07020'); }
-  }
+  // The marker's colour no longer depends on whose mean it is; see
+  // MEAN_MARKER_COLOR. Kept as an explicit re-assert so a morph cannot leave a
+  // stale colour behind from an older render.
+  if (meanLine) { meanLine.setAttribute('stroke', MEAN_MARKER_COLOR); }
+  if (meanTri) { meanTri.setAttribute('fill', MEAN_MARKER_COLOR); }
 
   /** @param {number} now */
   function frame(now) {
