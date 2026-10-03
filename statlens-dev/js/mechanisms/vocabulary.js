@@ -86,8 +86,37 @@ export const VOCABULARY = {
   },
 
   /**
+   * Randomization against a null that NAMES A POPULATION — the one-proportion
+   * test, where H₀ says p₀ and you draw n independent trials from it.
+   *
+   * Split off from `nullWorld` on 2026-10-03. The two had been sharing a
+   * vocabulary, and sharing it was the bug: `nullWorld` is defined below as
+   * "the data moved onto the null", which is a true description of the
+   * one-MEAN test and a false one here. Your sample contributes nothing to
+   * building this population; H₀ states it outright, and the sample enters once,
+   * at the end, as the thing you compare against. Calling the panel "Observed
+   * Data" and morphing it into the null animated a transformation that does not
+   * happen. (Jeff: "that doesn't really fit here like it does for the one
+   * sample mean randomization test.")
+   *
+   * Naming the source "Population under H₀" also resolves the collision flagged
+   * below for this page: the panel and the chart no longer share a name.
+   */
+  statedPopulation: {
+    source: 'Population under H₀',
+    draw: 'This Simulation',
+    drawLatest: 'Last Simulation',
+    distribution: 'Null Distribution',
+    verb: 'simulate',
+  },
+
+  /**
    * Randomization against a stated null value, where the source is not the data
    * as observed but the data moved onto the null. Holds the collision.
+   *
+   * One-MEAN only, since 2026-10-03: there the shift is real — every value moves
+   * by the same constant and the resample is drawn from the shifted sample — so
+   * Observed → Null is an honest animation of the mechanism.
    */
   nullWorld: {
     source: 'Null Distribution',   // ⚠ the same words as `distribution` below
@@ -138,7 +167,7 @@ export const PAGE_LABELS = {
   'randomization-anova': { source: 'Observed Groups', draw: 'This Shuffle' },
   'randomization-chisq': { source: 'Observed Table', draw: 'This Shuffle' },
   'randomization-one-mean': { source: 'Observed Data', draw: 'This Simulation' },
-  'randomization-one-prop': { source: 'Observed Data', draw: 'This Simulation' },
+  'randomization-one-prop': { source: 'Population under H₀', draw: 'This Simulation' },
   'goodness-of-fit': { source: 'Observed Counts', draw: 'One Sample under H₀' },
 };
 

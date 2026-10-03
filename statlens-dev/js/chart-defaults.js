@@ -8,11 +8,12 @@
  */
 
 import * as d3Scale from 'd3-scale';
+import * as d3Selection from 'd3-selection';
 import { gridCentredOn } from './grid.js';
-import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
+import { drawHistogram, computeBins, snappedPropThresholds, renderOverlayLine } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
-import { renderSimPills, renderCutlines } from './chart-utils.js';
+import { renderSimPills, renderCutlines, deoverlapLabels } from './chart-utils.js';
 import { formatStat } from './stats.js';
 import { wrapWithStepper } from './page-utils.js';
 
@@ -363,6 +364,12 @@ export function createBinAdjuster(parent, opts) {
  * @param {string} [opts.proportionLabel] - Pre-computed proportion label for bootstrap pills
  * @returns {SimChartResult}
  */
+/**
+ * The parameter marker's colour: dark neutral, 9.7:1 on white, distinct from
+ * both the purple statistic line and the chart's blue. See renderSimChart.
+ */
+const PARAMETER_COLOR = '#444';
+
 export function renderSimChart(container, stats, opts) {
   container.innerHTML = '';
 
@@ -511,6 +518,37 @@ export function renderSimChart(container, stats, opts) {
       direction: opts.direction,
       precision: opts.precision,
     });
+  }
+
+  // The value H₀ names, marked on the distribution it generated.
+  //
+  // A null distribution is CENTRED on the null value by construction, and until
+  // now nothing on the chart said so: the only line was the observed statistic.
+  // So a student could run a thousand simulations against μ₀ = 0 on data
+  // centred near 130, get p = 0, and never see that the question was the
+  // problem (the one-mean page defaulted μ₀ to 0 and ignored the value its own
+  // datasets carry — fixed 2026-10-03, and this is what makes it visible).
+  //
+  // Dark and dashed, deliberately NOT purple: purple means "the statistic you
+  // observed" on every randomization page, and the Sampling Distribution Lab
+  // already spends purple on the parameter. Rather than make one colour mean
+  // both things a week apart, the parameter gets its own quiet treatment here.
+  // (Jeff, 2026-10-03.)
+  //
+  // Only the one-sample pages pass it. On the two-group and paired tests the
+  // null is 0, the axis already crosses there, and a line would say what the
+  // axis says.
+  if (opts.parameterMark && frame && xScale && stats.length > 0) {
+    const { value, label } = opts.parameterMark;
+    if (Number.isFinite(value)) {
+      const overlays = d3Selection.select(frame.inner).select('.overlays');
+      renderOverlayLine(overlays, value, xScale, frame.height, PARAMETER_COLOR,
+        label, opts.precision ?? 2, label, true);
+      // Re-settle every label, including the one just added — the observed line
+      // and the parameter can land on top of each other, and when they do it is
+      // because the two are close, which is exactly when you want to read both.
+      deoverlapLabels([...frame.inner.querySelectorAll('.overlays text')]);
+    }
   }
 
   return { frame, xScale, yScale, bins, domain: chartDomain, maxStack: dotMaxStack, binWidth: dotBinWidth, countToY: dotCountToY };

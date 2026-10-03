@@ -1678,6 +1678,25 @@ input[aria-invalid="true"] {
    has no n — and a quiet note saying so. */
 .null-pop-note { color: var(--ims-gray-text, #666); font-weight: 400; font-size: 0.85em; }
 
+/* Step 1 on the one-proportion randomization test: the population H₀ names, and
+   your sample, drawn on the same board at the same width so the two boundaries
+   can be compared directly. They are two OBJECTS, not two states of one — your
+   sample is never transformed into the null here, which is what the old
+   Observed→Null morph implied. (Jeff, 2026-10-03.) */
+.pbm-src-row { margin: 0.25rem 0 0; }
+.pbm-src-row:first-child { margin-top: 0; }
+.pbm-src-label {
+  display: block;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--ims-gray-text, #555);
+  text-align: left;
+}
+/* The parameter is not the statistic, and the chart below says so in the same
+   two voices: dark for the value H₀ names, purple for the one you observed. */
+.pbm-src-label .is-parameter { color: #444; font-weight: 700; }
+.pbm-src-label .is-statistic { color: var(--observed-stat); font-weight: 700; }
+.pbm-src-count { color: var(--ims-gray-text, #666); font-weight: 400; }
+
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
 /* The marble grid, the cell bar and their arc-fly animation lived here until
    2026-10-02. Two displays do the work now — the dot block and the aggregate

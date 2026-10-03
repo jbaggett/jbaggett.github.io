@@ -619,7 +619,7 @@ function renderBars(group, bins, xScale, yScale, innerHeight, isTail, animate, i
  * @param {number} [precision] - Decimal places for value label (default: 2)
  * @param {string} [microLabel] - Small text above the value (e.g. 'observed', 'parameter')
  */
-function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, precision = 2, microLabel, dashed = false) {
+export function renderOverlayLine(overlays, value, xScale, innerHeight, color, label, precision = 2, microLabel, dashed = false) {
   const x = xScale(value);
   const w = xScale.range()[1];
   const line = overlays.append('line')
