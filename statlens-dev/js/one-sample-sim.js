@@ -519,7 +519,14 @@ export function initOneSamplePage(config) {
       ? `what H\u2080 says \u00b7 <span class="is-parameter">p\u2080 = ${p0}</span>`
       : `<span class="is-parameter">p\u2080 = ${p0}</span>`;
     let html = `<span class="pbm-src-row"><span class="pbm-src-label">${label}</span>`
-      + populationBarHTML(p0, { style: 'margin-top:2px', board: true }) + '</span>';
+      + populationBarHTML(p0, {
+          style: 'margin-top:2px', board: true,
+          // Your sample, marked on the population you draw from — one picture
+          // for both, rather than a second bar or a fourth panel.
+          // (Jeff, 2026-10-03: "draw it on the population.")
+          reference: observedStat,
+          referenceLabel: `your sample \u00b7 p\u0302 = ${fmtObs(observedStat)}`,
+        }) + '</span>';
     if (SHOW_SAMPLE_IN_SOURCE) {
       html += `<span class="pbm-src-row"><span class="pbm-src-label">your sample \u00b7 `
         + `<span class="is-statistic">p\u0302 = ${fmtObs(observedStat)}</span>`

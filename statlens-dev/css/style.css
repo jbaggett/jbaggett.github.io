@@ -1619,6 +1619,25 @@ input[aria-invalid="true"] {
   box-shadow: 1px 0 0 rgba(255,255,255,.95), -1px 0 0 rgba(255,255,255,.95);
   pointer-events: none;
 }
+/* The reference line's label, hung under the line it belongs to. Centred on it,
+   and allowed to overhang the bar at both ends — the board is only 56px tall and
+   there is nothing under it to collide with. */
+.pbm-ref-tag {
+  position: absolute;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: var(--observed-stat, #7B2D8E);
+  pointer-events: none;
+}
+/* …and the board leaves room for it, so the tag does not sit on whatever
+   follows the panel. */
+.mech-prop-bar.is-board { margin-bottom: 1.1rem; }
+
 /* The part of the bar not yet drawn: the two regions grow in from the ends and
    this closes between them. Light enough to read as "nothing here yet" against
    both the amber and the blue it is giving way to. */
@@ -2276,7 +2295,16 @@ body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-key {
    and darts need somewhere to land — 14px of strip is a line, not an area.
    Wide and short rather than the Lab's square, because this one lives in a
    mechanism panel with another panel beside it. (Jeff, 2026-10-03.) */
-.mech-prop-bar.is-board { height: 56px; border-radius: 4px; }
+.mech-prop-bar.is-board {
+  height: 56px;
+  border-radius: 4px;
+  /* A reference line overhangs the bar at both ends and hangs its label below
+     it, and `.mech-prop-bar` clips by default — which swallowed both, leaving a
+     white gap where the line should be. The clipping was only ever for the
+     fill's corners, and the fill rounds its own (see `.mech-prop-fill`), which
+     is the same reason `.pbm-aggregate` turns it off. (2026-10-03.) */
+  overflow: visible;
+}
 
 /* A dart in flight. Appended to <body>, so it inherits none of the block's
    geometry — without this it would be a rounded SQUARE turning into a circle

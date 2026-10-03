@@ -819,16 +819,34 @@ export function propBarHTML(successes, failures, opts = {}) {
  * area to land in. (Jeff, 2026-10-03.)
  *
  * @param {number} p 0..1
- * @param {{ className?: string, style?: string, board?: boolean }} [opts]
+ * @param {{ className?: string, style?: string, board?: boolean,
+ *   reference?: number, referenceLabel?: string }} [opts]
  * @returns {string}
  */
 export function populationBarHTML(p, opts = {}) {
   const pct = Math.max(0, Math.min(1, p)) * 100;
   const cls = (opts.board ? ' is-board' : '') + (opts.className ? ` ${opts.className}` : '');
   const style = opts.style ? ` style="${opts.style}"` : '';
+  // Your sample, marked ON the population you are drawing from.
+  //
+  // One picture carrying both things, which is what the goodness-of-fit page
+  // already does from the other side — it draws the observed counts and marks
+  // the null on them as dashed expecteds. Here the population is the base,
+  // because it is what the draw comes from, and p̂ is the line across it. The
+  // alternative was a second bar or a fourth panel; a reference line costs no
+  // height and puts the comparison at the place the draw happens. (Jeff,
+  // 2026-10-03: "draw it on the population.")
+  const ref = opts.reference == null || !Number.isFinite(opts.reference) ? '' : (() => {
+    const rp = Math.max(0, Math.min(1, opts.reference)) * 100;
+    return `<div class="pbm-ref" style="left:${rp}%"></div>`
+      + `<div class="pbm-ref-tag" style="left:${rp}%">${opts.referenceLabel ?? ''}</div>`;
+  })();
+  const aria = `A population in which ${pct.toFixed(1)}% are successes`
+    + (ref ? `, with the observed sample marked at ${(opts.reference * 100).toFixed(1)}%` : '');
   return `<div class="mech-prop-bar pbm-population${cls}" role="img"`
-    + ` aria-label="A population in which ${pct.toFixed(1)}% are successes"${style}>`
+    + ` aria-label="${aria}"${style}>`
     + `<div class="mech-prop-fill" style="width:${pct}%"></div>`
+    + ref
     + '</div>';
 }
 
