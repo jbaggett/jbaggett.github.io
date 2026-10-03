@@ -1789,8 +1789,13 @@ function fmtTick(v) {
  */
 export function drawMiniDotplot(container, values, options = {}) {
   const {
-    width = 220,
-    height = 60,
+    // 220x60 unless the container says otherwise. A fixed 220 inside a 491px
+    // panel is less than half the room, and the SVG scales its text with it, so
+    // the axis labels came out proportionally tiny too — the same letterboxing
+    // the strip's other charts had. (Jeff, 2026-10-02: "plots in steps 1 and 2
+    // can be bigger".)
+    width = miniChartWidth(container),
+    height = miniChartHeight(container),
     meanValue,
     highlightMean = false,
     domain,
@@ -1889,8 +1894,13 @@ export function drawMiniDotplot(container, values, options = {}) {
  */
 export function drawMiniHistogram(container, values, options = {}) {
   const {
-    width = 220,
-    height = 60,
+    // 220x60 unless the container says otherwise. A fixed 220 inside a 491px
+    // panel is less than half the room, and the SVG scales its text with it, so
+    // the axis labels came out proportionally tiny too — the same letterboxing
+    // the strip's other charts had. (Jeff, 2026-10-02: "plots in steps 1 and 2
+    // can be bigger".)
+    width = miniChartWidth(container),
+    height = miniChartHeight(container),
     meanValue,
     highlightMean = false,
     domain,
@@ -1987,6 +1997,33 @@ export function drawMiniHistogram(container, values, options = {}) {
  * @param {number[]} values
  * @param {{ width?: number, height?: number, meanValue?: number, highlightMean?: boolean, domain?: [number, number], color?: string, label?: string }} options
  */
+/**
+ * How wide a mini chart may draw: the container's own width, when it has one.
+ *
+ * Falls back to the old fixed 220 for a container that has not been laid out
+ * (hidden panels measure zero) so a chart drawn before its panel is shown is
+ * still a chart rather than a sliver.
+ *
+ * @param {HTMLElement|null} container
+ * @returns {number}
+ */
+function miniChartWidth(container) {
+  const w = container?.getBoundingClientRect?.().width ?? 0;
+  return w >= 160 ? Math.round(w) : 220;
+}
+
+/**
+ * …and how tall. Proportional, so a wider chart does not become a letterbox
+ * strip, but capped: the strip is a band and the chart below it is the one
+ * competing for the page's height.
+ *
+ * @param {HTMLElement|null} container
+ * @returns {number}
+ */
+function miniChartHeight(container) {
+  return Math.max(60, Math.min(120, Math.round(miniChartWidth(container) * 0.25)));
+}
+
 export function drawMiniChart(container, values, options = {}) {
   if (!values || values.length === 0) { container.innerHTML = ''; return; }
   if (values.length <= 30) {

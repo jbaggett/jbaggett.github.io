@@ -13,7 +13,9 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, updatePropBar, populationBarHTML } from './prop-bootstrap-mech.js';
+import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView }
+  from './prop-bootstrap-mech.js';
+import { animateDartScoop } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -41,6 +43,13 @@ import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartTo
  */
 export function initOneSamplePage(config) {
   const isProp = config.mode === 'one-prop';
+  /**
+   * Above this many observations the darts are not thrown — the dots still
+   * appear, all at once. Sixty flyers is already a downpour; a hundred and
+   * twenty is a screen of moving objects that says nothing the first thirty
+   * did not. (The dot block itself survives to 120; see hasIndividualView.)
+   */
+  const DART_MAX = 60;
   // These pages simulate against a stated null value, so the source panel is
   // the data moved onto the null rather than the data as observed.
   const words = wordsFor('nullWorld');
@@ -342,6 +351,47 @@ export function initOneSamplePage(config) {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
       label: 'Simulated resample from null distribution',
       indices: lastResampleIdx ?? undefined,
+    });
+  }
+
+  /**
+   * The proportion draw: dots, scooped off the null population.
+   *
+   * Same mechanism as the Sampling Distribution Lab, so the same picture —
+   * darts rain onto the population, stick, and fly into the sample as dots,
+   * leaving footprints that show where this sample came from. The Lab draws
+   * from a population at p; this page draws from one at p₀. That is the only
+   * difference, and it belongs in the label, not in the animation.
+   * (Jeff, 2026-10-03.)
+   *
+   * @param {number[]} trials - the draw, successes first
+   * @param {boolean} animate
+   * @returns {number} ms
+   */
+  function renderPropDraw(trials, animate) {
+    const host = /** @type {HTMLElement|null} */ (mechSimStat?.querySelector('.mech-prop-draw'));
+    if (!host) return 0;
+    renderPropResample(host, trials, {
+      style: 'dots', label: 'This simulated sample', delta: false,
+    });
+    if (!animate) return 0;
+    // The board only exists while the null side is showing. Toggle back to the
+    // observed sample and there is nothing to throw at — the generic data
+    // stream runs instead (see `ownAnim`).
+    const board = /** @type {HTMLElement|null} */
+      (mechObservedStat?.querySelector('.mech-prop-bar.is-board'));
+    const dots = /** @type {HTMLElement[]} */ ([...host.querySelectorAll('.pbm-dot')]);
+    if (!board || dots.length !== trials.length) return 0;
+    const mark = (/** @type {boolean} */ ok) =>
+      `obs-mark pbm-dot ${ok ? 'pbm-success' : 'pbm-failure'}`;
+    return animateDartScoop({
+      board,
+      split: getNullValue(),
+      targets: dots,
+      successCount: trials.reduce((a, v) => a + v, 0),
+      flyerClass: (ok) => `pbm-flyer ${mark(ok)}`,
+      ghostClass: (ok) => `scoop-ghost ${mark(ok)}`,
+      max: DART_MAX,
     });
   }
 
@@ -983,7 +1033,8 @@ export function initOneSamplePage(config) {
       mechObservedStat.innerHTML =
         `<span class="observed-highlight">p\u2080 = ${p0}</span>`
         + ` <span class="null-pop-note">\u00b7 a population to draw from, not a sample</span>`
-        + populationBarHTML(animated ? fromPct / 100 : p0, { style: 'margin-top:4px' });
+        + populationBarHTML(animated ? fromPct / 100 : p0,
+            { style: 'margin-top:4px', board: true });
       if (animated) {
         const f = /** @type {HTMLElement|null} */ (mechObservedStat.querySelector('.mech-prop-fill'));
         if (f) {
@@ -1166,6 +1217,10 @@ export function initOneSamplePage(config) {
 
     lastSimStat = 0;
     let lastSimDetail = '';
+    /** The trials behind the latest proportion draw, for the dot block. */
+    /** @type {number[]|null} */ let lastPropDraw = null;
+    // Dots while they fit the panel; the aggregate bar above that.
+    const propDots = isProp && hasIndividualView(sampleN);
     let mechAnimMs = 0; // resample-build animation duration (delays the drop)
 
     const isSingle = count === 1;
@@ -1188,9 +1243,22 @@ export function initOneSamplePage(config) {
       const pct = n > 0 ? (lastSuccesses / n * 100) : 0;
       lastSimDetail = `${lastSuccesses} of ${n} (p\u0302 = <span class="mech-stat-value${hlClass}">${fmtObs(lastSimStat)}</span>)`;
 
-      // Proportion bar for visual
-      lastSimDetail += `
-        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
+      // The draw itself. Dots while they fit, so this page shows a sample the
+      // same way the bootstrap CI for a proportion does and the same way the
+      // Sampling Distribution Lab does — one dot per observation, successes
+      // first, so the amber fraction IS p̂. Above that, the aggregate bar: the
+      // display changes with SCALE, never with the kind of thing being shown.
+      // (Jeff, 2026-10-03.)
+      //
+      // The trials are materialised here rather than drawn as an array:
+      // `drawBernoulliCount` returns a count because the trials used not to be
+      // shown, and the order of n exchangeable Bernoulli trials carries
+      // nothing — a sorted array and a shuffled one are the same sample. What
+      // is NOT free is the count, and that comes from the seeded draw.
+      lastPropDraw = Array.from({ length: n }, (_, i) => (i < lastSuccesses ? 1 : 0));
+      lastSimDetail += propDots
+        ? '<div class="mech-prop-draw"></div>'
+        : `\n        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
 
       if (mechanismDescEl) {
         // What the draw actually is: n independent trials, each a success with
@@ -1229,7 +1297,8 @@ export function initOneSamplePage(config) {
     if (mechSimStat) {
       // The cards / dotplot views do their own animation; only fire the generic
       // stream for the other cases (proportions, large-n histogram).
-      const ownAnim = !isProp && (useCards() || useDots()) && lastResampleArr && lastResampleArr.length >= 2;
+      const ownAnim = (!isProp && (useCards() || useDots()) && lastResampleArr && lastResampleArr.length >= 2)
+        || (propDots && nullShown && sampleN <= DART_MAX);
       if (isSingle && mechObservedStat && !ownAnim) {
         flyDataStream(mechObservedStat, mechSimStat);
       }
@@ -1241,6 +1310,9 @@ export function initOneSamplePage(config) {
       // waits until the resample has actually finished building (was firing early).
       if (!isProp && lastResampleArr && lastResampleArr.length >= 2) {
         mechAnimMs = renderMeanResampleView(isSingle);
+      }
+      if (propDots && lastPropDraw) {
+        mechAnimMs = Math.max(mechAnimMs, renderPropDraw(lastPropDraw, isSingle));
       }
     }
 

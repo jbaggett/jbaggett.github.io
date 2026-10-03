@@ -10,6 +10,7 @@ import { mean, sd } from '../../js/stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
 import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
+import { animateDartScoop } from '../../js/mechanisms/draw-animation.js';
 import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart } from '../../js/page-utils.js';
 import { resolveChartType } from '../../js/chart-defaults.js';
 import * as d3Shape from 'd3-shape';
@@ -716,130 +717,35 @@ function animateCombineOrange(meanValue, onDone) {
 }
 
 /**
- * Proportion scoop — three visible phases so the *sampling* itself is the star:
- *   1. THROW: darts rain down onto the population square and stick (with a small
- *      overshoot bounce) at uniform random spots. A dart that lands on the amber
- *      (left) side is a success, on the blue (right) side a failure — it takes
- *      the colour of wherever it hit.
- *   2. HOLD: the stuck darts sit on the square for a beat — "this is the random
- *      sample of n points we just grabbed from the population."
- *   3. FLY: the darts lift off and fly down, growing into marbles, into their
- *      spots in the sorted One-sample grid.
- * Reduced motion / oversized scoops → straight reveal.
+ * Proportion scoop: throw darts at the population, hold, fly into the sample.
+ *
+ * The animation itself now lives in js/mechanisms/draw-animation.js, because
+ * the one-proportion randomization test draws the same picture — n independent
+ * observations from a population whose success fraction is known — and two
+ * copies of it would have drifted the way every other pair on this site has.
+ * What stays here is the Lab's own DOM: which element is the board, which are
+ * the marks, and what they are called. (2026-10-03.)
+ *
  * @param {number[]} sample
  * @param {() => void} onDone
  */
 function animateScoop(sample, onDone) {
   const grid = sampleContainer && sampleContainer.querySelector('.marble-grid');
   const square = popContainer && popContainer.querySelector('.prop-square');
-  // Clear the previous draw's footprints — only the current sample is marked.
-  if (square) square.querySelectorAll('.scoop-ghost').forEach(g => g.remove());
-  // Skip the per-marble fly for very large scoops (too many flyers).
-  if (prefersReducedMotion || sample.length > CAT_DOT_MAX || !grid || !square) { onDone(); return; }
+  if (!grid || !square) { onDone(); return; }
   const marbles = /** @type {HTMLElement[]} */ (Array.from(grid.querySelectorAll('.marble')));
   if (marbles.length !== sample.length) { onDone(); return; }
-
-  const sq = square.getBoundingClientRect();
-  const splitX = sq.left + popMu * sq.width; // boundary: amber (left) | blue (right)
-  const successCount = sample.filter(v => v === 1).length;
-  marbles.forEach(mb => { mb.style.visibility = 'hidden'; });
-
-  // Overshoot ease so each dart snaps onto the board and settles — a "stick".
-  const easeOutBack = (/** @type {number} */ t) => {
-    const c1 = 1.70158, c3 = c1 + 1;
-    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-  };
-
-  const n = marbles.length;
-  const STAGGER = Math.min(420 / n, 22); // launch cadence — rat-a-tat of darts
-  const THROW = 320;                     // each dart's flight onto the board
-  const HOLD = 520;                      // pause to register the sample
-  const FLY = 760;                       // lift-off to the One-sample grid
-  const flyStart = (n - 1) * STAGGER + THROW + HOLD;
-  const total = flyStart + FLY;
-
-  const flyers = marbles.map((mb, i) => {
-    const isSuccess = i < successCount; // grid is sorted: successes first
-    // Landing spot: uniform point within the matching region of the square.
-    const lx = isSuccess
-      ? sq.left + Math.random() * (popMu * sq.width)
-      : splitX + Math.random() * ((1 - popMu) * sq.width);
-    const ly = sq.top + Math.random() * sq.height;
-    const tr = mb.getBoundingClientRect();
-    const endSz = tr.width || 16;
-    const landSz = Math.max(7, endSz * 0.55); // a small dart tip; grows when it flies
-    // Launch from above the square with a little drift so it reads as "thrown".
-    const launchX = lx + (Math.random() - 0.5) * 50;
-    const launchY = sq.top - 70 - Math.random() * 40;
-    const dot = document.createElement('div');
-    dot.className = 'sl-flyer marble ' + (isSuccess ? 'cat-success' : 'cat-failure');
-    // White ring + drop shadow so the dart stays visible even when it lands on a
-    // region of its own colour (amber-on-amber / blue-on-blue), and reads as
-    // sitting ON the population board.
-    dot.style.cssText = `position:fixed;left:0;top:0;width:${landSz}px;height:${landSz}px;`
-      + `z-index:1000;pointer-events:none;opacity:0;`
-      + `box-shadow:0 0 0 1.5px #fff, 0 2px 4px rgba(0,0,0,.45);`;
-    document.body.appendChild(dot);
-    return {
-      dot, launchTime: i * STAGGER, launchX, launchY, lx, ly, isSuccess,
-      // Landing spot as a fraction of the square, for the persistent footprint.
-      pctX: ((lx - sq.left) / sq.width) * 100,
-      pctY: ((ly - sq.top) / sq.height) * 100,
-      ex: tr.left + tr.width / 2, ey: tr.top + tr.height / 2, landSz, endSz,
-    };
+  const cat = (/** @type {boolean} */ isSuccess) => (isSuccess ? 'cat-success' : 'cat-failure');
+  animateDartScoop({
+    board: /** @type {HTMLElement} */ (square),
+    split: popMu,
+    targets: marbles,
+    successCount: sample.filter(v => v === 1).length,
+    flyerClass: (isSuccess) => `sl-flyer marble ${cat(isSuccess)}`,
+    ghostClass: (isSuccess) => `scoop-ghost marble ${cat(isSuccess)}`,
+    max: CAT_DOT_MAX,
+    onDone,
   });
-
-  const place = (/** @type {HTMLElement} */ el, /** @type {number} */ cx, /** @type {number} */ cy, /** @type {number} */ sz) => {
-    el.style.left = `${cx - sz / 2}px`;
-    el.style.top = `${cy - sz / 2}px`;
-    el.style.width = `${sz}px`;
-    el.style.height = `${sz}px`;
-  };
-
-  let ghostsPlaced = false;
-  const t0 = performance.now();
-  function step(now) {
-    const elapsed = now - t0;
-    // The instant the darts lift off, stamp a faint footprint where each landed
-    // so the population square keeps showing where this sample came from.
-    if (elapsed >= flyStart && !ghostsPlaced) {
-      ghostsPlaced = true;
-      for (const f of flyers) {
-        const g = document.createElement('div');
-        g.className = 'scoop-ghost marble ' + (f.isSuccess ? 'cat-success' : 'cat-failure');
-        const gSz = Math.max(9, f.landSz); // sized so the fill shows under the 2px border
-        g.style.left = `${f.pctX}%`;
-        g.style.top = `${f.pctY}%`;
-        g.style.width = `${gSz}px`;
-        g.style.height = `${gSz}px`;
-        square.appendChild(g);
-      }
-    }
-    for (const f of flyers) {
-      if (elapsed < flyStart) {
-        // THROW + HOLD: dart drops onto the board, sticks, then waits.
-        const tLand = elapsed - f.launchTime;
-        if (tLand <= 0) { f.dot.style.opacity = '0'; place(f.dot, f.launchX, f.launchY, f.landSz); continue; }
-        f.dot.style.opacity = String(Math.min(tLand / 70, 1));
-        const tt = Math.min(tLand / THROW, 1);
-        const e = easeOutBack(tt); // overshoots past the landing point, then settles
-        place(f.dot, f.launchX + (f.lx - f.launchX) * e, f.launchY + (f.ly - f.launchY) * e, f.landSz);
-      } else {
-        // FLY: lift off the board and grow into a marble in the grid.
-        const ft = Math.min((elapsed - flyStart) / FLY, 1);
-        const e = ft < 0.5 ? 4 * ft * ft * ft : 1 - Math.pow(-2 * ft + 2, 3) / 2;
-        const sz = f.landSz + (f.endSz - f.landSz) * e;
-        place(f.dot, f.lx + (f.ex - f.lx) * e, f.ly + (f.ey - f.ly) * e, sz);
-      }
-    }
-    if (elapsed < total) requestAnimationFrame(step);
-    else {
-      marbles.forEach(mb => { mb.style.visibility = ''; });
-      flyers.forEach(f => f.dot.remove());
-      onDone();
-    }
-  }
-  requestAnimationFrame(step);
 }
 
 /**

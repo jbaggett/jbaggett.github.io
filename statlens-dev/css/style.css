@@ -2112,6 +2112,40 @@ input[aria-invalid="true"] {
   margin: 2px 0 6px;
   overflow: hidden;
 }
+/* The null-world population, deepened into a board you can throw darts at.
+   The one-proportion randomization test scoops its sample the way the Sampling
+   Distribution Lab does (js/mechanisms/draw-animation.js: animateDartScoop),
+   and darts need somewhere to land — 14px of strip is a line, not an area.
+   Wide and short rather than the Lab's square, because this one lives in a
+   mechanism panel with another panel beside it. (Jeff, 2026-10-03.) */
+.mech-prop-bar.is-board { height: 56px; border-radius: 4px; }
+
+/* A dart in flight. Appended to <body>, so it inherits none of the block's
+   geometry — without this it would be a rounded SQUARE turning into a circle
+   on landing. Colour comes from :root, which body does inherit. */
+.pbm-flyer { --mark-radius: 50%; --mark-ratio: 1; --mark-border: 0; }
+
+/* The footprint a scooped observation leaves on the board, so the board keeps
+   showing where this sample came from. Cleared on the next draw.
+   The Sampling Distribution Lab has its own copy of this rule, page-local and
+   older; it wins there by document order and says the same thing. */
+.scoop-ghost {
+  position: absolute;
+  box-sizing: border-box;
+  /* Round, like the dot that was lifted off it — and said here explicitly
+     because a ghost sits on the BOARD, outside the block that would otherwise
+     set --mark-radius, so .obs-mark's 3px default would win. */
+  border-radius: 50%;
+  opacity: 0.8;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  /* White ring + dark outer ring so the mark reads on the amber hatch, on the
+     blue region and on the panel alike. Border + outline rather than
+     box-shadow: box-shadow dropped the solid fill in one browser. */
+  border: 2px solid #fff;
+  outline: 1px solid rgba(30, 30, 30, 0.45);
+}
+
 .mech-prop-fill {
   height: 100%;
   background-color: var(--obs-success-bg, #C08700);

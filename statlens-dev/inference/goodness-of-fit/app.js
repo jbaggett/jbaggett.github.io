@@ -9,7 +9,7 @@
 import { setJStat, pdfChisq, chisqCDF, chisqInv } from '../../js/distributions.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { drawCurve, computeDomain } from '../../js/curve.js';
-import { fetchDataset, loadDatasetIndex, announce, initTabs, initHelp, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initHelp, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 import { tex } from '../../js/tex.js';
 
 const jstatMod = await import('jstat');
@@ -43,6 +43,8 @@ initHelp();
 /** @type {number[]} */ let p0 = [];
 let currentSourceName = '';
 let currentDatasetId = '';
+// See the note in showResults: the panel collapses onto this.
+/** @type {any} */ let currentDataset = null;
 /** @type {{parameter?: string, claim?: string, nullClaim?: string}} */
 let datasetContext = {};
 const baseTitle = document.title.replace(/\s*\|\s*StatLens$/, '');
@@ -91,6 +93,7 @@ function loadDataset(ds, id) {
   }
   currentSourceName = ds.name || '';
   currentDatasetId = id;
+  currentDataset = ds;
   datasetContext = { parameter: ds.parameter, claim: ds.claim, nullClaim: ds.nullClaim };
   applyState(cats.map(String), obs, props);
 }
@@ -140,6 +143,7 @@ document.getElementById('gof-load')?.addEventListener('click', () => {
   if (Math.abs(sum - 1) > 0.02) { announce(`Hypothesized proportions sum to ${sum.toFixed(3)} — they must sum to 1.`); return; }
   currentSourceName = '';
   currentDatasetId = '';
+  currentDataset = null;
   datasetContext = {};
   applyState(cats, obs, props.map(p => p / sum));
 });
@@ -163,6 +167,11 @@ function showResults() {
   const pValue = 1 - chisqCDF(chiSq, df);
 
   if (dataPreview) dataPreview.hidden = false;
+  // The panel collapses onto a summary bar carrying the Change Data button and
+  // "About this data", like every page that uses `initDataPanel`. This page
+  // loads datasets by hand, so picking one left the frame unchanged — the data
+  // arrived and none of the furniture did. (Jeff, 2026-10-02.)
+  collapseDataPanel(document.getElementById('data-panel'), currentDataset ?? undefined);
   if (dataSummary) {
     const namePrefix = currentSourceName ? `${currentSourceName}: ` : '';
     dataSummary.textContent = `${namePrefix}${categories.length} categories, n = ${n}`;

@@ -407,11 +407,17 @@ export function renderPropBag(container, data, opts = {}) {
   fitAggCounts(el.querySelector('.mech-prop-bar'));
 }
 
-/** Render a resample statically (no animation). */
+/**
+ * Render a resample statically (no animation).
+ *
+ * `label` names the panel for a screen reader. It defaults to "Resample"
+ * because every caller but one IS a resample; the one-proportion randomization
+ * test draws fresh Bernoulli trials from p₀ and would be lying if it said so.
+ */
 export function renderPropResample(container, resample, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
-  const el = makeFilled(resample, opts.style, 'Resample', usableWidth(container),
+  const el = makeFilled(resample, opts.style, opts.label || 'Resample', usableWidth(container),
     opts.layout ?? null, opts.reference ?? null, opts.delta !== false);
   el.classList.add('pbm-resample');
   container.appendChild(el);
@@ -738,13 +744,18 @@ export function propBarHTML(successes, failures, opts = {}) {
  *
  * So: no counts, no n, just the split and the proportion.
  *
+ * `board: true` deepens it into something you can throw darts at — the
+ * one-proportion randomization test samples from this population the way the
+ * Sampling Distribution Lab samples from its square, and a 14px strip has no
+ * area to land in. (Jeff, 2026-10-03.)
+ *
  * @param {number} p 0..1
- * @param {{ className?: string, style?: string }} [opts]
+ * @param {{ className?: string, style?: string, board?: boolean }} [opts]
  * @returns {string}
  */
 export function populationBarHTML(p, opts = {}) {
   const pct = Math.max(0, Math.min(1, p)) * 100;
-  const cls = opts.className ? ` ${opts.className}` : '';
+  const cls = (opts.board ? ' is-board' : '') + (opts.className ? ` ${opts.className}` : '');
   const style = opts.style ? ` style="${opts.style}"` : '';
   return `<div class="mech-prop-bar pbm-population${cls}" role="img"`
     + ` aria-label="A population in which ${pct.toFixed(1)}% are successes"${style}>`

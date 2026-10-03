@@ -131,6 +131,8 @@ const SHARE_SCRIPT_SRC = document.currentScript
     trials: 'Trials',
     prob: 'Probability',
     stat: 'Statistic',
+    view: 'Layout',
+    tab: 'Tab',
   };
 
   /** Params that are display/mode-only (not data settings) — excluded from summary */
@@ -145,12 +147,22 @@ const SHARE_SCRIPT_SRC = document.currentScript
   }
 
   /**
-   * Get current URL params as an array of {key, value, label} objects.
+   * Get the shared link's params as an array of {key, value, label} objects.
    * Filters out display-only params.
+   *
+   * Reads the LINK, not the address bar. They are normally the same — the tool
+   * keeps the address bar equal to its state (js/share-state.js) — but a page
+   * may hold state it deliberately does not write on arrival: the landing page
+   * leaves the bare home URL bare and still shares which layout and tab you
+   * are on. Reading `location.search` there printed "Nothing is set yet" under
+   * a link that carried two settings, which is the one thing this table is for.
+   * (2026-10-02.)
    * @returns {Array<{key: string, value: string, label: string}>}
    */
   function getUrlParams() {
-    const params = new URLSearchParams(location.search);
+    let search = location.search;
+    try { search = new URL(liveUrl()).search; } catch { /* keep the address bar */ }
+    const params = new URLSearchParams(search);
     const result = [];
     for (const [key, value] of params) {
       if (DISPLAY_PARAMS.has(key)) continue;

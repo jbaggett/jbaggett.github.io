@@ -949,6 +949,26 @@ produces six procedure types: `one-mean`, `paired`, `two-means`, `one-prop`,
 
 ---
 
+## Landing Page Parameters (`/`)
+
+The home page can be opened on a particular layout and tab, so a syllabus or a
+chapter can link to the shelf a student needs rather than to the top of the
+page. Added 2026-10-02; the **Share** button on the landing page produces these
+links, and they are also written into the address bar as you switch, so a plain
+copy from the browser carries them.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `view` | string | `cards` | Which of the three layouts to show. `cards` = By Course Phase, `data-grid` = By Variable Type, `proc-grid` = By Procedure. An unrecognised value falls back to the saved preference, then to `cards`. | `?view=proc-grid` |
+| `tab` | string | `explore` | Which course-phase tab to open, in the `cards` layout only: `explore`, `simulate`, `compute`, `apply`, `foundations`. The panel ids are `tab-<name>`; either spelling is accepted. An unrecognised value shows the default tab. | `?tab=simulate` |
+
+**A link beats a saved preference.** Both parameters override what this browser
+has in `localStorage` (`sb-view`, `sb-course-tab`) — whoever sent the link meant
+the layout they were looking at. Without either parameter the saved choice is
+restored as before, and the bare home URL is left bare.
+
+---
+
 ## Tool Path Reference
 
 | Path | Tool | Data Source |

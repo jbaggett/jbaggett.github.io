@@ -1000,3 +1000,164 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
   requestAnimationFrame(step);
   return total;
 }
+
+// ─── Scooping from a population: darts on a board ───────────────────────
+
+/** Throw cadence, flight, the beat on the board, and the lift-off. */
+const DART_THROW = 320, DART_HOLD = 520, DART_FLY = 760;
+
+/**
+ * Sample from a population by throwing darts at it.
+ *
+ * Three visible phases, because the *sampling* is the thing being taught:
+ *
+ *   1. THROW — darts rain onto the board and stick, with a small overshoot
+ *      bounce, at uniform random spots. A dart landing left of the split is a
+ *      success, right of it a failure: it takes the colour of wherever it hit,
+ *      so the outcome is something the board decides, not something the dart
+ *      brought with it.
+ *   2. HOLD — the stuck darts sit there for a beat. *This* is the random
+ *      sample of n points we just grabbed.
+ *   3. FLY — they lift off and fly to their places in the sample, growing into
+ *      dots, and leave a faint footprint behind so the board keeps showing
+ *      where this sample came from.
+ *
+ * Written for the Sampling Distribution Lab and lifted here when the
+ * one-proportion randomization test needed the same picture: both draw n
+ * independent observations from a population whose success fraction is known —
+ * p in the Lab, p₀ under the null — which is one mechanism, and was one
+ * animation written once. The two differ only in the shape of the board (a
+ * square there, a deepened bar inside a strip panel here).
+ *
+ * ⚠ `rand` is DECORATION — where on the board each dart happens to land. It
+ * must never be the page's statistical rng: drawing from that stream here
+ * would change the sample itself, and the same `?seed=` would stop producing
+ * the same numbers. The outcomes are decided before this function is called;
+ * all it chooses is splatter.
+ *
+ * @param {object} opts
+ * @param {HTMLElement} opts.board - the area being sampled, split left|right
+ * @param {number} opts.split - 0..1, the success fraction (the boundary's x)
+ * @param {HTMLElement[]} opts.targets - the sample's marks, successes first
+ * @param {number} opts.successCount - how many of `targets` are successes
+ * @param {(isSuccess: boolean) => string} opts.flyerClass - class for a dart
+ * @param {((isSuccess: boolean) => string)|null} [opts.ghostClass] - class for the
+ *   footprint left behind; null leaves no footprints
+ * @param {number} [opts.max] - decline above this many darts (too many flyers)
+ * @param {() => number} [opts.rand] - decorative randomness only; see above
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animateDartScoop({ board, split, targets, successCount,
+    flyerClass, ghostClass = null, max = 100, rand = Math.random, onDone }) {
+  const done = () => { if (onDone) onDone(); };
+  if (prefersReducedMotion() || !board || !targets?.length || targets.length > max) {
+    done();
+    return 0;
+  }
+  // Only the CURRENT sample is marked, so last draw's footprints go first.
+  board.querySelectorAll('[data-scoop-ghost]').forEach(g => g.remove());
+
+  const bd = board.getBoundingClientRect();
+  if (!bd.width || !bd.height) { done(); return 0; }
+  const splitX = bd.left + Math.max(0, Math.min(1, split)) * bd.width;
+  const n = targets.length;
+  targets.forEach(t => { t.style.visibility = 'hidden'; });
+
+  // Overshoot ease, so each dart snaps onto the board and settles — a "stick".
+  const easeOutBack = (/** @type {number} */ t) => {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  };
+
+  const STAGGER = Math.min(420 / n, 22);   // launch cadence — a rat-a-tat
+  const flyStart = (n - 1) * STAGGER + DART_THROW + DART_HOLD;
+  const total = flyStart + DART_FLY;
+
+  const flyers = targets.map((mark, i) => {
+    const isSuccess = i < successCount;    // targets are sorted: successes first
+    // Landing spot: a uniform point inside the matching region of the board.
+    const lx = isSuccess
+      ? bd.left + rand() * (splitX - bd.left)
+      : splitX + rand() * (bd.right - splitX);
+    const ly = bd.top + rand() * bd.height;
+    const tr = mark.getBoundingClientRect();
+    const endSz = tr.width || 16;
+    const landSz = Math.max(7, endSz * 0.55);  // a dart tip; it grows as it flies
+    const dot = document.createElement('div');
+    dot.className = flyerClass(isSuccess);
+    // White ring + shadow so a dart stays visible when it lands on a region of
+    // its own colour (amber on amber, blue on blue) and reads as sitting ON
+    // the board rather than being part of it.
+    dot.style.cssText = `position:fixed;left:0;top:0;width:${landSz}px;height:${landSz}px;`
+      + 'z-index:1000;pointer-events:none;opacity:0;'
+      + 'box-shadow:0 0 0 1.5px #fff, 0 2px 4px rgba(0,0,0,.45);';
+    document.body.appendChild(dot);
+    return {
+      dot, isSuccess, launchTime: i * STAGGER, lx, ly, landSz, endSz,
+      // Launched from above the board with a little drift, so it reads as thrown.
+      launchX: lx + (rand() - 0.5) * 50,
+      launchY: bd.top - 70 - rand() * 40,
+      // The landing spot as a fraction of the board, for the footprint — the
+      // board can be resized or re-rendered between draws.
+      pctX: ((lx - bd.left) / bd.width) * 100,
+      pctY: ((ly - bd.top) / bd.height) * 100,
+      ex: tr.left + tr.width / 2, ey: tr.top + tr.height / 2,
+    };
+  });
+
+  const place = (/** @type {HTMLElement} */ el, /** @type {number} */ cx,
+                 /** @type {number} */ cy, /** @type {number} */ sz) => {
+    el.style.left = `${cx - sz / 2}px`;
+    el.style.top = `${cy - sz / 2}px`;
+    el.style.width = `${sz}px`;
+    el.style.height = `${sz}px`;
+  };
+
+  let ghostsPlaced = false;
+  const t0 = performance.now();
+  function step(/** @type {number} */ now) {
+    const elapsed = now - t0;
+    // The instant the darts lift off, stamp the footprints they leave.
+    if (elapsed >= flyStart && !ghostsPlaced) {
+      ghostsPlaced = true;
+      if (ghostClass) {
+        for (const f of flyers) {
+          const g = document.createElement('div');
+          g.className = ghostClass(f.isSuccess);
+          g.dataset.scoopGhost = '1';
+          const gSz = Math.max(9, f.landSz);  // sized so the fill shows under the ring
+          g.style.left = `${f.pctX}%`;
+          g.style.top = `${f.pctY}%`;
+          g.style.width = `${gSz}px`;
+          g.style.height = `${gSz}px`;
+          board.appendChild(g);
+        }
+      }
+    }
+    for (const f of flyers) {
+      if (elapsed < flyStart) {
+        // THROW + HOLD: the dart drops onto the board, sticks, then waits.
+        const tLand = elapsed - f.launchTime;
+        if (tLand <= 0) { f.dot.style.opacity = '0'; place(f.dot, f.launchX, f.launchY, f.landSz); continue; }
+        f.dot.style.opacity = String(Math.min(tLand / 70, 1));
+        const e = easeOutBack(Math.min(tLand / DART_THROW, 1));
+        place(f.dot, f.launchX + (f.lx - f.launchX) * e, f.launchY + (f.ly - f.launchY) * e, f.landSz);
+      } else {
+        // FLY: lift off the board and grow into the sample's dot.
+        const ft = Math.min((elapsed - flyStart) / DART_FLY, 1);
+        const e = ft < 0.5 ? 4 * ft * ft * ft : 1 - Math.pow(-2 * ft + 2, 3) / 2;
+        const sz = f.landSz + (f.endSz - f.landSz) * e;
+        place(f.dot, f.lx + (f.ex - f.lx) * e, f.ly + (f.ey - f.ly) * e, sz);
+      }
+    }
+    if (elapsed < total) requestAnimationFrame(step);
+    else {
+      targets.forEach(t => { t.style.removeProperty('visibility'); });
+      flyers.forEach(f => f.dot.remove());
+      done();
+    }
+  }
+  requestAnimationFrame(step);
+  return total;
+}

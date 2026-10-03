@@ -859,6 +859,30 @@ export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } 
    *   3) one-sample-sim: #mech-sim-stat (already contains label + value)
    *   4) chisq: #mech-shuffled-chisq with parent <p> "χ² = <span>..."
    */
+  /**
+   * The summary is ONE LINE, so it takes the panel's words and leaves its
+   * picture behind.
+   *
+   * It used to copy `innerHTML` wholesale, which worked only for as long as
+   * the panel held nothing but text. It does not: the one-mean panel carries a
+   * `<div id="mech-sim-chart">`, so every sync minted a SECOND element with
+   * that id — harmless purely by document order, since the real panel comes
+   * first and `getElementById` returns the first match. And when the
+   * one-proportion draw became a block of dots (2026-10-03), the clone caught
+   * them mid-flight with `visibility: hidden` still on them and kept 34
+   * permanently invisible dots in the summary.
+   *
+   * @param {Element} el
+   * @returns {string}
+   */
+  function compactStat(el) {
+    const clone = /** @type {HTMLElement} */ (el.cloneNode(true));
+    clone.querySelectorAll('.mech-prop-draw, .mech-chart-container').forEach(n => n.remove());
+    // Nothing copied in here may keep an id; see above.
+    clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    return clone.innerHTML;
+  }
+
   function syncSummary() {
     if (!summary) return;
 
@@ -878,7 +902,7 @@ export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } 
     // Try one-sample-sim #mech-sim-stat (already labeled)
     const mechSimStat = strip.querySelector('#mech-sim-stat');
     if (mechSimStat && mechSimStat.textContent.trim()) {
-      summary.innerHTML = mechSimStat.innerHTML;
+      summary.innerHTML = compactStat(mechSimStat);
       return;
     }
 

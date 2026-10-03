@@ -105,13 +105,27 @@
             font-size: 0.82rem; color: var(--ims-gray-text); margin: 0.1rem 0 0;
             font-style: italic;
         }
-        /* Proportion sample: scooped marbles (match the population waffle —
-           failure solid blue, success amber with the same 45° diagonal hatch). */
+        /* Proportion sample: scooped dots (failure solid blue, success amber with
+           the same 45° diagonal hatch).
+
+           ROUND, not square. One observation of a categorical variable is drawn
+           the same way everywhere on the site — a dot, amber hatched for a
+           success and solid blue for a failure — and the authority for that is
+           `.pbm-block { --mark-radius: 50% }` in css/style.css, which the
+           bootstrap CI for a proportion uses. These were 3px-rounded squares,
+           so a student moving between the Lab and the bootstrap page saw the
+           same quantity in two shapes and had to work out that they meant the
+           same thing. (Jeff, 2026-10-03: "use dots instead of squares so that
+           the look of the dots is similar to bootstrapping CI for a single
+           proportion.")
+
+           The population square it is scooped FROM stays a square: it is an
+           area whose split is p, not a bag of marbles you could count. */
         .marble-grid {
             display: flex; flex-wrap: wrap; gap: 3px;
             padding: 0.6rem 0.3rem 0.2rem; align-content: flex-start;
         }
-        .marble { width: 16px; height: 16px; border-radius: 3px; box-sizing: border-box; }
+        .marble { width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; }
         .cat-failure { background: #0072B2; }
         .cat-success {
             background-color: #C08700;
@@ -128,10 +142,11 @@
         .prop-square .prop-region { height: 100%; flex: 0 0 auto; }
         .prop-square .prop-region:last-child { flex: 1 1 auto; }
         /* Faint footprint left where a sample point came from — shows where the
-           current sample was drawn; cleared on the next draw. Kept square so it
-           reads as a faded version of the marble (not a separate dot shape). */
+           current sample was drawn; cleared on the next draw. Round, for the
+           same reason the dots are: it has to read as a faded version of the
+           dot that was lifted off it, not as a different kind of mark. */
         .scoop-ghost {
-            position: absolute; border-radius: 1px; box-sizing: border-box;
+            position: absolute; border-radius: 50%; box-sizing: border-box;
             opacity: 0.8; pointer-events: none; transform: translate(-50%, -50%);
             /* White ring (border) + dark outer ring (outline) so the mark reads on
                the amber hatch, the blue region, the white margin, and the means
