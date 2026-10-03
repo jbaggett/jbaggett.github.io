@@ -21,7 +21,7 @@ import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
-import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, morphMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
+import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
@@ -2813,10 +2813,6 @@ export function initSimPage(config) {
     const fmtType = config.proportion ? 'proportion' : undefined;
 
     // Can we morph existing histograms? (non-proportion, single-step, charts exist)
-    const canMorphCharts = !config.proportion && highlight
-      && document.getElementById('mech-hist-resamp-1')?.querySelector('svg.mech-minichart')
-      && document.getElementById('mech-hist-resamp-2')?.querySelector('svg.mech-minichart');
-
     // Can we animate proportion bars? (proportion, single-step, bars already rendered)
     const canAnimateProps = config.proportion && highlight && !cardMechanism
       && mechResampleContent.querySelector('.mech-prop-bar');
@@ -2909,56 +2905,17 @@ export function initSimPage(config) {
 
       morphMs = 200 + 400;
 
-    } else if (canMorphCharts && mechOriginalContent) {
-      // Ghost: fade resample histograms to low opacity
-      const cell1 = /** @type {HTMLElement} */ (document.getElementById('mech-hist-resamp-1'));
-      const cell2 = /** @type {HTMLElement} */ (document.getElementById('mech-hist-resamp-2'));
-      const svg1 = cell1?.querySelector('svg');
-      const svg2 = cell2?.querySelector('svg');
-      if (svg1) svg1.style.opacity = '0.25';
-      if (svg2) svg2.style.opacity = '0.25';
-
-      // Fade stat text too
-      const statSpans = mechResampleContent.querySelectorAll('.mech-group-stat-sm');
-      const diffSpan = mechResampleContent.querySelector('.mech-stat-value');
-      statSpans.forEach(s => { /** @type {HTMLElement} */ (s).style.opacity = '0.2'; });
-      if (diffSpan) /** @type {HTMLElement} */ (diffSpan).style.opacity = '0.2';
-
-      // Fire flying dots from original → resample
-      flyDataStream(mechOriginalContent, mechResampleContent);
-
-      // After dots are mid-flight, morph histograms to new data
-      setTimeout(() => {
-        if (svg1) { svg1.style.transition = 'opacity 400ms ease'; svg1.style.opacity = '1'; }
-        if (svg2) { svg2.style.transition = 'opacity 400ms ease'; svg2.style.opacity = '1'; }
-
-        const domainOpt = twoGroupChartDomain ?? undefined;
-        const chartOpts = { minHeight: 88, domain: domainOpt, numBins: twoGroupNumBins, highlightMean: true };
-        if (cell1) morphMiniChart(cell1, g1, { ...chartOpts, meanValue: statFn(g1), label: `Resampled ${group1Name}` });
-        if (cell2) morphMiniChart(cell2, g2, { ...chartOpts, meanValue: statFn(g2), label: `Resampled ${group2Name}` });
-
-        // Update stat text
-        const statSymbol = config.proportion ? 'p\u0302' : '<span class="x-bar">x</span>';
-        statSpans.forEach((s, i) => {
-          const gData = i === 0 ? g1 : g2;
-          s.innerHTML = `n=${gData.length}, ${statSymbol}=${formatStat(statFn(gData), dataPrecision, fmtType)}`;
-          /** @type {HTMLElement} */ (s).style.transition = 'opacity 250ms ease';
-          /** @type {HTMLElement} */ (s).style.opacity = '1';
-        });
-
-        // Update diff
-        const diffVal = formatStat(statFn(g1) - statFn(g2), dataPrecision, fmtType);
-        if (diffSpan) {
-          diffSpan.textContent = diffVal;
-          diffSpan.classList.add('highlight-last');
-          /** @type {HTMLElement} */ (diffSpan).style.transition = 'opacity 250ms ease';
-          /** @type {HTMLElement} */ (diffSpan).style.opacity = '1';
-        }
-      }, 200);
-
-      morphMs = 200 + 400;
     } else {
-      // Full rebuild (first time or batch)
+      // EVERY single draw rebuilds and animates — there is no quick path.
+      //
+      // There used to be one: the first +1 rebuilt the panel and ran the full
+      // handover, and every +1 after it took a morph instead — a fade and a
+      // shift, over in 600ms. So the mechanism explained itself once and then
+      // stopped, exactly when a student starts pressing +1 to watch it again.
+      // Batching is how you skip an animation on this site (+10, +100), and it
+      // already works; a single draw should always be the whole story.
+      // (Jeff, 2026-10-03: "keep the same animation with lots of dots
+      // throughout for every +1, animations can be avoided by pressing +10".)
       mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, highlight);
       renderTwoGroupCharts(g1, g2, 'resamp', highlight);
       // Past the dotplot cap the groups are mini histograms, and the panel just
