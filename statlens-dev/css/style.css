@@ -1437,7 +1437,7 @@ input[aria-invalid="true"] {
    The marble grid and the shuffling cards are the same object drawn twice: one
    mark per observation, success or failure. They arrived as two components with
    two class families, two geometries and two colour schemes, so a reader meets
-   amber hatched squares on the bootstrap page and red cards on the
+   amber squares (hatched, at the time) on the bootstrap page and red cards on the
    randomization test for the identical thing (measured 2026-09-30, see
    docs/mechanism-survey-2026-09.md §3). What legitimately differs between those
    pages is the MECHANISM — drawing with replacement vs re-allocating — and that
@@ -1449,18 +1449,47 @@ input[aria-invalid="true"] {
 
    ┌─ FALL 2027: making them the same is THE `.mech-card-display` BLOCK BELOW ─┐
    │ Delete its five `--obs-*` lines and the cards take the amber-and-blue     │
-   │ defaults from here — the CVD-safe Okabe-Ito pair, hatching as the         │
-   │ redundant non-colour cue. That is the colour change, and it is all of it. │
+   │ defaults from here — the CVD-safe Okabe-Ito pair. That is the colour     │
+   │ change, and it is all of it. (The redundant non-colour cue is position    │
+   │ and the labels; the hatch that used to do it came out on 2026-10-03.)     │
    │                                                                          │
    │ Its four `--mark-*` lines are SHAPE, not colour. Keep them and the cards  │
    │ stay card-shaped in amber and blue; delete them too and both become the   │
    │ grid's 15px square. Verified by deleting the rule in a live page: the     │
-   │ cards went to #C08700 hatched, and to 15×15 when the shape lines went     │
+   │ cards went to #C08700, and to 15×15 when the shape lines went             │
    │ with it. Decide the shape separately from the colour. (Jeff, 2026-10-01.) │
    └──────────────────────────────────────────────────────────────────────────┘ */
 :root {
   --obs-success-bg: #C08700;
-  --obs-success-pattern: repeating-linear-gradient(45deg, #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px);
+  /* NO HATCH on success, since 2026-10-03.
+   *
+   * It was there as a redundant non-colour cue, and it was costing more than it
+   * bought. Measured: the in-bar count is near-black and reads at 5.56:1 on
+   * plain amber but drops to 2.71:1 wherever a stripe crosses it — under even
+   * the 3:1 a graphical element needs, let alone AA — and the stripes are
+   * 2.05:1 against the base, loud enough to interfere with the dart footprints
+   * on the amber half of a board too.
+   *
+   * What it was for is still covered twice over, without colour: POSITION
+   * (successes are always first, contiguous) and the literal labels, "24 S" and
+   * "10 F". And the pair is Okabe-Ito, chosen because it separates on the
+   * blue-yellow axis that red-green CVD preserves — simulated, amber and blue
+   * stay distinct hues under protanopia (#8f8f04 vs #6c6cb2) and deuteranopia
+   * (#9b9b00 vs #6161b3).
+   *
+   * The one case it genuinely helped is greyscale: the luminance ratio is
+   * 1.38-1.83:1 under simulation, so a black-and-white printout leans entirely
+   * on position and the labels.
+   *
+   * It also ends an inconsistency — `.pbm-dot.pbm-success` had already opted
+   * out, so a success was striped in a bar and solid as a dot.
+   * (Jeff, 2026-10-03: "I think it makes text and dots drawn in the amber part
+   * harder to read… take out the hatching in the simulation tools.")
+   *
+   * The Sampling Distribution Lab keeps its own, page-local copy: it is not one
+   * of the simulation tools, and nothing but footprints sits on its board.
+   */
+  --obs-success-pattern: none;
   --obs-success-edge: transparent;
   --obs-failure-bg: #0072B2;
   --obs-failure-edge: transparent;
@@ -1573,9 +1602,10 @@ input[aria-invalid="true"] {
 }
 /* Amber success, blue failure — the same pair the block, the grid and the cards
    use, carried over so the display changing at n = 120 is a change of SCALE and
-   not of language. The hatch comes with it: on the aggregate view the regions
-   are the only thing left carrying the outcome, so the non-colour channel
-   matters more here, not less. */
+   not of language. On the aggregate view the regions are the only thing left
+   carrying the outcome, so the non-colour channel matters more here, not less —
+   which is the two counts printed inside them, and their order. It used to be a
+   diagonal hatch as well; see the note at `--obs-success-pattern`. */
 /* (The aggregate bar's amber/blue is the shared default now.) */
 /* The reference line crosses the bar, so it is read against amber and blue
    rather than against the panel — and purple on those is 2.57:1 and 1.55:1,
@@ -1617,10 +1647,11 @@ input[aria-invalid="true"] {
 @media (prefers-reduced-motion: reduce) { .pbm-fleck { display: none; } }
 /* Each count pushed to the OUTER end of its region, so the two sit at the
    extremes of what they count and the boundary between them is left clear. */
-/* Solid behind the glyphs. The hatch is a fine diagonal and 12px text sitting
-   on it is read through stripes; painting the region's own colour behind the
-   text alone keeps the hatch everywhere it is doing its job (saying "success"
-   without relying on hue) and takes it out from under the one place it hurts. */
+/* A plate behind the glyphs. It was painting the region's own colour over the
+   hatch so 12px text was not read through stripes; with the hatch gone
+   (2026-10-03) the fill is a no-op and what is left doing work is the padding
+   and the rounded corner. Kept as one rule so that if a pattern ever returns,
+   the text is already protected from it. */
 .pbm-aggbar .pbm-count-t {
   flex: 0 0 auto; white-space: nowrap;
   padding: 0 3px; border-radius: 2px;
