@@ -820,7 +820,7 @@ export function propBarHTML(successes, failures, opts = {}) {
  *
  * @param {number} p 0..1
  * @param {{ className?: string, style?: string, board?: boolean,
- *   reference?: number, referenceLabel?: string }} [opts]
+ *   reference?: number, referenceLabel?: string, parameterLabel?: string }} [opts]
  * @returns {string}
  */
 export function populationBarHTML(p, opts = {}) {
@@ -841,11 +841,24 @@ export function populationBarHTML(p, opts = {}) {
     return `<div class="pbm-ref" style="left:${rp}%"></div>`
       + `<div class="pbm-ref-tag" style="left:${rp}%">${opts.referenceLabel ?? ''}</div>`;
   })();
+  // p₀ labels the BOUNDARY it describes, not the panel.
+  //
+  // It used to sit at the top-left of the panel as a row label, which read fine
+  // until the observed marker landed near the left edge too — then "p₀ = 0.5"
+  // and the sample's label stacked at the same x with the dashed line between
+  // them, and neither obviously belonged to anything. Each label now sits at
+  // its own mark: the parameter above the split it names, the sample below its
+  // line. They can only meet when p̂ ≈ p₀, and then they are on opposite sides
+  // of the bar. (Jeff, 2026-10-03.)
+  const param = opts.parameterLabel
+    ? `<div class="pbm-ref-tag is-parameter" style="left:${pct}%">${opts.parameterLabel}</div>`
+    : '';
   const aria = `A population in which ${pct.toFixed(1)}% are successes`
     + (ref ? `, with the observed sample marked at ${(opts.reference * 100).toFixed(1)}%` : '');
   return `<div class="mech-prop-bar pbm-population${cls}" role="img"`
     + ` aria-label="${aria}"${style}>`
     + `<div class="mech-prop-fill" style="width:${pct}%"></div>`
+    + param
     + ref
     + '</div>';
 }
@@ -899,5 +912,39 @@ export function updatePropBar(barEl, successes, failures, opts = {}) {
       /** @type {HTMLElement} */ (el).style.transition = 'opacity 250ms ease';
       /** @type {HTMLElement} */ (el).style.opacity = '1';
     });
+  }
+}
+
+/**
+ * Keep a bar's labels inside the panel.
+ *
+ * Each tag is centred on the mark it names, which puts half of it outside the
+ * panel when that mark is near an edge — at p̂ = 0.048 the sample's label ran
+ * off the left and lost its first word. CSS cannot clamp to a container, so
+ * this measures and pins: a tag that would overhang stops being centred and
+ * sits flush with the edge instead, still the nearest thing to its own mark.
+ * (Jeff, 2026-10-03: a screenshot of "ur sample · p̂ = 0.048".)
+ *
+ * Call after the bar is in the DOM. Safe to call repeatedly.
+ *
+ * @param {Element|null} barEl
+ */
+export function fitPopulationTags(barEl) {
+  if (!barEl) return;
+  const bounds = barEl.getBoundingClientRect();
+  if (!bounds.width) return;
+  for (const tag of barEl.querySelectorAll('.pbm-ref-tag')) {
+    const el = /** @type {HTMLElement} */ (tag);
+    el.style.removeProperty('transform');
+    el.style.removeProperty('margin-left');
+    el.style.transform = 'translateX(-50%)';
+    const r = el.getBoundingClientRect();
+    if (r.left < bounds.left) {
+      el.style.transform = 'none';
+      el.style.marginLeft = `${bounds.left - r.left - r.width / 2}px`;
+    } else if (r.right > bounds.right) {
+      el.style.transform = 'none';
+      el.style.marginLeft = `${bounds.right - r.right - r.width / 2}px`;
+    }
   }
 }

@@ -13,7 +13,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView }
+import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags }
   from './prop-bootstrap-mech.js';
 import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
@@ -515,17 +515,19 @@ export function initOneSamplePage(config) {
   function renderPropSource() {
     if (!isProp || !mechObservedStat || sampleN === 0) return;
     const p0 = getNullValue();
-    const label = SHOW_SAMPLE_IN_SOURCE
-      ? `what H\u2080 says \u00b7 <span class="is-parameter">p\u2080 = ${p0}</span>`
-      : `<span class="is-parameter">p\u2080 = ${p0}</span>`;
-    let html = `<span class="pbm-src-row"><span class="pbm-src-label">${label}</span>`
+    // Both labels live ON the bar now, each at its own mark — p₀ above the
+    // boundary it names, the observed sample below its line. The row label they
+    // used to share put them at the same x whenever p̂ was near the left edge.
+    let html = `<span class="pbm-src-row">`
       + populationBarHTML(p0, {
           style: 'margin-top:2px', board: true,
-          // Your sample, marked on the population you draw from — one picture
-          // for both, rather than a second bar or a fourth panel.
-          // (Jeff, 2026-10-03: "draw it on the population.")
+          parameterLabel: `p\u2080 = ${p0}`,
+          // The observed sample, marked on the population you draw from — one
+          // picture for both, rather than a second bar or a fourth panel.
+          // "observed", not "your", to match the line the distribution already
+          // draws for it. (Jeff, 2026-10-03.)
           reference: observedStat,
-          referenceLabel: `your sample \u00b7 p\u0302 = ${fmtObs(observedStat)}`,
+          referenceLabel: `observed p\u0302 = ${fmtObs(observedStat)}`,
         }) + '</span>';
     if (SHOW_SAMPLE_IN_SOURCE) {
       html += `<span class="pbm-src-row"><span class="pbm-src-label">your sample \u00b7 `
@@ -536,6 +538,9 @@ export function initOneSamplePage(config) {
         + '</span>';
     }
     mechObservedStat.innerHTML = html;
+    // Centred tags overhang the panel when their mark is near an edge; this
+    // pins the ones that would. Must run after the bar is in the DOM.
+    fitPopulationTags(mechObservedStat.querySelector('.pbm-population'));
   }
 
   /** Format observed stat for display. */

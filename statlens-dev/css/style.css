@@ -1627,6 +1627,7 @@ input[aria-invalid="true"] {
   top: 100%;
   transform: translateX(-50%);
   margin-top: 3px;
+  /* Pinned by fitPopulationTags when the mark is near an edge. */
   white-space: nowrap;
   font-size: 0.72rem;
   font-weight: 700;
@@ -1634,9 +1635,18 @@ input[aria-invalid="true"] {
   color: var(--observed-stat, #7B2D8E);
   pointer-events: none;
 }
-/* …and the board leaves room for it, so the tag does not sit on whatever
-   follows the panel. */
-.mech-prop-bar.is-board { margin-bottom: 1.1rem; }
+/* The parameter's label goes ABOVE its boundary, the sample's below its line —
+   so each sits at the mark it names, and the two can only meet when p̂ ≈ p₀,
+   where they are on opposite sides of the bar. */
+.pbm-ref-tag.is-parameter {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 3px;
+  color: #444;
+}
+/* …and the board leaves room above and below, so neither tag sits on whatever
+   surrounds the panel. */
+.mech-prop-bar.is-board { margin-top: 1.2rem; margin-bottom: 1.1rem; }
 
 /* The part of the bar not yet drawn: the two regions grow in from the ends and
    this closes between them. Light enough to read as "nothing here yet" against
