@@ -569,6 +569,12 @@ export function initOneSamplePage(config) {
     // seeding it here would play the morph to an empty room.
     if (isProp) renderPropSource();
     else renderMeanBagView();
+    // …and the draw panel says what it is waiting for, rather than sitting
+    // blank beside a full one. (2026-10-03.)
+    if (mechSimStat && !mechSimStat.textContent.trim()) {
+      const verb = isProp ? 'simulate a sample' : 'resample';
+      mechSimStat.innerHTML = `<p class="mech-resample-empty">Click <strong>+1</strong> to ${verb}.</p>`;
+    }
   }
 
   function enableControls() {

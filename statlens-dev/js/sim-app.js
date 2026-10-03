@@ -1696,6 +1696,13 @@ export function initSimPage(config) {
       initMechanismCollapse(mechanismStrip);
       if (useNewPropMech) ensurePropStyleToggle();
       renderOriginalSample();
+      // Say what the empty panel is waiting for. The two-group pages have done
+      // this since they opened at load; the one-sample ones opened at load for
+      // the first time on 2026-10-03 and inherited a blank box beside a full
+      // one, which reads as broken rather than as pending.
+      if (resampleContentEl && !resampleContentEl.textContent.trim()) {
+        resampleContentEl.innerHTML = resamplePanelPlaceholderHTML();
+      }
       // The non-tiles view is the default for numeric data.
       //
       // It used to be tiles below 30 observations and a histogram above, which
