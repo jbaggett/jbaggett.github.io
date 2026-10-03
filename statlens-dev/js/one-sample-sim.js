@@ -480,6 +480,21 @@ export function initOneSamplePage(config) {
   }
 
   /**
+   * Whether Step 1 also draws your observed sample under the null population.
+   *
+   * OFF since 2026-10-03, the day it went on: Jeff didn't like the placement
+   * ("I don't like the placement of the observed sample bar below the null bar,
+   * let's remove or hide it for now"). Left as one flag rather than deleted,
+   * because the thing it was for — comparing your p̂ against p₀ by eye — is
+   * still a real want and may come back somewhere else on the page.
+   *
+   * Nothing is lost meanwhile: p̂ is in the data bar at the top, and the Step 3
+   * distribution now marks BOTH values, so the comparison happens where the
+   * decision does.
+   */
+  const SHOW_SAMPLE_IN_SOURCE = false;
+
+  /**
    * Step 1 on the proportion page: the population H₀ names, and your sample.
    *
    * TWO OBJECTS, drawn on the same board at the same width so the two
@@ -500,16 +515,20 @@ export function initOneSamplePage(config) {
   function renderPropSource() {
     if (!isProp || !mechObservedStat || sampleN === 0) return;
     const p0 = getNullValue();
-    const obsFailures = sampleN - sampleSuccesses;
-    mechObservedStat.innerHTML =
-      `<span class="pbm-src-row"><span class="pbm-src-label">what H\u2080 says \u00b7 `
-      + `<span class="is-parameter">p\u2080 = ${p0}</span></span>`
-      + populationBarHTML(p0, { style: 'margin-top:2px' , board: true }) + '</span>'
-      + `<span class="pbm-src-row"><span class="pbm-src-label">your sample \u00b7 `
-      + `<span class="is-statistic">p\u0302 = ${fmtObs(observedStat)}</span>`
-      + `<span class="pbm-src-count"> (${sampleSuccesses} of ${sampleN})</span></span>`
-      + propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:2px', board: true })
-      + '</span>';
+    const label = SHOW_SAMPLE_IN_SOURCE
+      ? `what H\u2080 says \u00b7 <span class="is-parameter">p\u2080 = ${p0}</span>`
+      : `<span class="is-parameter">p\u2080 = ${p0}</span>`;
+    let html = `<span class="pbm-src-row"><span class="pbm-src-label">${label}</span>`
+      + populationBarHTML(p0, { style: 'margin-top:2px', board: true }) + '</span>';
+    if (SHOW_SAMPLE_IN_SOURCE) {
+      html += `<span class="pbm-src-row"><span class="pbm-src-label">your sample \u00b7 `
+        + `<span class="is-statistic">p\u0302 = ${fmtObs(observedStat)}</span>`
+        + `<span class="pbm-src-count"> (${sampleSuccesses} of ${sampleN})</span></span>`
+        + propBarHTML(sampleSuccesses, sampleN - sampleSuccesses,
+            { style: 'margin-top:2px', board: true })
+        + '</span>';
+    }
+    mechObservedStat.innerHTML = html;
   }
 
   /** Format observed stat for display. */
