@@ -693,7 +693,13 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
 
   // A fixed budget of particles, allocated across bars by largest remainder so
   // the counts are exact and every drawn-from bin fires at least once.
-  const BUDGET = Math.max(24, Math.min(110, Math.round(n || 110)));
+  // Fewer particles, and a shorter stream to send them down — the animation
+  // was 3.55s end to end and read as waiting rather than watching. The cadence
+  // is deliberately unchanged: 110 over 2100ms was one every 19ms, 70 over
+  // 1250ms is one every 18ms, so it is the same rain for a shorter time rather
+  // than the same rain hurried. (Jeff, 2026-10-03: "takes a little too long so
+  // we probably want to speed it up or maybe draw fewer dots.")
+  const BUDGET = Math.max(24, Math.min(70, Math.round(n || 70)));
   const exact = slots.map(s => (s.box.height / totalH) * BUDGET);
   slots.forEach((s, i) => { s.share = Math.floor(exact[i]); });
   let left = BUDGET - slots.reduce((t, s) => t + s.share, 0);
@@ -717,7 +723,7 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
     [queue[i], queue[j]] = [queue[j], queue[i]];
   }
 
-  const STREAM = 2100, FLY = 430, HOLD = 220, GATHER = 560, SETTLE = 240;
+  const STREAM = 1250, FLY = 430, HOLD = 220, GATHER = 420, SETTLE = 240;
   const gap = queue.length > 1 ? STREAM / queue.length : 0;
   const drawsPer = (n || queue.length) / (queue.length || 1);
 

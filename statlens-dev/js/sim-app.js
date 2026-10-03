@@ -1640,10 +1640,16 @@ export function initSimPage(config) {
    */
   function combineThenDrop(dropSource) {
     if (!dropSource || !chartContainer) return;
-    const marker = (/** @type {string} */ id) =>
-      document.getElementById(id)?.querySelector('.overlays line') ?? null;
+    // A dotplot marks its mean with an overlay line; a mini histogram marks it
+    // with `.mc-mean`. Past the dotplot cap the panel is histograms, and
+    // looking only for the first would have left the bigger samples with no
+    // combine at all. (2026-10-03.)
+    const marker = (/** @type {number} */ i) =>
+      document.getElementById(`mech-dot-resamp-${i}`)?.querySelector('.overlays line')
+      ?? document.getElementById(`mech-hist-resamp-${i}`)?.querySelector('.mc-mean')
+      ?? null;
     const ms = animateCombineStats({
-      sources: [marker('mech-dot-resamp-1'), marker('mech-dot-resamp-2')],
+      sources: [marker(1), marker(2)],
       target: dropSource,
     });
     if (!ms) {
@@ -2357,6 +2363,30 @@ export function initSimPage(config) {
    * @param {string} tag - 'orig' or 'resamp'
    * @param {boolean} [highlightMean=false] - Highlight mean markers in orange
    */
+  /**
+   * Animate both groups' mini histograms from original to resampled.
+   *
+   * The same handover the one-sample mean CI runs, once per group. The two are
+   * started together so the pair reads as one draw rather than two, and the
+   * longer of the two durations is what the caller waits on.
+   *
+   * @param {number} n - observations behind the draw, which paces the stream
+   * @returns {number} ms
+   */
+  function animateHistogramPair(n) {
+    const svg = (/** @type {string} */ id) =>
+      document.getElementById(id)?.querySelector('svg.mech-minichart') ?? null;
+    let ms = 0;
+    for (const i of [1, 2]) {
+      ms = Math.max(ms, animateHistogramDraw({
+        sourceSvg: svg(`mech-hist-orig-${i}`),
+        targetSvg: svg(`mech-hist-resamp-${i}`),
+        n: Math.round(n / 2),
+      }));
+    }
+    return ms;
+  }
+
   function renderTwoGroupCharts(g1, g2, tag, highlightMean = false) {
     if (config.proportion) return;
     const statFn = config.mode === 'bootstrap' ? getBootstrapStat().fn : mean;
@@ -2923,6 +2953,14 @@ export function initSimPage(config) {
       // Full rebuild (first time or batch)
       mechResampleContent.innerHTML = buildTwoGroupHTML(g1, g2, highlight);
       renderTwoGroupCharts(g1, g2, 'resamp', highlight);
+      // Past the dotplot cap the groups are mini histograms, and the panel just
+      // redrew — bars appearing with nothing to say where they came from. The
+      // one-sample mean CI already animates this exact handover, bar to bar;
+      // run it per group so a bigger sample is the SAME mechanism at a coarser
+      // grain rather than a different, duller one. (Jeff, 2026-10-03.)
+      if (highlight && !twoMeanDotActive() && !config.proportion) {
+        morphMs = Math.max(morphMs, animateHistogramPair(g1.length + g2.length));
+      }
     }
 
     // Describe the mechanism as a subtitle on the resample column title, rather
