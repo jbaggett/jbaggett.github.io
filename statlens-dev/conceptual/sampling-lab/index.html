@@ -105,8 +105,8 @@
             font-size: 0.82rem; color: var(--ims-gray-text); margin: 0.1rem 0 0;
             font-style: italic;
         }
-        /* Proportion sample: scooped dots (failure solid blue, success amber with
-           the same 45° diagonal hatch).
+        /* Proportion sample: scooped dots — failure solid blue, success solid
+           amber, the shared pair.
 
            ROUND, not square. One observation of a categorical variable is drawn
            the same way everywhere on the site — a dot, amber hatched for a
@@ -129,11 +129,19 @@
             justify-content: center;
         }
         .marble { width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; }
-        .cat-failure { background: #0072B2; }
+        /* Success and failure take the SHARED tokens, so this page cannot drift
+           from the simulation tools again. They were a hardcoded copy of the
+           same two colours plus a diagonal hatch, which is how the hatch came
+           out of the simulation tools on 2026-10-03 and stayed here — the Lab
+           striped where one-proportion was solid, on two pages built to look
+           alike. The reasoning for dropping it is at `--obs-success-pattern`
+           in css/style.css: the stripes cost the in-bar count more than half
+           its contrast, and position plus the labels already carry the outcome
+           without colour. (Jeff, 2026-10-03: "yes, change the lab too.") */
+        .cat-failure { background: var(--obs-failure-bg, #0072B2); }
         .cat-success {
-            background-color: #C08700;
-            background-image: repeating-linear-gradient(45deg,
-                #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px);
+            background-color: var(--obs-success-bg, #C08700);
+            background-image: var(--obs-success-pattern, none);
         }
         /* Proportion population: a shaded area split left (success, amber) /
            right (failure, blue). We sample uniform points on it.
