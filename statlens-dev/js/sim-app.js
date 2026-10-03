@@ -8,6 +8,7 @@ import { parseParams } from './url-params.js';
 import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forgetSeed } from './share-state.js';
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
+import { createSharedScale } from './mechanisms/entities.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
 import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
@@ -164,7 +165,8 @@ export function initSimPage(config) {
    * so in code. `resampleSourceValues()` already hands back the differences.
    * (Jeff, 2026-10-02: "route through one-mean mechanism".)
    */
-  const usesMeanMech = () => config.mode === 'bootstrap' && !config.proportion && !config.twoGroup;
+  const usesMeanMech = () => !config.proportion && !config.twoGroup
+    && (config.mode === 'bootstrap' || config.paired);
   /** True when the animated mean-dotplot mechanism should be used right now. */
   const meanDotActive = () => {
     if (!usesMeanMech()) return false;
@@ -201,8 +203,11 @@ export function initSimPage(config) {
   const twoMeanDotActive = () => isMeanTwoGroup && data2.length > 0
     && data1.length >= 2 && data1.length <= MEAN_DOT_MAX
     && data2.length >= 2 && data2.length <= MEAN_DOT_MAX;
-  const mechG1 = createMeanMechanism({ formatValue: formatChipValue, initialView: 'dotplot' });
-  const mechG2 = createMeanMechanism({ formatValue: formatChipValue, initialView: 'dotplot' });
+  // One scale for both groups: same dot size, same sizing stack, so the two
+  // rows are genuinely comparable rather than merely adjacent.
+  const twoGroupScale = createSharedScale();
+  const mechG1 = createMeanMechanism({ formatValue: formatChipValue, initialView: 'dotplot', scale: twoGroupScale });
+  const mechG2 = createMeanMechanism({ formatValue: formatChipValue, initialView: 'dotplot', scale: twoGroupScale });
   /** Shared dotplot domain across BOTH groups so the two panels are comparable. */
   function computeTwoMeanDomain() {
     const all = [...data1, ...data2];
@@ -425,6 +430,9 @@ export function initSimPage(config) {
   }
   /** @type {number[]} */
   let lastResample = [];
+  /** The differences the last sign flip was applied to, for a view switch. */
+  /** @type {number[]} */
+  let lastPairedOriginal = [];
   /** Which observations the last resample drew, when it was drawn by index. */
   /** @type {number[]|null} */
   let lastResampleIndices = null;
@@ -1580,20 +1588,20 @@ export function initSimPage(config) {
     // Initialize mechanism strip on first generate (deferred from data load)
     if (!mechanismInitialized && mechanismStrip) {
       mechanismInitialized = true;
-      if (config.paired && config.mode !== 'bootstrap' && originalContentEl) {
-        // Randomization-paired keeps its tiles for now. Its draw is a SIGN
-        // FLIP, not a draw with replacement — nothing is taken twice and
-        // nothing is missed — so the mean mechanism's vocabulary would be
-        // saying something false about it. That one waits on the shuffle
-        // animation. (2026-10-02.)
-        mechanismStrip.hidden = false;
-        initMechanismCollapse(mechanismStrip);
-        renderOriginalSample();
-      } else if (config.mode === 'bootstrap' && !config.twoGroup && originalContentEl) {
-        // Bootstrap-paired comes through here now. The note that used to send
-        // it down the branch above said flipping the view "gains no animation,
-        // and wiring paired onto the mean mechanism is the real fix" — that is
-        // done, so the reason is gone. (2026-09-28 → 2026-10-02.)
+      // Every one-sample mechanism: the mean, the proportion, and both paired
+      // pages. This briefly read `usesMeanMech()`, which excludes proportions —
+      // so bootstrap-prop stopped entering the branch that unhides the strip
+      // and nothing rendered at all. (2026-10-02.)
+      if ((config.mode === 'bootstrap' || config.paired) && !config.twoGroup && originalContentEl) {
+        // Both paired pages come through here. The note that used to send them
+        // down a branch of their own said flipping the view "gains no
+        // animation, and wiring paired onto the mean mechanism is the real
+        // fix" — that is done, so the reason is gone.
+        //
+        // The randomization one takes the DISPLAY and not the draw: its draw is
+        // a SIGN FLIP, where nothing is taken twice and nothing is missed, so
+        // burst's vocabulary would be saying something false about it. Same
+        // split as randomization-diff-means. (2026-09-28 → 2026-10-02.)
         mechanismStrip.hidden = false;
         initMechanismCollapse(mechanismStrip);
         if (useNewPropMech) ensurePropStyleToggle();
@@ -1819,6 +1827,7 @@ export function initSimPage(config) {
 
       // Show paired sign-flip mechanism
       lastResample = lastFlipped;
+      lastPairedOriginal = centeredDiffs;
       showPairedMechanism(centeredDiffs, lastFlipped, count === 1);
 
       // Highlights
@@ -2200,17 +2209,22 @@ export function initSimPage(config) {
       // animation pool them without anything moving sideways.
       // (Jeff, 2026-10-02.)
       const tag = isOriginal ? 'orig' : 'resamp';
+      // The group's name and its statistic are the same column of information —
+      // "who this row is" — so they stack in ONE column on the left and the
+      // plot takes everything else. They used to flank the plot, costing it a
+      // column on each side. (Jeff, 2026-10-02.)
+      const key = (/** @type {string} */ name, /** @type {number} */ n, /** @type {number} */ stat) => `
+            <div class="mech-dot-key">
+              <div class="mech-group-label">${name}</div>
+              <div class="mech-group-stat-sm">n=${n}, ${statSymbol}=${formatStat(stat, dataPrecision, fmtType)}</div>
+            </div>`;
       html += `
         <div class="mech-dot-stack">
-          <div class="mech-dot-row">
-            <div class="mech-group-label">${group1Name}</div>
+          <div class="mech-dot-row">${key(group1Name, g1.length, s1)}
             <div id="mech-dot-${tag}-1" class="mech-dot-cell"></div>
-            <div class="mech-group-stat-sm">n=${g1.length}, ${statSymbol}=${formatStat(s1, dataPrecision, fmtType)}</div>
           </div>
-          <div class="mech-dot-row">
-            <div class="mech-group-label">${group2Name}</div>
+          <div class="mech-dot-row">${key(group2Name, g2.length, s2)}
             <div id="mech-dot-${tag}-2" class="mech-dot-cell"></div>
-            <div class="mech-group-stat-sm">n=${g2.length}, ${statSymbol}=${formatStat(s2, dataPrecision, fmtType)}</div>
           </div>
         </div>`;
     } else {
@@ -2297,8 +2311,14 @@ export function initSimPage(config) {
       mechG1.resetSizing(); mechG2.resetSizing();
       const c1 = document.getElementById('mech-dot-orig-1');
       const c2 = document.getElementById('mech-dot-orig-2');
-      if (c1) mechG1.renderBag(c1, data1, mean(data1), { domain, meanLabel: 'x̄', label: `Observed ${group1Name}` });
-      if (c2) mechG2.renderBag(c2, data2, mean(data2), { domain, meanLabel: 'x̄', label: `Observed ${group2Name}` });
+      // The cell's own width, not the panel's. Each row gives its plot a `1fr`
+      // grid column narrower than the panel, so measuring the panel drew for
+      // 491 and placed it in 391 — letterboxed, with the drawing floating in
+      // the middle of its own box. Both groups take the same number, since they
+      // share the column. (2026-10-02.)
+      const cellW = Math.round((c1 ?? c2)?.getBoundingClientRect().width ?? 0) || undefined;
+      if (c1) mechG1.renderBag(c1, data1, mean(data1), { domain, meanLabel: 'x̄', label: `Observed ${group1Name}`, displayWidth: cellW });
+      if (c2) mechG2.renderBag(c2, data2, mean(data2), { domain, meanLabel: 'x̄', label: `Observed ${group2Name}`, displayWidth: cellW });
       return;
     }
     renderTwoGroupCharts(data1, data2, 'orig');
@@ -3270,8 +3290,11 @@ export function initSimPage(config) {
     // Small mean samples — animated dotplot resample, via the shared mechanism.
     if (meanDotActive()) {
       meanMech.setView('dotplot');
+      // A sign flip is not a draw with replacement, so it gets the display
+      // without the pluck-and-fly.
+      const drawn = morph && config.mode === 'bootstrap';
       return meanMech.renderResample(resampleContentEl, resampleSourceValues(), resampleValues,
-        mean(resampleValues), morph, {
+        mean(resampleValues), drawn, {
           domain: meanDomain ?? computeMeanDomain() ?? undefined,
           meanLabel: config.paired ? 'd̄' : 'x̄',
           indices: lastResampleIndices ?? undefined,
@@ -3548,6 +3571,20 @@ export function initSimPage(config) {
 
     resampleContentEl.innerHTML = '';
 
+    // Dots lead, as everywhere else. The flip chips stay one click away under
+    // Tiles, and they are not a lesser view here: they say WHICH differences
+    // flipped, with a ± on each, which is the one thing a dotplot of the
+    // flipped values cannot show. (Jeff, 2026-10-02.)
+    if (meanDotActive()) {
+      meanMech.setView('dotplot');
+      meanMech.renderResample(resampleContentEl, originalDiffs, flippedDiffs,
+        mean(flippedDiffs), false, {
+          domain: meanDomain ?? computeMeanDomain() ?? undefined,
+          meanLabel: 'd̄*', label: 'Sign-flipped differences',
+        });
+      return;
+    }
+
     if (originalDiffs.length <= CHIP_THRESHOLD) {
       // Small n: show aligned chips with flip indicators
       const container = document.createElement('div');
@@ -3657,6 +3694,14 @@ export function initSimPage(config) {
     // (paired's tiles become a histogram too), and the two-group pages have no
     // `originalContentEl`, so this is a no-op there rather than a special case.
     renderOriginalSample();
+    // The paired randomization panel draws itself — its Tiles view is the flip
+    // chips, with a ± on each difference that changed sign, which the generic
+    // resample renderer knows nothing about. Switching the view used to hand it
+    // to that renderer and the badges vanished. (2026-10-02.)
+    if (config.paired && config.mode === 'randomization' && lastResample.length) {
+      showPairedMechanism(lastPairedOriginal, lastResample, false);
+      return;
+    }
     // Statically. This passed `lastWasSingle`, so switching the view re-ran the
     // whole +1 animation — dots flying out of a panel nobody had asked to
     // resample, and a statistic setting off for the chart from geometry that
@@ -3682,7 +3727,8 @@ export function initSimPage(config) {
   // ROLE choice wearing the names of its two pictures, and that has moved to
   // the View control beside Step 1, where the proportion pages keep theirs.
   // (Jeff, 2026-10-02.)
-  const viewToggleIsLive = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup;
+  const viewToggleIsLive = !config.proportion && !config.twoGroup
+    && (config.mode === 'bootstrap' || config.paired);
   /** Hide the rendering choice when the role it belongs to is not showing. */
   let syncRenderingToggle = () => {};
   if (resampleToggle) {

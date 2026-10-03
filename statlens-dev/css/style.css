@@ -2042,17 +2042,23 @@ input[aria-invalid="true"] {
    stacking them. `display: contents` puts both rows' cells in the one grid. */
 .mech-dot-stack {
   display: grid;
-  grid-template-columns: minmax(4.5em, max-content) 1fr minmax(6.5em, max-content);
+  grid-template-columns: minmax(5em, max-content) 1fr;
   align-items: center;
-  gap: 0.1rem 0.5rem;
+  gap: 0.1rem 0.6rem;
 }
 .mech-dot-row { display: contents; }
-.mech-dot-row .mech-group-label { text-align: right; margin: 0; }
-.mech-dot-row .mech-group-stat-sm { text-align: left; margin: 0; white-space: nowrap; }
+/* Name and statistic together: one column saying who the row is, and the plot
+   gets the rest. `max-content` on the shared column keeps both rows' plots the
+   same width, which is what makes the two axes line up. */
+.mech-dot-key { text-align: right; line-height: 1.3; }
+.mech-dot-key .mech-group-label { margin: 0; }
+.mech-dot-key .mech-group-stat-sm { margin: 0; white-space: nowrap; display: block; }
 /* Shorter than a standalone dotplot: two of them share the height one used to
    have, and the strip is a band rather than a page. */
 .mech-dot-stack .mech-dot-cell { min-width: 0; min-height: 0; }
-.mech-dot-stack .mech-dot-cell svg { max-height: 104px; }
+/* No height cap: the plot is drawn FOR this width now, so capping the height
+   would letterbox it again. */
+.mech-dot-stack .mech-dot-cell svg { max-height: none; }
 /* The axis labels, in viewBox units. d3-axis sets font-size as an ATTRIBUTE on
    the axis group, which a size on the <svg> does not override — the text has to
    be targeted directly. At a 0.64 scale, 16 units renders at ~10px; the

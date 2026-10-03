@@ -933,10 +933,21 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
   const n1 = targetGroups[0]?.length ?? 0;
   /** @type {Array<{el: HTMLElement, from: {x:number,y:number}, pool: {x:number,y:number}, to: {x:number,y:number}}>} */
   const flyers = [];
-  // The pool sits where the dealt panel's two rows meet, so the deal is the
-  // only vertical move that means anything.
-  const rowY = [targetGroups[0], targetGroups[1]].map(g => g?.length ? centre(g[0]).y : 0);
-  const poolY = (rowY[0] + rowY[1]) / 2;
+  // The pool sits BETWEEN the two plots, measured from the plots themselves.
+  // It used to be the midpoint of the two groups' first circles, which is a
+  // point that depends on how tall each stack happens to be — so the pile sat
+  // wherever the data put it, usually low. (Jeff, 2026-10-02: "the pooled
+  // distribution should land directly between the two histograms in Step 2,
+  // but it's lower".)
+  const plotBox = (/** @type {Element[]} */ g) => {
+    const svg = /** @type {SVGGraphicsElement} */ (g?.[0])?.ownerSVGElement;
+    return svg ? svg.getBoundingClientRect() : null;
+  };
+  const b1 = plotBox(targetGroups[0]), b2 = plotBox(targetGroups[1]);
+  const poolY = (b1 && b2)
+    ? (b1.bottom + b2.top) / 2
+    : ([targetGroups[0], targetGroups[1]].map(g => g?.length ? centre(g[0]).y : 0)
+        .reduce((a, b) => a + b, 0) / 2);
 
   tgt.forEach((dot, i) => {
     const match = claim(relX(dot));

@@ -33,7 +33,8 @@ import { computeDots } from './dotplot.js';
 export const MEAN_DOT_MAX = 80;
 
 /**
- * @param {{ formatValue?: (v:number)=>string, initialView?: 'summary'|'dotplot' }} [config]
+ * @param {{ formatValue?: (v:number)=>string, initialView?: 'summary'|'dotplot',
+ *   scale?: ReturnType<typeof createSharedScale> }} [config]
  */
 export function createMeanMechanism(config = {}) {
   const formatValue = config.formatValue || ((v) => String(v));
@@ -47,7 +48,13 @@ export function createMeanMechanism(config = {}) {
   // because both renders happened in this one closure — true by construction,
   // and only for as long as they stayed together. Stated now, so the two panels
   // can be placed anywhere and still line up (js/mechanisms/entities.js).
-  const scale = createSharedScale();
+  // A caller with two mechanisms side by side hands them ONE scale, so the two
+  // groups' dots come out the same size. Each sizes itself from its own tallest
+  // stack otherwise, and a group with a taller stack gets smaller dots —
+  // two differently-scaled pictures presented as comparable, which is the one
+  // thing stacking them on a shared axis was meant to stop.
+  // (Jeff, 2026-10-02.)
+  const scale = config.scale ?? createSharedScale();
 
   /** Tiles only for small n in tiles view. */
   const useCards = (/** @type {number} */ n) => n >= 2 && n <= CHIP_MAX && view === 'summary';
@@ -63,7 +70,7 @@ export function createMeanMechanism(config = {}) {
    * @param {HTMLElement} el
    * @param {number[]} values
    * @param {number} meanVal - the stat to mark (x̄ or μ₀)
-   * @param {{ domain?: [number,number], label?: string, meanLabel?: string }} [opts]
+   * @param {{ domain?: [number,number], label?: string, meanLabel?: string, displayWidth?: number }} [opts]
    */
   function renderBag(el, values, meanVal, opts = {}) {
     if (!el || values.length < 2) return;
@@ -80,7 +87,14 @@ export function createMeanMechanism(config = {}) {
       // zero, so measuring per-panel would give the two plots different scales
       // on the very first render — the one render where they are side by side
       // and being compared.
-      scale.width = mechDisplayWidth(el.parentElement);
+      // A caller that knows its own geometry says so. `mechDisplayWidth` walks
+      // up to the PANEL, which is right when the plot fills it and wrong when
+      // it sits in a grid column — the two-group rows give each plot a 1fr
+      // column narrower than the panel, and their row is `display: contents`,
+      // so there is nothing between the cell and the panel to measure anyway.
+      // Drawing for 491 and placing in 391 letterboxed the result.
+      // (2026-10-02.)
+      scale.width = opts.displayWidth ?? mechDisplayWidth(el.parentElement);
       bag = drawMechDotplot(el, values, {
         domain: opts.domain, mean: meanVal, meanLabel: opts.meanLabel || 'x̄', sizingMaxStack: scale.sizingMaxStack,
         displayWidth: scale.width,
