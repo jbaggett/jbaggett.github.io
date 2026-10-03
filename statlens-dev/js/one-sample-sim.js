@@ -13,7 +13,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
+import { propBarHTML, updatePropBar, populationBarHTML } from './prop-bootstrap-mech.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -797,8 +797,14 @@ export function initOneSamplePage(config) {
   // ─── Apply URL params for hypothesis (from cross-links) ───
   {
     const urlP = parseParams();
-    // Set null value from ?p= (proportion) or ?null_value= (mean)
-    const nullVal = isProp ? urlP.p : urlP.null_value;
+    // Set null value from ?p= (proportion) or ?null_value= (mean).
+    //
+    // `null_value` is accepted on the proportion page too. It is the obvious
+    // name, it is what every other page spells it, and typing it there did
+    // nothing at all — no warning, no effect, just the default null and a
+    // simulation answering a question nobody asked. `p` stays the documented
+    // spelling for proportions. (2026-10-02.)
+    const nullVal = isProp ? (urlP.p ?? urlP.null_value) : urlP.null_value;
     if (nullVal != null && nullInput) {
       nullInput.value = String(nullVal);
       syncAltNullValue();
@@ -959,42 +965,38 @@ export function initOneSamplePage(config) {
     const p0 = getNullValue();
 
     if (isProp) {
-      // Morph proportion bar from observed p̂ to null p₀
-      const nullPct = (p0 * 100).toFixed(1);
-      const nullSuccesses = Math.round(p0 * sampleN);
-      const nullFailures = sampleN - nullSuccesses;
-
-      // Change title
+      // The null world is a POPULATION, not your sample rearranged.
+      //
+      // This used to morph the observed bar into a bag of n at p₀ — "17 of 34"
+      // — which made the null look like a shuffled version of the data and, at
+      // any p₀ where n·p₀ is not a whole number, showed a bag whose proportion
+      // was not p₀ (10 of 34 for p₀ = 0.3, which is 0.294). The simulation
+      // draws n INDEPENDENT trials at probability p₀; there is no bag and no n
+      // on this side. So: the split, the proportion, and nothing else.
+      // (Jeff, 2026-10-02: "it shifts the null so it looks like resampling.")
       setPanelHeading(mechObservedTitle, words.source);
-
-      // Find existing prop bar fill and morph it
       const fill = mechObservedStat.querySelector('.mech-prop-fill');
-      const bar = mechObservedStat.querySelector('.mech-prop-bar');
-      if (fill && !prefersReducedMotion()) {
-        // The whole panel has to move to the null, not just the bar's width.
-        // It used to write one label reading "p₀ = 0.5" across the bar; when
-        // the counts moved inside their own regions that label stopped
-        // existing, so the bar slid to 50% while still saying "24 S / 10 F" —
-        // the OBSERVED counts under a null-shaped bar. (Jeff, 2026-09-29.)
-        // Under p₀ with n = 34 the null model is 17 and 17, and that is what
-        // the bar now says, along with the "17 of 34" in front of it.
-        /** @type {HTMLElement} */ (fill).style.transition = 'width 700ms ease-out';
-        updatePropBar(bar, nullSuccesses, nullFailures);
-        const lead = mechObservedStat.querySelector('.obs-success-count');
-        if (lead) lead.textContent = String(nullSuccesses);
-        // Update stat text
-        mechObservedStat.querySelector('.observed-highlight')?.replaceWith(
-          Object.assign(document.createElement('span'), {
-            className: 'observed-highlight',
-            innerHTML: `p\u2080 = ${p0}`,
-          })
-        );
+      const animated = fill && !prefersReducedMotion();
+      // Where the bar is now, so the boundary can be seen to move FROM the
+      // data TO the null rather than simply appearing at p₀.
+      const fromPct = animated ? parseFloat(/** @type {HTMLElement} */ (fill).style.width) || 0 : 0;
+      mechObservedStat.innerHTML =
+        `<span class="observed-highlight">p\u2080 = ${p0}</span>`
+        + ` <span class="null-pop-note">\u00b7 a population to draw from, not a sample</span>`
+        + populationBarHTML(animated ? fromPct / 100 : p0, { style: 'margin-top:4px' });
+      if (animated) {
+        const f = /** @type {HTMLElement|null} */ (mechObservedStat.querySelector('.mech-prop-fill'));
+        if (f) {
+          // Widths animate; the claim does not. What moves is the boundary of
+          // the population, from where the data put it to where H₀ puts it.
+          requestAnimationFrame(() => {
+            f.style.transition = 'width 700ms ease-out';
+            f.style.width = `${Math.max(0, Math.min(1, p0)) * 100}%`;
+          });
+        }
         syncNullToggle();
         return 700;
       }
-      // Fallback: instant update
-      mechObservedStat.innerHTML = `<span class="obs-success-count">${nullSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u2080 = ${p0}</span>)
-        ${propBarHTML(nullSuccesses, nullFailures, { style: 'margin-top:4px' })}`;
       syncNullToggle();
       return 0;
     } else {
@@ -1191,7 +1193,11 @@ export function initOneSamplePage(config) {
         ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
 
       if (mechanismDescEl) {
-        mechanismDescEl.textContent = `Simulate ${n} trials from null distribution (p\u2080 = ${p0})`;
+        // What the draw actually is: n independent trials, each a success with
+        // probability p₀. "From the null distribution" invited the reading that
+        // there was a fixed thing of size n being sampled.
+        mechanismDescEl.textContent =
+          `Draw ${n} independent trials \u00b7 each a success with probability ${p0}`;
         mechanismDescEl.hidden = false;
       }
     } else {

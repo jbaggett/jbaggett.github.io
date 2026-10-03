@@ -785,6 +785,22 @@ export function initSimPage(config) {
     return isFinite(val) ? val : 0;
   }
 
+  // A null value asked for in the link.
+  //
+  // `getShareState` has written `null_value` into every shared link since the
+  // editable null landed, and nothing ever read it back — so a link pinning a
+  // non-zero null reopened at zero, silently answering a different question
+  // from the one it was sharing. The share state and the page have to agree on
+  // the round trip or the link is worse than no link. (Jeff, 2026-10-02:
+  // "fix it so that we can pass null values".)
+  if (nullValueInput) {
+    const asked = parseParams().null_value;
+    if (asked != null && Number.isFinite(Number(asked))) {
+      nullValueInput.value = String(asked);
+      if (nullDisplayMirror) nullDisplayMirror.textContent = String(asked);
+    }
+  }
+
   // Sync null-display mirror and re-run when null value changes
   if (nullValueInput) {
     nullValueInput.addEventListener('input', () => {

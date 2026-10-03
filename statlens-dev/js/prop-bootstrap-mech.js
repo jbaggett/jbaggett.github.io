@@ -724,6 +724,34 @@ export function propBarHTML(successes, failures, opts = {}) {
   return roomInside(pct) ? bar : bar + asideHTML(successes, failures);
 }
 
+/**
+ * The same bar, standing for a POPULATION rather than a sample.
+ *
+ * A null-world panel has no n: you draw independent trials, each a success
+ * with probability p₀, which is the same as drawing from a population that is
+ * 100·p₀ percent successes and never runs out. Drawing it as "17 of 34" says
+ * three false things — that the null is your sample rearranged, that it is a
+ * finite bag of 34 (which would be sampling WITHOUT replacement, a different
+ * null distribution), and that its proportion is p₀, which it is not unless
+ * n·p₀ is a whole number. At p₀ = 0.3 with n = 34 the panel showed "10 of 34",
+ * and 10/34 is 0.294. (Jeff, 2026-10-02.)
+ *
+ * So: no counts, no n, just the split and the proportion.
+ *
+ * @param {number} p 0..1
+ * @param {{ className?: string, style?: string }} [opts]
+ * @returns {string}
+ */
+export function populationBarHTML(p, opts = {}) {
+  const pct = Math.max(0, Math.min(1, p)) * 100;
+  const cls = opts.className ? ` ${opts.className}` : '';
+  const style = opts.style ? ` style="${opts.style}"` : '';
+  return `<div class="mech-prop-bar pbm-population${cls}" role="img"`
+    + ` aria-label="A population in which ${pct.toFixed(1)}% are successes"${style}>`
+    + `<div class="mech-prop-fill" style="width:${pct}%"></div>`
+    + '</div>';
+}
+
 /** Whether both regions can hold their own count. */
 function roomInside(/** @type {number} */ pct) {
   return pct >= MIN_REGION_PCT && pct <= 100 - MIN_REGION_PCT;
