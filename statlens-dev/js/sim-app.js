@@ -32,7 +32,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView } from './prop-bootstrap-mech.js';
+import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView, blockLayout } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
@@ -2479,8 +2479,15 @@ export function initSimPage(config) {
     if (!mechOriginalContent) return;
     ensurePropStyleToggle();
     mechOriginalContent.innerHTML = twoPropPanelHTML('bag', data1, data2, false);
-    renderPropBag(document.getElementById('pbm-bag-1'), data1, { style: propMechStyle, label: `${group1Name} sample` });
-    renderPropBag(document.getElementById('pbm-bag-2'), data2, { style: propMechStyle, label: `${group2Name} sample` });
+    // ONE geometry for both groups. Dot size falls as n rises, so a group of 34
+    // beside a group of 69 would otherwise draw 24px dots against 18px — two
+    // scales for the one comparison the panel is for. The bigger group decides,
+    // because it is the one with a size constraint. (2026-10-03.)
+    const c1 = document.getElementById('pbm-bag-1');
+    const shared = blockLayout(Math.max(data1.length, data2.length),
+      Math.round(c1?.getBoundingClientRect().width ?? 0));
+    renderPropBag(c1, data1, { style: propMechStyle, label: `${group1Name} sample`, layout: shared });
+    renderPropBag(document.getElementById('pbm-bag-2'), data2, { style: propMechStyle, label: `${group2Name} sample`, layout: shared });
   }
 
   /**

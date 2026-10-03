@@ -129,6 +129,14 @@ const DIGIT_MIN_W = 13;
 const DOT_GAP = 2;
 /** Dot diameters tried, largest first. Quantised so the bag and the resample
  *  land on the same size even when their panels differ by a few pixels. */
+/**
+ * How many rows a block may use before the dots start shrinking instead.
+ *
+ * Three keeps a block short enough that two groups and their two resamples —
+ * four blocks — still fit a panel together, which is the arrangement that has
+ * to work. (2026-10-03.)
+ */
+const MAX_ROWS = 3;
 const DOT_STEPS = [24, 22, 20, 18, 16, 14, 13, 12, 11, 10, 9, 8];
 /** How tall the block is allowed to get. The panel is a strip, not a page. */
 const BLOCK_H = 168;
@@ -170,14 +178,53 @@ export function blockLayout(n, availW, opts = {}) {
   // the student's week — a queue there and a rectangle here is a difference
   // with nothing behind it. (Jeff, 2026-10-03: "the grid of dots in Step 2 can
   // be wider and centered.")
-  const widest = opts.wide ? n : Math.max(1, Math.ceil(Math.sqrt(n * 4)));
-  for (const s of DOT_STEPS) {
-    const maxCols = Math.max(1, Math.min(widest, Math.floor((W + DOT_GAP) / (s + DOT_GAP))));
-    const maxRows = Math.max(1, Math.floor((BLOCK_H + DOT_GAP) / (s + DOT_GAP)));
-    if (maxCols * maxRows < n) continue;
-    size = s;
-    // Balance: 62 in rows of 16 is 16/16/16/14, not 16/16/16/16/2.
-    cols = Math.min(n, Math.ceil(n / Math.ceil(n / maxCols)));
+  //
+  // The aspect alone is not enough as n grows: it is a bound on WIDTH, so a
+  // bigger sample just adds rows. At n = 50 that gave 13 columns and four rows
+  // of 24px — a block twice as tall as it needed to be, four of them stacked in
+  // a two-group panel. So the width may also widen to whatever keeps the block
+  // within MAX_ROWS. (Jeff, 2026-10-03: "for larger samples we should decrease
+  // the dot sizes a bit to take less vertical space.")
+  const aspect = Math.max(1, Math.ceil(Math.sqrt(n * 4)));
+  const widest = opts.wide ? n : Math.max(aspect, Math.ceil(n / MAX_ROWS));
+
+  const colsAt = (/** @type {number} */ step) =>
+    Math.max(1, Math.min(widest, Math.floor((W + DOT_GAP) / (step + DOT_GAP))));
+  const rowsAt = (/** @type {number} */ step) => Math.ceil(n / colsAt(step));
+  // Balance the last row: 62 in rows of 16 is 16/16/16/14, not 16/16/16/16/2.
+  const balanced = (/** @type {number} */ step) =>
+    Math.min(n, Math.ceil(n / rowsAt(step)));
+
+  // Shorten the block by widening it, and shrink the dots only as far as they
+  // can still carry a numeral.
+  //
+  // Two rules pull against each other and the order matters. Fewest rows wants
+  // more columns, which wants smaller dots; and a dot below DIGIT_MIN_W cannot
+  // hold the count of how many times it was drawn, which is a thing the block
+  // is for. So: among the sizes that stay legible, aim for MAX_ROWS — or for
+  // the fewest rows they can manage, if even the smallest legible dot cannot
+  // reach it — and take the LARGEST size that gets there.
+  //
+  // At n = 50 this costs nothing: 17 columns of 24px in three rows where the
+  // old aspect rule gave 13 columns in four, same dots, a quarter less height.
+  // Past that the dots step down — 90 observations draw at 14px — and the block
+  // keeps getting shorter as the sample grows, which is the point. (Jeff,
+  // 2026-10-03: "for larger samples we should decrease the dot sizes a bit to
+  // take less vertical space.")
+  const legible = DOT_STEPS.filter(step => step >= DIGIT_MIN_W);
+  if (legible.length) {
+    const target = Math.max(MAX_ROWS, Math.min(...legible.map(rowsAt)));
+    for (const step of legible) {
+      if (rowsAt(step) <= target) return { cols: balanced(step), size: step };
+    }
+  }
+  // Nothing legible fits — an absurdly narrow panel. Fall back to the old rule:
+  // the largest dot that fits the height budget at all.
+  for (const step of DOT_STEPS) {
+    const maxRows = Math.max(1, Math.floor((BLOCK_H + DOT_GAP) / (step + DOT_GAP)));
+    if (colsAt(step) * maxRows < n) continue;
+    size = step;
+    cols = balanced(step);
     break;
   }
   return { cols, size };
@@ -401,14 +448,22 @@ function layoutOf(container) {
 
 /**
  * Render the original "bag".
+ *
+ * `layout` lets a caller impose one block geometry on several bags. Two groups
+ * in one panel MUST share it: dot size now falls as n rises (see blockLayout),
+ * so left to themselves a group of 34 draws 24px dots beside a group of 69 at
+ * 18px — two scales for one comparison, which is the thing the panel exists to
+ * make. (2026-10-03.)
+ *
  * @param {HTMLElement} container
  * @param {number[]} data binary (1 = success, 0 = failure)
- * @param {{style?: 'grid'|'bars'|'dots', label?: string}} [opts]
+ * @param {{style?: 'grid'|'bars'|'dots', label?: string, layout?: {cols:number,size:number}}} [opts]
  */
 export function renderPropBag(container, data, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
-  const el = makeFilled(data, opts.style, opts.label || 'Original sample', usableWidth(container));
+  const el = makeFilled(data, opts.style, opts.label || 'Original sample', usableWidth(container),
+    opts.layout ?? null);
   el.classList.add('pbm-bag');
   container.appendChild(el);
   fitAggCounts(el.querySelector('.mech-prop-bar'));

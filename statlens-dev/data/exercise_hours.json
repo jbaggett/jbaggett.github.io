@@ -1,0 +1,293 @@
+{
+  "id": "exercise_hours",
+  "name": "Exercise Hours by Sex (Simulated)",
+  "description": "Self-reported hours of exercise per week for 62 simulated students, by sex. A two-sample comparison whose interval contains zero. IMS Ch. 19, 20.",
+  "source": "statlens (simulated)",
+  "chapter": "IMS Ch. 19, 20",
+  "type": "randomization",
+  "variables": [
+    {
+      "name": "sex",
+      "label": "Sex",
+      "type": "categorical"
+    },
+    {
+      "name": "exercise_hours",
+      "label": "Exercise (hours per week)",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "sex": "Female",
+      "exercise_hours": 5.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 6.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 4.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 14.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 8.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 10.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 17.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 6.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 1.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 7.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 9.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 5.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 4.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 14.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 24.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 11.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 8.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 4.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 8.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 7.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 6.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 18.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 13.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 5.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 6.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 18.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 5.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 3.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 6.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 2.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 3.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 22.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 15.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 8.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 5.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 4.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 3.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 7.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 6.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 3.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 6.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 5.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 12.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 10.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 13.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 3.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 2.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 5.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 20.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 13.0
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 3.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 8.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 3.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 0.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 9.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 3.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 2.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 4.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 10.0
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 4.5
+    },
+    {
+      "sex": "Male",
+      "exercise_hours": 21.5
+    },
+    {
+      "sex": "Female",
+      "exercise_hours": 8.0
+    }
+  ],
+  "studyDescription": "These values were generated for teaching; they are not measurements from a real survey, and no students were asked. They are modelled on a class survey in which 62 introductory statistics students report how many hours they exercise in a typical week, rounded to the nearest half hour, with 34 reporting female and 28 male. The distribution is right-skewed, as self-reported exercise usually is: most students report a few hours a week and a few report a great deal.",
+  "variableDescriptions": {
+    "sex": "The sex a student reported, female or male.",
+    "exercise_hours": "Hours of exercise in a typical week, as the student reported it, rounded to the nearest half hour."
+  },
+  "sourceDetail": "Simulated data, generated by StatLens (2026-10-03) for a two-sample comparison of means. Built to be realistic in shape and size rather than to reproduce any particular study. Use it to practise the procedure and the wording of a conclusion; for a real two-group comparison of means see births14_smoke, stem_cell or lizard_run.",
+  "context": {
+    "population": "introductory statistics students",
+    "parameter": "the difference in mean weekly exercise hours between male and female students",
+    "unit": "hours per week"
+  },
+  "inferenceContexts": [
+    {
+      "test": "two-means",
+      "groupVar": "sex",
+      "responseVar": "exercise_hours",
+      "group1": "Female",
+      "group2": "Male",
+      "alternative": "two-sided",
+      "parameter": "the difference in mean weekly exercise hours between female and male students",
+      "claim": "female and male students differ in how many hours they exercise per week"
+    }
+  ]
+}
