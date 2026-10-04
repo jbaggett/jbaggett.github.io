@@ -142,6 +142,18 @@ export function applyTierLayout(mechanismKind, doc = document, mode = 'tiers') {
   const drawTier = tiers.querySelector('.mech-tier--draw');
   if (caption && drawTier) drawTier.appendChild(caption);
 
+  // The result rides with the distribution it is read off.
+  //
+  // In the strip layout `.app-body` is a grid and the result sits in a cell
+  // beside the chart, which keeps it on screen. These layouts lift the chart
+  // out into a tier and left the result behind — so it collapsed to a
+  // full-width block at the BOTTOM of the page, under everything, 112px below
+  // the fold on a 1296x880 laptop in split and 798px below it in tiers. The
+  // chart moved and the number you read off it did not. (Jeff, 2026-10-02.)
+  const results = doc.getElementById('results');
+  const distTier = tiers.querySelector('.mech-tier--distribution');
+  if (results && distTier) distTier.appendChild(results);
+
   host.insertBefore(tiers, strip);
   // The strip is now an empty shell — its arrow only meant something between
   // two side-by-side panels. `hidden` is not enough: the engines set

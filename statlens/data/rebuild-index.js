@@ -44,15 +44,24 @@ function deriveGroupMeta(variables, rows) {
 for (const f of files) {
   try {
     const ds = JSON.parse(readFileSync(join(dataDir, f), 'utf-8'));
-    if (ds.id && ds.rows) {
-      const { groupLevels, minGroupN } = deriveGroupMeta(ds.variables, ds.rows);
+    // `rows` OR `observed`: a goodness-of-fit dataset may be a table of counts
+    // with no case-level rows at all. Requiring `rows` silently dropped five of
+    // the six gof datasets from the index — barking_deer, blood_types,
+    // mendel_peas, stock_geometric, textbooks_format — so the page's dropdown
+    // offered one. Nothing failed; they were simply not there. Found 2026-10-03
+    // after a routine rebuild, which is the point: a rebuild must be safe to
+    // run, and this one quietly deleted data.
+    const rows = ds.rows ?? null;
+    const counts = Array.isArray(ds.observed) ? ds.observed : null;
+    if (ds.id && (rows || counts)) {
+      const { groupLevels, minGroupN } = deriveGroupMeta(ds.variables, rows ?? []);
       index.push({
         id: ds.id,
         name: ds.name,
         description: ds.description,
         type: ds.type,
         chapter: ds.chapter || '',
-        n: ds.rows.length,
+        n: rows ? rows.length : counts.reduce((a, b) => a + b, 0),
         variables: (ds.variables || []).map(v => v.name),
         hasNumeric: (ds.variables || []).some(v => v.type === 'numeric'),
         hasCategorical: (ds.variables || []).some(v => v.type === 'categorical'),

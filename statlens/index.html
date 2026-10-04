@@ -473,7 +473,7 @@
         <a href="#main-content">Skip to content</a>
     </nav>
     <main id="main-content">
-        <h1><svg viewBox="0 0 32 32" aria-hidden="true" style="width:1.3em;height:1.3em;vertical-align:-0.15em"><circle cx="16" cy="16" r="15" fill="#569BBD"/><path d="M4 24 C4 24, 8 23, 10 20 C12 17, 13 8, 16 8 C19 8, 20 17, 22 20 C24 23, 28 24, 28 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M4 24 C4 24, 8 23, 10 20 L10 24 Z" fill="#ffffff60"/></svg> StatLens</h1>
+        <h1><svg viewBox="0 0 32 32" aria-hidden="true" style="width:1.3em;height:1.3em;vertical-align:-0.15em"><circle cx="16" cy="16" r="15" fill="#569BBD"/><path d="M4 24 C4 24, 8 23, 10 20 C12 17, 13 8, 16 8 C19 8, 20 17, 22 20 C24 23, 28 24, 28 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M4 24 C4 24, 8 23, 10 20 L10 24 Z" fill="#ffffff60"/></svg> StatLens<span class="header-actions"></span></h1>
         <img src="hero.png" alt="Statistical visualizations: bell curve, dotplot, histogram, scatterplot with regression line, and confidence interval" style="width:100%;height:auto;margin:0 0 0.6rem;border-radius:6px">
 
         <p style="text-align:right;margin:0 0 1rem;font-size:0.9rem;">
@@ -1146,6 +1146,14 @@
     </main>
 
     <script>
+    // Which layout and tab you are looking at is page state, so it belongs in
+    // the address bar and in the Share link — see the module at the bottom of
+    // this file. A link beats a saved preference: someone who sends you
+    // "By Variable Type" means it, whatever this browser has stored.
+    // (Jeff, 2026-10-02.)
+    const urlPrefs = new URLSearchParams(location.search);
+    const syncShare = () => { try { window.__sbSyncShare?.(); } catch {} };
+
     // View toggle logic — persists choice in localStorage
     const panels = document.querySelectorAll('.view-panel');
     const radios = document.querySelectorAll('.view-switcher input[type="radio"]');
@@ -1157,13 +1165,14 @@
             label.classList.toggle('active', r.value === viewId);
         });
         try { localStorage.setItem('sb-view', viewId); } catch {}
+        syncShare();
     }
 
     radios.forEach(r => r.addEventListener('change', () => switchView(r.value)));
 
-    // Restore saved preference
+    // Restore the view: URL first, then this browser's saved choice.
     try {
-        const saved = localStorage.getItem('sb-view');
+        const saved = urlPrefs.get('view') || localStorage.getItem('sb-view');
         if (saved && document.getElementById('view-' + saved)) {
             switchView(saved);
             const radio = document.querySelector(`.view-switcher input[value="${saved}"]`);
@@ -1183,6 +1192,7 @@
         });
         coursePanels.forEach(p => p.classList.toggle('active', p.id === tabId));
         try { localStorage.setItem('sb-course-tab', tabId); } catch {}
+        syncShare();
     }
 
     courseTabs.forEach(t => {
@@ -1207,10 +1217,16 @@
         });
     }
 
-    // Restore saved course tab
+    // Restore the course tab: URL first, then this browser's saved choice.
+    // `?tab=simulate` is the readable form; the panel ids are `tab-simulate`.
     try {
-        const savedTab = localStorage.getItem('sb-course-tab');
-        if (savedTab && document.getElementById(savedTab)) {
+        const fromUrl = urlPrefs.get('tab');
+        const savedTab = (fromUrl ? 'tab-' + fromUrl.replace(/^tab-/, '') : null)
+            || localStorage.getItem('sb-course-tab');
+        // Must be a panel, not just any element whose id happens to start with
+        // `tab-` — the tab BUTTONS are `tab-btn-explore`, and switching to one
+        // of those would turn every panel off.
+        if (savedTab && document.getElementById(savedTab)?.classList.contains('course-panel')) {
             switchCourseTab(savedTab);
         }
     } catch {}
@@ -1263,6 +1279,32 @@
             }
         });
     }
+    </script>
+    <!-- The landing page has state too: which of the three layouts you are
+         looking at, and which course-phase tab. Registering it means the Share
+         button (mounted into .header-actions by js/share.js) hands out the page
+         you are actually showing — "open StatLens on the Simulate tab" becomes
+         a link rather than an instruction. -->
+    <script type="module">
+        import { registerShareState, syncUrl } from './js/share-state.js';
+        registerShareState(() => {
+            const v = document.querySelector('.view-switcher input:checked');
+            const inCards = document.getElementById('view-cards')?.classList.contains('active');
+            const t = inCards ? document.querySelector('.course-tab.active') : null;
+            return { params: {
+                view: v instanceof HTMLInputElement ? v.value : undefined,
+                // Only the course-phase layout has tabs; a ?tab= on either of
+                // the others would be a parameter the page ignores.
+                tab: t ? (t.getAttribute('aria-controls') || '').replace(/^tab-/, '') : undefined,
+            } };
+        });
+        // Called by the inline script above on every switch — including arrow-key
+        // tab navigation, which fires neither `click` nor `change`, so the
+        // delegated syncUrlOnInteraction() would miss it.
+        window.__sbSyncShare = syncUrl;
+        // Deliberately NOT synced on load: arriving at the bare home page should
+        // leave a bare URL. Share still carries the choice either way, since it
+        // asks the provider rather than reading the address bar.
     </script>
     <script src="js/page-number.js"></script>
     <script src="js/feedback.js"></script>

@@ -17,7 +17,7 @@ applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { fetchDataset, loadDatasetIndex, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
@@ -55,6 +55,10 @@ initPlayPause(genBtns, resetBtn);
 let observedChisq = 0;
 let totalN = 0;
 let currentSourceName = '';
+// The dataset behind the loaded counts, kept so the panel can collapse onto it
+// the way every other page's does. Null after manual entry: there is no study
+// to describe and nothing to download. (2026-10-02.)
+/** @type {any} */ let currentDataset = null;
 /** @type {{nullClaim?: string}} */
 let datasetContext = {};
 
@@ -118,6 +122,7 @@ function loadDataset(ds) {
     return;
   }
   currentSourceName = ds.name || '';
+  currentDataset = ds;
   datasetContext = { nullClaim: ds.nullClaim };
   applyState(cats.map(String), obs, props);
 }
@@ -170,6 +175,7 @@ document.getElementById('gof-load')?.addEventListener('click', () => {
   if (Math.abs(sum - 1) > 0.02) { announce(`Hypothesized proportions sum to ${sum.toFixed(3)} — they must sum to 1.`); return; }
   const norm = props.map(p => p / sum); // gentle normalization for tiny rounding
   currentSourceName = '';
+  currentDataset = null;
   datasetContext = {};
   applyState(cats, obs, norm);
 });
@@ -192,6 +198,16 @@ function applyState(cats, obs, props) {
 
 function showDataLoaded() {
   if (dataPreview) dataPreview.hidden = false;
+  // Collapse the panel onto a summary bar with a Change Data button, the
+  // Explore/Preview/Download actions and "About this data" — what every page
+  // running `initDataPanel` does on load. This page loads datasets by hand
+  // (`loadDatasetIndex` + `fetchDataset`), so it got the data and none of the
+  // furniture: you picked a dataset and the frame simply did not change.
+  // Reported by Jeff, 2026-10-02. Logged as debt — the real fix is to stop
+  // hand-rolling the panel on this page and its inference twin.
+  collapseDataPanel(document.getElementById('data-panel'), currentDataset ?? undefined);
+  const ctrl = document.getElementById('controls');
+  if (ctrl) ctrl.classList.add('sticky');
   if (dataSummary) {
     const namePrefix = currentSourceName ? `${currentSourceName}: ` : '';
     dataSummary.textContent = `${namePrefix}${categories.length} categories, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}`;
@@ -205,6 +221,17 @@ function showDataLoaded() {
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Draw simulated samples to build the null distribution.</p>';
   if (mechObserved) mechObserved.innerHTML = miniBarsHTML(observed);
   if (mechObservedChisq) mechObservedChisq.textContent = formatStat(observedChisq, 2);
+
+  // The strip opens as soon as there is data, with the observed panel already
+  // drawn — not on the first +1. A student who loads data should see what is
+  // about to be drawn from before they draw from it. (Todd's idea, via Jeff,
+  // 2026-10-03.) The copy in the generate path stays as the fallback; it is a
+  // no-op once this has run.
+  if (!mechanismInitialized && mechanismStrip) {
+    mechanismInitialized = true;
+    mechanismStrip.hidden = false;
+    initMechanismCollapse(mechanismStrip);
+  }
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
 
   if (plotOnly && !plotOnlyRan) {

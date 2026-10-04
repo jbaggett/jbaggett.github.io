@@ -105,33 +105,69 @@
             font-size: 0.82rem; color: var(--ims-gray-text); margin: 0.1rem 0 0;
             font-style: italic;
         }
-        /* Proportion sample: scooped marbles (match the population waffle —
-           failure solid blue, success amber with the same 45° diagonal hatch). */
+        /* Proportion sample: scooped dots — failure solid blue, success solid
+           amber, the shared pair.
+
+           ROUND, not square. One observation of a categorical variable is drawn
+           the same way everywhere on the site — a dot, amber hatched for a
+           success and solid blue for a failure — and the authority for that is
+           `.pbm-block { --mark-radius: 50% }` in css/style.css, which the
+           bootstrap CI for a proportion uses. These were 3px-rounded squares,
+           so a student moving between the Lab and the bootstrap page saw the
+           same quantity in two shapes and had to work out that they meant the
+           same thing. (Jeff, 2026-10-03: "use dots instead of squares so that
+           the look of the dots is similar to bootstrapping CI for a single
+           proportion.")
+
+           The population square it is scooped FROM stays a square: it is an
+           area whose split is p, not a bag of marbles you could count. */
         .marble-grid {
             display: flex; flex-wrap: wrap; gap: 3px;
             padding: 0.6rem 0.3rem 0.2rem; align-content: flex-start;
+            /* Centred, like the dot block on the one-proportion randomization
+               test — the two sit a week apart in the course. */
+            justify-content: center;
         }
-        .marble { width: 16px; height: 16px; border-radius: 3px; box-sizing: border-box; }
-        .cat-failure { background: #0072B2; }
+        .marble { width: 16px; height: 16px; border-radius: 50%; box-sizing: border-box; }
+        /* Success and failure take the SHARED tokens, so this page cannot drift
+           from the simulation tools again. They were a hardcoded copy of the
+           same two colours plus a diagonal hatch, which is how the hatch came
+           out of the simulation tools on 2026-10-03 and stayed here — the Lab
+           striped where one-proportion was solid, on two pages built to look
+           alike. The reasoning for dropping it is at `--obs-success-pattern`
+           in css/style.css: the stripes cost the in-bar count more than half
+           its contrast, and position plus the labels already carry the outcome
+           without colour. (Jeff, 2026-10-03: "yes, change the lab too.") */
+        .cat-failure { background: var(--obs-failure-bg, #0072B2); }
         .cat-success {
-            background-color: #C08700;
-            background-image: repeating-linear-gradient(45deg,
-                #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px);
+            background-color: var(--obs-success-bg, #C08700);
+            background-image: var(--obs-success-pattern, none);
         }
-        /* Proportion population: a shaded square split left (success, amber) /
-           right (failure, blue). We sample uniform points on it. */
+        /* Proportion population: a shaded area split left (success, amber) /
+           right (failure, blue). We sample uniform points on it.
+
+           A wide board rather than the 150×140 square it was, to match the
+           one-proportion randomization test's null population exactly — same
+           height, same radius, same proportions of the panel it sits in. The
+           two pages run the same animation on the same mechanism (n draws from
+           a population with a known success fraction), and showing it on two
+           differently-shaped figures made a student work out that they were
+           the same thing. (Jeff, 2026-10-03: "it will be less confusing if the
+           animations are nearly identical.") The height is
+           `.mech-prop-bar.is-board`'s, in css/style.css. */
         .prop-square {
             position: relative;
-            display: flex; width: 150px; height: 140px; margin: 0.5rem auto 0;
+            display: flex; width: 100%; height: 56px; margin: 0.5rem auto 0;
             border: 1px solid #bbb; border-radius: 4px; overflow: hidden;
         }
         .prop-square .prop-region { height: 100%; flex: 0 0 auto; }
         .prop-square .prop-region:last-child { flex: 1 1 auto; }
         /* Faint footprint left where a sample point came from — shows where the
-           current sample was drawn; cleared on the next draw. Kept square so it
-           reads as a faded version of the marble (not a separate dot shape). */
+           current sample was drawn; cleared on the next draw. Round, for the
+           same reason the dots are: it has to read as a faded version of the
+           dot that was lifted off it, not as a different kind of mark. */
         .scoop-ghost {
-            position: absolute; border-radius: 1px; box-sizing: border-box;
+            position: absolute; border-radius: 50%; box-sizing: border-box;
             opacity: 0.8; pointer-events: none; transform: translate(-50%, -50%);
             /* White ring (border) + dark outer ring (outline) so the mark reads on
                the amber hatch, the blue region, the white margin, and the means

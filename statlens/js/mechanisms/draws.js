@@ -103,10 +103,21 @@ export function resampleGroups(g1, g2, rng) {
  */
 export function shuffleLabels(g1, g2, rng) {
   const combined = g1.concat(g2);
-  shuffle(combined, rng);
+  // Shuffle the POSITIONS, then read the values through them. Shuffling the
+  // values directly throws away which observation each one was — and a draw
+  // that cannot say where a value came from cannot be animated honestly, which
+  // is the same gap `indices` closed for resampling. The order the PRNG is
+  // consumed in is unchanged, so seeded links reproduce exactly as before.
+  // (2026-10-02.)
+  const order = combined.map((_, i) => i);
+  shuffle(order, rng);
+  const take = (/** @type {number[]} */ idx) => ({
+    values: idx.map(i => combined[i]),
+    indices: idx,
+  });
   return {
-    first: { values: combined.slice(0, g1.length) },
-    second: { values: combined.slice(g1.length) },
+    first: take(order.slice(0, g1.length)),
+    second: take(order.slice(g1.length)),
   };
 }
 

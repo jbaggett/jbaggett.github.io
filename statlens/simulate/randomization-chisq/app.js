@@ -273,6 +273,17 @@ function showDataLoaded() {
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
   announce(`Data loaded: ${rowLabels.length} × ${colLabels.length} table, n = ${totalN}`);
 
+  // The strip opens as soon as there is data, with the observed panel already
+  // drawn — not on the first +1. A student who loads data should see what is
+  // about to be drawn from before they draw from it. (Todd's idea, via Jeff,
+  // 2026-10-03.) The copy in the generate path stays as the fallback; it is a
+  // no-op once this has run.
+  if (!mechanismInitialized && mechanismStrip) {
+    mechanismInitialized = true;
+    mechanismStrip.hidden = false;
+    initMechanismCollapse(mechanismStrip);
+  }
+
   // Scroll controls into view after DOM settles
   setTimeout(() => {
     const target = document.getElementById('controls') || genBtns[0]?.closest('.generate-bar');

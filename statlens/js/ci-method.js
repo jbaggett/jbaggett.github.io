@@ -101,7 +101,7 @@ export function bcaCI(stats, thetaHat, jack, ciLevel) {
   const B = stats.length;
   const alpha = (100 - ciLevel) / 100;
   const pct = () => /** @type {[number, number]} */ ([quantile(stats, alpha / 2), quantile(stats, 1 - alpha / 2)]);
-  if (B < 2 || !jack || jack.length < 3) return { ci: pct(), z0: NaN, a: NaN, fellBack: true };
+  if (B < 2 || !jack || jack.length < 3) return { ci: pct(), z0: NaN, a: NaN, fellBack: true, levels: null };
 
   // Bias correction (strict "<", matching scipy/R).
   let below = 0;
@@ -114,15 +114,18 @@ export function bcaCI(stats, thetaHat, jack, ciLevel) {
   for (const ji of jack) { const d = jbar - ji; num += d * d * d; den += d * d; }
   const a = den === 0 ? 0 : num / (6 * Math.pow(den, 1.5));
 
-  if (!isFinite(z0) || !isFinite(a)) return { ci: pct(), z0, a, fellBack: true };
+  if (!isFinite(z0) || !isFinite(a)) return { ci: pct(), z0, a, fellBack: true, levels: null };
 
   const zLo = invNorm(alpha / 2), zHi = invNorm(1 - alpha / 2);
   const adj = (/** @type {number} */ z) => { const t = z0 + z; return normCDF(z0 + t / (1 - a * t)); };
   let a1 = adj(zLo), a2 = adj(zHi);
-  if (!isFinite(a1) || !isFinite(a2) || a1 >= a2) return { ci: pct(), z0, a, fellBack: true };
+  if (!isFinite(a1) || !isFinite(a2) || a1 >= a2) return { ci: pct(), z0, a, fellBack: true, levels: null };
   a1 = Math.min(Math.max(a1, 1e-4), 1 - 1e-4);
   a2 = Math.min(Math.max(a2, 1e-4), 1 - 1e-4);
-  return { ci: [quantile(stats, a1), quantile(stats, a2)], z0, a, fellBack: false };
+  // The adjusted cutoffs go out with the interval: the Monte-Carlo margin is a
+  // statement about the quantile INDEX, so it needs the level each end actually
+  // came from, not the nominal one.
+  return { ci: [quantile(stats, a1), quantile(stats, a2)], z0, a, fellBack: false, levels: [a1, a2] };
 }
 
 /** z for a confidence level, with z = 2 exactly at 95% (the "±2 SE" rule of thumb). */
@@ -219,10 +222,125 @@ export function ciMethodFromUrl() {
 }
 
 /**
+ * How far each end of the interval would move if you ran the whole simulation
+ * again — the Monte-Carlo margin, in the data's own units.
+ *
+ * The randomization pages have said this about the p-value since REQ-031
+ * (`p ± 1.96·sqrt(p(1−p)/N)`) and the bootstrap pages said nothing, so the same
+ * idea was taught on eight pages and silently dropped on five. It is one idea
+ * either way: **a count out of B resamples is binomial.** For a p-value it is
+ * the count of extreme resamples. For a CI bound it is the INDEX of the
+ * quantile — the 2.5th percentile is the 25th of 1000, and resampling noise
+ * puts that index at 25 ± 10, so the bound could have been anywhere from the
+ * 15th to the 35th smallest resample. Read those two off the sorted array and
+ * the margin is already in the right units. (Jeff, 2026-10-02.)
+ *
+ * It works from the LEVEL each end came from, not from where the bound value
+ * happens to sit. Looking the value up instead was the first version and it is
+ * wrong in exactly the case worth being right about: on a discrete statistic a
+ * bound often lands on an atom, and the lookup returns the atom's top edge
+ * rather than the quantile's own index. On 3 of 62 at B = 10,000 that reported
+ * ±0.008 where the truth is 0 — the bound is pinned and no number of resamples
+ * will move it. BCa passes its own adjusted cutoffs, so its shifted ends need
+ * no special case.
+ *
+ * ±z·SE is not a quantile at all. Its ends are `mean(stats) ± z·sd(stats)`, and
+ * BOTH of those move: Var ≈ σ²/B + z²σ²/(2B). Using only the SE term — the
+ * second version — came out a consistent 0.82× of the truth, which is exactly
+ * sqrt(1/2)/sqrt(1/2 + 1/z²·…) says it should be.
+ *
+ * Every branch is checked against brute force: the spread of the bound over 400
+ * independent bootstrap runs. See tests/unit/ci-mc-margin.test.js.
+ *
+ * Returns null below 100 resamples, where the order statistics clamp to the
+ * ends of the array and the number would be noise reported as precision.
+ *
+ * @param {number[]} stats bootstrap statistics
+ * @param {number} ciLevel e.g. 95
+ * @param {{method?: string, levels?: [number,number]|null}} [opts]
+ * @returns {{lo: number, hi: number}|null} 95% margin on each end
+ */
+export function ciMonteCarloMargin(stats, ciLevel, opts = {}) {
+  const B = stats?.length ?? 0;
+  if (B < 100) return null;
+
+  if (opts.method === 'se') {
+    const z = zFor(ciLevel);
+    const m = 1.96 * sd(stats) * Math.sqrt((1 + (z * z) / 2) / B);
+    return { lo: m, hi: m };
+  }
+
+  const alpha = (100 - ciLevel) / 100;
+  const levels = opts.levels ?? [alpha / 2, 1 - alpha / 2];
+  const sorted = [...stats].sort((a, b) => a - b);
+  return { lo: quantileMargin(sorted, levels[0]), hi: quantileMargin(sorted, levels[1]) };
+}
+
+/**
+ * The margin for one bound: half the spread between the order statistics 1.96
+ * binomial SDs either side of the quantile's index.
+ *
+ * When one repeated value covers that whole span the spread is zero — the right
+ * answer, and a useful one: more resamples will not move this bound. That is
+ * the ordinary case on a discrete statistic.
+ *
+ * @param {number[]} sorted
+ * @param {number} q
+ * @returns {number}
+ */
+function quantileMargin(sorted, q) {
+  const B = sorted.length;
+  const k = B * q;
+  const spread = 1.96 * Math.sqrt(B * q * (1 - q));
+  const at = (/** @type {number} */ x) =>
+    sorted[Math.max(0, Math.min(B - 1, Math.round(x) - 1))];
+  return Math.max(0, (at(k + spread) - at(k - spread)) / 2);
+}
+
+/**
+ * Split resamples into below / inside / above the interval — the same cut the
+ * chart uses to colour its dots, so what a pill claims is what a reader can
+ * count. Exported for tests.
+ *
+ * @param {number[]} stats
+ * @param {[number,number]} ci
+ * @returns {{leftProb: number, midProb: number, rightProb: number}}
+ */
+export function ciRegionMass(stats, ci) {
+  const n = stats.length;
+  if (n === 0) return { leftProb: 0, midProb: 0, rightProb: 0 };
+  const [lo, hi] = ci;
+  let left = 0, mid = 0, right = 0;
+  for (const v of stats) {
+    if (v < lo) left++;
+    else if (v > hi) right++;
+    else mid++;
+  }
+  return { leftProb: left / n, midProb: mid / n, rightProb: right / n };
+}
+
+/**
  * Three symmetric probability pills on a bootstrap distribution: the middle (blue)
  * is the fraction of resamples INSIDE the interval, each tail (gray) the fraction
  * beyond a bound. These report what actually happened, not the nominal level — in
  * ±SE mode that's the point (the shortcut lands near 95%, not exactly on it).
+ *
+ * The three regions are a PARTITION, cut the same way the chart colours its
+ * dots: the interval is closed, so a resample sitting exactly on a bound is
+ * inside it and blue. The tails used to be counted inclusively (`<=`, `>=`)
+ * while the shading was inclusive of the middle, with the middle taken as the
+ * leftover — so a spike landing exactly on a bound was counted in the tail and
+ * drawn blue at the same time. On a discrete statistic that is not an edge
+ * case but the normal case: at n = 62 with p-hat = 3/62 the lower bound comes
+ * out at exactly 0, and the 4.7% of resamples with no successes were being
+ * reported as a left tail with no grey dots anywhere to point at.
+ * (Jeff, 2026-10-01: "at the low end we have .0469, but there are no gray dots
+ * to point to".)
+ *
+ * The three now sum to 1 by construction, and every dot a pill counts is a dot
+ * the reader can find. The consequence is worth seeing rather than hiding: on a
+ * lumpy statistic a nominal 95% percentile interval really does hold ~99% of
+ * the resamples, because a whole atom sits inside the bound.
  *
  * @param {import('./chart-utils.js').ChartFrame} frame
  * @param {any} xScale
@@ -232,9 +350,7 @@ export function ciMethodFromUrl() {
 export function drawCiPills(frame, xScale, stats, ci) {
   const n = stats.length;
   if (n === 0) return;
-  const leftProb = stats.filter(v => v <= ci[0]).length / n;
-  const rightProb = stats.filter(v => v >= ci[1]).length / n;
-  const midProb = Math.max(0, 1 - leftProb - rightProb);
+  const { leftProb, midProb, rightProb } = ciRegionMass(stats, ci);
   const [dMin, dMax] = xScale.domain();
   const grp = d3Selection.select(frame.inner).select('.annotations');
   addProbPill(grp, frame, xScale, dMin, ci[0], leftProb, { isComplement: true });

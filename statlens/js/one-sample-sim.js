@@ -13,7 +13,9 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, updatePropBar } from './prop-bootstrap-mech.js';
+import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags, obsLegendHTML }
+  from './prop-bootstrap-mech.js';
+import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat } from './stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -41,9 +43,19 @@ import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartTo
  */
 export function initOneSamplePage(config) {
   const isProp = config.mode === 'one-prop';
+  /**
+   * Above this many observations the darts are not thrown — the dots still
+   * appear, all at once. Sixty flyers is already a downpour; a hundred and
+   * twenty is a screen of moving objects that says nothing the first thirty
+   * did not. (The dot block itself survives to 120; see hasIndividualView.)
+   */
+  const DART_MAX = 60;
   // These pages simulate against a stated null value, so the source panel is
   // the data moved onto the null rather than the data as observed.
-  const words = wordsFor('nullWorld');
+  // One-prop's null NAMES a population; one-mean's is the data moved onto the
+  // null. Sharing a vocabulary is what let the proportion page call its source
+  // "Observed Data" and morph it into something the data never became.
+  const words = wordsFor(isProp ? 'statedPopulation' : 'nullWorld');
   applyRequestedLayout('nullWorld');
 
   // ─── DOM elements ───
@@ -323,6 +335,20 @@ export function initOneSamplePage(config) {
   const obsChartEl = () => /** @type {HTMLElement|null} */ (document.getElementById('mech-obs-chart'));
 
   /** Render the left "bag" panel using the observed or null-shifted sample. */
+  /**
+   * Dotplot height in the strip, phone first.
+   *
+   * The same measurement that shortened the two-group pages: at 393px a
+   * mechanism dotplot drew at the desktop's 210-unit viewBox and came out
+   * 194px tall, two of them plus the rest making a strip taller than the
+   * viewport. (js/sim-app.js carries the same rule and the same numbers.)
+   */
+  const phoneLayout = () =>
+    typeof window !== 'undefined' && window.matchMedia?.('(max-width: 560px)').matches;
+  const dotGeometry = () => phoneLayout()
+    ? { viewHeight: 120, margin: { top: 12, right: 18, bottom: 30, left: 18 } }
+    : {};
+
   function renderMeanBagView() {
     const el = obsChartEl();
     if (!el || sampleData.length < 2) return;
@@ -331,6 +357,7 @@ export function initOneSamplePage(config) {
     mech.renderBag(el, vals, meanVal, {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄',
       label: nullShown ? 'Null-shifted sample' : 'Observed sample',
+      ...dotGeometry(),
     });
   }
 
@@ -342,6 +369,50 @@ export function initOneSamplePage(config) {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
       label: 'Simulated resample from null distribution',
       indices: lastResampleIdx ?? undefined,
+      ...dotGeometry(),
+    });
+  }
+
+  /**
+   * The proportion draw: dots, scooped off the null population.
+   *
+   * Same mechanism as the Sampling Distribution Lab, so the same picture —
+   * darts rain onto the population, stick, and fly into the sample as dots,
+   * leaving footprints that show where this sample came from. The Lab draws
+   * from a population at p; this page draws from one at p₀. That is the only
+   * difference, and it belongs in the label, not in the animation.
+   * (Jeff, 2026-10-03.)
+   *
+   * @param {number[]} trials - the draw, successes first
+   * @param {boolean} animate
+   * @returns {number} ms
+   */
+  function renderPropDraw(trials, animate) {
+    const host = /** @type {HTMLElement|null} */ (mechSimStat?.querySelector('.mech-prop-draw'));
+    if (!host) return 0;
+    renderPropResample(host, trials, {
+      style: 'dots', label: 'This simulated sample', delta: false, wide: true,
+    });
+    if (!animate) return 0;
+    // The board only exists while the null side is showing. Toggle back to the
+    // observed sample and there is nothing to throw at — the generic data
+    // stream runs instead (see `ownAnim`).
+    // The POPULATION board, not the sample beside it: `pbm-population` is the
+    // class populationBarHTML puts on the one you draw from.
+    const board = /** @type {HTMLElement|null} */
+      (mechObservedStat?.querySelector('.mech-prop-bar.pbm-population'));
+    const dots = /** @type {HTMLElement[]} */ ([...host.querySelectorAll('.pbm-dot')]);
+    if (!board || dots.length !== trials.length) return 0;
+    const mark = (/** @type {boolean} */ ok) =>
+      `obs-mark pbm-dot ${ok ? 'pbm-success' : 'pbm-failure'}`;
+    return animateDartScoop({
+      board,
+      split: getNullValue(),
+      targets: dots,
+      successCount: trials.reduce((a, v) => a + v, 0),
+      flyerClass: (ok) => `pbm-flyer ${mark(ok)}`,
+      ghostClass: (ok) => `scoop-ghost ${mark(ok)}`,
+      max: DART_MAX,
     });
   }
 
@@ -371,7 +442,7 @@ export function initOneSamplePage(config) {
   /** (Re)draw the bag dotplot with `values` (used by the null-shift glide). */
   function drawMeanBag(values, meanVal) {
     const el = obsChartEl();
-    if (el && values.length >= 2) mech.renderBag(el, values, meanVal, { domain: sharedBoxplotDomain(), meanLabel: 'x̄' });
+    if (el && values.length >= 2) mech.renderBag(el, values, meanVal, { domain: sharedBoxplotDomain(), meanLabel: 'x̄', ...dotGeometry() });
   }
 
   /** Slide the bag's dots + mean line by `deltaPx` → 0 (the observed↔null shift).
@@ -424,6 +495,73 @@ export function initOneSamplePage(config) {
     if (altNullValue) altNullValue.textContent = nullInput?.value ?? (isProp ? '0.5' : '0');
   }
 
+  /**
+   * Whether Step 1 also draws your observed sample under the null population.
+   *
+   * OFF since 2026-10-03, the day it went on: Jeff didn't like the placement
+   * ("I don't like the placement of the observed sample bar below the null bar,
+   * let's remove or hide it for now"). Left as one flag rather than deleted,
+   * because the thing it was for — comparing your p̂ against p₀ by eye — is
+   * still a real want and may come back somewhere else on the page.
+   *
+   * Nothing is lost meanwhile: p̂ is in the data bar at the top, and the Step 3
+   * distribution now marks BOTH values, so the comparison happens where the
+   * decision does.
+   */
+  const SHOW_SAMPLE_IN_SOURCE = false;
+
+  /**
+   * Step 1 on the proportion page: the population H₀ names, and your sample.
+   *
+   * TWO OBJECTS, drawn on the same board at the same width so the two
+   * boundaries can be compared by eye — not two states of one object. The old
+   * panel showed the observed sample and morphed it into the null, which
+   * animates a transformation that does not happen: your sample contributes
+   * nothing to building this population. H₀ states p₀ outright, you draw n
+   * independent trials from it, and the sample enters once, at the end, as the
+   * thing you compare against. (Jeff, 2026-10-03: "that doesn't really fit here
+   * like it does for the one sample mean randomization test.")
+   *
+   * The arrow leaves the NULL board — that is what the draw comes from — and
+   * the darts are thrown at it (see renderPropDraw's `.pbm-population` lookup).
+   *
+   * Rebuilt whenever p₀ changes, so the board is a live picture of the H₀ box
+   * above it: type 0.3 and the boundary moves.
+   */
+  function renderPropSource() {
+    if (!isProp || !mechObservedStat || sampleN === 0) return;
+    const p0 = getNullValue();
+    // Both labels live ON the bar now, each at its own mark — p₀ above the
+    // boundary it names, the observed sample below its line. The row label they
+    // used to share put them at the same x whenever p̂ was near the left edge.
+    let html = `<span class="pbm-src-row">`
+      + populationBarHTML(p0, {
+          // No inline margin: the board's spacing is the stylesheet's, and an
+          // inline one beat it. `.mech-prop-bar.pbm-population.is-board` holds
+          // a whole row above the bar so the p₀ tag clears the panel heading.
+          board: true,
+          parameterLabel: `p\u2080 = ${p0}`,
+          // The observed sample, marked on the population you draw from — one
+          // picture for both, rather than a second bar or a fourth panel.
+          // "observed", not "your", to match the line the distribution already
+          // draws for it. (Jeff, 2026-10-03.)
+          reference: observedStat,
+          referenceLabel: `observed p\u0302 = ${fmtObs(observedStat)}`,
+        }) + '</span>';
+    if (SHOW_SAMPLE_IN_SOURCE) {
+      html += `<span class="pbm-src-row"><span class="pbm-src-label">your sample \u00b7 `
+        + `<span class="is-statistic">p\u0302 = ${fmtObs(observedStat)}</span>`
+        + `<span class="pbm-src-count"> (${sampleSuccesses} of ${sampleN})</span></span>`
+        + propBarHTML(sampleSuccesses, sampleN - sampleSuccesses,
+            { style: 'margin-top:2px', board: true })
+        + '</span>';
+    }
+    mechObservedStat.innerHTML = html;
+    // Centred tags overhang the panel when their mark is near an edge; this
+    // pins the ones that would. Must run after the bar is in the DOM.
+    fitPopulationTags(mechObservedStat.querySelector('.pbm-population'));
+  }
+
   /** Format observed stat for display. */
   function fmtObs(v) {
     return isProp ? formatStat(v, 0, 'proportion') : formatStat(v, dataPrecision);
@@ -441,9 +579,39 @@ export function initOneSamplePage(config) {
   }
 
   /** Enable generate buttons and show hypothesis. */
+  /**
+   * Show the mechanism strip, with the source panel already in it.
+   *
+   * On load rather than on the first +1: a student who loads data should see
+   * what is about to be drawn from before they draw from it, not after. (Todd's
+   * idea, via Jeff, 2026-10-03.) Idempotent, and still called from the first
+   * generate so a page that reaches +1 another way still initialises.
+   */
+  function initMechanismStrip() {
+    if (mechanismInitialized || !mechanismStrip) return;
+    mechanismInitialized = true;
+    mechanismStrip.hidden = false;
+    initMechanismCollapse(mechanismStrip);
+    ensureNullToggle();
+    ensureMeanViewToggle();
+    // The proportion page's source is its null POPULATION, which exists as soon
+    // as H₀ does — so it can be drawn now. The mean page's source is the
+    // null-SHIFTED sample, and the shift is an animation the first +1 performs;
+    // seeding it here would play the morph to an empty room.
+    if (isProp) renderPropSource();
+    else renderMeanBagView();
+    // …and the draw panel says what it is waiting for, rather than sitting
+    // blank beside a full one. (2026-10-03.)
+    if (mechSimStat && !mechSimStat.textContent.trim()) {
+      const verb = isProp ? 'simulate a sample' : 'resample';
+      mechSimStat.innerHTML = `<p class="mech-resample-empty">Click <strong>+1</strong> to ${verb}.</p>`;
+    }
+  }
+
   function enableControls() {
     if (hypothesisDisplay) hypothesisDisplay.hidden = false;
     for (const btn of genBtns) btn.disabled = false;
+    initMechanismStrip();
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
     // Figure-only embed: auto-run the largest batch once so the finished,
@@ -535,6 +703,38 @@ export function initOneSamplePage(config) {
       applyDatasetOutcome();
     }
 
+    /**
+     * The colour key under the strip: amber is the outcome being counted, blue
+     * is the other one, both in the dataset's own words.
+     *
+     * The board and the dot block are drawn in two colours and nothing said
+     * which was which — the panel prints p̂ and the bar prints "24 S", and
+     * between them a student still has to GUESS that amber is the success.
+     * (Jeff, 2026-10-03: "for proportions simulations let's find a way to add a
+     * legend somewhere for success and failures (the two colors)".)
+     */
+    function renderPropLegend() {
+      const strip = document.getElementById('mechanism-strip');
+      if (!strip || !successOutcome) return;
+      const succ = successOutcome.value;
+      if (!succ) return;
+      const levels = [...successOutcome.options].map(o => o.value);
+      // Two levels: the other one is the failure, by name. More than two: the
+      // rest are pooled, and "not X" is the only honest label for the pool.
+      const fail = levels.length === 2
+        ? (levels.find(l => l !== succ) ?? 'failure')
+        : `not ${succ}`;
+      // Its own row at the foot of the strip — the same place sim-app puts it,
+      // so the two engines draw one key and not two.
+      let row = strip.querySelector('.mech-legend-row');
+      if (!row) {
+        row = document.createElement('p');
+        row.className = 'mech-legend-row';
+        strip.appendChild(row);
+      }
+      row.innerHTML = obsLegendHTML(succ, fail);
+    }
+
     function applyDatasetOutcome() {
       const successVal = successOutcome?.value;
       if (!successVal || rawOutcomes.length === 0) return;
@@ -551,12 +751,8 @@ export function initOneSamplePage(config) {
       }
 
       // Populate mechanism strip content (stays hidden until first generate)
-      if (mechObservedStat) {
-        const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
-        const obsFailures = sampleN - sampleSuccesses;
-        mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
-      }
+      renderPropSource();
+      renderPropLegend();
       computePreSimDomain();
       scrollToControls();
     }
@@ -565,6 +761,9 @@ export function initOneSamplePage(config) {
       autoCollapse: true,
       stickyControls: true,
       showPreview: true,
+      // Which column is the outcome, asked once by the shared picker rather
+      // than guessed as "the first categorical" (js/variable-picker.js).
+      needs: [{ key: 'outcome', label: 'Outcome:', kind: 'categorical' }],
       datasetFilter: (/** @type {any} */ ds) => ds.type === 'bootstrap_prop',
       onDataset: (/** @type {any} */ ds) => {
         const catVar = ds.variables.find(/** @param {any} v */ v => v.type === 'categorical') || ds.variables[0];
@@ -577,8 +776,11 @@ export function initOneSamplePage(config) {
         populateSuccessSelector(levels, datasetContext.successLabel);
         announce(`${ds.name}.`);
       },
-      onText: (/** @type {any} */ parsed) => {
-        let catIdx = parsed.types.indexOf('categorical');
+      onText: (/** @type {any} */ parsed, /** @type {string} */ _src,
+               /** @type {Record<string,string>} */ pick) => {
+        let catIdx = pick?.outcome != null
+          ? parsed.headers.indexOf(pick.outcome)
+          : parsed.types.indexOf('categorical');
         // Inline 0/1 samples (e.g. ?data=1,1,0,1) type as a single NUMERIC
         // column, but for a one-proportion test a binary 0/1 column IS the
         // outcome. Accept it as a proportion (successes = count of 1s) instead
@@ -637,6 +839,12 @@ export function initOneSamplePage(config) {
           return;
         }
         reportInputProblem(loadSummaryBtn, '');
+        // A new problem, so the old study goes with it — same gap as sim-app's
+        // summary handler (Todd Will, REQ-068 B): the dataset's name and its
+        // `nullClaim` sentence used to survive summary entry and sit over
+        // numbers from somewhere else.
+        datasetContext = {};
+        currentSourceName = '';
         sampleN = n;
         sampleSuccesses = k;
         observedStat = k / n;
@@ -647,12 +855,7 @@ export function initOneSamplePage(config) {
           dataSummary.innerHTML = `n = ${n}, successes = ${k}, <span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>`;  // No dataset name for manual summary input
         }
         // Populate mechanism strip content (stays hidden until first generate)
-        if (mechObservedStat) {
-          const obsPct = n > 0 ? (k / n * 100) : 0;
-          const obsFail = n - k;
-          mechObservedStat.innerHTML = `<span class="obs-success-count">${k}</span> of ${n} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-            ${propBarHTML(k, obsFail, { style: 'margin-top:4px' })}`;
-        }
+        renderPropSource();
         propDataApi.triggerPostLoad();
         setPageTitle(baseTitle, currentSourceName, { n });
         announce(`Data loaded: n = ${n}, successes = ${k}`);
@@ -699,6 +902,7 @@ export function initOneSamplePage(config) {
       autoCollapse: true,
       stickyControls: true,
       showPreview: true,
+      needs: [{ key: 'response', label: 'Variable:', kind: 'numeric' }],
       // Single-quantitative-variable datasets only — match the CI-for-a-mean tool
       // (simulate/bootstrap-mean). Excludes regression and paired datasets, which
       // have multiple numeric columns and aren't appropriate for a one-mean test.
@@ -715,16 +919,17 @@ export function initOneSamplePage(config) {
         datasetContext = ds.context || {};
         currentSourceName = ds.name || '';
         currentDatasetId = ds.id || '';
+        adoptDatasetNull(ds);
         loadNumericData(values);
         announce(`${ds.name}.`);
       },
-      onText: (/** @type {any} */ parsed) => {
-        const numIdx = parsed.types.indexOf('numeric');
-        if (numIdx < 0) {
+      onText: (/** @type {any} */ parsed, /** @type {string} */ _src,
+               /** @type {Record<string,string>} */ pick) => {
+        const colName = pick?.response ?? parsed.headers[parsed.types.indexOf('numeric')];
+        if (!colName) {
           announce('Need at least one numeric column.');
           return;
         }
-        const colName = parsed.headers[numIdx];
         const values = parsed.data
           .map(/** @param {any} r */ r => Number(r[colName]))
           .filter(/** @param {number} v */ v => isFinite(v));
@@ -769,6 +974,14 @@ export function initOneSamplePage(config) {
       if (sampleN > 0) computePreSimDomain();
     });
     nullInput.addEventListener('input', syncAltNullValue);
+    // Step 1 is a picture of this box: change p₀ and the boundary moves.
+    //
+    // On `change`, NOT on `input`. Redrawing per keystroke opened a window where
+    // the board showed 0.3 while the distribution below it had been built at
+    // 0.5 — and a picture is read faster than a number, so that window lies
+    // louder than the input does. `change` fires at the same moment the handler
+    // above resets the simulation, so the board and the chart move together.
+    nullInput.addEventListener('change', renderPropSource);
   }
 
   if (altDirectionBtn) {
@@ -788,13 +1001,49 @@ export function initOneSamplePage(config) {
     });
   }
 
+  /** Whether the null came from the URL, which beats anything a dataset says. */
+  let urlNullValue = false;
+
+  /**
+   * Take the null value a dataset ships, if it has one for this test.
+   *
+   * There is no defensible default μ₀ for a mean, and 0 is the worst available
+   * one: pick "Coast Starlight" (centred near 130) and the page tested μ₀ = 0,
+   * ran a thousand simulations and reported p = 0, with nothing on screen
+   * suggesting the question rather than the data was the problem. 23 of the 136
+   * datasets carry a `one-mean` null in `inferenceContexts` and the page was
+   * ignoring all of them. A proportion needs no such rescue — p₀ = 0.5 is
+   * defensible for any proportion — so this is means only.
+   * (Jeff, 2026-10-03.)
+   *
+   * An explicit `?null_value=` still wins: a link is a deliberate act.
+   *
+   * @param {any} ds
+   */
+  function adoptDatasetNull(ds) {
+    if (isProp || urlNullValue || !nullInput) return;
+    const ctx = Array.isArray(ds?.inferenceContexts) ? ds.inferenceContexts : [];
+    const hit = ctx.find((/** @type {any} */ c) => c && c.test === 'one-mean'
+      && Number.isFinite(Number(c.nullValue)));
+    if (!hit) return;
+    nullInput.value = String(Number(hit.nullValue));
+    syncAltNullValue();
+  }
+
   // ─── Apply URL params for hypothesis (from cross-links) ───
   {
     const urlP = parseParams();
-    // Set null value from ?p= (proportion) or ?null_value= (mean)
-    const nullVal = isProp ? urlP.p : urlP.null_value;
+    // Set null value from ?p= (proportion) or ?null_value= (mean).
+    //
+    // `null_value` is accepted on the proportion page too. It is the obvious
+    // name, it is what every other page spells it, and typing it there did
+    // nothing at all — no warning, no effect, just the default null and a
+    // simulation answering a question nobody asked. `p` stays the documented
+    // spelling for proportions. (2026-10-02.)
+    const nullVal = isProp ? (urlP.p ?? urlP.null_value) : urlP.null_value;
     if (nullVal != null && nullInput) {
       nullInput.value = String(nullVal);
+      urlNullValue = true;
       syncAltNullValue();
     }
     // Set direction from ?direction=
@@ -819,7 +1068,30 @@ export function initOneSamplePage(config) {
    * so an instructor can step between "the original sample" and "what it looks
    * like if H₀ is true" at their own pace instead of relying on the auto-morph.
    */
+  /**
+   * Set a panel heading's words without evicting what lives in it.
+   *
+   * The Observed | Null toggle sits INSIDE this heading now, and `textContent =`
+   * takes it with it — `morphToNull` rewrites the heading on the very first
+   * generate, so the control was built and destroyed in the same tick. (The
+   * paired page's heading had the identical problem on the other engine.)
+   *
+   * @param {Element|null} el
+   * @param {string} text
+   */
+  function setPanelHeading(el, text) {
+    if (!el) return;
+    const keep = [...el.children];
+    el.textContent = text;
+    for (const child of keep) el.appendChild(child);
+  }
+
   function ensureNullToggle() {
+    // Proportions have nothing to toggle BETWEEN: Step 1 shows the population
+    // H₀ names and your sample at the same time, which is better than making
+    // you hold one in memory while looking at the other — and they were never
+    // two states of one thing in the first place. (Jeff, 2026-10-03.)
+    if (isProp) return;
     if (nullToggleBtns) return;
     const panel = document.getElementById('mech-observed');
     const titleEl = panel?.querySelector('.mechanism-title');
@@ -831,7 +1103,10 @@ export function initOneSamplePage(config) {
     wrap.innerHTML =
       '<button type="button" data-view="observed" aria-pressed="true">Observed</button>'
       + '<button type="button" data-view="null" aria-pressed="false">Null</button>';
-    titleEl.after(wrap);
+    // Inside the heading, at its far end — it used to go AFTER the title, which
+    // put it on a row of its own under "Observed Data". Same placement as the
+    // View toggle on the bootstrap pages. (Jeff, 2026-10-02.)
+    titleEl.appendChild(wrap);
     nullToggleBtns = wrap.querySelectorAll('button');
     for (const b of nullToggleBtns) {
       b.addEventListener('click', () => {
@@ -932,47 +1207,17 @@ export function initOneSamplePage(config) {
     const p0 = getNullValue();
 
     if (isProp) {
-      // Morph proportion bar from observed p̂ to null p₀
-      const nullPct = (p0 * 100).toFixed(1);
-      const nullSuccesses = Math.round(p0 * sampleN);
-      const nullFailures = sampleN - nullSuccesses;
-
-      // Change title
-      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
-
-      // Find existing prop bar fill and morph it
-      const fill = mechObservedStat.querySelector('.mech-prop-fill');
-      const bar = mechObservedStat.querySelector('.mech-prop-bar');
-      if (fill && !prefersReducedMotion()) {
-        // The whole panel has to move to the null, not just the bar's width.
-        // It used to write one label reading "p₀ = 0.5" across the bar; when
-        // the counts moved inside their own regions that label stopped
-        // existing, so the bar slid to 50% while still saying "24 S / 10 F" —
-        // the OBSERVED counts under a null-shaped bar. (Jeff, 2026-09-29.)
-        // Under p₀ with n = 34 the null model is 17 and 17, and that is what
-        // the bar now says, along with the "17 of 34" in front of it.
-        /** @type {HTMLElement} */ (fill).style.transition = 'width 700ms ease-out';
-        updatePropBar(bar, nullSuccesses, nullFailures);
-        const lead = mechObservedStat.querySelector('.obs-success-count');
-        if (lead) lead.textContent = String(nullSuccesses);
-        // Update stat text
-        mechObservedStat.querySelector('.observed-highlight')?.replaceWith(
-          Object.assign(document.createElement('span'), {
-            className: 'observed-highlight',
-            innerHTML: `p\u2080 = ${p0}`,
-          })
-        );
-        syncNullToggle();
-        return 700;
-      }
-      // Fallback: instant update
-      mechObservedStat.innerHTML = `<span class="obs-success-count">${nullSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u2080 = ${p0}</span>)
-        ${propBarHTML(nullSuccesses, nullFailures, { style: 'margin-top:4px' })}`;
-      syncNullToggle();
+      // Nothing to morph. The population under H₀ has been on screen since the
+      // data loaded, beside the sample, and your sample was never turned into
+      // it. `nullShown` stays true only so the rest of the engine — the dart
+      // scoop's gate, the toggle sync — can keep asking one question.
+      renderPropSource();
       return 0;
-    } else {
+    }
+
+    {
       // One-mean: morph boxplot from observed x̄ to shifted (centered at μ₀)
-      if (mechObservedTitle) mechObservedTitle.textContent = words.source;
+      setPanelHeading(mechObservedTitle, words.source);
 
       // Stat line doubles as the PERSISTENT explanation of how this null
       // distribution was made (every value shifted by the same constant).
@@ -1031,16 +1276,14 @@ export function initOneSamplePage(config) {
    */
   function revertToObserved() {
     nullShown = false;
-    if (mechObservedTitle) mechObservedTitle.textContent = words.beforeShift ?? words.source;
+    setPanelHeading(mechObservedTitle, words.beforeShift ?? words.source);
 
     if (isProp) {
-      // Re-render with observed proportion
-      if (mechObservedStat) {
-        const obsPct = sampleN > 0 ? (sampleSuccesses / sampleN * 100) : 0;
-        const obsFailures = sampleN - sampleSuccesses;
-        mechObservedStat.innerHTML = `<span class="obs-success-count">${sampleSuccesses}</span> of ${sampleN} (<span class="observed-highlight">p\u0302 = ${fmtObs(observedStat)}</span>)
-          ${propBarHTML(sampleSuccesses, obsFailures, { style: 'margin-top:4px' })}`;
-      }
+      // Unreachable: the proportion page has no Observed|Null toggle to revert
+      // from. Step 1 shows the population AND the sample at once, because they
+      // are two objects rather than two states of one. Kept as a no-op so the
+      // shared reset path does not have to know which page it is on.
+      renderPropSource();
     } else {
       // One-mean: slide the dots back from the null-shifted positions to the
       // observed ones — symmetric with morphToNull (don't rebuild = no blink).
@@ -1098,16 +1341,13 @@ export function initOneSamplePage(config) {
 
   /** @param {number} count */
   function generateSimulations(count) {
+    // A clean slate: see the note in js/sim-app.js. The dart scoop hides its
+    // target dots until the darts arrive, so an interrupted run would leave
+    // them invisible.
+    cancelDrawAnimations();
     if (!rng) rng = createRng(seed);
 
-    // Show mechanism strip on first generate (deferred from data load)
-    if (!mechanismInitialized && mechanismStrip) {
-      mechanismInitialized = true;
-      mechanismStrip.hidden = false;
-      initMechanismCollapse(mechanismStrip);
-      ensureNullToggle();
-      ensureMeanViewToggle();
-    }
+    initMechanismStrip();
 
     // On first generate, morph left panel from "Observed" to "Null Distribution"
     const nullMorphMs = morphToNull();
@@ -1125,11 +1365,22 @@ export function initOneSamplePage(config) {
     const prevLength = allStats.length;
 
     if (simTitleEl) {
-      simTitleEl.textContent = count === 1 ? words.draw : words.drawLatest;
+      // The one-mean page draws WITH REPLACEMENT from the null-shifted sample,
+      // so it can say so, the way the bootstrap pages do — the STEP 2 tag
+      // beside it already says which panel it is. The one-prop page is left
+      // alone: its draw is a Bernoulli sample from p₀, not a resample of
+      // anything, and calling it one would be false. (Jeff, 2026-10-02.)
+      setPanelHeading(simTitleEl, isProp
+        ? (count === 1 ? words.draw : words.drawLatest)
+        : 'Resample with Replacement');
     }
 
     lastSimStat = 0;
     let lastSimDetail = '';
+    /** The trials behind the latest proportion draw, for the dot block. */
+    /** @type {number[]|null} */ let lastPropDraw = null;
+    // Dots while they fit the panel; the aggregate bar above that.
+    const propDots = isProp && hasIndividualView(sampleN);
     let mechAnimMs = 0; // resample-build animation duration (delays the drop)
 
     const isSingle = count === 1;
@@ -1152,12 +1403,29 @@ export function initOneSamplePage(config) {
       const pct = n > 0 ? (lastSuccesses / n * 100) : 0;
       lastSimDetail = `${lastSuccesses} of ${n} (p\u0302 = <span class="mech-stat-value${hlClass}">${fmtObs(lastSimStat)}</span>)`;
 
-      // Proportion bar for visual
-      lastSimDetail += `
-        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px' })}`;
+      // The draw itself. Dots while they fit, so this page shows a sample the
+      // same way the bootstrap CI for a proportion does and the same way the
+      // Sampling Distribution Lab does — one dot per observation, successes
+      // first, so the amber fraction IS p̂. Above that, the aggregate bar: the
+      // display changes with SCALE, never with the kind of thing being shown.
+      // (Jeff, 2026-10-03.)
+      //
+      // The trials are materialised here rather than drawn as an array:
+      // `drawBernoulliCount` returns a count because the trials used not to be
+      // shown, and the order of n exchangeable Bernoulli trials carries
+      // nothing — a sorted array and a shuffled one are the same sample. What
+      // is NOT free is the count, and that comes from the seeded draw.
+      lastPropDraw = Array.from({ length: n }, (_, i) => (i < lastSuccesses ? 1 : 0));
+      lastSimDetail += propDots
+        ? '<div class="mech-prop-draw"></div>'
+        : `\n        ${propBarHTML(lastSuccesses, lastFailures, { style: 'margin-top:4px', board: true })}`;
 
       if (mechanismDescEl) {
-        mechanismDescEl.textContent = `Simulate ${n} trials from null distribution (p\u2080 = ${p0})`;
+        // What the draw actually is: n independent trials, each a success with
+        // probability p₀. "From the null distribution" invited the reading that
+        // there was a fixed thing of size n being sampled.
+        mechanismDescEl.textContent =
+          `Draw ${n} independent trials \u00b7 each a success with probability ${p0}`;
         mechanismDescEl.hidden = false;
       }
     } else {
@@ -1189,7 +1457,8 @@ export function initOneSamplePage(config) {
     if (mechSimStat) {
       // The cards / dotplot views do their own animation; only fire the generic
       // stream for the other cases (proportions, large-n histogram).
-      const ownAnim = !isProp && (useCards() || useDots()) && lastResampleArr && lastResampleArr.length >= 2;
+      const ownAnim = (!isProp && (useCards() || useDots()) && lastResampleArr && lastResampleArr.length >= 2)
+        || (propDots && nullShown && sampleN <= DART_MAX);
       if (isSingle && mechObservedStat && !ownAnim) {
         flyDataStream(mechObservedStat, mechSimStat);
       }
@@ -1201,6 +1470,9 @@ export function initOneSamplePage(config) {
       // waits until the resample has actually finished building (was firing early).
       if (!isProp && lastResampleArr && lastResampleArr.length >= 2) {
         mechAnimMs = renderMeanResampleView(isSingle);
+      }
+      if (propDots && lastPropDraw) {
+        mechAnimMs = Math.max(mechAnimMs, renderPropDraw(lastPropDraw, isSingle));
       }
     }
 
@@ -1299,6 +1571,11 @@ export function initOneSamplePage(config) {
       observedStat: observed,
       direction,
       nullCenter: nullVal,
+      // The value H₀ names, marked on the distribution it generated — the
+      // distribution is centred there by construction and nothing said so.
+      parameterMark: Number.isFinite(nullVal)
+        ? { value: nullVal, label: isProp ? 'p\u2080' : '\u03BC\u2080' }
+        : null,
       highlightIndex,
       highlightIndices,
       prevBinCounts,
@@ -1430,9 +1707,9 @@ export function initOneSamplePage(config) {
       <p>Observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span></p>
       <p>Extreme count: ${extremeCount} of ${N} (${dirLabel})</p>
       <p>${pLine}</p>
-      ${extremeCount === 0 ? '' : `<p class="hint">The “±” is the 95% Monte-Carlo margin on
-         this estimate — <strong>more simulations → a tighter one</strong>. Once it stops
-         shrinking usefully, more clicking will not change your conclusion.</p>`}
+      ${extremeCount === 0 ? '' : `<p class="hint">Run it again and the p-value could shift
+         <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More simulations → tighter</strong>;
+         once it stops shrinking, more clicking will not change your conclusion.</p>`}
       <p class="interpretation">${extremeCount} of ${N} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
     `;
   }

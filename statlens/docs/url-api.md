@@ -177,6 +177,7 @@ Accepted by pages under `simulate/`. Parsed by `js/url-params.js`, consumed by `
 | `mview` | string | _(auto)_ | **Pin the mechanism-strip view.** Only `tiles` (alias `summary`) is honoured. Numeric data now **starts** in the non-Tiles view (dotplots up to 80 observations, a histogram beyond), and neither of those can show *how many times* a value was drawn — so an activity built around counting repeats (e.g. `bootstrap-explore` on `penny_ages`, n = 648) must ask for Tiles explicitly. Counts as an explicit user choice, so the auto-default leaves it alone. `histogram` is deliberately **not** accepted: the mean mechanism carries its own three-way Tiles/Dotplot/Histogram control that this param does not move, and it is the auto-default for large n anyway. | `?dataset=penny_ages&mview=tiles` |
 | `direction` | string | _(page default)_ | Tail direction for hypothesis test shading. Valid values: `less`, `greater`, `two-sided` (mapped internally to `twosided`). Sets the alternative hypothesis direction button. | `?direction=greater` |
 | `mechanism` | string | _(bars)_ | Mechanism-strip view for **two-group proportion randomization** pages (`randomization-diff-props`). `cards` sets the initial view to dealt cards instead of proportion bars; a live "Bars / Cards" toggle is available regardless. Cards are shown only for small samples (≤50 per group); ignored otherwise. Pairs with `success`/`failure` for card legend labels (which otherwise derive from the data's outcome levels). | `?mechanism=cards` |
+| `cardcolor` | string | `red` | **Which card colour carries the success**, in the card view (`?mechanism=cards`). Ignored unless the card view is actually shown — `?mechstyle=aggregate` wins over `?mechanism=cards`, since cards are a rendering *inside* the individual view. `red` is the default and the textbook's convention; `white` (aliases `swap`, `swapped`) deals the success as the white card, for materials whose own deck reads that way — the coursepack's opportunity-cost activity makes red the "buy", which is the *non*-success, so a student otherwise meets two opposite conventions in one sitting. Changes only the colours, never which outcome is counted (that is `success=`). A **Swap colours** button in the strip's colour key does the same thing live, and the setting rides along in a shared link. Ignored outside the card view. | `?mechanism=cards&cardcolor=white` |
 
 ### Pages using `one-sample-sim.js`
 
@@ -946,6 +947,26 @@ produces six procedure types: `one-mean`, `paired`, `two-means`, `one-prop`,
 | `procedures` | string (CSV) | _(full pool)_ | Explicit comma-list of procedure types to include. Accepts the six testTypes plus common aliases (`two-prop`→`two-props`, `two-mean`→`two-means`, `chi-square`/`chisq-gof`/`chisq-indep`→`chisq`). Tags with no scenarios (`anova`, `slope`) are accepted but contribute nothing. An all-unrecognized list falls back to the full pool. | `?procedures=one-prop,two-prop,one-mean,two-mean,paired` |
 
 `scope` takes precedence over `procedures` when both are present.
+
+---
+
+## Landing Page Parameters (`/`)
+
+The home page can be opened on a particular layout and tab, so a syllabus or a
+chapter can link to the shelf a student needs rather than to the top of the
+page. Added 2026-10-02; the **Share** button on the landing page produces these
+links, and they are also written into the address bar as you switch, so a plain
+copy from the browser carries them.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `view` | string | `cards` | Which of the three layouts to show. `cards` = By Course Phase, `data-grid` = By Variable Type, `proc-grid` = By Procedure. An unrecognised value falls back to the saved preference, then to `cards`. | `?view=proc-grid` |
+| `tab` | string | `explore` | Which course-phase tab to open, in the `cards` layout only: `explore`, `simulate`, `compute`, `apply`, `foundations`. The panel ids are `tab-<name>`; either spelling is accepted. An unrecognised value shows the default tab. | `?tab=simulate` |
+
+**A link beats a saved preference.** Both parameters override what this browser
+has in `localStorage` (`sb-view`, `sb-course-tab`) — whoever sent the link meant
+the layout they were looking at. Without either parameter the saved choice is
+restored as before, and the bare home URL is left bare.
 
 ---
 

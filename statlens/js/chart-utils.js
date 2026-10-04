@@ -1789,8 +1789,13 @@ function fmtTick(v) {
  */
 export function drawMiniDotplot(container, values, options = {}) {
   const {
-    width = 220,
-    height = 60,
+    // 220x60 unless the container says otherwise. A fixed 220 inside a 491px
+    // panel is less than half the room, and the SVG scales its text with it, so
+    // the axis labels came out proportionally tiny too — the same letterboxing
+    // the strip's other charts had. (Jeff, 2026-10-02: "plots in steps 1 and 2
+    // can be bigger".)
+    width = miniChartWidth(container),
+    height = miniChartHeight(container, options.minHeight),
     meanValue,
     highlightMean = false,
     domain,
@@ -1856,8 +1861,8 @@ export function drawMiniDotplot(container, values, options = {}) {
   // Mean marker line (vertical, full height of plot area)
   if (meanValue !== undefined) {
     const mx = x(meanValue);
-    const mColor = highlightMean ? '#E07020' : '#D33';
-    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+    const mColor = highlightMean ? STAT_RESAMPLE : STAT_OBSERVED;
+    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="2"/>`;
     // Small triangle at top
     svg += `<polygon class="mc-mean-tri" points="${mx - 3},0 ${mx + 3},0 ${mx},4" fill="${mColor}"/>`;
   }
@@ -1889,8 +1894,13 @@ export function drawMiniDotplot(container, values, options = {}) {
  */
 export function drawMiniHistogram(container, values, options = {}) {
   const {
-    width = 220,
-    height = 60,
+    // 220x60 unless the container says otherwise. A fixed 220 inside a 491px
+    // panel is less than half the room, and the SVG scales its text with it, so
+    // the axis labels came out proportionally tiny too — the same letterboxing
+    // the strip's other charts had. (Jeff, 2026-10-02: "plots in steps 1 and 2
+    // can be bigger".)
+    width = miniChartWidth(container),
+    height = miniChartHeight(container, options.minHeight),
     meanValue,
     highlightMean = false,
     domain,
@@ -1958,8 +1968,8 @@ export function drawMiniHistogram(container, values, options = {}) {
   // Mean marker line
   if (meanValue !== undefined) {
     const mx = x(meanValue);
-    const mColor = highlightMean ? '#E07020' : '#D33';
-    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="1.5" stroke-dasharray="3,2"/>`;
+    const mColor = highlightMean ? STAT_RESAMPLE : STAT_OBSERVED;
+    svg += `<line class="mc-mean" x1="${mx.toFixed(1)}" x2="${mx.toFixed(1)}" y1="0" y2="${plotH}" stroke="${mColor}" stroke-width="2"/>`;
     svg += `<polygon class="mc-mean-tri" points="${mx - 3},0 ${mx + 3},0 ${mx},4" fill="${mColor}"/>`;
   }
 
@@ -1987,6 +1997,65 @@ export function drawMiniHistogram(container, values, options = {}) {
  * @param {number[]} values
  * @param {{ width?: number, height?: number, meanValue?: number, highlightMean?: boolean, domain?: [number, number], color?: string, label?: string }} options
  */
+/**
+ * How wide a mini chart may draw: the container's own width, when it has one.
+ *
+ * Falls back to the old fixed 220 for a container that has not been laid out
+ * (hidden panels measure zero) so a chart drawn before its panel is shown is
+ * still a chart rather than a sliver.
+ *
+ * @param {HTMLElement|null} container
+ * @returns {number}
+ */
+/**
+ * What colour a statistic's marker is, by ROLE rather than by renderer.
+ *
+ * These were two conventions for one quantity: a mini histogram drew its mean
+ * crimson-dashed and the mechanism dotplot beside it drew the same mean solid
+ * purple, so which a student met depended only on whether n was past the dot
+ * cap — a fact about rendering, presented as a change of meaning.
+ *
+ * The rule now is the one Jeff set (2026-10-03): "purple in the original plots
+ * and orange in the resample plots for the sample mean marker (to go with the
+ * orange flying dot)". So the colour says WHICH statistic it is:
+ *
+ *   purple  the statistic you observed — the same `--observed-stat` the big
+ *           charts use for "observed = …"
+ *   orange  a resampled one, exactly the colour of the dot that carries it to
+ *           the distribution (`--highlight-orange`, FLY_COLOR)
+ *
+ * ⚠ Two oranges, for one reason. `#E07020` is 3.23:1 on white — fine for a LINE
+ * (graphical elements need 3:1) and a fail for TEXT (4.5:1). The label takes
+ * `#C2410C` at 5.18:1, the same hue a shade down. Matching the flying dot is
+ * the whole point of the line, so the line is the one that keeps the exact
+ * value.
+ */
+export const STAT_OBSERVED = '#7B2D8E';
+export const STAT_RESAMPLE = '#E07020';
+export const STAT_RESAMPLE_TEXT = '#C2410C';
+
+function miniChartWidth(container) {
+  const w = container?.getBoundingClientRect?.().width ?? 0;
+  return w >= 160 ? Math.round(w) : 220;
+}
+
+/**
+ * …and how tall. Proportional, so a wider chart does not become a letterbox
+ * strip, but capped: the strip is a band and the chart below it is the one
+ * competing for the page's height.
+ *
+ * @param {HTMLElement|null} container
+ * @returns {number}
+ */
+function miniChartHeight(container, minHeight = 0) {
+  // Width x 0.25 suits a one-sample panel, which is wide and shallow. A
+  // two-group cell is half that width and the same formula made it SHORTER
+  // than the 70px it used to be pinned at — wider but squatter is not bigger.
+  // `minHeight` lets a caller raise the floor without pinning the size back.
+  // (2026-10-03.)
+  return Math.max(60, minHeight, Math.min(120, Math.round(miniChartWidth(container) * 0.25)));
+}
+
 export function drawMiniChart(container, values, options = {}) {
   if (!values || values.length === 0) { container.innerHTML = ''; return; }
   if (values.length <= 30) {
@@ -2060,10 +2129,12 @@ export function morphMiniChart(container, newValues, options = {}) {
   // Also update mean marker color immediately
   const meanLine = g.querySelector('.mc-mean');
   const meanTri = g.querySelector('.mc-mean-tri');
-  if (options.highlightMean) {
-    if (meanLine) { meanLine.setAttribute('stroke', '#E07020'); }
-    if (meanTri) { meanTri.setAttribute('fill', '#E07020'); }
-  }
+  // The marker's colour no longer depends on whose mean it is; see
+  // MEAN_MARKER_COLOR. Kept as an explicit re-assert so a morph cannot leave a
+  // stale colour behind from an older render.
+  const mColor = options.highlightMean ? STAT_RESAMPLE : STAT_OBSERVED;
+  if (meanLine) { meanLine.setAttribute('stroke', mColor); }
+  if (meanTri) { meanTri.setAttribute('fill', mColor); }
 
   /** @param {number} now */
   function frame(now) {

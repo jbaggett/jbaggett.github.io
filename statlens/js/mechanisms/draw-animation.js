@@ -35,6 +35,54 @@
 import { prefersReducedMotion } from '../settings.js';
 
 /** Matches the existing resample flyer, so the styles differ in motion only. */
+/**
+ * Every animation currently in flight, and how to stop it.
+ *
+ * These animations run on requestAnimationFrame and clean up in their own last
+ * frame — which is correct right up until someone presses +1 again before that
+ * frame arrives. Then two runs share the screen: 64 flyers for a 48-dot
+ * mechanism, the first run's dots still hidden waiting for its own finish, and
+ * the second run's arriving on top of them. (Jeff, 2026-10-03: "the resample
+ * dots in Step 2 don't all disappear when we sample again. the animation needs
+ * a clean slate each time we press +1.")
+ *
+ * So each run registers how to abort itself, and starting a draw cancels
+ * whatever was still going. An aborted run must leave the DOM as if it had
+ * finished — flyers removed, hidden targets shown again — because the next
+ * render is about to draw over it either way.
+ *
+ * @type {Set<() => void>}
+ */
+const inFlight = new Set();
+
+/**
+ * Stop every animation still running and undo what it was mid-way through.
+ *
+ * Safe to call when nothing is running. Call it before starting a new draw.
+ */
+export function cancelDrawAnimations() {
+  for (const abort of [...inFlight]) {
+    try { abort(); } catch { /* a half-torn-down run is still better aborted */ }
+  }
+  inFlight.clear();
+}
+
+/**
+ * Register a run. Returns a `stopped()` predicate for its frame loop to check
+ * and a `finish()` to call when it ends normally.
+ *
+ * @param {() => void} undo - put the DOM back as a finished run would leave it
+ */
+function trackRun(undo) {
+  let dead = false;
+  const abort = () => { if (!dead) { dead = true; undo(); } };
+  inFlight.add(abort);
+  return {
+    stopped: () => dead,
+    finish: () => { dead = true; inFlight.delete(abort); },
+  };
+}
+
 const FLY_COLOR = '#E07020';
 
 /**
@@ -197,9 +245,19 @@ function timing(style, order, total) {
  * @param {DrawStyle} opts.style
  * @param {SVGElement|null} [opts.targetSvg] - for the combine phase's mean marker
  * @param {() => void} [opts.onDone]
+ * @param {(el: Element) => void} [opts.onGhost] - empty one source mark
+ * @param {(el: Element, count: number) => void} [opts.onReveal] - fill one in,
+ *   given how many times it has now been taken. Supplying it makes the draw
+ *   ghosted and hands the whole "what a mark looks like" question to the caller.
+ * @param {number} [opts.leadIn] - hold the whole source EMPTY for this many ms
+ *   before the first flyer launches. Only meaningful for a ghosted draw: the
+ *   emptying is instantaneous, so without a pause the first dots are already
+ *   filling back in before a reader has seen the sample go blank, and "every
+ *   dot starts untaken" never registers. (Jeff, 2026-10-01.)
  * @returns {number} total duration in ms, 0 if it declined to run
  */
-export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone }) {
+export function animateResampleDraw({ sourceCircles, targetDots, indices, style, targetSvg, onDone,
+  onGhost, onReveal, leadIn = 0 }) {
   if (prefersReducedMotion() || !indices?.length || !targetDots.length) return 0;
   if (indices.length !== targetDots.length) return 0;
   // A draw already in the air belongs to the previous click. Clear it, or a
@@ -219,6 +277,10 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     order.sort((a, b) => x(a) - x(b));
   }
 
+  // The hold is worth nothing unless the source is actually being emptied, and
+  // a long one is just a stall, so it is bounded on both sides.
+  const lead = (GHOSTED.has(style) || !!onReveal) ? Math.min(Math.max(leadIn, 0), 1200) : 0;
+
   /** @type {Array<{el: HTMLElement, sx:number, sy:number, ex:number, ey:number, dot: Element, src: Element|null, index:number, delay:number, fly:number}>} */
   const flyers = [];
   order.forEach((i, rank) => {
@@ -235,20 +297,31 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
     }
     const el = document.createElement('div');
     el.className = 'dpr-flyer';
+    // A flyer carries its source's own colour when the source has one. On the
+    // mean pages every dot is the same colour and this resolves to nothing, so
+    // they keep the orange. On the proportion stacks the mark's colour IS its
+    // outcome, and an orange dot landing in the blue stack would be saying
+    // something false about what was drawn. (2026-10-01.)
+    const fill = srcColour(src) || FLY_COLOR;
     el.style.cssText = `position:fixed;left:${sx - sz / 2}px;top:${sy - sz / 2}px;`
-      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${FLY_COLOR};`
+      + `width:${sz}px;height:${sz}px;border-radius:50%;background:${fill};`
       + `z-index:1000;pointer-events:none;opacity:0;`;
     document.body.appendChild(el);
     /** @type {SVGElement} */ (dot).style.opacity = '0';
     const t = timing(style, rank, targetDots.length);
-    flyers.push({ el, sx, sy, ex, ey, dot, src, index: indices[i], delay: t.delay, fly: t.fly });
+    flyers.push({ el, sx, sy, ex, ey, dot, src, index: indices[i], delay: t.delay + lead, fly: t.fly });
   });
 
-  if (GHOSTED.has(style)) {
+  // A caller with its own vocabulary for "empty" and "filled in" supplies it.
+  // The proportion stacks do: their marks carry an outcome as well as a count,
+  // so the ramp they darken along depends on which stack the mark is in, which
+  // is not something this module should know. (2026-10-01.)
+  const ghosted = GHOSTED.has(style) || !!onReveal;
+  if (ghosted) {
     // Empty the source. Each pick fills one in (see `reveal`), so what is still
     // an outline when the draw finishes is what was never taken — nothing has
     // to be dimmed to say it.
-    for (const c of sourceCircles) ghost(c);
+    for (const c of sourceCircles) (onGhost ?? ghost)(c);
   } else {
     // Never taken: say so. On a real sample this is roughly a third of the dots,
     // and it is half of what "with replacement" means.
@@ -262,7 +335,7 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
   // the pure colour-depth encoding, kept clean so it can be judged on its own
   // against `rings` (Jeff, 2026-09-28). If it wins, it needs a non-colour
   // partner before it becomes the default.
-  if (style === 'burst') {
+  if (style === 'burst' && !onReveal) {
     takenCount.forEach((n, j) => { if (n > 1) badge(sourceCircles[j], n); });
   }
 
@@ -301,8 +374,10 @@ export function animateResampleDraw({ sourceCircles, targetDots, indices, style,
         // A pick is worth seeing at its source, not only at its destination.
         if (f.src && style !== 'burst') pulse(f.src);
         // …and in the ghosted styles the pick is also what fills the dot in.
-        if (f.src && GHOSTED.has(style) && f.index >= 0) {
-          reveal(f.src, ++seen[f.index], style);
+        if (f.src && ghosted && f.index >= 0) {
+          const n = ++seen[f.index];
+          if (onReveal) onReveal(f.src, n);
+          else reveal(f.src, n, style);
         }
       }
       const e = ease(t);
@@ -349,7 +424,13 @@ function combineInto(els, overlays, dur, settle, onDone) {
     x: parseFloat(el.style.left) + el.offsetWidth / 2,
     y: parseFloat(el.style.top) + el.offsetHeight / 2,
   }));
-  const targetY = starts.reduce((s, p) => s + p.y, 0) / starts.length;
+  // ON the mean marker, both ways. The x came from the line and the y was the
+  // AVERAGE HEIGHT OF THE FLYERS — which is not a position that means anything:
+  // it is wherever the draw happened to leave its dots. The statistic has a
+  // place in this plot, the marker is drawn at it, and that is where the dot
+  // the student is about to watch fly should be sitting. (Jeff, 2026-10-02:
+  // "the dot [originates] in the wrong place".)
+  const targetY = box.top + box.height / 2;
   const t0 = performance.now();
 
   function step(now) {
@@ -601,7 +682,12 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
     }
     const tol = Math.max(6, box.width * 0.75);
     return {
-      bar, src: bestD <= tol ? src : null, box,
+      // `src` is the bar to FLASH — only when the match is close enough that
+      // flashing it is honest. `origin` is where this bin's dots are taken
+      // from, which must be a source bar whatever happens: falling back to the
+      // target bar started five of eighty-three dots on the resample side,
+      // which says they came from where they were going. (2026-10-03.)
+      bar, src: bestD <= tol ? src : null, origin: src ?? null, box,
       finalY: Number(bar.getAttribute('y')) || 0,
       finalH: Number(bar.getAttribute('height')) || 0,
       landed: 0, share: 0,
@@ -612,7 +698,13 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
 
   // A fixed budget of particles, allocated across bars by largest remainder so
   // the counts are exact and every drawn-from bin fires at least once.
-  const BUDGET = Math.max(24, Math.min(110, Math.round(n || 110)));
+  // Fewer particles, and a shorter stream to send them down — the animation
+  // was 3.55s end to end and read as waiting rather than watching. The cadence
+  // is deliberately unchanged: 110 over 2100ms was one every 19ms, 70 over
+  // 1250ms is one every 18ms, so it is the same rain for a shorter time rather
+  // than the same rain hurried. (Jeff, 2026-10-03: "takes a little too long so
+  // we probably want to speed it up or maybe draw fewer dots.")
+  const BUDGET = Math.max(24, Math.min(70, Math.round(n || 70)));
   const exact = slots.map(s => (s.box.height / totalH) * BUDGET);
   slots.forEach((s, i) => { s.share = Math.floor(exact[i]); });
   let left = BUDGET - slots.reduce((t, s) => t + s.share, 0);
@@ -636,9 +728,84 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
     [queue[i], queue[j]] = [queue[j], queue[i]];
   }
 
-  const STREAM = 2100, FLY = 430, HOLD = 220, GATHER = 560, SETTLE = 240;
-  const gap = queue.length > 1 ? STREAM / queue.length : 0;
-  const drawsPer = (n || queue.length) / (queue.length || 1);
+  // Fill the source bars with dots, hold, carry them across, let them become
+  // the resample's bars.
+  //
+  // The draw used to be a continuous rain: particles left the source one at a
+  // time and the target grew as each landed. It read as weather rather than as
+  // an act — nothing was ever *held*, so there was no moment at which the
+  // resample existed as a thing taken from somewhere. (Jeff, 2026-10-03: "I'm
+  // not a big fan of the sampling from a histogram animation, could we maybe
+  // stack orange dots in the original sample histogram and fly them to the
+  // resample histogram where they coalesce into the bars.")
+  //
+  // So it is the same three beats as the dart scoop and the card shuffle, which
+  // is the point — one grammar for every draw on the site:
+  //   1. TAKE   — each source bar fills bottom-up with its share of dots, so
+  //               the dots tile the bin they were drawn from and the stack IS
+  //               that bin's count.
+  //   2. HOLD   — they sit there. THIS is the resample, and it came from here.
+  //   3. CARRY  — they cross together, each to its own bin's place in the new
+  //               histogram, and the bars grow under them as they arrive.
+  //   4. MERGE  — the dots fade into the bars they have just built.
+  const TAKE = 760, HOLD = 380, CARRY = 700, MERGE = 300, GATHER = 420, SETTLE = 240;
+
+  /** Where each dot sits inside a bar: tiled bottom-up, so `share` fills it. */
+  const seat = (/** @type {DOMRect} */ box, /** @type {number} */ k,
+                /** @type {number} */ of, /** @type {number} */ jitter) => ({
+    x: box.left + box.width / 2 + (jitter - 0.5) * Math.max(0, box.width - 6),
+    y: box.bottom - (k + 0.5) * (Math.max(box.height, 4) / Math.max(of, 1)),
+  });
+
+  /** @type {{el: HTMLElement, slot: typeof slots[0], from: {x:number,y:number}, to: {x:number,y:number}, at: number, lift: number, shown: boolean, landed: boolean, size: number}[]} */
+  const dots = [];
+  let seq = 0;
+  const totalDots = slots.reduce((t, sl) => t + sl.share, 0);
+  for (const slot of slots) {
+    const src = (slot.origin ?? slot.src ?? slot.bar).getBoundingClientRect();
+    const size = Math.max(3, Math.min(6, Math.min(src.width, slot.box.width) * 0.55));
+    for (let k = 0; k < slot.share; k++) {
+      const j = Math.random();
+      dots.push({
+        el: document.createElement('div'), slot, size,
+        from: seat(src, k, slot.share, j),
+        to: seat(/** @type {DOMRect} */ ({
+          left: slot.box.left, width: slot.box.width,
+          bottom: slot.box.bottom, height: slot.finalH,
+        }), k, slot.share, j),
+        at: 0, lift: 0, shown: false, landed: false,
+      });
+    }
+  }
+  // Taken in a random order across the bars, so the fill reads as draws from the
+  // whole sample rather than one bin being emptied at a time.
+  for (let i = dots.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [dots[i], dots[j]] = [dots[j], dots[i]];
+  }
+  dots.forEach(d => { d.at = (seq++ / Math.max(totalDots, 1)) * TAKE; });
+
+  // Hide the resample: bare axes, nothing drawn.
+  for (const sl of slots) {
+    /** @type {SVGElement} */ (sl.bar).style.opacity = '0';
+    sl.bar.setAttribute('height', '0');
+    sl.bar.setAttribute('y', String(sl.finalY + sl.finalH));
+  }
+  // …and its MEAN, which was the one thing on the panel that did not wait.
+  // A mean marker on an empty axis is a claim about a resample that does not
+  // exist yet; it should arrive when the thing it summarises does. (Jeff,
+  // 2026-10-03: "I don't think the purple bar in the resamples should appear
+  // until after the dots fly and the aggregation happens.")
+  const meanBits = /** @type {SVGElement[]} */ ([...targetSvg.querySelectorAll(
+    '.mc-mean, .mc-mean-tri, .resample-mean-group, .overlays line, .overlays text')]);
+  for (const m of meanBits) m.style.opacity = '0';
+  /** Put the mean back, however this run ends. */
+  const showMean = (/** @type {boolean} */ fade) => {
+    for (const m of meanBits) {
+      if (fade) m.style.transition = 'opacity 260ms ease-out';
+      m.style.opacity = '1';
+    }
+  };
 
   const counter = document.createElementNS('http://www.w3.org/2000/svg', 'text');
   counter.setAttribute('class', 'dpr-draw-counter');
@@ -647,75 +814,92 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
   counter.setAttribute('text-anchor', 'end');
   counter.textContent = `0 / ${n ?? ''}`.trim();
   if (n) targetSvg.appendChild(counter);
+  const drawsPer = (n || dots.length) / (dots.length || 1);
 
-  /** @type {{el: HTMLElement, slot: typeof slots[0], sx:number, sy:number, at:number, launched:boolean}[]} */
-  const parts = queue.map((slot, i) => {
-    // From a random point INSIDE the bar it came from — the draw takes one
-    // observation out of that bin, not the bin itself.
-    const from = (slot.src ?? slot.bar).getBoundingClientRect();
-    return {
-      el: /** @type {HTMLElement} */ (document.createElement('div')),
-      slot,
-      sx: from.left + Math.random() * from.width,
-      sy: from.top + Math.random() * Math.max(from.height, 2),
-      at: i * gap,
-      launched: false,
-    };
+  // A little spread on the lift-off, so the bars FILL as the dots arrive rather
+  // than all appearing in one frame. Small enough that the crossing still reads
+  // as one movement — this is a carry, not a second rain.
+  const CARRY_SPREAD = 220;
+  dots.forEach((d, i) => { d.lift = (i / Math.max(dots.length - 1, 1)) * CARRY_SPREAD; });
+
+  const carryStart = TAKE + HOLD;
+  const total = carryStart + CARRY_SPREAD + CARRY + MERGE + GATHER + SETTLE;
+  const run = trackRun(() => {
+    for (const d of dots) d.el.remove();
+    counter.remove();
+    for (const sl of slots) {
+      sl.bar.setAttribute('y', String(sl.finalY));
+      sl.bar.setAttribute('height', String(sl.finalH));
+      /** @type {SVGElement} */ (sl.bar).style.removeProperty('opacity');
+    }
+    showMean(false);
   });
 
+  const place = (/** @type {typeof dots[0]} */ d, /** @type {number} */ x, /** @type {number} */ y) => {
+    d.el.style.left = `${x - d.size / 2}px`;
+    d.el.style.top = `${y - d.size / 2}px`;
+  };
+  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
   const t0 = performance.now();
-  const total = STREAM + FLY + HOLD + GATHER + SETTLE;
   let landedCount = 0;
 
-  function step(now) {
+  function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
     const elapsed = now - t0;
-    let running = false;
-    for (const pt of parts) {
-      const t = (elapsed - pt.at) / FLY;
-      if (t < 0) { running = true; continue; }
-      if (!pt.launched) {
-        pt.launched = true;
-        pt.el.className = 'dpr-draw';
-        pt.el.style.cssText = `position:fixed;left:${pt.sx - 3}px;top:${pt.sy - 3}px;`
-          + `width:6px;height:6px;border-radius:50%;background:${FLY_COLOR};`
-          + `z-index:1000;pointer-events:none;`;
-        document.body.appendChild(pt.el);
-        // The bar it came from flashes — and stays exactly as tall as it was.
-        if (pt.slot.src) pulseBar(pt.slot.src);
+    for (const d of dots) {
+      // TAKE: appear in the bin it came from, and flash that bin.
+      if (!d.shown) {
+        if (elapsed < d.at) continue;
+        d.shown = true;
+        d.el.className = 'dpr-draw';
+        d.el.style.cssText = `position:fixed;width:${d.size}px;height:${d.size}px;`
+          + `border-radius:50%;background:${FLY_COLOR};z-index:1000;pointer-events:none;`
+          + 'box-shadow:0 0 0 1px rgba(255,255,255,.75);';
+        place(d, d.from.x, d.from.y);
+        document.body.appendChild(d.el);
+        if (d.slot.src) pulseBar(d.slot.src);
       }
+      if (elapsed < carryStart + d.lift) continue;
+      // CARRY: together, each to its own place in the new bar.
+      const t = Math.min((elapsed - carryStart - d.lift) / CARRY, 1);
+      const e = ease(t);
+      place(d, d.from.x + (d.to.x - d.from.x) * e, d.from.y + (d.to.y - d.from.y) * e);
+      if (t >= 1 && !d.landed) {
+        d.landed = true;
+        landedCount++;
+        grow(d.slot);
+        if (n) counter.textContent = `${Math.min(n, Math.round(landedCount * drawsPer))} / ${n}`;
+      }
+      // MERGE: fade into the bar now underneath.
       if (t >= 1) {
-        if (pt.el.isConnected) {
-          pt.el.remove();
-          landedCount++;
-          grow(pt.slot);
-          if (n) counter.textContent = `${Math.min(n, Math.round(landedCount * drawsPer))} / ${n}`;
-        }
-        continue;
+        const m = Math.min((elapsed - carryStart - d.lift - CARRY) / MERGE, 1);
+        d.el.style.opacity = String(1 - m);
       }
-      running = true;
-      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      // Lands on the CURRENT top of its bar, which is where the next draw piles.
-      const ex = pt.slot.box.left + pt.slot.box.width / 2;
-      const ey = targetTop(pt.slot);
-      pt.el.style.left = `${pt.sx + (ex - pt.sx) * e - 3}px`;
-      pt.el.style.top = `${pt.sy + (ey - pt.sy) * e - 3}px`;
     }
-    if (running) { requestAnimationFrame(step); return; }
-    // Settle on the exact computed histogram, whatever rounding the stream did.
-    for (const s of slots) {
-      s.bar.setAttribute('y', String(s.finalY));
-      s.bar.setAttribute('height', String(s.finalH));
-      /** @type {SVGElement} */ (s.bar).style.removeProperty('opacity');
+    if (elapsed < carryStart + CARRY_SPREAD + CARRY + MERGE) { requestAnimationFrame(step); return; }
+
+    run.finish();
+    for (const d of dots) d.el.remove();
+    // Settle on the exact computed histogram, whatever rounding the carry did.
+    for (const sl of slots) {
+      sl.bar.setAttribute('y', String(sl.finalY));
+      sl.bar.setAttribute('height', String(sl.finalH));
+      /** @type {SVGElement} */ (sl.bar).style.removeProperty('opacity');
     }
     if (n) counter.textContent = `${n} / ${n}`;
+    // The histogram is built; NOW mark its mean. The gather that follows
+    // converges the bars onto it, so it has to be there — and arriving one beat
+    // before being converged on is exactly the right moment for it.
+    showMean(true);
     setTimeout(() => {
       counter.remove();
       gatherBars(targetSvg, tgtBars, GATHER, SETTLE, onDone);
-    }, HOLD);
+    }, 220);
   }
 
-  /** Grow a bar by one landed draw. */
-  function grow(slot) {
+  /** Grow a bar by one dot's worth. */
+  function grow(/** @type {typeof slots[0]} */ slot) {
     slot.landed++;
     const frac = Math.min(1, slot.landed / Math.max(1, slot.share));
     const h = slot.finalH * frac;
@@ -724,14 +908,27 @@ export function animateHistogramDraw({ sourceSvg, targetSvg, n, onDone }) {
     /** @type {SVGElement} */ (slot.bar).style.removeProperty('opacity');
   }
 
-  /** Screen y of a bar's current top — where the next draw piles on. */
-  function targetTop(slot) {
-    const frac = Math.min(1, slot.landed / Math.max(1, slot.share));
-    return slot.box.bottom - slot.box.height * frac;
-  }
-
   requestAnimationFrame(step);
   return total;
+}
+
+/**
+ * The colour a flyer should be, taken from the mark it leaves.
+ *
+ * Only an HTML mark with a real background answers; an SVG circle carries its
+ * colour in `fill`, and on those pages every dot is the same colour anyway, so
+ * returning null there keeps the flyer orange as before.
+ *
+ * @param {Element|null} src
+ * @returns {string|null}
+ */
+function srcColour(src) {
+  if (!src || src.namespaceURI !== 'http://www.w3.org/1999/xhtml') return null;
+  try {
+    const bg = getComputedStyle(/** @type {HTMLElement} */ (src)).backgroundColor;
+    if (!bg || bg === 'transparent' || /rgba\(0, 0, 0, 0\)/.test(bg)) return null;
+    return bg;
+  } catch { return null; }
 }
 
 /** A source bar flashes as a draw leaves it — and keeps its height. */
@@ -799,4 +996,690 @@ function gatherBars(svg, bars, dur, settle, onDone) {
     setTimeout(() => onDone?.(), settle);
   }
   requestAnimationFrame(step);
+}
+
+/** The two groups' shades during a shuffle — keyed to where a dot STARTED. */
+const POOL_SHADE = ['#569BBD', '#114B5F'];
+/** Pool, hold, deal, settle. */
+const POOL_MS = 720, POOL_HOLD = 380, DEAL_MS = 720, DEAL_SETTLE = 200;
+
+/**
+ * A shuffle, as the book draws it: gather both piles into one, deal back out.
+ *
+ * This is not a draw, and burst cannot be reused for it. Burst's whole
+ * vocabulary is repeats and misses — "this one was taken twice, that one never"
+ * — and a permutation has neither: every observation appears exactly once, in
+ * one group or the other, and the group sizes never change. What a shuffle has
+ * to say instead is that the VALUES did not change, only the labels did.
+ *
+ * So the dots pool on one scale and deal back out, and the deal moves them
+ * VERTICALLY only — a dot's x is its value, and a value that never moves
+ * sideways is a value that did not change. That is the whole argument of a
+ * randomization test, made a property of the picture rather than a sentence
+ * under it. (It is also why the two groups had to be stacked on one axis
+ * first; side by side, pooling moves everything sideways and the picture says
+ * the opposite.)
+ *
+ * Each flyer carries the shade of the group it STARTED in, so the pool visibly
+ * mixes and the dealt rows come out interleaved — otherwise pool-and-deal is
+ * dots going down and coming back up, with nothing to show that anything
+ * changed. The settled dots are uniform again; the shades belong to the act,
+ * not to the data.
+ *
+ * @param {object} opts
+ * @param {Element[][]} opts.sourceGroups - [group1, group2] circles, as drawn
+ * @param {Element[][]} opts.targetGroups - the same for the dealt panel
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
+  if (prefersReducedMotion()) return 0;
+  const src = [...(sourceGroups[0] ?? []), ...(sourceGroups[1] ?? [])];
+  const tgt = [...(targetGroups[0] ?? []), ...(targetGroups[1] ?? [])];
+  if (!src.length || src.length !== tgt.length) return 0;
+  dismissAirborneStat();
+
+  const centre = (/** @type {Element} */ c) => {
+    const r = c.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, size: Math.max(r.width, 7) };
+  };
+  // Pair each dealt dot with a source dot of the SAME VALUE. The permutation
+  // says which observation went where, but two observations with the same value
+  // are indistinguishable in this picture — matching on the value is both
+  // simpler and exactly as true, and it does not depend on the order the
+  // dotplot happens to put its circles in the DOM.
+  //
+  // On SCREEN position within its own plot, not on `cx`. The two rows' SVGs
+  // come out with slightly different viewBoxes, so one value is cx 62.80 in the
+  // top plot and 64.38 in the bottom — the same place on screen, a different
+  // number. Keying on `cx` paired only the dots whose groups happened to agree:
+  // 10 of 18. (2026-10-02.)
+  const relX = (/** @type {Element} */ c) => {
+    const own = /** @type {SVGGraphicsElement} */ (c).ownerSVGElement;
+    const r = c.getBoundingClientRect();
+    const o = own?.getBoundingClientRect();
+    return Math.round(r.left + r.width / 2 - (o?.left ?? 0));
+  };
+  // Paired BY RANK, not by position.
+  //
+  // Matching each dealt dot to a source dot at the same x was right in
+  // principle and wrong in fact: a dotplot BINS, and a bin's centre depends on
+  // the values in that plot. The shuffle hands the two plots the same 48
+  // values split differently, so the bins move and the x multisets no longer
+  // agree — measured on lizard_run, 10 of 48 dealt dots had no source within
+  // the 2px window the old lookup allowed. Those ten got no flyer, and a dot
+  // with no flyer was never hidden: ten dots sat in Step 2 while everything
+  // else flew, which is what a reader sees as "some dots remain". (Jeff,
+  // 2026-10-04, on a phone; it was doing it on every width.)
+  //
+  // Rank pairing is exact and total. A permutation preserves the multiset of
+  // values, so the kth smallest on the left IS the kth smallest on the right,
+  // whatever each plot did with its bins — and both sides have n dots, so
+  // every dealt dot gets exactly one source.
+  const ranked = (/** @type {Element[]} */ arr) =>
+    arr.map((c, i) => ({ c, i, x: relX(c) }))
+      .sort((a, b) => a.x - b.x || a.i - b.i);
+  const srcRank = ranked(src);
+  const n1src = sourceGroups[0]?.length ?? 0;
+  /** @type {Map<Element, {c: Element, group: number}>} */
+  const partner = new Map();
+  ranked(tgt).forEach((t, rank) => {
+    const m = srcRank[rank];
+    if (m) partner.set(t.c, { c: m.c, group: m.i < n1src ? 0 : 1 });
+  });
+  const claim = (/** @type {Element} */ dot) => partner.get(dot) ?? null;
+
+  const n1 = targetGroups[0]?.length ?? 0;
+  /** @type {Array<{el: HTMLElement, from: {x:number,y:number}, pool: {x:number,y:number}, to: {x:number,y:number}}>} */
+  const flyers = [];
+  // The pool sits BETWEEN the two plots, measured from the plots themselves.
+  // It used to be the midpoint of the two groups' first circles, which is a
+  // point that depends on how tall each stack happens to be — so the pile sat
+  // wherever the data put it, usually low. (Jeff, 2026-10-02: "the pooled
+  // distribution should land directly between the two histograms in Step 2,
+  // but it's lower".)
+  const plotBox = (/** @type {Element[]} */ g) => {
+    const svg = /** @type {SVGGraphicsElement} */ (g?.[0])?.ownerSVGElement;
+    return svg ? svg.getBoundingClientRect() : null;
+  };
+  const b1 = plotBox(targetGroups[0]), b2 = plotBox(targetGroups[1]);
+  const poolY = (b1 && b2)
+    ? (b1.bottom + b2.top) / 2
+    : ([targetGroups[0], targetGroups[1]].map(g => g?.length ? centre(g[0]).y : 0)
+        .reduce((a, b) => a + b, 0) / 2);
+
+  tgt.forEach((dot, i) => {
+    const match = claim(dot);
+    if (!match) return;
+    const from = centre(match.c);
+    const to = centre(dot);
+    const el = document.createElement('div');
+    el.className = 'dpr-flyer dpr-shuffle';
+    el.style.cssText = `position:fixed;left:${from.x - to.size / 2}px;top:${from.y - to.size / 2}px;`
+      + `width:${to.size}px;height:${to.size}px;border-radius:50%;`
+      + `background:${POOL_SHADE[match.group]};z-index:1000;pointer-events:none;`;
+    document.body.appendChild(el);
+    /** @type {SVGElement} */ (dot).style.opacity = '0';
+    flyers.push({ el, from, pool: { x: to.x, y: poolY }, to, dot, rank: i, group: i < n1 ? 0 : 1 });
+  });
+  if (!flyers.length) return 0;
+
+  // The mean a deal has not produced yet.
+  //
+  // The dealt plot draws its x̄* with the panel, so the statistic was on screen
+  // in full while the dots that make it were still in the air — the same thing
+  // the histogram handover was corrected for ("I don't think the purple bar in
+  // the resamples should appear until after the dots fly and the aggregation
+  // happens", Jeff, 2026-10-03), in the one path that had not been. It arrives
+  // when the dots do. (Jeff, 2026-10-04: "yes, fix".)
+  const marks = [...new Set(tgt.map(d => /** @type {SVGGraphicsElement} */ (d).ownerSVGElement))]
+    .map(svg => /** @type {SVGElement|null} */ (svg?.querySelector('g.overlays')))
+    .filter(Boolean);
+  for (const m of marks) {
+    m.style.transition = 'none';
+    m.style.opacity = '0';
+  }
+  const showMarks = (/** @type {boolean} */ fade) => {
+    for (const m of marks) {
+      m.style.transition = fade ? 'opacity 260ms ease' : 'none';
+      m.style.opacity = '1';
+    }
+  };
+
+  const run = trackRun(() => {
+    for (const f of flyers) {
+      f.el.remove();
+      /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
+    }
+    showMarks(false);
+  });
+
+  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const total = POOL_MS + POOL_HOLD + DEAL_MS + DEAL_SETTLE;
+  const t0 = performance.now();
+
+  function step(now) {
+    if (run.stopped()) return;
+    const e = now - t0;
+    for (const f of flyers) {
+      let x, y;
+      if (e < POOL_MS) {
+        const t = ease(e / POOL_MS);
+        x = f.from.x + (f.pool.x - f.from.x) * t;
+        y = f.from.y + (f.pool.y - f.from.y) * t;
+      } else if (e < POOL_MS + POOL_HOLD) {
+        x = f.pool.x; y = f.pool.y;
+      } else {
+        // Vertical only: x is already the value's place in the dealt panel.
+        const t = ease(Math.min((e - POOL_MS - POOL_HOLD) / DEAL_MS, 1));
+        x = f.to.x;
+        y = f.pool.y + (f.to.y - f.pool.y) * t;
+      }
+      f.el.style.left = `${x - f.el.offsetWidth / 2}px`;
+      f.el.style.top = `${y - f.el.offsetHeight / 2}px`;
+    }
+    if (e < POOL_MS + POOL_HOLD + DEAL_MS) { requestAnimationFrame(step); return; }
+    run.finish();
+    for (const f of flyers) {
+      /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
+      f.el.style.transition = `opacity ${DEAL_SETTLE}ms ease-out`;
+      f.el.style.opacity = '0';
+      setTimeout(() => f.el.remove(), DEAL_SETTLE + 60);
+    }
+    // …and the mean arrives with them, now that there is a sample to take it of.
+    showMarks(true);
+    setTimeout(() => onDone?.(), DEAL_SETTLE);
+  }
+  requestAnimationFrame(step);
+  return total;
+}
+
+// ─── Scooping from a population: darts on a board ───────────────────────
+
+/** Throw cadence, flight, the beat on the board, and the lift-off. */
+const DART_THROW = 320, DART_HOLD = 520, DART_FLY = 760;
+
+/**
+ * Sample from a population by throwing darts at it.
+ *
+ * Three visible phases, because the *sampling* is the thing being taught:
+ *
+ *   1. THROW — darts rain onto the board and stick, with a small overshoot
+ *      bounce, at uniform random spots. A dart landing left of the split is a
+ *      success, right of it a failure: it takes the colour of wherever it hit,
+ *      so the outcome is something the board decides, not something the dart
+ *      brought with it.
+ *   2. HOLD — the stuck darts sit there for a beat. *This* is the random
+ *      sample of n points we just grabbed.
+ *   3. FLY — they lift off and fly to their places in the sample, growing into
+ *      dots, and leave a faint footprint behind so the board keeps showing
+ *      where this sample came from.
+ *
+ * Written for the Sampling Distribution Lab and lifted here when the
+ * one-proportion randomization test needed the same picture: both draw n
+ * independent observations from a population whose success fraction is known —
+ * p in the Lab, p₀ under the null — which is one mechanism, and was one
+ * animation written once. The two differ only in the shape of the board (a
+ * square there, a deepened bar inside a strip panel here).
+ *
+ * ⚠ `rand` is DECORATION — where on the board each dart happens to land. It
+ * must never be the page's statistical rng: drawing from that stream here
+ * would change the sample itself, and the same `?seed=` would stop producing
+ * the same numbers. The outcomes are decided before this function is called;
+ * all it chooses is splatter.
+ *
+ * @param {object} opts
+ * @param {HTMLElement} opts.board - the area being sampled, split left|right
+ * @param {number} opts.split - 0..1, the success fraction (the boundary's x)
+ * @param {HTMLElement[]} opts.targets - the sample's marks, successes first
+ * @param {number} opts.successCount - how many of `targets` are successes
+ * @param {(isSuccess: boolean) => string} opts.flyerClass - class for a dart
+ * @param {((isSuccess: boolean) => string)|null} [opts.ghostClass] - class for the
+ *   footprint left behind; null leaves no footprints
+ * @param {number} [opts.max] - decline above this many darts (too many flyers)
+ * @param {() => number} [opts.rand] - decorative randomness only; see above
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animateDartScoop({ board, split, targets, successCount,
+    flyerClass, ghostClass = null, max = 100, rand = Math.random, onDone }) {
+  const done = () => { if (onDone) onDone(); };
+  if (prefersReducedMotion() || !board || !targets?.length || targets.length > max) {
+    done();
+    return 0;
+  }
+  // Only the CURRENT sample is marked, so last draw's footprints go first.
+  board.querySelectorAll('[data-scoop-ghost]').forEach(g => g.remove());
+
+  const bd = board.getBoundingClientRect();
+  if (!bd.width || !bd.height) { done(); return 0; }
+  const splitX = bd.left + Math.max(0, Math.min(1, split)) * bd.width;
+  const n = targets.length;
+  targets.forEach(t => { t.style.visibility = 'hidden'; });
+
+  // Overshoot ease, so each dart snaps onto the board and settles — a "stick".
+  const easeOutBack = (/** @type {number} */ t) => {
+    const c1 = 1.70158, c3 = c1 + 1;
+    return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+  };
+
+  const STAGGER = Math.min(420 / n, 22);   // launch cadence — a rat-a-tat
+  const flyStart = (n - 1) * STAGGER + DART_THROW + DART_HOLD;
+  const total = flyStart + DART_FLY;
+
+  // Throw them in a RANDOM order.
+  //
+  // A dart's destination is its dot, and the dots are sorted successes-first so
+  // the amber fraction is p̂ — which meant dart i launched in that order too, and
+  // every amber dart was thrown before any blue one. The picture said: first we
+  // draw the successes, then we draw the failures. The whole claim of the
+  // mechanism is that each observation is an independent draw, and watching the
+  // board fill left-to-right-by-outcome contradicts it.
+  //
+  // So the LAUNCH ORDER is shuffled while each dart keeps its own landing spot
+  // and its own dot. Nothing about the sample changes — only when each dart
+  // leaves. (Jeff, 2026-10-03.)
+  const order = targets.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+  /** slot[i] = when dart i is thrown, as a position in the cadence. */
+  const slot = new Array(n);
+  order.forEach((idx, pos) => { slot[idx] = pos; });
+
+  const flyers = targets.map((mark, i) => {
+    const isSuccess = i < successCount;    // targets are sorted: successes first
+    // Landing spot: a uniform point inside the matching region of the board.
+    const lx = isSuccess
+      ? bd.left + rand() * (splitX - bd.left)
+      : splitX + rand() * (bd.right - splitX);
+    const ly = bd.top + rand() * bd.height;
+    const tr = mark.getBoundingClientRect();
+    const endSz = tr.width || 16;
+    const landSz = Math.max(7, endSz * 0.55);  // a dart tip; it grows as it flies
+    const dot = document.createElement('div');
+    dot.className = flyerClass(isSuccess);
+    // White ring + shadow so a dart stays visible when it lands on a region of
+    // its own colour (amber on amber, blue on blue) and reads as sitting ON
+    // the board rather than being part of it.
+    dot.style.cssText = `position:fixed;left:0;top:0;width:${landSz}px;height:${landSz}px;`
+      + 'z-index:1000;pointer-events:none;opacity:0;'
+      + 'box-shadow:0 0 0 1.5px #fff, 0 2px 4px rgba(0,0,0,.45);';
+    document.body.appendChild(dot);
+    return {
+      dot, isSuccess, launchTime: slot[i] * STAGGER, lx, ly, landSz, endSz,
+      // Launched from above the board with a little drift, so it reads as thrown.
+      launchX: lx + (rand() - 0.5) * 50,
+      launchY: bd.top - 70 - rand() * 40,
+      // The landing spot as a fraction of the board, for the footprint — the
+      // board can be resized or re-rendered between draws.
+      pctX: ((lx - bd.left) / bd.width) * 100,
+      pctY: ((ly - bd.top) / bd.height) * 100,
+      ex: tr.left + tr.width / 2, ey: tr.top + tr.height / 2,
+    };
+  });
+
+  const place = (/** @type {HTMLElement} */ el, /** @type {number} */ cx,
+                 /** @type {number} */ cy, /** @type {number} */ sz) => {
+    el.style.left = `${cx - sz / 2}px`;
+    el.style.top = `${cy - sz / 2}px`;
+    el.style.width = `${sz}px`;
+    el.style.height = `${sz}px`;
+  };
+
+  const run = trackRun(() => {
+    for (const f of flyers) f.dot.remove();
+    targets.forEach(t => { t.style.removeProperty('visibility'); });
+  });
+
+  let ghostsPlaced = false;
+  const t0 = performance.now();
+  function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
+    const elapsed = now - t0;
+    // The instant the darts lift off, stamp the footprints they leave.
+    if (elapsed >= flyStart && !ghostsPlaced) {
+      ghostsPlaced = true;
+      if (ghostClass) {
+        for (const f of flyers) {
+          const g = document.createElement('div');
+          g.className = ghostClass(f.isSuccess);
+          g.dataset.scoopGhost = '1';
+          const gSz = Math.max(9, f.landSz);  // sized so the fill shows under the ring
+          g.style.left = `${f.pctX}%`;
+          g.style.top = `${f.pctY}%`;
+          g.style.width = `${gSz}px`;
+          g.style.height = `${gSz}px`;
+          board.appendChild(g);
+        }
+      }
+    }
+    for (const f of flyers) {
+      if (elapsed < flyStart) {
+        // THROW + HOLD: the dart drops onto the board, sticks, then waits.
+        const tLand = elapsed - f.launchTime;
+        if (tLand <= 0) { f.dot.style.opacity = '0'; place(f.dot, f.launchX, f.launchY, f.landSz); continue; }
+        f.dot.style.opacity = String(Math.min(tLand / 70, 1));
+        const e = easeOutBack(Math.min(tLand / DART_THROW, 1));
+        place(f.dot, f.launchX + (f.lx - f.launchX) * e, f.launchY + (f.ly - f.launchY) * e, f.landSz);
+      } else {
+        // FLY: lift off the board and grow into the sample's dot.
+        const ft = Math.min((elapsed - flyStart) / DART_FLY, 1);
+        const e = ft < 0.5 ? 4 * ft * ft * ft : 1 - Math.pow(-2 * ft + 2, 3) / 2;
+        const sz = f.landSz + (f.endSz - f.landSz) * e;
+        place(f.dot, f.lx + (f.ex - f.lx) * e, f.ly + (f.ey - f.ly) * e, sz);
+      }
+    }
+    if (elapsed < total) requestAnimationFrame(step);
+    else {
+      run.finish();
+      targets.forEach(t => { t.style.removeProperty('visibility'); });
+      flyers.forEach(f => f.dot.remove());
+      done();
+    }
+  }
+  requestAnimationFrame(step);
+  return total;
+}
+
+// ─── Two statistics becoming one ────────────────────────────────────────
+
+/** Converge, then let the result settle before it travels on. */
+const COMBINE_STAT_MS = 620, COMBINE_STAT_SETTLE = 180;
+
+/**
+ * Fly two group statistics together into the one they make.
+ *
+ * On a two-group page the difference used to appear in the readout and then
+ * set off for the distribution, which skips the step that matters: the number
+ * being plotted is not a thing either group has, it is what you get by taking
+ * one from the other. So the two means leave their own markers, meet on the
+ * difference, and only then does the difference fly to the chart.
+ * (Jeff, 2026-10-03: "say the sample means for each group first fly together to
+ * suggest taking the difference then having it fly to the resampling
+ * distribution.")
+ *
+ * Each flyer carries the colour of the marker it left, so the two arriving dots
+ * are visibly the two lines you were just looking at.
+ *
+ * @param {object} opts
+ * @param {Element[]} opts.sources - the markers the statistics leave from
+ * @param {Element} opts.target - where they meet (the difference readout)
+ * @param {() => void} [opts.onDone]
+ * @returns {number} ms before the result is ready to travel on, 0 if it declined
+ */
+export function animateCombineStats({ sources, target, onDone }) {
+  const done = () => { if (onDone) onDone(); };
+  const srcs = (sources ?? []).filter(Boolean);
+  if (prefersReducedMotion() || srcs.length < 2 || !target) { done(); return 0; }
+  // Whatever a per-group draw parked is not what flies to the distribution.
+  //
+  // Each group's own resample animation parks its merged statistic on that
+  // group's mean marker, for `animateDropToChart` to pick up — right on a
+  // one-sample page, where that IS the statistic being plotted. Here it is one
+  // of the two values about to be combined, so leaving it parked made the
+  // DIFFERENCE set off from inside one of the resamples, undoing the journey
+  // this function has just finished explaining. (Jeff, 2026-10-03: "the
+  // difference mean should fly from that corner … right now it originates from
+  // between the two resamples.")
+  dismissAirborneStat();
+
+  const tb = target.getBoundingClientRect();
+  if (!tb.width && !tb.height) { done(); return 0; }
+  const tx = tb.left + tb.width / 2;
+  const ty = tb.top + tb.height / 2;
+
+  const flyers = srcs.map((el) => {
+    const r = el.getBoundingClientRect();
+    // A marker line has zero width; its centre is still where it is.
+    const sx = r.left + r.width / 2;
+    const sy = r.top + r.height / 2;
+    const colour = el.getAttribute?.('stroke') || '#7B2D8E';
+    const dot = document.createElement('div');
+    dot.className = 'stat-combine-flyer';
+    dot.style.cssText = 'position:fixed;width:12px;height:12px;border-radius:50%;'
+      + `background:${colour};z-index:1000;pointer-events:none;`
+      + 'box-shadow:0 0 0 2px #fff, 0 1px 3px rgba(0,0,0,.4);'
+      + `left:${sx - 6}px;top:${sy - 6}px;`;
+    document.body.appendChild(dot);
+    return { dot, sx, sy };
+  });
+
+  const run = trackRun(() => { for (const f of flyers) f.dot.remove(); });
+
+  const t0 = performance.now();
+  function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
+    const t = Math.min((now - t0) / COMBINE_STAT_MS, 1);
+    // Ease out: they set off quickly and arrive together, which is what makes
+    // the meeting read as one event rather than two arrivals.
+    const e = 1 - Math.pow(1 - t, 3);
+    for (const f of flyers) {
+      f.dot.style.left = `${f.sx + (tx - f.sx) * e - 6}px`;
+      f.dot.style.top = `${f.sy + (ty - f.sy) * e - 6}px`;
+      // Fade only at the very end, so they are solid for the whole journey and
+      // vanish INTO the number rather than before reaching it.
+      if (t > 0.86) f.dot.style.opacity = String((1 - t) / 0.14);
+    }
+    if (t < 1) requestAnimationFrame(step);
+    else { run.finish(); flyers.forEach(f => f.dot.remove()); done(); }
+  }
+  requestAnimationFrame(step);
+  return COMBINE_STAT_MS + COMBINE_STAT_SETTLE;
+}
+
+/* ─── A shuffle of OUTCOMES: emerge, scramble, deal ───────────────────────── */
+
+/** Emerge, scramble in the pool, deal, settle. */
+/**
+ * Emerge, mix, deal, settle.
+ *
+ * The mix is three passes, not one. A single swap between two random positions
+ * is a permutation and reads as a twitch — the pile shifts and resettles, and
+ * nothing about it says the outcomes were thoroughly mixed. Three fast passes
+ * churn: a mark crosses the pile, is crossed by others, and ends somewhere it
+ * could not be traced to. (Jeff, 2026-10-04: "when the dots get pooled the
+ * animation doesn't look like it mixes well … I'd like something more
+ * suggestive of a rigorous shuffle".)
+ *
+ * And the deal is dealt — one mark at a time, alternating between the two
+ * groups, fast enough to be a riffle and slow enough to be a sequence. That is
+ * the card metaphor the page offers in its other rendering, made the same here.
+ */
+const MARK_EMERGE = 520, MARK_MIX_PASS = 200, MARK_MIX_PASSES = 3;
+const MARK_FLIGHT = 380, MARK_DEAL_SPAN = 880, MARK_SETTLE = 140;
+
+/**
+ * The two-proportion shuffle, drawn as what it is: the outcomes come out of
+ * both groups, get mixed, and are dealt back into groups of the same sizes.
+ *
+ * `animatePoolAndDeal` above does this for two stacked DOTPLOTS, where a dot's
+ * x is its value and the deal is therefore purely vertical — that is the whole
+ * argument of the test made a property of the picture. A proportion block has
+ * no such axis: position inside a block is just reading order, and what must
+ * not change is the OUTCOME each mark carries. So this version pairs source to
+ * target by outcome, and keeps each mark's colour the whole way across — the
+ * amber that leaves a group arrives as amber in the other one. Only the group
+ * it belongs to changed, which is the null hypothesis, animated.
+ *
+ * The middle beat is the one the dotplot version does not have. Pooling and
+ * dealing on its own is dots going out and coming back; a visible scramble in
+ * the pile is what says the re-allocation was arbitrary. (Jeff, 2026-10-03:
+ * "we could somehow have dots emerge, scramble, then be 'dealt' into the
+ * shuffle".)
+ *
+ * The scramble's randomness is DECORATIVE and uses Math.random deliberately:
+ * the permutation itself was drawn from the seeded stream long before this
+ * runs, and a seeded tool whose pictures differ run to run would still be
+ * reproducible where it counts. Nothing here reads or advances that stream.
+ *
+ * @param {object} opts
+ * @param {HTMLElement[][]} opts.sourceGroups - [group1, group2] marks, as drawn
+ * @param {HTMLElement[][]} opts.targetGroups - the same for the dealt panel
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animatePoolAndDealMarks({ sourceGroups, targetGroups, onDone }) {
+  if (prefersReducedMotion()) return 0;
+  const src = [...(sourceGroups?.[0] ?? []), ...(sourceGroups?.[1] ?? [])];
+  const tgt = [...(targetGroups?.[0] ?? []), ...(targetGroups?.[1] ?? [])];
+  if (!src.length || src.length !== tgt.length) return 0;
+
+  const isSuccess = (/** @type {Element} */ el) =>
+    el.classList.contains('pbm-success') || el.classList.contains('is-success');
+  // A permutation moves labels, not outcomes, so the two sides hold the same
+  // counts. If they do not, this is not the picture being asked for — decline
+  // rather than draw a lie.
+  const srcS = src.filter(isSuccess), srcF = src.filter(e => !isSuccess(e));
+  const tgtS = tgt.filter(isSuccess), tgtF = tgt.filter(e => !isSuccess(e));
+  if (srcS.length !== tgtS.length) return 0;
+  dismissAirborneStat();
+
+  const box = (/** @type {Element} */ el) => el.getBoundingClientRect();
+  const centre = (/** @type {Element} */ el) => {
+    const r = box(el);
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+  // The pool sits between the two panels, measured from where the marks
+  // actually are — so it lands in the gap whether the panels are side by side
+  // (strip) or stacked (tiers).
+  const union = (/** @type {Element[]} */ g) => {
+    const rs = g.map(box);
+    if (!rs.length) return null;
+    return {
+      l: Math.min(...rs.map(r => r.left)), r: Math.max(...rs.map(r => r.right)),
+      t: Math.min(...rs.map(r => r.top)), b: Math.max(...rs.map(r => r.bottom)),
+    };
+  };
+  const ua = union(src), ub = union(tgt);
+  if (!ua || !ub) return 0;
+  const mid = (/** @type {{l:number,r:number,t:number,b:number}} */ u) =>
+    ({ x: (u.l + u.r) / 2, y: (u.t + u.b) / 2 });
+  const pool = { x: (mid(ua).x + mid(ub).x) / 2, y: (mid(ua).y + mid(ub).y) / 2 };
+
+  // Pair by outcome, in order: which particular amber becomes which other
+  // amber is not a fact this picture has, and claiming one would be inventing
+  // detail the permutation never produced.
+  const queueS = [...srcS], queueF = [...srcF];
+  /** @type {{el: HTMLElement, dot: HTMLElement, from: {x:number,y:number}, to: {x:number,y:number}, p1: {x:number,y:number}, p2: {x:number,y:number}}[]} */
+  const flyers = [];
+  const size = Math.max(box(src[0]).width, 6);
+  const height = Math.max(box(src[0]).height, 6);
+  // A PILE, not a third block: the marks shrink on the way in and overlap, so
+  // it reads as a heap that could not be counted — which is the point of the
+  // beat. A tidy grid at full size covered both panels (90 marks at 20px is
+  // 300×200 of strip) and looked like a third display rather than a transit.
+  const POOL_SCALE = 0.62;
+  const poolW = size * POOL_SCALE, poolH = height * POOL_SCALE;
+  const cols = Math.max(3, Math.ceil(Math.sqrt(tgt.length * 1.6)));
+  const rows = Math.ceil(tgt.length / cols);
+  const gapX = poolW * 0.86, gapY = poolH * 0.86;
+  const slot = (/** @type {number} */ i) => ({
+    x: pool.x + ((i % cols) - (cols - 1) / 2) * gapX,
+    y: pool.y + (Math.floor(i / cols) - (rows - 1) / 2) * gapY,
+  });
+  const shuffled = (/** @type {number} */ n) => {
+    const a = [...Array(n).keys()];
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  // One slot arrangement per beat: into the pile, then a fresh permutation for
+  // each mixing pass. Successive passes mean marks cross each other repeatedly
+  // rather than trading places once.
+  const stops = Array.from({ length: MARK_MIX_PASSES + 1 }, () => shuffled(tgt.length));
+
+  // Dealt alternately into the two groups — one for this pile, one for that —
+  // which is what makes the split read as a deal rather than a cut.
+  const n1t = targetGroups[0]?.length ?? 0;
+  const dealOrder = new Array(tgt.length);
+  {
+    let a = 0, bIdx = n1t, k = 0;
+    while (a < n1t || bIdx < tgt.length) {
+      if (a < n1t) dealOrder[a++] = k++;
+      if (bIdx < tgt.length) dealOrder[bIdx++] = k++;
+    }
+  }
+  const stagger = tgt.length > 1 ? Math.min(16, MARK_DEAL_SPAN / (tgt.length - 1)) : 0;
+
+  tgt.forEach((dot, i) => {
+    const source = (isSuccess(dot) ? queueS : queueF).shift();
+    if (!source) return;
+    const cs = getComputedStyle(source);
+    const from = centre(source);
+    const to = centre(dot);
+    const el = document.createElement('div');
+    el.className = 'dpr-flyer dpr-shuffle-mark';
+    el.style.cssText = `position:fixed;left:${from.x - size / 2}px;top:${from.y - size / 2}px;`
+      + `width:${size}px;height:${height}px;`
+      + `border-radius:${cs.borderRadius};background:${cs.backgroundColor};`
+      + `border:${cs.borderWidth} solid ${cs.borderColor};box-sizing:border-box;`
+      + 'z-index:1000;pointer-events:none;';
+    document.body.appendChild(el);
+    dot.style.opacity = '0';
+    flyers.push({ el, dot, from, to,
+      path: stops.map(order => slot(order[i])),
+      delay: dealOrder[i] * stagger });
+  });
+  if (!flyers.length) return 0;
+
+  const run = trackRun(() => {
+    for (const f of flyers) { f.el.remove(); f.dot.style.removeProperty('opacity'); }
+  });
+
+  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const MIX_MS = MARK_MIX_PASS * MARK_MIX_PASSES;
+  const DEAL_AT = MARK_EMERGE + MIX_MS;
+  const lastDeal = flyers.reduce((m, f) => Math.max(m, f.delay), 0);
+  const total = DEAL_AT + lastDeal + MARK_FLIGHT + MARK_SETTLE;
+  const t0 = performance.now();
+
+  function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
+    const e = now - t0;
+    for (const f of flyers) {
+      if (!f.el.isConnected) continue;
+      let x, y, k;
+      if (e < MARK_EMERGE) {
+        // Out of the block and into the pile.
+        const t = ease(e / MARK_EMERGE);
+        k = t;
+        x = f.from.x + (f.path[0].x - f.from.x) * t;
+        y = f.from.y + (f.path[0].y - f.from.y) * t;
+      } else if (e < DEAL_AT) {
+        // Mixing: pass by pass, each one a fresh arrangement of the pile.
+        const into = Math.min(MARK_MIX_PASSES - 1, Math.floor((e - MARK_EMERGE) / MARK_MIX_PASS));
+        const t = ease(((e - MARK_EMERGE) % MARK_MIX_PASS) / MARK_MIX_PASS);
+        const a = f.path[into], b = f.path[into + 1];
+        k = 1;
+        x = a.x + (b.x - a.x) * t;
+        y = a.y + (b.y - a.y) * t;
+      } else {
+        // Dealt, in turn. Before its turn a mark simply waits in the pile.
+        const held = f.path[MARK_MIX_PASSES];
+        const t = ease(Math.max(0, Math.min(1, (e - DEAL_AT - f.delay) / MARK_FLIGHT)));
+        k = 1 - t;
+        x = held.x + (f.to.x - held.x) * t;
+        y = held.y + (f.to.y - held.y) * t;
+        if (t >= 1) { f.el.remove(); f.dot.style.removeProperty('opacity'); continue; }
+      }
+      // Size follows the journey: full in the blocks, small in the pile.
+      const w = size + (poolW - size) * k, h = height + (poolH - height) * k;
+      f.el.style.width = `${w}px`;
+      f.el.style.height = `${h}px`;
+      f.el.style.left = `${x - w / 2}px`;
+      f.el.style.top = `${y - h / 2}px`;
+    }
+    if (e < total) requestAnimationFrame(step);
+    else {
+      run.finish();
+      for (const f of flyers) { f.el.remove(); f.dot.style.removeProperty('opacity'); }
+      onDone?.();
+    }
+  }
+  requestAnimationFrame(step);
+  return total;
 }

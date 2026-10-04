@@ -265,7 +265,7 @@ These parameters are available across most pages via the shared `parseParams()` 
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a dataset with numeric and categorical variables | `dataset=stem_cell` |
 
-**Compatible Datasets:** Datasets where `hasNumeric === true` AND `hasCategorical === true`. Includes: `stem_cell`, `births14_smoke`, `ncbirths_smoke`, `lizard_run`, `epa2021_mpg`, `classdata`, `nyc_marathon`, `mlb_players_18`, `plant_growth`, `hsb2_math`, `evals_rank`, `fastfood_anova`
+**Compatible Datasets:** Datasets where `hasNumeric === true` AND `hasCategorical === true`. Includes: `stem_cell`, `births14_smoke`, `ncbirths_smoke`, `lizard_run`, `epa2021_mpg`, `exercise_hours`, `classdata`, `nyc_marathon`, `mlb_players_18`, `plant_growth`, `hsb2_math`, `evals_rank`, `fastfood_anova`
 
 **Textbook Integration Notes:** Use for comparing groups before introducing formal two-sample tests (Ch. 20) or ANOVA (Ch. 22). The density overlay is useful for checking normality conditions.
 
@@ -437,7 +437,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `seed` | string | Deterministic seed | `seed=demo` |
 | `ci` | integer | Confidence level | `ci=95` |
 
-**Compatible Datasets:** Datasets with `type === 'randomization'` (numeric response, categorical group). Includes: `stem_cell`, `births14_smoke`, `ncbirths_smoke`, `lizard_run`, `epa2021_mpg`
+**Compatible Datasets:** Datasets with `type === 'randomization'` (numeric response, categorical group). Includes: `stem_cell`, `births14_smoke`, `ncbirths_smoke`, `lizard_run`, `epa2021_mpg`, `exercise_hours`
 
 **Textbook Integration Notes:** Use for Ch. 20 (two-sample bootstrap). Often used back-to-back with the randomization test page for the same dataset to compare CI vs hypothesis test approaches.
 
@@ -526,6 +526,15 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a two-group categorical dataset | `dataset=sex_discrimination` |
 | `seed` | string | Deterministic seed | `seed=demo` |
 | `direction` | string | Alternative direction | `direction=greater` |
+| `mechanism` | string | `cards` opens in the dealt-card view (small groups only) | `mechanism=cards` |
+| `cardcolor` | string | Which card colour is the success: `red` (default) or `white` | `cardcolor=white` |
+| `mechstyle` | string | `aggregate` for the summary bar instead of one mark per observation | `mechstyle=aggregate` |
+
+**Mechanism strip (2026-10-03):** each group is drawn as a block with **one mark per
+observation** (the summary bar takes over past ~120 per group), and a shuffle animates as
+*emerge → scramble → deal* between the panels. **Draw as: Dots | Cards** sits beside Step 1;
+the card view deals red = success by default (`cardcolor` or the on-screen **Swap colours**
+button changes that). A colour key under the strip names both outcomes.
 
 **Compatible Datasets:** Datasets with `type === 'randomization_prop'`. Includes: `sex_discrimination`, `opportunity_cost`, `cpr`, `yawn`, `heart_transplant`, `malaria`, `migraine`, `fish_oil_18`, `mammogram`, `resume`, `biontech_adolescents`, `sinusitis`, `smallpox`
 

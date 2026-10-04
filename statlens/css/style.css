@@ -1432,40 +1432,434 @@ input[aria-invalid="true"] {
   .mech-bottom-bar { flex-direction: column; gap: 6px; }
 }
 
+/* ===== One mark per observation =====
+
+   The marble grid and the shuffling cards are the same object drawn twice: one
+   mark per observation, success or failure. They arrived as two components with
+   two class families, two geometries and two colour schemes, so a reader meets
+   amber squares (hatched, at the time) on the bootstrap page and red cards on the
+   randomization test for the identical thing (measured 2026-09-30, see
+   docs/mechanism-survey-2026-09.md §3). What legitimately differs between those
+   pages is the MECHANISM — drawing with replacement vs re-allocating — and that
+   belongs in the animation, which already differs.
+
+   So geometry and colour both come from here now, and each context sets its own
+   values. Today they are set to what each page already looked like, so nothing
+   moves.
+
+   ┌─ FALL 2027: making them the same is THE `.mech-card-display` BLOCK BELOW ─┐
+   │ Delete its five `--obs-*` lines and the cards take the amber-and-blue     │
+   │ defaults from here — the CVD-safe Okabe-Ito pair. That is the colour     │
+   │ change, and it is all of it. (The redundant non-colour cue is position    │
+   │ and the labels; the hatch that used to do it came out on 2026-10-03.)     │
+   │                                                                          │
+   │ Its four `--mark-*` lines are SHAPE, not colour. Keep them and the cards  │
+   │ stay card-shaped in amber and blue; delete them too and both become the   │
+   │ grid's 15px square. Verified by deleting the rule in a live page: the     │
+   │ cards went to #C08700, and to 15×15 when the shape lines went             │
+   │ with it. Decide the shape separately from the colour. (Jeff, 2026-10-01.) │
+   └──────────────────────────────────────────────────────────────────────────┘ */
+:root {
+  --obs-success-bg: #C08700;
+  /* NO HATCH on success, since 2026-10-03.
+   *
+   * It was there as a redundant non-colour cue, and it was costing more than it
+   * bought. Measured: the in-bar count is near-black and reads at 5.56:1 on
+   * plain amber but drops to 2.71:1 wherever a stripe crosses it — under even
+   * the 3:1 a graphical element needs, let alone AA — and the stripes are
+   * 2.05:1 against the base, loud enough to interfere with the dart footprints
+   * on the amber half of a board too.
+   *
+   * What it was for is still covered twice over, without colour: POSITION
+   * (successes are always first, contiguous) and the literal labels, "24 S" and
+   * "10 F". And the pair is Okabe-Ito, chosen because it separates on the
+   * blue-yellow axis that red-green CVD preserves — simulated, amber and blue
+   * stay distinct hues under protanopia (#8f8f04 vs #6c6cb2) and deuteranopia
+   * (#9b9b00 vs #6161b3).
+   *
+   * The one case it genuinely helped is greyscale: the luminance ratio is
+   * 1.38-1.83:1 under simulation, so a black-and-white printout leans entirely
+   * on position and the labels.
+   *
+   * It also ends an inconsistency — `.pbm-dot.pbm-success` had already opted
+   * out, so a success was striped in a bar and solid as a dot.
+   * (Jeff, 2026-10-03: "I think it makes text and dots drawn in the amber part
+   * harder to read… take out the hatching in the simulation tools.")
+   *
+   * The Sampling Distribution Lab keeps its own, page-local copy: it is not one
+   * of the simulation tools, and nothing but footprints sits on its board.
+   */
+  --obs-success-pattern: none;
+  --obs-success-edge: transparent;
+  --obs-failure-bg: #0072B2;
+  --obs-failure-edge: transparent;
+}
+.obs-mark {
+  width: var(--mark-w, 14px);
+  height: calc(var(--mark-w, 14px) * var(--mark-ratio, 1));
+  border-radius: var(--mark-radius, 3px);
+  border: var(--mark-border, 0) solid transparent;
+  box-sizing: border-box;
+  background-color: var(--obs-failure-bg);
+  background-image: none;
+  border-color: var(--obs-failure-edge);
+}
+.obs-mark.is-success,
+.obs-mark.pbm-success,
+.obs-mark.card.is-success {
+  background-color: var(--obs-success-bg);
+  background-image: var(--obs-success-pattern);
+  border-color: var(--obs-success-edge);
+}
+
+/* One block of dots (prototype, ?mechstyle=dots): successes then failures,
+   CONTIGUOUS. Two separated stacks read as two groups being sampled
+   separately, and a one-proportion bootstrap draws from a single bag — so this
+   is the block the Sampling Distribution Lab uses for a population, split
+   amber/blue. Position still carries the outcome, which is what frees darkness
+   to carry the count; see the note in js/prop-bootstrap-mech.js. */
+.pbm-block {
+  margin: 0.3rem auto;
+  --mark-ratio: 1;
+  --mark-radius: 50%;
+  --mark-border: 0;
+}
+.pbm-block-counts {
+  text-align: center;
+  font-size: 0.75rem; font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  margin-bottom: 2px;
+}
+.pbm-block-counts .is-success { color: #7F5900; }
+.pbm-block-counts .is-failure { color: #005D92; }
+.pbm-block-counts .pbm-of { color: var(--ims-gray-text, #666); font-weight: 400; }
+.pbm-block-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--mark-w, 14px));
+  gap: 2px; justify-content: center;
+}
+/* Each extra draw steps one down the ramp. Within a ramp the steps are ~1.4:1,
+   enough to read as "darker" side by side; the OUTCOME is never carried by
+   darkness, only by where the dot sits in the block. */
+.pbm-dot { transition: background-color .25s ease-out; }
+.pbm-dot.pbm-success { background-image: none; }
+/* The repeat count, written inside the dot it counts, as burst does on the mean
+   pages (.dpr-badge). White on the DARKENED fill only: 4.46:1 on amber-2x and
+   7.05:1 on blue-2x, rising with each further step. The 1x colours are never
+   asked to hold a digit — a dot taken once has nothing to say — which matters,
+   because white on #C08700 is 3.13:1 and would fail as text. Small samples
+   only; js/prop-bootstrap-mech.js stops printing below DIGIT_MIN_W. */
+.pbm-dot:not(:empty) {
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  font-size: calc(var(--mark-w, 14px) * 0.62);
+  line-height: 1;
+  user-select: none;
+}
+.pbm-dot.pbm-success[style*="--mark-depth: 2"],
+.pbm-dot.pbm-success[style*="--mark-depth:2"] { background-color: #9D6F00; }
+.pbm-dot.pbm-success[style*="--mark-depth: 3"],
+.pbm-dot.pbm-success[style*="--mark-depth:3"] { background-color: #7F5900; }
+.pbm-dot.pbm-success[style*="--mark-depth: 4"],
+.pbm-dot.pbm-success[style*="--mark-depth:4"] { background-color: #604400; }
+.pbm-dot.pbm-failure[style*="--mark-depth: 2"],
+.pbm-dot.pbm-failure[style*="--mark-depth:2"] { background-color: #005D92; }
+.pbm-dot.pbm-failure[style*="--mark-depth: 3"],
+.pbm-dot.pbm-failure[style*="--mark-depth:3"] { background-color: #004B75; }
+.pbm-dot.pbm-failure[style*="--mark-depth: 4"],
+.pbm-dot.pbm-failure[style*="--mark-depth:4"] { background-color: #003959; }
+/* Never drawn: an outline, not a fade — so "not selected" stays a perceivable
+   shape rather than a faint one. The outline keeps the dot's OWN colour family:
+   an undrawn success is pale amber ringed in amber, an undrawn failure pale blue
+   ringed in blue. A single grey-blue ghost made undrawn successes look as if
+   they had changed sides. (Jeff, 2026-10-01.)
+   Both rings clear the 3:1 that graphical elements need — amber 3.13:1, blue
+   5.19:1 against the panel. The blue ring used to be #7FA9BE at 2.52:1, which
+   did not, so this fixes that too. */
+.pbm-dot.pbm-untaken { background-image: none !important; }
+.pbm-dot.pbm-success.pbm-untaken {
+  background-color: #F7EEDA !important;
+  box-shadow: inset 0 0 0 1.4px #C08700;
+}
+.pbm-dot.pbm-failure.pbm-untaken {
+  background-color: #EAF4F9 !important;
+  box-shadow: inset 0 0 0 1.4px #0072B2;
+}
+
+/* The aggregate display (n past MAX_MARBLES): two regions and a boundary, no
+   per-observation marks. On a resample the observed sample's boundary is pinned
+   as a dashed line that does not move, so a draw that shifts the boundary by
+   1.3% of the bar reads as a gap from a fixed thing rather than as a width
+   nobody can compare. The purple is the chart's own observed-statistic colour
+   (OBSERVED_COLOR, js/dotplot.js), so the strip and the distribution agree on
+   what "observed" looks like. (Jeff, 2026-10-01.) */
+.pbm-aggregate { margin: 0.3rem auto; max-width: 540px; padding: 5px 0 0; }
+/* `overflow: visible` so the reference line can overhang the bar; the fill
+   keeps its own rounded corner, which is what the clipping was for. */
+.pbm-aggregate .mech-prop-bar {
+  position: relative; height: 22px; overflow: visible; border-radius: 3px;
+}
+/* Amber success, blue failure — the same pair the block, the grid and the cards
+   use, carried over so the display changing at n = 120 is a change of SCALE and
+   not of language. On the aggregate view the regions are the only thing left
+   carrying the outcome, so the non-colour channel matters more here, not less —
+   which is the two counts printed inside them, and their order. It used to be a
+   diagonal hatch as well; see the note at `--obs-success-pattern`. */
+/* (The aggregate bar's amber/blue is the shared default now.) */
+/* The reference line crosses the bar, so it is read against amber and blue
+   rather than against the panel — and purple on those is 2.57:1 and 1.55:1,
+   both under the 3:1 a graphical element needs. The white casing is what makes
+   it visible: white on amber is 3.13:1 and on blue 5.19:1, so the line reads as
+   a light stripe wherever the purple does not. It also overhangs the bar at
+   both ends, where it has the panel's 7.52:1 to itself. */
+.pbm-ref {
+  position: absolute; top: -5px; bottom: -5px; width: 0;
+  border-left: 2px dashed #7B2D8E;
+  box-shadow: 1px 0 0 rgba(255,255,255,.95), -1px 0 0 rgba(255,255,255,.95);
+  pointer-events: none;
+}
+/* On a POPULATION board the observed mark does not cross the bar.
+ *
+ * A full-height line competes with the boundary between the two regions — and
+ * when p̂ happens to land near p₀ the two coincide, so the thing that says
+ * "your data" sits exactly on the thing that says "what H₀ claims" and neither
+ * can be read. (Jeff, 2026-10-03: "no danger that line reaching p₀ = .5 or
+ * similar".) So it rises only out of the bottom of the bar and finishes in a
+ * triangle below it: a point on the scale, pointing at where that point is,
+ * which cannot be mistaken for a division of the population.
+ */
+.pbm-population .pbm-ref {
+  top: auto;
+  height: 38%;
+  bottom: 0;
+  border-left-style: solid;
+}
+.pbm-population .pbm-ref::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 100%;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  /* Flat side down, apex up: it points AT the bar, from outside it. */
+  border-bottom: 6px solid var(--observed-stat, #7B2D8E);
+  /* The same white casing the line gets, so the triangle reads against the
+     panel as well as against the bar it touches. */
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, .95));
+}
+/* …and the label clears the triangle. */
+.pbm-population .pbm-ref-tag:not(.is-parameter) { margin-top: 9px; }
+
+/* The reference line's label, hung under the line it belongs to. Centred on it,
+   and allowed to overhang the bar at both ends — the board is only 56px tall and
+   there is nothing under it to collide with. */
+.pbm-ref-tag {
+  position: absolute;
+  top: 100%;
+  transform: translateX(-50%);
+  margin-top: 3px;
+  /* Pinned by fitPopulationTags when the mark is near an edge. */
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: var(--observed-stat, #7B2D8E);
+  pointer-events: none;
+}
+/* The parameter's label goes ABOVE its boundary, the sample's below its line —
+   so each sits at the mark it names, and the two can only meet when p̂ ≈ p₀,
+   where they are on opposite sides of the bar. */
+.pbm-ref-tag.is-parameter {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 3px;
+  color: #444;
+}
+/* …and the board leaves room above and below, so neither tag sits on whatever
+   surrounds the panel. */
+.mech-prop-bar.is-board { margin-top: 1.2rem; margin-bottom: 1.1rem; }
+/* The population board needs a whole row above it, not a gap.
+ *
+ * Its parameter tag hangs above the bar at p₀'s own x, and the panel's heading
+ * ("Population under H₀") is a full-width h2 whose TEXT runs along the left.
+ * At p₀ = 0.5 the tag sits past the words and nothing shows; at p₀ = 0.1 — the
+ * medical-consultant example's own null — it lands on them. The tag is not
+ * allowed to move (it names the boundary it sits over), so the bar moves down
+ * instead, by enough that the tag clears the heading's line at every p₀. */
+.mech-prop-bar.pbm-population.is-board { margin-top: 1.75rem; }
+
+/* The part of the bar not yet drawn: the two regions grow in from the ends and
+   this closes between them. Light enough to read as "nothing here yet" against
+   both the amber and the blue it is giving way to. */
+.pbm-undrawn {
+  position: absolute; top: 0; bottom: 0;
+  background: #E3E3E3;
+  border-radius: 0;
+  pointer-events: none;
+}
+/* A draw leaving the bag. Small and few — a couple of dozen for any n, since
+   one per observation is the noise this display exists to avoid. */
+.pbm-fleck {
+  position: fixed; width: 7px; height: 7px; border-radius: 50%;
+  margin: -3.5px 0 0 -3.5px;
+  z-index: 1000; pointer-events: none;
+}
+/* Opacity ONLY. A `transform` here would win over the inline one that does the
+   travelling — a running animation beats an inline style — and the fleck would
+   never leave the bag. */
+@keyframes pbm-fleck {
+  0%   { opacity: 0; }
+  14%  { opacity: 1; }
+  72%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .pbm-fleck { display: none; } }
+/* Each count pushed to the OUTER end of its region, so the two sit at the
+   extremes of what they count and the boundary between them is left clear. */
+/* A plate behind the glyphs. It was painting the region's own colour over the
+   hatch so 12px text was not read through stripes; with the hatch gone
+   (2026-10-03) the fill is a no-op and what is left doing work is the padding
+   and the rounded corner. Kept as one rule so that if a pattern ever returns,
+   the text is already protected from it. */
+.pbm-aggbar .pbm-count-t {
+  flex: 0 0 auto; white-space: nowrap;
+  padding: 0 3px; border-radius: 2px;
+}
+.pbm-aggbar .pbm-count.is-success .pbm-count-t { background: var(--obs-success-bg, #C08700); }
+.pbm-aggbar .pbm-count.is-outside .pbm-count-t { background: none; padding: 0; }
+.pbm-aggbar .pbm-count.is-success { justify-content: flex-start; padding-left: 6px; }
+.pbm-aggbar .pbm-count.is-failure { justify-content: flex-end; padding-right: 6px; }
+/* …and a count whose own region cannot hold it drops below the bar at that same
+   end, in its OWN colour rather than the grey line both used to share. The
+   darker tints are what clear 4.5:1 on the panel: #C08700 is 3.13:1 and would
+   fail as text, #7F5900 is 6.30:1 and #005D92 is 7.05:1. The same pair the dot
+   block's header uses. */
+.pbm-aggbar .pbm-count.is-outside {
+  top: 100%; bottom: auto; height: 1.2em; margin-top: 3px;
+  overflow: visible; padding: 0;
+}
+.pbm-aggbar .pbm-count.is-success.is-outside { color: #7F5900; justify-content: flex-start; }
+.pbm-aggbar .pbm-count.is-failure.is-outside { color: #005D92; justify-content: flex-end; }
+.pbm-aggregate:has(.pbm-count.is-outside) { padding-bottom: 1.2em; }
+.pbm-delta {
+  margin-top: 6px; text-align: center;
+  font-family: var(--font-mono, monospace); font-size: 0.8rem;
+}
+/* 5.9:1 on the panel — a result, not decoration, so it carries text contrast. */
+.pbm-delta-n { font-weight: 700; color: #7B2D8E; }
+.pbm-delta-sep { color: var(--ims-gray-text, #666); }
+.pbm-delta-p { color: var(--ims-gray-text, #555); }
+@media (prefers-reduced-motion: reduce) {
+  .pbm-aggregate .mech-prop-fill { transition: none !important; }
+}
+
+/* View: Individual | Aggregate. The two roles the mean pages already have — one
+   mark per observation, or the shape with the individuals gone — named rather
+   than described by the display that happens to draw them ("Grid | Bar"). The
+   control is absent, not disabled, when n is past the point where a mark per
+   observation can be drawn: there is no choice to offer. (Jeff, 2026-10-02.) */
+.pbm-style-toggle { display: inline-flex; align-items: center; gap: 0.4rem; }
+/* In a tier heading it sits at the far end, so the step's name still reads
+   first and the control is where the thing it controls is. */
+/* The heading's controls, in a box of their own so a heading can wrap them
+   together. `margin-left: auto` lives here now rather than on each control:
+   two of them each claiming it SPLIT the free space and spread the pair across
+   the heading. */
+.mech-head-controls {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 0.3rem 0.75rem;
+  margin-left: auto;
+  font-weight: 400;
+}
+/* In a tier heading the controls take a line of their own. The heading line
+   there also carries the difference, parked at its far right, and the two were
+   laid out on top of each other. (Jeff, 2026-10-03.) */
+.mech-tier-head { flex-wrap: wrap; row-gap: 0.3rem; }
+.mech-tier-head .mech-head-controls { flex-basis: 100%; margin-left: 0; }
+/* The panel heading becomes a row so the control can sit at its far end. */
+.mechanism-panel .mechanism-title:has(.pbm-style-toggle),
+.mechanism-panel .mechanism-title:has(.mech-null-toggle) {
+  display: flex; align-items: center; gap: 0.5rem;
+  /* Two controls now share this row on the two-proportion randomization page
+     (View: Individual | Aggregate, and Draw as: Dots | Cards). On a phone they
+     do not fit beside the heading, and without wrapping the second one ran off
+     the right edge reading "Dr aw as: Do". */
+  flex-wrap: wrap; row-gap: 0.3rem;
+}
+/* …and only the FIRST control claims the free space. Two `margin-left: auto`
+   in one flex row SPLIT it, which spread the pair across the heading instead of
+   keeping them together at its end. */
+.mech-tier-head .pbm-style-toggle ~ .pbm-style-toggle,
+.mechanism-title .pbm-style-toggle ~ .pbm-style-toggle { margin-left: 0; }
+.mechanism-title .mech-null-toggle { margin-left: auto; font-weight: 400; }
+.pbm-style-toggle .seg-label {
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--ims-gray-text, #555);
+}
+/* On a phone the two controls are 354px of a 335px panel — 19px too wide — so
+   they wrapped onto two 46px rows at the top of Step 1, 97px of chrome above a
+   picture that was already taller than the screen. Without the words they are
+   255px and share one row. The buttons say "Individual | Aggregate" and
+   "Dots | Cards", which name themselves, and each `.seg-control` carries its
+   own `aria-label`, so nothing is lost to a screen reader. (2026-10-05.) */
+@media (max-width: 560px) {
+  .pbm-style-toggle .seg-label { position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .mech-head-controls { gap: 0.3rem 0.5rem; }
+}
+
+/* The null-world panel: a population, not a sample. No counts on the bar — it
+   has no n — and a quiet note saying so. */
+.null-pop-note { color: var(--ims-gray-text, #666); font-weight: 400; font-size: 0.85em; }
+
+/* Step 1 on the one-proportion randomization test: the population H₀ names, and
+   your sample, drawn on the same board at the same width so the two boundaries
+   can be compared directly. They are two OBJECTS, not two states of one — your
+   sample is never transformed into the null here, which is what the old
+   Observed→Null morph implied. (Jeff, 2026-10-03.) */
+.pbm-src-row { margin: 0.25rem 0 0; }
+.pbm-src-row:first-child { margin-top: 0; }
+.pbm-src-label {
+  display: block;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--ims-gray-text, #555);
+  text-align: left;
+}
+/* The parameter is not the statistic, and the chart below says so in the same
+   two voices: dark for the value H₀ names, purple for the one you observed. */
+.pbm-src-label .is-parameter { color: #444; font-weight: 700; }
+.pbm-src-label .is-statistic { color: var(--observed-stat); font-weight: 700; }
+.pbm-src-count { color: var(--ims-gray-text, #666); font-weight: 400; }
+
 /* ===== One-proportion bootstrap mechanism (B2): bag + resample ===== */
-/* CVD-safe Okabe-Ito: success = amber (hatched), failure = blue. */
-.pbm-success { background-color: #C08700;
-  background-image: repeating-linear-gradient(45deg, #7D5800 0, #7D5800 1.5px, transparent 1.5px, transparent 6px); }
-.pbm-failure { background-color: #0072B2; }
-
-.pbm-grid { display: grid; gap: 2px; justify-content: center; margin: 0.3rem auto; }
-.pbm-marble { width: var(--pbm-marble, 14px); height: var(--pbm-marble, 14px);
-  border-radius: 3px; box-sizing: border-box; }
-/* Empty resample slot: outline only, filled as marbles fly in */
-.pbm-empty { background: none; border: 1.5px dashed #b9c6cc; }
-
-/* Proportion-bar style: a row of n full-height cells (successes left, failures
-   right), built one draw at a time. Cells are contiguous (no gap) so filled
-   same-colour runs read as one solid bar; empty cells show the gray track. */
-.pbm-fillbar { display: flex; gap: 0; height: 40px; max-width: 340px;
-  margin: 0.4rem auto; border: 1px solid #b9c6cc; border-radius: 5px; overflow: hidden;
-  background: #eef2f4; }
-.pbm-cell { flex: 1 1 0; min-width: 0; height: 100%; }
-.pbm-cell.pbm-empty { background: none; }
+/* The marble grid, the cell bar and their arc-fly animation lived here until
+   2026-10-02. Two displays do the work now — the dot block and the aggregate
+   bar, one per role — and the retired pair was unreachable from the UI while
+   still costing every change to the mechanism a second dialect to make it in.
+   `?mechstyle=grid` and `?mechstyle=bars` resolve to the survivors. */
 
 /* Two-proportion bootstrap (B4): two stacked groups, each its own bag/resample */
 .pbm-twogroup { display: flex; flex-direction: column; gap: 0.5rem; }
 .pbm-group { display: flex; flex-direction: column; }
 
-/* Pulse a source cell when it's drawn */
-.pbm-pulse { animation: pbm-pulse 300ms ease; box-shadow: 0 0 0 2px #1A1A1A; }
-@keyframes pbm-pulse { 0% { transform: scale(1); } 45% { transform: scale(1.45); } 100% { transform: scale(1); } }
-
-/* Flying clone during a draw */
-.pbm-flyer { position: absolute; width: 11px; height: 11px; border-radius: 3px;
-  transform: translate(-50%, -50%); pointer-events: none; z-index: 30; }
-
 /* Segmented control for resample view toggle */
+/* `display: inline-flex` beats the user-agent `[hidden] { display: none }`, so
+   a hidden segmented control stayed on screen. */
+.seg-control[hidden] { display: none !important; }
+/* A panel's closing line: the statistic, and whatever short thing goes with it
+   — the rendering choice on Step 1, the draw's caption on Step 2 — side by
+   side rather than stacked. */
+.mech-stat-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap;
+}
+.mech-stat-row .mechanism-stat { margin: 0; }
+.mech-stat-row .mechanism-desc { margin: 0; text-align: right; flex: 0 1 auto; }
+.mech-stat-row .seg-control { flex: none; font-size: 0.78rem; }
+.mech-stat-row .seg-control button { padding: 3px 9px; }
 .seg-control {
   display: inline-flex;
   border: 1px solid var(--border);
@@ -1609,43 +2003,134 @@ input[aria-invalid="true"] {
   color: var(--ims-dark, #114B5F);
 }
 .mech-card-count { font-weight: 400; color: #595959; }
+/* `--card-w` is set inline HERE, per draw, from the larger pile — so the mark
+   width has to be read here too. Reading it on .mech-card-display (the parent)
+   silently fell back to 15px and undid the shrink at 75 cards. */
+.mech-card-display .card-sizes { display: contents; --mark-w: var(--card-w, 15px); }
 .mech-card-display .cards {
   /* A fixed-track grid rather than wrapping flex: with equal group widths both
-     piles fit the same number of 15px columns, so equal n always draws the
-     same shape — and unequal n differs by whole rows, which is the comparison
-     the panel exists to make. */
+     piles fit the same number of columns, so equal n always draws the same
+     shape — and unequal n differs by whole rows, which is the comparison the
+     panel exists to make.
+     The track width comes from --card-w, set once per draw from the larger
+     pile, so both groups are always drawn at one scale. */
   display: grid;
-  grid-template-columns: repeat(auto-fill, 15px);
+  grid-template-columns: repeat(auto-fill, var(--card-w, 15px));
   gap: 3px;
   justify-content: center;
 }
-.mech-card-display .card {
-  width: 15px;
-  height: 19px;
-  border-radius: 2px;
-  border: 1px solid #999;
+/* Card geometry and today's red/white, through the shared mark's variables.
+   Deleting this block in Fall 2027 is the whole colour change — see the box at
+   "One mark per observation". */
+.mech-card-display {
+  --mark-ratio: 1.267;   /* 19/15 — a card keeps its shape as it shrinks */
+  --mark-radius: 2px;
+  --mark-border: 1px;
+  --obs-success-bg: var(--ims-red, #F05133);
+  --obs-success-pattern: none;
+  --obs-success-edge: #999;
+  --obs-failure-bg: #f5f5f5;
+  --obs-failure-edge: #ccc;
 }
-/* Filled = success, outline = failure → distinct by fill, not colour alone */
-.mech-card-display .card.is-success { background: var(--ims-red, #F05133); }
-.mech-card-display .card.is-failure { background: #f5f5f5; border-color: #ccc; }
-.mech-card-legend {
+/* The colour key for any proportion display (js/prop-bootstrap-mech.js,
+   obsLegendHTML). Its chips are `.obs-mark`, the component the display itself
+   is built from, so the key inherits whatever palette and shape its context
+   sets and cannot drift from what it describes. */
+.obs-legend {
   display: inline-flex;
+  font-style: normal;
   align-items: center;
-  gap: 0.3rem;
-  margin-left: 0.75rem;
+  gap: 0.9rem;
   font-size: 0.8rem;
+  white-space: nowrap;
 }
-.mech-card-swatch {
-  display: inline-block;
-  width: 12px;
-  height: 15px;
-  border-radius: 2px;
-  border: 1px solid #999;
-  vertical-align: middle;
-  margin-left: 0.5rem;
+.obs-legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.obs-legend .obs-mark { flex: none; }
+.obs-legend-label { color: var(--ims-text, #222); }
+/* The card palette, carried by the legend because it sits in the strip's bottom
+   bar, outside `.mech-card-display`. Same five variables, one place to change
+   in Fall 2027 — see the box at "One mark per observation". */
+.obs-cards {
+  --mark-w: 12px;
+  --mark-ratio: 1.267;
+  --mark-radius: 2px;
+  --mark-border: 1px;
+  --obs-success-bg: var(--ims-red, #F05133);
+  --obs-success-pattern: none;
+  --obs-success-edge: #999;
+  --obs-failure-bg: #f5f5f5;
+  --obs-failure-edge: #ccc;
 }
-.mech-card-swatch.is-success { background: var(--ims-red, #F05133); }
-.mech-card-swatch.is-failure { background: #f5f5f5; border-color: #ccc; }
+/* ?cardcolor=white — the WHITE card is the success.
+   Red = success is this tool's convention and the textbook's, but a coursepack
+   example can deal its own deck the other way round (the opportunity-cost
+   activity makes red the "buy", which is the non-success), and a student then
+   meets two opposite conventions in one sitting. Which colour carries the
+   success is a property of the MATERIAL, so it is a setting rather than a
+   rewrite. (Todd Will + Jeff, REQ-071.) */
+.obs-cards.is-swapped,
+.mech-card-display.is-swapped {
+  --obs-success-bg: #f5f5f5;
+  --obs-success-edge: #ccc;
+  --obs-failure-bg: var(--ims-red, #F05133);
+  --obs-failure-edge: #999;
+}
+.mech-card-legend { margin-left: 0.75rem; }
+/* The pooled bar a shuffle deals from: the two bags slid together, held for a
+   beat between the panels, then dealt out. It is a transit, not a panel — no
+   border, no background, and it leaves when the deal has launched. */
+.pbm-pool { filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .18)); }
+.pbm-pool-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--ims-gray-text, #555);
+  text-align: center;
+  margin: 0 0 3px;
+}
+
+/* The shuffled panel's numbers, while its marks are still in the air.
+   Hidden, not emptied: the row keeps its height and nothing reflows when the
+   value appears. (See showTwoPropShuffle.) */
+.pbm-reveal-pending .pbm-block-counts,
+.pbm-reveal-pending .mech-prop-count,
+.pbm-reveal-pending .mech-prop-aside,
+.pbm-reveal-pending .pbm-stat-value,
+.pbm-reveal-pending .mech-stat-value { visibility: hidden; }
+
+/* The key's own row at the foot of the mechanism strip. */
+.mech-legend-row {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 0.3rem 0.5rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.8rem;
+  color: var(--ims-gray-text);
+}
+.mechanism-strip.collapsed .mech-legend-row { display: none; }
+/* Which colour is the success, changed where the question comes up: in the key
+   that answers it. A button rather than a second toggle in the control bar —
+   it is a reading of the same deal, not another view of the data. */
+.obs-swap-btn {
+  margin-left: 0.6rem;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+  font-family: inherit;
+  color: var(--ims-navy, #114B5F);
+  background: transparent;
+  border: 1px solid var(--ims-blue, #569BBD);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.obs-swap-btn:hover { background: rgba(86, 155, 189, 0.12); }
+/* The caption row, WHEN it is carrying the key — the mean pages' captions keep
+   their own alignment (`.mech-stat-row .mechanism-desc` is right-aligned). */
+.mechanism-desc:has(.obs-legend) {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: 0.3rem 0.5rem;
+}
+/* Touch targets: the swap button is the only control in this row. */
+@media (hover: none) and (pointer: coarse) {
+  .obs-swap-btn { min-height: 44px; padding: 0 0.7rem; }
+}
 @media (prefers-reduced-motion: reduce) {
   .mech-card-display .card { transition: none !important; }
 }
@@ -1744,6 +2229,21 @@ input[aria-invalid="true"] {
   color: var(--ims-green);
 }
 
+/* The difference sits at the BOTTOM RIGHT of its panel.
+ *
+ * It is where the two group means converge before the result flies to the
+ * distribution (js/mechanisms/draw-animation.js: animateCombineStats), and the
+ * mean markers sit in the middle-right of their plots — so left-aligned, the
+ * flyers crossed the whole panel to get to it. (Jeff, 2026-10-03: "move the
+ * diff = to the bottom right so dots don't have so far to fly.")
+ *
+ * WHICH corner depends on where it has to go next, which is a property of the
+ * layout — "or upper right. the position should depend on the layout":
+ *   - strip and tiers: the distribution is BELOW, so bottom right.
+ *   - split: the distribution is the column BESIDE it, and that column's
+ *     middle sits above Step 2 — so upper right, which is also the end of the
+ *     panel the mean markers are at.
+ */
 .mech-diff {
   font-family: var(--font-mono);
   font-weight: 700;
@@ -1752,10 +2252,45 @@ input[aria-invalid="true"] {
   font-size: 0.85rem;
   transition: color 0.3s;
   width: fit-content;
+  margin-left: auto;
 }
 .mech-diff.highlight-last {
   color: var(--highlight-orange);
 }
+/* Split: the distribution is beside these tiers, not below them, so the
+   difference moves to the TOP of its panel. `order` rather than markup, so the
+   reading order a screen reader gets does not change — the difference is still
+   announced after the groups it came from.
+   The flex container is the content div that HOLDS the difference; the panel
+   one level up is already flex, but `order` only acts on a direct parent. */
+/* In a tier the difference rides on the STEP heading's line, at its right end.
+   It is a one-line readout and it was taking a line of its own at the bottom of
+   a panel where vertical space is the whole problem; the heading row is already
+   there and half empty. Absolute, so it survives the panel's innerHTML being
+   rewritten on every draw, and `.mech-tier` is already positioned.
+   (Jeff, 2026-10-03: "moving diff = to the upper right on the same line at
+   Step # XYZ we gain a bit of room for bigger dots without adding vertical
+   height.") */
+/* The tier is the containing block, so the panel must not be a closer one.
+   `.mechanism-panel` is `position: relative`, which silently caught the
+   absolute diff and parked it at the top of the PANEL — under the heading
+   rather than on it. The diff is the only absolutely-positioned thing inside a
+   mechanism panel (checked on the live page), so standing the panel down here
+   costs nothing. */
+body[data-mech-layout="tiers"] .mech-tier .mechanism-panel,
+body[data-mech-layout="split"] .mech-tier .mechanism-panel {
+  position: static;
+}
+body[data-mech-layout="tiers"] .mech-tier .mech-diff,
+body[data-mech-layout="split"] .mech-tier .mech-diff {
+  position: absolute;
+  /* The tier's own padding, so it lands flush with the right end of the STEP
+     heading's line rather than inset from it. */
+  top: 0.4rem;
+  right: 0.6rem;
+  margin: 0;
+}
+
 .mech-box-container {
   margin: 2px 0 4px;
 }
@@ -1781,6 +2316,97 @@ input[aria-invalid="true"] {
   text-align: center;
   margin-top: 2px;
 }
+/* Two groups STACKED on one scale: each row gets the whole panel width, so a
+   value sits at the same x in both. The label and the per-group statistic sit
+   on the row rather than above and below it, which is most of the height the
+   second row costs. */
+/* ONE grid for both rows, not a grid per row. Per-row grids sized their own
+   columns, so "x-bar = -4.333" and "x-bar = 3.500" gave the two plots different
+   widths and the axes did not line up — which defeats the entire reason for
+   stacking them. `display: contents` puts both rows' cells in the one grid. */
+.mech-dot-stack {
+  display: grid;
+  /* A narrow key column that WRAPS rather than one sized to the longest group
+     name. "Western fence lizard" on one line cost the plot 150px; over three
+     short lines it costs 60, and the rows are tall enough to hold them because
+     a dotplot is taller than four lines of 11px text. (Jeff, 2026-10-03.) */
+  grid-template-columns: minmax(0, 6.5em) 1fr;
+  align-items: center;
+  gap: 0.1rem 0.5rem;
+}
+.mech-dot-row { display: contents; }
+/* Name and statistic together: one column saying who the row is, and the plot
+   gets the rest. `max-content` on the shared column keeps both rows' plots the
+   same width, which is what makes the two axes line up. */
+.mech-dot-key { text-align: right; line-height: 1.3; }
+.mech-dot-key .mech-group-label { margin: 0; }
+.mech-dot-key .mech-group-stat-sm { margin: 0; white-space: nowrap; display: block; }
+/* In the key column the name WRAPS instead of truncating. `.mech-group-label`
+   ellipsises by default, which is right where it labels a histogram column and
+   wrong here: "Western fence lizard" became "Western fenc…", so the narrow
+   column cost the reader the group's name — the one thing the column is for.
+   A dotplot row is tall enough for three or four lines of 12px text.
+   (Jeff, 2026-10-03: "we could put western fence lizard n = 22 on 4 lines.") */
+.mech-dot-key .mech-group-label {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  line-height: 1.15;
+}
+/* Shorter than a standalone dotplot: two of them share the height one used to
+   have, and the strip is a band rather than a page. */
+.mech-dot-stack .mech-dot-cell { min-width: 0; min-height: 0; }
+/* No height cap: the plot is drawn FOR this width now, so capping the height
+   would letterbox it again. */
+.mech-dot-stack .mech-dot-cell svg { max-height: none; }
+/* The axis labels, in viewBox units. d3-axis sets font-size as an ATTRIBUTE on
+   the axis group, which a size on the <svg> does not override — the text has to
+   be targeted directly. At a 0.64 scale, 16 units renders at ~10px; the
+   inherited 10 rendered at 5. */
+.mech-dot-stack .mech-dot-cell svg .tick text { font-size: 16px; }
+
+/* In a TIER, the two groups sit side by side.
+ *
+ * Stacked is right in the strip, where the two panels share a row and each one
+ * is half the page: a value then sits at the same x in both groups, and the
+ * shuffle can pool them without anything moving sideways. In a tier the panel
+ * is the whole page and stacking spends that width on nothing — two 199px
+ * dotplots make a 460px tier, two tiers make 920px, and Step 1 and Step 2
+ * cannot be seen together on a laptop. (Jeff, 2026-10-03: "step 1 and step 2
+ * get too big vertically here so we can't see them together.")
+ *
+ * The labels go ABOVE in Step 1 and BELOW in Step 2, so the two steps' PLOTS
+ * face each other across the tier boundary rather than being held apart by two
+ * rows of text — which is also the gap the draw animation has to cross.
+ *
+ * NOT on a page whose draw pools the two groups (`data-mech-pools`): there the
+ * stacking is load-bearing, because the shuffle moves its dots vertically only
+ * and side by side every dealt dot would cross between two differently-placed
+ * axes. See js/sim-app.js.
+ */
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier .mech-dot-stack,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-stack {
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 0.15rem 0.8rem;
+}
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier .mech-dot-row,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-row {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier--draw .mech-dot-row,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier--draw .mech-dot-row {
+  flex-direction: column-reverse;
+}
+/* The key names the plot above or below it now, not the one beside it. */
+body[data-mech-layout="tiers"]:not([data-mech-pools]) .mech-tier .mech-dot-key,
+body[data-mech-layout="split"]:not([data-mech-pools]) .mech-tier .mech-dot-key {
+  text-align: center;
+}
+
 /* Side-by-side mini histograms in two-group mechanism strip */
 .mech-hist-pair {
   display: flex;
@@ -1817,17 +2443,74 @@ input[aria-invalid="true"] {
 }
 
 /* Proportion bar visualization in two-group mechanism strip */
+/* Amber success, blue failure, everywhere a proportion bar is drawn.
+   The dot block, the grid, the cards and the aggregate bar all speak this pair;
+   these bars were the last ones still using blue-on-grey, so the same data wore
+   two colour schemes depending on which page you were on.
+   (Jeff, 2026-10-02: "one proportion randomization test should use the newer
+   bars".) */
 .mech-prop-bar {
   position: relative;
   height: 14px;
-  background: var(--ims-lgray);
+  background: var(--obs-failure-bg, #0072B2);
   border-radius: 3px;
   margin: 2px 0 6px;
   overflow: hidden;
 }
+/* The null-world population, deepened into a board you can throw darts at.
+   The one-proportion randomization test scoops its sample the way the Sampling
+   Distribution Lab does (js/mechanisms/draw-animation.js: animateDartScoop),
+   and darts need somewhere to land — 14px of strip is a line, not an area.
+   Wide and short rather than the Lab's square, because this one lives in a
+   mechanism panel with another panel beside it. (Jeff, 2026-10-03.) */
+.mech-prop-bar.is-board {
+  height: 56px;
+  border-radius: 4px;
+  /* A reference line overhangs the bar at both ends and hangs its label below
+     it, and `.mech-prop-bar` clips by default — which swallowed both, leaving a
+     white gap where the line should be. The clipping was only ever for the
+     fill's corners, and the fill rounds its own (see `.mech-prop-fill`), which
+     is the same reason `.pbm-aggregate` turns it off. (2026-10-03.) */
+  overflow: visible;
+}
+
+/* A dart in flight. Appended to <body>, so it inherits none of the block's
+   geometry — without this it would be a rounded SQUARE turning into a circle
+   on landing. Colour comes from :root, which body does inherit. */
+.pbm-flyer { --mark-radius: 50%; --mark-ratio: 1; --mark-border: 0; }
+
+/* The footprint a scooped observation leaves on the board, so the board keeps
+   showing where this sample came from. Cleared on the next draw.
+   The Sampling Distribution Lab has its own copy of this rule, page-local and
+   older; it wins there by document order and says the same thing. */
+.scoop-ghost {
+  position: absolute;
+  box-sizing: border-box;
+  /* Round, like the dot that was lifted off it — and said here explicitly
+     because a ghost sits on the BOARD, outside the block that would otherwise
+     set --mark-radius, so .obs-mark's 3px default would win. */
+  border-radius: 50%;
+  opacity: 0.8;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  /* White ring + dark outer ring so the mark reads on the amber hatch, on the
+     blue region and on the panel alike. Border + outline rather than
+     box-shadow: box-shadow dropped the solid fill in one browser. */
+  border: 2px solid #fff;
+  outline: 1px solid rgba(30, 30, 30, 0.45);
+}
+/* …and the white has to WIN. A ghost carries `obs-mark pbm-dot pbm-success`
+   for its colour, and `.obs-mark.pbm-success { border-color: var(--obs-success-edge) }`
+   is two classes to the rule above's one — so successes were painted with a
+   transparent border and all you saw was the dark outer ring. Amber footprints
+   read as black-edged, blue ones as white-edged, for no reason a student could
+   discover. (Jeff, 2026-10-03: "leave all boundaries white for legibility.") */
+.scoop-ghost.obs-mark { border-color: #fff; }
+
 .mech-prop-fill {
   height: 100%;
-  background: var(--accent);
+  background-color: var(--obs-success-bg, #C08700);
+  background-image: var(--obs-success-pattern);
   border-radius: 3px 0 0 3px;
   transition: width 0.3s ease;
 }
@@ -1860,10 +2543,10 @@ input[aria-invalid="true"] {
   white-space: nowrap;
   overflow: hidden;
 }
-/* White on #3A7CA5 is 4.56:1, so it carries its own weight — no text-shadow. */
-.mech-prop-count.is-success { left: 0; color: #fff; }
-/* Near-black on #D9D9D9 is 12.3:1. */
-.mech-prop-count.is-failure { right: 0; color: #1A1A1A; }
+/* White on #C08700 is 3.13:1 and fails as text, so the amber region takes
+   near-black (5.56:1); the blue region takes white (5.19:1). */
+.mech-prop-count.is-success { left: 0; color: #1A1A1A; }
+.mech-prop-count.is-failure { right: 0; color: #fff; }
 /* Both counts, below the bar, for when one region is too narrow to hold its
    own. A middle dot, never a slash. */
 .mech-prop-aside {
@@ -2093,8 +2776,11 @@ input[aria-invalid="true"] {
 
 .mini-chart svg {
   font-family: var(--font-body);
-  font-size: 10px;
-  max-height: 140px;
+  /* viewBox units, so the rendered size is this times the scale the panel
+     gives it. At 13 in a 614-wide view inside a ~490px panel that is ~10px on
+     screen; it was 10 units at a 0.38 scale, which is 4px. */
+  font-size: 13px;
+  max-height: 210px;
 }
 
 
@@ -2295,6 +2981,31 @@ input[aria-invalid="true"] {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+/* In the tier layouts the result is inside Step 3 rather than in a grid cell
+   beside the chart, so it takes the tier's width and sits under the chart it
+   belongs to. The empty shell it came from collapses. */
+.mech-tier--distribution > #results { width: auto; margin-top: 0.5rem; }
+/* …and it reads ACROSS rather than down. In the sidebar the result has a tall
+   narrow cell and one fact per line is right; under a chart it has a wide short
+   one, and four stacked lines spend 219px saying four short things — enough to
+   push the answer off a 1296x880 laptop screen, which is the whole complaint.
+   Wrapped into a row it is ~85px and the chart and the number you read off it
+   are on screen together, which is what the layout is for. */
+.mech-tier--distribution #result-summary {
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  gap: 0.15rem 1.15rem;
+  padding: 0.55rem 0.8rem;
+}
+.mech-tier--distribution #result-summary > p { margin: 0; }
+/* The sentence is a sentence: it gets its own line. */
+.mech-tier--distribution #result-summary > p.interpretation,
+.mech-tier--distribution #result-summary > .result-note,
+.mech-tier--distribution #result-summary > ul,
+.mech-tier--distribution #result-summary > table { flex-basis: 100%; }
+body[data-mech-layout] #chart-and-results:empty,
+body[data-mech-layout] #chart-and-results .app-body:not(:has(> *:not(.app-main))) {
+  display: none;
 }
 
 /* ===== Expert Mode ===== */
@@ -4128,6 +4839,17 @@ body[data-mode="discover"] .present-only { display: none !important; }
   from { opacity: 0; transform: translateX(-50%) translateY(1rem); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+/* …and the page can scroll clear of it.
+   The toast is fixed to the bottom centre. On a phone the generate bar is the
+   LAST thing on the page in the tier layouts, so at full scroll the toast sat
+   on top of it — and since the page was already scrolled as far as it goes,
+   there was no way to move it out from under: +1 / +100 could not be pressed
+   at all while the toast was up. Reserving its height at the foot of the body
+   gives the scroll somewhere to go. The toast is appended to `body` by an
+   inline script repeated in 63 pages, so this is the one place that can see it
+   for all of them. (Found 2026-10-02 by a phone test that started timing out
+   on a click, after a layout change moved the bar 72px further down.) */
+body:has(> .update-toast) { padding-bottom: 5.5rem; }
 
 /* ═══════════════════════════════════════════════════════════════ */
 /* Embed mode — compact layout for iframe embedding in LMS       */
@@ -5178,6 +5900,10 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
    data panel auto-collapses and on the file/paste tabs — matching the means
    tools, so a multi-variable CSV can be re-pointed at any categorical column. */
 .var-selector-row { margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; align-items: center; }
+/* …and `display: flex` beats the UA's `[hidden] { display: none }`, so a row
+   that has not been filled in yet still drew an 8px band. Every page that marks
+   this row `hidden` in its markup was showing one. (2026-10-05.) */
+.var-selector-row[hidden] { display: none; }
 .var-selector-row label { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; margin: 0; }
 .var-selector-row select { width: auto; }
 
@@ -5352,8 +6078,31 @@ body[data-mech-layout="split"] .mech-tier--source .mechanism-panel,
 body[data-mech-layout="split"] .mech-tier--draw .mechanism-panel {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  /* `flex-start` here shrink-wrapped every child to its own content, so the
+     display inside a 436px panel drew itself at 225px and sat in the left
+     half — cards at 5 columns where 13 would fit, with a third of the panel
+     empty. The dotplots escaped it only because they were given an explicit
+     width. Stretch is what this always meant: the panel is the width, and the
+     display fills it. (Jeff, 2026-10-01.) */
+  align-items: stretch;
   gap: 0.2rem;
+}
+/* Text inside a stretched panel still reads from the left. */
+body[data-mech-layout="tiers"] .mech-tier--source .mechanism-panel > p,
+body[data-mech-layout="tiers"] .mech-tier--draw .mechanism-panel > p,
+body[data-mech-layout="split"] .mech-tier--source .mechanism-panel > p,
+body[data-mech-layout="split"] .mech-tier--draw .mechanism-panel > p { align-self: flex-start; }
+/* …but a stat paragraph that CARRIES the display is not text.
+   `<p class="mechanism-stat">` holds the proportion board and the block of
+   dots, so the rule above shrink-wrapped them to the width of the sentence
+   printed above them: a 359px board and a 6-column block inside a 1028px tier,
+   both hard against the left edge, while the distribution beside them used the
+   whole width. Stretch them and `.mechanism-stat`'s own `text-align: center`
+   does the rest — the same centred full-width display the strip layout has
+   always shown. (Jeff, 2026-10-03: "use the width and keep centered.") */
+body[data-mech-layout="tiers"] .mech-tier .mechanism-panel > p:has(.mech-prop-bar, .mech-prop-draw),
+body[data-mech-layout="split"] .mech-tier .mechanism-panel > p:has(.mech-prop-bar, .mech-prop-draw) {
+  align-self: stretch;
 }
 body[data-mech-layout="tiers"] .mech-tier--source .mech-minichart,
 body[data-mech-layout="tiers"] .mech-tier--draw .mech-minichart,

@@ -11,6 +11,7 @@ import { getSettings, setSettings, resetSettings, applySettings, getActivityMode
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
 import { takeAirborneStat, dismissAirborneStat } from './mechanisms/draw-animation.js';
+import { createVariablePicker } from './variable-picker.js';
 
 /**
  * Resolve the path to the data/ directory from any page.
@@ -644,7 +645,31 @@ export function animateDropToChart(sourceEl, chartContainer, opts = {}) {
     sy = r.top + r.height / 2;
   } else {
     let effectiveSource = sourceEl;
-    const sourceRect = sourceEl.getBoundingClientRect();
+    // No parked dot — the draw either did not animate, or took long enough
+    // that the safety timer let go of it. The caller hands us the mechanism's
+    // numeric readout, which on a dotplot panel sits BELOW the plot, so the
+    // statistic appeared to set off from under the picture rather than from
+    // the place in it that it marks. If the panel draws a mean marker, start
+    // there instead — the fallback should land in the same place the handoff
+    // would have. (Jeff, 2026-10-02.)
+    const panel = sourceEl.closest('.mechanism-panel, .mech-tier');
+    const markers = panel ? panel.querySelectorAll('.overlays line') : [];
+    // …but ONLY when the panel marks ONE statistic.
+    //
+    // On a two-group panel there are two markers and the statistic travelling
+    // to the distribution is neither of them — it is their DIFFERENCE, which
+    // the two means have just flown together to form (animateCombineStats).
+    // Taking the first marker made that difference set off from inside one of
+    // the resamples, undoing the journey the combine had just finished
+    // explaining. With two groups the caller's readout is the right origin,
+    // and it is the corner the two means arrived at. (Jeff, 2026-10-03: "the
+    // difference mean should fly from that corner … right now it originates
+    // from between the two resamples.")
+    if (markers.length === 1) {
+      const mr = markers[0].getBoundingClientRect();
+      if (mr.width || mr.height) effectiveSource = /** @type {HTMLElement} */ (markers[0]);
+    }
+    const sourceRect = effectiveSource.getBoundingClientRect();
     if (sourceRect.width === 0 && sourceRect.height === 0) {
       const strip = sourceEl.closest('.mechanism-strip');
       const summary = strip?.querySelector('.mechanism-collapsed-summary');
@@ -846,6 +871,30 @@ export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } 
    *   3) one-sample-sim: #mech-sim-stat (already contains label + value)
    *   4) chisq: #mech-shuffled-chisq with parent <p> "χ² = <span>..."
    */
+  /**
+   * The summary is ONE LINE, so it takes the panel's words and leaves its
+   * picture behind.
+   *
+   * It used to copy `innerHTML` wholesale, which worked only for as long as
+   * the panel held nothing but text. It does not: the one-mean panel carries a
+   * `<div id="mech-sim-chart">`, so every sync minted a SECOND element with
+   * that id — harmless purely by document order, since the real panel comes
+   * first and `getElementById` returns the first match. And when the
+   * one-proportion draw became a block of dots (2026-10-03), the clone caught
+   * them mid-flight with `visibility: hidden` still on them and kept 34
+   * permanently invisible dots in the summary.
+   *
+   * @param {Element} el
+   * @returns {string}
+   */
+  function compactStat(el) {
+    const clone = /** @type {HTMLElement} */ (el.cloneNode(true));
+    clone.querySelectorAll('.mech-prop-draw, .mech-chart-container').forEach(n => n.remove());
+    // Nothing copied in here may keep an id; see above.
+    clone.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    return clone.innerHTML;
+  }
+
   function syncSummary() {
     if (!summary) return;
 
@@ -865,7 +914,7 @@ export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } 
     // Try one-sample-sim #mech-sim-stat (already labeled)
     const mechSimStat = strip.querySelector('#mech-sim-stat');
     if (mechSimStat && mechSimStat.textContent.trim()) {
-      summary.innerHTML = mechSimStat.innerHTML;
+      summary.innerHTML = compactStat(mechSimStat);
       return;
     }
 
@@ -1691,6 +1740,13 @@ export function initDataPanel(config) {
   const { datasetFilter, deepLinkFilter, onDataset, onText, onRawText, onClear,
     autoCollapse = false, stickyControls = false, showPreview = false,
     datasetGroupFn,
+    // The SHAPE this page needs from a file it has never seen — e.g. a numeric
+    // response and a two-level grouping variable. Given one, the panel builds
+    // the variable picker itself and hands `onText` the chosen columns, so a
+    // page does not grow its own (js/variable-picker.js explains why that
+    // matters). Bundled datasets are not routed through it: they are curated
+    // and carry their own metadata.
+    needs,
     // Whether `?data=` (a flat comma list) can express this page's data shape.
     // docs/url-api.md has always said "single-variable pages only", but the code
     // accepted it everywhere — and on the randomization pages, which need two
@@ -1706,6 +1762,33 @@ export function initDataPanel(config) {
   const clearBtn = document.getElementById('clear-btn');
   const saveBtn = document.getElementById('save-btn');
   const fileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('file-input'));
+
+  // ── The variable picker, when the page said what shape it needs ──
+  //
+  // Outside the data panel, like the hand-rolled ones it replaces: the panel
+  // collapses the moment data loads, and a control that goes with it is a
+  // control nobody can change. Injected rather than written into 37 page
+  // templates, which is the move the Open URL row above already makes.
+  /** @type {{headers:string[],types:string[],data:any[]}|null} */
+  let pickerParsed = null;
+  let pickerSource = '';
+  const varPicker = needs?.length ? (() => {
+    const panel = document.getElementById('data-panel');
+    // A bare container: the styled, spaced element is the picker's own, so a
+    // page that never shows one costs nothing. (`.var-selector-row` carries
+    // margin and padding, so putting it here added 8px of page height to every
+    // tool that declares `needs` — caught by the split layout's height budget.)
+    const host = document.createElement('div');
+    panel?.parentNode?.insertBefore(host, panel.nextSibling);
+    return createVariablePicker({
+      host,
+      slots: needs,
+      onChange: (pick) => {
+        if (pickerParsed && onText) onText(pickerParsed, pickerSource, pick);
+      },
+    });
+  })() : null;
+
 
   // ── "Open File/URL" — the URL half (Todd Will's request, Sept 2026) ─────
   // `?csv=` has worked since the beginning, but only by hand-editing a query
@@ -1916,6 +1999,7 @@ export function initDataPanel(config) {
         }
 
         lastLoadedDataset = ds;
+        varPicker?.clear();
         onDataset(ds, meta);
         // Populate editor with dataset as CSV
         if (ds.rows && ds.variables) {
@@ -2117,7 +2201,8 @@ export function initDataPanel(config) {
             v.name = v.name.replace(/<[^>]*>/g, '').trim();
           }
           const meta = { id: ds.id || 'pasted', name: ds.name || sourceName, description: ds.description || '', type: 'external', n: ds.rows.length };
-          onDataset(ds, meta);
+          varPicker?.clear();
+        onDataset(ds, meta);
           const cols = ds.variables.map(/** @param {any} v */ v => v.name);
           populateEditor(rowsToCSV(ds.rows, cols), meta.name);
           return;
@@ -2127,7 +2212,15 @@ export function initDataPanel(config) {
     if (!onText) return;
     try {
       const parsed = parseCSV(text);
-      onText(parsed, sourceName);
+      if (varPicker) {
+        pickerParsed = parsed;
+        pickerSource = sourceName;
+        // `raw` as well: a page may want the original text when the parse
+        // produced no rows (a bare comma list of numbers is not a table).
+        onText(parsed, sourceName, varPicker.update(parsed), text);
+      } else {
+        onText(parsed, sourceName);
+      }
     } catch (e) {
       announce(`Error parsing data: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -2228,7 +2321,8 @@ export function initDataPanel(config) {
           const ds = asDatasetJSON(text);
           if (ds) {
             const meta = datasetMeta(ds, name);
-            onDataset(ds, meta);
+            varPicker?.clear();
+        onDataset(ds, meta);
             populateEditor(rowsToCSV(ds.rows, ds.variables.map((/** @type {any} */ v) => v.name)), meta.name);
           } else {
             ingestText(text, name);
@@ -2275,6 +2369,8 @@ export function initDataPanel(config) {
         const ctrl = document.getElementById('controls');
         if (ctrl) ctrl.classList.remove('sticky');
       }
+      varPicker?.clear();
+      pickerParsed = null;
       onClear();
     });
   }
