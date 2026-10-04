@@ -1060,20 +1060,34 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
     const o = own?.getBoundingClientRect();
     return Math.round(r.left + r.width / 2 - (o?.left ?? 0));
   };
-  const byValue = new Map();
-  src.forEach((c, i) => {
-    const k = relX(c);
-    if (!byValue.has(k)) byValue.set(k, []);
-    byValue.get(k).push({ c, group: i < (sourceGroups[0]?.length ?? 0) ? 0 : 1 });
+  // Paired BY RANK, not by position.
+  //
+  // Matching each dealt dot to a source dot at the same x was right in
+  // principle and wrong in fact: a dotplot BINS, and a bin's centre depends on
+  // the values in that plot. The shuffle hands the two plots the same 48
+  // values split differently, so the bins move and the x multisets no longer
+  // agree — measured on lizard_run, 10 of 48 dealt dots had no source within
+  // the 2px window the old lookup allowed. Those ten got no flyer, and a dot
+  // with no flyer was never hidden: ten dots sat in Step 2 while everything
+  // else flew, which is what a reader sees as "some dots remain". (Jeff,
+  // 2026-10-04, on a phone; it was doing it on every width.)
+  //
+  // Rank pairing is exact and total. A permutation preserves the multiset of
+  // values, so the kth smallest on the left IS the kth smallest on the right,
+  // whatever each plot did with its bins — and both sides have n dots, so
+  // every dealt dot gets exactly one source.
+  const ranked = (/** @type {Element[]} */ arr) =>
+    arr.map((c, i) => ({ c, i, x: relX(c) }))
+      .sort((a, b) => a.x - b.x || a.i - b.i);
+  const srcRank = ranked(src);
+  const n1src = sourceGroups[0]?.length ?? 0;
+  /** @type {Map<Element, {c: Element, group: number}>} */
+  const partner = new Map();
+  ranked(tgt).forEach((t, rank) => {
+    const m = srcRank[rank];
+    if (m) partner.set(t.c, { c: m.c, group: m.i < n1src ? 0 : 1 });
   });
-  /** Nearest key with anything left in it — rounding can leave a 1px gap. */
-  const claim = (/** @type {number} */ k) => {
-    for (const d of [0, 1, -1, 2, -2]) {
-      const bucket = byValue.get(k + d);
-      if (bucket?.length) return bucket.shift();
-    }
-    return null;
-  };
+  const claim = (/** @type {Element} */ dot) => partner.get(dot) ?? null;
 
   const n1 = targetGroups[0]?.length ?? 0;
   /** @type {Array<{el: HTMLElement, from: {x:number,y:number}, pool: {x:number,y:number}, to: {x:number,y:number}}>} */
@@ -1095,7 +1109,7 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
         .reduce((a, b) => a + b, 0) / 2);
 
   tgt.forEach((dot, i) => {
-    const match = claim(relX(dot));
+    const match = claim(dot);
     if (!match) return;
     const from = centre(match.c);
     const to = centre(dot);
