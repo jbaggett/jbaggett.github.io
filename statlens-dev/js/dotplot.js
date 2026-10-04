@@ -724,6 +724,24 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     .attr('role', 'listitem')
     .attr('aria-label', d => d.label);
 
+  // …and a cut column still gets its rounded top.
+  //
+  // Butt caps make the join flat, which is what the join wants, but they also
+  // flatten the top of the column — so a split column stood out as square-topped
+  // beside the rounded ones. A disc at the apex, in the top piece's colour,
+  // restores the cap without rounding the join. (Jeff, 2026-10-04: "the columns
+  // in the dotplot should all have the rounded tops, even the split ones".)
+  const caps = segments.filter(seg => !seg.whole && seg.to === seg.count);
+  group.selectAll('.col-cap')
+    .data(caps)
+    .join('circle')
+    .attr('class', 'col-cap')
+    .attr('cx', d => xScale(d.center))
+    .attr('cy', d => yScale(d.to))
+    .attr('r', colWidth / 2)
+    .attr('fill', d => d.fill)
+    .attr('aria-hidden', 'true');
+
   // Highlight only the NEW portion of columns that received new dots
   if (highlightIndex >= 0 || (highlightIndices && highlightIndices.size > 0)) {
     // Count how many new dots landed in each bin

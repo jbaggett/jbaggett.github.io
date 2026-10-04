@@ -1,7 +1,7 @@
 {
   "id": "friday_traffic",
   "name": "Friday the 13th Traffic",
-  "description": "Traffic volume on Friday the 6th vs. Friday the 13th at the same locations. Is there less traffic on the 13th? IMS Ch. 21.",
+  "description": "Traffic volume on Friday the 6th vs. Friday the 13th on the same stretch of the M25 motorway. Is there less traffic on the 13th? IMS Ch. 21.",
   "source": "openintro::friday",
   "chapter": "IMS Ch. 21",
   "type": "paired",
@@ -17,12 +17,12 @@
       "type": "numeric"
     }
   ],
-  "studyDescription": "Researchers collected traffic volume data from multiple road segments in the UK on pairs of consecutive Fridays: Friday the 6th and Friday the 13th. Each pair represents the same location measured on both dates, yielding n = 55 paired observations across 10 road segments over several months. This is an observational study with a paired design.",
+  "studyDescription": "Scanlon and colleagues obtained traffic flows from the British Department of Transport for two stretches of the M25 motorway — between junctions 7 and 8, and between junctions 9 and 10 — on five pairs of consecutive Fridays between 1990 and 1992. Each pair is the same stretch of road counted on Friday the 6th and again on Friday the 13th, giving n = 10 paired observations. This is an observational study.",
   "variableDescriptions": {
-    "sixth": "The traffic volume (number of vehicles) recorded on the preceding Friday the 6th at a given location.",
-    "thirteenth": "The traffic volume (number of vehicles) recorded on Friday the 13th at the same location."
+    "sixth": "Vehicles counted on that stretch of the M25 on Friday the 6th.",
+    "thirteenth": "Vehicles counted on the same stretch on the following Friday the 13th."
   },
-  "sourceDetail": "OpenIntro IMS, Chapter 21. Based on Scanlon et al. (1993), 'Is Friday the 13th Bad for Your Health?', BMJ.",
+  "sourceDetail": "OpenIntro IMS, Chapter 21; openintro::friday, the rows with type = \"traffic\". Scanlon, T.J., Luben, R.N., Scanlon, F.L. & Singleton, N. (1993), 'Is Friday the 13th Bad For Your Health?', BMJ 307:1584-1586.",
   "context": {
     "population": "road segments on Fridays",
     "parameter": "mean difference in traffic volume",
@@ -68,186 +68,6 @@
     {
       "sixth": 117584,
       "thirteenth": 117263
-    },
-    {
-      "sixth": 4942,
-      "thirteenth": 4882
-    },
-    {
-      "sixth": 4895,
-      "thirteenth": 4736
-    },
-    {
-      "sixth": 4805,
-      "thirteenth": 4784
-    },
-    {
-      "sixth": 4570,
-      "thirteenth": 4603
-    },
-    {
-      "sixth": 4506,
-      "thirteenth": 4629
-    },
-    {
-      "sixth": 6754,
-      "thirteenth": 6998
-    },
-    {
-      "sixth": 6704,
-      "thirteenth": 6707
-    },
-    {
-      "sixth": 5871,
-      "thirteenth": 5662
-    },
-    {
-      "sixth": 6026,
-      "thirteenth": 6162
-    },
-    {
-      "sixth": 5676,
-      "thirteenth": 5665
-    },
-    {
-      "sixth": 3685,
-      "thirteenth": 3848
-    },
-    {
-      "sixth": 3799,
-      "thirteenth": 3680
-    },
-    {
-      "sixth": 3563,
-      "thirteenth": 3554
-    },
-    {
-      "sixth": 3673,
-      "thirteenth": 3676
-    },
-    {
-      "sixth": 3558,
-      "thirteenth": 3613
-    },
-    {
-      "sixth": 5751,
-      "thirteenth": 5993
-    },
-    {
-      "sixth": 5367,
-      "thirteenth": 5320
-    },
-    {
-      "sixth": 4949,
-      "thirteenth": 4960
-    },
-    {
-      "sixth": 5298,
-      "thirteenth": 5467
-    },
-    {
-      "sixth": 5199,
-      "thirteenth": 5092
-    },
-    {
-      "sixth": 4141,
-      "thirteenth": 4389
-    },
-    {
-      "sixth": 3674,
-      "thirteenth": 3660
-    },
-    {
-      "sixth": 3707,
-      "thirteenth": 3822
-    },
-    {
-      "sixth": 3633,
-      "thirteenth": 3730
-    },
-    {
-      "sixth": 3688,
-      "thirteenth": 3615
-    },
-    {
-      "sixth": 4266,
-      "thirteenth": 4532
-    },
-    {
-      "sixth": 3954,
-      "thirteenth": 3964
-    },
-    {
-      "sixth": 4028,
-      "thirteenth": 3926
-    },
-    {
-      "sixth": 3689,
-      "thirteenth": 3692
-    },
-    {
-      "sixth": 3920,
-      "thirteenth": 3853
-    },
-    {
-      "sixth": 7138,
-      "thirteenth": 6836
-    },
-    {
-      "sixth": 6568,
-      "thirteenth": 6363
-    },
-    {
-      "sixth": 6514,
-      "thirteenth": 6555
-    },
-    {
-      "sixth": 6115,
-      "thirteenth": 6412
-    },
-    {
-      "sixth": 5325,
-      "thirteenth": 6099
-    },
-    {
-      "sixth": 6502,
-      "thirteenth": 6648
-    },
-    {
-      "sixth": 6416,
-      "thirteenth": 6398
-    },
-    {
-      "sixth": 6422,
-      "thirteenth": 6503
-    },
-    {
-      "sixth": 6748,
-      "thirteenth": 6716
-    },
-    {
-      "sixth": 7023,
-      "thirteenth": 7057
-    },
-    {
-      "sixth": 4083,
-      "thirteenth": 4277
-    },
-    {
-      "sixth": 4107,
-      "thirteenth": 4334
-    },
-    {
-      "sixth": 4168,
-      "thirteenth": 4050
-    },
-    {
-      "sixth": 4174,
-      "thirteenth": 4198
-    },
-    {
-      "sixth": 4079,
-      "thirteenth": 4105
     }
   ],
   "inferenceContexts": [
