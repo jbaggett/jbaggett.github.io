@@ -10,7 +10,7 @@ import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { createSharedScale } from './mechanisms/entities.js';
 import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
-import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animateCombineStats,
+import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animatePoolAndDealMarks, animateCombineStats,
   cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
@@ -32,7 +32,7 @@ import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle 
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
-import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView, blockLayout } from './prop-bootstrap-mech.js';
+import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView, blockLayout, obsLegendHTML } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
 import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
@@ -99,6 +99,18 @@ export function initSimPage(config) {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
   }
   let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
+  // Which card colour carries the success (?cardcolor=red|white).
+  //
+  // Red = success is this tool's convention and the textbook's, but a
+  // coursepack example can deal its own deck the other way round — the
+  // opportunity-cost activity makes red the "buy", which is the NON-success —
+  // and a student then meets two opposite conventions in one sitting. Which
+  // colour means success is a property of the material, not of the statistics,
+  // so it is a setting: a URL parameter for the link an assignment hands out,
+  // and a control in the legend for the person already looking at it.
+  // (Todd Will + Jeff, REQ-071.)
+  let cardColorSwapped = /^(white|swap|swapped)$/i.test(
+    new URLSearchParams(location.search).get('cardcolor') || '');
   // The proportion mechanism's view. Two roles, as the mean pages have:
   // INDIVIDUAL — one mark per observation, which can say which observations
   // were drawn and how often — and AGGREGATE, which throws the individuals away
@@ -119,7 +131,25 @@ export function initSimPage(config) {
   })();
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
-  const useNewPropMech2 = config.mode === 'bootstrap' && config.proportion && !!config.twoGroup;
+  /**
+   * The two-group proportion display: one mark per observation, per group (or
+   * the aggregate bar once n outgrows a mark each).
+   *
+   * The randomization page drew two 14px `propBarHTML` strips instead — a
+   * picture that carries a proportion and nothing else, while the CI page
+   * beside it drew the same kind of data as blocks of marks. Two displays for
+   * one idea, and the thinner one on the page where the mechanism is harder.
+   * (Jeff, 2026-10-03: "the two proportion bars don't convey much, I wonder if
+   * we can use the wider bars we use in one sample land … we could also use two
+   * of the dot blocks when we have small samples.")
+   *
+   * Not in the card view: there the cards ARE the individual marks, dealt
+   * rather than blocked, so the two are alternative renderings of the same
+   * role and not layers of one display.
+   */
+  const useNewPropMech2 = () => config.proportion && !!config.twoGroup
+    && (config.mode === 'bootstrap' || config.mode === 'randomization')
+    && !cardMechanism;
   // B1: one-sample mean bootstrap — animated dotplot resampling for small samples
   // (the non-summary view). Large samples keep the histogram.
   // Shared with the one-sample engine — a second copy of this number is how the
@@ -372,12 +402,14 @@ export function initSimPage(config) {
     }
     // Card mechanism toggle (two-proportion randomization).
     if (cardMechanism) params.mechanism = 'cards';
+    // …and which colour it deals the success as, when that is not the default.
+    if (cardColorSwapped) params.cardcolor = 'white';
     // Individual | Aggregate, when it has been moved off the default AND the
     // choice was the reader's. Above MAX_MARBLES the aggregate is forced by n,
     // and pinning that in the link would carry it to a dataset small enough to
     // have had the choice.
     const biggestGroup = Math.max(data1?.length ?? 0, data2?.length ?? 0);
-    if ((useNewPropMech || useNewPropMech2) && propMechStyle !== 'dots'
+    if ((useNewPropMech || useNewPropMech2()) && propMechStyle !== 'dots'
         && hasIndividualView(biggestGroup)) {
       params.mechstyle = propMechStyle === 'aggregate' ? 'aggregate' : propMechStyle;
     }
@@ -1256,14 +1288,17 @@ export function initSimPage(config) {
     // 2026-10-03: "immediately show the original samples when the data is
     // loaded instead of waiting for a +1".)
     initMechanismStrip();
-    if (cardsAllowed() && mechanismStrip) {
-      // Cards asked for by name (an activity pointing at them) open the strip
-      // even if a stale "collapsed" is remembered from another page.
-      if (cardMechanism) initMechanismCollapse(mechanismStrip, { forceExpanded: true });
-      ensureViewToggle();
-      // Card legend (decodes filled vs outline) shows only in card view.
-      updateMechCardLegend();
+    // Cards asked for by name (an activity pointing at them) open the strip
+    // even if a stale "collapsed" is remembered from another page.
+    if (cardsAllowed() && cardMechanism && mechanismStrip) {
+      initMechanismCollapse(mechanismStrip, { forceExpanded: true });
     }
+    // Unconditional: it also REMOVES a control left over from a dataset whose
+    // groups were small enough to deal.
+    if (cardModeAvailable) ensureViewToggle();
+    // The colour key, on every proportion page and in every view. It names the
+    // outcomes in the dataset's words, so it has to follow the data.
+    if (config.proportion) updateMechCardLegend();
 
     // The H₀ sentence under the strip names the study ("survival rate is the
     // same regardless of whether a transplant was received"), so it has to
@@ -1722,7 +1757,7 @@ export function initSimPage(config) {
     } else if (config.twoGroup) {
       mechanismStrip.hidden = false;
       initMechanismCollapse(mechanismStrip);
-      if (useNewPropMech2) ensurePropStyleToggle();
+      if (useNewPropMech2()) ensurePropStyleToggle();
       renderTwoGroupOriginal();
       // Blank until the first shuffle (was seeded with the original grouping,
       // which looked like a completed shuffle).
@@ -2290,7 +2325,8 @@ export function initSimPage(config) {
 
     if (config.proportion && cardMechanism) {
       // Card mode: each observation is a card, grouped into two grids
-      html += `<div class="mech-card-display">${cardGroupsHTML(g1, g2, cardOpts())}</div>`;
+      html += `<div class="mech-card-display${cardColorSwapped ? ' is-swapped' : ''}">`
+        + `${cardGroupsHTML(g1, g2, cardOpts())}</div>`;
     } else if (config.proportion) {
       // Proportion groups: show S/F chip bars + stats
       const succ1 = g1.filter(v => v === 1).length;
@@ -2454,7 +2490,7 @@ export function initSimPage(config) {
   /** Render original group summaries in the mechanism strip. */
   function renderTwoGroupOriginal() {
     if (!mechOriginalContent) return;
-    if (useNewPropMech2) { renderTwoPropBags(); return; }
+    if (useNewPropMech2()) { renderTwoPropBags(); return; }
     mechOriginalContent.innerHTML = buildTwoGroupHTML(data1, data2, false, true);
     if (twoMeanDotActive()) {
       const domain = computeTwoMeanDomain();
@@ -2545,6 +2581,57 @@ export function initSimPage(config) {
   }
 
   /**
+   * A shuffle of the two groups, drawn as blocks of marks.
+   *
+   * The bootstrap's `showTwoPropResample` cannot be reused for it. Its whole
+   * vocabulary is repeats and misses — this one was drawn twice, that one never
+   * — and a permutation has neither: every observation appears exactly once, in
+   * one group or the other, and the group sizes never change. What this has to
+   * say instead is that the OUTCOMES did not change, only which group they sit
+   * in, so the marks pool, scramble, and are dealt back out keeping their
+   * colour. (js/mechanisms/draw-animation.js: animatePoolAndDealMarks.)
+   *
+   * @param {number[]} g1 @param {number[]} g2
+   * @param {boolean} animate - only on +1; a hundred of these is a flicker
+   * @returns {number} animation duration in ms
+   */
+  function showTwoPropShuffle(g1, g2, animate) {
+    if (!mechResampleContent) return 0;
+    mechResampleContent.innerHTML = twoPropPanelHTML('rs', g1, g2, true);
+    const c1 = /** @type {HTMLElement} */ (document.getElementById('pbm-rs-1'));
+    const c2 = /** @type {HTMLElement} */ (document.getElementById('pbm-rs-2'));
+    // One geometry for all four blocks, from the biggest group — the same rule
+    // the bags use, for the same reason: two scales cannot be compared.
+    const shared = blockLayout(Math.max(data1.length, data2.length),
+      Math.round(c1?.getBoundingClientRect().width ?? 0));
+    const common = { style: propMechStyle, layout: shared, delta: false };
+    renderPropResample(c1, g1, { ...common, label: `Shuffled ${group1Name}`,
+      reference: data1.length ? mean(data1) : null });
+    renderPropResample(c2, g2, { ...common, label: `Shuffled ${group2Name}`,
+      reference: data2.length ? mean(data2) : null });
+
+    const marks = (/** @type {Element|null} */ el) =>
+      /** @type {HTMLElement[]} */ ([...(el?.querySelectorAll('.pbm-dot') ?? [])]);
+    const ms = animate ? animatePoolAndDealMarks({
+      sourceGroups: [marks(document.getElementById('pbm-bag-1')),
+                     marks(document.getElementById('pbm-bag-2'))],
+      targetGroups: [marks(c1), marks(c2)],
+    }) : 0;
+
+    // The difference is the thing the deal produced, so it arrives when the
+    // deal does — not before the marks have landed.
+    const diffEl = mechResampleContent.querySelector('.mech-stat-value');
+    const setDiff = () => {
+      if (!diffEl) return;
+      diffEl.textContent = formatStat(mean(g1) - mean(g2), dataPrecision, 'proportion');
+      diffEl.classList.add('highlight-last');
+    };
+    if (ms > 0) { if (diffEl) diffEl.textContent = '…'; setTimeout(setDiff, Math.max(0, ms - 120)); }
+    else setDiff();
+    return ms;
+  }
+
+  /**
    * Encoded null next to the shuffle mechanism (randomization only): connect H₀
    * to *why* we shuffle — "the labels carry no information, so we re-allocate
    * them." Injected from JS so every randomization page gets it without per-page
@@ -2569,16 +2656,49 @@ export function initSimPage(config) {
     el.innerHTML = claim + mech;
   }
 
-  /** Set the card legend (cards view) or clear it (bars view). */
+  /**
+   * The colour key under the strip — for every proportion view, not just cards.
+   *
+   * The card view has always named its two colours; the bar and dot views named
+   * neither. A student met "11 S" and "39 F" inside the bars and had to infer
+   * that amber was the outcome being counted — the letters abbreviate the
+   * OUTCOME, they do not translate the colour. Now both are named wherever a
+   * proportion is drawn, in the words the dataset uses ("survived" / "died").
+   * (Jeff, 2026-10-03: "for proportions simulations let's find a way to add a
+   * legend somewhere for success and failures (the two colors)".)
+   *
+   * In the card view the key also carries the control for WHICH colour is the
+   * success, since that is the one place the question arises (REQ-071).
+   */
   function updateMechCardLegend() {
-    if (!mechanismDescEl) return;
-    if (cardMechanism) {
-      const o = cardOpts();
-      mechanismDescEl.innerHTML = cardLegendHTML(o.successLabel || 'success', o.failureLabel || 'failure');
-      mechanismDescEl.hidden = false;
-    } else {
-      mechanismDescEl.hidden = true;
+    if (!config.proportion || !mechanismStrip) return;
+    // Its own row at the foot of the strip, not the caption paragraph.
+    // `#mechanism-description` is already spoken for: `placeStatRows` moves it
+    // into Step 2's stat row on the one-proportion bootstrap, inside a panel
+    // that stays hidden until the first draw — so a key written there was
+    // correct and invisible.
+    let row = mechanismStrip.querySelector('.mech-legend-row');
+    if (!row) {
+      row = document.createElement('p');
+      row.className = 'mech-legend-row';
+      mechanismStrip.appendChild(row);
     }
+    const mechanismDescEl = /** @type {HTMLElement} */ (row);
+    const o = cardOpts();
+    const succ = o.successLabel || 'success';
+    const fail = o.failureLabel || 'failure';
+    mechanismDescEl.innerHTML = cardMechanism
+      ? cardLegendHTML(succ, fail, { swapped: cardColorSwapped })
+        + `<button type="button" class="obs-swap-btn" aria-pressed="${String(cardColorSwapped)}"`
+        + ` title="Swap which card colour means ${succ}">⇄ Swap colours</button>`
+      : obsLegendHTML(succ, fail);
+    mechanismDescEl.hidden = false;
+    const swapBtn = mechanismDescEl.querySelector('.obs-swap-btn');
+    if (swapBtn) swapBtn.addEventListener('click', () => {
+      cardColorSwapped = !cardColorSwapped;
+      rerenderMechanismView();
+      announce(`${succ} is now the ${cardColorSwapped ? 'white' : 'red'} card.`);
+    });
   }
 
   /**
@@ -2625,8 +2745,10 @@ export function initSimPage(config) {
       if (!haveResample) {
         // No shuffle yet — keep the panel blank rather than mirroring the original.
         mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
-      } else if (useNewPropMech2) {
-        showTwoPropResample(lastTwoG1, lastTwoG2, false); // view switch → no draw animation
+      } else if (useNewPropMech2()) {
+        // A view switch, not a simulation step: no draw, no deal.
+        if (config.mode === 'randomization') showTwoPropShuffle(lastTwoG1, lastTwoG2, false);
+        else showTwoPropResample(lastTwoG1, lastTwoG2, false);
       } else {
         mechResampleContent.innerHTML = buildTwoGroupHTML(lastTwoG1, lastTwoG2, false);
         renderTwoGroupCharts(lastTwoG1, lastTwoG2, 'resamp');
@@ -2635,34 +2757,62 @@ export function initSimPage(config) {
     updateMechCardLegend();
   }
 
-  /** Add the Bars/Cards segmented toggle to the strip's collapse bar (top-right).
-   *  Idempotent; only for two-group proportion pages. */
+  /**
+   * Dots | Cards — the RENDERING inside the individual view.
+   *
+   * It is the same dimension the mean pages call Dots | Tiles: the role (one
+   * mark per observation, or the aggregate) is the other control's, and this
+   * says which picture that role is drawn as. It used to be "Bars | Cards" in
+   * the strip's collapse bar, grey and top-right among the page chrome, where
+   * a reader who did not already know cards existed had no reason to look —
+   * and "Bars" stopped being true when the individual view became blocks of
+   * marks. Now it sits beside Step 1's heading, next to the role it modifies.
+   * (Jeff, 2026-10-03: "make it discoverable".)
+   *
+   * Idempotent. Rebuilt on every data load, because `cardsAllowed()` depends
+   * on the group sizes.
+   */
   function ensureViewToggle() {
-    if (!cardsAllowed() || !mechanismStrip) return;
-    const bar = mechanismStrip.querySelector('.mechanism-collapse-bar');
-    if (!bar || bar.querySelector('.mech-view-toggle')) return;
+    if (!mechanismStrip) return;
+    const existing = mechanismStrip.querySelector('.mech-view-toggle')
+      ?? document.querySelector('.mech-view-toggle');
+    // Cards need small groups, and the aggregate has one rendering — so in
+    // either case the control goes away rather than sitting there meaning
+    // nothing (the same rule the role control follows).
+    if (!cardsAllowed() || propMechStyle === 'aggregate') { existing?.remove(); return; }
+    if (existing) return;
 
-    const seg = document.createElement('div');
-    seg.className = 'seg-control mech-view-toggle';
-    seg.setAttribute('role', 'group');
-    seg.setAttribute('aria-label', 'Mechanism view');
-    seg.innerHTML =
-      `<button type="button" data-view="bars" aria-pressed="${String(!cardMechanism)}">Bars</button>` +
-      `<button type="button" data-view="cards" aria-pressed="${String(cardMechanism)}">Cards</button>`;
+    // Beside Step 1's heading, after the role control — the two read as one
+    // sentence: View: Individual | Aggregate, drawn as Dots | Cards.
+    const host = document.querySelector('.mech-tier--source .mech-tier-head')
+      ?? document.querySelector('[data-entity="source"] .mechanism-title')
+      ?? mechanismStrip.querySelector('.mechanism-collapse-bar');
+    if (!host) return;
 
-    seg.addEventListener('click', (e) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'pbm-style-toggle mech-view-toggle';
+    wrap.innerHTML =
+      '<span class="seg-label">Draw as:</span>'
+      + '<div class="seg-control" role="group" aria-label="Mechanism rendering">'
+      + `<button type="button" data-view="dots" aria-pressed="${String(!cardMechanism)}">Dots</button>`
+      + `<button type="button" data-view="cards" aria-pressed="${String(cardMechanism)}">Cards</button>`
+      + '</div>';
+
+    wrap.addEventListener('click', (e) => {
       const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-view]');
       if (!btn) return;
       const wantCards = btn.getAttribute('data-view') === 'cards';
       if (wantCards === cardMechanism) return;
       cardMechanism = wantCards;
-      for (const b of seg.querySelectorAll('button')) {
+      for (const b of wrap.querySelectorAll('button')) {
         b.setAttribute('aria-pressed', String((b.getAttribute('data-view') === 'cards') === cardMechanism));
       }
+      syncUrl();
       rerenderMechanismView();
     });
 
-    bar.insertBefore(seg, bar.firstChild);
+    if (host.classList.contains('mechanism-collapse-bar')) host.insertBefore(wrap, host.firstChild);
+    else host.appendChild(wrap);
   }
 
   /** Add the Grid/Bar segmented toggle for the one-proportion bootstrap
@@ -2677,7 +2827,7 @@ export function initSimPage(config) {
    * (609 + 1,391) has to take the toggle with it. (Jeff, 2026-10-02.)
    */
   function ensurePropStyleToggle() {
-    const forProps = useNewPropMech || useNewPropMech2;
+    const forProps = useNewPropMech || useNewPropMech2();
     // One control, both families. The proportion pages flip which DISPLAY the
     // mechanism draws; the quantitative ones flip which ROLE the resample panel
     // shows. Same question, same words, same place — which is the whole point
@@ -2764,9 +2914,14 @@ export function initSimPage(config) {
       for (const b of seg.querySelectorAll('button')) {
         b.setAttribute('aria-pressed', String(b.getAttribute('data-pstyle') === propMechStyle));
       }
+      // The aggregate has one rendering, so Dots | Cards goes with it.
+      if (cardModeAvailable) {
+        if (propMechStyle === 'aggregate') cardMechanism = false;
+        ensureViewToggle();
+      }
       syncUrl();
       // Re-render bag + current resample (static) in the new representation.
-      if (useNewPropMech2) {
+      if (useNewPropMech2()) {
         rerenderMechanismView();
       } else {
         renderOriginalSample();
@@ -2805,7 +2960,11 @@ export function initSimPage(config) {
     lastTwoG2 = g2;
 
     // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
-    if (useNewPropMech2) return showTwoPropResample(g1, g2, highlight);
+    if (useNewPropMech2()) {
+      return config.mode === 'randomization'
+        ? showTwoPropShuffle(g1, g2, highlight)
+        : showTwoPropResample(g1, g2, highlight);
+    }
 
     // B3: two stacked dotplots per group.
     if (twoMeanDotActive()) {
@@ -2974,15 +3133,10 @@ export function initSimPage(config) {
       }
       sub.textContent = ` · ${descText}`;
     }
-    // The bottom caption row is now only used for the card legend (filled vs
-    // outline), which has no other home.
-    if (cardMechanism) {
-      const o = cardOpts();
-      mechanismDescEl.innerHTML = cardLegendHTML(o.successLabel || 'success', o.failureLabel || 'failure');
-      mechanismDescEl.hidden = false;
-    } else {
-      mechanismDescEl.hidden = true;
-    }
+    // The bottom caption row carries the colour key (and, in the card view, the
+    // control for which colour is the success). One implementation, so the two
+    // call sites cannot drift.
+    updateMechCardLegend();
     return morphMs;
   }
 

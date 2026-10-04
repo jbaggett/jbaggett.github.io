@@ -948,3 +948,43 @@ export function fitPopulationTags(barEl) {
     }
   }
 }
+
+/* ─── The colour key ──────────────────────────────────────────────────────── */
+
+/** @param {string} s */
+function escLabel(s) {
+  return String(s).replace(/[&<>"]/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] || c));
+}
+
+/**
+ * The key to a proportion display: one mark per outcome, named.
+ *
+ * Every proportion tool draws the same two things — a success and a failure —
+ * and until now only the card view said which was which. Everywhere else the
+ * amber/blue pair was introduced by nothing at all: a student met "11 S" and
+ * "39 F" inside the bars and had to infer that amber was the one being counted.
+ * The in-bar letters are an abbreviation of the outcome, not a translation of
+ * the colour. (Jeff, 2026-10-03: "for proportions simulations let's find a way
+ * to add a legend somewhere for success and failures (the two colors)".)
+ *
+ * The chips are `.obs-mark`, the same component the display itself is built
+ * from, so the key cannot drift from the thing it describes: it inherits
+ * whatever palette and shape its context sets — amber squares beside a bar,
+ * red and white cards beside a deal.
+ *
+ * @param {string} successLabel - the outcome being counted ("survived")
+ * @param {string} failureLabel - the other one ("died")
+ * @param {{ className?: string }} [opts]
+ * @returns {string}
+ */
+export function obsLegendHTML(successLabel, failureLabel, opts = {}) {
+  const cls = opts.className ? ` ${opts.className}` : '';
+  const item = (/** @type {string} */ kind, /** @type {string} */ label) =>
+    `<span class="obs-legend-item">`
+    + `<span class="obs-mark is-${kind}" aria-hidden="true"></span>`
+    + `<span class="obs-legend-label">${escLabel(label)}</span></span>`;
+  return `<span class="obs-legend${cls}">`
+    + item('success', successLabel) + item('failure', failureLabel)
+    + '</span>';
+}

@@ -13,7 +13,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags }
+import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags, obsLegendHTML }
   from './prop-bootstrap-mech.js';
 import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
@@ -520,7 +520,10 @@ export function initOneSamplePage(config) {
     // used to share put them at the same x whenever p̂ was near the left edge.
     let html = `<span class="pbm-src-row">`
       + populationBarHTML(p0, {
-          style: 'margin-top:2px', board: true,
+          // No inline margin: the board's spacing is the stylesheet's, and an
+          // inline one beat it. `.mech-prop-bar.pbm-population.is-board` holds
+          // a whole row above the bar so the p₀ tag clears the panel heading.
+          board: true,
           parameterLabel: `p\u2080 = ${p0}`,
           // The observed sample, marked on the population you draw from — one
           // picture for both, rather than a second bar or a fourth panel.
@@ -684,6 +687,38 @@ export function initOneSamplePage(config) {
       applyDatasetOutcome();
     }
 
+    /**
+     * The colour key under the strip: amber is the outcome being counted, blue
+     * is the other one, both in the dataset's own words.
+     *
+     * The board and the dot block are drawn in two colours and nothing said
+     * which was which — the panel prints p̂ and the bar prints "24 S", and
+     * between them a student still has to GUESS that amber is the success.
+     * (Jeff, 2026-10-03: "for proportions simulations let's find a way to add a
+     * legend somewhere for success and failures (the two colors)".)
+     */
+    function renderPropLegend() {
+      const strip = document.getElementById('mechanism-strip');
+      if (!strip || !successOutcome) return;
+      const succ = successOutcome.value;
+      if (!succ) return;
+      const levels = [...successOutcome.options].map(o => o.value);
+      // Two levels: the other one is the failure, by name. More than two: the
+      // rest are pooled, and "not X" is the only honest label for the pool.
+      const fail = levels.length === 2
+        ? (levels.find(l => l !== succ) ?? 'failure')
+        : `not ${succ}`;
+      // Its own row at the foot of the strip — the same place sim-app puts it,
+      // so the two engines draw one key and not two.
+      let row = strip.querySelector('.mech-legend-row');
+      if (!row) {
+        row = document.createElement('p');
+        row.className = 'mech-legend-row';
+        strip.appendChild(row);
+      }
+      row.innerHTML = obsLegendHTML(succ, fail);
+    }
+
     function applyDatasetOutcome() {
       const successVal = successOutcome?.value;
       if (!successVal || rawOutcomes.length === 0) return;
@@ -701,6 +736,7 @@ export function initOneSamplePage(config) {
 
       // Populate mechanism strip content (stays hidden until first generate)
       renderPropSource();
+      renderPropLegend();
       computePreSimDomain();
       scrollToControls();
     }

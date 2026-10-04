@@ -12,6 +12,8 @@
  * holding `.card` elements grouped under `.card-group` with an `<h3>` label.
  */
 
+import { obsLegendHTML } from './prop-bootstrap-mech.js';
+
 /**
  * @typedef {object} CardOpts
  * @property {string} group1Name
@@ -78,13 +80,21 @@ function groupHTML(name, g, opts) {
 }
 
 /**
- * Compact legend markup (filled vs outline) for the strip description area.
+ * The card view's colour key.
+ *
+ * It is the shared proportion key (obsLegendHTML) wearing the card palette,
+ * because the chips have to be the cards they describe — the legend sits in the
+ * strip's bottom bar, outside `.mech-card-display`, so it carries the palette
+ * itself rather than inheriting it.
+ *
  * @param {string} successLabel
  * @param {string} failureLabel
+ * @param {{ swapped?: boolean }} [opts] - `swapped`: the WHITE card is the
+ *   success (?cardcolor=white), for materials whose own deck reads that way.
  * @returns {string}
  */
-export function cardLegendHTML(successLabel, failureLabel) {
-  return `<span class="mech-card-legend">`
-    + `<span class="mech-card-swatch is-success"></span> ${successLabel}`
-    + `<span class="mech-card-swatch is-failure"></span> ${failureLabel}</span>`;
+export function cardLegendHTML(successLabel, failureLabel, opts = {}) {
+  return obsLegendHTML(successLabel, failureLabel, {
+    className: `mech-card-legend obs-cards${opts.swapped ? ' is-swapped' : ''}`,
+  });
 }

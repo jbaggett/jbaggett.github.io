@@ -1429,3 +1429,176 @@ export function animateCombineStats({ sources, target, onDone }) {
   requestAnimationFrame(step);
   return COMBINE_STAT_MS + COMBINE_STAT_SETTLE;
 }
+
+/* ─── A shuffle of OUTCOMES: emerge, scramble, deal ───────────────────────── */
+
+/** Emerge, scramble in the pool, deal, settle. */
+const MARK_EMERGE = 620, MARK_SCRAMBLE = 480, MARK_DEAL = 760, MARK_SETTLE = 160;
+
+/**
+ * The two-proportion shuffle, drawn as what it is: the outcomes come out of
+ * both groups, get mixed, and are dealt back into groups of the same sizes.
+ *
+ * `animatePoolAndDeal` above does this for two stacked DOTPLOTS, where a dot's
+ * x is its value and the deal is therefore purely vertical — that is the whole
+ * argument of the test made a property of the picture. A proportion block has
+ * no such axis: position inside a block is just reading order, and what must
+ * not change is the OUTCOME each mark carries. So this version pairs source to
+ * target by outcome, and keeps each mark's colour the whole way across — the
+ * amber that leaves a group arrives as amber in the other one. Only the group
+ * it belongs to changed, which is the null hypothesis, animated.
+ *
+ * The middle beat is the one the dotplot version does not have. Pooling and
+ * dealing on its own is dots going out and coming back; a visible scramble in
+ * the pile is what says the re-allocation was arbitrary. (Jeff, 2026-10-03:
+ * "we could somehow have dots emerge, scramble, then be 'dealt' into the
+ * shuffle".)
+ *
+ * The scramble's randomness is DECORATIVE and uses Math.random deliberately:
+ * the permutation itself was drawn from the seeded stream long before this
+ * runs, and a seeded tool whose pictures differ run to run would still be
+ * reproducible where it counts. Nothing here reads or advances that stream.
+ *
+ * @param {object} opts
+ * @param {HTMLElement[][]} opts.sourceGroups - [group1, group2] marks, as drawn
+ * @param {HTMLElement[][]} opts.targetGroups - the same for the dealt panel
+ * @param {() => void} [opts.onDone]
+ * @returns {number} total duration in ms, 0 if it declined to run
+ */
+export function animatePoolAndDealMarks({ sourceGroups, targetGroups, onDone }) {
+  if (prefersReducedMotion()) return 0;
+  const src = [...(sourceGroups?.[0] ?? []), ...(sourceGroups?.[1] ?? [])];
+  const tgt = [...(targetGroups?.[0] ?? []), ...(targetGroups?.[1] ?? [])];
+  if (!src.length || src.length !== tgt.length) return 0;
+
+  const isSuccess = (/** @type {Element} */ el) =>
+    el.classList.contains('pbm-success') || el.classList.contains('is-success');
+  // A permutation moves labels, not outcomes, so the two sides hold the same
+  // counts. If they do not, this is not the picture being asked for — decline
+  // rather than draw a lie.
+  const srcS = src.filter(isSuccess), srcF = src.filter(e => !isSuccess(e));
+  const tgtS = tgt.filter(isSuccess), tgtF = tgt.filter(e => !isSuccess(e));
+  if (srcS.length !== tgtS.length) return 0;
+  dismissAirborneStat();
+
+  const box = (/** @type {Element} */ el) => el.getBoundingClientRect();
+  const centre = (/** @type {Element} */ el) => {
+    const r = box(el);
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  };
+  // The pool sits between the two panels, measured from where the marks
+  // actually are — so it lands in the gap whether the panels are side by side
+  // (strip) or stacked (tiers).
+  const union = (/** @type {Element[]} */ g) => {
+    const rs = g.map(box);
+    if (!rs.length) return null;
+    return {
+      l: Math.min(...rs.map(r => r.left)), r: Math.max(...rs.map(r => r.right)),
+      t: Math.min(...rs.map(r => r.top)), b: Math.max(...rs.map(r => r.bottom)),
+    };
+  };
+  const ua = union(src), ub = union(tgt);
+  if (!ua || !ub) return 0;
+  const mid = (/** @type {{l:number,r:number,t:number,b:number}} */ u) =>
+    ({ x: (u.l + u.r) / 2, y: (u.t + u.b) / 2 });
+  const pool = { x: (mid(ua).x + mid(ub).x) / 2, y: (mid(ua).y + mid(ub).y) / 2 };
+
+  // Pair by outcome, in order: which particular amber becomes which other
+  // amber is not a fact this picture has, and claiming one would be inventing
+  // detail the permutation never produced.
+  const queueS = [...srcS], queueF = [...srcF];
+  /** @type {{el: HTMLElement, dot: HTMLElement, from: {x:number,y:number}, to: {x:number,y:number}, p1: {x:number,y:number}, p2: {x:number,y:number}}[]} */
+  const flyers = [];
+  const size = Math.max(box(src[0]).width, 6);
+  const height = Math.max(box(src[0]).height, 6);
+  // A PILE, not a third block: the marks shrink on the way in and overlap, so
+  // it reads as a heap that could not be counted — which is the point of the
+  // beat. A tidy grid at full size covered both panels (90 marks at 20px is
+  // 300×200 of strip) and looked like a third display rather than a transit.
+  const POOL_SCALE = 0.62;
+  const poolW = size * POOL_SCALE, poolH = height * POOL_SCALE;
+  const cols = Math.max(3, Math.ceil(Math.sqrt(tgt.length * 1.6)));
+  const rows = Math.ceil(tgt.length / cols);
+  const gapX = poolW * 0.86, gapY = poolH * 0.86;
+  const slot = (/** @type {number} */ i) => ({
+    x: pool.x + ((i % cols) - (cols - 1) / 2) * gapX,
+    y: pool.y + (Math.floor(i / cols) - (rows - 1) / 2) * gapY,
+  });
+  const shuffled = (/** @type {number} */ n) => {
+    const a = [...Array(n).keys()];
+    for (let i = n - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+  const inPool = shuffled(tgt.length), afterScramble = shuffled(tgt.length);
+
+  tgt.forEach((dot, i) => {
+    const source = (isSuccess(dot) ? queueS : queueF).shift();
+    if (!source) return;
+    const cs = getComputedStyle(source);
+    const from = centre(source);
+    const to = centre(dot);
+    const el = document.createElement('div');
+    el.className = 'dpr-flyer dpr-shuffle-mark';
+    el.style.cssText = `position:fixed;left:${from.x - size / 2}px;top:${from.y - size / 2}px;`
+      + `width:${size}px;height:${height}px;`
+      + `border-radius:${cs.borderRadius};background:${cs.backgroundColor};`
+      + `border:${cs.borderWidth} solid ${cs.borderColor};box-sizing:border-box;`
+      + 'z-index:1000;pointer-events:none;';
+    document.body.appendChild(el);
+    dot.style.opacity = '0';
+    flyers.push({ el, dot, from, to, p1: slot(inPool[i]), p2: slot(afterScramble[i]) });
+  });
+  if (!flyers.length) return 0;
+
+  const run = trackRun(() => {
+    for (const f of flyers) { f.el.remove(); f.dot.style.removeProperty('opacity'); }
+  });
+
+  const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const total = MARK_EMERGE + MARK_SCRAMBLE + MARK_DEAL + MARK_SETTLE;
+  const t0 = performance.now();
+
+  function step(/** @type {number} */ now) {
+    if (run.stopped()) return;
+    const e = now - t0;
+    for (const f of flyers) {
+      let x, y;
+      if (e < MARK_EMERGE) {
+        const t = ease(e / MARK_EMERGE);
+        x = f.from.x + (f.p1.x - f.from.x) * t;
+        y = f.from.y + (f.p1.y - f.from.y) * t;
+      } else if (e < MARK_EMERGE + MARK_SCRAMBLE) {
+        const t = ease((e - MARK_EMERGE) / MARK_SCRAMBLE);
+        x = f.p1.x + (f.p2.x - f.p1.x) * t;
+        y = f.p1.y + (f.p2.y - f.p1.y) * t;
+      } else {
+        const t = ease(Math.min(1, (e - MARK_EMERGE - MARK_SCRAMBLE) / MARK_DEAL));
+        x = f.p2.x + (f.to.x - f.p2.x) * t;
+        y = f.p2.y + (f.to.y - f.p2.y) * t;
+        if (t >= 1 && f.el.isConnected) { f.el.remove(); f.dot.style.removeProperty('opacity'); }
+      }
+      if (f.el.isConnected) {
+        // Size follows the journey: full in the blocks, small in the pile.
+        const k = e < MARK_EMERGE ? ease(e / MARK_EMERGE)
+          : e < MARK_EMERGE + MARK_SCRAMBLE ? 1
+          : 1 - ease(Math.min(1, (e - MARK_EMERGE - MARK_SCRAMBLE) / MARK_DEAL));
+        const w = size + (poolW - size) * k, h = height + (poolH - height) * k;
+        f.el.style.width = `${w}px`;
+        f.el.style.height = `${h}px`;
+        f.el.style.left = `${x - w / 2}px`;
+        f.el.style.top = `${y - h / 2}px`;
+      }
+    }
+    if (e < total) requestAnimationFrame(step);
+    else {
+      run.finish();
+      for (const f of flyers) { f.el.remove(); f.dot.style.removeProperty('opacity'); }
+      onDone?.();
+    }
+  }
+  requestAnimationFrame(step);
+  return total;
+}
