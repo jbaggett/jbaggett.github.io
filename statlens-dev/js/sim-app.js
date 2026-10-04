@@ -98,6 +98,11 @@ export function initSimPage(config) {
   function cardsAllowed() {
     return cardModeAvailable && Math.max(data1.length, data2.length) <= CARD_MAX_GROUP;
   }
+  // `?mechanism=cards` with `?mechstyle=aggregate` is a contradiction: cards
+  // are a rendering INSIDE the individual view, and the aggregate has one
+  // rendering of its own. The role wins — it is the coarser choice, and the
+  // live toggle already drops the cards when you switch to Aggregate, so a link
+  // that did not would open in a state the UI cannot return you to.
   let cardMechanism = /** @type {any} */ (urlParams).mechanism === 'cards' && cardModeAvailable;
   // Which card colour carries the success (?cardcolor=red|white).
   //
@@ -129,6 +134,10 @@ export function initSimPage(config) {
     if (v === 'aggregate' || v === 'bars' || v === 'dots' || v === 'grid') return v;
     return 'dots';
   })();
+  // …and the role settles the contradiction named above: `?mechstyle=aggregate`
+  // with `?mechanism=cards` opened a card view whose role control said
+  // Aggregate, a state no click could produce or leave.
+  if (propMechStyle === 'aggregate') cardMechanism = false;
   const useNewPropMech = config.mode === 'bootstrap' && config.proportion && !config.twoGroup;
   // B4: two-proportion bootstrap reuses the same grid/bar resampling per group.
   /**
@@ -2616,9 +2625,17 @@ export function initSimPage(config) {
    */
   /** Pool, hold — then the two groups are dealt from it. */
   const POOL_MERGE_MS = 620, POOL_HOLD_MS = 320;
-  /** How long after the deal starts the last fleck leaves the pooled bar.
-   *  (`DRAW_MS * 0.6` in prop-bootstrap-mech, plus the flight's own tail.) */
-  const POOL_DEAL_TAIL = 820;
+  /**
+   * How long the pooled bar stays after the deal begins.
+   *
+   * The last fleck leaves at `DRAW_MS * 0.6` (prop-bootstrap-mech) — about
+   * 690ms — but a bar that goes the moment it has finished launching is gone
+   * while the thing it fed is still filling, and the eye has nothing left to
+   * compare the two shuffled bars against. It now stays until the boundaries
+   * have essentially settled. (Jeff, 2026-10-03: "make the pooled bar persist
+   * a little longer".)
+   */
+  const POOL_DEAL_TAIL = 1320;
 
   /**
    * The bar a shuffle deals from.
@@ -2701,9 +2718,9 @@ export function initSimPage(config) {
     // It leaves once it has been dealt from — which is after the LAST fleck has
     // left it, not after the first.
     const dismiss = () => {
-      pool.style.transition = 'opacity 260ms ease';
+      pool.style.transition = 'opacity 420ms ease';
       pool.style.opacity = '0';
-      setTimeout(() => pool.remove(), 300);
+      setTimeout(() => pool.remove(), 460);
     };
     return { geom, dismiss };
   }
