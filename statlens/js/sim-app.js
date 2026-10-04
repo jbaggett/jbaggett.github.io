@@ -33,7 +33,6 @@ import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartTo
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView, blockLayout, obsLegendHTML } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
-import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
 /**
  * @typedef {object} SimConfig
@@ -3229,20 +3228,46 @@ export function initSimPage(config) {
     let morphMs = 0;
 
     if (cardMechanism && cardContainer) {
-      // Gather → shuffle → deal the cards into their new groups; update the
-      // diff readout mid-deal. animateCardShuffle handles reduced-motion.
+      // The cards take the dots' choreography.
+      //
+      // `animateCardShuffle` re-dealt the SHUFFLED panel's own cards with a
+      // FLIP: they gathered, mixed and spread out again without the original
+      // groups taking any part, so the picture said "this panel rearranged
+      // itself" when what happens is that BOTH groups are poured together and
+      // dealt back out. The dot view already tells it properly, and its
+      // animation is not about dots — `animatePoolAndDealMarks` flies whatever
+      // marks it is given, copying each one's own computed style, so the
+      // flyers here come out as cards. (Jeff, 2026-10-04: "I want the original
+      // groups to merge into the FLIP and then deal, or you can just use the
+      // dots choreography.")
       const diffSpan = mechResampleContent.querySelector('.mech-stat-value');
-      if (diffSpan) /** @type {HTMLElement} */ (diffSpan).style.opacity = '0.3';
-      animateCardShuffle(/** @type {HTMLElement} */ (cardContainer), () => {
-        cardContainer.innerHTML = cardGroupsHTML(g1, g2, cardOpts());
-        const diffVal = formatStat(statFn(g1) - statFn(g2), dataPrecision, fmtType);
-        if (diffSpan) {
-          diffSpan.textContent = diffVal;
-          diffSpan.classList.add('highlight-last');
-          /** @type {HTMLElement} */ (diffSpan).style.opacity = '1';
-        }
-      });
-      morphMs = prefersReducedMotion() ? 0 : (300 + 350 + 400 + 120);
+      cardContainer.innerHTML = cardGroupsHTML(g1, g2, cardOpts());
+      const cards = (/** @type {Element|null} */ root) =>
+        /** @type {HTMLElement[]} */ ([...(root?.querySelectorAll('.card-group .card') ?? [])]);
+      const srcGroups = [...(mechOriginalContent?.querySelectorAll('.card-group') ?? [])];
+      const tgtGroups = [...cardContainer.querySelectorAll('.card-group')];
+      const setDiff = () => {
+        if (!diffSpan) return;
+        diffSpan.textContent = formatStat(statFn(g1) - statFn(g2), dataPrecision, fmtType);
+        diffSpan.classList.add('highlight-last');
+        /** @type {HTMLElement} */ (diffSpan).style.opacity = '1';
+      };
+      morphMs = srcGroups.length === 2 && tgtGroups.length === 2
+        ? animatePoolAndDealMarks({
+            sourceGroups: [cards(srcGroups[0]), cards(srcGroups[1])],
+            targetGroups: [cards(tgtGroups[0]), cards(tgtGroups[1])],
+          })
+        : 0;
+      if (morphMs > 0) {
+        // The dealt counts wait for the cards, the way the blocks' do: "13/50"
+        // sitting over an empty panel is the answer printed before the deal.
+        mechResampleContent.classList.add('pbm-reveal-pending');
+        if (diffSpan) /** @type {HTMLElement} */ (diffSpan).style.opacity = '0.3';
+        setTimeout(() => {
+          mechResampleContent?.classList.remove('pbm-reveal-pending');
+          setDiff();
+        }, Math.max(0, morphMs - 150));
+      } else setDiff();
 
     } else if (canAnimateProps && mechOriginalContent) {
       // Ghost: fade resample panel to low opacity

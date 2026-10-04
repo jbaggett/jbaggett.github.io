@@ -2120,6 +2120,7 @@ input[aria-invalid="true"] {
    Hidden, not emptied: the row keeps its height and nothing reflows when the
    value appears. (See showTwoPropShuffle.) */
 .pbm-reveal-pending .pbm-block-counts,
+.pbm-reveal-pending .mech-card-count,
 .pbm-reveal-pending .mech-prop-count,
 .pbm-reveal-pending .mech-prop-aside,
 .pbm-reveal-pending .pbm-stat-value,
