@@ -1799,6 +1799,17 @@ input[aria-invalid="true"] {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);
 }
+/* On a phone the two controls are 354px of a 335px panel — 19px too wide — so
+   they wrapped onto two 46px rows at the top of Step 1, 97px of chrome above a
+   picture that was already taller than the screen. Without the words they are
+   255px and share one row. The buttons say "Individual | Aggregate" and
+   "Dots | Cards", which name themselves, and each `.seg-control` carries its
+   own `aria-label`, so nothing is lost to a screen reader. (2026-10-05.) */
+@media (max-width: 560px) {
+  .pbm-style-toggle .seg-label { position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .mech-head-controls { gap: 0.3rem 0.5rem; }
+}
 
 /* The null-world panel: a population, not a sample. No counts on the bar — it
    has no n — and a quiet note saying so. */
@@ -5889,6 +5900,10 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
    data panel auto-collapses and on the file/paste tabs — matching the means
    tools, so a multi-variable CSV can be re-pointed at any categorical column. */
 .var-selector-row { margin: 0 0 0.6rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; align-items: center; }
+/* …and `display: flex` beats the UA's `[hidden] { display: none }`, so a row
+   that has not been filled in yet still drew an 8px band. Every page that marks
+   this row `hidden` in its markup was showing one. (2026-10-05.) */
+.var-selector-row[hidden] { display: none; }
 .var-selector-row label { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 600; margin: 0; }
 .var-selector-row select { width: auto; }
 

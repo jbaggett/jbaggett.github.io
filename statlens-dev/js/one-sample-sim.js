@@ -335,6 +335,20 @@ export function initOneSamplePage(config) {
   const obsChartEl = () => /** @type {HTMLElement|null} */ (document.getElementById('mech-obs-chart'));
 
   /** Render the left "bag" panel using the observed or null-shifted sample. */
+  /**
+   * Dotplot height in the strip, phone first.
+   *
+   * The same measurement that shortened the two-group pages: at 393px a
+   * mechanism dotplot drew at the desktop's 210-unit viewBox and came out
+   * 194px tall, two of them plus the rest making a strip taller than the
+   * viewport. (js/sim-app.js carries the same rule and the same numbers.)
+   */
+  const phoneLayout = () =>
+    typeof window !== 'undefined' && window.matchMedia?.('(max-width: 560px)').matches;
+  const dotGeometry = () => phoneLayout()
+    ? { viewHeight: 120, margin: { top: 12, right: 18, bottom: 30, left: 18 } }
+    : {};
+
   function renderMeanBagView() {
     const el = obsChartEl();
     if (!el || sampleData.length < 2) return;
@@ -343,6 +357,7 @@ export function initOneSamplePage(config) {
     mech.renderBag(el, vals, meanVal, {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄',
       label: nullShown ? 'Null-shifted sample' : 'Observed sample',
+      ...dotGeometry(),
     });
   }
 
@@ -354,6 +369,7 @@ export function initOneSamplePage(config) {
       domain: sharedBoxplotDomain(), meanLabel: 'x̄*',
       label: 'Simulated resample from null distribution',
       indices: lastResampleIdx ?? undefined,
+      ...dotGeometry(),
     });
   }
 
@@ -426,7 +442,7 @@ export function initOneSamplePage(config) {
   /** (Re)draw the bag dotplot with `values` (used by the null-shift glide). */
   function drawMeanBag(values, meanVal) {
     const el = obsChartEl();
-    if (el && values.length >= 2) mech.renderBag(el, values, meanVal, { domain: sharedBoxplotDomain(), meanLabel: 'x̄' });
+    if (el && values.length >= 2) mech.renderBag(el, values, meanVal, { domain: sharedBoxplotDomain(), meanLabel: 'x̄', ...dotGeometry() });
   }
 
   /** Slide the bag's dots + mean line by `deltaPx` → 0 (the observed↔null shift).

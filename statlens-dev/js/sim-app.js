@@ -200,9 +200,28 @@ export function initSimPage(config) {
    * ~24px of tier, which is spent here on 148 and r = 7.4 — the same height
    * budget, bigger dots. (Jeff, 2026-10-03.)
    */
-  const tierDotGeometry = () => (poolsGroups && mechLayout !== 'strip')
-    ? { viewHeight: 148, margin: { top: 20, right: 24, bottom: 34, left: 24 } }
-    : {};
+  /**
+   * How tall a dotplot in the mechanism strip may be.
+   *
+   * A PHONE is the binding case and it was never measured. At 393px the strip
+   * on randomization-diff-means came to 1,049px after a draw — four stacked
+   * dotplots at the desktop's 210-unit viewBox, 194px each on screen — against
+   * a 727px viewport, so the picture the +1 button animates could not be seen
+   * whole, let alone beside the button. Shorter here, because a phone's
+   * constraint is height and its dotplots are narrow anyway. (Jeff, 2026-10-05:
+   * "the tiered layouts, some of them have gotten very big, and they may cause
+   * issues on mobile devices.")
+   *
+   * Read at render time, not once: an orientation change is a different device
+   * as far as this is concerned, and the strip redraws on the next step.
+   */
+  const phoneLayout = () =>
+    typeof window !== 'undefined' && window.matchMedia?.('(max-width: 560px)').matches;
+  const tierDotGeometry = () => phoneLayout()
+    ? { viewHeight: 120, margin: { top: 12, right: 18, bottom: 30, left: 18 } }
+    : (poolsGroups && mechLayout !== 'strip')
+      ? { viewHeight: 148, margin: { top: 20, right: 24, bottom: 34, left: 24 } }
+      : {};
     const isMeanOneSample = config.mode === 'bootstrap' && !config.proportion && !config.twoGroup && !config.paired;
   // ── View: Individual | Aggregate, for the quantitative pages ────────
   //
@@ -2176,7 +2195,8 @@ export function initSimPage(config) {
       // differences.
       const vals = resampleSourceValues();
       meanMech.renderBag(originalContentEl, vals, mean(vals), {
-        domain: meanDomain ?? undefined, meanLabel: config.paired ? 'd̄' : 'x̄' });
+        domain: meanDomain ?? undefined, meanLabel: config.paired ? 'd̄' : 'x̄',
+        ...tierDotGeometry() });
       if (config.paired) {
         if (origNEl) origNEl.textContent = `${vals.length} pairs`;
         if (origMeanEl) origMeanEl.textContent = formatStat(mean(vals), dataPrecision);
@@ -2507,8 +2527,13 @@ export function initSimPage(config) {
    * dots were at their maximum: cpr's 50 and 40 draw at 18px instead of 24, in
    * the same three rows; at 90 per group both pages already draw 14px.
    */
-  const twoPropBlockOpts = () =>
-    (config.mode === 'randomization' ? { maxSize: 18 } : {});
+  const twoPropBlockOpts = () => ({
+    ...(config.mode === 'randomization' ? { maxSize: 18 } : {}),
+    // A phone stacks all four blocks in one column, so a row of dots costs
+    // four times what it costs on a desktop. Two rows of a slightly smaller
+    // dot read as well and give the strip a screenful back.
+    ...(phoneLayout() ? { maxRows: 2 } : {}),
+  });
 
   /** Render the two original group "bags". */
   function renderTwoPropBags() {
@@ -3718,6 +3743,7 @@ export function initSimPage(config) {
           domain: meanDomain ?? computeMeanDomain() ?? undefined,
           meanLabel: config.paired ? 'd̄' : 'x̄',
           indices: lastResampleIndices ?? undefined,
+          ...tierDotGeometry(),
         });
     }
 
@@ -4001,6 +4027,7 @@ export function initSimPage(config) {
         mean(flippedDiffs), false, {
           domain: meanDomain ?? computeMeanDomain() ?? undefined,
           meanLabel: 'd̄*', label: 'Sign-flipped differences',
+          ...tierDotGeometry(),
         });
       return;
     }

@@ -169,10 +169,15 @@ const BLOCK_H = 168;
  *
  * @param {number} n
  * @param {number} availW usable width in px; 0 when the panel is not on screen
- * @param {{wide?: boolean, maxSize?: number}} [opts]
+ * `maxRows` lowers the row target. A phone stacks four of these blocks in one
+ * column, so a row costs four times what it costs on a desktop; two rows of a
+ * narrower dot read as well as three and save the strip a screenful.
+ *
+ * @param {{wide?: boolean, maxSize?: number, maxRows?: number}} [opts]
  * @returns {{cols: number, size: number}}
  */
 export function blockLayout(n, availW, opts = {}) {
+  const maxRows = Math.max(1, Math.round(opts.maxRows ?? MAX_ROWS));
   // Not measurable yet (hidden strip, detached node): a desktop panel's width,
   // which is also what the two-group pages give each half.
   const W = Math.max(availW || 0, 150) - 4;
@@ -195,7 +200,7 @@ export function blockLayout(n, availW, opts = {}) {
   // within MAX_ROWS. (Jeff, 2026-10-03: "for larger samples we should decrease
   // the dot sizes a bit to take less vertical space.")
   const aspect = Math.max(1, Math.ceil(Math.sqrt(n * 4)));
-  const widest = opts.wide ? n : Math.max(aspect, Math.ceil(n / MAX_ROWS));
+  const widest = opts.wide ? n : Math.max(aspect, Math.ceil(n / maxRows));
 
   const colsAt = (/** @type {number} */ step) =>
     Math.max(1, Math.min(widest, Math.floor((W + DOT_GAP) / (step + DOT_GAP))));
@@ -224,7 +229,7 @@ export function blockLayout(n, availW, opts = {}) {
   const steps = DOT_STEPS.filter(step => step <= cap);
   const legible = steps.filter(step => step >= DIGIT_MIN_W);
   if (legible.length) {
-    const target = Math.max(MAX_ROWS, Math.min(...legible.map(rowsAt)));
+    const target = Math.max(maxRows, Math.min(...legible.map(rowsAt)));
     for (const step of legible) {
       if (rowsAt(step) <= target) return { cols: balanced(step), size: step };
     }
