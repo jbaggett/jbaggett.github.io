@@ -1770,7 +1770,17 @@ input[aria-invalid="true"] {
 .mechanism-panel .mechanism-title:has(.pbm-style-toggle),
 .mechanism-panel .mechanism-title:has(.mech-null-toggle) {
   display: flex; align-items: center; gap: 0.5rem;
+  /* Two controls now share this row on the two-proportion randomization page
+     (View: Individual | Aggregate, and Draw as: Dots | Cards). On a phone they
+     do not fit beside the heading, and without wrapping the second one ran off
+     the right edge reading "Dr aw as: Do". */
+  flex-wrap: wrap; row-gap: 0.3rem;
 }
+/* …and only the FIRST control claims the free space. Two `margin-left: auto`
+   in one flex row SPLIT it, which spread the pair across the heading instead of
+   keeping them together at its end. */
+.mech-tier-head .pbm-style-toggle ~ .pbm-style-toggle,
+.mechanism-title .pbm-style-toggle ~ .pbm-style-toggle { margin-left: 0; }
 .mechanism-title .mech-null-toggle { margin-left: auto; font-weight: 400; }
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
