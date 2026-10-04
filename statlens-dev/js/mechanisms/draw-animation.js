@@ -1472,7 +1472,23 @@ export function animateCombineStats({ sources, target, onDone }) {
 /* ─── A shuffle of OUTCOMES: emerge, scramble, deal ───────────────────────── */
 
 /** Emerge, scramble in the pool, deal, settle. */
-const MARK_EMERGE = 620, MARK_SCRAMBLE = 480, MARK_DEAL = 760, MARK_SETTLE = 160;
+/**
+ * Emerge, mix, deal, settle.
+ *
+ * The mix is three passes, not one. A single swap between two random positions
+ * is a permutation and reads as a twitch — the pile shifts and resettles, and
+ * nothing about it says the outcomes were thoroughly mixed. Three fast passes
+ * churn: a mark crosses the pile, is crossed by others, and ends somewhere it
+ * could not be traced to. (Jeff, 2026-10-04: "when the dots get pooled the
+ * animation doesn't look like it mixes well … I'd like something more
+ * suggestive of a rigorous shuffle".)
+ *
+ * And the deal is dealt — one mark at a time, alternating between the two
+ * groups, fast enough to be a riffle and slow enough to be a sequence. That is
+ * the card metaphor the page offers in its other rendering, made the same here.
+ */
+const MARK_EMERGE = 520, MARK_MIX_PASS = 200, MARK_MIX_PASSES = 3;
+const MARK_FLIGHT = 380, MARK_DEAL_SPAN = 880, MARK_SETTLE = 140;
 
 /**
  * The two-proportion shuffle, drawn as what it is: the outcomes come out of
@@ -1571,7 +1587,23 @@ export function animatePoolAndDealMarks({ sourceGroups, targetGroups, onDone }) 
     }
     return a;
   };
-  const inPool = shuffled(tgt.length), afterScramble = shuffled(tgt.length);
+  // One slot arrangement per beat: into the pile, then a fresh permutation for
+  // each mixing pass. Successive passes mean marks cross each other repeatedly
+  // rather than trading places once.
+  const stops = Array.from({ length: MARK_MIX_PASSES + 1 }, () => shuffled(tgt.length));
+
+  // Dealt alternately into the two groups — one for this pile, one for that —
+  // which is what makes the split read as a deal rather than a cut.
+  const n1t = targetGroups[0]?.length ?? 0;
+  const dealOrder = new Array(tgt.length);
+  {
+    let a = 0, bIdx = n1t, k = 0;
+    while (a < n1t || bIdx < tgt.length) {
+      if (a < n1t) dealOrder[a++] = k++;
+      if (bIdx < tgt.length) dealOrder[bIdx++] = k++;
+    }
+  }
+  const stagger = tgt.length > 1 ? Math.min(16, MARK_DEAL_SPAN / (tgt.length - 1)) : 0;
 
   tgt.forEach((dot, i) => {
     const source = (isSuccess(dot) ? queueS : queueF).shift();
@@ -1588,7 +1620,9 @@ export function animatePoolAndDealMarks({ sourceGroups, targetGroups, onDone }) 
       + 'z-index:1000;pointer-events:none;';
     document.body.appendChild(el);
     dot.style.opacity = '0';
-    flyers.push({ el, dot, from, to, p1: slot(inPool[i]), p2: slot(afterScramble[i]) });
+    flyers.push({ el, dot, from, to,
+      path: stops.map(order => slot(order[i])),
+      delay: dealOrder[i] * stagger });
   });
   if (!flyers.length) return 0;
 
@@ -1597,39 +1631,47 @@ export function animatePoolAndDealMarks({ sourceGroups, targetGroups, onDone }) 
   });
 
   const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-  const total = MARK_EMERGE + MARK_SCRAMBLE + MARK_DEAL + MARK_SETTLE;
+  const MIX_MS = MARK_MIX_PASS * MARK_MIX_PASSES;
+  const DEAL_AT = MARK_EMERGE + MIX_MS;
+  const lastDeal = flyers.reduce((m, f) => Math.max(m, f.delay), 0);
+  const total = DEAL_AT + lastDeal + MARK_FLIGHT + MARK_SETTLE;
   const t0 = performance.now();
 
   function step(/** @type {number} */ now) {
     if (run.stopped()) return;
     const e = now - t0;
     for (const f of flyers) {
-      let x, y;
+      if (!f.el.isConnected) continue;
+      let x, y, k;
       if (e < MARK_EMERGE) {
+        // Out of the block and into the pile.
         const t = ease(e / MARK_EMERGE);
-        x = f.from.x + (f.p1.x - f.from.x) * t;
-        y = f.from.y + (f.p1.y - f.from.y) * t;
-      } else if (e < MARK_EMERGE + MARK_SCRAMBLE) {
-        const t = ease((e - MARK_EMERGE) / MARK_SCRAMBLE);
-        x = f.p1.x + (f.p2.x - f.p1.x) * t;
-        y = f.p1.y + (f.p2.y - f.p1.y) * t;
+        k = t;
+        x = f.from.x + (f.path[0].x - f.from.x) * t;
+        y = f.from.y + (f.path[0].y - f.from.y) * t;
+      } else if (e < DEAL_AT) {
+        // Mixing: pass by pass, each one a fresh arrangement of the pile.
+        const into = Math.min(MARK_MIX_PASSES - 1, Math.floor((e - MARK_EMERGE) / MARK_MIX_PASS));
+        const t = ease(((e - MARK_EMERGE) % MARK_MIX_PASS) / MARK_MIX_PASS);
+        const a = f.path[into], b = f.path[into + 1];
+        k = 1;
+        x = a.x + (b.x - a.x) * t;
+        y = a.y + (b.y - a.y) * t;
       } else {
-        const t = ease(Math.min(1, (e - MARK_EMERGE - MARK_SCRAMBLE) / MARK_DEAL));
-        x = f.p2.x + (f.to.x - f.p2.x) * t;
-        y = f.p2.y + (f.to.y - f.p2.y) * t;
-        if (t >= 1 && f.el.isConnected) { f.el.remove(); f.dot.style.removeProperty('opacity'); }
+        // Dealt, in turn. Before its turn a mark simply waits in the pile.
+        const held = f.path[MARK_MIX_PASSES];
+        const t = ease(Math.max(0, Math.min(1, (e - DEAL_AT - f.delay) / MARK_FLIGHT)));
+        k = 1 - t;
+        x = held.x + (f.to.x - held.x) * t;
+        y = held.y + (f.to.y - held.y) * t;
+        if (t >= 1) { f.el.remove(); f.dot.style.removeProperty('opacity'); continue; }
       }
-      if (f.el.isConnected) {
-        // Size follows the journey: full in the blocks, small in the pile.
-        const k = e < MARK_EMERGE ? ease(e / MARK_EMERGE)
-          : e < MARK_EMERGE + MARK_SCRAMBLE ? 1
-          : 1 - ease(Math.min(1, (e - MARK_EMERGE - MARK_SCRAMBLE) / MARK_DEAL));
-        const w = size + (poolW - size) * k, h = height + (poolH - height) * k;
-        f.el.style.width = `${w}px`;
-        f.el.style.height = `${h}px`;
-        f.el.style.left = `${x - w / 2}px`;
-        f.el.style.top = `${y - h / 2}px`;
-      }
+      // Size follows the journey: full in the blocks, small in the pile.
+      const w = size + (poolW - size) * k, h = height + (poolH - height) * k;
+      f.el.style.width = `${w}px`;
+      f.el.style.height = `${h}px`;
+      f.el.style.left = `${x - w / 2}px`;
+      f.el.style.top = `${y - h / 2}px`;
     }
     if (e < total) requestAnimationFrame(step);
     else {
