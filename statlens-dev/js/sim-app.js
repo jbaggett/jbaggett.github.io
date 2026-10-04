@@ -147,9 +147,9 @@ export function initSimPage(config) {
    * rather than blocked, so the two are alternative renderings of the same
    * role and not layers of one display.
    */
-  const useNewPropMech2 = () => config.proportion && !!config.twoGroup
-    && (config.mode === 'bootstrap' || config.mode === 'randomization')
-    && !cardMechanism;
+  const twoPropBlockPage = config.proportion && !!config.twoGroup
+    && (config.mode === 'bootstrap' || config.mode === 'randomization');
+  const useNewPropMech2 = () => twoPropBlockPage && !cardMechanism;
   // B1: one-sample mean bootstrap — animated dotplot resampling for small samples
   // (the non-summary view). Large samples keep the histogram.
   // Shared with the one-sample engine — a second copy of this number is how the
@@ -1757,7 +1757,7 @@ export function initSimPage(config) {
     } else if (config.twoGroup) {
       mechanismStrip.hidden = false;
       initMechanismCollapse(mechanismStrip);
-      if (useNewPropMech2()) ensurePropStyleToggle();
+      if (twoPropBlockPage) ensurePropStyleToggle();
       renderTwoGroupOriginal();
       // Blank until the first shuffle (was seeded with the original grouping,
       // which looked like a completed shuffle).
@@ -2614,6 +2614,100 @@ export function initSimPage(config) {
    * @param {boolean} animate - only on +1; a hundred of these is a flicker
    * @returns {number} animation duration in ms
    */
+  /** Pool, hold — then the two groups are dealt from it. */
+  const POOL_MERGE_MS = 620, POOL_HOLD_MS = 320;
+  /** How long after the deal starts the last fleck leaves the pooled bar.
+   *  (`DRAW_MS * 0.6` in prop-bootstrap-mech, plus the flight's own tail.) */
+  const POOL_DEAL_TAIL = 820;
+
+  /**
+   * The bar a shuffle deals from.
+   *
+   * Past a mark per observation there is nothing to pool and deal — the display
+   * is two boundaries, and a boundary cannot fly. But the claim is the same one
+   * the marks make: under H₀ the labels carry no information, so each group is
+   * a draw from the OUTCOMES OF BOTH. So the two bags slide together into one
+   * pooled bar between the panels, and the flecks that fill the shuffled bars
+   * leave from there rather than from each group's own bag — which is what the
+   * aggregate draw does on the bootstrap page, and would be the wrong claim
+   * here. (Jeff, 2026-10-03: "for two prop shuffling in aggregate we could
+   * animate a pooled bar and flying dots from there".)
+   *
+   * @returns {{x0:number,x1:number,y:number,split:number}|null} where the deal
+   *   launches from, or null if there is nothing to pool
+   */
+  function poolTheBags() {
+    const bar = (/** @type {string} */ id) =>
+      /** @type {HTMLElement|null} */ (document.querySelector(`#${id} .mech-prop-bar`));
+    const b1 = bar('pbm-bag-1'), b2 = bar('pbm-bag-2');
+    const t1 = document.getElementById('pbm-rs-1');
+    if (!b1 || !b2 || !t1) return null;
+    const r1 = b1.getBoundingClientRect(), r2 = b2.getBoundingClientRect();
+    const rt = t1.getBoundingClientRect();
+    if (!r1.width || !r2.width) return null;
+
+    const s = data1.filter(v => v === 1).length + data2.filter(v => v === 1).length;
+    const f = (data1.length + data2.length) - s;
+    // Narrower than a panel's bar: at full width it lay across both panels and
+    // read as a third row of the display rather than as something passing
+    // between them.
+    const width = Math.min(Math.max(r1.width, r2.width) * 0.62, 340);
+    // Between the two panels, on the line the two bags share — the pile the
+    // marks make, at the scale a bar works in.
+    const cx = (r1.left + r1.width / 2 + rt.left + rt.width / 2) / 2;
+    const cy = (r1.top + r2.bottom) / 2;
+
+    const pool = document.createElement('div');
+    pool.className = 'pbm-pool';
+    pool.style.cssText = `position:fixed;left:${cx - width / 2}px;top:${cy - 26}px;`
+      + `width:${width}px;z-index:999;pointer-events:none;opacity:0;`;
+    pool.innerHTML = `<div class="pbm-pool-label">pooled</div>${propBarHTML(s, f)}`;
+    document.body.appendChild(pool);
+
+    // The bags do not vanish — they are still the data — so what travels is a
+    // ghost of each, fading as the pooled bar takes its place.
+    const ghosts = [r1, r2].map((r, i) => {
+      const g = /** @type {HTMLElement} */ ((i ? b2 : b1).cloneNode(true));
+      g.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;`
+        + `width:${r.width}px;height:${r.height}px;z-index:998;pointer-events:none;`
+        + `transition:transform ${POOL_MERGE_MS}ms cubic-bezier(.45,.05,.35,1),`
+        + ` opacity ${POOL_MERGE_MS}ms ease;`;
+      document.body.appendChild(g);
+      return { el: g, r };
+    });
+
+    const target = pool.querySelector('.mech-prop-bar')?.getBoundingClientRect();
+    requestAnimationFrame(() => {
+      pool.style.transition = `opacity ${POOL_MERGE_MS}ms ease`;
+      pool.style.opacity = '1';
+      for (const g of ghosts) {
+        const dx = (target ? target.left + target.width / 2 : cx) - (g.r.left + g.r.width / 2);
+        const dy = (target ? target.top + target.height / 2 : cy) - (g.r.top + g.r.height / 2);
+        g.el.style.transform = `translate(${dx}px, ${dy}px) scaleX(${target ? target.width / g.r.width : 1})`;
+        g.el.style.opacity = '0';
+      }
+    });
+    setTimeout(() => { for (const g of ghosts) g.el.remove(); }, POOL_MERGE_MS + 60);
+
+    const geom = (() => {
+      const b = pool.querySelector('.mech-prop-bar');
+      const fill = pool.querySelector('.mech-prop-fill');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return { x0: r.left, x1: r.right, y: r.top + r.height / 2,
+               split: fill ? fill.getBoundingClientRect().width : 0 };
+    })();
+
+    // It leaves once it has been dealt from — which is after the LAST fleck has
+    // left it, not after the first.
+    const dismiss = () => {
+      pool.style.transition = 'opacity 260ms ease';
+      pool.style.opacity = '0';
+      setTimeout(() => pool.remove(), 300);
+    };
+    return { geom, dismiss };
+  }
+
   function showTwoPropShuffle(g1, g2, animate) {
     if (!mechResampleContent) return 0;
     mechResampleContent.innerHTML = twoPropPanelHTML('rs', g1, g2, true);
@@ -2631,11 +2725,35 @@ export function initSimPage(config) {
 
     const marks = (/** @type {Element|null} */ el) =>
       /** @type {HTMLElement[]} */ ([...(el?.querySelectorAll('.pbm-dot') ?? [])]);
-    const ms = animate ? animatePoolAndDealMarks({
-      sourceGroups: [marks(document.getElementById('pbm-bag-1')),
-                     marks(document.getElementById('pbm-bag-2'))],
-      targetGroups: [marks(c1), marks(c2)],
-    }) : 0;
+    // Which display was actually drawn, rather than which was asked for:
+    // `effStyle` retires the individual view once n outgrows a mark each, so
+    // the preference can say "dots" while the panel holds two bars.
+    const individual = marks(c1).length > 0;
+    let ms = 0;
+    if (animate && individual) {
+      ms = animatePoolAndDealMarks({
+        sourceGroups: [marks(document.getElementById('pbm-bag-1')),
+                       marks(document.getElementById('pbm-bag-2'))],
+        targetGroups: [marks(c1), marks(c2)],
+      });
+    } else if (animate && !prefersReducedMotion()) {
+      // Aggregate: pool the two bags into one bar, hold, then deal both
+      // shuffled bars out of it. Guarded here rather than inside: the pooled
+      // bar is built before anything downstream gets to decline, so without
+      // this it appeared and vanished for a reader who asked for no motion.
+      const pooled = poolTheBags();
+      if (pooled?.geom) {
+        const wait = POOL_MERGE_MS + POOL_HOLD_MS;
+        const deal = (/** @type {HTMLElement} */ host, /** @type {number[]} */ g,
+                      /** @type {number[]} */ orig) =>
+          showPropResample(host, null, g, orig,
+            { style: propMechStyle, animate: true, source: pooled.geom, delay: wait, delta: false });
+        ms = Math.max(deal(c1, g1, data1), deal(c2, g2, data2));
+        // The flecks launch across the first 60% of the draw; the bar they come
+        // from has to outlast them.
+        setTimeout(pooled.dismiss, wait + POOL_DEAL_TAIL);
+      }
+    }
 
     // Every number the deal produces waits for the deal.
     //
@@ -2704,12 +2822,16 @@ export function initSimPage(config) {
     // into Step 2's stat row on the one-proportion bootstrap, inside a panel
     // that stays hidden until the first draw — so a key written there was
     // correct and invisible.
-    let row = mechanismStrip.querySelector('.mech-legend-row');
+    // In a tier layout the strip is an empty shell — the panels were moved out
+    // of it before the first render — so a key appended there was built, filled
+    // and never seen. It goes under Step 1, where the colours first appear.
+    const legendHost = document.querySelector('.mech-tier--source') ?? mechanismStrip;
+    let row = document.querySelector('.mech-legend-row');
     if (!row) {
       row = document.createElement('p');
       row.className = 'mech-legend-row';
-      mechanismStrip.appendChild(row);
     }
+    if (row.parentElement !== legendHost) legendHost.appendChild(row);
     const mechanismDescEl = /** @type {HTMLElement} */ (row);
     const o = cardOpts();
     const succ = o.successLabel || 'success';
@@ -2799,6 +2921,30 @@ export function initSimPage(config) {
    * Idempotent. Rebuilt on every data load, because `cardsAllowed()` depends
    * on the group sizes.
    */
+  /**
+   * The heading's controls sit together, in a box of their own.
+   *
+   * Two of them share Step 1's heading now, and in a tier layout the heading
+   * line also carries the difference, parked at its far right — so the two
+   * controls and the number were laid out on top of each other ("diff" written
+   * through "Draw as:"). A box lets the heading wrap them onto a line of their
+   * own without the title following them down. (Jeff, 2026-10-03, from a tiers
+   * screenshot: "have some elements overlapping here … maybe make toggles two
+   * rows".)
+   *
+   * @param {Element} host the panel title or tier heading
+   */
+  function headControls(host) {
+    let box = host.querySelector('.mech-head-controls');
+    if (!box) {
+      box = document.createElement('span');
+      box.className = 'mech-head-controls';
+      if (host.classList.contains('mechanism-collapse-bar')) host.insertBefore(box, host.firstChild);
+      else host.appendChild(box);
+    }
+    return box;
+  }
+
   function ensureViewToggle() {
     if (!mechanismStrip) return;
     const existing = mechanismStrip.querySelector('.mech-view-toggle')
@@ -2838,8 +2984,7 @@ export function initSimPage(config) {
       rerenderMechanismView();
     });
 
-    if (host.classList.contains('mechanism-collapse-bar')) host.insertBefore(wrap, host.firstChild);
-    else host.appendChild(wrap);
+    headControls(host).appendChild(wrap);
   }
 
   /** Add the Grid/Bar segmented toggle for the one-proportion bootstrap
@@ -2854,7 +2999,11 @@ export function initSimPage(config) {
    * (609 + 1,391) has to take the toggle with it. (Jeff, 2026-10-02.)
    */
   function ensurePropStyleToggle() {
-    const forProps = useNewPropMech || useNewPropMech2();
+    // The ROLE control belongs to the page, not to the rendering: cards are an
+    // individual view too, so switching to them must not take away the way back
+    // to Aggregate — and a ?mechanism=cards link has to open with both controls
+    // the live toggle shows.
+    const forProps = useNewPropMech || twoPropBlockPage;
     // One control, both families. The proportion pages flip which DISPLAY the
     // mechanism draws; the quantitative ones flip which ROLE the resample panel
     // shows. Same question, same words, same place — which is the whole point
@@ -2967,9 +3116,10 @@ export function initSimPage(config) {
     });
 
     // In the strip it leads the collapse bar; in a tier heading it trails the
-    // title, so "STEP 1  Original Sample" still reads first.
-    if (bar.classList.contains('mechanism-collapse-bar')) bar.insertBefore(seg, bar.firstChild);
-    else bar.appendChild(seg);
+    // title, so "STEP 1  Original Sample" still reads first. Either way it goes
+    // in the heading's controls box, beside whatever else lives there.
+    const box = headControls(bar);
+    box.insertBefore(seg, box.firstChild);
   }
 
   /**

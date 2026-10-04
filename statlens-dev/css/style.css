@@ -1764,8 +1764,21 @@ input[aria-invalid="true"] {
 .pbm-style-toggle { display: inline-flex; align-items: center; gap: 0.4rem; }
 /* In a tier heading it sits at the far end, so the step's name still reads
    first and the control is where the thing it controls is. */
-.mech-tier-head .pbm-style-toggle,
-.mechanism-title .pbm-style-toggle { margin-left: auto; font-weight: 400; }
+/* The heading's controls, in a box of their own so a heading can wrap them
+   together. `margin-left: auto` lives here now rather than on each control:
+   two of them each claiming it SPLIT the free space and spread the pair across
+   the heading. */
+.mech-head-controls {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 0.3rem 0.75rem;
+  margin-left: auto;
+  font-weight: 400;
+}
+/* In a tier heading the controls take a line of their own. The heading line
+   there also carries the difference, parked at its far right, and the two were
+   laid out on top of each other. (Jeff, 2026-10-03.) */
+.mech-tier-head { flex-wrap: wrap; row-gap: 0.3rem; }
+.mech-tier-head .mech-head-controls { flex-basis: 100%; margin-left: 0; }
 /* The panel heading becomes a row so the control can sit at its far end. */
 .mechanism-panel .mechanism-title:has(.pbm-style-toggle),
 .mechanism-panel .mechanism-title:has(.mech-null-toggle) {
@@ -2052,10 +2065,24 @@ input[aria-invalid="true"] {
   --obs-failure-edge: #999;
 }
 .mech-card-legend { margin-left: 0.75rem; }
+/* The pooled bar a shuffle deals from: the two bags slid together, held for a
+   beat between the panels, then dealt out. It is a transit, not a panel — no
+   border, no background, and it leaves when the deal has launched. */
+.pbm-pool { filter: drop-shadow(0 2px 6px rgba(0, 0, 0, .18)); }
+.pbm-pool-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem; font-weight: 700;
+  color: var(--ims-gray-text, #555);
+  text-align: center;
+  margin: 0 0 3px;
+}
+
 /* The shuffled panel's numbers, while its marks are still in the air.
    Hidden, not emptied: the row keeps its height and nothing reflows when the
    value appears. (See showTwoPropShuffle.) */
 .pbm-reveal-pending .pbm-block-counts,
+.pbm-reveal-pending .mech-prop-count,
+.pbm-reveal-pending .mech-prop-aside,
 .pbm-reveal-pending .pbm-stat-value,
 .pbm-reveal-pending .mech-stat-value { visibility: hidden; }
 

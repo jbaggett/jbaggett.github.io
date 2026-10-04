@@ -506,7 +506,18 @@ export function renderPropResample(container, resample, opts = {}) {
  * @param {HTMLElement} bagEl
  * @param {number[]} resample
  * @param {number[]} data - original sample
- * @param {{style?: 'grid'|'bars'|'dots', animate?: boolean, indices?: number[]}} [opts]
+ * `source` overrides where the flecks launch from. A two-group SHUFFLE draws
+ * each group from the pooled outcomes, not from its own bag — under H₀ the
+ * labels carry no information — so the two aggregate bars are dealt from one
+ * pooled bar between the panels. (Jeff, 2026-10-03: "for two prop shuffling in
+ * aggregate we could animate a pooled bar and flying dots from there".)
+ *
+ * `delay` holds the draw back — the shuffle spends its first beat pooling the
+ * two bags, and the deal has to wait for something to deal from.
+ *
+ * @param {{style?: 'grid'|'bars'|'dots', animate?: boolean, indices?: number[],
+ *   delta?: boolean, source?: {x0:number,x1:number,y:number,split:number}|null,
+ *   reference?: number|null, delay?: number}} [opts]
  * @returns {number} animation duration in ms
  */
 export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
@@ -517,11 +528,15 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
   // the two panels of one comparison in two different languages.
   // (Jeff, 2026-10-01.)
   const style = effStyle(opts.style, resample.length);
-  const animate = !!opts.animate && !prefersReducedMotion() && !!bagEl;
+  // Something to fly FROM: this group's bag, or a source the caller supplies —
+  // the pooled bar a two-group shuffle deals both groups out of.
+  const animate = !!opts.animate && !prefersReducedMotion() && (!!bagEl || !!opts.source);
   // The observed proportion, which the aggregate view pins as its reference.
   const reference = data.length ? counts(data).s / data.length : null;
   if (style === 'aggregate') {
-    return showAggregateDraw(resampleEl, bagEl, resample, reference, animate, opts.delta !== false);
+    return showAggregateDraw(resampleEl, bagEl, resample,
+      opts.reference !== undefined ? opts.reference : reference,
+      animate, opts.delta !== false, opts.source ?? null, Math.max(0, opts.delay ?? 0));
   }
   return showStackDraw(resampleEl, bagEl, resample, data, opts.indices ?? null, animate);
 }
@@ -542,7 +557,8 @@ export function showPropResample(resampleEl, bagEl, resample, data, opts = {}) {
  * @param {boolean} animate
  * @returns {number} duration ms
  */
-function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, withDelta = true) {
+function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, withDelta = true,
+    sourceGeom = null, delay = 0) {
   const { s, f, n } = counts(resample);
   resampleEl.innerHTML = '';
   const el = makeAggregate(resample, 'Resample', reference, withDelta);
@@ -579,7 +595,8 @@ function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, with
   // region of the bag — which is what a draw actually is.
   const flecks = Math.max(6, Math.min(22, Math.round(n / 10)));
   const amber = Math.round(flecks * (s / n));
-  const src = bagBarGeometry(bagEl);
+  // The pooled bar when a shuffle supplies one, otherwise this group's own bag.
+  const src = sourceGeom ?? bagBarGeometry(bagEl);
   const dst = bar.getBoundingClientRect();
   if (src) {
     for (let i = 0; i < flecks; i++) {
@@ -590,7 +607,7 @@ function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, with
       const ex = dst.left + dst.width
         * (isS ? Math.random() * (sPct / 100)
                : (sPct / 100) + Math.random() * (fPct / 100));
-      const delay = Math.round((i / flecks) * (DRAW_MS * 0.6));
+      const launch = delay + Math.round((i / flecks) * (DRAW_MS * 0.6));
       // Built at launch, not up front: creating all of them at t = 0 left two
       // dozen dots sitting on the bag waiting their turn, which read as part of
       // the bag rather than as something leaving it.
@@ -613,7 +630,7 @@ function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, with
             `translate(${ex - sx}px, ${dst.top + dst.height / 2 - src.y - jy}px)`;
         });
         setTimeout(() => t.remove(), FLECK_MS + 60);
-      }, delay);
+      }, launch);
     }
   }
 
@@ -629,7 +646,7 @@ function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, with
   // visible the whole time and the second beat never happened.
   for (const node of [ref, delta]) { if (node) node.style.opacity = '0'; }
 
-  requestAnimationFrame(() => {
+  const startGrowth = () => requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       // Gentle at both ends. The first try used `cubic-bezier(.33,1,.68,1)`,
       // which put most of the travel in the first 200ms — the gap did not close,
@@ -647,8 +664,9 @@ function showAggregateDraw(resampleEl, bagEl, resample, reference, animate, with
       }
     });
   });
-  setTimeout(() => gap.remove(), DRAW_MS + 80);
-  return DRAW_MS + REVEAL_MS + 80;
+  if (delay > 0) setTimeout(startGrowth, delay); else startGrowth();
+  setTimeout(() => gap.remove(), delay + DRAW_MS + 80);
+  return delay + DRAW_MS + REVEAL_MS + 80;
 }
 
 /** How long the two ends take to meet, and the comparison to arrive after. */
@@ -662,7 +680,7 @@ const FLECK_MS = 460;
  * @param {HTMLElement|null} bagEl
  * @returns {{x0:number, x1:number, y:number, split:number}|null}
  */
-function bagBarGeometry(bagEl) {
+export function bagBarGeometry(bagEl) {
   const bar = bagEl?.querySelector?.('.mech-prop-bar');
   if (!bar) return null;
   const r = bar.getBoundingClientRect();
