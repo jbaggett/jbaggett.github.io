@@ -4298,7 +4298,11 @@ export function initSimPage(config) {
           pillMode = mode;
           methodControl?.syncPills(pillMode, ciMethod);
           syncUrl();
-          renderChart();
+          // With its arguments. `renderChart()` bare draws an empty chart —
+          // the distribution simply vanished on the first click of the new
+          // control. (Jeff, 2026-10-04.) The method toggle beside it has always
+          // passed them; this is the same redraw.
+          renderChart(allStats, lastCI, lastObserved, lastDirection);
         },
       });
       methodControl.syncLabel(getCiLevel());
@@ -4742,16 +4746,29 @@ export function initSimPage(config) {
     // Bootstrap CI: values inside the CI are the region of interest
     /** @type {((v: number) => boolean)|undefined} */
     let regionPredicate;
+    /** @type {{below: number, above: number}|undefined} */
+    let splitRanks;
     if (config.mode === 'randomization' && observedStat != null && direction) {
       regionPredicate = (v) => isExtreme(v, observedStat, direction);
     } else if (config.mode === 'bootstrap' && ci) {
       regionPredicate = (v) => v >= ci[0] && v <= ci[1];
+      // In Target mode the shading is the LEVEL, counted off the ranks, so the
+      // picture holds exactly what the pills claim — and a boundary column is
+      // drawn in two pieces when the level falls inside it. That split is a
+      // depiction of where 95% would cut, not a claim that two resamples with
+      // the same value differ; switching to Actual puts the whole column back
+      // and the pill moves to what it really holds, which is the comparison.
+      // (Jeff, 2026-10-04.)
+      if (pillMode === 'target' && ciMethod !== 'se') {
+        const tail = Math.round(stats.length * (1 - getCiLevel() / 100) / 2);
+        if (tail > 0 && tail * 2 < stats.length) splitRanks = { below: tail, above: tail };
+      }
     }
 
     // Reasoning mode hides everything that reveals the answer on the chart: no
     // region shading, no CI bound lines. The observed-stat marker stays.
     const ciForChart = showReadout ? ci : null;
-    if (!showReadout) regionPredicate = undefined;
+    if (!showReadout) { regionPredicate = undefined; splitRanks = undefined; }
 
     /** @type {import('./chart-utils.js').ChartFrame|undefined} */
     let chartResult;
@@ -4769,6 +4786,7 @@ export function initSimPage(config) {
         xLabel,
         titleText,
         isExtreme: regionPredicate,
+        splitRanks,
         observedStat,
         ciLines: ciForChart ?? undefined,
         ciColor: ciLineColor,
@@ -4806,6 +4824,7 @@ export function initSimPage(config) {
         xLabel,
         titleText,
         isTail: regionPredicate,
+        splitRanks,
         observedStat: observedStat ?? undefined,
         ciLines: ciForChart ?? undefined,
         ciColor: ciLineColor,
@@ -4823,6 +4842,7 @@ export function initSimPage(config) {
         xLabel,
         titleText,
         isTail: regionPredicate,
+        splitRanks,
         observedStat: observedStat ?? undefined,
         ciLines: ciForChart ?? undefined,
         ciColor: ciLineColor,
