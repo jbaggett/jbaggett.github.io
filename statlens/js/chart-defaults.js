@@ -14,7 +14,7 @@ import { drawHistogram, computeBins, snappedPropThresholds, renderOverlayLine } 
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { renderSimPills, renderCutlines, deoverlapLabels } from './chart-utils.js';
-import { formatStat } from './stats.js';
+import { formatStat, extent} from './stats.js';
 import { wrapWithStepper } from './page-utils.js';
 
 // ─── Constants (single source of truth) ─────────────────────────────
@@ -178,8 +178,8 @@ export function displayPrecision(dataPrecision, opts = {}) {
  */
 export function computeDomain(values, opts = {}) {
   const padding = opts.padding ?? DOMAIN_PADDING;
-  let lo = Math.min(...values);
-  let hi = Math.max(...values);
+  // Loop, not spread: at ~125k values an argument list blows the stack.
+  let [lo, hi] = extent(values);
   if (opts.includeValue != null) {
     lo = Math.min(lo, opts.includeValue);
     hi = Math.max(hi, opts.includeValue);

@@ -509,6 +509,35 @@ export function permute(arr1, arr2, rng) {
  * @param {number[]} values
  * @returns {number}
  */
+/**
+ * Smallest and largest, without spreading the array into a call.
+ *
+ * `Math.min(...values)` passes every element as an argument, and an argument
+ * list has a size limit — at about 125,000 resamples the simulation pages threw
+ * "Maximum call stack size exceeded" and the distribution stopped redrawing
+ * while the counter kept going. (Jeff, 2026-10-04: "the randomization
+ * distribution broke or stopped displaying after I went to 151010 shuffles".)
+ * A loop has no such limit and is faster on a large array besides.
+ *
+ * @param {number[]} values
+ * @param {...number} extra values to include, e.g. an observed statistic
+ * @returns {[number, number]} [min, max]; [Infinity, -Infinity] when empty
+ */
+export function extent(values, ...extra) {
+    let lo = Infinity, hi = -Infinity;
+    for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+    }
+    for (const v of extra) {
+        if (!Number.isFinite(v)) continue;
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+    }
+    return [lo, hi];
+}
+
 export function detectPrecision(values) {
     let maxDec = 0;
     for (const v of values) {

@@ -17,7 +17,7 @@ import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { cor, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -200,6 +200,7 @@ function showDataLoaded() {
     dataSummary.textContent = `${namePrefix}n = ${xValues.length}, observed r = ${formatStat(observedR, 4)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  gateBigBatches(genBtns, xValues.length);
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
     const bigBtn = genBtns[genBtns.length - 1];
@@ -258,6 +259,16 @@ for (const btn of genBtns) {
 
 /** @param {number} count */
 function generateSimulations(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allStats.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allStats.length, 'simulations'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allStats.length, 'simulations'));
+  }
   if (!rng) rng = createRng(seed);
 
   if (!mechanismInitialized && mechanismStrip) {
@@ -452,6 +463,8 @@ if (resetBtn) {
 }
 
 function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
   rng = null;
   mechanismInitialized = false;

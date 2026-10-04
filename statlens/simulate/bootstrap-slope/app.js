@@ -13,7 +13,7 @@ import { bootstrapCI } from '../../js/sim-engine.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
 import { computeBins } from '../../js/histogram.js';
 import { parseCSV } from '../../js/csv-parser.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType, createChartToggle, computeDomain } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
 import {
@@ -190,6 +190,7 @@ function showDataLoaded() {
       `${namePrefix}n = ${xData.length}, slope = ${formatStat(reg.slope, d)}, r² = ${formatStat(reg.r2, d, 'correlation')}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  gateBigBatches(genBtns, xData.length);
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
   // Figure-only embed: auto-run the largest batch once so the finished, hoverable
@@ -319,6 +320,16 @@ for (const btn of genBtns) {
 
 /** @param {number} count */
 function generateResamples(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allSlopes.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allSlopes.length, 'resamples'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allSlopes.length, 'resamples'));
+  }
   if (!rng) rng = createRng(seed);
   const n = xData.length;
   const prevLength = allSlopes.length;
@@ -642,6 +653,8 @@ if (resetBtn) {
 }
 
 function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'resamples');
   allSlopes = [];
   bootLines = [];
   rng = null;

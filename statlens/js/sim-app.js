@@ -15,7 +15,7 @@ import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolA
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
-import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles } from './stats.js';
+import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles, extent} from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
@@ -26,7 +26,7 @@ import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR, ciRegionMass,} from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap} from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
@@ -276,7 +276,7 @@ export function initSimPage(config) {
   function computeMeanDomain() {
     const vals = resampleSourceValues();
     if (!vals.length) return null;
-    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const [lo, hi] = extent(vals);
     const pad = (hi - lo) * 0.08 || 0.5;
     return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
   }
@@ -303,7 +303,7 @@ export function initSimPage(config) {
   function computeTwoMeanDomain() {
     const all = [...data1, ...data2];
     if (!all.length) return undefined;
-    const lo = Math.min(...all), hi = Math.max(...all);
+    const [lo, hi] = extent(all);
     const pad = (hi - lo) * 0.08 || 0.5;
     return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
   }
@@ -1238,6 +1238,8 @@ export function initSimPage(config) {
       }
     }
     for (const btn of genBtns) btn.disabled = false;
+    // …except a batch big enough to freeze the page. See gateBigBatches.
+    gateBigBatches(genBtns, data1.length + data2.length);
     // Update chart toggle: discrete (proportion) data gets spike option
     updateToggleButtons(!!config.proportion);
     // Clear stale results
@@ -1776,6 +1778,16 @@ export function initSimPage(config) {
   }
 
   function generateSamples(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allStats.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allStats.length, 'simulations'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allStats.length, 'simulations'));
+  }
     // A clean slate. Press +1 before the last draw has finished and two runs
     // shared the screen — the old flyers still travelling, the old dots still
     // hidden waiting for a finish that would arrive after the new ones landed.
@@ -1896,8 +1908,7 @@ export function initSimPage(config) {
       // Batch histogram delta: compute previous bin counts for stacked overlay
       if (count > 1 && allStats.length > DOTPLOT_AUTO_THRESHOLD && prevLength > 0) {
         const domainVals = allStats;
-        let lo = Math.min(...domainVals);
-        let hi = Math.max(...domainVals);
+        let [lo, hi] = extent(domainVals);
         const dPad = (hi - lo) * 0.05 || 0.5;
         lo -= dPad; hi += dPad;
         if (preSimDomain) {
@@ -1998,9 +2009,7 @@ export function initSimPage(config) {
       }
       // Histogram delta for batch
       if (count > 1 && allStats.length > DOTPLOT_AUTO_THRESHOLD && prevLength > 0) {
-        const rVals = [...allStats, observedStat];
-        let rLo = Math.min(...rVals);
-        let rHi = Math.max(...rVals);
+        let [rLo, rHi] = extent(allStats, observedStat);
         const rPad = (rHi - rLo) * 0.05 || 0.5;
         rLo -= rPad; rHi += rPad;
         if (preSimDomain) {
@@ -2069,9 +2078,10 @@ export function initSimPage(config) {
       }
       if (count > 1 && allStats.length > DOTPLOT_AUTO_THRESHOLD && prevLength > 0) {
         // Histogram mode: compute previous bin counts for stacked delta
-        const rVals = observedStat != null ? [...allStats, observedStat] : allStats;
-        let rLo = Math.min(...rVals);
-        let rHi = Math.max(...rVals);
+        // Loop, not spread — see `extent`. This is the one that actually
+        // fired: at 125k resamples the batch handler threw and the chart
+        // stopped redrawing while the counter kept climbing.
+        let [rLo, rHi] = extent(allStats, observedStat ?? NaN);
         const rPad = (rHi - rLo) * 0.05 || 0.5;
         rLo -= rPad; rHi += rPad;
         if (preSimDomain) {
@@ -2461,8 +2471,7 @@ export function initSimPage(config) {
     // Set domain and bins from original data (stable across resamples)
     if (tag === 'orig') {
       const allVals = [...g1, ...g2];
-      const lo = Math.min(...allVals);
-      const hi = Math.max(...allVals);
+      const [lo, hi] = extent(allVals);
       const pad = (hi - lo) * 0.08 || 0.5;
       twoGroupChartDomain = [lo - pad, hi + pad];
       twoGroupNumBins = Math.min(Math.max(Math.ceil(Math.sqrt(Math.max(g1.length, g2.length))), 6), 15);
@@ -4436,6 +4445,8 @@ export function initSimPage(config) {
   }
 
   function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'simulations');
     // A reset means "give me a clean tool", which includes a clean address bar.
     forgetSeed();
     allStats = [];
@@ -4698,8 +4709,9 @@ export function initSimPage(config) {
       // A ±z·SE bound can sit outside the range of the resamples — keep it on screen.
       if (shownCI) vals.push(...shownCI);
       if (compareCI) vals.push(...compareCI);
-      let lo = Math.min(...vals);
-      let hi = Math.max(...vals);
+      // Loop, not spread: an argument list of 125k resamples blows the stack,
+      // and the counter kept climbing while the chart stopped redrawing.
+      let [lo, hi] = extent(vals);
       const pad = (hi - lo) * 0.05 || 0.5;
       lo -= pad;
       hi += pad;
@@ -5080,7 +5092,7 @@ export function initSimPage(config) {
         const { midProb } = ciRegionMass(stats, shown);
         const target = ciLevel / 100;
         if (Math.abs(midProb - target) >= 0.005) {
-          const lowest = Math.min(...stats), highest = Math.max(...stats);
+          const [lowest, highest] = extent(stats);
           const atFloor = shown[0] <= lowest, atCeiling = shown[1] >= highest;
           const why = atFloor && atCeiling ? 'they span every value the resamples took'
             : atFloor ? 'the low end is as low as a resample got, so there is no bottom tail'
@@ -5196,21 +5208,24 @@ export function initSimPage(config) {
 
   // ─── Keyboard shortcuts ───
 
-  const helpDialog = /** @type {HTMLDialogElement} */ (document.getElementById('keyboard-help'));
-  if (helpDialog) {
-    document.addEventListener('keydown', (e) => {
-      if (e.target !== document.body) return;
-      if (e.ctrlKey || e.metaKey) return;
-      if (e.key === '?') helpDialog.showModal();
-      if (e.key === '1') genBtns[0]?.click();
-      if (e.key === '2') genBtns[1]?.click();
-      if (e.key === '3') genBtns[2]?.click();
-      if (e.key === '4') genBtns[3]?.click();
-      if (e.key === '0' && resetBtn && !resetBtn.hidden) resetBtn.click();
-    });
-    const closeBtn = helpDialog.querySelector('button');
-    if (closeBtn) closeBtn.addEventListener('click', () => helpDialog.close());
-  }
+  // The number keys every help dialog advertises.
+  //
+  // This whole block was gated on `document.getElementById('keyboard-help')`,
+  // and no page has that element — all fifteen call their dialog `page-help`.
+  // So 1/2/3/4/0 have never worked on any simulation page, while every help
+  // dialog listed them. Found 2026-10-04 adding the fifth. `?` and the close
+  // button are `initHelp`'s, which does know both ids; this only needs the
+  // generate keys.
+  document.addEventListener('keydown', (e) => {
+    if (e.target !== document.body) return;
+    if (e.ctrlKey || e.metaKey) return;
+    if (e.key === '1') genBtns[0]?.click();
+    if (e.key === '2') genBtns[1]?.click();
+    if (e.key === '3') genBtns[2]?.click();
+    if (e.key === '4') genBtns[3]?.click();
+    if (e.key === '5') genBtns[4]?.click();
+    if (e.key === '0' && resetBtn && !resetBtn.hidden) resetBtn.click();
+  });
 
   initPlayPause(genBtns, resetBtn);
 

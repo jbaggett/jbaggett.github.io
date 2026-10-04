@@ -421,7 +421,7 @@ export function initSettings() {
 
 /**
  * Initialize keyboard shortcuts for generate buttons, reset, and help dialog.
- * Keys 1-4 map to gen-btn elements, 0 to reset, ? to help dialog.
+ * Keys 1-5 map to gen-btn elements, 0 to reset, ? to help dialog.
  * @param {NodeListOf<HTMLButtonElement>} genBtns - Generate buttons
  * @param {HTMLButtonElement|null} resetBtn - Reset button
  */
@@ -461,10 +461,117 @@ export function initHypToggle(elementId, onChange) {
 
 /**
  * Initialize keyboard shortcuts for generate buttons, reset, and help dialog.
- * Keys 1-4 map to gen-btn elements, 0 to reset, ? to help dialog.
+ * Keys 1-5 map to gen-btn elements, 0 to reset, ? to help dialog.
  * @param {NodeListOf<HTMLButtonElement>} genBtns - Generate buttons
  * @param {HTMLButtonElement|null} resetBtn - Reset button
  */
+/**
+ * The sample size above which the biggest batch is withheld.
+ *
+ * A shuffle permutes every observation, so a batch costs reps x n. Measured on
+ * 2026-10-04, with the page frozen for the whole of it because the loop is
+ * synchronous:
+ *
+ *     resume        n =  4,870   +10k froze  2,185ms
+ *     smallpox      n =  6,224   +10k froze  2,769ms
+ *     asian_smoke   n = 14,021   +10k froze ~7,000ms
+ *     fish_oil_18   n = 25,871   +10k froze 11,551ms
+ *     mammogram     n = 89,835   +10k never returned inside 30s
+ *
+ * About 0.45ms per thousand observations per thousand reps, so 3,000 buys a
+ * worst case near 1.3s — long enough to notice, short enough not to look
+ * broken. Everything smaller keeps the button; the eight largest datasets in
+ * the catalogue lose it until the work is cheaper.
+ *
+ * TEMPORARY. The real fix is D-23: sample the contingency table (or the counts)
+ * directly instead of permuting every row, which makes a batch cost reps rather
+ * than reps x n and retires this function. (Jeff, 2026-10-04: "temporarily
+ * disable the +10k button at some appropriate cutoff. We'll soon add the more
+ * direct sampling if it isn't too hard.")
+ */
+/**
+ * The most repetitions any simulation page will accumulate.
+ *
+ * Not a performance limit any more — the crash that prompted it was
+ * `Math.min(...stats)` blowing the argument list at ~125,000, and that is fixed
+ * (see `extent` in stats.js); 200,000 now runs clean. It is a limit on
+ * pointlessness. The Monte-Carlo margin on a p-value near 0.05 is ±0.0135 at
+ * 1,000 repetitions, ±0.0043 at 10,000 and ±0.0014 at 100,000 — three decimal
+ * places, long past anything a conclusion turns on. Past here the page would be
+ * spending seconds to sharpen a digit nobody reads, and a held-down Play button
+ * could run to a million. (Jeff, 2026-10-04: "we probably need to include a max
+ * of 100k or something … put a reasonable max into play for all simulations.")
+ */
+export const MAX_SIMULATIONS = 100000;
+
+/**
+ * How many of a requested batch may actually run, and whether that is the end.
+ *
+ * @param {number} current repetitions already accumulated
+ * @param {number} requested the batch the reader asked for
+ * @returns {{allowed: number, atCap: boolean}}
+ */
+export function capBatch(current, requested) {
+  const room = Math.max(0, MAX_SIMULATIONS - current);
+  const allowed = Math.min(requested, room);
+  return { allowed, atCap: current + allowed >= MAX_SIMULATIONS };
+}
+
+/**
+ * Turn the generate controls off once the cap is reached, and say why.
+ *
+ * @param {ArrayLike<HTMLButtonElement>} genBtns
+ * @param {number} current
+ * @param {string} [noun] what the page calls one repetition
+ */
+export function applySimulationCap(genBtns, current, noun = 'simulations') {
+  const done = current >= MAX_SIMULATIONS;
+  for (const btn of Array.from(genBtns)) {
+    if (!btn.dataset.count) continue;
+    if (done) {
+      btn.disabled = true;
+      btn.title = `${MAX_SIMULATIONS.toLocaleString()} ${noun} is the most this page will run. `
+        + `The margin on the answer is already smaller than any digit you would report — `
+        + `more would not change your conclusion. Reset to start again.`;
+    } else if (btn.title.includes('is the most this page will run')) {
+      btn.disabled = false;
+      btn.removeAttribute('title');
+    }
+  }
+  const play = /** @type {HTMLButtonElement|null} */ (document.getElementById('play-pause'));
+  if (play && done) { play.disabled = true; }
+  else if (play && play.title?.includes('is the most')) { play.disabled = false; }
+}
+
+export const BIG_BATCH_MAX_N = 3000;
+
+/**
+ * Withhold batches that would freeze the page, and say why.
+ *
+ * Only the ten-thousand button: +1,000 on the largest dataset is already slow,
+ * and taking it away would be a behaviour change nobody asked for.
+ *
+ * @param {ArrayLike<HTMLButtonElement>} genBtns
+ * @param {number} n observations the resampling moves on each repetition
+ */
+export function gateBigBatches(genBtns, n) {
+  for (const btn of Array.from(genBtns)) {
+    const count = Number(btn.dataset.count || 0);
+    if (count < 10000) continue;
+    const tooBig = Number.isFinite(n) && n > BIG_BATCH_MAX_N;
+    btn.disabled = tooBig;
+    btn.setAttribute('aria-disabled', String(tooBig));
+    if (tooBig) {
+      btn.title = `Too slow for this dataset (n = ${n.toLocaleString()}): every repetition `
+        + `shuffles all ${n.toLocaleString()} observations, so ten thousand of them would `
+        + `freeze the page for several seconds. Use +1k — the margin printed with the result `
+        + `says when more would not change your conclusion.`;
+    } else {
+      btn.removeAttribute('title');
+    }
+  }
+}
+
 export function initKeyboardShortcuts(genBtns, resetBtn) {
   initHelp();
 
@@ -475,6 +582,7 @@ export function initKeyboardShortcuts(genBtns, resetBtn) {
     if (e.key === '2') genBtns[1]?.click();
     if (e.key === '3') genBtns[2]?.click();
     if (e.key === '4') genBtns[3]?.click();
+    if (e.key === '5') genBtns[4]?.click();
     if (e.key === '0' && resetBtn && !resetBtn.hidden) resetBtn.click();
   });
 }

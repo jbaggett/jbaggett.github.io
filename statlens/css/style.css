@@ -1822,6 +1822,13 @@ input[aria-invalid="true"] {
    "Dots | Cards", which name themselves, and each `.seg-control` carries its
    own `aria-label`, so nothing is lost to a screen reader. (2026-10-05.) */
 @media (max-width: 560px) {
+  /* Five generate buttons and a trailing noun do not fit a phone: the bar is
+     361px wide on a Pixel 5 and the buttons alone come to 236 of it, so
+     "Shuffles" (59px) was the difference between one row and two. The buttons
+     say what they do, and the bar carries its own aria-label, so the word is
+     the thing to lose. (2026-10-04, adding +10k.) */
+  .gen-label { position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .pbm-style-toggle .seg-label { position: absolute; width: 1px; height: 1px;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .mech-head-controls { gap: 0.3rem 0.5rem; }
