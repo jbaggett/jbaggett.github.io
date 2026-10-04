@@ -2052,6 +2052,13 @@ input[aria-invalid="true"] {
   --obs-failure-edge: #999;
 }
 .mech-card-legend { margin-left: 0.75rem; }
+/* The shuffled panel's numbers, while its marks are still in the air.
+   Hidden, not emptied: the row keeps its height and nothing reflows when the
+   value appears. (See showTwoPropShuffle.) */
+.pbm-reveal-pending .pbm-block-counts,
+.pbm-reveal-pending .pbm-stat-value,
+.pbm-reveal-pending .mech-stat-value { visibility: hidden; }
+
 /* The key's own row at the foot of the mechanism strip. */
 .mech-legend-row {
   display: flex; align-items: center; justify-content: center;

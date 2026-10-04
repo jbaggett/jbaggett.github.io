@@ -2516,15 +2516,20 @@ export function initSimPage(config) {
   /** Build the two-stacked-group scaffold (empty host divs + per-group stats). */
   function twoPropPanelHTML(kind, g1, g2, withDiff) {
     const f = (/** @type {number} */ v) => formatStat(v, dataPrecision, 'proportion');
+    // p̂ sits in its own span so a shuffle can hold it back until the marks have
+    // landed. n cannot change — a permutation keeps the group sizes — so it is
+    // never hidden, and the row does not reflow when the value appears.
+    const stat = (/** @type {number[]} */ g) =>
+      `n = ${g.length}, p̂ = <span class="pbm-stat-value">${f(mean(g))}</span>`;
     let html = `<div class="pbm-twogroup">
       <div class="pbm-group">
         <div class="mech-group-row"><span class="mech-group-name">${group1Name}:</span>
-          <span class="mech-group-stat">n = ${g1.length}, p̂ = ${f(mean(g1))}</span></div>
+          <span class="mech-group-stat">${stat(g1)}</span></div>
         <div id="pbm-${kind}-1"></div>
       </div>
       <div class="pbm-group">
         <div class="mech-group-row"><span class="mech-group-name">${group2Name}:</span>
-          <span class="mech-group-stat">n = ${g2.length}, p̂ = ${f(mean(g2))}</span></div>
+          <span class="mech-group-stat">${stat(g2)}</span></div>
         <div id="pbm-${kind}-2"></div>
       </div>
     </div>`;
@@ -2533,6 +2538,20 @@ export function initSimPage(config) {
     }
     return html;
   }
+
+  /**
+   * Dot size for the two-group blocks.
+   *
+   * The randomization page stacks four of them — two groups and their two
+   * shuffled versions — above an H₀ sentence and a colour key, which at the
+   * 24px the bootstrap page uses is taller than a laptop shows beside the
+   * distribution. (Jeff, 2026-10-03: "for that particular page, let's make the
+   * dots a little smaller to occupy less vertical".) It bites only where the
+   * dots were at their maximum: cpr's 50 and 40 draw at 18px instead of 24, in
+   * the same three rows; at 90 per group both pages already draw 14px.
+   */
+  const twoPropBlockOpts = () =>
+    (config.mode === 'randomization' ? { maxSize: 18 } : {});
 
   /** Render the two original group "bags". */
   function renderTwoPropBags() {
@@ -2545,7 +2564,7 @@ export function initSimPage(config) {
     // because it is the one with a size constraint. (2026-10-03.)
     const c1 = document.getElementById('pbm-bag-1');
     const shared = blockLayout(Math.max(data1.length, data2.length),
-      Math.round(c1?.getBoundingClientRect().width ?? 0));
+      Math.round(c1?.getBoundingClientRect().width ?? 0), twoPropBlockOpts());
     renderPropBag(c1, data1, { style: propMechStyle, label: `${group1Name} sample`, layout: shared });
     renderPropBag(document.getElementById('pbm-bag-2'), data2, { style: propMechStyle, label: `${group2Name} sample`, layout: shared });
   }
@@ -2603,7 +2622,7 @@ export function initSimPage(config) {
     // One geometry for all four blocks, from the biggest group — the same rule
     // the bags use, for the same reason: two scales cannot be compared.
     const shared = blockLayout(Math.max(data1.length, data2.length),
-      Math.round(c1?.getBoundingClientRect().width ?? 0));
+      Math.round(c1?.getBoundingClientRect().width ?? 0), twoPropBlockOpts());
     const common = { style: propMechStyle, layout: shared, delta: false };
     renderPropResample(c1, g1, { ...common, label: `Shuffled ${group1Name}`,
       reference: data1.length ? mean(data1) : null });
@@ -2618,16 +2637,24 @@ export function initSimPage(config) {
       targetGroups: [marks(c1), marks(c2)],
     }) : 0;
 
-    // The difference is the thing the deal produced, so it arrives when the
-    // deal does — not before the marks have landed.
+    // Every number the deal produces waits for the deal.
+    //
+    // The counts, each group's p̂ and the difference were all written with the
+    // panel, so the answer was on screen in full while the marks were still in
+    // the air — and a student who reads "13 S, 37 F" before anything lands has
+    // no reason to watch the thing that produced it. They are hidden rather
+    // than emptied, so nothing reflows when they appear. (Jeff, 2026-10-03:
+    // "don't reveal the numbers of S and F in the shuffled groups until the
+    // animation completes".)
     const diffEl = mechResampleContent.querySelector('.mech-stat-value');
-    const setDiff = () => {
-      if (!diffEl) return;
-      diffEl.textContent = formatStat(mean(g1) - mean(g2), dataPrecision, 'proportion');
-      diffEl.classList.add('highlight-last');
+    const reveal = () => {
+      mechResampleContent?.classList.remove('pbm-reveal-pending');
+      diffEl?.classList.add('highlight-last');
     };
-    if (ms > 0) { if (diffEl) diffEl.textContent = '…'; setTimeout(setDiff, Math.max(0, ms - 120)); }
-    else setDiff();
+    if (ms > 0) {
+      mechResampleContent.classList.add('pbm-reveal-pending');
+      setTimeout(reveal, Math.max(0, ms - 120));
+    } else reveal();
     return ms;
   }
 

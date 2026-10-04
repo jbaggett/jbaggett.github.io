@@ -159,8 +159,17 @@ const BLOCK_H = 168;
  * Exported for tests: the arithmetic is the whole of the behaviour, and the
  * cases worth pinning (a panel 120px wide, n = 120) are ones no page produces.
  *
+ * `maxSize` caps the diameter. The two-proportion randomization page stacks
+ * FOUR blocks — two groups and their two shuffled versions — above an H₀
+ * sentence and a colour key, and at 24px that strip is taller than a laptop
+ * will show beside the distribution. Capping is better than another rule: the
+ * balancing below is unchanged, the block simply starts from a smaller dot and
+ * comes out shorter. (Jeff, 2026-10-03: "for that particular page, let's make
+ * the dots a little smaller to occupy less vertical".)
+ *
  * @param {number} n
  * @param {number} availW usable width in px; 0 when the panel is not on screen
+ * @param {{wide?: boolean, maxSize?: number}} [opts]
  * @returns {{cols: number, size: number}}
  */
 export function blockLayout(n, availW, opts = {}) {
@@ -211,7 +220,9 @@ export function blockLayout(n, availW, opts = {}) {
   // keeps getting shorter as the sample grows, which is the point. (Jeff,
   // 2026-10-03: "for larger samples we should decrease the dot sizes a bit to
   // take less vertical space.")
-  const legible = DOT_STEPS.filter(step => step >= DIGIT_MIN_W);
+  const cap = Number.isFinite(opts.maxSize) ? Number(opts.maxSize) : Infinity;
+  const steps = DOT_STEPS.filter(step => step <= cap);
+  const legible = steps.filter(step => step >= DIGIT_MIN_W);
   if (legible.length) {
     const target = Math.max(MAX_ROWS, Math.min(...legible.map(rowsAt)));
     for (const step of legible) {
@@ -220,7 +231,7 @@ export function blockLayout(n, availW, opts = {}) {
   }
   // Nothing legible fits — an absurdly narrow panel. Fall back to the old rule:
   // the largest dot that fits the height budget at all.
-  for (const step of DOT_STEPS) {
+  for (const step of (steps.length ? steps : DOT_STEPS)) {
     const maxRows = Math.max(1, Math.floor((BLOCK_H + DOT_GAP) / (step + DOT_GAP)));
     if (colsAt(step) * maxRows < n) continue;
     size = step;
