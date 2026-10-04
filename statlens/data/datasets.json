@@ -1090,10 +1090,10 @@
   {
     "id": "friday_traffic",
     "name": "Friday the 13th Traffic",
-    "description": "Traffic volume on Friday the 6th vs. Friday the 13th at the same locations. Is there less traffic on the 13th? IMS Ch. 21.",
+    "description": "Traffic volume on Friday the 6th vs. Friday the 13th on the same stretch of the M25 motorway. Is there less traffic on the 13th? IMS Ch. 21.",
     "type": "paired",
     "chapter": "IMS Ch. 21",
-    "n": 55,
+    "n": 10,
     "variables": [
       "sixth",
       "thirteenth"
@@ -2125,6 +2125,7 @@
     "id": "textbooks",
     "name": "UCLA Textbook Prices",
     "description": "Prices ($) of 73 textbooks at the UCLA bookstore vs. Amazon. Are UCLA prices higher on average? IMS Ch. 20.",
+    "type": "paired",
     "chapter": "",
     "n": 73,
     "variables": [

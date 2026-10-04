@@ -182,6 +182,11 @@ export function computeDotRadius(innerWidth, innerHeight, maxStack, numBins) {
  * @param {string} [options.descText] - Chart description for accessibility
  * @param {string} [options.id] - Unique ID prefix
  * @param {(value: number) => boolean} [options.isExtreme] - Predicate for extreme dot coloring
+ * @param {{below: number, above: number}} [options.splitRanks] - Classify dots by
+ *   RANK instead of by value: the `below` smallest and `above` largest are
+ *   outside the region, the rest inside. This is what lets a boundary column
+ *   split — the dots in it share a value, so only a rank can say "these two of
+ *   the twenty-eight are the ones the 2.5% reaches".
  * @param {number} [options.observedStat] - Value for observed statistic vertical line
  * @param {string} [options.observedLabel] - Label for observed line (default: 'observed')
  * @param {[number,number]} [options.ciLines] - CI bound values to draw as vertical lines
@@ -217,6 +222,7 @@ export function drawDotplot(container, values, options = {}) {
     descText = '',
     id,
     isExtreme,
+    splitRanks,
     observedStat,
     observedLabel = 'observed',
     ciLines,
@@ -342,9 +348,9 @@ export function drawDotplot(container, values, options = {}) {
   const dataGroup = d3Selection.select(frame.inner).select('.data');
   const tooltipNode = labels === 'none' ? undefined : frame.inner;
   if (wouldOverflow) {
-    renderColumns(dataGroup, dots, xScale, /** @type {d3Scale.ScaleLinear<number,number>} */ (yScale), frame.height, isExtreme, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, precision);
+    renderColumns(dataGroup, dots, xScale, /** @type {d3Scale.ScaleLinear<number,number>} */ (yScale), frame.height, isExtreme, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, precision, splitRanks);
   } else {
-    renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision);
+    renderDots(dataGroup, dots, xScale, frame.height, dotRadius, isExtreme, animate, highlightIndex, highlightIndices, tooltipNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision, splitRanks);
   }
 
   // Observed statistic line. It and the two bounds share one line of text above
@@ -481,7 +487,7 @@ let pendingHighlightTimers = [];
  * @param {Set<number>} [highlightIndices] - Batch new dots (+10): accent pulse
  * @param {SVGGElement} [innerNode] - chart-inner node for custom tooltips
  */
-function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision) {
+function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, highlightStroke, precision, splitRanks) {
   // A dot on an explore page IS an observation, so its exact value is the right
   // thing to show and stays the fallback. A dot on a (re)sampling distribution
   // is a computed statistic, where the exact value is a float tail nobody wants
@@ -493,10 +499,23 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
   pendingHighlightTimers = [];
   const shouldAnimate = animate && !prefersReducedMotion() && hasD3Transition();
   const extremeFill = optExtremeFill || fillColor || EXTREME_FILL;
-  const baseFill = optBaseFill || fillColor || (isExtreme ? BODY_FILL : DOT_FILL);
+  const baseFill = optBaseFill || fillColor || (isExtreme || splitRanks ? BODY_FILL : DOT_FILL);
+  /** @type {Set<object>} the dots the level reaches, when it is counted by rank */
+  const rankInside = new Set();
+  if (splitRanks) {
+    const sorted = dots.map((d, i) => ({ d, i }))
+      .sort((a, b) => a.d.value - b.d.value || a.i - b.i);
+    for (let r = splitRanks.below; r < dots.length - splitRanks.above; r++) {
+      if (sorted[r]) rankInside.add(sorted[r].d);
+    }
+  }
 
   /** Normal fill for a dot at index i. */
   function normalFill(d) {
+    // By RANK when the caller gave one, so exactly the level's worth of dots is
+    // shaded even where several share a value — the individual-dot counterpart
+    // of splitting a column. (Jeff, 2026-10-04.)
+    if (splitRanks) return rankInside.has(d) ? extremeFill : baseFill;
     if (!isExtreme) return baseFill;
     return isExtreme(d.value) ? extremeFill : baseFill;
   }
@@ -593,27 +612,69 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
  * @param {Set<number>} [highlightIndices] - Indices of batch-added dots
  * @param {SVGGElement} [innerNode]
  */
-function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, precision) {
+function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, highlightIndex = -1, highlightIndices, innerNode, fillColor, optBaseFill, optExtremeFill, precision, splitRanks) {
   // A column's centre is a value; print it the way the page prints this
   // statistic, else the compact axis format it used before.
   const fmtValue = valueFormat(precision);
   // Cancel any pending highlight timers from previous render
   for (const t of pendingHighlightTimers) clearTimeout(t);
   pendingHighlightTimers = [];
-  // Aggregate dots by binCenter → count
-  /** @type {Map<number, {count: number}>} */
+  // Aggregate dots by binCenter → count, and by how many of them are in the
+  // region of interest.
+  //
+  // The region is decided from the dots' own VALUES, not from the bin centre.
+  // A bin centre is computed from the grid (min + (i + ½)·width) and a CI bound
+  // from a quantile, so two numbers that are the same quantity arrive by
+  // different arithmetic and can differ in the last bit. Measured on
+  // transplant_survival: the upper bound and the atom 29/34 were both 0.853,
+  // the bound landing 1.2e-13 of a pixel below the column — so `centre <= hi`
+  // was false and 28 resamples sitting exactly ON the bound were drawn outside
+  // it, while the pills (which count values) called them inside. The lower
+  // bound, shifted the same direction, stayed comfortably inside. One tiny
+  // systematic offset, opposite consequences at the two ends, and a picture
+  // that shaded one boundary column blue and the other grey. (Jeff, 2026-10-04:
+  // "it's strange that one of the boundary columns is shaded blue while the
+  // other is shaded gray".)
+  //
+  // Majority, so a bin that straddles a bound takes the colour most of its dots
+  // would have. On a discrete statistic every dot in a column shares a value,
+  // so there is nothing to decide.
+  //
+  // `splitRanks` classifies by RANK instead, which is the only way to say "two
+  // of these twenty-eight are the ones the bottom 2.5% reaches" when all
+  // twenty-eight share a value. Then a boundary column is drawn in two pieces.
+  /** @type {Map<number, {count: number, below: number, inside: number, above: number}>} */
   const bins = new Map();
-  for (const d of dots) {
-    const entry = bins.get(d.binCenter);
-    if (entry) {
-      entry.count++;
-    } else {
-      bins.set(d.binCenter, { count: 1 });
-    }
+  /** @type {(d: {value: number}, rank: number) => -1|0|1} below / inside / above */
+  let classify;
+  if (splitRanks) {
+    const lo = splitRanks.below, hi = dots.length - splitRanks.above;
+    classify = (_d, rank) => (rank < lo ? -1 : rank >= hi ? 1 : 0);
+  } else if (isExtreme) {
+    // Value-based: in or out, with no side. Out dots are reported as `above`
+    // so they stack at the top, which is where a single-region column's colour
+    // comes from anyway — a column is whole in this mode unless its BIN
+    // straddles, and then the split is real.
+    classify = (d) => (isExtreme(d.value) ? 0 : 1);
+  } else {
+    classify = () => 0;
   }
+  // Rank order, so ties are broken the same way every render.
+  const order = dots.map((d, i) => i).sort((a, b) =>
+    dots[a].value - dots[b].value || a - b);
+  const rankOf = new Array(dots.length);
+  order.forEach((idx, rank) => { rankOf[idx] = rank; });
+
+  dots.forEach((d, i) => {
+    let entry = bins.get(d.binCenter);
+    if (!entry) { entry = { count: 0, below: 0, inside: 0, above: 0 }; bins.set(d.binCenter, entry); }
+    entry.count++;
+    const c = classify(d, rankOf[i]);
+    if (c < 0) entry.below++; else if (c > 0) entry.above++; else entry.inside++;
+  });
 
   const columnData = [...bins.entries()]
-    .map(([center, { count }]) => ({ center, count }))
+    .map(([center, b]) => ({ center, count: b.count, below: b.below, inside: b.inside, above: b.above }))
     .sort((a, b) => a.center - b.center);
 
   // Compute column width: fraction of bin pixel spacing, clamped
@@ -622,28 +683,64 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     : 10;
   const colWidth = Math.max(MIN_RADIUS * 2, Math.min(COLUMN_MAX_WIDTH, binPixelWidth * 0.75));
 
-  /** Color for a column based on its bin center value. */
-  function colColor(center) {
-    const extreme = optExtremeFill || fillColor || EXTREME_FILL;
-    const base = optBaseFill || fillColor || (isExtreme ? BODY_FILL : DOT_FILL);
-    if (!isExtreme) return base;
-    return isExtreme(center) ? extreme : base;
+  const REGION_FILL = optExtremeFill || fillColor || EXTREME_FILL;
+  const OUTSIDE_FILL = optBaseFill || fillColor || (isExtreme || splitRanks ? BODY_FILL : DOT_FILL);
+
+  // Drawn bottom-up: the outside-below piece, the inside piece, the
+  // outside-above piece. A column wholly in one region is one line with the
+  // rounded cap it has always had; a boundary column is two, flat where they
+  // meet, which is the StatKey picture — grey under blue at the left bound,
+  // blue under grey at the right. (Jeff, 2026-10-04.)
+  /** @type {Array<{center:number, count:number, from:number, to:number, fill:string, whole:boolean, label:string}>} */
+  const segments = [];
+  for (const col of columnData) {
+    const parts = [
+      { n: col.below, fill: OUTSIDE_FILL },
+      { n: col.inside, fill: REGION_FILL },
+      { n: col.above, fill: OUTSIDE_FILL },
+    ].filter(part => part.n > 0);
+    const whole = parts.length === 1;
+    let base = 0;
+    for (const part of parts) {
+      segments.push({ center: col.center, count: col.count, from: base, to: base + part.n,
+        fill: part.fill, whole, label: `${fmtValue(col.center)}: ${col.count}` });
+      base += part.n;
+    }
   }
 
-  // Draw columns as lines with round linecap for rounded tops
   const lines = group.selectAll('.col-line')
-    .data(columnData)
+    .data(segments)
     .join('line')
     .attr('class', 'col-line')
     .attr('x1', d => xScale(d.center))
     .attr('x2', d => xScale(d.center))
-    .attr('y1', innerHeight)
-    .attr('y2', d => yScale(d.count))
-    .attr('stroke', d => colColor(d.center))
+    .attr('y1', d => (d.from === 0 ? innerHeight : yScale(d.from)))
+    .attr('y2', d => yScale(d.to))
+    .attr('stroke', d => d.fill)
     .attr('stroke-width', colWidth)
-    .attr('stroke-linecap', 'round')
+    // Flat where two pieces meet, so the boundary between them is a line and
+    // not a pair of overlapping rounded caps.
+    .attr('stroke-linecap', d => (d.whole ? 'round' : 'butt'))
     .attr('role', 'listitem')
-    .attr('aria-label', d => `${fmtValue(d.center)}: ${d.count}`);
+    .attr('aria-label', d => d.label);
+
+  // …and a cut column still gets its rounded top.
+  //
+  // Butt caps make the join flat, which is what the join wants, but they also
+  // flatten the top of the column — so a split column stood out as square-topped
+  // beside the rounded ones. A disc at the apex, in the top piece's colour,
+  // restores the cap without rounding the join. (Jeff, 2026-10-04: "the columns
+  // in the dotplot should all have the rounded tops, even the split ones".)
+  const caps = segments.filter(seg => !seg.whole && seg.to === seg.count);
+  group.selectAll('.col-cap')
+    .data(caps)
+    .join('circle')
+    .attr('class', 'col-cap')
+    .attr('cx', d => xScale(d.center))
+    .attr('cy', d => yScale(d.to))
+    .attr('r', colWidth / 2)
+    .attr('fill', d => d.fill)
+    .attr('aria-hidden', 'true');
 
   // Highlight only the NEW portion of columns that received new dots
   if (highlightIndex >= 0 || (highlightIndices && highlightIndices.size > 0)) {

@@ -74,6 +74,9 @@ export function drawSpike(container, values, options = {}) {
     descText = '',
     id,
     isTail,
+    /** @type {{below: number, above: number}|undefined} Rank cut, for a spike
+     *  that straddles the boundary (see the comment at the lines below). */
+    splitRanks,
     observedStat,
     ciLines,
     ciColor = '#B5747A',
@@ -110,6 +113,7 @@ export function drawSpike(container, values, options = {}) {
   });
   const counts = countValues(values);
   const keys = [...counts.keys()].sort((a, b) => a - b);
+  const total = values.length;
 
   // Domain
   let lo, hi;
@@ -145,18 +149,55 @@ export function drawSpike(container, values, options = {}) {
   // Render spikes
   const spikeData = keys.map(k => ({ value: k, count: counts.get(k) ?? 0 }));
 
-  // Lines
+  // Lines, in up to two pieces.
+  //
+  // `splitRanks` says how many of the sorted values fall outside the region at
+  // each end, which on a lattice is the only way to say "two of these
+  // twenty-eight". A spike that straddles the cut is drawn grey up to the cut
+  // and coloured above it at the left bound, and the other way round at the
+  // right — the StatKey picture, and the same rule the dotplot's columns use.
+  // (Jeff, 2026-10-04.)
+  /** @type {Array<{value:number, count:number, from:number, to:number, region:boolean}>} */
+  const pieces = [];
+  if (splitRanks) {
+    let seen = 0;
+    const loCut = splitRanks.below, hiCut = total - splitRanks.above;
+    for (const d of spikeData) {
+      const start = seen, end = seen + d.count;
+      seen = end;
+      // [start, end) are this spike's ranks. Split at the two cuts.
+      // `isTail` has always meant "in the region of interest" — the CI for a
+      // bootstrap, the tail for a randomization — so the middle piece is the
+      // one that gets the region colour.
+      const parts = [
+        { n: Math.max(0, Math.min(end, loCut) - start), region: false },
+        { n: Math.max(0, Math.min(end, hiCut) - Math.max(start, loCut)), region: true },
+        { n: Math.max(0, end - Math.max(start, hiCut)), region: false },
+      ].filter(q => q.n > 0);
+      let base = 0;
+      for (const q of parts) {
+        pieces.push({ value: d.value, count: d.count, from: base, to: base + q.n, region: q.region });
+        base += q.n;
+      }
+    }
+  } else {
+    for (const d of spikeData) {
+      pieces.push({ value: d.value, count: d.count, from: 0, to: d.count,
+        region: isTail ? !!isTail(d.value) : false });
+    }
+  }
+
   dataGroup.selectAll('.spike-line')
-    .data(spikeData)
+    .data(pieces)
     .join('line')
     .attr('class', 'spike-line')
     .attr('x1', d => xScale(d.value))
     .attr('x2', d => xScale(d.value))
-    .attr('y1', frame.height)
-    .attr('y2', d => yScale(d.count))
+    .attr('y1', d => (d.from === 0 ? frame.height : yScale(d.from)))
+    .attr('y2', d => yScale(d.to))
     .attr('stroke', d => {
-      if (!isTail) return baseColor;
-      return isTail(d.value) ? REGION_SPIKE : BODY_SPIKE;
+      if (!isTail && !splitRanks) return baseColor;
+      return d.region ? REGION_SPIKE : BODY_SPIKE;
     })
     .attr('stroke-width', 2)
     .attr('role', 'listitem')
@@ -170,9 +211,14 @@ export function drawSpike(container, values, options = {}) {
     .attr('cx', d => xScale(d.value))
     .attr('cy', d => yScale(d.count))
     .attr('r', CAP_RADIUS)
+    // The cap belongs to the TOP of its spike, so on a split spike it takes the
+    // upper piece's colour — grey on the right-hand boundary spike, where the
+    // part above the cut is outside the interval.
     .attr('fill', d => {
-      if (!isTail) return baseColor;
-      return isTail(d.value) ? REGION_SPIKE : BODY_SPIKE;
+      if (!isTail && !splitRanks) return baseColor;
+      const top = pieces.filter(q => q.value === d.value).pop();
+      if (top) return top.region ? REGION_SPIKE : BODY_SPIKE;
+      return isTail && isTail(d.value) ? REGION_SPIKE : BODY_SPIKE;
     });
 
   // Tooltips (mouse + keyboard)

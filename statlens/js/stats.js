@@ -513,7 +513,19 @@ export function detectPrecision(values) {
     let maxDec = 0;
     for (const v of values) {
         if (!isFinite(v)) continue;
-        const s = String(v);
+        // Measured on the number the data MEANS, not on its binary expansion.
+        //
+        // This is called on computed values as well as on source columns — the
+        // paired tools hand it a column of differences — and in binary,
+        // 27.67 − 27.95 is −0.2799999999999976. Read literally that is sixteen
+        // decimals, so `inference/paired` printed "d̄ = 3.204383561643835865"
+        // for the UCLA textbook prices: eighteen digits of a quantity in
+        // dollars and cents. Twelve significant digits is far more than any
+        // measurement carries and far less than the noise, so rounding there
+        // first leaves real precision untouched and takes the artefact away.
+        // (Found 2026-10-04, typing the textbooks dataset as paired.)
+        const s = String(Number(v.toPrecision(12)));
+        if (s.includes('e') || s.includes('E')) continue;
         const dot = s.indexOf('.');
         if (dot >= 0) {
             const dec = s.length - dot - 1;

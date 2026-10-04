@@ -2,6 +2,7 @@
   "id": "textbooks",
   "name": "UCLA Textbook Prices",
   "description": "Prices ($) of 73 textbooks at the UCLA bookstore vs. Amazon. Are UCLA prices higher on average? IMS Ch. 20.",
+  "type": "paired",
   "source": "IMS (Introduction to Modern Statistics), UCLA bookstore survey",
   "variables": [
     {
@@ -13,12 +14,12 @@
       "type": "numeric"
     }
   ],
-  "studyDescription": "Prices of 73 textbooks required for UCLA courses, collected from both the UCLA bookstore and Amazon.com during the same semester. Each textbook was priced at both retailers, making this a paired dataset. This is an observational study comparing retail pricing.",
+  "studyDescription": "Seventy-three UCLA courses were sampled at random in Spring 2010 and the required textbook for each was priced twice: new at the UCLA bookstore, and new on Amazon.com. Each textbook was priced at both retailers, making this a paired dataset. This is an observational study comparing retail pricing.",
   "variableDescriptions": {
     "ucla": "Price of the textbook at the UCLA bookstore in US dollars",
     "amazon": "Price of the same textbook on Amazon.com in US dollars"
   },
-  "sourceDetail": "OpenIntro IMS Ch. 20. Data from a UCLA bookstore pricing survey, openintro::textbooks.",
+  "sourceDetail": "OpenIntro IMS Ch. 20; openintro::textbooks (ucla_new, amaz_new). Prices collected from 73 randomly sampled UCLA courses, Spring 2010.",
   "context": {
     "population": "UCLA textbooks",
     "parameter": "mean price difference",
@@ -31,11 +32,11 @@
       "amazon": 27.95
     },
     {
-      "ucla": 40,
+      "ucla": 40.59,
       "amazon": 31.14
     },
     {
-      "ucla": 31.5,
+      "ucla": 31.68,
       "amazon": 32
     },
     {
@@ -43,280 +44,280 @@
       "amazon": 11.52
     },
     {
-      "ucla": 18,
-      "amazon": 12.53
-    },
-    {
-      "ucla": 14,
-      "amazon": 14.21
-    },
-    {
-      "ucla": 24,
-      "amazon": 20
-    },
-    {
-      "ucla": 33.5,
-      "amazon": 26
-    },
-    {
-      "ucla": 34,
-      "amazon": 18.52
-    },
-    {
-      "ucla": 30.7,
-      "amazon": 24
-    },
-    {
-      "ucla": 22,
-      "amazon": 18.15
-    },
-    {
-      "ucla": 23,
-      "amazon": 23
-    },
-    {
-      "ucla": 18,
-      "amazon": 18
-    },
-    {
-      "ucla": 43,
-      "amazon": 36
-    },
-    {
-      "ucla": 12,
-      "amazon": 12
-    },
-    {
-      "ucla": 22,
-      "amazon": 14.21
-    },
-    {
-      "ucla": 13,
-      "amazon": 10
-    },
-    {
-      "ucla": 15,
-      "amazon": 14.4
-    },
-    {
-      "ucla": 19,
-      "amazon": 14.97
-    },
-    {
-      "ucla": 24,
-      "amazon": 21.96
-    },
-    {
-      "ucla": 22.25,
-      "amazon": 16
-    },
-    {
-      "ucla": 23.25,
-      "amazon": 19.22
-    },
-    {
-      "ucla": 20,
-      "amazon": 15.13
-    },
-    {
-      "ucla": 25,
-      "amazon": 24.64
-    },
-    {
-      "ucla": 21,
-      "amazon": 15.67
-    },
-    {
-      "ucla": 19,
-      "amazon": 13.59
-    },
-    {
-      "ucla": 36,
-      "amazon": 36
-    },
-    {
-      "ucla": 13.5,
-      "amazon": 12.5
-    },
-    {
-      "ucla": 30,
-      "amazon": 28.68
-    },
-    {
-      "ucla": 17,
-      "amazon": 14
-    },
-    {
-      "ucla": 35,
-      "amazon": 34
-    },
-    {
-      "ucla": 12.5,
-      "amazon": 11
-    },
-    {
-      "ucla": 57,
-      "amazon": 47.6
-    },
-    {
-      "ucla": 28,
-      "amazon": 25
-    },
-    {
-      "ucla": 38.75,
-      "amazon": 38.23
-    },
-    {
-      "ucla": 52,
-      "amazon": 45.4
-    },
-    {
-      "ucla": 25.75,
-      "amazon": 25.2
-    },
-    {
-      "ucla": 15,
-      "amazon": 15.4
-    },
-    {
-      "ucla": 18,
-      "amazon": 16
-    },
-    {
-      "ucla": 27,
-      "amazon": 26.8
-    },
-    {
-      "ucla": 10.5,
-      "amazon": 10.5
-    },
-    {
-      "ucla": 28,
-      "amazon": 28
-    },
-    {
-      "ucla": 14,
-      "amazon": 12.6
-    },
-    {
-      "ucla": 30,
-      "amazon": 25.99
-    },
-    {
-      "ucla": 17.5,
-      "amazon": 12.75
-    },
-    {
-      "ucla": 16,
-      "amazon": 12.95
-    },
-    {
-      "ucla": 25,
-      "amazon": 22.72
-    },
-    {
-      "ucla": 20,
-      "amazon": 16
-    },
-    {
       "ucla": 18.95,
-      "amazon": 15.19
+      "amazon": 14.21
+    },
+    {
+      "ucla": 14.95,
+      "amazon": 10.17
+    },
+    {
+      "ucla": 24.7,
+      "amazon": 20.06
+    },
+    {
+      "ucla": 19.5,
+      "amazon": 16.66
+    },
+    {
+      "ucla": 123.84,
+      "amazon": 106.25
     },
     {
       "ucla": 17,
-      "amazon": 10.35
+      "amazon": 13.26
     },
     {
-      "ucla": 21,
-      "amazon": 15.07
+      "ucla": 31.63,
+      "amazon": 29.95
     },
     {
-      "ucla": 15.5,
-      "amazon": 14.7
+      "ucla": 116,
+      "amazon": 88.09
     },
     {
-      "ucla": 25,
-      "amazon": 20
+      "ucla": 27.67,
+      "amazon": 18.45
     },
     {
-      "ucla": 19,
-      "amazon": 11.99
+      "ucla": 24.7,
+      "amazon": 16.47
     },
     {
-      "ucla": 14,
-      "amazon": 9.78
+      "ucla": 126.67,
+      "amazon": 97.38
     },
     {
-      "ucla": 45,
-      "amazon": 40
+      "ucla": 53.9,
+      "amazon": 47.51
     },
     {
-      "ucla": 22,
-      "amazon": 18.63
+      "ucla": 89.73,
+      "amazon": 74.93
     },
     {
-      "ucla": 32.5,
-      "amazon": 30
+      "ucla": 171,
+      "amazon": 132.77
+    },
+    {
+      "ucla": 152,
+      "amazon": 121.5
+    },
+    {
+      "ucla": 124.8,
+      "amazon": 108
     },
     {
       "ucla": 16,
-      "amazon": 13
+      "amazon": 11.67
     },
     {
-      "ucla": 17.25,
-      "amazon": 15
+      "ucla": 25.95,
+      "amazon": 18.94
     },
     {
-      "ucla": 10,
-      "amazon": 10
+      "ucla": 18,
+      "amazon": 12.24
     },
     {
-      "ucla": 12,
-      "amazon": 12
+      "ucla": 21.73,
+      "amazon": 21.95
     },
     {
-      "ucla": 28,
-      "amazon": 26.72
+      "ucla": 40.59,
+      "amazon": 31.14
     },
     {
-      "ucla": 13,
-      "amazon": 10.49
+      "ucla": 28.95,
+      "amazon": 28.95
     },
     {
-      "ucla": 24,
-      "amazon": 21
+      "ucla": 19.95,
+      "amazon": 16.15
     },
     {
-      "ucla": 35,
-      "amazon": 32
+      "ucla": 49.45,
+      "amazon": 37.75
     },
     {
-      "ucla": 14,
-      "amazon": 12
+      "ucla": 41.09,
+      "amazon": 31.78
     },
     {
-      "ucla": 11.5,
+      "ucla": 50.95,
+      "amazon": 32.97
+    },
+    {
+      "ucla": 44.5,
+      "amazon": 30.87
+    },
+    {
+      "ucla": 82.45,
+      "amazon": 85
+    },
+    {
+      "ucla": 34.6,
+      "amazon": 34.95
+    },
+    {
+      "ucla": 88.42,
+      "amazon": 97.95
+    },
+    {
+      "ucla": 84,
+      "amazon": 81.18
+    },
+    {
+      "ucla": 11.25,
       "amazon": 9.5
     },
     {
       "ucla": 15,
-      "amazon": 10
+      "amazon": 10.2
     },
     {
-      "ucla": 21,
-      "amazon": 18.99
+      "ucla": 180.03,
+      "amazon": 134.69
     },
     {
-      "ucla": 30,
-      "amazon": 28
+      "ucla": 174,
+      "amazon": 143.75
     },
     {
-      "ucla": 18,
-      "amazon": 15.61
+      "ucla": 188.58,
+      "amazon": 176
     },
     {
-      "ucla": 26,
-      "amazon": 22
+      "ucla": 146.75,
+      "amazon": 150.63
+    },
+    {
+      "ucla": 183.75,
+      "amazon": 145.4
+    },
+    {
+      "ucla": 214.5,
+      "amazon": 173.56
+    },
+    {
+      "ucla": 197,
+      "amazon": 131
+    },
+    {
+      "ucla": 194,
+      "amazon": 157.68
+    },
+    {
+      "ucla": 176.25,
+      "amazon": 137.17
+    },
+    {
+      "ucla": 24.7,
+      "amazon": 24.95
+    },
+    {
+      "ucla": 188,
+      "amazon": 159.28
+    },
+    {
+      "ucla": 29.7,
+      "amazon": 23.07
+    },
+    {
+      "ucla": 26.24,
+      "amazon": 21.04
+    },
+    {
+      "ucla": 55.13,
+      "amazon": 42.68
+    },
+    {
+      "ucla": 43.56,
+      "amazon": 39.37
+    },
+    {
+      "ucla": 129.6,
+      "amazon": 85.2
+    },
+    {
+      "ucla": 123.84,
+      "amazon": 93.13
+    },
+    {
+      "ucla": 85.12,
+      "amazon": 67.4
+    },
+    {
+      "ucla": 152.48,
+      "amazon": 132.79
+    },
+    {
+      "ucla": 29.7,
+      "amazon": 24.31
+    },
+    {
+      "ucla": 24.7,
+      "amazon": 24.95
+    },
+    {
+      "ucla": 89.71,
+      "amazon": 85.45
+    },
+    {
+      "ucla": 10.5,
+      "amazon": 10.08
+    },
+    {
+      "ucla": 92.88,
+      "amazon": 65.73
+    },
+    {
+      "ucla": 100.88,
+      "amazon": 84.26
+    },
+    {
+      "ucla": 11.95,
+      "amazon": 8.6
+    },
+    {
+      "ucla": 72.47,
+      "amazon": 58.42
+    },
+    {
+      "ucla": 92.1,
+      "amazon": 80.37
+    },
+    {
+      "ucla": 78.35,
+      "amazon": 64.09
+    },
+    {
+      "ucla": 42,
+      "amazon": 37.04
+    },
+    {
+      "ucla": 18.75,
+      "amazon": 20.21
+    },
+    {
+      "ucla": 48.46,
+      "amazon": 39.34
+    },
+    {
+      "ucla": 39.55,
+      "amazon": 26.37
+    },
+    {
+      "ucla": 29.65,
+      "amazon": 24.19
+    },
+    {
+      "ucla": 23.76,
+      "amazon": 18.72
+    },
+    {
+      "ucla": 27.7,
+      "amazon": 18.22
     }
   ],
   "inferenceContexts": [
