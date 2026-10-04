@@ -475,6 +475,7 @@ export function initKeyboardShortcuts(genBtns, resetBtn) {
     if (e.key === '2') genBtns[1]?.click();
     if (e.key === '3') genBtns[2]?.click();
     if (e.key === '4') genBtns[3]?.click();
+    if (e.key === '5') genBtns[4]?.click();
     if (e.key === '0' && resetBtn && !resetBtn.hidden) resetBtn.click();
   });
 }

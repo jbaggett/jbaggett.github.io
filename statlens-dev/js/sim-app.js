@@ -5196,21 +5196,24 @@ export function initSimPage(config) {
 
   // ─── Keyboard shortcuts ───
 
-  const helpDialog = /** @type {HTMLDialogElement} */ (document.getElementById('keyboard-help'));
-  if (helpDialog) {
-    document.addEventListener('keydown', (e) => {
-      if (e.target !== document.body) return;
-      if (e.ctrlKey || e.metaKey) return;
-      if (e.key === '?') helpDialog.showModal();
-      if (e.key === '1') genBtns[0]?.click();
-      if (e.key === '2') genBtns[1]?.click();
-      if (e.key === '3') genBtns[2]?.click();
-      if (e.key === '4') genBtns[3]?.click();
-      if (e.key === '0' && resetBtn && !resetBtn.hidden) resetBtn.click();
-    });
-    const closeBtn = helpDialog.querySelector('button');
-    if (closeBtn) closeBtn.addEventListener('click', () => helpDialog.close());
-  }
+  // The number keys every help dialog advertises.
+  //
+  // This whole block was gated on `document.getElementById('keyboard-help')`,
+  // and no page has that element — all fifteen call their dialog `page-help`.
+  // So 1/2/3/4/0 have never worked on any simulation page, while every help
+  // dialog listed them. Found 2026-10-04 adding the fifth. `?` and the close
+  // button are `initHelp`'s, which does know both ids; this only needs the
+  // generate keys.
+  document.addEventListener('keydown', (e) => {
+    if (e.target !== document.body) return;
+    if (e.ctrlKey || e.metaKey) return;
+    if (e.key === '1') genBtns[0]?.click();
+    if (e.key === '2') genBtns[1]?.click();
+    if (e.key === '3') genBtns[2]?.click();
+    if (e.key === '4') genBtns[3]?.click();
+    if (e.key === '5') genBtns[4]?.click();
+    if (e.key === '0' && resetBtn && !resetBtn.hidden) resetBtn.click();
+  });
 
   initPlayPause(genBtns, resetBtn);
 
