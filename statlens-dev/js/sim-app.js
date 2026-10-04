@@ -553,13 +553,6 @@ export function initSimPage(config) {
   /** Decimal places in source data (for formatStat). */
   let dataPrecision = 0;
 
-  // ── Variable selector (for multi-column CSV files) ──
-  /** @type {HTMLDivElement|null} */
-  let varSelectorDiv = null;
-  /** @type {HTMLSelectElement|null} */
-  let varSelectorSelect = null;
-  /** Parsed CSV data cached for variable switching. @type {{headers:string[], types:string[], data:Array<Record<string,any>>}|null} */
-  let parsedCSVCache = null;
 
   // Chart highlight state (declared early so renderChart can be called from showDataLoaded)
   /** Index of single newest dot for +1 highlight, or -1. */
@@ -938,185 +931,116 @@ export function initSimPage(config) {
     bootStatSelect.value = urlParams.stat;
   }
 
-  // ─── Variable selector helpers ───
-
-  /**
-   * Show a variable selector above the data-preview area.
-   * @param {string[]} columns - Numeric column names to choose from
-   * @param {(colName: string) => void} onChange - Called when selection changes
-   */
-  function showVarSelector(columns, onChange) {
-    hideVarSelector();
-    varSelectorDiv = document.createElement('div');
-    varSelectorDiv.className = 'var-selector-row';
-    varSelectorDiv.innerHTML = '<label for="sim-var-select">Variable: </label>';
-    varSelectorSelect = document.createElement('select');
-    varSelectorSelect.id = 'sim-var-select';
-    for (const col of columns) {
-      const opt = document.createElement('option');
-      opt.value = col;
-      opt.textContent = col;
-      varSelectorSelect.appendChild(opt);
-    }
-    varSelectorDiv.appendChild(varSelectorSelect);
-    // Insert before data-preview
-    const insertTarget = dataPreview?.parentElement;
-    if (insertTarget && dataPreview) {
-      insertTarget.insertBefore(varSelectorDiv, dataPreview);
-    }
-    varSelectorSelect.addEventListener('change', () => {
-      onChange(varSelectorSelect.value);
-    });
-  }
-
-  /** Remove the variable selector if present. */
-  function hideVarSelector() {
-    if (varSelectorDiv) {
-      varSelectorDiv.remove();
-      varSelectorDiv = null;
-      varSelectorSelect = null;
-    }
-    parsedCSVCache = null;
-  }
+  // ─── Variable selector ───
+  //
+  // There isn't one here any more. This engine grew its own — a `<select>` of
+  // the numeric columns, built, inserted and torn down by hand — and so did
+  // twenty other modules, each with its own ids and its own "only show it when
+  // there is a choice" rule, while the two-group pages had none at all. It is
+  // the data panel's job now: `needs: simNeeds` above, resolved by
+  // js/variable-picker.js. (Jeff, 2026-10-03: "it feels like we're building
+  // lots of one-off bits of code when we should be developing things centrally
+  // and applying them … shouldn't that just be kind of universal?")
 
   // ─── Data loading ───
 
   /**
-   * Parse text data (CSV or plain numbers) and load it into the simulation.
-   * @param {string} text - Raw text content
+   * Load a table the tool has never seen before.
+   *
+   * `pick` says which column fills which role — resolved by the shared picker
+   * (js/variable-picker.js) from the shape `simNeeds` declares, with the
+   * reader's control on screen to change it. This function used to decide for
+   * itself, with `parsed.types.indexOf('numeric')`: the FIRST numeric column in
+   * file order, which on a class survey is the row number.
+   *
+   * @param {{headers: string[], types: string[], data: Array<Record<string, any>>}} parsed
+   * @param {Record<string, string>} pick slot key → column name
+   * @param {string} raw the original text, for data that is not a table at all
    */
-  function loadTextData(text) {
-    if (!text.trim()) return;
+  function loadParsedData(parsed, pick, raw) {
     datasetContext = {};
+    // Changing a column is new data, not a new view of the old: whatever has
+    // been simulated was simulated from something else. (The engine's own
+    // variable selector used to do this; the central picker re-enters here.)
+    resetSimulation();
+    const col = (/** @type {string} */ key) => pick[key];
+    const values = (/** @type {string} */ name) =>
+      parsed.data.map(r => parseFloat(r[name])).filter(v => isFinite(v));
 
-      try {
-        const parsed = parseCSV(text);
-        if (parsed.headers.length > 0 && parsed.data.length > 0) {
-          const numIdx = parsed.types.indexOf('numeric');
-          const catIdx = parsed.types.indexOf('categorical');
-
-          if (config.proportion && !config.twoGroup) {
-            // One-sample bootstrap proportion: single categorical column
-            const catIndices = parsed.types
-              .map((t, i) => t === 'categorical' ? i : -1)
-              .filter(i => i >= 0);
-            if (catIndices.length >= 1) {
-              const outcomeCol = parsed.headers[catIndices[0]];
-              rawOutcomes1 = parsed.data.map(r => r[outcomeCol]);
-              rawOutcomes2 = [];
-              const outcomes = [...new Set(rawOutcomes1)];
-              populateSuccessSelector(outcomes);
-              encodeProportionData();
-              showDataLoaded();
-              return;
-            }
-          } else if (config.proportion) {
-            // Two-group proportion test: two categorical columns
-            const catIndices = parsed.types
-              .map((t, i) => t === 'categorical' ? i : -1)
-              .filter(i => i >= 0);
-            if (catIndices.length >= 2) {
-              const groupCol = parsed.headers[catIndices[0]];
-              const outcomeCol = parsed.headers[catIndices[1]];
-              const groups = [...new Set(parsed.data.map(r => r[groupCol]))];
-              const outcomes = [...new Set(parsed.data.map(r => r[outcomeCol]))];
-              if (groups.length >= 2) {
-                group1Name = groups[0];
-                group2Name = groups[1];
-                rawOutcomes1 = parsed.data
-                  .filter(r => r[groupCol] === groups[0])
-                  .map(r => r[outcomeCol]);
-                rawOutcomes2 = parsed.data
-                  .filter(r => r[groupCol] === groups[1])
-                  .map(r => r[outcomeCol]);
-                populateSuccessSelector(outcomes);
-                encodeProportionData();
-                showDataLoaded();
-                return;
-              }
-            }
-          } else if (config.paired) {
-            // Paired data: two numeric columns
-            const numIndices = parsed.types
-              .map((t, i) => t === 'numeric' ? i : -1)
-              .filter(i => i >= 0);
-            if (numIndices.length >= 2) {
-              const col1 = parsed.headers[numIndices[0]];
-              const col2 = parsed.headers[numIndices[1]];
-              group1Name = col1;
-              group2Name = col2;
-              data1 = parsed.data.map(r => parseFloat(r[col1])).filter(v => isFinite(v));
-              data2 = parsed.data.map(r => parseFloat(r[col2])).filter(v => isFinite(v));
-              // Trim to equal length
-              const minLen = Math.min(data1.length, data2.length);
-              data1 = data1.slice(0, minLen);
-              data2 = data2.slice(0, minLen);
-              showDataLoaded();
-              return;
-            }
-          } else if (config.twoGroup && catIdx >= 0 && numIdx >= 0) {
-            const groupCol = parsed.headers[catIdx];
-            const valCol = parsed.headers[numIdx];
-            const groups = [...new Set(parsed.data.map(r => r[groupCol]))];
-            if (groups.length >= 2) {
-              group1Name = groups[0];
-              group2Name = groups[1];
-              data1 = parsed.data
-                .filter(r => r[groupCol] === groups[0])
-                .map(r => parseFloat(r[valCol]))
-                .filter(v => isFinite(v));
-              data2 = parsed.data
-                .filter(r => r[groupCol] === groups[1])
-                .map(r => parseFloat(r[valCol]))
-                .filter(v => isFinite(v));
-              showDataLoaded();
-              return;
-            }
-          }
-
-          if (numIdx >= 0) {
-            const numericCols = parsed.headers.filter((h, i) => parsed.types[i] === 'numeric');
-            const colName = numericCols[0];
-            selectedVarName = colName;
-            datasetContext.parameter = colName;
-            data1 = parsed.data
-              .map(row => parseFloat(row[colName]))
-              .filter(v => isFinite(v));
-
-            // Show variable selector for multi-column CSV on single-variable pages
-            if (numericCols.length > 1 && !config.twoGroup && !config.paired) {
-              parsedCSVCache = parsed;
-              showVarSelector(numericCols, (selected) => {
-                selectedVarName = selected;
-                datasetContext.parameter = selected;
-                data1 = parsedCSVCache.data
-                  .map(row => parseFloat(row[selected]))
-                  .filter(v => isFinite(v));
-                resetSimulation();
-                showDataLoaded();
-              });
-            }
-
-            showDataLoaded();
-            return;
-          }
-        }
-      } catch {
-        // Fall through to simple parse
-      }
-
-      const values = text.split(/[\n,]+/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(Number)
-        .filter(v => isFinite(v));
-
-      if (values.length > 0) {
-        data1 = values;
+    if (parsed.headers.length > 0 && parsed.data.length > 0) {
+      if (config.paired && col('first') && col('second')) {
+        group1Name = col('first');
+        group2Name = col('second');
+        data1 = values(col('first'));
+        data2 = values(col('second'));
+        const minLen = Math.min(data1.length, data2.length);
+        data1 = data1.slice(0, minLen);
+        data2 = data2.slice(0, minLen);
         showDataLoaded();
-      } else {
-        announce('No numeric data found. Check your data format.');
+        return;
       }
+      if (config.proportion && !config.twoGroup && col('outcome')) {
+        rawOutcomes1 = parsed.data.map(r => r[col('outcome')]);
+        rawOutcomes2 = [];
+        populateSuccessSelector([...new Set(rawOutcomes1)]);
+        encodeProportionData();
+        showDataLoaded();
+        return;
+      }
+      if (config.proportion && col('group') && col('outcome')) {
+        const g = col('group'), o = col('outcome');
+        const groups = [...new Set(parsed.data.map(r => r[g]))];
+        if (groups.length >= 2) {
+          group1Name = groups[0];
+          group2Name = groups[1];
+          rawOutcomes1 = parsed.data.filter(r => r[g] === groups[0]).map(r => r[o]);
+          rawOutcomes2 = parsed.data.filter(r => r[g] === groups[1]).map(r => r[o]);
+          populateSuccessSelector([...new Set(parsed.data.map(r => r[o]))]);
+          encodeProportionData();
+          showDataLoaded();
+          return;
+        }
+      }
+      if (config.twoGroup && col('group') && col('response')) {
+        const g = col('group'), v = col('response');
+        const groups = [...new Set(parsed.data.map(r => r[g]))];
+        if (groups.length >= 2) {
+          group1Name = groups[0];
+          group2Name = groups[1];
+          data1 = parsed.data.filter(r => r[g] === groups[0]).map(r => parseFloat(r[v])).filter(x => isFinite(x));
+          data2 = parsed.data.filter(r => r[g] === groups[1]).map(r => parseFloat(r[v])).filter(x => isFinite(x));
+          showDataLoaded();
+          return;
+        }
+      }
+      if (col('response')) {
+        selectedVarName = col('response');
+        datasetContext.parameter = col('response');
+        data1 = values(col('response'));
+        data2 = [];
+        showDataLoaded();
+        return;
+      }
+      // A table the page cannot use. Say which columns it was looking for
+      // rather than falling through to "no numeric data found", which is both
+      // wrong and unactionable when the file is full of numbers.
+      const wanted = simNeeds.map(n => n.label.replace(/:$/, '').toLowerCase()).join(' and ');
+      announce(`This tool needs ${wanted}. Nothing in this file fits.`);
+      return;
+    }
+
+    // Not a table: a bare list of numbers, which `?data=` and a quick paste
+    // both produce.
+    const flat = String(raw).split(/[\n,]+/)
+      .map(t => t.trim()).filter(t => t.length > 0)
+      .map(Number).filter(v => isFinite(v));
+    if (flat.length > 0) {
+      data1 = flat;
+      data2 = [];
+      showDataLoaded();
+    } else {
+      announce('No numeric data found. Check your data format.');
+    }
   }
 
   // ── Summary input (proportion pages) ──
@@ -1497,8 +1421,33 @@ export function initSimPage(config) {
     return ds.type === 'randomization' || ds.type === 'randomization_prop';
   }
 
+  /**
+   * What this page needs from a file it has never seen.
+   *
+   * Declared, not inferred: the engine used to take the first categorical
+   * column and the first numeric column in file order, which on a class survey
+   * — `id,sex,exercise_hours,housing,commute_min` — grouped by `sex` and
+   * analysed `id`. The picker in js/variable-picker.js resolves the shape,
+   * skips row labels, and gives the reader the control to change it.
+   */
+  const simNeeds = (() => {
+    const num = (/** @type {string} */ key, /** @type {string} */ label) =>
+      ({ key, label, kind: /** @type {const} */ ('numeric') });
+    const cat = (/** @type {string} */ key, /** @type {string} */ label, /** @type {object} */ extra = {}) =>
+      ({ key, label, kind: /** @type {const} */ ('categorical'), ...extra });
+    if (config.paired) return [num('first', 'First measurement:'), num('second', 'Second measurement:')];
+    if (config.proportion && !config.twoGroup) return [cat('outcome', 'Outcome:')];
+    if (config.proportion) return [cat('group', 'Grouping variable:', { levels: 2 }), cat('outcome', 'Outcome:')];
+    // Two groups of three is what a difference in means needs to exist at all
+    // (REQ-024), and it is also what keeps a 1-of-each column out of the list.
+    if (config.twoGroup) return [cat('group', 'Grouping variable:', { levels: 2, minPerLevel: 3 }),
+                                 num('response', 'Response variable:')];
+    return [num('response', 'Variable:')];
+  })();
+
   const dataApi = initDataPanel({
     autoCollapse: true,
+    needs: simNeeds,
     stickyControls: true,
     showPreview: true,
     datasetFilter: simDatasetFilter,
@@ -1507,7 +1456,6 @@ export function initSimPage(config) {
     acceptsInlineData: !config.twoGroup && !config.paired,
     onDataset: (/** @type {any} */ ds) => {
       resetSimulation();
-      hideVarSelector();
       selectedVarName = '';
       datasetContext = ds.context || {};
       currentDatasetJSON = ds;
@@ -1574,16 +1522,16 @@ export function initSimPage(config) {
       showDataLoaded();
       announce(`${ds.name}.`);
     },
-    onRawText: (/** @type {string} */ text, /** @type {string} */ sourceName) => {
+    onText: (/** @type {any} */ parsed, /** @type {string} */ sourceName,
+             /** @type {Record<string,string>} */ pick, /** @type {string} */ raw) => {
       currentSourceName = sourceName || 'data';
-      loadTextData(text);
+      loadParsedData(parsed, pick || {}, raw || '');
     },
     onClear: () => {
       data1 = [];
       data2 = [];
       resampleViewExplicit = false;
       resetSimulation();
-      hideVarSelector();
       if (dataPreview) dataPreview.hidden = true;
       if (dataSummary) dataSummary.textContent = '\u2014';
       for (const btn of genBtns) btn.disabled = true;

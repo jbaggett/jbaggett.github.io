@@ -745,6 +745,9 @@ export function initOneSamplePage(config) {
       autoCollapse: true,
       stickyControls: true,
       showPreview: true,
+      // Which column is the outcome, asked once by the shared picker rather
+      // than guessed as "the first categorical" (js/variable-picker.js).
+      needs: [{ key: 'outcome', label: 'Outcome:', kind: 'categorical' }],
       datasetFilter: (/** @type {any} */ ds) => ds.type === 'bootstrap_prop',
       onDataset: (/** @type {any} */ ds) => {
         const catVar = ds.variables.find(/** @param {any} v */ v => v.type === 'categorical') || ds.variables[0];
@@ -757,8 +760,11 @@ export function initOneSamplePage(config) {
         populateSuccessSelector(levels, datasetContext.successLabel);
         announce(`${ds.name}.`);
       },
-      onText: (/** @type {any} */ parsed) => {
-        let catIdx = parsed.types.indexOf('categorical');
+      onText: (/** @type {any} */ parsed, /** @type {string} */ _src,
+               /** @type {Record<string,string>} */ pick) => {
+        let catIdx = pick?.outcome != null
+          ? parsed.headers.indexOf(pick.outcome)
+          : parsed.types.indexOf('categorical');
         // Inline 0/1 samples (e.g. ?data=1,1,0,1) type as a single NUMERIC
         // column, but for a one-proportion test a binary 0/1 column IS the
         // outcome. Accept it as a proportion (successes = count of 1s) instead
@@ -880,6 +886,7 @@ export function initOneSamplePage(config) {
       autoCollapse: true,
       stickyControls: true,
       showPreview: true,
+      needs: [{ key: 'response', label: 'Variable:', kind: 'numeric' }],
       // Single-quantitative-variable datasets only — match the CI-for-a-mean tool
       // (simulate/bootstrap-mean). Excludes regression and paired datasets, which
       // have multiple numeric columns and aren't appropriate for a one-mean test.
@@ -900,13 +907,13 @@ export function initOneSamplePage(config) {
         loadNumericData(values);
         announce(`${ds.name}.`);
       },
-      onText: (/** @type {any} */ parsed) => {
-        const numIdx = parsed.types.indexOf('numeric');
-        if (numIdx < 0) {
+      onText: (/** @type {any} */ parsed, /** @type {string} */ _src,
+               /** @type {Record<string,string>} */ pick) => {
+        const colName = pick?.response ?? parsed.headers[parsed.types.indexOf('numeric')];
+        if (!colName) {
           announce('Need at least one numeric column.');
           return;
         }
-        const colName = parsed.headers[numIdx];
         const values = parsed.data
           .map(/** @param {any} r */ r => Number(r[colName]))
           .filter(/** @param {number} v */ v => isFinite(v));

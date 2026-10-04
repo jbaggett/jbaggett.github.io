@@ -11,6 +11,7 @@ import { getSettings, setSettings, resetSettings, applySettings, getActivityMode
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
 import { takeAirborneStat, dismissAirborneStat } from './mechanisms/draw-animation.js';
+import { createVariablePicker } from './variable-picker.js';
 
 /**
  * Resolve the path to the data/ directory from any page.
@@ -1739,6 +1740,13 @@ export function initDataPanel(config) {
   const { datasetFilter, deepLinkFilter, onDataset, onText, onRawText, onClear,
     autoCollapse = false, stickyControls = false, showPreview = false,
     datasetGroupFn,
+    // The SHAPE this page needs from a file it has never seen — e.g. a numeric
+    // response and a two-level grouping variable. Given one, the panel builds
+    // the variable picker itself and hands `onText` the chosen columns, so a
+    // page does not grow its own (js/variable-picker.js explains why that
+    // matters). Bundled datasets are not routed through it: they are curated
+    // and carry their own metadata.
+    needs,
     // Whether `?data=` (a flat comma list) can express this page's data shape.
     // docs/url-api.md has always said "single-variable pages only", but the code
     // accepted it everywhere — and on the randomization pages, which need two
@@ -1754,6 +1762,33 @@ export function initDataPanel(config) {
   const clearBtn = document.getElementById('clear-btn');
   const saveBtn = document.getElementById('save-btn');
   const fileInput = /** @type {HTMLInputElement|null} */ (document.getElementById('file-input'));
+
+  // ── The variable picker, when the page said what shape it needs ──
+  //
+  // Outside the data panel, like the hand-rolled ones it replaces: the panel
+  // collapses the moment data loads, and a control that goes with it is a
+  // control nobody can change. Injected rather than written into 37 page
+  // templates, which is the move the Open URL row above already makes.
+  /** @type {{headers:string[],types:string[],data:any[]}|null} */
+  let pickerParsed = null;
+  let pickerSource = '';
+  const varPicker = needs?.length ? (() => {
+    const panel = document.getElementById('data-panel');
+    // A bare container: the styled, spaced element is the picker's own, so a
+    // page that never shows one costs nothing. (`.var-selector-row` carries
+    // margin and padding, so putting it here added 8px of page height to every
+    // tool that declares `needs` — caught by the split layout's height budget.)
+    const host = document.createElement('div');
+    panel?.parentNode?.insertBefore(host, panel.nextSibling);
+    return createVariablePicker({
+      host,
+      slots: needs,
+      onChange: (pick) => {
+        if (pickerParsed && onText) onText(pickerParsed, pickerSource, pick);
+      },
+    });
+  })() : null;
+
 
   // ── "Open File/URL" — the URL half (Todd Will's request, Sept 2026) ─────
   // `?csv=` has worked since the beginning, but only by hand-editing a query
@@ -1964,6 +1999,7 @@ export function initDataPanel(config) {
         }
 
         lastLoadedDataset = ds;
+        varPicker?.clear();
         onDataset(ds, meta);
         // Populate editor with dataset as CSV
         if (ds.rows && ds.variables) {
@@ -2165,7 +2201,8 @@ export function initDataPanel(config) {
             v.name = v.name.replace(/<[^>]*>/g, '').trim();
           }
           const meta = { id: ds.id || 'pasted', name: ds.name || sourceName, description: ds.description || '', type: 'external', n: ds.rows.length };
-          onDataset(ds, meta);
+          varPicker?.clear();
+        onDataset(ds, meta);
           const cols = ds.variables.map(/** @param {any} v */ v => v.name);
           populateEditor(rowsToCSV(ds.rows, cols), meta.name);
           return;
@@ -2175,7 +2212,15 @@ export function initDataPanel(config) {
     if (!onText) return;
     try {
       const parsed = parseCSV(text);
-      onText(parsed, sourceName);
+      if (varPicker) {
+        pickerParsed = parsed;
+        pickerSource = sourceName;
+        // `raw` as well: a page may want the original text when the parse
+        // produced no rows (a bare comma list of numbers is not a table).
+        onText(parsed, sourceName, varPicker.update(parsed), text);
+      } else {
+        onText(parsed, sourceName);
+      }
     } catch (e) {
       announce(`Error parsing data: ${e instanceof Error ? e.message : String(e)}`);
     }
@@ -2276,7 +2321,8 @@ export function initDataPanel(config) {
           const ds = asDatasetJSON(text);
           if (ds) {
             const meta = datasetMeta(ds, name);
-            onDataset(ds, meta);
+            varPicker?.clear();
+        onDataset(ds, meta);
             populateEditor(rowsToCSV(ds.rows, ds.variables.map((/** @type {any} */ v) => v.name)), meta.name);
           } else {
             ingestText(text, name);
@@ -2323,6 +2369,8 @@ export function initDataPanel(config) {
         const ctrl = document.getElementById('controls');
         if (ctrl) ctrl.classList.remove('sticky');
       }
+      varPicker?.clear();
+      pickerParsed = null;
       onClear();
     });
   }
