@@ -1774,11 +1774,27 @@ input[aria-invalid="true"] {
   margin-left: auto;
   font-weight: 400;
 }
-/* In a tier heading the controls take a line of their own. The heading line
-   there also carries the difference, parked at its far right, and the two were
-   laid out on top of each other. (Jeff, 2026-10-03.) */
+/* In a tier heading the controls sit on the heading line WHEN THEY FIT, and
+   take a line of their own when they do not — which is all `flex-wrap` does,
+   once nothing forces the break.
+   
+   They were forced onto their own line on 2026-10-03, to keep clear of the
+   difference parked at the heading's far right. Measured since: the difference
+   only reaches that line in the CARD view, where Step 1's content is short
+   enough to let it rise — in the dot and aggregate views it sits 300px lower.
+   So the whole break was being paid on every page to avoid a collision that
+   happens on one of them, and on a phone that is 28px of a screen the strip is
+   already short of. (Jeff, 2026-10-04: "when there is room, the View toggle in
+   Step 1 should be on the top line to avoid consuming vertical space on
+   phones.") */
 .mech-tier-head { flex-wrap: wrap; row-gap: 0.3rem; }
-.mech-tier-head .mech-head-controls { flex-basis: 100%; margin-left: 0; }
+.mech-tier-head .mech-head-controls { flex-basis: auto; margin-left: auto; }
+/* …and the card view, which is the one that puts the difference up there, still
+   gives the controls a line of their own. Reserving the difference's width with
+   padding instead was the first attempt: it shortens the wrapped line too, so
+   the two controls then wrapped into three rows and the card view came out
+   125px tall against the 74 it started at. */
+.mech-tier:has(.mech-card-display) .mech-head-controls { flex-basis: 100%; margin-left: 0; }
 /* The panel heading becomes a row so the control can sit at its far end. */
 .mechanism-panel .mechanism-title:has(.pbm-style-toggle),
 .mechanism-panel .mechanism-title:has(.mech-null-toggle) {
@@ -1809,6 +1825,11 @@ input[aria-invalid="true"] {
   .pbm-style-toggle .seg-label { position: absolute; width: 1px; height: 1px;
     overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .mech-head-controls { gap: 0.3rem 0.5rem; }
+  /* A tier heading on a phone is "Step 1  Original Sample  [View: …]" and the
+     three come to 334px of a 337px line — the aggregate view missed by four
+     pixels and dropped its control onto a second row for them. A tighter gap
+     buys the margin. */
+  .mech-tier-head { gap: 0.3rem; }
 }
 
 /* The null-world panel: a population, not a sample. No counts on the bar — it

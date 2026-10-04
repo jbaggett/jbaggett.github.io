@@ -25,8 +25,7 @@ import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, form
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
-  PERCENTILE_CI_COLOR, NORMAL_CI_COLOR,
-} from './ci-method.js';
+  PERCENTILE_CI_COLOR, NORMAL_CI_COLOR, ciRegionMass,} from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem } from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
@@ -345,6 +344,14 @@ export function initSimPage(config) {
   // The CI method (percentile vs ±z·SE), its z, its colours, and its marks on the
   // chart all live in js/ci-method.js — shared with the standalone bootstrap-slope page.
   let ciMethod = ciMethodFromUrl();
+  /**
+   * What the chart's three probability labels show: the level the interval asks
+   * for ('target', the default) or the share of resamples actually in each
+   * region ('actual'). `?pills=actual` for a link; the control is in the
+   * results panel under Show: Detailed.
+   */
+  let pillMode = /^actual$/i.test(new URLSearchParams(location.search).get('pills') || '')
+    ? 'actual' : 'target';
   /** Last bootstrap result, so the CI-method toggle can re-render without a new run.
    *  @type {{stats:number[], ci:number[], se:number, ciLevel:number}|null} */
   let lastBoot = null;
@@ -444,6 +451,8 @@ export function initSimPage(config) {
     // Editable null value (expert mode; omit the default 0).
     const nv = getNullValue();
     if (nv !== 0) params.null_value = nv;
+    // What the plot's probability labels show (omit the default).
+    if (pillMode === 'actual') params.pills = 'actual';
     // Success outcome for proportion tests.
     if (successOutcome && successOutcome !== 'success') params.success = successOutcome;
 
@@ -763,7 +772,28 @@ export function initSimPage(config) {
       // Histogram mode: scale PDF to match histogram bar heights
       const { xScale: hxScale, yScale: hyScale, bins, domain: dom } = lastHistResult;
       if (!bins || bins.length === 0) return;
-      const binWidth = /** @type {number} */ (bins[0].x1) - /** @type {number} */ (bins[0].x0);
+      // The TYPICAL bin, not the first one.
+      //
+      // A frequency histogram's bars are n·w·density, so the curve has to be
+      // scaled by a bin width — and this took `bins[0]`'s. On a discrete
+      // statistic the thresholds are snapped to the lattice and the bins come
+      // out ragged: measured on transplant_survival at n = 34, widths run
+      // 0.0456, 0.0588, 0.0588, 0.0441, 0.0147, … so the first bin is 22%
+      // narrower than the common one and the curve was drawn 22% short of the
+      // bars it is meant to be compared with — 2,332 against a 2,835 peak.
+      // (Jeff, 2026-10-04: "the normal curve on the sampling distribution is
+      // not scaled correctly.")
+      //
+      // The median is the width most bars actually have, so the curve tracks
+      // the bulk of the histogram and stays smooth. It cannot also match the
+      // narrow bins — with unequal widths no single smooth curve can, which is
+      // a property of the binning rather than of the curve (see D-30).
+      const widths = bins
+        .map(b => /** @type {number} */ (b.x1) - /** @type {number} */ (b.x0))
+        .filter(w => Number.isFinite(w) && w > 0)
+        .sort((a, b) => a - b);
+      if (!widths.length) return;
+      const binWidth = widths[Math.floor(widths.length / 2)];
 
       overlayTheoryCurve({
         container: chartContainer,
@@ -4260,7 +4290,17 @@ export function initSimPage(config) {
   if (config.mode === 'bootstrap' && ciSelect) {
     const ciPrimary = /** @type {HTMLElement|null} */ (ciSelect.closest('.ci-primary'));
     if (ciPrimary) {
-      methodControl = createCiMethodControl(ciPrimary, { method: ciMethod, onChange: setCiMethod });
+      methodControl = createCiMethodControl(ciPrimary, {
+        method: ciMethod, onChange: setCiMethod,
+        pillMode,
+        onPillMode: (/** @type {string} */ mode) => {
+          if (mode === pillMode) return;
+          pillMode = mode;
+          methodControl?.syncPills(pillMode, ciMethod);
+          syncUrl();
+          renderChart();
+        },
+      });
       methodControl.syncLabel(getCiLevel());
       // Honour the current statistic before the first render: a ?stat=median link
       // that also asked for ci_method=se must land on percentile, not the normal
@@ -4311,6 +4351,9 @@ export function initSimPage(config) {
     if (method === ciMethod) return;
     ciMethod = method;
     methodControl?.syncPressed(ciMethod);
+    // ±SE has nothing for the plot-label choice to decide, so the control goes
+    // dead there rather than offering a setting that does nothing.
+    methodControl?.syncPills(pillMode, ciMethod);
     syncTheoryToMethod();
     if (lastBoot) {
       displayBootstrapResults(lastBoot.stats, lastBoot.ci, lastBoot.se, lastBoot.ciLevel);
@@ -4806,7 +4849,11 @@ export function initSimPage(config) {
           mode: 'randomization', pValue, observedStat, direction,
         });
       } else if (config.mode === 'bootstrap' && ci) {
-        drawCiPills(chartResult, chartXScale, stats, ci);
+        // The percentile and BCa intervals ask for a level, so the pills print
+        // the level. ±SE is an approximation whose whole point is that it does
+        // not land on it, so that view keeps the counted shares.
+        drawCiPills(chartResult, chartXScale, stats, ci,
+          (ciMethod === 'se' || pillMode === 'actual') ? null : getCiLevel() / 100);
       }
     }
 
@@ -4991,6 +5038,40 @@ export function initSimPage(config) {
              <strong>±${hi}</strong>. <strong>More resamples → tighter.</strong></p>`;
     }
 
+    // What the bounds actually hold.
+    //
+    // The pills on the chart print the LEVEL — 2.5% / 95% / 2.5% — because that
+    // is what the procedure asks for and what "95% CI" means. On a lumpy
+    // statistic the bounds cannot deliver it exactly: at n = 62 a nominal 95%
+    // percentile interval holds 97.8% of the resamples, because a whole atom of
+    // the distribution sits inside the bound. That is not hidden, it is said
+    // here, with the reason — and the reason differs. Sometimes the statistic
+    // is simply granular; sometimes the bound has run out of distribution and
+    // the tail has nowhere to sit, which is a different sentence.
+    // (Jeff, 2026-10-04: "print actual in the results section.")
+    let actualLine = '';
+    if (ciMethod !== 'se' && stats.length > 0) {
+      const shown = ciMethod === 'bca' && bcaLine
+        ? /** @type {[number, number]} */ ([
+            Number(String(bcaLo).replace(/<[^>]*>/g, '')),
+            Number(String(bcaHi).replace(/<[^>]*>/g, ''))])
+        : ci;
+      if (shown && Number.isFinite(shown[0]) && Number.isFinite(shown[1])) {
+        const { midProb } = ciRegionMass(stats, shown);
+        const target = ciLevel / 100;
+        if (Math.abs(midProb - target) >= 0.005) {
+          const lowest = Math.min(...stats), highest = Math.max(...stats);
+          const atFloor = shown[0] <= lowest, atCeiling = shown[1] >= highest;
+          const why = atFloor && atCeiling ? 'they span every value the resamples took'
+            : atFloor ? 'the low end is as low as a resample got, so there is no bottom tail'
+            : atCeiling ? 'the high end is as high as a resample got, so there is no top tail'
+            : `${statSymbol} can only take certain values, so exactly ${ciPct}% is not available`;
+          actualLine = `<p class="hint">Actually holds
+            <strong>${(midProb * 100).toFixed(1)}%</strong>: ${why}.</p>`;
+        }
+      }
+    }
+
     resultDiv.innerHTML = showReadout ? `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
       <p>${paramLabel}: ${fmt(m)}</p>
@@ -4998,6 +5079,7 @@ export function initSimPage(config) {
       ${dataSpreadContrast}
       ${ciBlock}
       ${bothNote}
+      ${actualLine}
       ${mcLine}
       <p class="interpretation">We are ${ciPct}% confident that the ${ctxParam}${popPhrase} is between ${interpLo}${unitSuffix} and ${interpHi}${unitSuffix}.</p>
       ${stats.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}

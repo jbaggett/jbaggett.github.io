@@ -162,7 +162,7 @@ export function normalApproxCI(stats, ciLevel) {
  * @param {(method: string) => void} opts.onChange
  * @returns {{ syncPressed: (method: string) => void, syncLabel: (ciLevel: number) => void, setNormalAvailable: (available: boolean) => void }}
  */
-export function createCiMethodControl(ciPrimary, { method, onChange }) {
+export function createCiMethodControl(ciPrimary, { method, onChange, pillMode, onPillMode }) {
   const row = document.createElement('div');
   row.className = 'ci-method-row';
   row.innerHTML = `<span class="ci-method-label">Method:</span>
@@ -171,6 +171,11 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
       <button type="button" data-cim="se">±2 SE</button>
       <button type="button" data-cim="both">Both</button>
       <button type="button" data-cim="bca" class="expert-only" title="Bias-corrected and accelerated — adjusts the percentile interval for skew and bias in the bootstrap distribution.">BCa</button>
+    </div>
+    <span class="ci-method-label expert-only">Plot labels:</span>
+    <div class="seg-control ci-pills-toggle expert-only" role="group" aria-label="What the plot's probability labels show">
+      <button type="button" data-pills="target" title="The level the interval asks for: 2.5% in each tail, 95% between.">Target</button>
+      <button type="button" data-pills="actual" title="The share of resamples actually in each region — not the same thing when the statistic is lumpy.">Actual</button>
     </div>`;
   ciPrimary.insertAdjacentElement('afterend', row);
 
@@ -208,8 +213,36 @@ export function createCiMethodControl(ciPrimary, { method, onChange }) {
     }
   };
 
+  // What the plot's three probability labels show. Behind Detailed, because the
+  // default is the one a student should meet and an instructor is the only
+  // person who wants the other — and because the interface is already carrying
+  // as many controls as it can. (Jeff, 2026-10-04: "most of my instructors
+  // aren't going to be using the URL parameters … I'm a little concerned about
+  // overly complicating the interface. We could leave the toggle hidden unless
+  // 'detailed' view is selected.")
+  const pills = /** @type {HTMLElement} */ (row.querySelector('.ci-pills-toggle'));
+  pills.addEventListener('click', (e) => {
+    const btn = /** @type {HTMLButtonElement} */ (
+      /** @type {HTMLElement} */ (e.target).closest('button[data-pills]'));
+    if (btn && !btn.disabled) onPillMode?.(btn.getAttribute('data-pills') || 'target');
+  });
+  const syncPills = (/** @type {string} */ mode, /** @type {string} */ m) => {
+    for (const b of pills.querySelectorAll('button[data-pills]')) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-pills') === mode));
+      // ±SE is an approximation whose point is that it does NOT land on the
+      // level, so its labels always report what the interval holds; the choice
+      // has nothing to decide there.
+      const off = m === 'se';
+      /** @type {HTMLButtonElement} */ (b).disabled = off;
+      b.setAttribute('aria-disabled', String(off));
+      if (off) b.title = '±SE is an approximation — its labels always show what the interval actually holds.';
+      else b.removeAttribute('title');
+    }
+  };
+
   syncPressed(method);
-  return { syncPressed, syncLabel, setNormalAvailable };
+  syncPills(pillMode || 'target', method);
+  return { syncPressed, syncLabel, setNormalAvailable, syncPills };
 }
 
 /**
@@ -320,10 +353,23 @@ export function ciRegionMass(stats, ci) {
 }
 
 /**
- * Three symmetric probability pills on a bootstrap distribution: the middle (blue)
- * is the fraction of resamples INSIDE the interval, each tail (gray) the fraction
- * beyond a bound. These report what actually happened, not the nominal level — in
- * ±SE mode that's the point (the shortcut lands near 95%, not exactly on it).
+ * Three symmetric probability pills on a bootstrap distribution: the middle
+ * (blue) is the share of the distribution inside the interval, each tail (gray)
+ * the share beyond a bound.
+ *
+ * `target` picks WHICH share. The percentile method asks for 2.5% / 95% / 2.5%
+ * and the pills say so, because that is what the student is being asked to find
+ * and what the headline "95% CI" means. The ±SE method gets the counted shares
+ * instead: there the gap IS the lesson — the shortcut lands near 95%, not on
+ * it — so printing its target would hide the only thing that view is for.
+ * (Jeff, 2026-10-04: "yes to target as default, and use the bare number.")
+ *
+ * What is given up is that on a lumpy statistic the middle pill no longer
+ * equals a count of the bars under it: at n = 62 a nominal 95% interval holds
+ * 97.8% of the resamples. That number is not hidden — `ciRegionMass` still
+ * computes it and the results panel prints it with the reason — but it is no
+ * longer the thing a reader meets first, because "the middle 95%" is the idea
+ * and 0.978 is a consequence of arithmetic they have not been taught yet.
  *
  * The three regions are a PARTITION, cut the same way the chart colours its
  * dots: the interval is closed, so a resample sitting exactly on a bound is
@@ -346,11 +392,18 @@ export function ciRegionMass(stats, ci) {
  * @param {any} xScale
  * @param {number[]} stats
  * @param {[number,number]} ci
+ * @param {number|null} [target] the nominal level (e.g. 0.95) to print instead
+ *   of the counted shares; null keeps the counts.
  */
-export function drawCiPills(frame, xScale, stats, ci) {
+export function drawCiPills(frame, xScale, stats, ci, target = null) {
   const n = stats.length;
   if (n === 0) return;
-  const { leftProb, midProb, rightProb } = ciRegionMass(stats, ci);
+  const counted = ciRegionMass(stats, ci);
+  const { leftProb, midProb, rightProb } = target == null ? counted : (() => {
+    const mid = Math.max(0, Math.min(1, target));
+    const tail = (1 - mid) / 2;
+    return { leftProb: tail, midProb: mid, rightProb: tail };
+  })();
   const [dMin, dMax] = xScale.domain();
   const grp = d3Selection.select(frame.inner).select('.annotations');
   addProbPill(grp, frame, xScale, dMin, ci[0], leftProb, { isComplement: true });

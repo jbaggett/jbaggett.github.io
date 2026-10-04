@@ -600,20 +600,41 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
   // Cancel any pending highlight timers from previous render
   for (const t of pendingHighlightTimers) clearTimeout(t);
   pendingHighlightTimers = [];
-  // Aggregate dots by binCenter → count
-  /** @type {Map<number, {count: number}>} */
+  // Aggregate dots by binCenter → count, and by how many of them are in the
+  // region of interest.
+  //
+  // The region is decided from the dots' own VALUES, not from the bin centre.
+  // A bin centre is computed from the grid (min + (i + ½)·width) and a CI bound
+  // from a quantile, so two numbers that are the same quantity arrive by
+  // different arithmetic and can differ in the last bit. Measured on
+  // transplant_survival: the upper bound and the atom 29/34 were both 0.853,
+  // the bound landing 1.2e-13 of a pixel below the column — so `centre <= hi`
+  // was false and 28 resamples sitting exactly ON the bound were drawn outside
+  // it, while the pills (which count values) called them inside. The lower
+  // bound, shifted the same direction, stayed comfortably inside. One tiny
+  // systematic offset, opposite consequences at the two ends, and a picture
+  // that shaded one boundary column blue and the other grey. (Jeff, 2026-10-04:
+  // "it's strange that one of the boundary columns is shaded blue while the
+  // other is shaded gray".)
+  //
+  // Majority, so a bin that straddles a bound takes the colour most of its dots
+  // would have. On a discrete statistic every dot in a column shares a value,
+  // so there is nothing to decide.
+  /** @type {Map<number, {count: number, inRegion: number}>} */
   const bins = new Map();
   for (const d of dots) {
     const entry = bins.get(d.binCenter);
+    const inside = isExtreme ? isExtreme(d.value) : false;
     if (entry) {
       entry.count++;
+      if (inside) entry.inRegion++;
     } else {
-      bins.set(d.binCenter, { count: 1 });
+      bins.set(d.binCenter, { count: 1, inRegion: inside ? 1 : 0 });
     }
   }
 
   const columnData = [...bins.entries()]
-    .map(([center, { count }]) => ({ center, count }))
+    .map(([center, { count, inRegion }]) => ({ center, count, inRegion }))
     .sort((a, b) => a.center - b.center);
 
   // Compute column width: fraction of bin pixel spacing, clamped
@@ -622,12 +643,12 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     : 10;
   const colWidth = Math.max(MIN_RADIUS * 2, Math.min(COLUMN_MAX_WIDTH, binPixelWidth * 0.75));
 
-  /** Color for a column based on its bin center value. */
-  function colColor(center) {
+  /** Colour for a column, from the dots in it rather than from its centre. */
+  function colColor(col) {
     const extreme = optExtremeFill || fillColor || EXTREME_FILL;
     const base = optBaseFill || fillColor || (isExtreme ? BODY_FILL : DOT_FILL);
     if (!isExtreme) return base;
-    return isExtreme(center) ? extreme : base;
+    return col.inRegion * 2 >= col.count ? extreme : base;
   }
 
   // Draw columns as lines with round linecap for rounded tops
@@ -639,7 +660,7 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     .attr('x2', d => xScale(d.center))
     .attr('y1', innerHeight)
     .attr('y2', d => yScale(d.count))
-    .attr('stroke', d => colColor(d.center))
+    .attr('stroke', d => colColor(d))
     .attr('stroke-width', colWidth)
     .attr('stroke-linecap', 'round')
     .attr('role', 'listitem')
