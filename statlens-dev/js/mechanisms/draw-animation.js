@@ -1124,11 +1124,34 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
   });
   if (!flyers.length) return 0;
 
+  // The mean a deal has not produced yet.
+  //
+  // The dealt plot draws its x̄* with the panel, so the statistic was on screen
+  // in full while the dots that make it were still in the air — the same thing
+  // the histogram handover was corrected for ("I don't think the purple bar in
+  // the resamples should appear until after the dots fly and the aggregation
+  // happens", Jeff, 2026-10-03), in the one path that had not been. It arrives
+  // when the dots do. (Jeff, 2026-10-04: "yes, fix".)
+  const marks = [...new Set(tgt.map(d => /** @type {SVGGraphicsElement} */ (d).ownerSVGElement))]
+    .map(svg => /** @type {SVGElement|null} */ (svg?.querySelector('g.overlays')))
+    .filter(Boolean);
+  for (const m of marks) {
+    m.style.transition = 'none';
+    m.style.opacity = '0';
+  }
+  const showMarks = (/** @type {boolean} */ fade) => {
+    for (const m of marks) {
+      m.style.transition = fade ? 'opacity 260ms ease' : 'none';
+      m.style.opacity = '1';
+    }
+  };
+
   const run = trackRun(() => {
     for (const f of flyers) {
       f.el.remove();
       /** @type {SVGElement} */ (f.dot).style.removeProperty('opacity');
     }
+    showMarks(false);
   });
 
   const ease = (/** @type {number} */ t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -1163,6 +1186,8 @@ export function animatePoolAndDeal({ sourceGroups, targetGroups, onDone }) {
       f.el.style.opacity = '0';
       setTimeout(() => f.el.remove(), DEAL_SETTLE + 60);
     }
+    // …and the mean arrives with them, now that there is a sample to take it of.
+    showMarks(true);
     setTimeout(() => onDone?.(), DEAL_SETTLE);
   }
   requestAnimationFrame(step);
