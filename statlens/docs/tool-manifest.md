@@ -60,6 +60,7 @@
   - [Sampling Distribution Lab](#sampling-distribution-lab)
   - [Sampling Distribution Lab](#sampling-distribution-lab)
   - [CI Coverage Simulator](#ci-coverage-simulator)
+  - [Why ± 2 SE Works](#why--2-se-works)
   - [Randomization Test Walkthrough](#randomization-test-walkthrough)
   - [Decision Errors (Simulation)](#decision-errors-simulation)
   - [Power Lab (Simulation)](#power-lab-simulation)
@@ -373,6 +374,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `seed` | string | Deterministic seed for reproducibility | `seed=hw5q1` |
 | `ci` | integer | Confidence level (90, 95, or 99) | `ci=90` |
 | `direction` | string | Alternative direction (less, greater, two-sided) | `direction=greater` |
+| `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Same as Descriptive Statistics — one-variable numeric datasets (type `bootstrap` or `explore` with `hasNumeric` and not categorical/regression/paired).
 
@@ -394,6 +396,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a categorical dataset | `dataset=medical_consultant` |
 | `seed` | string | Deterministic seed | `seed=exam2q3` |
 | `ci` | integer | Confidence level | `ci=95` |
+| `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Datasets with `type === 'bootstrap_prop'`. Includes: `medical_consultant`, `transplant_survival`, `stent30`
 
@@ -415,6 +418,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a paired dataset | `dataset=textbooks` |
 | `seed` | string | Deterministic seed | `seed=demo` |
 | `ci` | integer | Confidence level | `ci=95` |
+| `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Datasets with `type === 'paired'`. Includes: `textbooks`, `hsb2_read_write`, `friday_traffic`, `helium`, `twins`, `prison`
 
@@ -436,6 +440,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a two-group numeric dataset | `dataset=stem_cell` |
 | `seed` | string | Deterministic seed | `seed=demo` |
 | `ci` | integer | Confidence level | `ci=95` |
+| `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Datasets with `type === 'randomization'` (numeric response, categorical group). Includes: `stem_cell`, `births14_smoke`, `ncbirths_smoke`, `lizard_run`, `epa2021_mpg`, `exercise_hours`
 
@@ -457,6 +462,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a two-group categorical dataset | `dataset=cpr` |
 | `seed` | string | Deterministic seed for reproducibility | `seed=hw6q2` |
 | `ci` | integer | Confidence level (90, 95, or 99) | `ci=95` |
+| `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Datasets with `type === 'randomization_prop'`. Includes: `sex_discrimination`, `opportunity_cost`, `cpr`, `yawn`, `heart_transplant`, `malaria`, `migraine`, `fish_oil_18`, `mammogram`, `resume`, `biontech_adolescents`, `sinusitis`, `smallpox`
 
@@ -481,6 +487,8 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `ci_method` | string | `percentile` / `se` / `both` | `ci_method=percentile` |
 | `readout` | string | `readout=false` hides the computed CI, shading, bound lines + pills — student estimates the interval off the histogram | `readout=false` |
 | `plot` | string | `plot=only` — figure-only embed; hides all chrome and auto-runs the 1000-resample bootstrap distribution at `seed` | `plot=only` |
+
+**Imported data:** the two columns are chosen by the shared variable picker (`js/variable-picker.js`), which skips row-label columns like `id` and shows a selector whenever there is a choice. Bundled datasets use their own metadata.
 
 **Compatible Datasets:** Datasets with `type === 'regression'`. Same as the Regression explore tool. Includes `bdims_regression` (shoulder girth → height, n = 507; observed slope 0.604, 98% CI ≈ (0.537, 0.673)).
 
@@ -621,6 +629,8 @@ button changes that). A colour key under the strip names both outcomes.
 | `dataset` | string | Pre-load a categorical dataset | `dataset=ask` |
 | `seed` | string | Deterministic seed | `seed=demo` |
 
+**Imported data:** the two columns are chosen by the shared variable picker (`js/variable-picker.js`), which skips row-label columns like `id` and shows a selector whenever there is a choice. Bundled datasets use their own metadata.
+
 **Compatible Datasets:** Datasets with `type === 'chisq'` or `type === 'randomization_prop'` (2+ categorical variables). Includes: `ask`, `diabetes2`, `lizard_habitat`, `immigration`, `ucb_admit`, `cards`, `burger`, `dream`, `smoking`, `drug_use`
 
 **Textbook Integration Notes:** Use for Ch. 18 (chi-square test). The randomization approach provides a simulation-based alternative before introducing the theoretical chi-square distribution.
@@ -682,6 +692,8 @@ button changes that). A colour key under the strip names both outcomes.
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a regression dataset | `dataset=possum_regression` |
+
+**Imported data:** the two columns are chosen by the shared variable picker (`js/variable-picker.js`), which skips row-label columns like `id` and shows a selector whenever there is a choice. Bundled datasets use their own metadata.
 
 **Compatible Datasets:** Datasets with `type === 'regression'`. Includes: `ames_regression`, `possum_regression`, `elmhurst_regression`, `mariokart_regression`, `loan50_regression`, `county_regression`, `bac`, `duke_forest`, `starbucks`, `babies_crawl`, `births14_regression`, `midterms_house`, `coast_starlight_regression`, `gpa_study_hours`, `cherry`, `satgpa`, `evals`, `gifted`
 
@@ -1152,6 +1164,31 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 **Compatible Datasets:** N/A (uses built-in population shapes)
 
 **Textbook Integration Notes:** Essential for Ch. 12 (understanding what "95% confidence" means). Students often misinterpret confidence intervals — this tool directly shows that 95% confidence means 95% of intervals contain the parameter, not that there's a 95% probability the parameter is in any specific interval. Run 100+ intervals to see the coverage rate stabilize near the confidence level. **For the bootstrap chapter**, the `method` selector turns this into the empirical companion to `conceptual/bootstrap-shift/`: that page argues *why* a percentile interval should work for one sample, this one measures how often each construction actually delivers its advertised rate. Measured here on a right-skewed population at nominal 95% (1200 intervals per cell): at n = 8, t 88.4% / percentile 83.7% / ±2·SE 85.3% / BCa 85.8%; at n = 50, 92.9% / 92.5% / 93.9% / 93.8%. The honest headline is that *every* method under-covers at small n, the gap to nominal is larger than the gaps between methods, BCa helps by a point or two rather than closing it, and the t-interval holds up best at very small n.
+
+---
+
+### Why ± 2 SE Works
+
+**Path:** `conceptual/two-se/`
+**Category:** Conceptual
+**Description:** The capture argument for a **statistic ± 2 SE** interval, drawn with **no numbers on it**. The x-axis is marked symbolically in standard errors either side of the parameter (`p−3SE … p+3SE`, or `μ−3SE … μ+3SE`), a shaded band holds the middle 68 / 95 / 99.7%, and a draggable marker is one sample's statistic with its interval drawn as a bar under the axis. The page reports **two verdicts** on every frame — whether the statistic landed within z SE of the parameter, and whether its interval contains the parameter — and they are never allowed to disagree, because they are the same statement read from two ends. A **Draw a sample** button takes a statistic from the curve (seeded) and keeps a running capture tally against the advertised level. Built from Todd Will's Mathematica demonstration of the same argument.
+**Concepts:** Why `statistic ± 2·SE` captures the parameter; the empirical rule (68 / 95 / 99.7); the equivalence `|statistic − parameter| ≤ 2·SE ⟺ parameter ∈ [statistic ± 2·SE]`; what "95% confident" is a statement about (the method across samples, not one interval); confidence bought with precision; the gap between a known SE and an estimated one
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `param` | string | `prop` (default — p, p̂) or `mean` (μ, x̄). Symbols only; the figure is identical. | `?param=mean` |
+| `ci` | string | Confidence level: `68`, `95` (default), `99.7`. Only these three — at any other level the band edge falls between ticks, and a student is back to reading a number off an axis built to avoid them. Alias `level`. | `?ci=99.7` |
+| `z` | float | Where the statistic starts, in SE from the parameter, −3.5 to 3.5 (default 1.3). Open past the band edge for a ready-made "what went wrong here?". | `?z=2.4` |
+| `seed` | string | PRNG seed for **Draw a sample** — the same run of draws every time you teach it. | `?seed=lecture3` |
+| `mode` | string | `present` hides the student reflection prompt (global parameter). | `?mode=present` |
+
+**Compatible Datasets:** N/A — the page deliberately has no data in it. That is the point: with numbers on the axis the equivalence looks like arithmetic to be trusted, and in SE units the two arrows are visibly the same length.
+
+**Instructor guide:** `conceptual/two-se/guide.html` — printable, with talking points, the four moves to make in ~8 minutes, three misconceptions and the link recipes.
+
+**Textbook Integration Notes:** For the confidence-interval chapter (Ch. 9), as the motivation **before** any interval is computed — it answers "why would adding and subtracting 2 SE have anything to do with 95%?" Sequence it after `conceptual/sampling-lab/` has established what a sampling distribution is. Drag slowly out past `p+2SE` and stop on the frame where both verdicts flip together; that simultaneity is the argument. Then switch to 99.7% to make the precision/confidence trade visible. Pairs with `conceptual/bootstrap-shift/` (the same argument for percentile intervals, with real data on the axis) and `conceptual/ci-coverage/` (what the coverage actually comes out to). The one thing to say out loud: this figure assumes SE is **known**, and in practice it is estimated — which is exactly why real coverage runs under the advertised rate at small *n*.
 
 ---
 

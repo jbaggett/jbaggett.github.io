@@ -18,7 +18,7 @@ import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, 
 import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { mean, sd, detectPrecision, formatStat, extent} from './stats.js';
-import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
+import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
 import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
@@ -1771,7 +1771,11 @@ export function initOneSamplePage(config) {
     if (lastHistResult) {
       const { xScale: hxScale, yScale: hyScale, bins, domain: dom } = lastHistResult;
       if (bins.length === 0) return;
-      const binWidth = /** @type {number} */ (bins[0].x1) - /** @type {number} */ (bins[0].x0);
+      // Not `bins[0]`'s width — on a proportion the first bin is clipped to the
+      // domain and is 68% of a real bin, which drew this curve a third short
+      // (js/histogram.js → typicalBinWidth).
+      const binWidth = typicalBinWidth(bins);
+      if (!binWidth) return;
 
       overlayTheoryCurve({
         container: chartContainer,

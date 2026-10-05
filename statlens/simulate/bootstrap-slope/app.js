@@ -11,8 +11,7 @@ import { resampleIndices } from '../../js/mechanisms/draws.js';
 import { linreg, mean, sd, detectPrecision, formatStat } from '../../js/stats.js';
 import { bootstrapCI } from '../../js/sim-engine.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
-import { computeBins } from '../../js/histogram.js';
-import { parseCSV } from '../../js/csv-parser.js';
+import { computeBins, typicalBinWidth } from '../../js/histogram.js';
 import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType, createChartToggle, computeDomain } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
@@ -114,29 +113,36 @@ let dataPrecision = 0;
 
 // ─── Data loading ───
 
-/** @param {string} text */
-function loadTextData(text) {
-  if (!text.trim()) return;
+/**
+ * Take the two columns the picker resolved. A point needs both coordinates, so
+ * a row missing either is dropped whole — filtering the columns separately (as
+ * this used to) re-pairs the survivors and fits a line through points that were
+ * never observed together.
+ * @param {{headers: string[], types: string[], data: Array<Record<string, any>>}} parsed
+ * @param {Record<string, string>} [pick]
+ */
+function loadColumns(parsed, pick) {
   datasetContext = {};
-  try {
-    const parsed = parseCSV(text);
-    const numIndices = parsed.types
-      .map((t, i) => t === 'numeric' ? i : -1)
-      .filter(i => i >= 0);
-    if (numIndices.length >= 2) {
-      xLabel = parsed.headers[numIndices[0]];
-      yLabel = parsed.headers[numIndices[1]];
-      xData = parsed.data.map(r => parseFloat(r[xLabel])).filter(v => isFinite(v));
-      yData = parsed.data.map(r => parseFloat(r[yLabel])).filter(v => isFinite(v));
-      const minLen = Math.min(xData.length, yData.length);
-      xData = xData.slice(0, minLen);
-      yData = yData.slice(0, minLen);
-      resetSimulation();
-      showDataLoaded();
-    }
-  } catch {
-    announce('Could not parse data.');
+  const numeric = parsed.headers.filter((h, i) => parsed.types[i] === 'numeric');
+  const xCol = pick?.x ?? numeric[0];
+  const yCol = pick?.y ?? numeric[1];
+  if (!xCol || !yCol) {
+    announce('Need two numeric columns.');
+    return;
   }
+  xLabel = xCol;
+  yLabel = yCol;
+  const xs = [];
+  const ys = [];
+  for (const row of parsed.data) {
+    const x = parseFloat(row[xCol]);
+    const y = parseFloat(row[yCol]);
+    if (isFinite(x) && isFinite(y)) { xs.push(x); ys.push(y); }
+  }
+  xData = xs;
+  yData = ys;
+  resetSimulation();
+  showDataLoaded();
 }
 
 initDataPanel({
@@ -160,7 +166,16 @@ initDataPanel({
     showDataLoaded();
     announce(`${ds.name}: ${minLen} observations.`);
   },
-  onRawText: (text) => { currentSourceName = ''; loadTextData(text); },
+  // Which two columns, asked rather than guessed: `id,height,weight` used to
+  // fit height on the ROW NUMBER and report slope = 0.7 (REQ-068 D).
+  needs: [
+    { key: 'x', label: 'Explanatory (x):', kind: 'numeric' },
+    { key: 'y', label: 'Response (y):', kind: 'numeric' },
+  ],
+  onText: (parsed, sourceName, pick) => {
+    currentSourceName = sourceName || '';
+    loadColumns(parsed, pick);
+  },
   onClear: () => {
     xData = [];
     yData = [];
@@ -536,8 +551,10 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
   if (ciMethod !== 'percentile' && slopes.length > 1 && result?.xScale && domain) {
     const centre = mean(slopes);
     const spread = sd(slopes);
+    // The typical bin, not `bins[0]` — a clipped first bin scales the curve
+    // short (js/histogram.js → typicalBinWidth).
     const binWidth = activeChart === 'histogram'
-      ? (result.bins?.length ? result.bins[0].x1 - result.bins[0].x0 : null)
+      ? typicalBinWidth(result.bins ?? [])
       : result.binWidth;
     const yScale = activeChart === 'histogram' ? result.yScale : result.countToY;
     if (spread > 0 && binWidth && yScale) {

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Why ± 2 SE Works | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <style>
+        .tse-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; align-items: center; margin: 0.5rem 0 0.75rem; }
+        .tse-controls > label { display: inline-flex; align-items: center; gap: 0.45rem; }
+        .tse-field { display: inline-flex; align-items: center; gap: 0.5rem; }
+        .tse-field > span.tse-label { color: var(--ims-gray-text); font-size: 0.9rem; }
+
+        /* The figure. Full width, fixed aspect, never scrolls sideways. */
+        #tse-figure { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+        #tse-figure svg { display: block; width: 100%; height: auto; }
+
+        .tse-slider-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0 0.25rem; }
+        .tse-slider-row input[type="range"] { flex: 1 1 260px; min-width: 200px; }
+        .tse-slider-row .tse-readout { font-family: var(--font-mono); font-weight: 700; min-width: 7.5rem; }
+
+        /* The two verdicts. They are the whole point, so they are large and they
+           never rely on colour alone — each carries a glyph and a sentence. */
+        .tse-verdicts { display: flex; flex-direction: column; gap: 0.5rem; margin: 0.9rem 0 0.4rem; }
+        .tse-verdict { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0.75rem;
+                       border: 1px solid var(--border); border-left-width: 5px; border-radius: 8px;
+                       background: var(--ims-bg-soft, #f7f9fb); line-height: 1.45; }
+        .tse-verdict .tse-glyph { font-size: 1.25rem; font-weight: 700; line-height: 1.2; flex: none; min-width: 1.2rem; text-align: center; }
+        .tse-verdict.is-yes { border-left-color: #0072B2; }
+        .tse-verdict.is-yes .tse-glyph { color: #0072B2; }
+        .tse-verdict.is-no { border-left-color: #D55E00; }
+        .tse-verdict.is-no .tse-glyph { color: #D55E00; }
+        .tse-sameness { margin: 0.5rem 0 0; font-weight: 700; }
+        .tse-sameness .tse-hint { display: block; font-weight: 400; font-size: 0.88rem; color: var(--ims-gray-text); margin-top: 0.15rem; }
+
+        .tse-tally { font-size: 0.9rem; color: var(--ims-gray-text); margin: 0.4rem 0 0; }
+        .tse-tally strong { font-family: var(--font-mono); color: var(--ims-text); }
+
+        .tse-prompt { border: 1px dashed var(--border); border-radius: 8px; padding: 0.7rem 0.85rem; margin: 1rem 0 0; background: #fff; }
+        .tse-prompt p { margin: 0 0 0.5rem; }
+        .tse-prompt .tse-answer { margin: 0.5rem 0 0; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+        .x-bar { border-top: 1.5px solid currentColor; line-height: 0.85; display: inline-block; }
+
+        @media (max-width: 560px) {
+            .tse-slider-row .tse-readout { min-width: 0; }
+            .tse-controls { gap: 0.6rem 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#settings">Skip to Settings</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Figure</a>
+    </nav>
+
+    <main>
+        <h1>Why &plusmn; 2 SE Works<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p>There are no numbers on this page, and that is the point. The axis is marked in standard errors away from the parameter, so the empirical rule can be read straight off it: about 95% of samples give a statistic within 2 SE of the parameter. Move the statistic and watch the two verdicts below &mdash; they are never allowed to disagree.</p>
+
+        <section id="settings" aria-label="Figure settings">
+            <div class="tse-controls">
+                <div class="tse-field">
+                    <span class="tse-label" id="param-label">Parameter:</span>
+                    <div class="seg-control" role="group" aria-labelledby="param-label" id="param-toggle">
+                        <button type="button" data-param="prop" aria-pressed="true">Proportion</button>
+                        <button type="button" data-param="mean" aria-pressed="false">Mean</button>
+                    </div>
+                </div>
+                <div class="tse-field">
+                    <span class="tse-label" id="level-label">Confidence level:</span>
+                    <div class="seg-control" role="group" aria-labelledby="level-label" id="level-toggle">
+                        <button type="button" data-level="68" aria-pressed="false">68% (&plusmn;1 SE)</button>
+                        <button type="button" data-level="95" aria-pressed="true">95% (&plusmn;2 SE)</button>
+                        <button type="button" data-level="99.7" aria-pressed="false">99.7% (&plusmn;3 SE)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="chart" aria-label="Sampling distribution figure">
+            <div id="tse-figure"></div>
+
+            <div class="tse-slider-row" id="controls">
+                <label for="stat-pos" id="stat-pos-label">Statistic:</label>
+                <input type="range" id="stat-pos" min="-3.5" max="3.5" step="0.05" value="1.3"
+                       aria-labelledby="stat-pos-label">
+                <span class="tse-readout" id="stat-readout"></span>
+                <button type="button" id="draw-btn" class="btn-primary">Draw a sample</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Reset the tally" title="Reset the tally">&#x21BA;</button>
+            </div>
+
+            <div class="tse-verdicts" id="verdicts" role="group" aria-label="The two verdicts"></div>
+            <p class="tse-sameness" id="sameness"></p>
+            <p class="tse-tally" id="tally"></p>
+
+            <div class="tse-prompt discover-only">
+                <p><strong>Before you drag:</strong> for which positions of the statistic will the interval
+                   <em>miss</em> the parameter? Say it in standard errors, then check.</p>
+                <button type="button" class="btn-secondary" id="reveal-btn" aria-expanded="false" aria-controls="prompt-answer">Show the answer</button>
+                <div class="tse-answer" id="prompt-answer" hidden></div>
+            </div>
+        </section>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Why &plusmn; 2 SE Works &mdash; Help</h2>
+        <p class="help-intro">This figure makes the argument behind every <strong>statistic &plusmn; 2&nbsp;SE</strong> confidence interval, without a single number in it.</p>
+        <ul class="help-intro">
+            <li>The curve is the <strong>sampling distribution</strong> of the statistic. Its centre is the parameter and its spread is one standard error, so the axis can be marked off symbolically: <em>p&minus;2SE</em>, <em>p&minus;SE</em>, <em>p</em>, <em>p+SE</em>, <em>p+2SE</em>.</li>
+            <li>The shaded band is the middle of that distribution &mdash; by the <strong>empirical rule</strong>, about 68% within 1 SE, 95% within 2 SE, 99.7% within 3 SE.</li>
+            <li>The marker is <strong>one sample's statistic</strong>. Drag it, use the slider (arrow keys work), or press <strong>Draw a sample</strong> to let the computer pick one from the curve.</li>
+            <li>The bar under the axis is that sample's <strong>interval</strong>, reaching 2 SE either side. It is drawn in blue when it reaches the parameter and in orange when it does not.</li>
+        </ul>
+        <p><strong>The argument.</strong> The interval reaches the parameter exactly when the statistic landed within 2 SE of it &mdash; the distance between them is the same distance either way. So the interval captures the parameter for exactly the samples in the shaded band, which is about 95% of them. That is all &ldquo;95% confident&rdquo; claims.</p>
+        <p><strong>What it does not say.</strong> For any one interval the parameter is either in it or not. The 95% is the success rate of the method across samples, not a probability about the interval in front of you.</p>
+        <p><strong>In practice SE is not known</strong> &mdash; it is estimated, from a bootstrap distribution or from a formula. That is the one gap between this picture and the interval a student actually computes, and it is why the real coverage is a little under the advertised rate at small <em>n</em>. <a href="../ci-coverage/">CI Coverage</a> measures that; <a href="../bootstrap-shift/">Why the Percentile CI Works</a> makes the matching argument for percentile intervals.</p>
+        <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a> with talking points, and <code>?mode=present</code> opens the page with the student prompt hidden.</p>
+        <h3>Keyboard</h3>
+        <ul class="help-intro">
+            <li><strong>&larr; / &rarr;</strong> &mdash; move the statistic (focus the slider first)</li>
+            <li><strong>d</strong> &mdash; draw a sample &nbsp;&middot;&nbsp; <strong>r</strong> &mdash; reset the tally</li>
+            <li><strong>?</strong> &mdash; this help</li>
+        </ul>
+        <button type="button" class="btn-primary">Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

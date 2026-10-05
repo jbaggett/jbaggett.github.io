@@ -137,9 +137,16 @@ initDataPanel({
     showDataLoaded();
     announce(`${ds.name}.`);
   },
-  onRawText: (text) => {
-    currentSourceName = '';
-    loadFromCSV(text);
+  // Which two columns, asked by the data panel rather than guessed from
+  // position — `id,height,weight` used to regress height on the ROW NUMBER and
+  // report r = 0.143 without a word (REQ-068 D, measured 2026-10-04).
+  needs: [
+    { key: 'x', label: 'Explanatory (x):', kind: 'numeric' },
+    { key: 'y', label: 'Response (y):', kind: 'numeric' },
+  ],
+  onText: (parsed, sourceName, pick) => {
+    currentSourceName = sourceName || '';
+    loadFromColumns(parsed, pick);
   },
   onClear: () => {
     xValues = [];
@@ -155,31 +162,29 @@ initDataPanel({
   },
 });
 
-/** @param {string} text */
-function loadFromCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) {
-    announce('Need a header row and at least one data row.');
+/**
+ * Take the two columns the picker resolved. A pair is only a pair when both
+ * sides are present, so a row missing either is dropped whole — reading the
+ * columns independently would shift the pairing and change r.
+ * @param {{headers: string[], types: string[], data: Array<Record<string, any>>}} parsed
+ * @param {Record<string, string>} [pick]
+ */
+function loadFromColumns(parsed, pick) {
+  const numeric = parsed.headers.filter((h, i) => parsed.types[i] === 'numeric');
+  const xCol = pick?.x ?? numeric[0];
+  const yCol = pick?.y ?? numeric[1];
+  if (!xCol || !yCol) {
+    announce('Need two numeric columns.');
     return;
   }
-  const delim = lines[0].includes('\t') ? '\t' : ',';
-  const header = lines[0].split(delim).map(s => s.trim());
-  if (header.length < 2) {
-    announce('Need at least two columns.');
-    return;
-  }
-  xLabel = header[0];
-  yLabel = header[1];
+  xLabel = xCol;
+  yLabel = yCol;
   const xs = [];
   const ys = [];
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(delim).map(s => s.trim());
-    const x = parseFloat(parts[0]);
-    const y = parseFloat(parts[1]);
-    if (isFinite(x) && isFinite(y)) {
-      xs.push(x);
-      ys.push(y);
-    }
+  for (const row of parsed.data) {
+    const x = parseFloat(row[xCol]);
+    const y = parseFloat(row[yCol]);
+    if (isFinite(x) && isFinite(y)) { xs.push(x); ys.push(y); }
   }
   if (xs.length < 3) {
     announce('Need at least 3 valid numeric pairs.');

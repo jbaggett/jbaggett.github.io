@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instructor Guide: Why ± 2 SE Works | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ims-blue: #569BBD;
+            --ims-dark: #114B5F;
+            --ims-red: #F05133;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Atkinson Hyperlegible', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        h1 {
+            color: var(--ims-dark);
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--ims-blue);
+            padding-bottom: 0.75rem;
+        }
+        h2 {
+            color: var(--ims-dark);
+            font-size: 1.15rem;
+            margin: 1.5rem 0 0.5rem;
+            border-left: 4px solid var(--ims-blue);
+            padding-left: 0.75rem;
+        }
+        h3 {
+            font-size: 1rem;
+            margin: 1rem 0 0.3rem;
+            color: #444;
+        }
+        p, li { font-size: 0.9rem; margin-bottom: 0.4rem; }
+        ul, ol { padding-left: 1.5rem; }
+        ul li { margin-bottom: 0.3rem; }
+
+        .ask-box {
+            background: #e8f4fd;
+            border-left: 4px solid var(--ims-blue);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .ask-box strong { color: var(--ims-dark); }
+
+        .tip-box {
+            background: #fff8e1;
+            border-left: 4px solid #f9a825;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .misconception {
+            background: #fce4ec;
+            border-left: 4px solid var(--ims-red);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .misconception strong { color: #c62828; }
+
+        .timing {
+            display: inline-block;
+            background: var(--ims-dark);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #ddd;
+        }
+
+        a { color: var(--ims-blue); }
+        a:hover { color: var(--ims-dark); }
+
+        .launch-link {
+            display: inline-block;
+            background: var(--ims-blue);
+            color: white;
+            text-decoration: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        .launch-link:hover { background: var(--ims-dark); color: white; }
+
+        @media print {
+            body { padding: 0.5in; max-width: none; }
+            .launch-link { display: none; }
+            .no-print { display: none; }
+            h2 { break-after: avoid; }
+            .ask-box, .tip-box, .misconception { break-inside: avoid; }
+        }
+    </style>
+</head><body>
+
+<h1>Instructor Guide: Why &plusmn; 2 SE Works</h1>
+<p class="subtitle">Companion notes for the StatLens conceptual figure &mdash; the capture argument for a &plusmn; 2 SE confidence interval</p>
+
+<p><a class="launch-link" href="index.html?mode=present">Launch in Presentation Mode</a></p>
+
+<h2>Overview <span class="timing">~8 min</span></h2>
+<p>One figure, no numbers. The axis is marked in standard errors either side of the parameter
+(<em>p&minus;2SE</em>, <em>p&minus;SE</em>, <em>p</em>, <em>p+SE</em>, <em>p+2SE</em>), so the empirical rule can be
+read straight off it. A draggable marker is one sample's statistic; the bar under the axis is that sample's
+interval. The page reports two verdicts and they are never allowed to disagree &mdash; that is the argument.</p>
+
+<p>The equivalence being taught is</p>
+<p style="text-align:center"><strong>|statistic &minus; parameter| &le; 2&middot;SE &nbsp;&nbsp;&hArr;&nbsp;&nbsp; parameter is inside [statistic &plusmn; 2&middot;SE]</strong></p>
+<p>which is one fact about a distance, read from either end. The symbolic axis is what makes it visible:
+with numbers on the axis it looks like arithmetic a student has to take on trust, and in SE units the
+two arrows are plainly the same length.</p>
+
+<div class="tip-box">
+    <strong>Why only 68 / 95 / 99.7?</strong> Because at exactly those levels the shaded band's edges land on
+    tick marks (&plusmn;1, &plusmn;2, &plusmn;3 SE). A 90% level would put the edge at 1.645 SE, between two ticks,
+    and the student would be back to reading a number off an axis built to avoid them.
+</div>
+
+<h2>Running it <span class="timing">~8 min</span></h2>
+
+<h3>1. Establish the axis before anything moves <span class="timing">~2 min</span></h3>
+<p>Point at the ticks and read them aloud: <em>p</em>, <em>p plus one SE</em>, <em>p plus two SE</em>.
+Make sure the room agrees that the curve is the <strong>sampling distribution of the statistic</strong> &mdash;
+one dot per possible sample &mdash; and not the distribution of the data.</p>
+<div class="ask-box">
+    <strong>Ask:</strong> &ldquo;What is one point on this curve?&rdquo; &nbsp;Wanted answer: the statistic from
+    one sample. If anyone says &ldquo;one observation&rdquo;, stop and fix it here &mdash; the rest will not land otherwise.
+</div>
+
+<h3>2. Drag the statistic inside the band <span class="timing">~2 min</span></h3>
+<p>Move it around while staying inside the shading. Both verdicts stay &#10003;. Draw attention to the bar
+reaching past the dashed line at <em>p</em> every time.</p>
+<div class="ask-box">
+    <strong>Ask:</strong> &ldquo;What would have to happen for the bar to fall short?&rdquo;
+</div>
+
+<h3>3. Cross the edge <span class="timing">~2 min</span></h3>
+<p>Drag slowly out past <em>p+2SE</em>. Both verdicts flip at the same instant and the bar turns orange.
+That simultaneity is the lesson &mdash; stop and say so.</p>
+<div class="ask-box">
+    <strong>Ask:</strong> &ldquo;Which samples give an interval that misses?&rdquo;
+    &nbsp;Wanted answer: exactly the ones outside the band &mdash; about 5% of them.
+</div>
+
+<h3>4. Hand it to chance <span class="timing">~2 min</span></h3>
+<p>Press <strong>Draw a sample</strong> twenty or thirty times. The tally creeps toward the advertised level.
+Students should see that no sample knows whether it is one of the lucky ones.</p>
+<div class="ask-box">
+    <strong>Ask:</strong> &ldquo;Which of the intervals we just drew contains <em>p</em>?&rdquo;
+    &nbsp;The honest answer is that in real life you cannot tell &mdash; that is precisely why we quote a
+    success rate for the method rather than a probability for the interval.
+</div>
+
+<h2>Common misconceptions</h2>
+<div class="misconception">
+    <strong>&ldquo;There is a 95% chance <em>p</em> is in this interval.&rdquo;</strong>
+    The figure is the cleanest refutation available: <em>p</em> is drawn as a fixed dashed line and never moves.
+    The interval is what moves. For any one interval the answer is already yes or no.
+</div>
+<div class="misconception">
+    <strong>&ldquo;Wider interval, more confident in my answer.&rdquo;</strong>
+    Switch to 99.7%. The band widens, the bar lengthens, misses become rare &mdash; and the interval now says
+    much less about where the parameter is. Confidence is bought with precision.
+</div>
+<div class="misconception">
+    <strong>&ldquo;The 5% is the chance the data were bad.&rdquo;</strong>
+    Nothing is wrong with a sample that lands in the tail. It is an ordinary sample from the same curve;
+    it just happened to be unusual, and ordinary methods applied to it give a wrong interval.
+</div>
+
+<h2>The gap to be honest about</h2>
+<p>This figure assumes <strong>SE is known</strong>. In practice it is estimated &mdash; from a bootstrap
+distribution, or from a formula with the sample's own numbers in it &mdash; and that is the one place the
+clean picture is optimistic. It is why real coverage runs a little under the advertised rate at small <em>n</em>.
+Do not paper over it; it is the reason the course keeps going after this slide.</p>
+<ul>
+    <li><a href="../ci-coverage/">CI Coverage</a> &mdash; measures what the coverage actually comes out to, by method and sample size.</li>
+    <li><a href="../bootstrap-shift/">Why the Percentile CI Works</a> &mdash; the same capture argument for percentile intervals, with real data on the axis.</li>
+    <li><a href="../../simulate/bootstrap-prop/?ci_method=se">Bootstrap a proportion with &plusmn;2&middot;SE</a> &mdash; where students meet the interval for real; the normal curve the interval is read off is on the chart.</li>
+</ul>
+
+<h2>Link recipes</h2>
+<ul>
+    <li><code>?param=mean</code> &mdash; &mu; and x&#772; instead of <em>p</em> and p&#770;</li>
+    <li><code>?ci=68</code> / <code>?ci=99.7</code> &mdash; open at another level</li>
+    <li><code>?z=2.4</code> &mdash; open with the statistic already outside the band (a ready-made &ldquo;what went wrong here?&rdquo;)</li>
+    <li><code>?mode=present</code> &mdash; hide the student prompt for projection</li>
+    <li><code>?seed=lecture3</code> &mdash; the same run of drawn samples every time you teach it</li>
+</ul>
+
+<p class="meta">StatLens &mdash; <a href="../../">statlens home</a> &middot; This page is designed to print.
+Built from Todd Will's Mathematica demonstration of the same argument.</p>
+
+</body>
+</html>

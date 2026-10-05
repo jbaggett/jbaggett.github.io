@@ -17,7 +17,7 @@
   "sourceDetail": "IMS (Introduction to Modern Statistics) Ch. 12, 16.",
   "context": {
     "population": "the medical consultant's patients",
-    "parameter": "true complication rate",
+    "parameter": "proportion who had a complication",
     "nullClaim": "the complication rate equals the national rate of 10%",
     "successLabel": "complication"
   },
