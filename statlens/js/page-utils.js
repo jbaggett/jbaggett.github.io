@@ -543,6 +543,35 @@ export function applySimulationCap(genBtns, current, noun = 'simulations') {
   else if (play && play.title?.includes('is the most')) { play.disabled = false; }
 }
 
+/**
+ * The button `?plot=only` should press to draw its figure.
+ *
+ * Chosen by its COUNT, never by its position. Every page used to take
+ * `genBtns[genBtns.length - 1]`, which meant "+1000" until a **+10k** button was
+ * added beside it on 2026-10-04 — after which the last button was +10k, and
+ * `gateBigBatches` disables that above n = 3000. So a MyOpenMath embed at
+ * n = 3335 pressed a disabled button and rendered an empty pair of axes, and
+ * every embed below that silently ran ten thousand repetitions where the
+ * documented contract (and the answer keys) say one thousand.
+ *
+ * Reported 2026-10-05 as "the interactive figure and link are not working".
+ * `docs/url-api.md` pins the number: `plot=only` "auto-runs the distribution on
+ * load (1000 reps at the given seed)".
+ *
+ * @param {ArrayLike<HTMLButtonElement>} genBtns
+ * @returns {HTMLButtonElement|undefined}
+ */
+export function autoRunButton(genBtns) {
+  const btns = Array.from(genBtns);
+  const thousand = btns.find(b => Number(b.dataset.count) === 1000 && !b.disabled);
+  if (thousand) return thousand;
+  // Nothing at 1000 on this page: take the largest batch that is actually
+  // pressable, so a gated button never leaves the figure blank.
+  return btns.filter(b => !b.disabled)
+    .sort((a, b) => Number(a.dataset.count || 0) - Number(b.dataset.count || 0))
+    .pop();
+}
+
 export const BIG_BATCH_MAX_N = 3000;
 
 /**

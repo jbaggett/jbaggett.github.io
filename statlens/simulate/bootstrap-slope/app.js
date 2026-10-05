@@ -12,7 +12,7 @@ import { linreg, mean, sd, detectPrecision, formatStat } from '../../js/stats.js
 import { bootstrapCI } from '../../js/sim-engine.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
 import { computeBins, typicalBinWidth } from '../../js/histogram.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType, createChartToggle, computeDomain } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
 import {
@@ -212,7 +212,7 @@ function showDataLoaded() {
   // bootstrap distribution appears with no click. (REQ-049)
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
-    const bigBtn = genBtns[genBtns.length - 1];
+    const bigBtn = autoRunButton(genBtns);
     if (bigBtn) requestAnimationFrame(() => bigBtn.click());
   }
 

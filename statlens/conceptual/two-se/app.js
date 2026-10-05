@@ -186,9 +186,19 @@ function reposition() {
   const color = hit ? CAPTURE : MISS;
   const baseline = bottomOf();
   const barY = baseline + 48;
+  // The bar is 2 SE either side of the statistic, ALWAYS, and must be drawn at
+  // that length even when an end leaves the plot.
+  //
+  // It used to clamp to the domain, so the interval shrank exactly when the
+  // statistic went extreme — 220px instead of 400px at z = 3.5, 45% short, in
+  // the case the page exists to teach. A reader dragging outward watched the
+  // interval get shorter, which is the opposite of the argument: the distance
+  // is the same measured from either end. The SVG clips what runs past the
+  // edge, which is the honest picture — the interval really does reach further
+  // than the frame. (Todd Will via REQ-072, 2026-10-05.)
   const statX = px(zStat);
-  const loX = px(Math.max(X_MIN, zStat - z));
-  const hiX = px(Math.min(X_MAX, zStat + z));
+  const loX = px(zStat - z);
+  const hiX = px(zStat + z);
   const set = (/** @type {string} */ id, /** @type {Record<string,string|number>} */ attrs) => {
     const el = svgEl.querySelector('#' + id);
     if (!el) return;
@@ -207,7 +217,9 @@ function reposition() {
   set('tse-bar-dot', { cx: statX, fill: color });
   const label = svgEl.querySelector('#tse-bar-text');
   if (label) {
-    label.setAttribute('x', String((loX + hiX) / 2));
+    // The caption rides the statistic (the bar's true midpoint) but stays in
+    // the frame, so it is still readable when an end has run off.
+    label.setAttribute('x', String(Math.max(90, Math.min(g.W - 90, statX))));
     label.setAttribute('fill', color);
     label.textContent = `statistic \u00B1 ${z}\u00A0SE${hit ? '' : ' \u2014 misses ' + s.param}`;
   }
@@ -247,15 +259,23 @@ function rebuild() {
   }).join('');
 
   const statX = px(zStat);
-  const loX = px(Math.max(X_MIN, zStat - z));
-  const hiX = px(Math.min(X_MAX, zStat + z));
+  const loX = px(zStat - z);
+  const hiX = px(zStat + z);
   const barY = baseline + 48;
   const arrowY = py(PEAK * 0.3);
 
   // The parameter's own line, carried down through the interval bar: whether it
   // crosses the bar IS the verdict, so it has to be visible at the bar.
-  const paramLine = `<line x1="${px(0)}" y1="${M.top + 4}" x2="${px(0)}" y2="${barY + 14}"`
+  //
+  // Drawn in two segments with the tick label's row left clear. In one piece it
+  // ran straight into the parameter's glyph and the two merged — a dashed stem
+  // descending into "μ" reads as a **p**, which on a page whose other symbol is
+  // literally p is the worst possible collision. (Todd Will via REQ-072.)
+  const dash = (/** @type {number} */ y1, /** @type {number} */ y2) =>
+    `<line x1="${px(0)}" y1="${y1}" x2="${px(0)}" y2="${y2}"`
     + ` stroke="#111" stroke-width="1.4" stroke-dasharray="3,3" opacity="0.65"/>`;
+  const labelBand = compact ? 30 : 32;
+  const paramLine = dash(M.top + 4, baseline) + dash(baseline + labelBand, barY + 14);
 
   const svg = `
 <svg viewBox="0 0 ${W} ${H}" role="img" preserveAspectRatio="xMidYMid meet"
@@ -286,7 +306,7 @@ function rebuild() {
   <line id="tse-bar-lo" x1="${loX}" y1="${barY - 8}" x2="${loX}" y2="${barY + 8}" stroke="${barColor}" stroke-width="3.4"/>
   <line id="tse-bar-hi" x1="${hiX}" y1="${barY - 8}" x2="${hiX}" y2="${barY + 8}" stroke="${barColor}" stroke-width="3.4"/>
   <circle id="tse-bar-dot" cx="${statX}" cy="${barY}" r="4.5" fill="${barColor}"/>
-  <text id="tse-bar-text" x="${(loX + hiX) / 2}" y="${barY + 26}" text-anchor="middle" font-size="13" font-weight="700"
+  <text id="tse-bar-text" x="${Math.max(90, Math.min(W - 90, statX))}" y="${barY + 26}" text-anchor="middle" font-size="13" font-weight="700"
         fill="${barColor}">statistic &#177; ${z}&#160;SE${hit ? '' : ' &#8212; misses ' + esc(s.param)}</text>
 </svg>`;
   figure.innerHTML = svg;

@@ -94,26 +94,54 @@ export function looksLikeIdentifier(parsed, col) {
  * @returns {string[]}
  */
 export function eligibleColumns(parsed, slot) {
-  const out = [];
-  parsed.headers.forEach((h, i) => {
-    if (parsed.types[i] !== slot.kind) return;
-    if (slot.kind === 'categorical') {
-      const levels = levelsOf(parsed, h);
-      if (slot.levels != null && levels.length !== slot.levels) return;
-      if (slot.levels == null && levels.length < 2) return;
-      if (slot.minPerLevel != null) {
-        const counts = new Map();
-        for (const row of parsed.data) {
-          const v = String(row[h]);
-          counts.set(v, (counts.get(v) ?? 0) + 1);
+  /** @param {(i: number) => boolean} typeOk */
+  const scan = (typeOk) => {
+    const out = [];
+    parsed.headers.forEach((h, i) => {
+      if (!typeOk(i)) return;
+      if (slot.kind === 'categorical') {
+        const levels = levelsOf(parsed, h);
+        if (slot.levels != null && levels.length !== slot.levels) return;
+        if (slot.levels == null && levels.length < 2) return;
+        if (slot.minPerLevel != null) {
+          const counts = new Map();
+          for (const row of parsed.data) {
+            const v = String(row[h]);
+            counts.set(v, (counts.get(v) ?? 0) + 1);
+          }
+          if ([...counts.values()].some(c => c < slot.minPerLevel)) return;
         }
-        if ([...counts.values()].some(c => c < slot.minPerLevel)) return;
       }
-    }
-    out.push(h);
-  });
-  return out;
+      out.push(h);
+    });
+    return out;
+  };
+
+  const out = scan(i => parsed.types[i] === slot.kind);
+  if (out.length || slot.kind !== 'categorical') return out;
+
+  // A few-valued NUMERIC column is a categorical variable that happens to be
+  // coded with digits, and refusing it broke a live homework link.
+  //
+  // MyOpenMath ships a student's sample to `simulate/bootstrap-prop` as
+  // `?data=1,0,1,1,0…&success=1`, which arrives as one column typed `numeric`.
+  // The outcome slot wanted `categorical`, found nothing, and the page answered
+  // "This tool needs outcome. Nothing in this file fits." — no chart, in an
+  // iframe, on an exercise students were working. (Reported via a colleague,
+  // 2026-10-05; shipped broken in 006d74f the day before.) The same refusal hit
+  // any pasted file with a 0/1-coded outcome, which is the ordinary way to write
+  // one down.
+  //
+  // Only as a FALLBACK, and only up to a handful of levels: when a real
+  // categorical column exists it still wins, so nothing that worked moves. The
+  // cap keeps a continuous measurement from being offered as an outcome merely
+  // because the sample is small.
+  return scan(i => parsed.types[i] === 'numeric'
+    && levelsOf(parsed, parsed.headers[i]).length <= NUMERIC_AS_CATEGORICAL_MAX);
 }
+
+/** How many distinct values a numeric column may have and still read as categorical. */
+const NUMERIC_AS_CATEGORICAL_MAX = 10;
 
 /**
  * What to pick before anyone has chosen: the first eligible column per slot,

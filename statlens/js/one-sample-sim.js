@@ -24,7 +24,7 @@ import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap} from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -619,7 +619,7 @@ export function initOneSamplePage(config) {
     // hidden under plot=only, so there is no other way to run it).
     if (plotOnly && !plotOnlyRan) {
       plotOnlyRan = true;
-      const bigBtn = genBtns[genBtns.length - 1];
+      const bigBtn = autoRunButton(genBtns);
       if (bigBtn) requestAnimationFrame(() => bigBtn.click());
     }
   }
