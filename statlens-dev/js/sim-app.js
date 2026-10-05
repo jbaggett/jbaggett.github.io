@@ -15,10 +15,10 @@ import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolA
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
 import { createRng } from './prng.js';
-import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles } from './stats.js';
+import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles, extent} from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
-import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
+import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
@@ -26,14 +26,13 @@ import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR, ciRegionMass,} from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem } from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap} from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
 import { renderPropBag, renderPropResample, showPropResample, propBarHTML, updatePropBar, hasIndividualView, blockLayout, obsLegendHTML } from './prop-bootstrap-mech.js';
 import { createMeanMechanism, MEAN_DOT_MAX as MEAN_DOT_MAX_SHARED } from './mean-mechanism.js';
-import { animateCardShuffle } from './card-shuffle-anim.js';
 import { initCoaching } from './coaching.js';
 /**
  * @typedef {object} SimConfig
@@ -276,7 +275,7 @@ export function initSimPage(config) {
   function computeMeanDomain() {
     const vals = resampleSourceValues();
     if (!vals.length) return null;
-    const lo = Math.min(...vals), hi = Math.max(...vals);
+    const [lo, hi] = extent(vals);
     const pad = (hi - lo) * 0.08 || 0.5;
     return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
   }
@@ -303,7 +302,7 @@ export function initSimPage(config) {
   function computeTwoMeanDomain() {
     const all = [...data1, ...data2];
     if (!all.length) return undefined;
-    const lo = Math.min(...all), hi = Math.max(...all);
+    const [lo, hi] = extent(all);
     const pad = (hi - lo) * 0.08 || 0.5;
     return /** @type {[number,number]} */ ([lo - pad, hi + pad]);
   }
@@ -772,28 +771,11 @@ export function initSimPage(config) {
       // Histogram mode: scale PDF to match histogram bar heights
       const { xScale: hxScale, yScale: hyScale, bins, domain: dom } = lastHistResult;
       if (!bins || bins.length === 0) return;
-      // The TYPICAL bin, not the first one.
-      //
-      // A frequency histogram's bars are n·w·density, so the curve has to be
-      // scaled by a bin width — and this took `bins[0]`'s. On a discrete
-      // statistic the thresholds are snapped to the lattice and the bins come
-      // out ragged: measured on transplant_survival at n = 34, widths run
-      // 0.0456, 0.0588, 0.0588, 0.0441, 0.0147, … so the first bin is 22%
-      // narrower than the common one and the curve was drawn 22% short of the
-      // bars it is meant to be compared with — 2,332 against a 2,835 peak.
-      // (Jeff, 2026-10-04: "the normal curve on the sampling distribution is
-      // not scaled correctly.")
-      //
-      // The median is the width most bars actually have, so the curve tracks
-      // the bulk of the histogram and stays smooth. It cannot also match the
-      // narrow bins — with unequal widths no single smooth curve can, which is
-      // a property of the binning rather than of the curve (see D-30).
-      const widths = bins
-        .map(b => /** @type {number} */ (b.x1) - /** @type {number} */ (b.x0))
-        .filter(w => Number.isFinite(w) && w > 0)
-        .sort((a, b) => a - b);
-      if (!widths.length) return;
-      const binWidth = widths[Math.floor(widths.length / 2)];
+      // The typical bin, not the first one: `bins[0]` is clipped to the domain
+      // whenever the thresholds are explicit, so it is the one bin whose width
+      // means nothing (js/histogram.js → typicalBinWidth).
+      const binWidth = typicalBinWidth(bins);
+      if (!binWidth) return;
 
       overlayTheoryCurve({
         container: chartContainer,
@@ -1238,6 +1220,8 @@ export function initSimPage(config) {
       }
     }
     for (const btn of genBtns) btn.disabled = false;
+    // …except a batch big enough to freeze the page. See gateBigBatches.
+    gateBigBatches(genBtns, data1.length + data2.length);
     // Update chart toggle: discrete (proportion) data gets spike option
     updateToggleButtons(!!config.proportion);
     // Clear stale results
@@ -1776,6 +1760,16 @@ export function initSimPage(config) {
   }
 
   function generateSamples(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allStats.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allStats.length, 'simulations'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allStats.length, 'simulations'));
+  }
     // A clean slate. Press +1 before the last draw has finished and two runs
     // shared the screen — the old flyers still travelling, the old dots still
     // hidden waiting for a finish that would arrive after the new ones landed.
@@ -1896,8 +1890,7 @@ export function initSimPage(config) {
       // Batch histogram delta: compute previous bin counts for stacked overlay
       if (count > 1 && allStats.length > DOTPLOT_AUTO_THRESHOLD && prevLength > 0) {
         const domainVals = allStats;
-        let lo = Math.min(...domainVals);
-        let hi = Math.max(...domainVals);
+        let [lo, hi] = extent(domainVals);
         const dPad = (hi - lo) * 0.05 || 0.5;
         lo -= dPad; hi += dPad;
         if (preSimDomain) {
@@ -1998,9 +1991,7 @@ export function initSimPage(config) {
       }
       // Histogram delta for batch
       if (count > 1 && allStats.length > DOTPLOT_AUTO_THRESHOLD && prevLength > 0) {
-        const rVals = [...allStats, observedStat];
-        let rLo = Math.min(...rVals);
-        let rHi = Math.max(...rVals);
+        let [rLo, rHi] = extent(allStats, observedStat);
         const rPad = (rHi - rLo) * 0.05 || 0.5;
         rLo -= rPad; rHi += rPad;
         if (preSimDomain) {
@@ -2069,9 +2060,10 @@ export function initSimPage(config) {
       }
       if (count > 1 && allStats.length > DOTPLOT_AUTO_THRESHOLD && prevLength > 0) {
         // Histogram mode: compute previous bin counts for stacked delta
-        const rVals = observedStat != null ? [...allStats, observedStat] : allStats;
-        let rLo = Math.min(...rVals);
-        let rHi = Math.max(...rVals);
+        // Loop, not spread — see `extent`. This is the one that actually
+        // fired: at 125k resamples the batch handler threw and the chart
+        // stopped redrawing while the counter kept climbing.
+        let [rLo, rHi] = extent(allStats, observedStat ?? NaN);
         const rPad = (rHi - rLo) * 0.05 || 0.5;
         rLo -= rPad; rHi += rPad;
         if (preSimDomain) {
@@ -2461,8 +2453,7 @@ export function initSimPage(config) {
     // Set domain and bins from original data (stable across resamples)
     if (tag === 'orig') {
       const allVals = [...g1, ...g2];
-      const lo = Math.min(...allVals);
-      const hi = Math.max(...allVals);
+      const [lo, hi] = extent(allVals);
       const pad = (hi - lo) * 0.08 || 0.5;
       twoGroupChartDomain = [lo - pad, hi + pad];
       twoGroupNumBins = Math.min(Math.max(Math.ceil(Math.sqrt(Math.max(g1.length, g2.length))), 6), 15);
@@ -3220,20 +3211,46 @@ export function initSimPage(config) {
     let morphMs = 0;
 
     if (cardMechanism && cardContainer) {
-      // Gather → shuffle → deal the cards into their new groups; update the
-      // diff readout mid-deal. animateCardShuffle handles reduced-motion.
+      // The cards take the dots' choreography.
+      //
+      // `animateCardShuffle` re-dealt the SHUFFLED panel's own cards with a
+      // FLIP: they gathered, mixed and spread out again without the original
+      // groups taking any part, so the picture said "this panel rearranged
+      // itself" when what happens is that BOTH groups are poured together and
+      // dealt back out. The dot view already tells it properly, and its
+      // animation is not about dots — `animatePoolAndDealMarks` flies whatever
+      // marks it is given, copying each one's own computed style, so the
+      // flyers here come out as cards. (Jeff, 2026-10-04: "I want the original
+      // groups to merge into the FLIP and then deal, or you can just use the
+      // dots choreography.")
       const diffSpan = mechResampleContent.querySelector('.mech-stat-value');
-      if (diffSpan) /** @type {HTMLElement} */ (diffSpan).style.opacity = '0.3';
-      animateCardShuffle(/** @type {HTMLElement} */ (cardContainer), () => {
-        cardContainer.innerHTML = cardGroupsHTML(g1, g2, cardOpts());
-        const diffVal = formatStat(statFn(g1) - statFn(g2), dataPrecision, fmtType);
-        if (diffSpan) {
-          diffSpan.textContent = diffVal;
-          diffSpan.classList.add('highlight-last');
-          /** @type {HTMLElement} */ (diffSpan).style.opacity = '1';
-        }
-      });
-      morphMs = prefersReducedMotion() ? 0 : (300 + 350 + 400 + 120);
+      cardContainer.innerHTML = cardGroupsHTML(g1, g2, cardOpts());
+      const cards = (/** @type {Element|null} */ root) =>
+        /** @type {HTMLElement[]} */ ([...(root?.querySelectorAll('.card-group .card') ?? [])]);
+      const srcGroups = [...(mechOriginalContent?.querySelectorAll('.card-group') ?? [])];
+      const tgtGroups = [...cardContainer.querySelectorAll('.card-group')];
+      const setDiff = () => {
+        if (!diffSpan) return;
+        diffSpan.textContent = formatStat(statFn(g1) - statFn(g2), dataPrecision, fmtType);
+        diffSpan.classList.add('highlight-last');
+        /** @type {HTMLElement} */ (diffSpan).style.opacity = '1';
+      };
+      morphMs = srcGroups.length === 2 && tgtGroups.length === 2
+        ? animatePoolAndDealMarks({
+            sourceGroups: [cards(srcGroups[0]), cards(srcGroups[1])],
+            targetGroups: [cards(tgtGroups[0]), cards(tgtGroups[1])],
+          })
+        : 0;
+      if (morphMs > 0) {
+        // The dealt counts wait for the cards, the way the blocks' do: "13/50"
+        // sitting over an empty panel is the answer printed before the deal.
+        mechResampleContent.classList.add('pbm-reveal-pending');
+        if (diffSpan) /** @type {HTMLElement} */ (diffSpan).style.opacity = '0.3';
+        setTimeout(() => {
+          mechResampleContent?.classList.remove('pbm-reveal-pending');
+          setDiff();
+        }, Math.max(0, morphMs - 150));
+      } else setDiff();
 
     } else if (canAnimateProps && mechOriginalContent) {
       // Ghost: fade resample panel to low opacity
@@ -4436,6 +4453,8 @@ export function initSimPage(config) {
   }
 
   function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'simulations');
     // A reset means "give me a clean tool", which includes a clean address bar.
     forgetSeed();
     allStats = [];
@@ -4698,8 +4717,9 @@ export function initSimPage(config) {
       // A ±z·SE bound can sit outside the range of the resamples — keep it on screen.
       if (shownCI) vals.push(...shownCI);
       if (compareCI) vals.push(...compareCI);
-      let lo = Math.min(...vals);
-      let hi = Math.max(...vals);
+      // Loop, not spread: an argument list of 125k resamples blows the stack,
+      // and the counter kept climbing while the chart stopped redrawing.
+      let [lo, hi] = extent(vals);
       const pad = (hi - lo) * 0.05 || 0.5;
       lo -= pad;
       hi += pad;
@@ -4759,7 +4779,18 @@ export function initSimPage(config) {
       // the same value differ; switching to Actual puts the whole column back
       // and the pill moves to what it really holds, which is the comparison.
       // (Jeff, 2026-10-04.)
-      if (pillMode === 'target' && ciMethod !== 'se') {
+      // Percentile only. A target label is a claim about RANKS — "the middle
+      // 95% of the resamples" — and the percentile interval is the only one
+      // placed by rank. BCa deliberately moves the cutoffs off 2.5/2.5 (here:
+      // 0.3% below, 3.9% above, measured on transplant_survival), so labelling
+      // its tails 2.5% erases the one thing the method does; and the split
+      // would be drawn at ranks 25/975 while the bound LINES sit at the BCa
+      // bounds, which put a grey/blue boundary and a dashed bound line in two
+      // different places on one chart (measured: blue from x=157 with the line
+      // at x=104). ±SE was already excluded for the same reason.
+      // `both` counts as percentile: it shades the percentile interval and
+      // draws the ±SE pair alongside it.
+      if (pillMode === 'target' && (ciMethod === 'percentile' || ciMethod === 'both')) {
         const tail = Math.round(stats.length * (1 - getCiLevel() / 100) / 2);
         if (tail > 0 && tail * 2 < stats.length) splitRanks = { below: tail, above: tail };
       }
@@ -4869,11 +4900,13 @@ export function initSimPage(config) {
           mode: 'randomization', pValue, observedStat, direction,
         });
       } else if (config.mode === 'bootstrap' && ci) {
-        // The percentile and BCa intervals ask for a level, so the pills print
-        // the level. ±SE is an approximation whose whole point is that it does
-        // not land on it, so that view keeps the counted shares.
+        // Only the percentile interval is defined as "the middle 95% of the
+        // resamples", so only it can print the level. ±SE and BCa are placed by
+        // a formula and a correction, so what they hold is an empirical fact and
+        // the pills count it.
         drawCiPills(chartResult, chartXScale, stats, ci,
-          (ciMethod === 'se' || pillMode === 'actual') ? null : getCiLevel() / 100);
+          (ciMethod === 'se' || ciMethod === 'bca' || pillMode === 'actual')
+            ? null : getCiLevel() / 100);
       }
     }
 
@@ -4945,21 +4978,54 @@ export function initSimPage(config) {
     }
     // Contextual interpretation using dataset metadata
     const ctx = datasetContext;
-    const bootLong = getBootstrapStat().longLabel;
-    // Adapt context parameter to current stat (e.g. "mean mercury level" → "standard deviation of mercury level")
+    // The word for the parameter has to be the word for THIS page's statistic.
+    //
+    // `getBootstrapStat()` is the mean / median / SD / quartile selector, which
+    // only the numeric pages have. A proportion page has no such control, so it
+    // was handing back 'mean' and every one-sample proportion CI was being
+    // interpreted as a population MEAN — on stent30 the sentence contradicted
+    // itself in six words, "the population mean of proportion who had a
+    // stroke". A proportion is the mean of a 0/1 indicator, so none of it was
+    // false; but p and μ are kept apart on purpose all course. (Jeff,
+    // 2026-10-04: "most instructors would say population proportion ... to
+    // distinguish it from a population mean.")
+    const bootLong = config.proportion ? 'proportion' : getBootstrapStat().longLabel;
+    /** @type {string} */
     let ctxParam;
+    let popPhrase = ctx.population ? ` for ${ctx.population}` : '';
     if (ctx.parameter) {
-      // Replace leading "mean"/"median"/etc with current stat's long label
-      const adapted = ctx.parameter.replace(/^(mean|median|standard deviation|first quartile|third quartile)\b/i, bootLong);
-      // If no replacement happened (e.g. "difference in ..."), prepend the stat
-      ctxParam = adapted === ctx.parameter && !ctx.parameter.toLowerCase().startsWith(bootLong)
-        ? `population ${bootLong} of ${ctx.parameter}`
-        : `population ${adapted}`;
+      const param = ctx.parameter.trim();
+      const starts = param.toLowerCase().startsWith(bootLong);
+      const rest = starts ? param.slice(bootLong.length).trim() : '';
+      if (starts && ctx.population && /^(who|that|with|having)\b/i.test(rest)) {
+        // "proportion who survived" + "heart transplant patients" belongs in the
+        // order an instructor writes it — the population between the parameter
+        // and the clause describing it — not trailing after the clause as a
+        // "for ..." that has drifted away from what it modifies.
+        ctxParam = `population ${bootLong} of ${ctx.population} ${rest}`;
+        popPhrase = '';
+      } else if (starts) {
+        ctxParam = `population ${param}`;
+      } else {
+        // Adapt the author's phrase to the chosen statistic, e.g.
+        // "mean rent" → "median rent". A multi-word statistic needs the "of"
+        // that a one-word one does not: "standard deviation rent" and "first
+        // quartile rent" both want it, "mean rent" and "median rent" both
+        // refuse it.
+        const join = bootLong.includes(' ') ? `${bootLong} of` : bootLong;
+        const adapted = param.replace(/^(mean|median|standard deviation|first quartile|third quartile)\b/i, join);
+        ctxParam = adapted !== param ? `population ${adapted}`
+          // A phrase that already names a proportion ("true survival rate")
+          // cannot take "population proportion of" in front of it — that names
+          // the kind of thing twice and reads as neither. Name the parameter
+          // plainly instead. A noun phrase ("mercury level") takes the "of".
+          : config.proportion ? paramName
+          : `population ${bootLong} of ${param}`;
+      }
     } else {
       ctxParam = paramName;
     }
     const unitSuffix = ctx.unit ? ` ${ctx.unit}` : '';
-    const popPhrase = ctx.population ? ` for ${ctx.population}` : '';
     /** @param {number} v */
     const fmt = (v) => config.proportion ? formatStat(v, dataPrecision, 'proportion') : formatStat(v, dataPrecision);
     const ciLo = `<span class="ci-value">${fmt(ci[0])}</span>`;
@@ -5080,18 +5146,48 @@ export function initSimPage(config) {
         const { midProb } = ciRegionMass(stats, shown);
         const target = ciLevel / 100;
         if (Math.abs(midProb - target) >= 0.005) {
-          const lowest = Math.min(...stats), highest = Math.max(...stats);
+          const [lowest, highest] = extent(stats);
           const atFloor = shown[0] <= lowest, atCeiling = shown[1] >= highest;
+          // Two different sentences wearing one coat, and only one of them
+          // belongs on a student's first bootstrap CI.
+          //
+          // A bound sitting ON the smallest or largest resample is a WARNING
+          // about this interval: medical_consultant's lower bound is 0, the
+          // least any resample took, so the interval is pinned at the edge of
+          // the simulation and the student should see that. Granularity — "p̂
+          // can only take certain values" — is a sophistication, and it was
+          // firing unasked in Simple view on `bootstrap-prop`, the first tool
+          // Ch. 9 lists, while `bootstrap-mean` beside it said nothing. So it
+          // moves behind Detailed, the same place the Target/Actual toggle went
+          // and for the same reason. (Jeff, 2026-10-04: the discovery is right,
+          // "but I'm not sure we want to mess with that the first time they see
+          // the bootstrap CI.")
+          const pinned = atFloor || atCeiling;
           const why = atFloor && atCeiling ? 'they span every value the resamples took'
             : atFloor ? 'the low end is as low as a resample got, so there is no bottom tail'
             : atCeiling ? 'the high end is as high as a resample got, so there is no top tail'
             : `${statSymbol} can only take certain values, so exactly ${ciPct}% is not available`;
-          actualLine = `<p class="hint">Actually holds
+          actualLine = `<p class="hint${pinned ? '' : ' expert-only'}">Actually holds
             <strong>${(midProb * 100).toFixed(1)}%</strong>: ${why}.</p>`;
         }
       }
     }
 
+    // Asking for the unreachable is not a puzzle, it is a dead end.
+    //
+    // "Cut off the bottom 2.5%" is an instruction a continuous statistic can
+    // follow and a lumpy one cannot. On medical_consultant (62 patients, 3
+    // complications) the bottom tail of the bootstrap distribution can be
+    // 0.00% or 4.62% and nothing in between — the next achievable tail after
+    // that is 19.18%. A student told to find 2.5% there is being asked for a
+    // value that does not exist, and the honest instruction is to get as close
+    // as possible and say so. Which is, as it happens, the lesson. (Jeff,
+    // 2026-10-04, on wanting students to discover the difference themselves.)
+    const tailPct = ((100 - ciLevel) / 2).toFixed(1);
+    const reachableNote = discreteGridStep() != null
+      ? ` Exactly ${tailPct}% may not be reachable — ${statSymbol} can only take certain values, so the`
+        + ` achievable tails jump. Get as close as you can, and note what you actually cut off.`
+      : '';
     resultDiv.innerHTML = showReadout ? `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
       <p>${paramLabel}: ${fmt(m)}</p>
@@ -5105,7 +5201,7 @@ export function initSimPage(config) {
       ${stats.length < 50 ? '<p class="hint">CI is approximate with few resamples. Generate more for stability.</p>' : ''}
     ` : `
       <p><strong>Bootstrap Distribution</strong> (${stats.length} resamples)</p>
-      <p class="reasoning-prompt"><strong>Estimate the ${ciPct}% confidence interval yourself.</strong> Hover (or focus) the bars to read each bin's edges and count, and find the values that cut off the bottom ${((100 - ciPct) / 2).toFixed(1)}% and top ${((100 - ciPct) / 2).toFixed(1)}% of the ${stats.length} resamples.</p>
+      <p class="reasoning-prompt"><strong>Estimate the ${ciPct}% confidence interval yourself.</strong> Hover (or focus) the bars to read each bin's edges and count, and find the values that cut off the bottom ${tailPct}% and top ${tailPct}% of the ${stats.length} resamples.${reachableNote}</p>
       ${stats.length < 50 ? '<p class="hint">Generate more resamples for a clearer distribution.</p>' : ''}
     `;
   }

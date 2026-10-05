@@ -17,7 +17,7 @@ import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { cor, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -137,9 +137,16 @@ initDataPanel({
     showDataLoaded();
     announce(`${ds.name}.`);
   },
-  onRawText: (text) => {
-    currentSourceName = '';
-    loadFromCSV(text);
+  // Which two columns, asked by the data panel rather than guessed from
+  // position — `id,height,weight` used to regress height on the ROW NUMBER and
+  // report r = 0.143 without a word (REQ-068 D, measured 2026-10-04).
+  needs: [
+    { key: 'x', label: 'Explanatory (x):', kind: 'numeric' },
+    { key: 'y', label: 'Response (y):', kind: 'numeric' },
+  ],
+  onText: (parsed, sourceName, pick) => {
+    currentSourceName = sourceName || '';
+    loadFromColumns(parsed, pick);
   },
   onClear: () => {
     xValues = [];
@@ -155,31 +162,29 @@ initDataPanel({
   },
 });
 
-/** @param {string} text */
-function loadFromCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) {
-    announce('Need a header row and at least one data row.');
+/**
+ * Take the two columns the picker resolved. A pair is only a pair when both
+ * sides are present, so a row missing either is dropped whole — reading the
+ * columns independently would shift the pairing and change r.
+ * @param {{headers: string[], types: string[], data: Array<Record<string, any>>}} parsed
+ * @param {Record<string, string>} [pick]
+ */
+function loadFromColumns(parsed, pick) {
+  const numeric = parsed.headers.filter((h, i) => parsed.types[i] === 'numeric');
+  const xCol = pick?.x ?? numeric[0];
+  const yCol = pick?.y ?? numeric[1];
+  if (!xCol || !yCol) {
+    announce('Need two numeric columns.');
     return;
   }
-  const delim = lines[0].includes('\t') ? '\t' : ',';
-  const header = lines[0].split(delim).map(s => s.trim());
-  if (header.length < 2) {
-    announce('Need at least two columns.');
-    return;
-  }
-  xLabel = header[0];
-  yLabel = header[1];
+  xLabel = xCol;
+  yLabel = yCol;
   const xs = [];
   const ys = [];
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(delim).map(s => s.trim());
-    const x = parseFloat(parts[0]);
-    const y = parseFloat(parts[1]);
-    if (isFinite(x) && isFinite(y)) {
-      xs.push(x);
-      ys.push(y);
-    }
+  for (const row of parsed.data) {
+    const x = parseFloat(row[xCol]);
+    const y = parseFloat(row[yCol]);
+    if (isFinite(x) && isFinite(y)) { xs.push(x); ys.push(y); }
   }
   if (xs.length < 3) {
     announce('Need at least 3 valid numeric pairs.');
@@ -200,6 +205,7 @@ function showDataLoaded() {
     dataSummary.textContent = `${namePrefix}n = ${xValues.length}, observed r = ${formatStat(observedR, 4)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  gateBigBatches(genBtns, xValues.length);
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
     const bigBtn = genBtns[genBtns.length - 1];
@@ -258,6 +264,16 @@ for (const btn of genBtns) {
 
 /** @param {number} count */
 function generateSimulations(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allStats.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allStats.length, 'simulations'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allStats.length, 'simulations'));
+  }
   if (!rng) rng = createRng(seed);
 
   if (!mechanismInitialized && mechanismStrip) {
@@ -452,6 +468,8 @@ if (resetBtn) {
 }
 
 function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
   rng = null;
   mechanismInitialized = false;

@@ -17,7 +17,7 @@
   "sourceDetail": "IMS (Introduction to Modern Statistics). Based on the Stanford Heart Transplant Study data.",
   "context": {
     "population": "heart transplant patients",
-    "parameter": "true survival rate",
+    "parameter": "proportion who survived",
     "successLabel": "survived"
   },
   "rows": [

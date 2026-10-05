@@ -16,7 +16,7 @@ applyRequestedLayout('permuteAssociation');
 import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { chisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle } from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -99,24 +99,25 @@ let rawData = [];
 // ─── Data loading: Paste / File / Clear ───
 
 /** @param {string} text */
-function loadFromCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
-  if (lines.length < 2) {
-    announce('Need a header row and at least one data row.');
-    return;
-  }
-  const delim = lines[0].includes('\t') ? '\t' : ',';
-  const header = lines[0].split(delim).map(s => s.trim());
-  if (header.length < 2) {
-    announce('Need at least two columns.');
+/**
+ * Build the table from the two columns the picker resolved. A row with either
+ * side missing is not an observation of a pair, so it is dropped whole.
+ * @param {{headers: string[], types: string[], data: Array<Record<string, any>>}} parsed
+ * @param {Record<string, string>} [pick]
+ */
+function loadFromColumns(parsed, pick) {
+  const categorical = parsed.headers.filter((h, i) => parsed.types[i] === 'categorical');
+  const rowCol = pick?.rows ?? categorical[0] ?? parsed.headers[0];
+  const colCol = pick?.cols ?? categorical.find(h => h !== rowCol) ?? parsed.headers[1];
+  if (!rowCol || !colCol || rowCol === colCol) {
+    announce('Need two categorical columns.');
     return;
   }
   const data = [];
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(delim).map(s => s.trim());
-    if (parts.length >= 2 && parts[0] && parts[1]) {
-      data.push({ group: parts[0], outcome: parts[1] });
-    }
+  for (const row of parsed.data) {
+    const g = row[rowCol] == null ? '' : String(row[rowCol]).trim();
+    const o = row[colCol] == null ? '' : String(row[colCol]).trim();
+    if (g && o) data.push({ group: g, outcome: o });
   }
   if (data.length === 0) {
     announce('No valid data rows found.');
@@ -229,10 +230,20 @@ const dataApi = initDataPanel({
     showDataLoaded();
     announce(`${ds.name}.`);
   },
-  onRawText: (text) => {
+  // Which two columns the table is built from. This used to take the first two
+  // columns by POSITION and by raw string, whatever their type, so a file
+  // starting with `id` cross-tabulated the ROW NUMBER against one variable.
+  // Measured on an 8-row file: an 8 × 2 table, one observation per row,
+  // reported as "observed χ² = 8.000". It now reads treatment × outcome and
+  // gets 2.000. (REQ-068 D, measured 2026-10-04.)
+  needs: [
+    { key: 'rows', label: 'Rows:', kind: 'categorical' },
+    { key: 'cols', label: 'Columns:', kind: 'categorical' },
+  ],
+  onText: (parsed, sourceName, pick) => {
     datasetContext = {};
-    currentSourceName = '';
-    loadFromCSV(text);
+    currentSourceName = sourceName || '';
+    loadFromColumns(parsed, pick);
   },
   onClear: () => {
     rawData = [];
@@ -257,6 +268,7 @@ function showDataLoaded() {
     dataSummary.textContent = `${namePrefix}${dims} table, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
+  gateBigBatches(genBtns, totalN);
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
     const bigBtn = genBtns[genBtns.length - 1];
@@ -327,6 +339,16 @@ for (const btn of genBtns) {
 
 /** @param {number} count */
 function generateSimulations(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allStats.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allStats.length, 'simulations'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allStats.length, 'simulations'));
+  }
   if (!rng) rng = createRng(seed);
 
   // Show mechanism strip on first generate (deferred from data load)
@@ -506,6 +528,8 @@ if (resetBtn) {
 }
 
 function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
   rng = null;
   mechanismInitialized = false;

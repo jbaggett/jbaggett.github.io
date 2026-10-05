@@ -174,7 +174,7 @@ export function createCiMethodControl(ciPrimary, { method, onChange, pillMode, o
     </div>
     <span class="ci-method-label expert-only">Plot labels:</span>
     <div class="seg-control ci-pills-toggle expert-only" role="group" aria-label="What the plot's probability labels show">
-      <button type="button" data-pills="target" title="The level the interval asks for: 2.5% in each tail, 95% between.">Target</button>
+      <button type="button" data-pills="target" title="The level the interval asks for: 2.5% in each tail, 95% between. Percentile method only.">Target</button>
       <button type="button" data-pills="actual" title="The share of resamples actually in each region — not the same thing when the statistic is lumpy.">Actual</button>
     </div>`;
   ciPrimary.insertAdjacentElement('afterend', row);
@@ -229,14 +229,19 @@ export function createCiMethodControl(ciPrimary, { method, onChange, pillMode, o
   const syncPills = (/** @type {string} */ mode, /** @type {string} */ m) => {
     for (const b of pills.querySelectorAll('button[data-pills]')) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-pills') === mode));
-      // ±SE is an approximation whose point is that it does NOT land on the
-      // level, so its labels always report what the interval holds; the choice
-      // has nothing to decide there.
-      const off = m === 'se';
+      // Only the percentile interval is DEFINED as the middle 95% of the
+      // resamples, so it is the only one where "the level" is a thing the plot
+      // could print. ±SE is an approximation whose point is that it does not
+      // land on the level; BCa moves the two cutoffs apart on purpose. Both
+      // always report what they hold, so the choice has nothing to decide.
+      const off = m === 'se' || m === 'bca';
       /** @type {HTMLButtonElement} */ (b).disabled = off;
       b.setAttribute('aria-disabled', String(off));
-      if (off) b.title = '±SE is an approximation — its labels always show what the interval actually holds.';
-      else b.removeAttribute('title');
+      b.title = !off ? ''
+        : m === 'bca'
+          ? 'BCa shifts the two cutoffs by different amounts on purpose, so its labels always show what the interval actually holds.'
+          : '±SE is an approximation — its labels always show what the interval actually holds.';
+      if (!off) b.removeAttribute('title');
     }
   };
 

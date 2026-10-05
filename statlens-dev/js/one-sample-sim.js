@@ -17,14 +17,14 @@ import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, 
   from './prop-bootstrap-mech.js';
 import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
-import { mean, sd, detectPrecision, formatStat } from './stats.js';
-import { drawHistogram, computeBins, snappedPropThresholds } from './histogram.js';
+import { mean, sd, detectPrecision, formatStat, extent} from './stats.js';
+import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
 import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem } from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap} from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -293,8 +293,7 @@ export function initOneSamplePage(config) {
   function sharedBoxplotDomain() {
     const all = sampleData.concat(shiftedData);
     if (all.length === 0) return [0, 1];
-    const lo = Math.min(...all);
-    const hi = Math.max(...all);
+    const [lo, hi] = extent(all);
     const pad = (hi - lo) * 0.08 || 0.5;
     return [lo - pad, hi + pad];
   }
@@ -611,6 +610,7 @@ export function initOneSamplePage(config) {
   function enableControls() {
     if (hypothesisDisplay) hypothesisDisplay.hidden = false;
     for (const btn of genBtns) btn.disabled = false;
+    gateBigBatches(genBtns, isProp ? sampleN : sampleData.length);
     initMechanismStrip();
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
@@ -1341,6 +1341,16 @@ export function initOneSamplePage(config) {
 
   /** @param {number} count */
   function generateSimulations(count) {
+  // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
+  // smaller than any digit a conclusion turns on, and a held Play button would
+  // otherwise run to a million.
+  {
+    const cap = capBatch(allStats.length, count);
+    if (cap.allowed <= 0) { applySimulationCap(genBtns, allStats.length, 'simulations'); return; }
+    count = cap.allowed;
+    // …and the controls go dead as the last batch lands.
+    if (cap.atCap) queueMicrotask(() => applySimulationCap(genBtns, allStats.length, 'simulations'));
+  }
     // A clean slate: see the note in js/sim-app.js. The dart scoop hides its
     // target dots until the darts arrive, so an interrupted run would leave
     // them invisible.
@@ -1480,8 +1490,7 @@ export function initOneSamplePage(config) {
 
     // Compute domain for consistent bin alignment
     // Never shrink below the pre-simulated domain
-    let lo = Math.min(...allStats, observedStat);
-    let hi = Math.max(...allStats, observedStat);
+    let [lo, hi] = extent(allStats, observedStat);
     const pad = (hi - lo) * 0.05 || 0.05;
     lo -= pad; hi += pad;
     if (preSimDomain) {
@@ -1540,8 +1549,7 @@ export function initOneSamplePage(config) {
     chartContainer.innerHTML = '';
     const n = stats.length;
 
-    let cLo = n > 0 ? Math.min(...stats, observed) : observed;
-    let cHi = n > 0 ? Math.max(...stats, observed) : observed;
+    let [cLo, cHi] = n > 0 ? extent(stats, observed) : [observed, observed];
     const cPad = (cHi - cLo) * 0.05 || 0.05;
     cLo -= cPad; cHi += cPad;
     if (preSimDomain) {
@@ -1724,6 +1732,8 @@ export function initOneSamplePage(config) {
   }
 
   function resetSimulation() {
+  // Starting again lifts the cap.
+  applySimulationCap(genBtns, 0, 'simulations');
     // A reset means "give me a clean tool", which includes a clean address bar.
     forgetSeed();
     allStats = [];
@@ -1761,7 +1771,11 @@ export function initOneSamplePage(config) {
     if (lastHistResult) {
       const { xScale: hxScale, yScale: hyScale, bins, domain: dom } = lastHistResult;
       if (bins.length === 0) return;
-      const binWidth = /** @type {number} */ (bins[0].x1) - /** @type {number} */ (bins[0].x0);
+      // Not `bins[0]`'s width — on a proportion the first bin is clipped to the
+      // domain and is 68% of a real bin, which drew this curve a third short
+      // (js/histogram.js → typicalBinWidth).
+      const binWidth = typicalBinWidth(bins);
+      if (!binWidth) return;
 
       overlayTheoryCurve({
         container: chartContainer,

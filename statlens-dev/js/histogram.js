@@ -652,3 +652,37 @@ export function renderOverlayLine(overlays, value, xScale, innerHeight, color, l
     .text(value.toFixed(precision));
   return /** @type {SVGTextElement} */ (t.node());
 }
+
+/**
+ * The width a bar on this histogram typically has.
+ *
+ * A frequency histogram's bars are n·w·density, so anything drawn to be
+ * compared with them — the theoretical curve, a KDE — has to be scaled by a bin
+ * width. Three call sites took `bins[0]`'s, and `bins[0]` is the one bin that
+ * cannot be trusted: when the thresholds are explicit (proportions, whose edges
+ * are snapped to the k/n lattice) `edgesWithin` returns only the INTERIOR edges,
+ * so d3 clips the first bin to `[domain[0], firstEdge]` and the last to
+ * `[lastEdge, domain[1]]`. Those two are partial by construction — anywhere
+ * from a sliver to a full width — while every interior bin is exactly the grid
+ * width.
+ *
+ * Measured on `bootstrap-prop` with transplant_survival (n = 34, step 1/34):
+ * interior bins 0.0588 (two steps) and both ends 0.0397, 68% of a full bin. The
+ * curve was scaled by that 0.0397 and so drawn a third short of the bars it
+ * exists to be compared with. (Jeff, 2026-10-04: "the normal curve on the
+ * sampling distribution is not scaled correctly.")
+ *
+ * The median is the width most bars actually have, and it ignores the two
+ * clipped ends whatever they came out as.
+ *
+ * @param {Array<{x0?: number, x1?: number}>} bins
+ * @returns {number|null} null when there is nothing to measure
+ */
+export function typicalBinWidth(bins) {
+  if (!bins || bins.length === 0) return null;
+  const widths = bins
+    .map(b => /** @type {number} */ (b.x1) - /** @type {number} */ (b.x0))
+    .filter(w => Number.isFinite(w) && w > 0)
+    .sort((a, b) => a - b);
+  return widths.length ? widths[Math.floor(widths.length / 2)] : null;
+}
