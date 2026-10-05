@@ -27,7 +27,16 @@
 
         .tse-slider-row { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin: 0.75rem 0 0.25rem; }
         .tse-slider-row input[type="range"] { flex: 1 1 260px; min-width: 200px; }
-        .tse-slider-row .tse-readout { font-family: var(--font-mono); font-weight: 700; min-width: 7.5rem; }
+        /* The readout must not be able to change the slider's width.
+           It sits in the slider's flex row, so when the number gained a digit
+           ("1 SE above p" → "1.25 SE above p") the readout grew 30px, the
+           slider lost 30px, and the thumb slid out from under the pointer
+           mid-drag — which then changed the value, which changed the text.
+           A fixed width big enough for the longest reading ("3.25 SE below p")
+           breaks the loop. Left-aligned so the text itself does not jiggle
+           inside it either. (Jeff, 2026-10-04: "it's still wonky.") */
+        .tse-slider-row .tse-readout { font-family: var(--font-mono); font-weight: 700;
+                                       flex: none; width: 10.5rem; text-align: left; }
 
         /* The two verdicts. They are the whole point, so they are large and they
            never rely on colour alone — each carries a glyph and a sentence. */
@@ -52,7 +61,7 @@
         .x-bar { border-top: 1.5px solid currentColor; line-height: 0.85; display: inline-block; }
 
         @media (max-width: 560px) {
-            .tse-slider-row .tse-readout { min-width: 0; }
+            .tse-slider-row .tse-readout { width: 9.5rem; font-size: 0.92rem; }
             .tse-controls { gap: 0.6rem 1rem; }
         }
     </style>
