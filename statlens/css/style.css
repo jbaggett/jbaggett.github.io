@@ -6373,3 +6373,30 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   .dpr-picked { animation: none; }
   .dpr-ghost { transition: none; }
 }
+
+/* ── Inquiry posture (`?ask=`): the controls a student aims the tool with ──
+   Sits directly under the chart, because every control in it changes what the
+   chart says. Not `.expert-only` — in this posture it IS the interface. */
+.aim-panel {
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--ims-blue, #569BBD);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  margin: 0.75rem 0;
+  background: var(--ims-bg-soft, #f7f9fb);
+}
+.aim-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.aim-row label, .aim-label { font-weight: 700; display: inline-flex; align-items: center; gap: 0.35rem; }
+.aim-sym { font-family: var(--font-mono); font-style: italic; }
+.aim-panel input[type="number"] {
+  width: 7rem; min-height: 44px; font-family: var(--font-mono); font-weight: 700;
+}
+.aim-hint { font-size: 0.85rem; color: var(--ims-gray-text); }
+.aim-tail button { min-height: 44px; }
+.aim-readout { margin: 0.35rem 0 0; line-height: 1.5; }
+.aim-readout strong { font-family: var(--font-mono); }
+@media (max-width: 560px) {
+  .aim-row { gap: 0.4rem; }
+  .aim-panel input[type="number"] { width: 6rem; }
+  .aim-hint { flex-basis: 100%; }
+}

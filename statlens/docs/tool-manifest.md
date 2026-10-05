@@ -561,6 +561,7 @@ button changes that). A colour key under the strip names both outcomes.
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
+| `ask` | string | **Inquiry posture** — hand decisions back: `null`, `tail`, `stat`, or `all`. The tool simulates but will not report a p-value until the student states the null, chooses a tail and types the test statistic. A wrong entry is counted where it was aimed, not corrected. One step per problem. | `ask=stat` |
 | `dataset` | string | Pre-load a categorical dataset | `dataset=medical_consultant` |
 | `p` | float | Null hypothesis proportion | `p=0.10` |
 | `direction` | string | Alternative: `less`, `greater`, or `twosided` | `direction=less` |

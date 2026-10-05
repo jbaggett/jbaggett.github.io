@@ -22,7 +22,7 @@
 // the shell caches the right files and the cache name carries the site with it.
 const BASE = self.location.pathname.replace(/sw\.js$/, '');
 const SITE = BASE.replace(/^\/|\/$/g, '').replace(/\//g, '-') || 'root';
-const CACHE_NAME = `${SITE}@ef0abad1`;
+const CACHE_NAME = `${SITE}@4d89de0d`;
 
 // App shell — the core files needed for the app to work, relative to BASE
 const APP_SHELL = [
@@ -149,7 +149,40 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Local resources: stale-while-revalidate
+  // Code and content: network-first, cache only as the offline fallback.
+  //
+  // Stale-while-revalidate hands back the CACHED copy and refreshes it for next
+  // time, so the view on screen runs one deploy behind. That is invisible on a
+  // normal visit — you reload and it is fixed — and it is not invisible at all
+  // when the tool is two iframes deep in Canvas → MyOpenMath → StatLens. Storage
+  // is partitioned by top-level site, so the worker serving that frame is a
+  // SEPARATE registration from the one a direct visit to learnlens.org uses:
+  // a student cannot clear it by opening the site in a tab and refreshing, and
+  // the "a new version is available" toast is painted inside a 460px frame
+  // nested two deep, where nobody will ever see it.
+  //
+  // Reported 2026-10-05 — a student still saw a broken exercise hours after the
+  // fix was live and verified. The activity-JSON branch above already makes this
+  // argument; the code that RUNS the tool has a stronger claim to it than the
+  // activity definitions do, and the datasets changed under students twice today
+  // as well. Media keeps the old strategy: a font or an icon cannot be stale in
+  // a way that changes an answer.
+  if (/\.(?:js|mjs|css|json)$/.test(url.pathname)
+      || event.request.mode === 'navigate'
+      || url.pathname.endsWith('/')) {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      }).catch(() => caches.match(event.request).then(c => c || Response.error()))
+    );
+    return;
+  }
+
+  // Everything else (images, fonts): stale-while-revalidate
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) =>
       cache.match(event.request).then((cached) => {

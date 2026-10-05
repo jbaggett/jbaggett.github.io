@@ -180,7 +180,7 @@ export function initOneSamplePage(config) {
         chartType = type;
         if (binAdjuster) binAdjuster.setMode(type);
         if (allStats.length > 0) {
-          renderChart(allStats, observedStat, getDirection());
+          renderChart(allStats, aimedStat(), getDirection());
         }
       },
     });
@@ -193,7 +193,7 @@ export function initOneSamplePage(config) {
       theoryOverlayOn = checked;
       if (allStats.length > 0 && chartContainer) {
         if (checked) {
-          renderChart(allStats, observedStat, getDirection());
+          renderChart(allStats, aimedStat(), getDirection());
         } else {
           removeTheoryOverlay(chartContainer);
         }
@@ -206,7 +206,7 @@ export function initOneSamplePage(config) {
         onChange: (bins) => {
           userBinCount = bins;
           if (allStats.length > 0) {
-            renderChart(allStats, observedStat, getDirection());
+            renderChart(allStats, aimedStat(), getDirection());
           }
         },
       });
@@ -467,6 +467,9 @@ export function initOneSamplePage(config) {
   }
 
   function getDirection() {
+    // Unchosen is a real state here: nothing is shaded and no p-value is
+    // reported until the student says which tail counts as extreme.
+    if (asks('tail')) return /** @type {any} */ (aimTail);
     const alt = altDirectionBtn?.dataset.value ?? 'greater';
     if (alt === 'greater') return /** @type {const} */ ('right');
     if (alt === 'less') return /** @type {const} */ ('left');
@@ -611,6 +614,9 @@ export function initOneSamplePage(config) {
     if (hypothesisDisplay) hypothesisDisplay.hidden = false;
     for (const btn of genBtns) btn.disabled = false;
     gateBigBatches(genBtns, isProp ? sampleN : sampleData.length);
+    // After the batch gate, never before: data arriving does not settle the null
+    // hypothesis, and this must not re-enable what gateBigBatches switched off.
+    if (inquiry) syncAim();
     initMechanismStrip();
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
@@ -671,6 +677,150 @@ export function initOneSamplePage(config) {
 
     // Render empty chart with pre-sim axes
     renderChart([], observedStat, getDirection());
+  }
+
+  // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
+  //
+  // StatKey's randomization page loads with NOTHING decided: an empty plot, an
+  // editable null in the sentence, three unchecked tail boxes, no marker on the
+  // distribution and no p-value anywhere. To get a number out, a student has to
+  // state the null, generate, choose a tail and TYPE the test statistic. Ours
+  // loads with every one of those already answered, so a student can pick the
+  // matching tool from the menu, press +1000 and copy the p-value without
+  // having decided anything. (Jeff, 2026-10-05: "lots of the cognitive steps
+  // have been removed"; "StatKey has this part right and we don't.")
+  //
+  // `?ask=` names which steps to hand back, one problem at a time, because a
+  // whole set that makes you aim the instrument every time is worse than one
+  // that never does. `?ask=all` is the full StatKey posture.
+  //
+  // Typing the statistic is the step with no equivalent here: `cutlines` is a
+  // DRAG, and the target is visibly the tallest part of the picture. Typing
+  // 0.760 means reading the data summary and knowing which of its three
+  // numbers is the statistic — so the summary stays on screen and the marker
+  // comes off the plot.
+  const askRaw = (new URLSearchParams(location.search).get('ask') || '').toLowerCase().trim();
+  const ask = new Set(askRaw === 'all' ? ['null', 'tail', 'stat']
+    : askRaw.split(/[,\s]+/).filter(Boolean));
+  const asks = (/** @type {string} */ k) => ask.has(k);
+  const inquiry = ask.size > 0;
+  /** The statistic the student typed, null until they do. */
+  let aimStat = /** @type {number|null} */ (null);
+  /** The tail the student chose, null until they do. */
+  let aimTail = /** @type {'left'|'right'|'both'|null} */ (null);
+  /** Whether the student has committed to a null value. */
+  let nullStated = !asks('null');
+
+  /** The statistic the shading is aimed at — theirs when asked for, else the sample's. */
+  function aimedStat() {
+    return asks('stat') ? aimStat : observedStat;
+  }
+  /** Everything the posture asked for has been supplied. */
+  function aimComplete() {
+    return (!asks('null') || nullStated)
+      && (!asks('tail') || aimTail != null)
+      && (!asks('stat') || aimStat != null);
+  }
+
+  const aimPanel = document.createElement('div');
+  if (inquiry) {
+    aimPanel.className = 'aim-panel';
+    aimPanel.innerHTML = `
+      ${asks('null') ? `<div class="aim-row"><label for="aim-null">Null hypothesis:
+        <span class="aim-sym">${isProp ? 'p' : '\u03BC'}</span> =</label>
+        <input type="number" id="aim-null" step="any" placeholder="?" aria-describedby="aim-null-hint">
+        <span class="aim-hint" id="aim-null-hint">State it before you simulate.</span></div>` : ''}
+      ${asks('tail') ? `<div class="aim-row" role="group" aria-label="Which tail counts as extreme">
+        <span class="aim-label">Tail:</span>
+        <div class="seg-control aim-tail">
+          <button type="button" data-tail="left" aria-pressed="false">Left</button>
+          <button type="button" data-tail="both" aria-pressed="false">Two-tail</button>
+          <button type="button" data-tail="right" aria-pressed="false">Right</button>
+        </div></div>` : ''}
+      ${asks('stat') ? `<div class="aim-row"><label for="aim-stat">Test statistic:
+        <span class="aim-sym">${isProp ? 'p\u0302' : '\u0078\u0304'}</span> =</label>
+        <input type="number" id="aim-stat" step="any" placeholder="?" aria-describedby="aim-stat-hint">
+        <span class="aim-hint" id="aim-stat-hint">Read it off your sample above.</span></div>` : ''}
+      <p class="aim-readout" id="aim-readout" role="status" aria-live="polite"></p>`;
+    chartContainer?.insertAdjacentElement('afterend', aimPanel);
+
+    const aimNullInput = /** @type {HTMLInputElement|null} */ (aimPanel.querySelector('#aim-null'));
+    const aimStatInput = /** @type {HTMLInputElement|null} */ (aimPanel.querySelector('#aim-stat'));
+
+    aimNullInput?.addEventListener('input', () => {
+      const v = parseFloat(aimNullInput.value);
+      nullStated = Number.isFinite(v) && (!isProp || (v >= 0 && v <= 1));
+      if (nullStated && nullInput) nullInput.value = String(v);
+      // A new null means a different null world; what is on screen was built
+      // under the old one, so it goes rather than quietly mixing the two.
+      if (allStats.length > 0) resetSimulation();
+      syncAim();
+    });
+    aimStatInput?.addEventListener('input', () => {
+      const v = parseFloat(aimStatInput.value);
+      // Whatever they typed is where the shading goes — including when it is
+      // wrong. A wrong aim draws a coherent wrong picture, which is the thing
+      // worth seeing; the problem grades it, not the tool.
+      aimStat = Number.isFinite(v) ? v : null;
+      syncAim();
+    });
+    aimPanel.querySelector('.aim-tail')?.addEventListener('click', (e) => {
+      const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-tail]');
+      if (!btn) return;
+      aimTail = /** @type {any} */ (btn.getAttribute('data-tail'));
+      for (const b of aimPanel.querySelectorAll('.aim-tail button')) {
+        b.setAttribute('aria-pressed', String(b === btn));
+      }
+      syncAim();
+    });
+    // Run once now, so the generate buttons are gated and the readout says what
+    // is still to choose before the student touches anything.
+    syncAim();
+  }
+
+  /** Redraw and re-report after any of the student's decisions changes. */
+  function syncAim() {
+    const blocked = asks('null') && !nullStated;
+    for (const b of genBtns) {
+      // Additive: this gate can switch a button OFF, never back on — the batch
+      // cutoff and the repetition cap have their own reasons to disable one.
+      if (blocked) {
+        b.disabled = true;
+        b.title = 'State the null hypothesis first — the simulation is built from it.';
+      } else if (b.title.startsWith('State the null')) {
+        b.disabled = false;
+        b.title = '';
+      }
+    }
+    const readout = aimPanel.querySelector('#aim-readout');
+    if (readout) {
+      const missing = [];
+      if (asks('null') && !nullStated) missing.push('a null value');
+      if (asks('tail') && aimTail == null) missing.push('a tail');
+      if (asks('stat') && aimStat == null) missing.push('a test statistic');
+      if (allStats.length === 0) {
+        // With an empty plot, say BOTH outstanding things — "still to choose"
+        // alone reads as though the simulation were already there.
+        readout.textContent = missing.length
+          ? `Generate some samples, and choose: ${missing.join(', ')}.`
+          : 'Now generate some samples.';
+      } else if (missing.length) {
+        readout.textContent = `Still to choose: ${missing.join(', ')}.`;
+      } else {
+        const { extremeCount } = computePValue(allStats, aimedStat(), getDirection());
+        const dirWord = aimTail === 'both' ? 'as far from the centre as'
+          : aimTail === 'left' ? 'at or below' : 'at or above';
+        readout.innerHTML = `<strong>${extremeCount}</strong> of ${allStats.length} simulated`
+          + ` statistics are ${dirWord} <strong>${aimedStat()}</strong>`
+          + ` &mdash; a proportion of <strong>${(extremeCount / allStats.length).toFixed(4)}</strong>.`;
+      }
+    }
+    if (allStats.length > 0) {
+      const d = getDirection();
+      renderChart(allStats, aimedStat(), d);
+      const { pValue, extremeCount } = computePValue(allStats, aimedStat(), d);
+      displayResults(allStats, aimedStat(), pValue, extremeCount, d);
+    }
   }
 
   // ─── Data loading ───
@@ -994,9 +1144,9 @@ export function initOneSamplePage(config) {
       altDirectionBtn.textContent = labels[next];
       if (allStats.length > 0) {
         const direction = getDirection();
-        renderChart(allStats, observedStat, direction);
-        const { pValue, extremeCount } = computePValue(allStats, observedStat, direction);
-        displayResults(allStats, observedStat, pValue, extremeCount, direction);
+        renderChart(allStats, aimedStat(), direction);
+        const { pValue, extremeCount } = computePValue(allStats, aimedStat(), direction);
+        displayResults(allStats, aimedStat(), pValue, extremeCount, direction);
       }
     });
   }
@@ -1512,21 +1662,22 @@ export function initOneSamplePage(config) {
       allStats, prevLength, count, computeBins,
       { domain: hlDomain, thresholds: lockedThresholds, numBins: isProp ? undefined : userBinCount });
 
-    const { pValue, extremeCount } = computePValue(allStats, observedStat, direction);
-    displayResults(allStats, observedStat, pValue, extremeCount, direction);
+    const { pValue, extremeCount } = computePValue(allStats, aimedStat(), direction);
+    displayResults(allStats, aimedStat(), pValue, extremeCount, direction);
+    if (inquiry) syncAim();
     if (resetBtn) resetBtn.hidden = false;
 
     if (count === 1) {
       // Wait for the resample to finish building before the stat drops into the
       // sampling distribution — otherwise the drop fires out of order.
       setTimeout(() => {
-        renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
+        renderChart(allStats, aimedStat(), direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
         if (mechSimStat && chartContainer) {
           animateDropToChart(mechSimStat, chartContainer);
         }
       }, Math.max(150, mechAnimMs));
     } else {
-      renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
+      renderChart(allStats, aimedStat(), direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
     }
     announce(`Generated ${count} simulation${count > 1 ? 's' : ''}. Total: ${allStats.length}`);
     // Something has been generated, so the link is worthless without the seed.
@@ -1559,6 +1710,10 @@ export function initOneSamplePage(config) {
     /** @type {[number, number]} */
     const domain = hlDomain || [cLo, cHi];
 
+    // Until every decision the posture asked for is made, the plot carries the
+    // distribution and nothing else: no marker, no shading, no p-value. That
+    // emptiness is the prompt.
+    const aimed = !inquiry || aimComplete();
     const activeChart = getActiveChartType(stats);
     if (setToggleSelected) setToggleSelected(activeChart);
     if (binAdjuster) binAdjuster.setMode(activeChart);
@@ -1568,7 +1723,7 @@ export function initOneSamplePage(config) {
     const precision = displayPrecision(dataPrecision, { proportion: isProp, sampleN });
     const nullVal = getNullValue();
 
-    const { pValue } = n > 0 ? computePValue(stats, observed, direction) : { pValue: 0 };
+    const { pValue } = (n > 0 && aimed) ? computePValue(stats, observed, direction) : { pValue: 0 };
 
     const result = renderSimChart(chartContainer, stats, {
       chartType: activeChart,
@@ -1576,8 +1731,8 @@ export function initOneSamplePage(config) {
       xLabel,
       titleText: words.distribution,
       domain,
-      observedStat: observed,
-      direction,
+      observedStat: aimed && Number.isFinite(observed) ? observed : undefined,
+      direction: aimed ? direction : undefined,
       nullCenter: nullVal,
       // The value H₀ names, marked on the distribution it generated — the
       // distribution is centred there by construction and nothing said so.
@@ -1596,8 +1751,8 @@ export function initOneSamplePage(config) {
       precision,
       // Reasoning / figure-only mode: no tail shading or p-value pills — the
       // student reads the p-value off the histogram. Observed marker stays.
-      regionPredicate: showReadout ? undefined : () => false,
-      pillMode: (showReadout && n > 0) ? 'randomization' : undefined,
+      regionPredicate: (showReadout && aimed) ? undefined : () => false,
+      pillMode: (showReadout && aimed && n > 0) ? 'randomization' : undefined,
       pValue,
     });
 
@@ -1654,6 +1809,15 @@ export function initOneSamplePage(config) {
    * @param {'left'|'right'|'both'} direction
    */
   function displayResults(stats, observed, pValue, extremeCount, direction) {
+    if (inquiry && !aimComplete()) {
+      const want = [];
+      if (asks('null') && !nullStated) want.push('state the null hypothesis');
+      if (asks('tail') && aimTail == null) want.push('choose which tail counts as extreme');
+      if (asks('stat') && aimStat == null) want.push('enter the test statistic');
+      resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
+        + `The simulation has run; it cannot tell you a p-value until you ${want.join(', then ')}.</p>`;
+      return;
+    }
     const dirLabel = direction === 'both' ? 'two-sided'
       : direction === 'right' ? 'right-tail' : 'left-tail';
 
