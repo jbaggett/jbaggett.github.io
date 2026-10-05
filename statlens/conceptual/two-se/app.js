@@ -152,7 +152,69 @@ function labelArrow(x1, x2, y, color, label, labelDy = -6) {
     + ` font-weight="700" fill="${color}">${label}</text>`;
 }
 
-function render() {
+/**
+ * What the figure's *scaffold* depends on. Only these force a rebuild.
+ * Dragging the statistic changes none of them.
+ */
+const layoutKey = () => `${paramKind}|${level}|${(figure.clientWidth || 780) < 560}`;
+/** @type {string} */
+let builtFor = '';
+/** Where the statistic's symbol was drawn, so the nudge is relative to it. */
+let builtStatX = 0;
+
+/**
+ * Move the statistic and its interval without rebuilding the figure.
+ *
+ * The first version re-wrote `figure.innerHTML` on every change, which threw
+ * away the SVG the pointer had been captured on: `pointerdown` set the position
+ * once, the element holding the listeners was destroyed, and every later
+ * `pointermove` arrived at a brand-new element whose `dragging` flag was false.
+ * Measured — a press at 30% of the width followed by moves to 40, 50, 60 and
+ * 70% left the readout stuck on the press position through all four. (Jeff,
+ * 2026-10-04: "somehow the slider resists motion or dragging.")
+ *
+ * So the scaffold is built once per layout and only these seven nodes move. It
+ * is also what the figure should have done anyway: on a phone, rebuilding this
+ * much markup per frame is the difference between a drag and a slideshow.
+ */
+function reposition() {
+  const svgEl = figure.querySelector('svg');
+  if (!svgEl) return;
+  const z = zc();
+  const s = sym();
+  const hit = captures();
+  const color = hit ? CAPTURE : MISS;
+  const baseline = bottomOf();
+  const barY = baseline + 48;
+  const statX = px(zStat);
+  const loX = px(Math.max(X_MIN, zStat - z));
+  const hiX = px(Math.min(X_MAX, zStat + z));
+  const set = (/** @type {string} */ id, /** @type {Record<string,string|number>} */ attrs) => {
+    const el = svgEl.querySelector('#' + id);
+    if (!el) return;
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, String(v));
+  };
+
+  set('tse-stat-line', { x1: statX, x2: statX });
+  // The symbol is drawn at build time where the statistic then was, so it is
+  // nudged by the difference rather than redrawn.
+  const symG = svgEl.querySelector('#tse-stat-sym');
+  if (symG) symG.setAttribute('transform', `translate(${(statX - builtStatX).toFixed(2)},0)`);
+
+  set('tse-bar', { x1: loX, x2: hiX, stroke: color });
+  set('tse-bar-lo', { x1: loX, x2: loX, stroke: color });
+  set('tse-bar-hi', { x1: hiX, x2: hiX, stroke: color });
+  set('tse-bar-dot', { cx: statX, fill: color });
+  const label = svgEl.querySelector('#tse-bar-text');
+  if (label) {
+    label.setAttribute('x', String((loX + hiX) / 2));
+    label.setAttribute('fill', color);
+    label.textContent = `statistic \u00B1 ${z}\u00A0SE${hit ? '' : ' \u2014 misses ' + s.param}`;
+  }
+  svgEl.setAttribute('aria-label', describe());
+}
+
+function rebuild() {
   const z = zc();
   const s = sym();
   const hit = captures();
@@ -217,17 +279,19 @@ function render() {
   ${ticks}
   ${paramLine}
 
-  <line x1="${statX}" y1="${M.top + 2}" x2="${statX}" y2="${barY}" stroke="${STAT_COLOR}" stroke-width="2.4"/>
-  ${statSymbolSvg(statX, M.top - 8, STAT_COLOR)}
+  <line id="tse-stat-line" x1="${statX}" y1="${M.top + 2}" x2="${statX}" y2="${barY}" stroke="${STAT_COLOR}" stroke-width="2.4"/>
+  <g id="tse-stat-sym">${statSymbolSvg(statX, M.top - 8, STAT_COLOR)}</g>
 
-  <line x1="${loX}" y1="${barY}" x2="${hiX}" y2="${barY}" stroke="${barColor}" stroke-width="3.4" stroke-linecap="butt"/>
-  <line x1="${loX}" y1="${barY - 8}" x2="${loX}" y2="${barY + 8}" stroke="${barColor}" stroke-width="3.4"/>
-  <line x1="${hiX}" y1="${barY - 8}" x2="${hiX}" y2="${barY + 8}" stroke="${barColor}" stroke-width="3.4"/>
-  <circle cx="${statX}" cy="${barY}" r="4.5" fill="${barColor}"/>
-  <text x="${(loX + hiX) / 2}" y="${barY + 26}" text-anchor="middle" font-size="13" font-weight="700"
+  <line id="tse-bar" x1="${loX}" y1="${barY}" x2="${hiX}" y2="${barY}" stroke="${barColor}" stroke-width="3.4" stroke-linecap="butt"/>
+  <line id="tse-bar-lo" x1="${loX}" y1="${barY - 8}" x2="${loX}" y2="${barY + 8}" stroke="${barColor}" stroke-width="3.4"/>
+  <line id="tse-bar-hi" x1="${hiX}" y1="${barY - 8}" x2="${hiX}" y2="${barY + 8}" stroke="${barColor}" stroke-width="3.4"/>
+  <circle id="tse-bar-dot" cx="${statX}" cy="${barY}" r="4.5" fill="${barColor}"/>
+  <text id="tse-bar-text" x="${(loX + hiX) / 2}" y="${barY + 26}" text-anchor="middle" font-size="13" font-weight="700"
         fill="${barColor}">statistic &#177; ${z}&#160;SE${hit ? '' : ' &#8212; misses ' + esc(s.param)}</text>
 </svg>`;
   figure.innerHTML = svg;
+  builtFor = layoutKey();
+  builtStatX = statX;
   attachDrag();
 }
 
@@ -277,10 +341,24 @@ function attachDrag() {
 // ─── Readouts ───
 
 let lastHit = /** @type {boolean|null} */ (null);
+/**
+ * What the sentences below the figure currently say, so they are not rewritten
+ * on every frame of a drag. Keyed on the verdict AND the level AND the symbols,
+ * because the text names all three — gating on the verdict alone left "within
+ * 2 SE" on screen after a switch to the 68% level.
+ */
+let paintedText = '';
 
-function setStat(z, { announceChange = true } = {}) {
+/**
+ * @param {number} z
+ * @param {{announceChange?: boolean, fromSlider?: boolean}} [opts]
+ */
+function setStat(z, { announceChange = true, fromSlider = false } = {}) {
   zStat = Math.max(-3.5, Math.min(3.5, z));
-  slider.value = String(zStat);
+  // Writing the value back into the control that is mid-drag makes it fight the
+  // browser's own thumb tracking; the figure's drag is the only caller that
+  // needs the slider moved for it.
+  if (!fromSlider) slider.value = String(zStat);
   update({ announceChange });
 }
 
@@ -291,7 +369,10 @@ function update({ announceChange = true } = {}) {
   const dist = Math.abs(zStat);
   const near = dist.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
 
-  render();
+  // Rebuild only when the scaffold itself changed — a level, a symbol set, or a
+  // breakpoint. Dragging just moves seven nodes.
+  if (layoutKey() !== builtFor) rebuild();
+  reposition();
 
   readout.textContent = `${near} SE ${zStat < 0 ? 'below' : 'above'} ${s.param}`;
   slider.setAttribute('aria-valuetext', describe());
@@ -303,12 +384,13 @@ function update({ announceChange = true } = {}) {
     + `<span class="tse-glyph" aria-hidden="true">${yes ? '✓' : '✕'}</span>`
     + `<span>${text}</span></div>`;
 
-  verdictsEl.innerHTML =
+  const textKey = `${hit}|${level}|${paramKind}`;
+  if (textKey !== paintedText) verdictsEl.innerHTML =
     row(hit, `The statistic is <strong>${hit ? 'within' : 'more than'} ${z} SE</strong> of ${s.param}`
       + ` &mdash; it is ${hit ? 'inside' : 'outside'} the shaded ${level}% band.`)
     + row(hit, `Its interval <strong>${hit ? 'contains' : 'misses'}</strong> ${s.param}.`);
 
-  samenessEl.innerHTML = hit
+  if (textKey !== paintedText) samenessEl.innerHTML = hit
     ? `Both true &mdash; and they are the same statement.`
       + `<span class="tse-hint">The gap between ${s.statHtml} and ${s.param} is one distance. Reading it from`
       + ` ${s.param} says the sample was typical; reading it from ${s.statHtml} says the interval reaches back.</span>`
@@ -321,6 +403,7 @@ function update({ announceChange = true } = {}) {
       : `Now outside the band — the interval misses ${s.param}.`);
   }
   lastHit = hit;
+  paintedText = textKey;
   renderTally();
 }
 
@@ -404,7 +487,7 @@ document.getElementById('level-toggle')?.addEventListener('click', (e) => {
   announce(`${level} percent level: the interval reaches ${zc()} SE either side.`);
 });
 
-slider.addEventListener('input', () => setStat(parseFloat(slider.value)));
+slider.addEventListener('input', () => setStat(parseFloat(slider.value), { fromSlider: true }));
 drawBtn.addEventListener('click', drawSample);
 resetBtn.addEventListener('click', resetTally);
 
@@ -432,7 +515,8 @@ document.addEventListener('keydown', (e) => {
 let resizeTimer = 0;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
-  resizeTimer = window.setTimeout(() => render(), prefersReducedMotion() ? 0 : 120);
+  resizeTimer = window.setTimeout(() => { if (layoutKey() !== builtFor) { rebuild(); reposition(); } },
+    prefersReducedMotion() ? 0 : 120);
 });
 
 initHelp();
