@@ -138,10 +138,18 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
   });
 }
 
-/** The readout element, created once per page. */
+/**
+ * The readout, created once per page — announced, not displayed.
+ *
+ * Jeff, 2026-10-06: "I don't think we need the repetition text below the
+ * sampling distribution when we hover. just seeing the graph change is enough."
+ * True for anyone who can see the graph change. A screen-reader user cannot,
+ * and this element is the `aria-live` region that tells them a different
+ * repetition is now in the panel — so the text stays and only the pixels go.
+ */
 export function createPeekElement(after) {
   const el = document.createElement('p');
-  el.className = 'resample-peek';
+  el.className = 'resample-peek sr-only';
   el.id = 'resample-peek';
   el.setAttribute('role', 'status');
   el.setAttribute('aria-live', 'polite');

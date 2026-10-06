@@ -6401,21 +6401,14 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   .aim-hint { flex-basis: 100%; }
 }
 
-/* What one dot came from — a readout under the chart rather than a floating
-   tooltip, so it survives a projector and a screen reader both. */
-.resample-peek {
-  margin: 0.4rem 0 0;
-  padding: 0.5rem 0.7rem;
-  border-left: 3px solid var(--ims-blue, #569BBD);
-  background: var(--ims-bg-soft, #f7f9fb);
-  border-radius: 0 6px 6px 0;
-  font-size: 0.9rem;
-  line-height: 1.45;
+/* What one dot came from.
+   The readout is `.sr-only`: the hovered repetition is DRAWN in the page's own
+   resample panel, so the text would repeat in words a change you can see. It
+   stays in the DOM as the aria-live region, for readers who cannot see it. */
+#chart-container [data-stat-index],
+#sampling-container [data-stat-index] { cursor: pointer; }
+#chart-container [data-stat-index]:focus-visible,
+#sampling-container [data-stat-index]:focus-visible {
+  outline: 2px solid #7B2D8E; outline-offset: 1px;
 }
-.resample-peek[hidden] { display: none; }
-#chart-container [data-stat-index] { cursor: pointer; }
-#chart-container [data-stat-index]:focus-visible { outline: 2px solid #7B2D8E; outline-offset: 1px; }
-/* The statistic under the pointer. Coloured by CLASS, not a stroke attribute,
-   so nothing selecting on the observed-statistic colour mistakes it for the
-   observed statistic — they are different claims about the chart. */
 .peek-marker { stroke: #7B2D8E; stroke-width: 2.5; }
