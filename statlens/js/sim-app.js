@@ -1603,7 +1603,6 @@ export function initSimPage(config) {
     // and how sure we are that it is that one. (Jeff, 2026-10-06: "the
     // repetition should just display in the step 2 box".)
     const notes = [];
-    if (config.twoGroup) notes.push(`${group1Name} only`);
     if (approx) notes.push('one of the repetitions in this bar');
     return {
       title: `Repetition ${i + 1}${notes.length ? ` (${notes.join('; ')})` : ''}`,
@@ -1628,8 +1627,17 @@ export function initSimPage(config) {
     const rec = resamples.get(i);
     if (!rec?.idx) return;
     peekedIndex = i;
-    const values = Array.from(rec.idx, (k) => data1[k]).filter((v) => v != null);
-    if (values.length) showResample(/** @type {number[]} */ (values), false, true, false);
+    const g1 = Array.from(rec.idx, (k) => data1[k]).filter((v) => v != null);
+    if (rec.idx2) {
+      // Both groups, because a two-group statistic is a comparison and half of
+      // one is not a resample.
+      const g2 = Array.from(rec.idx2, (k) => data2[k]).filter((v) => v != null);
+      if (g1.length && g2.length) {
+        showTwoGroupMechanism(/** @type {number[]} */ (g1), /** @type {number[]} */ (g2), false, false);
+      }
+      return;
+    }
+    if (g1.length) showResample(/** @type {number[]} */ (g1), false, true, false);
   }
   /** Put Step 2 back to the resample the simulation actually last drew. */
   function restorePeeked() {
@@ -1961,7 +1969,7 @@ export function initSimPage(config) {
           // no marks on either side. (2026-09-28.)
           lastRsIdx1 = first.indices ?? null;
           lastRsIdx2 = second.indices ?? null;
-          resamples.rememberIndices(allStats.length, first.indices);
+          resamples.rememberIndexPair(allStats.length, first.indices, second.indices);
           const stat = statFn(rs1) - statFn(rs2);
           allStats.push(stat);
         }

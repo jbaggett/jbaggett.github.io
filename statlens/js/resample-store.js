@@ -28,7 +28,7 @@
 const BUDGET = 100000;
 
 export function createResampleStore() {
-  /** @type {Map<number, {k?: number, n?: number, idx?: ArrayLike<number>}>} */
+  /** @type {Map<number, {k?: number, n?: number, idx?: ArrayLike<number>, idx2?: ArrayLike<number>, vals?: ArrayLike<number>}>} */
   const byIndex = new Map();
   /** @type {number[]} */
   const order = [];
@@ -39,7 +39,8 @@ export function createResampleStore() {
     while (stored > BUDGET && order.length) {
       const old = /** @type {number} */ (order.shift());
       const rec = byIndex.get(old);
-      stored -= rec?.idx ? rec.idx.length : 1;
+      stored -= rec?.idx ? rec.idx.length + (rec.idx2?.length ?? 0)
+        : (rec?.vals ? rec.vals.length : 1);
       byIndex.delete(old);
     }
   }
@@ -65,6 +66,34 @@ export function createResampleStore() {
       byIndex.set(index, { idx: Int32Array.from(idx) });
       order.push(index);
       stored += idx.length;
+      trim();
+    },
+    /**
+     * A two-group draw: each group is resampled separately, so the record is a
+     * PAIR. Storing only the first group made the readout say "treatment only",
+     * which is accurate but half a picture.
+     * @param {number} index
+     * @param {ArrayLike<number>|null|undefined} a
+     * @param {ArrayLike<number>|null|undefined} bIdx
+     */
+    rememberIndexPair(index, a, bIdx) {
+      if (!a || !bIdx || byIndex.has(index)) return;
+      byIndex.set(index, { idx: Int32Array.from(a), idx2: Int32Array.from(bIdx) });
+      order.push(index);
+      stored += a.length + bIdx.length;
+      trim();
+    },
+    /**
+     * A sample stored by VALUE. Needed where the thing drawn from is itself
+     * regenerated — the sampling lab rebuilds its population whenever the shape
+     * or size changes, so an index into it would not survive.
+     * @param {number} index @param {ArrayLike<number>|null|undefined} values
+     */
+    rememberValues(index, values) {
+      if (!values || byIndex.has(index)) return;
+      byIndex.set(index, { vals: Float64Array.from(values) });
+      order.push(index);
+      stored += values.length;
       trim();
     },
     /** @param {number} index */

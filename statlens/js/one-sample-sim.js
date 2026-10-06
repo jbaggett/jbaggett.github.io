@@ -692,20 +692,71 @@ export function initOneSamplePage(config) {
 
   /** @param {number} i @param {boolean} approx */
   function describeAt(i, approx) {
+    if (!resamples.has(i)) return null;
+    // The resample is DRAWN in the panel now, so listing its values here as
+    // well would be a worse copy of a picture the page already makes.
+    showPeeked(i);
+    return {
+      title: `Repetition ${i + 1}${approx ? ' (one of the repetitions in this bar)' : ''}`,
+      detail: `shown in the ${words.draw ?? 'resample'} panel \u2014 `
+        + `${isProp ? 'p\u0302' : 'x\u0304'}* = `
+        + `${formatStat(allStats[i], isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1)}`,
+    };
+  }
+
+  /** Which repetition the mechanism panel is showing on a hover's behalf. */
+  let peekedIndex = -1;
+
+  /**
+   * Draw the hovered repetition in the mechanism panel.
+   *
+   * The panel is already the picture of a resample; it only ever showed the
+   * newest. For a MEAN the stored indices rebuild it exactly. For a PROPORTION
+   * the stored count IS the whole resample — which trial came up a success is
+   * not information, so a representative arrangement of k successes is the same
+   * draw, not an approximation of it.
+   * @param {number} i
+   */
+  function showPeeked(i) {
+    if (i === peekedIndex) return;
     const rec = resamples.get(i);
-    if (!rec) return null;
-    const d = describeResample(rec, i, allStats[i], {
-      proportion: isProp,
-      source: isProp ? undefined : sampleData,
-      successLabel: isProp ? (successOutcome?.value || '') : '',
-      fmt: (v) => formatStat(v, isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1),
-    });
-    return approx ? { ...d, title: `${d.title} (one of the repetitions in this bar)` } : d;
+    if (!rec) return;
+    peekedIndex = i;
+    lastSimStat = allStats[i];
+    if (isProp && rec.k != null) {
+      // `lastSuccesses` is local to the generate function, not module state, so
+      // the panel is written directly. The dot board is rebuilt from the count:
+      // for a Bernoulli draw WHICH trial came up a success is not information,
+      // so k successes in any arrangement is the same resample, not an
+      // approximation of it.
+      if (mechSimStat) {
+        const host = mechSimStat.querySelector('.mech-prop-draw');
+        mechSimStat.innerHTML = `${rec.k} of ${rec.n} `
+          + `(p\u0302 = <span class="mech-stat-value">${fmtObs(allStats[i])}</span>)`
+          + (host ? '<span class="mech-prop-draw"></span>' : '');
+        if (host) {
+          const trials = Array.from({ length: /** @type {number} */ (rec.n) },
+            (_, j) => j < /** @type {number} */ (rec.k));
+          renderPropDraw(trials, false);
+        }
+      }
+    } else if (rec.idx) {
+      lastResampleArr = Array.from(rec.idx, (k) => shiftedData[k]).filter((v) => v != null);
+      lastResampleIdx = Array.from(rec.idx);
+      renderMeanResampleView(false);
+    }
+  }
+  /** Put the panel back to the repetition the simulation actually last drew. */
+  function restorePeeked() {
+    if (peekedIndex === -1) return;
+    peekedIndex = -1;
+    const rec = resamples.get(allStats.length - 1);
+    if (rec) { peekedIndex = -2; showPeeked(allStats.length - 1); peekedIndex = -1; }
   }
 
   function wirePeek() {
     attachResamplePeek({ container: chartContainer, peek, geom: lastGeom,
-      stats: () => allStats, describe: describeAt });
+      stats: () => allStats, describe: describeAt, onLeave: restorePeeked });
   }
 
   // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────

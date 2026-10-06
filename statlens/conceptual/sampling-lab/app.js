@@ -5,6 +5,8 @@
  * the sampling distribution of x̄ build up — CLT in action.
  */
 
+import { createResampleStore } from '../../js/resample-store.js';
+import { attachResamplePeek, createPeekElement } from '../../js/resample-peek.js';
 import { createRng, randNormal } from '../../js/prng.js';
 import { mean, sd } from '../../js/stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
@@ -180,6 +182,23 @@ let sampleMeans = [];
 /** Values of the most recently drawn sample (shown in the "One sample" tier). */
 /** @type {number[]} */
 let lastSample = [];
+/**
+ * Every sample that made a dot, so any dot can be asked about.
+ *
+ * "What is one dot?" is the confusion this page exists to clear up, and the One
+ * sample panel is already the picture of one — it just only ever showed the
+ * newest. Hovering a dot in the sampling distribution now draws THAT sample
+ * there instead. Values rather than indices, because a sample here is drawn
+ * from a generated population that is itself regenerated when the shape or size
+ * changes; an index into it would not survive that.
+ */
+const samples = createResampleStore();
+/** Geometry of the last sampling-distribution render, for the hit-test. */
+let peekGeom = /** @type {any} */ (null);
+/** Which dot the One sample panel is currently showing on a hover's behalf. */
+let peekedIndex = -1;
+/** @type {HTMLElement|null} */
+let peekEl = null;
 
 /** @type {(() => number)|null} */
 let rng = null;
@@ -434,6 +453,50 @@ function renderPopulation() {
  * have visibly combined into the mean — so pass showMean=false for that.
  * @param {boolean} [showMean=true]
  */
+/**
+ * Draw the hovered dot's sample in the One sample panel.
+ *
+ * That panel already IS the picture of one sample; it just only ever showed the
+ * newest. Only redrawn when the index changes, because in column view the
+ * describe callback runs on every mousemove.
+ * @param {number} i
+ */
+function showPeekedSample(i) {
+  if (i === peekedIndex) return;
+  const rec = samples.get(i);
+  if (!rec?.vals) return;
+  peekedIndex = i;
+  lastSample = Array.from(rec.vals);
+  renderCurrentSample(true);
+}
+/** Put the One sample panel back to the sample the lab actually last drew. */
+function restorePeekedSample() {
+  if (peekedIndex === -1) return;
+  peekedIndex = -1;
+  const rec = samples.get(sampleMeans.length - 1);
+  if (rec?.vals) { lastSample = Array.from(rec.vals); renderCurrentSample(true); }
+}
+/** Wire hover on the sampling distribution back to the samples behind it. */
+function wireSamplePeek() {
+  if (!peekEl) peekEl = createPeekElement(samplingContainer);
+  attachResamplePeek({
+    container: samplingContainer,
+    peek: /** @type {HTMLElement} */ (peekEl),
+    geom: peekGeom,
+    stats: () => sampleMeans,
+    onLeave: restorePeekedSample,
+    describe: (i, approx) => {
+      if (!samples.get(i)?.vals) return null;
+      showPeekedSample(i);
+      return {
+        title: `Sample ${i + 1}${approx ? ' (one of the samples in this bar)' : ''}`,
+        detail: `shown in the One sample panel \u2014 ${lab().statAxis} `
+          + `${sampleMeans[i].toFixed(statPrecision())}`,
+      };
+    },
+  });
+}
+
 function renderCurrentSample(showMean = true) {
   if (!sampleContainer) return;
   sampleContainer.innerHTML = '';
@@ -560,6 +623,7 @@ function drawSamples(count) {
 
   for (let i = 0; i < count; i++) {
     const { sample, sampleMean } = drawOneSample(n);
+    samples.rememberValues(sampleMeans.length, sample);
     sampleMeans.push(sampleMean);
     if (i === count - 1) lastSample = sample; // show the last sample of the batch
   }
@@ -770,6 +834,7 @@ function drawOneSampleAnimated() {
   const prevLength = sampleMeans.length;
   const { sample } = drawOneSample(n);
   const m = mean(sample);
+  samples.rememberValues(sampleMeans.length, sample);
   sampleMeans.push(m);
 
   lastSample = sample;
@@ -1165,6 +1230,8 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
     if (showNormalCheckbox?.checked && n >= 10) {
       overlayNormalOnDotplot(result, sampleMeans);
     }
+    peekGeom = { xScale: result.xScale, yScale: result.countToY, frame: result.frame, bins: null };
+    wireSamplePeek();
   } else {
     const result = drawHistogram(samplingContainer, sampleMeans, {
       id: 'sampling-dist',
@@ -1177,6 +1244,9 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       domain,
       thresholds,
     });
+    peekGeom = { xScale: result.xScale, yScale: result.yScale, frame: result.frame,
+                 bins: result.bins ?? null };
+    wireSamplePeek();
     if (showNormalCheckbox?.checked && result?.bins?.length > 0) {
       const firstX0 = result.bins[0].x0;
       const lastX1 = result.bins[result.bins.length - 1].x1;
@@ -1399,6 +1469,9 @@ function emitState(event) {
 function resetSimulation() {
   sampleMeans = [];
   lastSample = [];
+  samples.clear();
+  peekedIndex = -1;
+  if (peekEl) peekEl.hidden = true;
   rng = null;
   // Keep a fixed ?seed= reproducible across resets; otherwise reshuffle.
   seed = urlSeed || Math.random().toString(36).slice(2, 10);
