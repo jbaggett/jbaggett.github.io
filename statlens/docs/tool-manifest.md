@@ -115,6 +115,24 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 ---
 
+## Shared Chart Affordances (no URL parameter — always on)
+
+Every simulation and sampling-distribution chart carries these. They need no
+configuration and no link changes; a textbook link to any of these tools gets
+them automatically.
+
+| Affordance | What it does | Where |
+|---|---|---|
+| **Minor ticks** | Unlabelled ticks subdivide each labelled interval (4 or 5 of them, chosen so they land on readable values), so a cutoff can be estimated between labels. | Every chart with a numeric horizontal axis. |
+| **Axis ruler** | Click the strip just below the horizontal axis to drop a draggable marker that reads its own value. Arrow keys nudge (Shift = bigger steps), `Esc` or its `×` removes it, and several can be placed at once. It is **not** snapped to ticks or bin edges — estimating is the point. Markers survive adding more repetitions. | The 14 simulation pages and the Sampling Distribution Lab. |
+| **Hover a dot** | Hovering a dot, bar or spike in the distribution shows the sample or resample that produced it, in the page's own sample panel. Exact where there is one mark per repetition; the nearest column otherwise, with the readout saying so. | The 14 simulation pages and the Sampling Distribution Lab (quantitative and proportion). |
+
+The ruler and the hover are announced to screen readers: the ruler is a
+`role="slider"` carrying an `aria-valuetext`, and the hovered repetition is
+described in the page's `aria-live` region.
+
+---
+
 ## Explore Tools
 
 ### Descriptive Statistics

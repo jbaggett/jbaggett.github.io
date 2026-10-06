@@ -6412,3 +6412,14 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   outline: 2px solid #7B2D8E; outline-offset: 1px;
 }
 .peek-marker { stroke: #7B2D8E; stroke-width: 2.5; }
+
+/* A ruler placed by clicking the axis.
+   The focus ring is drawn on the LINE, not on the group: the group's box is the
+   full-height grab area, so a default outline drew a tall rectangle across the
+   whole chart. Never `outline: none` without a replacement — this is the
+   replacement. */
+.axis-ruler:focus { outline: none; }
+.axis-ruler:focus-visible { outline: none; }
+.axis-ruler:focus-visible line { stroke: #7B2D8E; stroke-width: 3.5; }
+.axis-ruler:focus-visible .axis-ruler-pill { stroke: #7B2D8E; stroke-width: 2; }
+.axis-ruler-close:hover { fill: #D55E00; }

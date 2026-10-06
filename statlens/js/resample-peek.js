@@ -25,6 +25,8 @@
  *                too and the caller should say so.
  */
 
+import { localPoint } from './chart-utils.js';
+
 const NS = 'http://www.w3.org/2000/svg';
 
 /**
@@ -112,9 +114,10 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
 
   const baseline = yScale(0);
   svgRoot.addEventListener('mousemove', (/** @type {MouseEvent} */ e) => {
-    const box = inner.getBoundingClientRect();
-    const mx = e.clientX - box.left;
-    const my = e.clientY - box.top;
+    // The group's bounding box is not its origin — the y-axis labels sit left
+    // of it — so this has to go through the screen CTM or the marker lands to
+    // the right of the pointer by the width of those labels.
+    const { x: mx, y: my } = localPoint(inner, e.clientX, e.clientY);
     let best = columns[0], bestD = Infinity;
     for (const c of columns) {
       const d = Math.abs(xScale(c.center) - mx);

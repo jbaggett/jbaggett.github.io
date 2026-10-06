@@ -26,7 +26,7 @@ import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
-import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
+import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion, attachAxisRuler} from './chart-utils.js';
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
@@ -752,6 +752,14 @@ export function initOneSamplePage(config) {
     peekedIndex = -1;
     const rec = resamples.get(allStats.length - 1);
     if (rec) { peekedIndex = -2; showPeeked(allStats.length - 1); peekedIndex = -1; }
+  }
+
+  /** A ruler the reader can place by clicking the axis (js/chart-utils.js). */
+  function wireRuler() {
+    if (!lastGeom?.frame || !lastGeom?.xScale) return;
+    attachAxisRuler({ frame: lastGeom.frame, xScale: lastGeom.xScale,
+      precision: isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1,
+      label: isProp ? 'p\u0302*' : 'x\u0304*' });
   }
 
   function wirePeek() {
@@ -1747,6 +1755,7 @@ export function initOneSamplePage(config) {
 
     // Marks are redrawn on every render, so the hover wiring goes back on.
     wirePeek();
+    wireRuler();
 
   }
 

@@ -660,7 +660,12 @@ export function createChart(container, options = {}) {
 
   inner.append('g').attr('class', 'axes');
   inner.append('g').attr('class', 'data');
-  inner.append('g').attr('class', 'overlays');
+  // Reference lines — the observed statistic, CI bounds, a truth marker — are
+  // drawn ON TOP of the data and are 2.5px wide, so they were swallowing hovers
+  // meant for the dots underneath. A dot sitting under the observed line simply
+  // could not be hovered. These are labels, not controls; interactive overlays
+  // (the distribution pages' draggable boundaries) live in `.annotations`.
+  inner.append('g').attr('class', 'overlays').style('pointer-events', 'none');
   inner.append('g').attr('class', 'annotations');
   inner.append('g').attr('class', 'chart-tooltip')
     // Stash the inner width so showTooltip can clamp a tooltip that would
@@ -1272,7 +1277,7 @@ export function renderCutlines(frame, xScale, stats, opts) {
 
     function render() {
       const px = xScale(dataX);
-      hit.attr('x', px - 12);
+      hit.attr('x', px - 7);
       line.attr('x1', px).attr('x2', px);
       grip.attr('x', px - 5);
       const clampedLabelX = Math.max(28, Math.min(w - 28, px));
@@ -2254,4 +2259,240 @@ export function morphMiniChart(container, newValues, options = {}) {
 
   requestAnimationFrame(frame);
   return MORPH_MS;
+}
+
+/**
+ * A ruler you place by clicking the axis.
+ *
+ * Todd Will asked for denser ticks because estimating a cutoff off a sparse axis
+ * is guesswork; minor ticks answer that for a printed figure, and this answers
+ * it for a live one — click the axis strip and you get a line you can drag, with
+ * the value under it.
+ *
+ * Why a click on the axis rather than a toggle (Jeff, 2026-10-06: "Could we
+ * somehow hide it unless needed or wanted — toggle? or click in the x-ticks area
+ * to get a movable cutline?"): a toggle is permanent chrome that every reader
+ * meets on every page, to serve something most of them will not use on most
+ * visits. The axis strip is already dead space. The cost of that choice is
+ * discoverability, so the strip carries a pointer cursor and a tooltip, and the
+ * help dialog says it — findable by anyone who goes looking, invisible to
+ * everyone else.
+ *
+ * **No snapping.** The point is to estimate, and snapping would do the
+ * estimating. (Jeff: "no snapping, at least at first.") When it earns its keep
+ * it belongs on discrete statistics only, where positions between achievable
+ * values mean nothing — not on bin edges, which move when the bin count does.
+ *
+ * @param {object} opts
+ * @param {import('./types.js').ChartFrame} opts.frame
+ * @param {{ (v: number): number, invert: (p: number) => number, domain: () => number[], range: () => number[] }} opts.xScale
+ * @param {number} [opts.precision=2]
+ * @param {string} [opts.label='value']
+ */
+/**
+ * Where a pointer is, in a chart group's own coordinates.
+ *
+ * NOT `clientX - inner.getBoundingClientRect().left`. On an SVG `<g>` that box
+ * is the union of the children's boxes, and the y-axis tick labels hang to the
+ * LEFT of the group's origin — so the box starts left of local x = 0 and every
+ * reading came out too large. Jeff, 2026-10-06: "the hover dot in a histogram is
+ * displaced to the right of where the mouse cursor is." Consistently right, by
+ * about the width of the axis labels. The screen CTM is the actual mapping.
+ *
+ * @param {Element} el - the group the chart is drawn in
+ * @param {number} clientX @param {number} [clientY]
+ * @returns {{x: number, y: number}}
+ */
+export function localPoint(el, clientX, clientY = 0) {
+  const svg = /** @type {any} */ (el).ownerSVGElement ?? el;
+  const ctm = /** @type {any} */ (el).getScreenCTM?.();
+  if (ctm && typeof (/** @type {any} */ (svg).createSVGPoint) === 'function') {
+    const pt = /** @type {any} */ (svg).createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const local = pt.matrixTransform(ctm.inverse());
+    return { x: local.x, y: local.y };
+  }
+  const box = el.getBoundingClientRect();
+  return { x: clientX - box.left, y: clientY - box.top };
+}
+
+/** Placed markers, per chart container, so a redraw does not take them. */
+const rulerMemory = new WeakMap();
+
+export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' }) {
+  const inner = d3Selection.select(frame.inner);
+  if (!frame.inner || typeof xScale.invert !== 'function') return;
+  // A marker is placed to read a bound off the distribution, and the very next
+  // thing a reader does is add another thousand repetitions. The chart is drawn
+  // from scratch each time — the whole <svg> is replaced — so reading the old
+  // markers off the DOM finds nothing by the time this runs. They are kept
+  // beside the container instead, and by VALUE: the axis may have rescaled
+  // under them, and the value is what the reader meant.
+  const svgEl = /** @type {Element|null} */ (
+    /** @type {any} */ (frame.inner).ownerSVGElement ?? frame.inner.closest?.('svg'));
+  // Not the <svg>'s own parent: that wrapper div is rebuilt with the chart, so
+  // keying on it gave a fresh key every redraw and remembered nothing. The
+  // nearest ancestor carrying an id is the container the page owns, and stays.
+  const host = /** @type {Element|null} */ (
+    svgEl?.closest?.('[id]') ?? svgEl?.parentNode ?? null);
+  const carried = (host && rulerMemory.get(host)) || [];
+  inner.selectAll('.axis-ruler-layer').remove();
+  noteRulerInHelp();
+
+  const [dMin, dMax] = /** @type {number[]} */ (xScale.domain());
+  const [rLo, rHi] = /** @type {number[]} */ (xScale.range()).slice().sort((a, b) => a - b);
+  const fmt = (/** @type {number} */ v) => v.toFixed(precision);
+  const nudge = (dMax - dMin) / 200;
+
+  const layer = inner.append('g').attr('class', 'axis-ruler-layer');
+  // Appended last is not the same as painted last: a page that draws its axis
+  // after this put the tick <text> above the strip and swallowed the click. One
+  // page worked and another did not for that reason alone.
+  layer.raise();
+
+  const remember = () => {
+    if (!host) return;
+    rulerMemory.set(host, layer.selectAll('.axis-ruler').nodes()
+      .map((n) => Number(/** @type {Element} */ (n).getAttribute('aria-valuenow')))
+      .filter((v) => Number.isFinite(v)));
+  };
+
+  // The strip under the plot, where the ticks live. Transparent, and the only
+  // reason the gesture is reachable at all.
+  const strip = layer.append('rect')
+    .attr('class', 'axis-ruler-strip')
+    .attr('x', rLo).attr('y', frame.height)
+    .attr('width', rHi - rLo).attr('height', 26)
+    .attr('fill', 'transparent')
+    .style('cursor', 'col-resize');
+  strip.append('title').text(`Click to place a marker you can drag along the ${label} axis`);
+
+  /** @param {number} dataX @param {boolean} [takeFocus] */
+  function addRuler(dataX, takeFocus = true) {
+    let x = Math.min(dMax, Math.max(dMin, dataX));
+    const g = layer.append('g')
+      .attr('class', 'axis-ruler')
+      .attr('tabindex', 0)
+      .attr('role', 'slider')
+      .attr('aria-label', `Marker on the ${label} axis — drag, or use the arrow keys`)
+      .attr('aria-valuemin', fmt(dMin))
+      .attr('aria-valuemax', fmt(dMax));
+
+    // Wide enough to grab without aiming, narrow enough that two markers can be
+    // put close together: the grab area sits above the strip, so a click inside
+    // it is a grab rather than a new marker.
+    const hit = g.append('rect')
+      .attr('y', 0).attr('width', 14).attr('height', frame.height + 26)
+      .attr('fill', 'transparent')
+      .style('cursor', 'ew-resize')
+      .style('touch-action', 'none');
+    // Drawn after the hit rect and so on top of it, and a SIBLING of it — so a
+    // pointer landing exactly on the line hit the line, which has no handler,
+    // and the drag silently never started. The rect is the handle; the line is
+    // the picture of it.
+    const line = g.append('line')
+      .attr('y1', 0).attr('y2', frame.height)
+      .attr('stroke', '#444').attr('stroke-width', 2)
+      .attr('stroke-dasharray', '5,4')
+      .style('pointer-events', 'none');
+    // The pill sits IN the strip band, so left clickable it would eat the click
+    // meant to place the next marker — two markers could not be put within a
+    // pill's width of each other. It is a readout; the line is the handle.
+    const pillBg = g.append('rect')
+      .attr('class', 'axis-ruler-pill')
+      .attr('height', 20).attr('rx', 4)
+      .attr('fill', '#fff').attr('stroke', '#444')
+      .style('pointer-events', 'none');
+    const pillText = g.append('text')
+      .attr('class', 'axis-ruler-value')
+      .attr('text-anchor', 'middle').attr('font-size', 12).attr('font-weight', 700)
+      .attr('fill', '#111')
+      .style('pointer-events', 'none');
+    // A marker you cannot put away is clutter, so each carries its own dismiss.
+    const close = g.append('text')
+      .attr('class', 'axis-ruler-close')
+      .attr('text-anchor', 'middle').attr('font-size', 13).attr('font-weight', 700)
+      .attr('fill', '#777').style('cursor', 'pointer').text('×');
+    close.append('title').text('Remove this marker');
+
+    function render() {
+      const px = xScale(x);
+      hit.attr('x', px - 12);
+      line.attr('x1', px).attr('x2', px);
+      const txt = fmt(x);
+      const w = Math.max(38, txt.length * 8 + 14);
+      const cx = Math.max(rLo + w / 2, Math.min(rHi - w / 2, px));
+      // The value sits in the axis strip, not at the top of the plot. At the top
+      // it landed on the observed-statistic label and on the probability pills —
+      // and an axis reading belongs by the axis anyway. It is opaque, so where
+      // it does cover a tick label it wins cleanly rather than blurring with it.
+      const pillY = frame.height + 4;
+      pillBg.attr('x', cx - w / 2).attr('y', pillY).attr('width', w);
+      pillText.attr('x', cx).attr('y', pillY + 14).text(txt);
+      close.attr('x', cx + w / 2 + 7).attr('y', pillY + 14);
+      g.attr('aria-valuenow', txt).attr('aria-valuetext', `${txt} on the ${label} axis`);
+      remember();
+    }
+    const setFromPointer = (/** @type {PointerEvent} */ e) => {
+      const at = localPoint(/** @type {Element} */ (frame.inner), e.clientX);
+      x = Math.min(dMax, Math.max(dMin, xScale.invert(at.x)));
+      render();
+    };
+    let dragging = false;
+    hit.on('pointerdown', function (e) {
+      dragging = true;
+      /** @type {Element} */ (this).setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    });
+    hit.on('pointermove', (e) => { if (dragging) { e.preventDefault(); setFromPointer(e); } });
+    hit.on('pointerup', () => { dragging = false; });
+    hit.on('pointercancel', () => { dragging = false; });
+    close.on('click', (e) => { e.stopPropagation(); g.remove(); remember(); });
+    g.on('keydown', (e) => {
+      const k = e.key;
+      if (k === 'ArrowLeft' || k === 'ArrowRight') {
+        e.preventDefault();
+        x = Math.min(dMax, Math.max(dMin, x + (k === 'ArrowRight' ? 1 : -1) * nudge * (e.shiftKey ? 5 : 1)));
+        render();
+      } else if (k === 'Home') { e.preventDefault(); x = dMin; render(); }
+      else if (k === 'End') { e.preventDefault(); x = dMax; render(); }
+      else if (k === 'Escape' || k === 'Delete' || k === 'Backspace') { e.preventDefault(); g.remove(); remember(); }
+    });
+    render();
+    // Only a marker the reader just placed takes focus. One restored after a
+    // redraw must not, or every +1000 would yank the keyboard out of the panel.
+    if (takeFocus) /** @type {SVGGElement} */ (g.node()).focus?.();
+    return g;
+  }
+
+  strip.on('click', function (e) {
+    addRuler(xScale.invert(localPoint(/** @type {Element} */ (frame.inner), e.clientX).x));
+  });
+
+  for (const v of carried) addRuler(v, false);
+}
+
+/**
+ * Say in the help dialog that the axis can be clicked.
+ *
+ * A gesture nobody can see is a gesture nobody finds, and the tooltip on the
+ * strip only helps someone already hovering there. Written from here rather
+ * than into sixteen help dialogs by hand, so the sentence exists exactly where
+ * the feature does and cannot drift away from it.
+ */
+let rulerNoted = false;
+function noteRulerInHelp() {
+  if (rulerNoted) return;
+  rulerNoted = true;
+  const dialog = document.getElementById('page-help');
+  if (!dialog || dialog.querySelector('.help-ruler-note')) return;
+  const note = document.createElement('p');
+  note.className = 'help-ruler-note';
+  note.innerHTML = '<strong>Measuring off the axis.</strong> Click the strip just '
+    + 'below the horizontal axis to drop a marker you can drag, with its value '
+    + 'beside it \u2014 useful for reading a cutoff off the distribution. Arrow '
+    + 'keys nudge it (Shift for bigger steps); <kbd>Esc</kbd> or its '
+    + '\u00d7 removes it. Place as many as you like.';
+  const closeBtn = dialog.querySelector('button.btn-primary');
+  if (closeBtn) dialog.insertBefore(note, closeBtn); else dialog.appendChild(note);
 }

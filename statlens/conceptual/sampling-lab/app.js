@@ -12,6 +12,7 @@ import { mean, sd } from '../../js/stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
 import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
+import { attachAxisRuler } from '../../js/chart-utils.js';
 import { animateDartScoop } from '../../js/mechanisms/draw-animation.js';
 import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart } from '../../js/page-utils.js';
 import { resolveChartType } from '../../js/chart-defaults.js';
@@ -476,6 +477,32 @@ function restorePeekedSample() {
   const rec = samples.get(sampleMeans.length - 1);
   if (rec?.vals) { lastSample = Array.from(rec.vals); renderCurrentSample(true); }
 }
+/**
+ * Everything that hangs off a freshly drawn sampling distribution.
+ *
+ * There are four branches that draw it — dotplot, spike, histogram, and the
+ * categorical pair — and only two of them were wiring the hover. The proportion
+ * branches returned early, so hovering a p̂ dot showed nothing at all. One
+ * finisher, called by all four.
+ *
+ * @param {{frame: any, xScale: any, yScale?: any, countToY?: any, bins?: any[]}} result
+ */
+function finishSamplingChart(result) {
+  peekGeom = {
+    xScale: result.xScale,
+    yScale: result.yScale ?? result.countToY,
+    frame: result.frame,
+    bins: result.bins ?? null,
+  };
+  wireSamplePeek();
+  attachAxisRuler({
+    frame: result.frame,
+    xScale: result.xScale,
+    precision: statPrecision(),
+    label: lab().statAxis,
+  });
+}
+
 /** Wire hover on the sampling distribution back to the samples behind it. */
 function wireSamplePeek() {
   if (!peekEl) peekEl = createPeekElement(samplingContainer);
@@ -1187,6 +1214,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       if (showNormalCheckbox?.checked && n >= 10) {
         overlayNormalOnSpike(spikeResult, sampleMeans, binWidth);
       }
+      finishSamplingChart(spikeResult);
     } else {
       const result = drawDotplot(samplingContainer, sampleMeans, {
         id: 'sampling-dist',
@@ -1208,6 +1236,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       if (showNormalCheckbox?.checked && n >= 10) {
         overlayNormalOnDotplot(result, sampleMeans);
       }
+      finishSamplingChart(result);
     }
     return;
   }
@@ -1230,8 +1259,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
     if (showNormalCheckbox?.checked && n >= 10) {
       overlayNormalOnDotplot(result, sampleMeans);
     }
-    peekGeom = { xScale: result.xScale, yScale: result.countToY, frame: result.frame, bins: null };
-    wireSamplePeek();
+    finishSamplingChart(result);
   } else {
     const result = drawHistogram(samplingContainer, sampleMeans, {
       id: 'sampling-dist',
@@ -1244,9 +1272,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       domain,
       thresholds,
     });
-    peekGeom = { xScale: result.xScale, yScale: result.yScale, frame: result.frame,
-                 bins: result.bins ?? null };
-    wireSamplePeek();
+    finishSamplingChart(result);
     if (showNormalCheckbox?.checked && result?.bins?.length > 0) {
       const firstX0 = result.bins[0].x0;
       const lastX1 = result.bins[result.bins.length - 1].x1;

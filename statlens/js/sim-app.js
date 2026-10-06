@@ -24,7 +24,7 @@ import { createResampleStore } from './resample-store.js';
 import { attachResamplePeek, createPeekElement } from './resample-peek.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
-import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
+import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition, attachAxisRuler} from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
@@ -1644,6 +1644,14 @@ export function initSimPage(config) {
     if (peekedIndex === -1) return;
     peekedIndex = -1;
     if (lastResample?.length) showResample(lastResample, false, false, false);
+  }
+
+  /** A ruler the reader can place by clicking the axis (js/chart-utils.js). */
+  function wireRuler() {
+    if (!peekGeom?.frame || !peekGeom?.xScale) return;
+    attachAxisRuler({ frame: peekGeom.frame, xScale: peekGeom.xScale,
+      precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
+      label: 'statistic' });
   }
 
   function wirePeek() {
@@ -5081,6 +5089,7 @@ export function initSimPage(config) {
       bins: lastHistResult?.bins ?? null,
     };
     wirePeek();
+    wireRuler();
 
     lastStatIndex = -1; // Reset after rendering
     batchHighlightIndices = null;
