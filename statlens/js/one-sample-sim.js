@@ -11,7 +11,7 @@
 import { createAskPosture } from './ask-posture.js';
 import { createResampleStore, describeResample } from './resample-store.js';
 import { attachResamplePeek, createPeekElement } from './resample-peek.js';
-import { createRng } from './prng.js';
+import { createRng, shuffle } from './prng.js';
 import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forgetSeed } from './share-state.js';
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
@@ -26,7 +26,7 @@ import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
-import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion, attachAxisRuler} from './chart-utils.js';
+import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion, attachAxisRuler, holdHeight } from './chart-utils.js';
 import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
@@ -597,6 +597,9 @@ export function initOneSamplePage(config) {
     mechanismInitialized = true;
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
+    // The strip is above the chart; hovering a dot fills it, and a panel that
+    // grows slides the dots out from under the pointer.
+    holdHeight(mechSimStat);
     ensureNullToggle();
     ensureMeanViewToggle();
     // The proportion page's source is its null POPULATION, which exists as soon
@@ -733,11 +736,18 @@ export function initOneSamplePage(config) {
         const host = mechSimStat.querySelector('.mech-prop-draw');
         mechSimStat.innerHTML = `${rec.k} of ${rec.n} `
           + `(p\u0302 = <span class="mech-stat-value">${fmtObs(allStats[i])}</span>)`
-          + (host ? '<span class="mech-prop-draw"></span>' : '');
+          // A <div>, matching what the normal render writes — as a <span> the
+          // board laid out differently and the panel came out taller, which
+          // moved the chart the reader was pointing at.
+          + (host ? '<div class="mech-prop-draw"></div>' : '');
         if (host) {
+          // Which trial came up a success carries nothing — but a board that
+          // shows every success first LOOKS like it does, and the dart-throw
+          // animation is built to never suggest that order. Shuffled by the
+          // repetition's own index, so the same dot always shows the same board.
           const trials = Array.from({ length: /** @type {number} */ (rec.n) },
             (_, j) => j < /** @type {number} */ (rec.k));
-          renderPropDraw(trials, false);
+          renderPropDraw(shuffle(trials, createRng(`peek-${i}`)), false);
         }
       }
     } else if (rec.idx) {

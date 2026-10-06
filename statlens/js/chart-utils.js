@@ -2290,6 +2290,29 @@ export function morphMiniChart(container, newValues, options = {}) {
  * @param {string} [opts.label='value']
  */
 /**
+ * Stop a panel from shoving the page around as its contents change.
+ *
+ * The mechanism panel sits ABOVE the distribution, so anything that makes it
+ * taller slides the chart down — and hovering a dot fills that panel, which
+ * meant the dots moved out from under the pointer as you reached for them
+ * (46px on the one-proportion page). The panel keeps the tallest height it has
+ * had, so the chart stays put. It only ever grows, and the growth settles after
+ * the first full render.
+ *
+ * @param {HTMLElement|null|undefined} el
+ */
+export function holdHeight(el) {
+  if (!el || /** @type {any} */ (el).__heldHeight || typeof ResizeObserver === 'undefined') return;
+  /** @type {any} */ (el).__heldHeight = true;
+  let max = 0;
+  new ResizeObserver(() => {
+    const h = el.offsetHeight;
+    // No feedback loop: once min-height is max, offsetHeight stops at max.
+    if (h > max) { max = h; el.style.minHeight = `${max}px`; }
+  }).observe(el);
+}
+
+/**
  * Where a pointer is, in a chart group's own coordinates.
  *
  * NOT `clientX - inner.getBoundingClientRect().left`. On an SVG `<g>` that box
@@ -2335,7 +2358,7 @@ export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' 
   // nearest ancestor carrying an id is the container the page owns, and stays.
   const host = /** @type {Element|null} */ (
     svgEl?.closest?.('[id]') ?? svgEl?.parentNode ?? null);
-  const carried = (host && rulerMemory.get(host)) || [];
+  const carried = ((host && rulerMemory.get(host)) || []).slice(-1);
   inner.selectAll('.axis-ruler-layer').remove();
   noteRulerInHelp();
 
@@ -2369,6 +2392,11 @@ export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' 
 
   /** @param {number} dataX @param {boolean} [takeFocus] */
   function addRuler(dataX, takeFocus = true) {
+    // One marker at a time (Jeff, 2026-10-06). Several at once read as clutter
+    // rather than as a measurement, and the one that answers the question is
+    // the one you just placed. Clicking elsewhere on the strip moves it there;
+    // clicking the marker itself still grabs it for a drag.
+    layer.selectAll('.axis-ruler').remove();
     let x = Math.min(dMax, Math.max(dMin, dataX));
     const g = layer.append('g')
       .attr('class', 'axis-ruler')
@@ -2465,9 +2493,33 @@ export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' 
     return g;
   }
 
-  strip.on('click', function (e) {
-    addRuler(xScale.invert(localPoint(/** @type {Element} */ (frame.inner), e.clientX).x));
-  });
+  // The click is taken on the SVG ROOT, not on the strip.
+  //
+  // The strip is a transparent rect, and Chromium's real pointer hit-testing
+  // would not reliably resolve to it even when `elementsFromPoint` put it on
+  // top of the stack: on a page whose chart had just been redrawn, every click
+  // landed on the <svg> instead and only started working after any scroll. The
+  // root always gets the event, and the band test is exact, so the strip is now
+  // only what gives the cursor and the tooltip.
+  const svgRoot = /** @type {Element|null} */ (
+    /** @type {any} */ (frame.inner).ownerSVGElement ?? frame.inner.closest?.('svg'));
+  if (svgRoot) {
+    d3Selection.select(svgRoot).on('click.axisruler', function (e) {
+      // A click on a marker already placed is a grab or a dismissal, not a
+      // request for another one.
+      if (/** @type {Element} */ (e.target).closest?.('.axis-ruler')) return;
+      const at = localPoint(/** @type {Element} */ (frame.inner), e.clientX, e.clientY);
+      // @ts-ignore DEBUG
+      (window.__r ||= []).push({ at, h: frame.height,
+        same: frame.inner === document.querySelector('#chart-container .chart-inner'),
+        tf: frame.inner.getAttribute('transform'),
+        host: frame.inner.closest('[id]')?.id,
+        stripInSameInner: !!frame.inner.querySelector('.axis-ruler-strip') });
+      if (at.y < frame.height || at.y > frame.height + 26) return;
+      if (at.x < rLo - 4 || at.x > rHi + 4) return;
+      addRuler(xScale.invert(at.x));
+    });
+  }
 
   for (const v of carried) addRuler(v, false);
 }
@@ -2489,10 +2541,10 @@ function noteRulerInHelp() {
   const note = document.createElement('p');
   note.className = 'help-ruler-note';
   note.innerHTML = '<strong>Measuring off the axis.</strong> Click the strip just '
-    + 'below the horizontal axis to drop a marker you can drag, with its value '
-    + 'beside it \u2014 useful for reading a cutoff off the distribution. Arrow '
-    + 'keys nudge it (Shift for bigger steps); <kbd>Esc</kbd> or its '
-    + '\u00d7 removes it. Place as many as you like.';
+    + 'below the horizontal axis to drop a marker, with its value beside it '
+    + '\u2014 useful for reading a cutoff off the distribution. Drag it, or nudge '
+    + 'it with the arrow keys (Shift for bigger steps); clicking elsewhere on '
+    + 'the strip moves it there, and <kbd>Esc</kbd> or its \u00d7 removes it.';
   const closeBtn = dialog.querySelector('button.btn-primary');
   if (closeBtn) dialog.insertBefore(note, closeBtn); else dialog.appendChild(note);
 }
