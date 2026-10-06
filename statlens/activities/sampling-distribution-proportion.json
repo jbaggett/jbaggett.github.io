@@ -35,7 +35,7 @@
     },
     {
       "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 62 marbles, collapse to a single proportion **\\(\\hat{p}^*\\)*, and drop that one dot into the **Sampling distribution** panel at the bottom — one simulated study under H₀.",
-      "observe": "That bottom panel is a **distribution of statistics** — one dot per study, not per marble. Click **+1** a few more times to add more studies."
+      "observe": "That **Sampling distribution** panel is a **distribution of statistics** — one dot per study, not per marble. Click **+1** a few more times to add more studies."
     },
     {
       "instruction": "Now click **+1000** to run a thousand simulated studies quickly and let the null distribution fill in.",
@@ -44,7 +44,7 @@
         "atLeast": 500,
         "hint": "Click **+1000** to draw at least 500 samples, then answer below."
       },
-      "observe": "Look at the bottom panel and the **SD of \\(\\hat{p}\\)'s** readout, then compare it to the theory value **√(p(1−p)/n)**.",
+      "observe": "Look at the **Sampling distribution** panel and the **SD of \\(\\hat{p}\\)'s** readout, then compare it to the theory value **√(p(1−p)/n)**.",
       "gate": {
         "question": "Where is the null distribution of \\(\\hat{p}\\) centered, and what is its shape?",
         "choices": [

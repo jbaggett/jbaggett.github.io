@@ -536,10 +536,20 @@ function drawOneSample(n) {
  * @param {number} count
  */
 function drawSamples(count) {
-  // Animate single draws (means and proportions). Comparison mode re-renders
-  // instead; the animation itself no-ops gracefully when the sample isn't a
-  // dotplot (large n) or reduced motion is set.
-  if (count === 1 && !prefersReducedMotion && !frozen) {
+  // Animate single draws (means and proportions). The animation no-ops
+  // gracefully when the sample isn't a dotplot (large n) or reduced motion is
+  // set.
+  //
+  // Freezing a distribution used to switch the animation off entirely, so the
+  // moment a reader froze one to compare against, every later draw appeared
+  // without being drawn — and the comparison is exactly when it matters most to
+  // see WHICH distribution a new dot is joining. The guard was conservative
+  // rather than load-bearing: the animated path ends in the same
+  // `updateStatsAndRender` the batch path uses, so the frozen overlay and the
+  // shared axis are rebuilt identically either way, and the dot flies into
+  // `samplingContainer`, which is the live plot and does not move when a frozen
+  // one appears beside it. (Jeff, 2026-10-06.)
+  if (count === 1 && !prefersReducedMotion) {
     drawOneSampleAnimated();
     return;
   }

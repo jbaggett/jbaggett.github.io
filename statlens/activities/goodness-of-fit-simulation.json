@@ -18,7 +18,7 @@
       }
     },
     {
-      "instruction": "Look at the **mechanism strip**. On the left are Mendel's *observed* counts with dashed markers at the *expected* counts \\((n\\cdot p_0)\\). Click **+1** a few times and watch the right panel: each is one fresh sample of 556 drawn from the 9:3:3:1 model.",
+      "instruction": "Look at the **mechanism strip**. On the left are Mendel's *observed* counts with dashed markers at the *expected* counts \\((n\\cdot p_0)\\). Click **+1** a few times and watch the **One Sample under H₀** panel: each is one fresh sample of 556 drawn from the 9:3:3:1 model.",
       "observe": "How does each simulated sample's \\(\\chi^2\\) compare to Mendel's observed \\(\\chi^2 = 0.47\\)? Are most bigger or smaller?",
       "reveal": "Most simulated samples — pure chance under \\(H_0\\) — land *further* from the expected counts than Mendel's data did, so their \\(\\chi^2\\) is usually **larger** than 0.47. Mendel's fit is unusually tight."
     },
