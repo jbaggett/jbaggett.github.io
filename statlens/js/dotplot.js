@@ -295,7 +295,7 @@ export function drawDotplot(container, values, options = {}) {
     && (forceColumns || (maxStack > 0 && maxStack * MIN_RADIUS * 2 > frame.height));
 
   // Y axis is implicit (stacking height) for dots; column mode gets a y-axis
-  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
+  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick).tickSizeOuter(0);
   const axes = d3Selection.select(frame.inner).select('.axes');
 
   /** @type {d3Scale.ScaleLinear<number,number>|null} */

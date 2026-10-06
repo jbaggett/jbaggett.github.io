@@ -350,11 +350,23 @@ export function autoReduceTicks(axisG, xAxis) {
  * Call AFTER `autoReduceTicks`, since the spacing depends on which labelled
  * ticks survived.
  *
+ * **How many subdivisions is not a constant.** d3 only ever labels in steps of
+ * 1, 2 or 5 × 10ᵏ, and five subdivisions is only readable for two of those:
+ *
+ *     step 50  ÷5 → 10     ✓        step 10  ÷5 → 2      ✓
+ *     step 0.5 ÷5 → 0.1    ✓        step 0.2 ÷5 → 0.04   ✗
+ *
+ * A step whose mantissa is 2 wants QUARTERS, not fifths — 0.2 ÷ 4 = 0.05, so
+ * the marks fall on 0.65, 0.70, 0.75 instead of 0.64, 0.68, 0.72, 0.76. Picking
+ * the divisor from the mantissa keeps every minor tick on a 1/2/5 × 10ᵏ value,
+ * the same family the labels come from, which is what makes them countable at a
+ * glance. (Jeff, 2026-10-06: "it's easy to read the minor ticks when they align
+ * with tenths or quarters or halves, but not so easy otherwise.")
+ *
  * @param {d3Selection.Selection<any, any, any, any>} axisG
- * @param {{ (v: number): number, range: () => number[] }} xScale
- * @param {number} [divisions=5] - minor intervals per labelled interval
+ * @param {{ (v: number): number, range: () => number[], invert?: (p: number) => number }} xScale
  */
-export function addMinorTicks(axisG, xScale, divisions = 5) {
+export function addMinorTicks(axisG, xScale) {
   const majors = axisG.selectAll('.tick').nodes()
     .map((n) => {
       const m = /translate\(\s*([-\d.]+)/.exec(n.getAttribute('transform') || '');
@@ -366,6 +378,22 @@ export function addMinorTicks(axisG, xScale, divisions = 5) {
 
   axisG.selectAll('.minor-tick').remove();
   const [lo, hi] = /** @type {number[]} */ (xScale.range()).slice().sort((a, b) => a - b);
+
+  // Choose the divisor from the labelled step's own mantissa, in DATA units —
+  // pixels cannot tell 0.2 from 0.5.
+  let divisions = 5;
+  if (typeof xScale.invert === 'function') {
+    const dataStep = Math.abs(xScale.invert(majors[1]) - xScale.invert(majors[0]));
+    if (dataStep > 0) {
+      const mag = Math.pow(10, Math.floor(Math.log10(dataStep)));
+      const mantissa = dataStep / mag;
+      // Nearest of 1, 2, 5, 10 — floating point leaves 0.2 as 2.0000000000000004.
+      const nearest = [1, 2, 5, 10].reduce((a, b) =>
+        Math.abs(b - mantissa) < Math.abs(a - mantissa) ? b : a);
+      divisions = (nearest === 2) ? 4 : 5;
+    }
+  }
+
   const step = (majors[1] - majors[0]) / divisions;
   if (!(step > 2)) return;   // below ~2px apart they read as a smudge, not ticks
 
@@ -679,6 +707,16 @@ export function addAxes(frame, xAxis, yAxis, xLabel, yLabel) {
     else if (isPhone || frame.height < 280) yAxis.ticks(5);
     else yAxis.ticks(7);
   }
+
+  // No end caps on the x axis.
+  //
+  // d3 draws the domain path as `M x0,6 V0 H x1 V6` — the two vertical strokes
+  // at the ends are 6px long, the same length as a tick, and sit at whatever the
+  // scale's extent happens to be. They read as major ticks and almost never mark
+  // a value anyone would name. `tickSizeOuter(0)` flattens the path to a plain
+  // line. (Jeff, 2026-10-06: "an extra mark at the ends that looks similar to a
+  // major tick, but it usually isn't.")
+  if (typeof xAxis.tickSizeOuter === 'function') xAxis.tickSizeOuter(0);
 
   // X axis — render, then auto-reduce ticks if labels overlap
   const xAxisG = axes.append('g')

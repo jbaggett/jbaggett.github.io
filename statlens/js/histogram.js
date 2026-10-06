@@ -281,7 +281,7 @@ export function drawHistogram(container, values, options = {}) {
   if (options.yMax == null) yScale.nice();
   yScale.range([frame.height, 0]);
 
-  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
+  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick).tickSizeOuter(0);
   const freqFormat = /** @param {any} d */ (d) => {
     const v = +d / totalN;
     if (v === 0) return '0';
