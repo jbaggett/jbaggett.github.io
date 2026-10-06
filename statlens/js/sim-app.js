@@ -14,7 +14,7 @@ import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolA
   cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
-import { createRng } from './prng.js';
+import { createRng, rngFromState } from './prng.js';
 import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles, extent} from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
@@ -1622,9 +1622,38 @@ export function initSimPage(config) {
    * a worse version of something the page can draw. Only re-rendered when the
    * index changes, because in column mode `describe` runs on every mousemove.
    */
+  /**
+   * The draw behind repetition `i`, replayed from the generator state kept for
+   * it. Storing the indices instead cost n numbers a dot and ran out at large
+   * n — on Ames (n = 2,930) only the newest 34 of 1,000 survived, so hovering
+   * any older dot did nothing. Replaying costs one draw, only when asked.
+   * @param {number} i
+   * @returns {{idx: ArrayLike<number>, idx2?: ArrayLike<number>}|null}
+   */
+  function drawBehind(i) {
+    const rec = resamples.get(i);
+    if (!rec) return null;
+    if (rec.idx) return { idx: rec.idx, idx2: rec.idx2 };
+    if (!rec.st) return null;
+    const r = rngFromState(rec.st);
+    // The same branch the generate loop took: the configuration does not change
+    // while a run's statistics stand, so this reproduces that draw exactly.
+    if (config.paired && data2.length > 0) {
+      const { indices } = resamplePairedDiffs(data1, data2, r);
+      return indices ? { idx: indices } : null;
+    }
+    if (config.twoGroup && data2.length > 0) {
+      const { first, second } = resampleGroups(data1, data2, r);
+      return (first.indices && second.indices)
+        ? { idx: first.indices, idx2: second.indices } : null;
+    }
+    const { indices } = resampleOne(data1, r);
+    return indices ? { idx: indices } : null;
+  }
+
   function showPeeked(i) {
     if (i === peekedIndex) return;
-    const rec = resamples.get(i);
+    const rec = drawBehind(i);
     if (!rec?.idx) return;
     peekedIndex = i;
     const g1 = Array.from(rec.idx, (k) => data1[k]).filter((v) => v != null);
@@ -1956,10 +1985,11 @@ export function initSimPage(config) {
         // unaffected — see sampleIndicesWithReplacement.
         const diffs = data2.map((v, i) => v - data1[i]);
         for (let i = 0; i < count; i++) {
+          const st = rng.getState();
           const { values: rs, indices: idx } = resamplePairedDiffs(data1, data2, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
-          resamples.rememberIndices(allStats.length, idx);
+          resamples.rememberState(allStats.length, st);
           allStats.push(statFn(rs));
         }
       } else if (config.twoGroup && data2.length > 0) {
@@ -1967,6 +1997,7 @@ export function initSimPage(config) {
         /** @type {number[]} */ let lastRs1 = [];
         /** @type {number[]} */ let lastRs2 = [];
         for (let i = 0; i < count; i++) {
+          const st = rng.getState();
           const { first, second } = resampleGroups(data1, data2, rng);
           const rs1 = first.values;
           const rs2 = second.values;
@@ -1977,7 +2008,7 @@ export function initSimPage(config) {
           // no marks on either side. (2026-09-28.)
           lastRsIdx1 = first.indices ?? null;
           lastRsIdx2 = second.indices ?? null;
-          resamples.rememberIndexPair(allStats.length, first.indices, second.indices);
+          resamples.rememberState(allStats.length, st);
           const stat = statFn(rs1) - statFn(rs2);
           allStats.push(stat);
         }
@@ -1985,10 +2016,11 @@ export function initSimPage(config) {
       } else {
         // One-sample bootstrap — by index, for the same reason.
         for (let i = 0; i < count; i++) {
+          const st = rng.getState();
           const { values: rs, indices: idx } = resampleOne(data1, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
-          resamples.rememberIndices(allStats.length, idx);
+          resamples.rememberState(allStats.length, st);
           allStats.push(statFn(rs));
         }
       }

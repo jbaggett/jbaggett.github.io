@@ -7,6 +7,12 @@
  */
 
 /**
+ * A seeded generator. Calling it returns the next float in [0, 1); it also
+ * carries its own 128-bit state, so a draw can be replayed rather than stored.
+ * @typedef {{ (): number, getState: () => number[], setState: (st: ReadonlyArray<number>) => void }} Rng
+ */
+
+/**
  * Hash a string seed into four 32-bit unsigned integers.
  * @param {string} str
  * @returns {[number, number, number, number]}
@@ -34,10 +40,10 @@ function cyrb128(str) {
  * @param {number} b
  * @param {number} c
  * @param {number} d
- * @returns {() => number} Function returning next float in [0, 1)
+ * @returns {Rng} Function returning next float in [0, 1), plus state access
  */
 function sfc32(a, b, c, d) {
-    return function() {
+    const next = /** @type {Rng} */ (function() {
         a |= 0; b |= 0; c |= 0; d |= 0;
         let t = (a + b | 0) + d | 0;
         d = d + 1 | 0;
@@ -46,13 +52,35 @@ function sfc32(a, b, c, d) {
         c = (c << 21 | c >>> 11);
         c = c + t | 0;
         return (t >>> 0) / 4294967296;
-    };
+    });
+    // The whole generator is these four integers, which is what makes a draw
+    // RETRIEVABLE rather than storable: keeping 4 numbers per repetition and
+    // re-running the draw costs less than keeping the draw, by a factor of n.
+    // Reading the state does not advance it, so a seeded run is unaffected.
+    next.getState = () => [a | 0, b | 0, c | 0, d | 0];
+    next.setState = (st) => { a = st[0] | 0; b = st[1] | 0; c = st[2] | 0; d = st[3] | 0; };
+    return next;
+}
+
+/**
+ * A generator restored to a state captured earlier by `rng.getState()`.
+ *
+ * Draws taken from it repeat exactly the draws that followed that state — so a
+ * simulation can store four numbers per repetition instead of the n indices it
+ * drew, and reconstruct any of them on demand. At n = 2,930 (Ames) that is the
+ * difference between keeping 34 of 1,000 resamples and keeping all of them.
+ *
+ * @param {ReadonlyArray<number>} state
+ * @returns {Rng}
+ */
+export function rngFromState(state) {
+    return sfc32(state[0], state[1], state[2], state[3]);
 }
 
 /**
  * Create a seeded PRNG (sfc32 algorithm with cyrb128 seed hash).
  * @param {string|number} seed - Seed value (converted to string internally)
- * @returns {() => number} A function that returns the next float in [0, 1)
+ * @returns {Rng} A function that returns the next float in [0, 1)
  */
 export function createRng(seed) {
     const [a, b, c, d] = cyrb128(String(seed));

@@ -11,7 +11,7 @@
 import { createAskPosture } from './ask-posture.js';
 import { createResampleStore, describeResample } from './resample-store.js';
 import { attachResamplePeek, createPeekElement } from './resample-peek.js';
-import { createRng, shuffle } from './prng.js';
+import { createRng, rngFromState, shuffle } from './prng.js';
 import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forgetSeed } from './share-state.js';
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
@@ -750,9 +750,11 @@ export function initOneSamplePage(config) {
           renderPropDraw(shuffle(trials, createRng(`peek-${i}`)), false);
         }
       }
-    } else if (rec.idx) {
-      lastResampleArr = Array.from(rec.idx, (k) => shiftedData[k]).filter((v) => v != null);
-      lastResampleIdx = Array.from(rec.idx);
+    } else {
+      const idx = rec.idx ?? (rec.st ? drawFromShiftedNull(shiftedData, rngFromState(rec.st)).indices : null);
+      if (!idx) return;
+      lastResampleArr = Array.from(idx, (k) => shiftedData[k]).filter((v) => v != null);
+      lastResampleIdx = Array.from(idx);
       renderMeanResampleView(false);
     }
   }
@@ -1582,13 +1584,17 @@ export function initOneSamplePage(config) {
         // animation cannot say which observation was taken twice or never —
         // this page showed dots flying with no marks at all, while
         // bootstrap-mean (which kept them) showed both. (2026-09-28.)
+        // Four numbers rather than n: the draw is replayed from the
+        // generator's state when a reader hovers that dot, so a large sample
+        // no longer runs the store out of budget and loses the older ones.
+        const st = rng.getState();
         const draw = drawFromShiftedNull(shiftedData, rng);
         const resampleArr = draw.values;
         const simMean = mean(resampleArr);
         lastSimStat = simMean;
         lastResampleArr = /** @type {number[]} */ (resampleArr);
         lastResampleIdx = draw.indices ?? null;
-        resamples.rememberIndices(allStats.length, draw.indices);
+        resamples.rememberState(allStats.length, st);
         allStats.push(simMean);
       }
       const hlClass = isSingle ? ' highlight-last' : '';

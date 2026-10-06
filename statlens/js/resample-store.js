@@ -15,20 +15,28 @@
  *   a proportion   the success COUNT. k of n is the whole resample; there is
  *                  nothing else to know, so this costs one number per dot and
  *                  every dot can be kept however many are drawn.
- *   a mean         the INDICES drawn, which the draw already returns for the
- *                  animation (it has to know which observation was taken twice
- *                  and which never). Values are recovered by lookup.
+ *   a mean         the PRNG STATE the draw started from — four integers. The
+ *                  draw is replayed from it on demand (js/prng.js
+ *                  `rngFromState`), which costs n random numbers once, when a
+ *                  reader actually asks about that dot.
  *
- * Indices cost n numbers per dot, so they are kept under a budget rather than
- * without limit: 100,000 stored values is a few hundred KB and covers 1,000
- * resamples of n = 100 completely. Past it the OLDEST are dropped, because the
- * dot a reader hovers is overwhelmingly one they just watched land.
+ * The state replaced storing the n indices drawn, which cost n numbers PER dot
+ * and so had to run under a budget: at Ames' n = 2,930 a 100,000-value budget
+ * held 34 of 1,000 resamples, and hovering any of the other 966 did nothing at
+ * all — silently, because a missing record is indistinguishable from a dot with
+ * nothing to say. Four numbers per dot is 4,000 for a full run, so the budget
+ * no longer binds on the paths that use it. (Jeff, 2026-10-06: "when I hover
+ * over dots in the resampling distribution the histogram for the resample
+ * should update but it doesn't.")
+ *
+ * The budget remains for `rememberValues`, which stores a sample the generator
+ * cannot replay because the thing drawn from is itself regenerated.
  */
 
 const BUDGET = 100000;
 
 export function createResampleStore() {
-  /** @type {Map<number, {k?: number, n?: number, idx?: ArrayLike<number>, idx2?: ArrayLike<number>, vals?: ArrayLike<number>}>} */
+  /** @type {Map<number, {k?: number, n?: number, st?: number[], idx?: ArrayLike<number>, idx2?: ArrayLike<number>, vals?: ArrayLike<number>}>} */
   const byIndex = new Map();
   /** @type {number[]} */
   const order = [];
@@ -40,7 +48,8 @@ export function createResampleStore() {
       const old = /** @type {number} */ (order.shift());
       const rec = byIndex.get(old);
       stored -= rec?.idx ? rec.idx.length + (rec.idx2?.length ?? 0)
-        : (rec?.vals ? rec.vals.length : 1);
+        : rec?.vals ? rec.vals.length
+        : rec?.st ? 4 : 1;
       byIndex.delete(old);
     }
   }
@@ -55,6 +64,18 @@ export function createResampleStore() {
       byIndex.set(index, { k, n });
       order.push(index);
       stored += 1;
+      trim();
+    },
+    /**
+     * The generator state a draw started from — replay it to get the draw back.
+     * Four numbers, whatever n is.
+     * @param {number} index @param {ReadonlyArray<number>|null|undefined} state
+     */
+    rememberState(index, state) {
+      if (!state || byIndex.has(index)) return;
+      byIndex.set(index, { st: [state[0], state[1], state[2], state[3]] });
+      order.push(index);
+      stored += 4;
       trim();
     },
     /**
