@@ -6422,4 +6422,10 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .axis-ruler:focus-visible { outline: none; }
 .axis-ruler:focus-visible line { stroke: #7B2D8E; stroke-width: 3.5; }
 .axis-ruler:focus-visible .axis-ruler-pill { stroke: #7B2D8E; stroke-width: 2; }
-.axis-ruler-close:hover { fill: #D55E00; }
+/* The dismiss is a button, not a glyph: it has to look pressable and be big
+   enough to hit. The disc carries the state; the hit area around it is larger
+   than the disc, and larger again on a touch screen. */
+.axis-ruler-close:hover .axis-ruler-close-disc,
+.axis-ruler-close:focus-visible .axis-ruler-close-disc { fill: #D55E00; stroke: #D55E00; }
+.axis-ruler-close:hover .axis-ruler-close-glyph,
+.axis-ruler-close:focus-visible .axis-ruler-close-glyph { fill: #fff; }

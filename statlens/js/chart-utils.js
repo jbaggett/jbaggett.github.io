@@ -1277,7 +1277,7 @@ export function renderCutlines(frame, xScale, stats, opts) {
 
     function render() {
       const px = xScale(dataX);
-      hit.attr('x', px - 7);
+      hit.attr('x', px - 12);
       line.attr('x1', px).attr('x2', px);
       grip.attr('x', px - 5);
       const clampedLabelX = Math.max(28, Math.min(w - 28, px));
@@ -2402,7 +2402,8 @@ export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' 
       .attr('class', 'axis-ruler')
       .attr('tabindex', 0)
       .attr('role', 'slider')
-      .attr('aria-label', `Marker on the ${label} axis — drag, or use the arrow keys`)
+      .attr('aria-label',
+        `Marker on the ${label} axis — drag or use the arrow keys to move it, Escape to remove it`)
       .attr('aria-valuemin', fmt(dMin))
       .attr('aria-valuemax', fmt(dMax));
 
@@ -2437,19 +2438,39 @@ export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' 
       .attr('fill', '#111')
       .style('pointer-events', 'none');
     // A marker you cannot put away is clutter, so each carries its own dismiss.
-    const close = g.append('text')
+    // Findable, not merely present. As a bare glyph the dismiss was an 8x18px
+    // target in grey (4x9 on a phone), well under the 44px this project
+    // requires on touch, and it read as "there is no way to close this". It is
+    // a button now: a disc that looks pressable, over a hit area sized for the
+    // pointer in use.
+    // In CSS pixels, not user units: the chart scales its viewBox to the
+    // container, so a fixed 44 user units is 26 real pixels on a phone — the
+    // place the 44 is actually required. The scale is read at render time.
+    const closeCssSize = (typeof matchMedia === 'function'
+      && matchMedia('(pointer: coarse)').matches) ? 44 : 30;
+    const close = g.append('g')
       .attr('class', 'axis-ruler-close')
+      .style('cursor', 'pointer');
+    const closeTarget = close.append('rect')
+      .attr('fill', 'transparent');
+    const closeDisc = close.append('circle')
+      .attr('class', 'axis-ruler-close-disc')
+      .attr('r', 9).attr('fill', '#fff').attr('stroke', '#444').attr('stroke-width', 1.5);
+    const closeGlyph = close.append('text')
+      .attr('class', 'axis-ruler-close-glyph')
       .attr('text-anchor', 'middle').attr('font-size', 13).attr('font-weight', 700)
-      .attr('fill', '#777').style('cursor', 'pointer').text('×');
+      .attr('fill', '#444').style('pointer-events', 'none').text('×');
     close.append('title').text('Remove this marker');
 
     function render() {
       const px = xScale(x);
-      hit.attr('x', px - 12);
+      hit.attr('x', px - 7);
       line.attr('x1', px).attr('x2', px);
       const txt = fmt(x);
       const w = Math.max(38, txt.length * 8 + 14);
-      const cx = Math.max(rLo + w / 2, Math.min(rHi - w / 2, px));
+      // The pill and its button are clamped TOGETHER, so a marker near the top
+      // of the axis cannot push the button off the edge of the chart.
+      const cx = Math.max(rLo + w / 2, Math.min(rHi - (w / 2 + 20), px));
       // The value sits in the axis strip, not at the top of the plot. At the top
       // it landed on the observed-statistic label and on the probability pills —
       // and an axis reading belongs by the axis anyway. It is opaque, so where
@@ -2457,7 +2478,14 @@ export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' 
       const pillY = frame.height + 4;
       pillBg.attr('x', cx - w / 2).attr('y', pillY).attr('width', w);
       pillText.attr('x', cx).attr('y', pillY + 14).text(txt);
-      close.attr('x', cx + w / 2 + 7).attr('y', pillY + 14);
+      const closeCx = cx + w / 2 + 11;
+      const closeCy = pillY + 10;
+      const scale = /** @type {any} */ (frame.inner).getScreenCTM?.()?.a || 1;
+      const closeHit = closeCssSize / scale;
+      closeTarget.attr('width', closeHit).attr('height', closeHit)
+        .attr('x', closeCx - closeHit / 2).attr('y', closeCy - closeHit / 2);
+      closeDisc.attr('cx', closeCx).attr('cy', closeCy);
+      closeGlyph.attr('x', closeCx).attr('y', closeCy + 4.5);
       g.attr('aria-valuenow', txt).attr('aria-valuetext', `${txt} on the ${label} axis`);
       remember();
     }
@@ -2544,7 +2572,8 @@ function noteRulerInHelp() {
     + 'below the horizontal axis to drop a marker, with its value beside it '
     + '\u2014 useful for reading a cutoff off the distribution. Drag it, or nudge '
     + 'it with the arrow keys (Shift for bigger steps); clicking elsewhere on '
-    + 'the strip moves it there, and <kbd>Esc</kbd> or its \u00d7 removes it.';
+    + 'the strip moves it there. The \u00d7 button beside the value removes it, as '
+    + 'does <kbd>Esc</kbd> while it has focus.';
   const closeBtn = dialog.querySelector('button.btn-primary');
   if (closeBtn) dialog.insertBefore(note, closeBtn); else dialog.appendChild(note);
 }

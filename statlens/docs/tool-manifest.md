@@ -124,7 +124,7 @@ them automatically.
 | Affordance | What it does | Where |
 |---|---|---|
 | **Minor ticks** | Unlabelled ticks subdivide each labelled interval (4 or 5 of them, chosen so they land on readable values), so a cutoff can be estimated between labels. | Every chart with a numeric horizontal axis. |
-| **Axis ruler** | Click the strip just below the horizontal axis to drop a draggable marker that reads its own value. Drag it, or nudge it with the arrow keys (Shift = bigger steps); clicking elsewhere on the strip moves it there, and `Esc` or its `×` removes it. One marker at a time. It is **not** snapped to ticks or bin edges — estimating is the point. The marker survives adding more repetitions. | The 14 simulation pages and the Sampling Distribution Lab. |
+| **Axis ruler** | Click the strip just below the horizontal axis to drop a draggable marker that reads its own value. Drag it, or nudge it with the arrow keys (Shift = bigger steps); clicking elsewhere on the strip moves it there. The `×` button beside the value removes it (`Esc` also works while it has focus). One marker at a time. It is **not** snapped to ticks or bin edges — estimating is the point. The marker survives adding more repetitions. | The 14 simulation pages and the Sampling Distribution Lab. |
 | **Hover a dot** | Hovering a dot, bar or spike in the distribution shows the sample or resample that produced it, in the page's own sample panel. Exact where there is one mark per repetition; the nearest column otherwise, with the readout saying so. | The 14 simulation pages and the Sampling Distribution Lab (quantitative and proportion). |
 
 The ruler and the hover are announced to screen readers: the ruler is a
