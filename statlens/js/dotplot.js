@@ -472,7 +472,31 @@ export function drawDotplot(container, values, options = {}) {
 const HIGHLIGHT_FILL = '#E07020';
 
 /** Pending highlight timeouts — cancelled on re-render to prevent stale animations. */
+/**
+ * Pending highlight reverts, each with the undo it was going to perform.
+ *
+ * A newly drawn dot is enlarged to `radius * 1.2` for 800ms so the eye catches
+ * it, and a timer shrinks it back. Cancelling that timer on the next render —
+ * which is what used to happen — DROPPED the shrink instead of performing it,
+ * so any re-render inside the 800ms window stranded every new dot at 1.2× its
+ * size. After a +100 batch that is every dot on the plot: measured on
+ * bootstrap-mean, dots of diameter 19.06px stacked 15.88px apart, overlapping
+ * by 3.2px in every column, and they never recovered. (Jeff, 2026-10-06: "the
+ * dots in that plot are too big and overlapping.")
+ *
+ * So a cancel now RUNS the revert it is cancelling.
+ * @type {Array<{id: ReturnType<typeof setTimeout>, undo: () => void}>}
+ */
 let pendingHighlightTimers = [];
+
+/** Cancel every pending highlight revert — and perform it, rather than lose it. */
+function flushHighlightTimers() {
+  for (const t of pendingHighlightTimers) {
+    clearTimeout(t.id);
+    try { t.undo(); } catch { /* the dots it referred to are already gone */ }
+  }
+  pendingHighlightTimers = [];
+}
 
 /**
  * Render dots into a D3 selection.
@@ -494,9 +518,9 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
   // to read (130.43333333333334) and the page has already said how it prints
   // this quantity — so honour that when it is supplied.
   const fmtValue = Number.isFinite(precision) ? valueFormat(precision) : (/** @type {number} */ v) => String(v);
-  // Cancel any pending highlight timers from previous render
-  for (const t of pendingHighlightTimers) clearTimeout(t);
-  pendingHighlightTimers = [];
+  // Cancel any pending highlight reverts from the previous render — and run
+  // them, so nothing is left at its enlarged size.
+  flushHighlightTimers();
   const shouldAnimate = animate && !prefersReducedMotion() && hasD3Transition();
   const extremeFill = optExtremeFill || fillColor || EXTREME_FILL;
   const baseFill = optBaseFill || fillColor || (isExtreme || splitRanks ? BODY_FILL : DOT_FILL);
@@ -563,7 +587,8 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
       .attr('r', radius * 1.5);
     // Shrink back to normal size but keep orange fill — persists until next render
     // connects visually to the orange resample mean in the mechanism strip
-    pendingHighlightTimers.push(setTimeout(() => {
+    {
+      const undo = () => {
       selected.each(function() {
         if (reducedMotion) {
           // Keep a persistent dark border when requested, so the newest dot is
@@ -575,7 +600,9 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
           animateDotRevert(this, HIGHLIGHT_FILL, radius, 400, highlightStroke || undefined, highlightStroke ? 2 : 1);
         }
       });
-    }, 800));
+      };
+      pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+    }
   } else if (highlightIndices && highlightIndices.size > 0) {
     const selected = circles.filter((d, i) => highlightIndices.has(i));
     selected
@@ -583,7 +610,8 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
       .attr('stroke', '#000')
       .attr('stroke-width', 1.5)
       .attr('r', radius * 1.2);
-    pendingHighlightTimers.push(setTimeout(() => {
+    {
+      const undo = () => {
       selected.each(function(d) {
         if (reducedMotion) {
           this.setAttribute('fill', normalFill(d));
@@ -594,7 +622,9 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
           animateDotRevert(this, normalFill(d), radius, 400);
         }
       });
-    }, 800));
+      };
+      pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+    }
   }
 }
 
@@ -617,9 +647,9 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
   // A column's centre is a value; print it the way the page prints this
   // statistic, else the compact axis format it used before.
   const fmtValue = valueFormat(precision);
-  // Cancel any pending highlight timers from previous render
-  for (const t of pendingHighlightTimers) clearTimeout(t);
-  pendingHighlightTimers = [];
+  // Cancel any pending highlight reverts from the previous render — and run
+  // them, so nothing is left at its enlarged size.
+  flushHighlightTimers();
   // Aggregate dots by binCenter → count, and by how many of them are in the
   // region of interest.
   //
@@ -781,7 +811,8 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     // Revert: for +1, keep last highlight persistent; for batches, fade out
     const reducedMotion = prefersReducedMotion();
     if (!isOneShot) {
-      pendingHighlightTimers.push(setTimeout(() => {
+      {
+        const undo = () => {
         if (reducedMotion) {
           hlLines.remove();
         } else {
@@ -790,12 +821,17 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
             animateColumnRevert(el, 'transparent', 0, 400, () => el.remove());
           });
         }
-      }, 800));
+        };
+        pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+      }
     } else {
       // +1: shrink to normal width but keep orange — persists until next render
-      pendingHighlightTimers.push(setTimeout(() => {
+      {
+        const undo = () => {
         hlLines.attr('stroke-width', colWidth);
-      }, 800));
+        };
+        pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+      }
     }
   }
 

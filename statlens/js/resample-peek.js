@@ -34,8 +34,10 @@ const NS = 'http://www.w3.org/2000/svg';
  * @param {() => number[]} opts.stats - the statistics currently plotted
  * @param {{xScale: any, yScale: any, frame: any, bins: any[]|null}|null} opts.geom
  * @param {(index: number, approximate: boolean) => {title: string, detail: string}|null} opts.describe
+ * @param {() => void} [opts.onLeave] - the pointer has left; put back whatever
+ *   the page was showing before
  */
-export function attachResamplePeek({ container, peek, stats, geom, describe }) {
+export function attachResamplePeek({ container, peek, stats, geom, describe, onLeave }) {
   if (!container) return;
   const show = (/** @type {number} */ i, /** @type {boolean} */ approx) => {
     const d = describe(i, approx);
@@ -55,7 +57,7 @@ export function attachResamplePeek({ container, peek, stats, geom, describe }) {
       m.addEventListener('mouseenter', () => show(i, false));
       m.addEventListener('focus', () => show(i, false));
     }
-    container.addEventListener('mouseleave', () => { peek.hidden = true; }, { once: true });
+    container.addEventListener('mouseleave', () => { peek.hidden = true; onLeave?.(); }, { once: true });
     return;
   }
 
@@ -132,6 +134,7 @@ export function attachResamplePeek({ container, peek, stats, geom, describe }) {
   svgRoot.addEventListener('mouseleave', () => {
     if (marker) marker.style.display = 'none';
     peek.hidden = true;
+    onLeave?.();
   });
 }
 

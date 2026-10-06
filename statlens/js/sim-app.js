@@ -20,7 +20,7 @@ import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
 import { createAskPosture } from './ask-posture.js';
-import { createResampleStore, describeResample } from './resample-store.js';
+import { createResampleStore } from './resample-store.js';
 import { attachResamplePeek, createPeekElement } from './resample-peek.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
@@ -1594,23 +1594,53 @@ export function initSimPage(config) {
   function describeAt(i, approx) {
     const rec = resamples.get(i);
     if (!rec) return null;
+    showPeeked(i);
     // A two-group draw resamples each group, so its record is the FIRST group's
     // indices; saying so is better than implying the whole resample is there.
-    const d = describeResample(rec, i, allStats[i], {
-      proportion: config.proportion,
-      source: data1,
-      successLabel: '',
-      fmt: (v) => formatStat(v, dataPrecision + 1),
-    });
+    // The VALUES are drawn in Step 2 now, so repeating them here as a list of
+    // numbers would be a worse copy of a picture the page already makes. The
+    // readout keeps only what the panel cannot say: which repetition this is,
+    // and how sure we are that it is that one. (Jeff, 2026-10-06: "the
+    // repetition should just display in the step 2 box".)
     const notes = [];
     if (config.twoGroup) notes.push(`${group1Name} only`);
     if (approx) notes.push('one of the repetitions in this bar');
-    return notes.length ? { ...d, title: `${d.title} (${notes.join('; ')})` } : d;
+    return {
+      title: `Repetition ${i + 1}${notes.length ? ` (${notes.join('; ')})` : ''}`,
+      detail: `shown in Step 2 \u2014 statistic ${formatStat(allStats[i], dataPrecision + 1)}`,
+    };
+  }
+
+  /** Which repetition Step 2 is currently showing on behalf of a hover. */
+  let peekedIndex = -1;
+
+  /**
+   * Draw the hovered repetition's resample in the Step 2 panel.
+   *
+   * Jeff, 2026-10-06: "I was hoping that the repetition should just display in
+   * the step 2 box where the resample is displayed." Which is right — Step 2 is
+   * already the picture of a resample, and a line of numbers under the chart is
+   * a worse version of something the page can draw. Only re-rendered when the
+   * index changes, because in column mode `describe` runs on every mousemove.
+   */
+  function showPeeked(i) {
+    if (i === peekedIndex) return;
+    const rec = resamples.get(i);
+    if (!rec?.idx) return;
+    peekedIndex = i;
+    const values = Array.from(rec.idx, (k) => data1[k]).filter((v) => v != null);
+    if (values.length) showResample(/** @type {number[]} */ (values), false, true, false);
+  }
+  /** Put Step 2 back to the resample the simulation actually last drew. */
+  function restorePeeked() {
+    if (peekedIndex === -1) return;
+    peekedIndex = -1;
+    if (lastResample?.length) showResample(lastResample, false, false, false);
   }
 
   function wirePeek() {
     attachResamplePeek({ container: chartContainer, peek: peekEl, geom: peekGeom,
-      stats: () => allStats, describe: describeAt });
+      stats: () => allStats, describe: describeAt, onLeave: restorePeeked });
   }
 
   // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
