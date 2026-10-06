@@ -6415,3 +6415,7 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .resample-peek[hidden] { display: none; }
 #chart-container [data-stat-index] { cursor: pointer; }
 #chart-container [data-stat-index]:focus-visible { outline: 2px solid #7B2D8E; outline-offset: 1px; }
+/* The statistic under the pointer. Coloured by CLASS, not a stroke attribute,
+   so nothing selecting on the observed-statistic colour mistakes it for the
+   observed statistic — they are different claims about the chart. */
+.peek-marker { stroke: #7B2D8E; stroke-width: 2.5; }
