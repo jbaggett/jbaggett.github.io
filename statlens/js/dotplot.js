@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat, addMinorTicks} from './chart-utils.js';
 import { sturgesBins } from './histogram.js';
 
 /** Default dot fill — IMS blue. */
@@ -314,6 +314,7 @@ export function drawDotplot(container, values, options = {}) {
       .attr('transform', `translate(0, ${frame.height})`)
       .call(xAxis);
     autoReduceTicks(xAxisG, xAxis);
+    addMinorTicks(xAxisG, xScale);
 
     // Faint vertical grid lines aligned to the rendered axis ticks
     const gridGroup = d3Selection.select(frame.inner).select('.data');

@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, /* drawHorizontalGridlines, */ formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat, addMinorTicks} from './chart-utils.js';
 
 /** Default bar fill (IMS blue at 50% opacity) — used when no isTail predicate. */
 const BAR_FILL = '#569BBD80';
@@ -348,6 +348,7 @@ export function drawHistogram(container, values, options = {}) {
       // Update axes
       const xAxisSel = d3Selection.select(frame.inner).select('.x-axis').call(xAxis);
       autoReduceTicks(xAxisSel, xAxis);
+      addMinorTicks(xAxisSel, xScale);
       d3Selection.select(frame.inner).select('.y-axis').call(yAxis);
 
       // Re-render bars

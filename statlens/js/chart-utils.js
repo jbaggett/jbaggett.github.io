@@ -332,6 +332,64 @@ export function autoReduceTicks(axisG, xAxis) {
   }
 }
 
+/**
+ * Short unlabelled ticks between the labelled ones, so a value can be read off
+ * the axis instead of guessed at.
+ *
+ * Todd Will, via the course discussion (2026-10-06): "additional tick marks on
+ * all of the plots. It's hard to ask students to estimate cutoffs with such
+ * sparsely labeled ticks." Measured at the time: the sampling lab drew THREE
+ * labelled ticks across 638px — one every 174 pixels — and the simulation
+ * charts were not much better after `autoReduceTicks` had thinned them to stop
+ * the labels colliding.
+ *
+ * Minor ticks are the standard answer because they solve the real constraint:
+ * labels crowd, marks do not. They also help where an interactive ruler cannot
+ * — a projected figure, a print-out, a screenshot in the coursepack.
+ *
+ * Call AFTER `autoReduceTicks`, since the spacing depends on which labelled
+ * ticks survived.
+ *
+ * @param {d3Selection.Selection<any, any, any, any>} axisG
+ * @param {{ (v: number): number, range: () => number[] }} xScale
+ * @param {number} [divisions=5] - minor intervals per labelled interval
+ */
+export function addMinorTicks(axisG, xScale, divisions = 5) {
+  const majors = axisG.selectAll('.tick').nodes()
+    .map((n) => {
+      const m = /translate\(\s*([-\d.]+)/.exec(n.getAttribute('transform') || '');
+      return m ? Number(m[1]) : NaN;
+    })
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  if (majors.length < 2) return;
+
+  axisG.selectAll('.minor-tick').remove();
+  const [lo, hi] = /** @type {number[]} */ (xScale.range()).slice().sort((a, b) => a - b);
+  const step = (majors[1] - majors[0]) / divisions;
+  if (!(step > 2)) return;   // below ~2px apart they read as a smudge, not ticks
+
+  // Extend half an interval past each end so the gap before the first label and
+  // after the last one is subdivided too — that is where reading off the axis
+  // is hardest.
+  const marks = [];
+  for (let x = majors[0] - step * divisions; x <= majors[majors.length - 1] + step * divisions; x += step) {
+    if (x < lo - 0.5 || x > hi + 0.5) continue;
+    if (majors.some((m) => Math.abs(m - x) < step / 2)) continue;
+    marks.push(x);
+  }
+  const g = axisG.append('g').attr('class', 'minor-ticks').attr('aria-hidden', 'true');
+  for (const x of marks) {
+    g.append('line')
+      .attr('class', 'minor-tick')
+      .attr('x1', x).attr('x2', x)
+      .attr('y1', 0).attr('y2', 4)
+      .attr('stroke', 'currentColor')
+      .attr('stroke-width', 1)
+      .attr('opacity', 0.45);
+  }
+}
+
 /** Up to 3 sig figs, strip trailing zeros (40.0 → 40, 1.50 → 1.5). */
 function _siClean(v) {
   return String(Number(v.toPrecision(3)));
@@ -628,6 +686,10 @@ export function addAxes(frame, xAxis, yAxis, xLabel, yLabel) {
     .attr('transform', `translate(0, ${frame.height})`)
     .call(xAxis);
   autoReduceTicks(xAxisG, xAxis);
+  // Minor ticks go on here, after the reduction, so every chart that uses
+  // addAxes gets them — spike plots and the lab included — rather than each
+  // call site remembering to ask.
+  if (typeof xAxis.scale === 'function') addMinorTicks(xAxisG, xAxis.scale());
 
   // Y axis
   axes.append('g')
