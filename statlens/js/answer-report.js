@@ -83,6 +83,37 @@ export function initAnswerReport(opts = {}) {
       + `(${opts.keys.join(', ')}); nothing will be posted.`);
   }
 
+  /**
+   * Origins the CONFIGURATION may be posted to.
+   *
+   * The plain answer above goes to `'*'`, which is acceptable only because its
+   * payload is a single number the student just produced on screen. I wrote
+   * that caveat down on 2026-09-13 and it applies here: the configuration says
+   * what a student DECIDED — the null they stated, the tail they chose, the
+   * statistic they typed — and that is reasoning, not a readout. It goes to a
+   * named origin or it does not go.
+   *
+   * `?report_origin=` names one explicitly, for an LMS this list does not know.
+   * Anything unparseable is refused rather than widened to `'*'`.
+   */
+  const CONFIG_ORIGINS = ['https://www.myopenmath.com', 'https://myopenmath.com'];
+  function configTarget() {
+    const named = new URLSearchParams(location.search).get('report_origin');
+    if (named) {
+      try { return new URL(named).origin; } catch { 
+        console.warn('StatLens: ?report_origin= is not a URL; the configuration will not be posted.');
+        return null;
+      }
+    }
+    // With no named origin, only post where we already know the grader lives.
+    const ref = document.referrer;
+    if (!ref) return null;
+    try {
+      const o = new URL(ref).origin;
+      return CONFIG_ORIGINS.includes(o) ? o : null;
+    } catch { return null; }
+  }
+
   let lastSent = /** @type {string|null} */ (null);
 
   return {
@@ -103,6 +134,23 @@ export function initAnswerReport(opts = {}) {
           JSON.stringify({ subject: SUBJECT, qn, value }), '*');
       } catch (err) {
         console.warn('StatLens: could not post the answer to the parent frame.', err);
+      }
+    },
+    /**
+     * What the student DECIDED, for a grader that marks the reasoning rather
+     * than the number. Opt-in twice — `?qn=` must be set and the posture must
+     * be active — and posted only to a known origin.
+     * @param {Record<string, unknown>} config
+     */
+    sendConfiguration(config) {
+      if (!active) return;
+      const target = configTarget();
+      if (!target) return;
+      try {
+        window.parent.postMessage(
+          JSON.stringify({ subject: 'statlens.configuration', qn, config }), target);
+      } catch (err) {
+        console.warn('StatLens: could not post the configuration.', err);
       }
     },
   };

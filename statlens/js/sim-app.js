@@ -19,6 +19,7 @@ import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles, ext
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
+import { createAskPosture } from './ask-posture.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
@@ -1578,7 +1579,52 @@ export function initSimPage(config) {
   });
 
   /** Map alternative hypothesis selection to tail direction. */
+  // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
+  // js/ask-posture.js holds the mechanism; this page supplies its own symbols
+  // and its own idea of "extreme". Randomization only — a bootstrap CI has no
+  // tail to choose and no null to state, and `ask=bounds` is its analogue.
+  const posture = createAskPosture({
+    after: chartContainer,
+    // Paired is its own parameter — the mean DIFFERENCE, not a mean — and the
+    // course writes it μ_d / d̄.
+    symbols: config.paired
+      ? { param: '\u03BC\u1D48', stat: 'd\u0304' }
+      : {
+        param: config.proportion ? (config.twoGroup ? 'p\u2081 \u2212 p\u2082' : 'p')
+          : (config.twoGroup ? '\u03BC\u2081 \u2212 \u03BC\u2082' : '\u03BC'),
+        stat: config.proportion ? (config.twoGroup ? 'p\u0302\u2081 \u2212 p\u0302\u2082' : 'p\u0302')
+          : (config.twoGroup ? '\u0078\u0304\u2081 \u2212 \u0078\u0304\u2082' : '\u0078\u0304'),
+      },
+    genBtns,
+    nullInput: nullValueInput,
+    count: () => allStats.length,
+    observed: () => lastObserved ?? 0,
+    pageTail: () => getDirection(),
+    extremeCount: (stat, tail) => permutationPValue(allStats, stat, tail).extremeCount,
+    // A bootstrap tool has no tail to choose and no null to state; `bounds` is
+    // its analogue — type both ends and see what they actually capture.
+    steps: config.mode === 'bootstrap' ? ['bounds'] : ['null', 'tail', 'stat'],
+    report: (cfg) => answer.sendConfiguration(cfg),
+    insideCount: (lo, hi) => allStats.filter(v => v >= lo && v <= hi).length,
+    level: () => getCiLevel(),
+    onNullChange: () => resetSimulation(),
+    onChange: () => {
+      if (allStats.length === 0) return;
+      renderChart(allStats, lastCI, lastObserved, getDirection());
+      const d = getDirection();
+      const { pValue, extremeCount } = permutationPValue(allStats, aimedStat(lastObserved), d);
+      displayRandomizationResults(allStats, lastObserved, pValue, extremeCount, d);
+    },
+  });
+  /** Where the shading is aimed: the student's typed value when asked for. */
+  function aimedStat(/** @type {number|undefined} */ observed) {
+    return posture.asks('stat') ? /** @type {any} */ (posture.stat) : observed;
+  }
+
   function getDirection() {
+    // Unchosen is a real state under `?ask=tail`: nothing is shaded until the
+    // student says which tail counts as extreme.
+    if (posture.asks('tail')) return /** @type {any} */ (posture.tail);
     const alt = altDirectionBtn?.dataset.value ?? 'greater';
     if (alt === 'greater') return /** @type {const} */ ('right');
     if (alt === 'less') return /** @type {const} */ ('left');
@@ -4661,6 +4707,10 @@ export function initSimPage(config) {
   }
 
   function renderChart(stats, ci, observedStat, direction) {
+    // Every branch funnels through here, so the student's aim is substituted
+    // once rather than in each of the four generate paths.
+    observedStat = posture.asks('stat')
+      ? /** @type {any} */ (posture.stat ?? undefined) : observedStat;
     chartContainer.innerHTML = '';
     const n = stats.length;
     // Cache params for chart type toggle re-render. lastCI stays the PERCENTILE
@@ -4798,7 +4848,11 @@ export function initSimPage(config) {
 
     // Reasoning mode hides everything that reveals the answer on the chart: no
     // region shading, no CI bound lines. The observed-stat marker stays.
-    const ciForChart = showReadout ? ci : null;
+    // Under `?ask=bounds` the chart shades the interval the STUDENT typed, and
+    // shows nothing until both ends are in. The computed CI is what they are
+    // being asked to find, so it cannot be on screen while they look for it.
+    const askedBounds = posture.asks('bounds');
+    const ciForChart = askedBounds ? posture.bounds : (showReadout ? ci : null);
     if (!showReadout) { regionPredicate = undefined; splitRanks = undefined; }
 
     /** @type {import('./chart-utils.js').ChartFrame|undefined} */
@@ -4952,6 +5006,12 @@ export function initSimPage(config) {
   // renderSimPills and _addSimPill are now in chart-utils.js
 
   function displayBootstrapResults(stats, ci, se, ciLevel) {
+    if (posture.active && !posture.complete()) {
+      resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
+        + `The resamples are drawn; the interval is yours to find. `
+        + `${posture.missing().join(', then ')}.</p>`;
+      return;
+    }
     const m = mean(stats);
     let statLabel, paramLabel, paramName;
     if (config.paired) {
@@ -5214,6 +5274,13 @@ export function initSimPage(config) {
    * @param {'left'|'right'|'both'} direction
    */
   function displayRandomizationResults(stats, observedStat, pValue, extremeCount, direction) {
+    if (posture.active && !posture.complete()) {
+      resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
+        + `The simulation has run; it cannot tell you a p-value until you `
+        + `${posture.missing().join(', then ')}.</p>`;
+      return;
+    }
+    observedStat = aimedStat(observedStat);
     const dirLabel = direction === 'both' ? 'two-sided'
       : direction === 'right' ? 'right-tail' : 'left-tail';
     const nullDiff = getNullValue();

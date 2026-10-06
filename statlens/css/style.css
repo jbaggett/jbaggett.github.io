@@ -6400,3 +6400,18 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   .aim-panel input[type="number"] { width: 6rem; }
   .aim-hint { flex-basis: 100%; }
 }
+
+/* What one dot came from — a readout under the chart rather than a floating
+   tooltip, so it survives a projector and a screen reader both. */
+.resample-peek {
+  margin: 0.4rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--ims-blue, #569BBD);
+  background: var(--ims-bg-soft, #f7f9fb);
+  border-radius: 0 6px 6px 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.resample-peek[hidden] { display: none; }
+#chart-container [data-stat-index] { cursor: pointer; }
+#chart-container [data-stat-index]:focus-visible { outline: 2px solid #7B2D8E; outline-offset: 1px; }

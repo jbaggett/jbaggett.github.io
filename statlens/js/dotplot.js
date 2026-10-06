@@ -525,6 +525,7 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
     .join('circle')
     .attr('cx', d => xScale(d.binCenter))
     .attr('cy', d => innerHeight - (d.stackIndex + 0.5) * radius * 2)
+    .attr('data-stat-index', (d, i) => i)
     .attr('r', radius)
     .attr('fill', normalFill)
     .attr('stroke', normalFill)
