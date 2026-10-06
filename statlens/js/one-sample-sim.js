@@ -10,6 +10,7 @@
 
 import { createAskPosture } from './ask-posture.js';
 import { createResampleStore, describeResample } from './resample-store.js';
+import { attachResamplePeek, createPeekElement } from './resample-peek.js';
 import { createRng } from './prng.js';
 import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forgetSeed } from './share-state.js';
 import { applyRequestedLayout } from './mechanisms/layout.js';
@@ -681,168 +682,30 @@ export function initOneSamplePage(config) {
     renderChart([], observedStat, getDirection());
   }
 
-  // What one dot came from. The strip already shows the NEWEST resample; this
-  // keeps the rest so any dot can be asked about (js/resample-store.js).
+  // What one dot came from. The strip already shows the NEWEST resample; the
+  // store keeps the rest so any dot can be asked about, and js/resample-peek.js
+  // does the wiring — shared with sim-app.js rather than written twice.
   const resamples = createResampleStore();
   /** Geometry of the last render, so a hover can be mapped back to a statistic. */
   let lastGeom = /** @type {any} */ (null);
-  const peek = document.createElement('p');
-  peek.className = 'resample-peek';
-  peek.id = 'resample-peek';
-  peek.setAttribute('role', 'status');
-  peek.setAttribute('aria-live', 'polite');
-  peek.hidden = true;
-  chartContainer?.insertAdjacentElement('afterend', peek);
+  const peek = createPeekElement(chartContainer);
 
-  /** Wire hover/focus on the dots to the store. Called after every render. */
-  function attachResamplePeek() {
-    const marks = chartContainer?.querySelectorAll('[data-stat-index]');
-    if (!marks || !marks.length) return;
-    for (const m of marks) {
-      const i = Number(m.getAttribute('data-stat-index'));
-      if (!resamples.has(i)) continue;
-      m.setAttribute('tabindex', '0');
-      m.setAttribute('role', 'button');
-      const show = () => {
-        const rec = resamples.get(i);
-        if (!rec) return;
-        const { title, detail } = describeResample(rec, i, allStats[i], {
-          proportion: isProp,
-          source: isProp ? undefined : sampleData,
-          successLabel: isProp ? (successOutcome?.value || 'successes') : undefined,
-          fmt: (v) => formatStat(v, isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1),
-        });
-        peek.innerHTML = `<strong>${title}:</strong> ${detail}`;
-        peek.hidden = false;
-      };
-      m.addEventListener('mouseenter', show);
-      m.addEventListener('focus', show);
-      m.setAttribute('aria-label', `Repetition ${i + 1} — press to see the resample behind it`);
-    }
-    chartContainer?.addEventListener('mouseleave', () => { peek.hidden = true; }, { once: true });
+  /** @param {number} i @param {boolean} approx */
+  function describeAt(i, approx) {
+    const rec = resamples.get(i);
+    if (!rec) return null;
+    const d = describeResample(rec, i, allStats[i], {
+      proportion: isProp,
+      source: isProp ? undefined : sampleData,
+      successLabel: isProp ? (successOutcome?.value || '') : '',
+      fmt: (v) => formatStat(v, isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1),
+    });
+    return approx ? { ...d, title: `${d.title} (one of the repetitions in this bar)` } : d;
   }
 
-  /**
-   * The same question on a spike plot or a histogram, where a mark is not one
-   * dot. Jeff, 2026-10-06: "can't we approximate from the pixels which dot
-   * we're hovering over … it doesn't have to be exact."
-   *
-   * It is barely an approximation on a SPIKE plot: a spike is exactly one
-   * achievable value, so the column is known and only the choice among the
-   * statistics tied at that value is arbitrary — height picks the rank, so
-   * hovering near the top of a spike gives a later repetition than hovering
-   * near its foot. On a histogram the column is a bin rather than a value, so
-   * the x is approximate too, which is the honest limit of the idea and is why
-   * the readout says "one of" there.
-   */
-  function attachApproxPeek() {
-    // Not "is this a dotplot" — a dotplot at 1,000 repetitions draws FILLED
-    // COLUMNS rather than one circle per statistic, so the view is named dotplot
-    // and has no per-dot marks at all. The honest test is whether exact hover
-    // targets exist; if they do not, the approximate one takes over.
-    if (!lastGeom || allStats.length === 0) return;
-    if (chartContainer?.querySelector('[data-stat-index]')) return;
-    const { xScale, yScale, frame, bins } = lastGeom;
-    const inner = frame?.inner;
-    if (!inner || !xScale || !yScale) return;
-
-    // Group the statistics into the columns actually drawn.
-    /** @type {Map<string, {center: number, idx: number[]}>} */
-    const cols = new Map();
-    const keyOf = (/** @type {number} */ v) => {
-      if (!bins || !bins.length) return v.toPrecision(12);          // spike: one value per mark
-      for (let i = 0; i < bins.length; i++) {
-        if (v >= bins[i].x0 && (v < bins[i].x1 || i === bins.length - 1)) return 'b' + i;
-      }
-      return 'b0';
-    };
-    allStats.forEach((v, i) => {
-      const k = keyOf(v);
-      const c = cols.get(k);
-      if (c) { c.idx.push(i); } else { cols.set(k, { center: v, idx: [i] }); }
-    });
-    // A bin's centre is the middle of the bin, not of the values in it.
-    if (bins && bins.length) {
-      for (const [k, c] of cols) {
-        const i = Number(k.slice(1));
-        if (bins[i]) c.center = (bins[i].x0 + bins[i].x1) / 2;
-      }
-    }
-    const columns = [...cols.values()];
-    if (!columns.length) return;
-
-    // Listen on the SVG itself rather than on the inner <g>. A <g> only receives
-    // pointer events where it has drawn something, so most of the plot is a
-    // hole — and the obvious fix, a transparent <rect> over the frame, is
-    // indistinguishable from chart content: it broke a test that counts rects
-    // to tell a histogram from a dotplot. The root always gets the event, and
-    // the coordinates are taken relative to the inner group.
-    const NS = 'http://www.w3.org/2000/svg';
-    const svgRoot = inner.ownerSVGElement ?? inner.closest('svg');
-    if (!svgRoot) return;
-
-    // Created on first hover, not up front. A <circle> sitting unused in the
-    // chart is how a chart-type detector decides it is looking at a dotplot —
-    // the second time an element I added was mistaken for chart content (a
-    // transparent hit rect was read as a histogram bar). Adding nothing to the
-    // DOM until it is wanted avoids the whole class of it.
-    /** @type {SVGCircleElement|null} */
-    let marker = null;
-    const ensureMarker = () => {
-      if (!marker) {
-        marker = /** @type {SVGCircleElement} */ (document.createElementNS(NS, 'circle'));
-        marker.setAttribute('r', '5');
-        marker.setAttribute('class', 'peek-marker');
-        marker.setAttribute('fill', 'none');
-        marker.setAttribute('pointer-events', 'none');
-        inner.appendChild(marker);
-      }
-      return marker;
-    };
-
-    const baseline = yScale(0);
-    svgRoot.addEventListener('mousemove', (/** @type {MouseEvent} */ e) => {
-      const box = inner.getBoundingClientRect();
-      const mx = e.clientX - box.left;
-      const my = e.clientY - box.top;
-      // Nearest column by pixel distance, so the pointer never has to be on a mark.
-      let best = columns[0], bestD = Infinity;
-      for (const c of columns) {
-        const d = Math.abs(xScale(c.center) - mx);
-        if (d < bestD) { bestD = d; best = c; }
-      }
-      const count = best.idx.length;
-      const top = yScale(count);
-      const frac = (baseline - my) / Math.max(1, baseline - top);
-      const rank = Math.min(count, Math.max(1, Math.ceil(frac * count)));
-      const i = best.idx[rank - 1];
-      const rec = resamples.get(i);
-      const cx = xScale(best.center);
-      const cy = baseline - ((rank - 0.5) / count) * (baseline - top);
-      const m = ensureMarker();
-      m.setAttribute('cx', String(cx));
-      m.setAttribute('cy', String(cy));
-      m.style.display = '';
-      if (!rec) {
-        peek.innerHTML = `<strong>Repetition ${i + 1}</strong> \u2014 its resample is no longer kept `
-          + `(the oldest are dropped once a lot have been drawn).`;
-        peek.hidden = false;
-        return;
-      }
-      const { title, detail } = describeResample(rec, i, allStats[i], {
-        proportion: isProp,
-        source: isProp ? undefined : sampleData,
-        successLabel: isProp ? (successOutcome?.value || '') : '',
-        fmt: (v) => formatStat(v, isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1),
-      });
-      const hedge = bins && bins.length ? 'one of the repetitions in this bar' : null;
-      peek.innerHTML = `<strong>${title}${hedge ? ` (${hedge})` : ''}:</strong> ${detail}`;
-      peek.hidden = false;
-    });
-    svgRoot.addEventListener('mouseleave', () => {
-      if (marker) marker.style.display = 'none';
-      peek.hidden = true;
-    });
+  function wirePeek() {
+    attachResamplePeek({ container: chartContainer, peek, geom: lastGeom,
+      stats: () => allStats, describe: describeAt });
   }
 
   // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
@@ -1832,8 +1695,7 @@ export function initOneSamplePage(config) {
     }
 
     // Marks are redrawn on every render, so the hover wiring goes back on.
-    attachResamplePeek();
-    attachApproxPeek();
+    wirePeek();
 
   }
 

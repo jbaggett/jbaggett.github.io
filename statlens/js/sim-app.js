@@ -20,6 +20,8 @@ import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
 import { createAskPosture } from './ask-posture.js';
+import { createResampleStore, describeResample } from './resample-store.js';
+import { attachResamplePeek, createPeekElement } from './resample-peek.js';
 import { drawDotplot } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
@@ -1579,6 +1581,38 @@ export function initSimPage(config) {
   });
 
   /** Map alternative hypothesis selection to tail direction. */
+  // What one dot came from, on these eleven tools too. Each branch below
+  // already keeps the drawn INDICES — the animation needs them to show which
+  // observation was taken twice and which never — so remembering a resample
+  // costs nothing extra to compute.
+  const resamples = createResampleStore();
+  /** Geometry of the last render, so a hover maps back to a statistic. */
+  let peekGeom = /** @type {any} */ (null);
+  const peekEl = createPeekElement(chartContainer);
+
+  /** @param {number} i @param {boolean} approx */
+  function describeAt(i, approx) {
+    const rec = resamples.get(i);
+    if (!rec) return null;
+    // A two-group draw resamples each group, so its record is the FIRST group's
+    // indices; saying so is better than implying the whole resample is there.
+    const d = describeResample(rec, i, allStats[i], {
+      proportion: config.proportion,
+      source: data1,
+      successLabel: '',
+      fmt: (v) => formatStat(v, dataPrecision + 1),
+    });
+    const notes = [];
+    if (config.twoGroup) notes.push(`${group1Name} only`);
+    if (approx) notes.push('one of the repetitions in this bar');
+    return notes.length ? { ...d, title: `${d.title} (${notes.join('; ')})` } : d;
+  }
+
+  function wirePeek() {
+    attachResamplePeek({ container: chartContainer, peek: peekEl, geom: peekGeom,
+      stats: () => allStats, describe: describeAt });
+  }
+
   // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
   // js/ask-posture.js holds the mechanism; this page supplies its own symbols
   // and its own idea of "extreme". Randomization only — a bootstrap CI has no
@@ -1879,6 +1913,7 @@ export function initSimPage(config) {
           const { values: rs, indices: idx } = resamplePairedDiffs(data1, data2, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
+          resamples.rememberIndices(allStats.length, idx);
           allStats.push(statFn(rs));
         }
       } else if (config.twoGroup && data2.length > 0) {
@@ -1896,6 +1931,7 @@ export function initSimPage(config) {
           // no marks on either side. (2026-09-28.)
           lastRsIdx1 = first.indices ?? null;
           lastRsIdx2 = second.indices ?? null;
+          resamples.rememberIndices(allStats.length, first.indices);
           const stat = statFn(rs1) - statFn(rs2);
           allStats.push(stat);
         }
@@ -1906,6 +1942,7 @@ export function initSimPage(config) {
           const { values: rs, indices: idx } = resampleOne(data1, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
+          resamples.rememberIndices(allStats.length, idx);
           allStats.push(statFn(rs));
         }
       }
@@ -4499,6 +4536,8 @@ export function initSimPage(config) {
   }
 
   function resetSimulation() {
+    resamples.clear();
+    if (peekEl) peekEl.hidden = true;
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
     // A reset means "give me a clean tool", which includes a clean address bar.
@@ -4993,6 +5032,17 @@ export function initSimPage(config) {
     if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot') && config.mode === 'bootstrap') {
       applyTheoryOverlay(stats);
     }
+
+    // Marks are rebuilt on every render, so the hover wiring goes back on —
+    // after the chart is drawn, not before, since the geometry it hit-tests
+    // against is produced by the branches above.
+    peekGeom = {
+      xScale: chartXScale,
+      yScale: lastHistResult?.yScale ?? lastDotResult?.countToY,
+      frame: chartResult,
+      bins: lastHistResult?.bins ?? null,
+    };
+    wirePeek();
 
     lastStatIndex = -1; // Reset after rendering
     batchHighlightIndices = null;
