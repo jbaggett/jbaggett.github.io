@@ -6429,3 +6429,75 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .axis-ruler-close:focus-visible .axis-ruler-close-disc { fill: #D55E00; stroke: #D55E00; }
 .axis-ruler-close:hover .axis-ruler-close-glyph,
 .axis-ruler-close:focus-visible .axis-ruler-close-glyph { fill: #fff; }
+
+
+/* ===== Tool search: the header button and the overlay =====
+   Shared because the markup is built by js/search-mount.js on every page,
+   not written into each one. */
+/* ── Header: the search button and the one link that earns a place
+      beside it. Everything else that used to sit under the banner is in
+      the footer, which already listed it. ── */
+.search-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border: 2px solid var(--accent); border-radius: 50%;
+    background: transparent; color: var(--accent); cursor: pointer; padding: 0;
+    flex-shrink: 0;
+}
+.search-btn:hover { background: var(--accent); color: #fff; }
+.search-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Sits at the RIGHT end of the header, not in the icon cluster: beside
+   the magnifying glass it read as a caption for it. `margin-left:auto`
+   is what pushes it there — .header-actions is order:-1 and always
+   leftmost, which is the house layout on every page. */
+.header-link {
+    margin-left: auto;
+    font-size: 0.82rem; font-weight: 600; color: var(--ims-gray-text, #666);
+    text-decoration: none; white-space: nowrap;
+}
+.header-link:hover { color: var(--accent); text-decoration: underline; }
+@media (max-width: 520px) { .header-link { display: none; } }
+
+/* ── The search overlay ── */
+#site-search-dialog {
+    width: min(620px, calc(100vw - 2rem)); max-width: none;
+    margin: 10vh auto auto; padding: 0.9rem;
+    border: 1px solid var(--border, #ccc); border-radius: 12px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.22);
+}
+#site-search-dialog::backdrop { background: rgba(17,75,95,0.35); }
+.ss-dialog-head { display: flex; align-items: center; gap: 0.5rem; }
+.ss-dialog-head input[type="search"] {
+    flex: 1 1 auto; min-width: 0; box-sizing: border-box; font: inherit; font-size: 1rem;
+    padding: 0.6rem 0.8rem; border: 2px solid var(--border, #ccc); border-radius: 8px;
+    background: #fff;
+}
+.ss-dialog-head input[type="search"]:focus-visible {
+    outline: 2px solid var(--ims-blue, #569BBD); outline-offset: 2px;
+    border-color: var(--ims-blue, #569BBD);
+}
+.ss-close {
+    flex: none; width: 36px; height: 36px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border, #ccc); background: #fff;
+    font-size: 1.3rem; line-height: 1; color: var(--ims-gray-text, #666);
+}
+.ss-close:hover { background: #f2f2f2; color: var(--ims-text, #333); }
+.site-search-hint { margin: 0.55rem 0 0; font-size: 0.85rem; color: var(--ims-gray-text, #666); }
+/* In the overlay the results sit in the flow — there is nothing below
+   them to push, and an absolutely positioned panel would escape the
+   dialog's own box. */
+.site-search-results {
+    margin-top: 0.55rem; background: #fff;
+    border: 1px solid var(--border, #ccc); border-radius: 8px;
+    max-height: 52vh; overflow-y: auto;
+}
+.ss-result {
+    display: block; padding: 0.55rem 0.8rem; text-decoration: none; color: inherit;
+    border-bottom: 1px solid var(--border, #eee);
+}
+.ss-result:last-child { border-bottom: none; }
+.ss-result:hover, .ss-result.is-active { background: #eaf3f8; }
+.ss-result:focus-visible { outline: 2px solid var(--ims-blue, #569BBD); outline-offset: -2px; }
+.ss-title { display: block; font-weight: 700; color: var(--ims-dark, #114B5F); }
+.ss-desc { display: block; font-size: 0.86rem; margin-top: 0.1rem; }
+.ss-why { display: block; font-size: 0.76rem; color: var(--ims-gray-text, #666); margin-top: 0.15rem; }
+.ss-empty { margin: 0; padding: 0.7rem 0.8rem; font-size: 0.9rem; }

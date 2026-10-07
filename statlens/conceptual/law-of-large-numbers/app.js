@@ -99,7 +99,19 @@ const MAX_TRIALS = 200000;
 const params = new URLSearchParams(location.search);
 /** @type {'coin'|'die'} */
 let experiment = params.get('exp') === 'die' ? 'die' : 'coin';
-const seed = params.get('seed') || 'lln';
+
+/**
+ * The seed in play. `?seed=` fixes the run the page OPENS with, so a lecture or
+ * a handout reproduces exactly; the reset button then draws a fresh one, because
+ * "start over" means a new run and not the same one again. (Jeff, 2026-10-07:
+ * "can we randomize the seed when we reset with the circular arrow button?")
+ * Reload to get the link's run back.
+ *
+ * Switching experiment or `n` keeps the seed — those are not "start over", and
+ * a seeded link should survive a reader looking at the dice and coming back.
+ */
+let seed = params.get('seed') || 'lln';
+const newSeed = () => Math.random().toString(36).slice(2, 10);
 
 let rng = createRng(`${seed}:${experiment}`);
 /** Running sum of the trial outcomes, and how many there have been. */
@@ -321,12 +333,14 @@ function addTrials(count) {
     + `${Math.abs(value - e.expected).toFixed(e.precision)} from ${e.expected}.`);
 }
 
-function reset() {
+/** @param {boolean} [fresh] - draw a new seed, so the run differs from the last */
+function reset(fresh = false) {
+  if (fresh) seed = newSeed();
   sum = 0; n = 0;
   running = []; totals = [];
   rng = createRng(`${seed}:${experiment}`);
   redraw();
-  announce('Started over.');
+  announce(fresh ? 'Started over with a new sequence of trials.' : 'Started over.');
 }
 
 // ─── Wiring ───
@@ -337,7 +351,7 @@ for (const btn of document.querySelectorAll('.gen-btn')) {
   });
 }
 
-resetBtn?.addEventListener('click', reset);
+resetBtn?.addEventListener('click', () => reset(true));
 
 expToggle?.addEventListener('click', (ev) => {
   const btn = /** @type {HTMLElement} */ (ev.target).closest('button[data-exp]');
@@ -388,7 +402,7 @@ document.addEventListener('keydown', (ev) => {
   if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
   const counts = { '1': 1, '2': 10, '3': 100, '4': 1000 };
   if (ev.key in counts) { ev.preventDefault(); addTrials(counts[/** @type {'1'} */ (ev.key)]); }
-  else if (ev.key === 'r' || ev.key === 'R') { ev.preventDefault(); reset(); }
+  else if (ev.key === 'r' || ev.key === 'R') { ev.preventDefault(); reset(true); }
 });
 
 initHelp();

@@ -99,7 +99,7 @@
                 <button type="button" class="gen-btn" data-count="10">+10</button>
                 <button type="button" class="gen-btn" data-count="100">+100</button>
                 <button type="button" class="gen-btn" data-count="1000">+1000</button>
-                <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over with a new run" title="Start over with a new run">&#x21BA;</button>
             </div>
 
             <div class="lln-extras">
@@ -133,11 +133,12 @@
         <p><strong>Why it settles.</strong> Nothing corrects a run of tails. The line calms down because the denominator grows: one more toss changes a proportion out of 20 by up to 0.05, and a proportion out of 2000 by at most 0.0005. The early trials are never cancelled &mdash; they are outvoted.</p>
         <p><strong>&ldquo;Spread out the early trials&rdquo;</strong> puts the trial count on a log scale, so the first ten trials get as much width as the last nine hundred. The wild early stretch is where the law is doing its visible work, and on an ordinary axis it is squeezed into a sliver.</p>
         <p><strong>&ldquo;Also show the running total&rdquo;</strong> draws heads minus tails (or the total roll minus 3.5 per roll). This is the half that gets left out: the <em>proportion</em> converges while the <em>total</em> wanders further and further from zero. A coin is never &ldquo;due&rdquo;.</p>
+        <p><strong>Starting over.</strong> The circular arrow gives a <em>different</em> run each time, so you can ask &ldquo;does that happen every time?&rdquo; and find out. A link with <code>?seed=</code> always opens on the same run &mdash; reload the page to get it back after resetting.</p>
         <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a> with talking points, and <code>?mode=present</code> hides the student prompt.</p>
         <h3>Keyboard</h3>
         <ul class="help-intro">
             <li><strong>1</strong> / <strong>2</strong> / <strong>3</strong> / <strong>4</strong> &mdash; add 1, 10, 100 or 1000 trials</li>
-            <li><strong>r</strong> &mdash; start over &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
+            <li><strong>r</strong> &mdash; start over, with a new run &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
         </ul>
         <button type="button" class="btn-primary">Close</button>
     </dialog>
@@ -160,5 +161,6 @@
     </script>
     <script src="../../js/page-number.js"></script>
     <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
 </body>
 </html>

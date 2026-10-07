@@ -26,7 +26,20 @@
  */
 
 const INDEX_URL = new URL('../search-index.json', import.meta.url).href;
+/**
+ * The site root, as an absolute URL.
+ *
+ * The index stores paths from the root ("simulate/bootstrap-mean/"). On the
+ * landing page those work as written; from `conceptual/two-se/` the same string
+ * would resolve to `conceptual/two-se/simulate/bootstrap-mean/`. Resolving
+ * against this module's own location gives the root wherever the page sits,
+ * which is what lets the search go on every page at all.
+ */
+const SITE_ROOT = new URL('../', import.meta.url).href;
 const MAX_RESULTS = 8;
+
+/** @param {string} p A path from the site root. */
+const href = (p) => new URL(p, SITE_ROOT).href;
 
 /** @typedef {{p: string, t: string, d: string, k: string}} Entry */
 
@@ -155,7 +168,7 @@ export function initSiteSearch() {
     if (!q.trim()) { close(); if (status) status.textContent = ''; return; }
     if (!current.length) {
       list.innerHTML = `<p class="ss-empty">Nothing matched &ldquo;${escapeHtml(q)}&rdquo;. `
-        + `<a href="find/">Browse every page</a> instead.</p>`;
+        + `<a href="${href('find/')}">Browse every page</a> instead.</p>`;
       list.hidden = false;
       input.setAttribute('aria-expanded', 'true');
       if (status) status.textContent = `No tools matched ${q}.`;
@@ -163,7 +176,7 @@ export function initSiteSearch() {
     }
     list.innerHTML = current.map((e, i) => {
       const why = matchedKeywords(e, q);
-      return `<a class="ss-result" role="option" id="ss-opt-${i}" aria-selected="false" href="${e.p}">`
+      return `<a class="ss-result" role="option" id="ss-opt-${i}" aria-selected="false" href="${href(e.p)}">`
         + `<span class="ss-title">${escapeHtml(e.t)}</span>`
         + `<span class="ss-desc">${escapeHtml(e.d)}</span>`
         + (why.length ? `<span class="ss-why">${escapeHtml(why.join(' · '))}</span>` : '')

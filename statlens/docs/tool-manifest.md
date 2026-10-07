@@ -126,11 +126,14 @@ textbook is remixed and a chapter tag would go stale in 75 files.
 | Where | What |
 |---|---|
 | **`find/`** | Every indexed page in one static, printable list, grouped by section, each with its description and keywords visible. Generated from the pages themselves, so a new tool appears as soon as it has the meta tags. Works with scripting off — it is the fallback for the search box. |
-| **Search overlay (home page)** | Opened by the magnifying glass in the header, by `/`, or by Ctrl/Cmd-K. Filters as you type over title, description and keywords; ↓/↑ step the results, Enter opens one, Escape closes. A query that matches nothing points at `find/`. It is an overlay rather than a field in the page so the landing page's top band stays clear. |
+| **Search overlay (every page)** | Opened by the magnifying glass in the header cluster, by `/`, or by Ctrl/Cmd-K — on every page, so a reader mid-tool can jump to another without going home first. Filters as you type over title, description and keywords; ↓/↑ step the results, Enter opens one, Escape closes. A query that matches nothing points at `find/`. The button and overlay are built by `js/search-mount.js`, not written into each page, so there is one place to change them; results link from the site root, resolved against the module's own URL so they work at any directory depth. |
 | **`search-index.json`** | The same data as a flat list, generated alongside `find/`. Stable shape: `{pages: [{p, t, d, k}]}` — path, title, description, keywords. Usable by the textbook project if it ever wants to link or check tool coverage programmatically. |
 
-Regenerate both with `node scripts/build-find.mjs`; `--check` fails if they are stale, which a unit
-test asserts. The authored wording lives in `scripts/page-metadata.mjs`, but **the pages are the
+Regenerate both with `node scripts/build-find.mjs`. **`--check` fails if they are stale OR if any
+page exists that is neither indexed nor explicitly unlisted** — a new tool cannot quietly exist
+without being findable. A unit test runs it, so `npm test` catches it. A page is registered by
+having `description` + `keywords` in its `<head>`; to keep one out deliberately, add it to
+`UNLISTED` in the builder with the reason. The authored wording lives in `scripts/page-metadata.mjs`, but **the pages are the
 source of truth** — the builder reads their head tags.
 
 ---
