@@ -101,9 +101,9 @@ function clampN(v) { return Math.max(2, Math.min(200, Math.round(v))); }
 
 const el = (/** @type {string} */ id) => document.getElementById(id);
 const popChart = el('pop-chart'), sampleChart = el('sample-chart');
-const distChart = el('dist-chart'), ciChart = el('ci-chart');
+const distChart = el('dist-chart');
 const popStats = el('pop-stats'), sampleStats = el('sample-stats');
-const distStats = el('dist-stats'), ciStats = el('ci-stats'), ciVerdict = el('ci-verdict');
+const distStats = el('dist-stats'), ciVerdict = el('ci-verdict');
 const shapeToggle = el('shape-toggle'), levelToggle = el('level-toggle');
 const nInput = /** @type {HTMLInputElement|null} */ (el('n-input'));
 const revealBtn = el('reveal-btn'), revealAnswer = el('reveal-answer');
@@ -203,151 +203,162 @@ function drawSamplePanel() {
   }
 }
 
+/**
+ * Step 3 — the sampling distribution, with the interval drawn on its own axis.
+ *
+ * The interval used to be a separate panel with its own scale, which made the
+ * reader compare two pictures to see the one fact that matters. On one axis the
+ * fact is simply visible: the bar beneath the axis is the SAME WIDTH as the
+ * shaded band, slid off μ and onto the mean of the sample actually drawn.
+ * (Jeff, 2026-10-07: "show the central 95% width and use that as the CI width
+ * centred on the observed x̄ … or we could put it below the axis".)
+ *
+ * Which is also why μ and the observed x̄ are both marked here: the distance
+ * between them is the thing the verdict is about, and it should be readable off
+ * the picture rather than from two numbers in a readout.
+ */
 function drawDistribution() {
   if (!distChart) return;
   distChart.innerHTML = '';
   if (!means.length) {
-    distChart.innerHTML = '<p class="pci-placeholder">No samples yet.</p>';
+    distChart.innerHTML = '<p class="pci-placeholder">No samples yet \u2014 press <strong>+1</strong>.</p>';
     if (distStats) distStats.innerHTML = '';
+    if (ciVerdict) ciVerdict.innerHTML = '';
     return;
   }
   const b = band();
+  const haveCI = !!(b && firstSample);
+  const lo = haveCI ? firstMean - b.margin : NaN;
+  const hi = haveCI ? firstMean + b.margin : NaN;
+
+  // The axis has to hold the means, μ, and both ends of the interval — the
+  // interval can reach past the sample means when x̄ was an unusual one, and
+  // clipping it would hide exactly the case worth looking at.
+  const loEnd = Math.min(d3Array.min(means) ?? mu, mu, haveCI ? lo : Infinity);
+  const hiEnd = Math.max(d3Array.max(means) ?? mu, mu, haveCI ? hi : -Infinity);
+  const pad = (hiEnd - loEnd) * 0.04 || 1;
+
   const result = drawHistogram(distChart, means, {
     id: 'pci-dist',
-    xLabel: 'Sample mean (x̄)',
+    xLabel: 'Sample mean (x\u0304)',
     titleText: 'Sampling distribution of the sample mean',
     descText: b
-      ? `${means.length} sample means. The middle ${level}% run from ${b.lo.toFixed(2)} to ${b.hi.toFixed(2)}.`
+      ? `${means.length} sample means. The middle ${level}% run from ${b.lo.toFixed(2)} to `
+        + `${b.hi.toFixed(2)}.` + (haveCI
+          ? ` Your interval, the same width centred on x\u0304 = ${firstMean.toFixed(2)}, runs `
+            + `${lo.toFixed(2)} to ${hi.toFixed(2)} and ${lo <= mu && mu <= hi ? 'contains' : 'misses'} `
+            + `\u03BC = ${mu.toFixed(2)}.` : '')
       : `${means.length} sample means.`,
     observedStat: mu,
-    observedLabel: 'μ',
+    observedLabel: '\u03BC',
     ciLines: b ? /** @type {[number, number]} */ ([b.lo, b.hi]) : undefined,
-    // The MIDDLE is the marked region, as on every bootstrap CI page
-    // (`regionPredicate = v => v >= ci[0] && v <= ci[1]`). Marking the outside
-    // instead — which reads naturally from the name `isTail` — put the colour
-    // on the two slivers nobody is being asked to look at.
+    // The MIDDLE is the marked region, as on every bootstrap CI page.
     isTail: b ? ((/** @type {number} */ v) => v >= b.lo && v <= b.hi) : undefined,
     animate: false,
     precision: 2,
-    viewHeight: 260,
+    domain: /** @type {[number, number]} */ ([loEnd - pad, hiEnd + pad]),
+    // Short and wide on purpose. The SVG scales to its container, so a tall
+    // viewBox becomes a tall chart on a wide column — and the whole page is
+    // meant to fit one screen. 320 leaves ~200 user units of plot above a
+    // bottom margin that has to hold ticks, the axis title AND the interval.
+    viewHeight: 320,
+    margin: { top: 24, right: 22, bottom: 96, left: 56 },
   });
 
   wirePeek(result);
+  if (haveCI) drawIntervalOnAxis(result, lo, hi);
 
   if (distStats) {
     const se = sd(means);
     const theory = sigma / Math.sqrt(n);
     distStats.innerHTML =
         `<span><span class="pci-k">Samples</span> <span class="pci-v">${means.length.toLocaleString()}</span></span>`
-      + `<span><span class="pci-k">SD of the x̄'s</span> <span class="pci-v">${se.toFixed(3)}</span></span>`
-      + `<span><span class="pci-k">σ/√n</span> <span class="pci-v">${theory.toFixed(3)}</span></span>`
+      + `<span><span class="pci-k">SD of the x\u0304's</span> <span class="pci-v">${se.toFixed(3)}</span></span>`
+      + `<span><span class="pci-k">\u03C3/\u221An</span> <span class="pci-v">${theory.toFixed(3)}</span></span>`
       + (b
-        ? `<span><span class="pci-k">Middle ${level}% of x̄'s</span> `
+        ? `<span><span class="pci-k">Middle ${level}% of x\u0304's</span> `
           + `<span class="pci-v">${b.lo.toFixed(2)} to ${b.hi.toFixed(2)}</span></span>`
           + `<span><span class="pci-k">Margin of error</span> `
-          + `<span class="pci-v">± ${b.margin.toFixed(2)}</span></span>`
+          + `<span class="pci-v">\u00b1 ${b.margin.toFixed(2)}</span></span>`
         : `<span class="pci-placeholder">Twenty samples needed before a middle ${level}% means anything.</span>`);
   }
+  drawVerdict(b, lo, hi, haveCI);
 }
 
 /**
- * Step 4 — one sample, one interval, drawn on the sampling distribution's axis.
- *
- * Hand-built rather than a chart helper: what is being drawn is an interval as
- * a BAR under an axis, next to μ. No histogram renderer makes that picture, and
- * borrowing one would have meant hiding most of it.
+ * The observed sample's mean, and its interval, under the distribution's axis.
+ * @param {{frame: any, xScale: any}} result
+ * @param {number} lo @param {number} hi
  */
-function drawInterval() {
-  if (!ciChart) return;
-  ciChart.innerHTML = '';
-  const b = band();
-  if (!firstSample || !b) {
-    ciChart.innerHTML = `<p class="pci-placeholder">${firstSample
-      ? 'Draw at least 20 samples to get a margin of error.'
-      : 'Press <strong>+1</strong> to draw your sample.'}</p>`;
-    if (ciVerdict) ciVerdict.innerHTML = '';
-    if (ciStats) ciStats.innerHTML = '';
-    return;
-  }
-  const lo = firstMean - b.margin, hi = firstMean + b.margin;
+function drawIntervalOnAxis(result, lo, hi) {
+  const { frame, xScale } = result;
+  const g = d3Selection.select(frame.inner).select('.annotations');
   const captures = lo <= mu && mu <= hi;
-
-  const frame = createChart(ciChart, {
-    viewHeight: 150,
-    titleText: 'Your interval',
-    descText: `From the first sample: ${lo.toFixed(2)} to ${hi.toFixed(2)}. `
-      + `It ${captures ? 'contains' : 'does not contain'} μ = ${mu.toFixed(2)}.`,
-    id: 'pci-ci',
-  });
-
-  const pad = Math.max(b.margin * 1.6, Math.abs(firstMean - mu) * 1.5) || 1;
-  const x = d3Scale.scaleLinear()
-    .domain([Math.min(lo, mu) - pad, Math.max(hi, mu) + pad])
-    .range([0, frame.width]);
-  const yAxis = d3Scale.scaleLinear().domain([0, 1]).range([frame.height, 0]);
-  const axis = d3Axis.axisBottom(x);
-  addAxes(frame, axis, d3Axis.axisLeft(yAxis).ticks(0), 'Sample mean (x̄)', '');
-  // No y scale here — the vertical direction carries nothing.
-  d3Selection.select(frame.inner).select('.y-axis').remove();
-
-  const g = d3Selection.select(frame.inner).select('.data');
-  const barY = frame.height * 0.55;
-
-  // μ first, so the bar reads as reaching for it.
-  g.append('line')
-    .attr('x1', x(mu)).attr('x2', x(mu)).attr('y1', 6).attr('y2', frame.height)
-    .attr('stroke', MU_COLOR).attr('stroke-width', 2.5).attr('stroke-dasharray', '6,4');
-  g.append('text')
-    .attr('x', x(mu)).attr('y', 0).attr('dy', 12).attr('text-anchor', 'middle')
-    .attr('font-size', 13).attr('font-weight', 700).attr('fill', MU_COLOR)
-    .text(`μ = ${mu.toFixed(2)}`);
-
   const colour = captures ? CAPTURE : MISS;
+
+  // The axis title is placed by addAxes at `height + margin.bottom - 8`, so the
+  // bar and its labels are laid out against that rather than guessed at — the
+  // first attempt drew the x̄ label straight through "Sample mean (x̄)".
+  const titleY = frame.height + frame.margin.bottom - 8;
+  const barY = frame.height + 54;
+  const statLabelY = frame.height + 39;
+  const endsY = frame.height + 71;
+  if (barY >= titleY) return;   // not enough margin; better nothing than a pile-up
+
+  // The observed statistic, carried from the distribution down to the bar — the
+  // line IS the argument: where the sample landed, and where its interval went.
+  const px = xScale(firstMean);
   g.append('line')
-    .attr('x1', x(lo)).attr('x2', x(hi)).attr('y1', barY).attr('y2', barY)
-    .attr('stroke', colour).attr('stroke-width', 6).attr('stroke-linecap', 'round');
+    .attr('class', 'pci-xbar')
+    .attr('x1', px).attr('x2', px).attr('y1', 0).attr('y2', barY)
+    .attr('stroke', STAT_COLOR).attr('stroke-width', 2.5);
+  // Beside the line, not on it — centred, the line ran straight through the
+  // text. It flips to the other side near the right edge so it cannot overflow.
+  const nearRight = px > frame.width - 90;
+  g.append('text')
+    .attr('x', px + (nearRight ? -7 : 7)).attr('y', statLabelY)
+    .attr('text-anchor', nearRight ? 'end' : 'start')
+    .attr('font-size', 12).attr('font-weight', 700).attr('fill', STAT_COLOR)
+    .text(`x\u0304 = ${firstMean.toFixed(2)}`);
+
+  g.append('line')
+    .attr('class', 'pci-ci-bar')
+    .attr('x1', xScale(lo)).attr('x2', xScale(hi)).attr('y1', barY).attr('y2', barY)
+    .attr('stroke', colour).attr('stroke-width', 7).attr('stroke-linecap', 'round');
   for (const v of [lo, hi]) {
     g.append('line')
-      .attr('x1', x(v)).attr('x2', x(v)).attr('y1', barY - 9).attr('y2', barY + 9)
+      .attr('x1', xScale(v)).attr('x2', xScale(v)).attr('y1', barY - 9).attr('y2', barY + 9)
       .attr('stroke', colour).attr('stroke-width', 3);
+    g.append('text')
+      .attr('x', xScale(v)).attr('y', endsY).attr('text-anchor', 'middle')
+      .attr('font-size', 11).attr('font-weight', 700).attr('fill', colour)
+      .text(v.toFixed(2));
   }
-  g.append('circle')
-    .attr('cx', x(firstMean)).attr('cy', barY).attr('r', 5)
-    .attr('fill', STAT_COLOR);
-  g.append('text')
-    .attr('x', x(firstMean)).attr('y', barY + 26).attr('text-anchor', 'middle')
-    .attr('font-size', 12).attr('font-weight', 700).attr('fill', STAT_COLOR)
-    .text(`x̄ = ${firstMean.toFixed(2)}`);
+}
 
-  if (ciVerdict) {
-    ciVerdict.innerHTML =
-      `<div class="pci-verdict ${captures ? 'is-yes' : 'is-no'}">`
-      + `<span class="pci-glyph" aria-hidden="true">${captures ? '✓' : '✗'}</span>`
-      + `<span>Your interval runs <strong>${lo.toFixed(2)} to ${hi.toFixed(2)}</strong> and `
-      + `<strong>${captures ? 'contains' : 'does not contain'}</strong> μ = ${mu.toFixed(2)}. `
-      + `Your x̄ of ${firstMean.toFixed(2)} is <strong>${
-        firstMean >= b.lo && firstMean <= b.hi ? 'inside' : 'outside'}</strong> the shaded middle `
-      + `in step 3 &mdash; and those two facts always agree, because both say the distance from `
-      + `x̄ to μ is ${captures ? 'no more' : 'more'} than ${b.margin.toFixed(2)}.</span></div>`;
+/** @param {{lo:number,hi:number,margin:number}|null} b */
+function drawVerdict(b, lo, hi, haveCI) {
+  if (!ciVerdict) return;
+  if (!haveCI || !b) {
+    ciVerdict.innerHTML = `<p class="pci-placeholder">${means.length
+      ? `Draw at least 20 samples to get a margin of error.`
+      : ''}</p>`;
+    return;
   }
-  if (ciStats) {
-    ciStats.innerHTML =
-        `<span><span class="pci-k">x̄</span> <span class="pci-v">${firstMean.toFixed(2)}</span></span>`
-      + `<span><span class="pci-k">Margin</span> <span class="pci-v">± ${b.margin.toFixed(2)}</span></span>`
-      + `<span><span class="pci-k">Interval</span> `
-      + `<span class="pci-v">(${lo.toFixed(2)}, ${hi.toFixed(2)})</span></span>`
-      + `<span><span class="pci-k">|x̄ − μ|</span> `
-      + `<span class="pci-v">${Math.abs(firstMean - mu).toFixed(2)}</span></span>`;
-  }
+  const captures = lo <= mu && mu <= hi;
+  const inside = firstMean >= b.lo && firstMean <= b.hi;
+  ciVerdict.innerHTML =
+    `<div class="pci-verdict ${captures ? 'is-yes' : 'is-no'}">`
+    + `<span class="pci-glyph" aria-hidden="true">${captures ? '\u2713' : '\u2717'}</span>`
+    + `<span>The interval <strong>${captures ? 'contains' : 'misses'}</strong> \u03BC, and x\u0304 is `
+    + `<strong>${inside ? 'inside' : 'outside'}</strong> the shaded middle. `
+    + `These always agree: the bar is the band's width, moved onto x\u0304.</span></div>`;
 }
 
 /**
  * Hovering a bar in step 3 puts THAT sample into step 2.
  *
- * "I want the sampling labs and differences of props and means to have
- * hoverable dots that show the original samples, this should extend to the new
- * app." (Jeff, 2026-10-07.) Here a dot is a whole SAMPLE rather than a
- * resample, which makes the question more direct still: every bar is a batch of
+ * Here a dot is a whole SAMPLE rather than a resample: every bar is a batch of
  * samples that happened to have similar means, and hovering says which one.
  *
  * @param {{frame: any, xScale: any, yScale: any, bins?: any[]}} result
@@ -411,7 +422,6 @@ function redraw() {
   drawPopulation();
   drawSamplePanel();
   drawDistribution();
-  drawInterval();
 }
 
 // ─── Running ───
@@ -529,7 +539,7 @@ redraw();
 // generate button the reader just pressed slides out from under the pointer —
 // which then lands on a dot and pops its tooltip. Same failure as the mechanism
 // strip on the one-proportion pages (2026-10-06).
-for (const id of ['pop-chart', 'sample-chart', 'dist-chart', 'ci-chart']) {
+for (const id of ['pop-chart', 'sample-chart', 'dist-chart']) {
   holdHeight(/** @type {HTMLElement|null} */ (el(id)));
 }
 

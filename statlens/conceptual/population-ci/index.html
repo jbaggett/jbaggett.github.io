@@ -32,6 +32,9 @@
     <style>
         .pci-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; align-items: center; margin: 0.5rem 0 0.75rem; }
         .pci-field { display: inline-flex; flex-direction: row; align-items: center; gap: 0.5rem; }
+        /* A global rule stacks a <label>'s contents in a column, which split
+           "Sample size n:" across three lines. */
+        .pci-field > label.pci-label { display: inline; }
         .pci-field > .pci-label { color: var(--ims-gray-text); font-size: 0.9rem; white-space: nowrap; }
         /* Five shape buttons do not fit a phone in one row. The field wraps and
            the segmented control wraps inside it, rather than pushing the page
@@ -40,8 +43,24 @@
         #shape-toggle { flex-wrap: wrap; max-width: 100%; }
         .pci-field input[type="number"] { width: 5rem; }
 
-        .pci-step { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem 0.8rem;
-                    margin: 0.9rem 0 0; background: #fff; }
+        /* Steps 1 and 2 stack in a narrow rail; step 3 gets the room, because it
+           is the one carrying the argument. One screen is the target, so the
+           side panels are deliberately small — they are context, not the
+           subject. (Jeff, 2026-10-07.) */
+        /* The same width the simulation pages take (main:has(.app-body)), so the
+           distribution gets room. Everything is meant to fit one screen. */
+        @media (min-width: 768px) { main:has(.pci-grid) { max-width: 1060px; } }
+        .pci-grid { display: grid; grid-template-columns: minmax(220px, 300px) 1fr;
+                    gap: 0.8rem; align-items: start; margin: 0.8rem 0 0; }
+        .pci-side { display: flex; flex-direction: column; gap: 0.8rem; min-width: 0; }
+        .pci-main { min-width: 0; margin: 0; }
+        @media (max-width: 860px) {
+            .pci-grid { grid-template-columns: 1fr; }
+            .pci-side { flex-direction: column; }
+        }
+
+        .pci-step { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.7rem 0.6rem;
+                    margin: 0; background: #fff; }
         .pci-step > h2 { font-size: 1rem; margin: 0 0 0.35rem; color: var(--ims-dark, #114B5F); }
         .pci-step > h2 .pci-num { display: inline-block; background: var(--ims-dark, #114B5F); color: #fff;
                                   border-radius: 50%; width: 1.4rem; height: 1.4rem; line-height: 1.4rem;
@@ -55,10 +74,12 @@
            had just pressed slid out from under the pointer onto a dot, popping
            its tooltip. The ratios are the charts' own viewBoxes (600 wide),
            plus room for the export row, so this holds at any width. */
+        /* Reserve each panel's height before its chart exists, so the first draw
+           does not shove the page down. The ratios are the charts' own
+           viewBoxes, plus room for the export row. */
         #pop-chart    { min-height: 0; aspect-ratio: 600 / 272; }
         #sample-chart { min-height: 0; aspect-ratio: 600 / 242; }
-        #dist-chart   { min-height: 0; aspect-ratio: 600 / 302; }
-        #ci-chart     { min-height: 0; aspect-ratio: 600 / 192; }
+        #dist-chart   { min-height: 0; aspect-ratio: 600 / 372; }
         .pci-chart:has(svg) { aspect-ratio: auto; }
 
         .pci-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1.4rem; margin: 0.45rem 0 0; font-size: 0.9rem; }
@@ -94,7 +115,7 @@
     <main>
         <h1>Confidence Intervals by Repeated Sampling<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
 
-        <p>A bootstrap interval resamples your one sample because you only get one. Here you get as many as you like: choose a population, set the sample size, and draw sample after sample from the population itself. This is the picture the bootstrap is imitating &mdash; and it is where the margin of error comes from.</p>
+        <p>A bootstrap resamples one sample because that is all you get. Here you can sample the population again and again &mdash; which is where a margin of error comes from, and the picture the bootstrap imitates.</p>
 
         <section id="settings" aria-label="Population and sample settings">
             <div class="pci-controls">
@@ -117,45 +138,43 @@
             </div>
         </section>
 
-        <section class="pci-step" aria-labelledby="step1-h">
-            <h2 id="step1-h"><span class="pci-num">1</span>The population</h2>
-            <p class="pci-sub">All of it &mdash; which is the one thing you never have in practice. The dashed line is &mu;.</p>
-            <div class="pci-chart" id="pop-chart"></div>
-            <div class="pci-stats" id="pop-stats"></div>
-        </section>
+        <div class="pci-grid">
+            <div class="pci-side">
+                <section class="pci-step" aria-labelledby="step1-h">
+                    <h2 id="step1-h"><span class="pci-num">1</span>The population</h2>
+                    <p class="pci-sub">All of it &mdash; the one thing you never have.</p>
+                    <div class="pci-chart" id="pop-chart"></div>
+                    <div class="pci-stats" id="pop-stats"></div>
+                </section>
 
-        <section class="pci-step" aria-labelledby="step2-h">
-            <h2 id="step2-h"><span class="pci-num">2</span>One sample from it</h2>
-            <p class="pci-sub">The most recent draw of <em>n</em> values, with its mean marked.</p>
-            <div class="pci-chart" id="sample-chart"></div>
-            <div class="pci-stats" id="sample-stats"></div>
-        </section>
-
-        <section class="pci-step" id="step3" aria-labelledby="step3-h">
-            <h2 id="step3-h"><span class="pci-num">3</span>The sampling distribution of <span class="x-bar">x</span></h2>
-            <p class="pci-sub">One mean per sample. The shaded middle holds the stated percentage of them.</p>
-            <div class="pci-chart" id="dist-chart"></div>
-            <div class="pci-stats" id="dist-stats"></div>
-
-            <div class="gen-bar" id="controls" role="group" aria-label="Draw samples">
-                <button type="button" class="gen-btn" data-count="1">+1</button>
-                <button type="button" class="gen-btn" data-count="10">+10</button>
-                <button type="button" class="gen-btn" data-count="100">+100</button>
-                <button type="button" class="gen-btn" data-count="1000">+1000</button>
-                <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+                <section class="pci-step" aria-labelledby="step2-h">
+                    <h2 id="step2-h"><span class="pci-num">2</span>One sample from it</h2>
+                    <p class="pci-sub">The most recent draw of <em>n</em> values.</p>
+                    <div class="pci-chart" id="sample-chart"></div>
+                    <div class="pci-stats" id="sample-stats"></div>
+                </section>
             </div>
-        </section>
 
-        <section class="pci-step" aria-labelledby="step4-h">
-            <h2 id="step4-h"><span class="pci-num">4</span>Your interval</h2>
-            <p class="pci-sub">In practice you have one sample and no picture above it. Here is the first sample you drew, given the margin of error that picture produced.</p>
-            <div class="pci-chart" id="ci-chart"></div>
-            <div id="ci-verdict"></div>
-            <div class="pci-stats" id="ci-stats"></div>
-        </section>
+            <section class="pci-step pci-main" id="step3" aria-labelledby="step3-h">
+                <h2 id="step3-h"><span class="pci-num">3</span>The sampling distribution of <span class="x-bar">x</span>, and your interval</h2>
+                <p class="pci-sub">One mean per sample. The bar beneath the axis is the shaded band's width, moved onto the sample you drew.</p>
+                <div class="pci-chart" id="dist-chart"></div>
+
+                <div class="gen-bar" id="controls" role="group" aria-label="Draw samples">
+                    <button type="button" class="gen-btn" data-count="1">+1</button>
+                    <button type="button" class="gen-btn" data-count="10">+10</button>
+                    <button type="button" class="gen-btn" data-count="100">+100</button>
+                    <button type="button" class="gen-btn" data-count="1000">+1000</button>
+                    <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+                </div>
+
+                <div id="ci-verdict"></div>
+                <div class="pci-stats" id="dist-stats"></div>
+            </section>
+        </div>
 
         <div class="pci-note discover-only">
-            <p><strong>Before you draw a thousand:</strong> the shaded middle in step 3 is centred on &mu;, but your interval in step 4 is centred on <span class="x-bar">x</span>. When does the interval reach &mu;?</p>
+            <p><strong>Before you draw a thousand:</strong> the shaded band is centred on &mu;, but the bar beneath the axis is centred on <span class="x-bar">x</span>. When does that bar reach &mu;?</p>
             <button type="button" class="btn-secondary" id="reveal-btn" aria-expanded="false" aria-controls="reveal-answer">Show the answer</button>
             <div id="reveal-answer" hidden></div>
         </div>
@@ -170,9 +189,9 @@
             <li><strong>Step 1</strong> is the whole population, with &mu; marked. You never have this in practice, which is the point of the exercise.</li>
             <li><strong>Step 2</strong> is the most recent sample of <em>n</em>, with its mean.</li>
             <li><strong>Step 3</strong> collects one mean per sample. The shaded middle is the central 90 / 95 / 99% of those means &mdash; it is centred on &mu;, and its half-width is the <strong>margin of error</strong>.</li>
-            <li><strong>Step 4</strong> takes the <em>first</em> sample you drew and gives it that margin: <span class="x-bar">x</span> &plusmn; <em>m</em>. That is a confidence interval.</li>
+            <li><strong>The bar under the axis</strong> is that same width, centred on the <em>first</em> sample's mean instead of on &mu;: <span class="x-bar">x</span> &plusmn; <em>m</em>. That is a confidence interval, drawn on the same scale so you can see it is the shaded band slid sideways.</li>
         </ul>
-        <p><strong>Read step 3 carefully.</strong> The shaded range is <em>not</em> a confidence interval &mdash; it is the range of sample means, and it is centred on &mu;, which you would not know. It becomes an interval for &mu; only when you take its half-width over to one sample, which is step 4.</p>
+        <p><strong>Read the shaded band carefully.</strong> It is <em>not</em> a confidence interval &mdash; it is the range of sample means, and it is centred on &mu;, which you would not know. It becomes an interval for &mu; only when you take its half-width over to one sample, which is the bar beneath the axis.</p>
         <p><strong>The argument.</strong> The interval <span class="x-bar">x</span> &plusmn; <em>m</em> reaches &mu; exactly when <span class="x-bar">x</span> landed within <em>m</em> of &mu; &mdash; that is, exactly when <span class="x-bar">x</span> is inside the shaded middle. So the intervals that work are the ones from the shaded samples, which is the stated percentage of them. That is what the confidence level counts.</p>
         <p><strong>What the bootstrap does about it.</strong> You cannot draw step 3, because you cannot sample the population again. The bootstrap resamples your sample instead, producing a distribution of nearly the same width centred on <span class="x-bar">x</span> rather than on &mu;. <a href="../bootstrap-shift/">Why the Percentile CI Works</a> puts those two distributions on one axis; <a href="../ci-coverage/">CI Coverage</a> runs many intervals and counts the hits.</p>
         <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a>, and <code>?mode=present</code> hides the student prompt.</p>
