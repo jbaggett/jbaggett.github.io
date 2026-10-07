@@ -128,7 +128,8 @@
         <ul class="help-intro">
             <li><strong>The blue line</strong> is the running value after each trial &mdash; the proportion of tosses so far that were heads, or the average of the rolls so far.</li>
             <li><strong>The dashed line</strong> is what the model expects: 0.5 for a fair coin, 3.5 for a fair die.</li>
-            <li><strong>Add trials</strong> a few at a time. Early on the line jumps about; later a single trial barely moves it.</li>
+            <li><strong>Add trials</strong> a few at a time, or press <strong>&#9654;</strong> and let them keep coming. Early on the line jumps about; later a single trial barely moves it.</li>
+            <li><strong>Playing speeds up as it goes</strong>, on purpose: the first trials each move the line visibly and are worth watching arrive, and by the five hundredth they are individually invisible. Roughly a thousand trials in nine seconds, ten thousand in fifteen. It runs at the same speed on any machine &mdash; it is paced by the clock, not by how fast your screen redraws.</li>
         </ul>
         <p><strong>Why it settles.</strong> Nothing corrects a run of tails. The line calms down because the denominator grows: one more toss changes a proportion out of 20 by up to 0.05, and a proportion out of 2000 by at most 0.0005. The early trials are never cancelled &mdash; they are outvoted.</p>
         <p><strong>&ldquo;Spread out the early trials&rdquo;</strong> puts the trial count on a log scale, so the first ten trials get as much width as the last nine hundred. The wild early stretch is where the law is doing its visible work, and on an ordinary axis it is squeezed into a sliver.</p>
@@ -138,6 +139,7 @@
         <h3>Keyboard</h3>
         <ul class="help-intro">
             <li><strong>1</strong> / <strong>2</strong> / <strong>3</strong> / <strong>4</strong> &mdash; add 1, 10, 100 or 1000 trials</li>
+            <li><strong>p</strong> &mdash; play / stop</li>
             <li><strong>r</strong> &mdash; start over, with a new run &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
         </ul>
         <button type="button" class="btn-primary">Close</button>

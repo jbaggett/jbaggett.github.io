@@ -91,6 +91,37 @@ const EXPERIMENTS = {
 /** At most this many points are drawn; beyond it the trace is thinned. */
 const MAX_POINTS = 1400;
 
+/**
+ * Continuous play, paced by the CLOCK rather than by frames.
+ *
+ * Jeff, 2026-10-07: "choose a comfortable speed that will remain constant(ish)
+ * across browsers and machines." Adding a fixed number of trials per animation
+ * frame would run at whatever the display refreshes at — the same page would
+ * sample twice as fast on a 120Hz laptop as on a 60Hz one, and slower again
+ * under load. So each frame asks how much TIME has passed and adds the trials
+ * that belong to it. A slow machine draws fewer frames and adds more per frame;
+ * the trials-per-second comes out the same.
+ *
+ * The rate rises with n, which is the pedagogy rather than impatience: early
+ * trials each move the line visibly and are worth watching arrive, and by trial
+ * 500 they are individually invisible. Roughly: ~6/s at the start, reaching
+ * 1,000 in about nine seconds and 10,000 in about half a minute.
+ */
+const PLAY_BASE = 6;        // trials per second at the very start
+const PLAY_GROWTH = 0.5;    // extra trials per second, per trial already drawn
+/**
+ * The ceiling. High, on purpose: with the rate proportional to n, each DECADE
+ * of trials takes about the same wall time (ln 10 / 0.5 ≈ 4.6s), which is
+ * exactly the pacing the log-scale view wants. A low cap turns that back into
+ * a crawl just as the reader reaches the stretch where the law is supposed to
+ * look boring — "it may have to accelerate with n to show anything meaningful
+ * after a while" (Jeff, 2026-10-07). At 2,000/s a frame adds ~33 trials, which
+ * costs nothing; the chart is thinned to MAX_POINTS before it is drawn.
+ */
+const PLAY_MAX = 2000;
+/** Redraw at most this often. The sampler is not throttled, only the picture. */
+const REDRAW_MS = 40;
+
 /** Trials beyond this are refused — the page is a demonstration, not a stress test. */
 const MAX_TRIALS = 200000;
 
@@ -334,7 +365,84 @@ function addTrials(count) {
 }
 
 /** @param {boolean} [fresh] - draw a new seed, so the run differs from the last */
+// ─── Continuous play ───
+
+let playing = false;
+/** @type {number|null} */ let rafId = null;
+let lastTick = 0;
+let carry = 0;         // fractional trials owed from the previous frame
+let lastDraw = 0;
+
+/** @param {number} count */
+function trialsPerSecond(count) {
+  return Math.min(PLAY_MAX, PLAY_BASE + PLAY_GROWTH * count);
+}
+
+/** Add trials without redrawing — the loop decides when the picture updates. */
+function sampleOnly(/** @type {number} */ count) {
+  const e = exp();
+  const room = MAX_TRIALS - n;
+  const take = Math.min(count, room);
+  for (let i = 0; i < take; i++) {
+    sum += e.draw(rng);
+    n += 1;
+    running.push(sum / n);
+    totals.push(e.total(sum, n));
+  }
+  return take;
+}
+
+function tick(/** @type {number} */ now) {
+  if (!playing) return;
+  const dt = Math.min(0.25, (now - lastTick) / 1000);   // a tab that was hidden
+  lastTick = now;                                        // must not dump a burst
+  carry += dt * trialsPerSecond(n);
+  const whole = Math.floor(carry);
+  if (whole > 0) {
+    carry -= whole;
+    if (sampleOnly(whole) < whole) { stopPlay('Reached the limit.'); redraw(); return; }
+  }
+  if (now - lastDraw >= REDRAW_MS) { lastDraw = now; redraw(); }
+  rafId = requestAnimationFrame(tick);
+}
+
+function startPlay() {
+  if (playing || n >= MAX_TRIALS) return;
+  playing = true;
+  carry = 0;
+  lastTick = performance.now();
+  lastDraw = 0;
+  setPlayButton();
+  announce('Playing \u2014 trials are being added continuously.');
+  rafId = requestAnimationFrame(tick);
+}
+
+function stopPlay(/** @type {string} */ why = '') {
+  if (!playing) return;
+  playing = false;
+  if (rafId !== null) cancelAnimationFrame(rafId);
+  rafId = null;
+  setPlayButton();
+  redraw();
+  const e = exp();
+  announce(`${why} Stopped at ${n.toLocaleString()} ${e.trialsWord}. `
+    + `${e.valueName} ${running[n - 1]?.toFixed(e.precision) ?? '\u2014'}.`);
+}
+
+const togglePlay = () => (playing ? stopPlay() : startPlay());
+
+/** @type {HTMLButtonElement|null} */
+let playBtn = null;
+function setPlayButton() {
+  if (!playBtn) return;
+  playBtn.textContent = playing ? '\u25A0' : '\u25B6';
+  playBtn.title = playing ? 'Stop' : 'Play \u2014 keep adding trials';
+  playBtn.setAttribute('aria-label', playing ? 'Stop adding trials' : 'Play: keep adding trials');
+  playBtn.setAttribute('aria-pressed', String(playing));
+}
+
 function reset(fresh = false) {
+  stopPlay();
   if (fresh) seed = newSeed();
   sum = 0; n = 0;
   running = []; totals = [];
@@ -347,8 +455,25 @@ function reset(fresh = false) {
 
 for (const btn of document.querySelectorAll('.gen-btn')) {
   btn.addEventListener('click', () => {
+    stopPlay();   // an explicit +N means "this many", not "this many and carry on"
     addTrials(Number(/** @type {HTMLElement} */ (btn).dataset.count) || 1);
   });
+}
+
+// The play button lives with the other generate controls, styled like the one
+// js/page-utils.js builds for the simulation pages — same glyphs, same
+// semantics — but driven by the clock rather than a per-trial timer.
+{
+  const bar = document.getElementById('controls');
+  const resetButton = document.getElementById('reset-btn');
+  if (bar) {
+    playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.className = 'play-btn';
+    setPlayButton();
+    playBtn.addEventListener('click', togglePlay);
+    bar.insertBefore(playBtn, resetButton);
+  }
 }
 
 resetBtn?.addEventListener('click', () => reset(true));
@@ -401,7 +526,8 @@ document.addEventListener('keydown', (ev) => {
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(/** @type {HTMLElement} */ (ev.target).tagName)) return;
   if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
   const counts = { '1': 1, '2': 10, '3': 100, '4': 1000 };
-  if (ev.key in counts) { ev.preventDefault(); addTrials(counts[/** @type {'1'} */ (ev.key)]); }
+  if (ev.key in counts) { ev.preventDefault(); stopPlay(); addTrials(counts[/** @type {'1'} */ (ev.key)]); }
+  else if (ev.key === 'p' || ev.key === 'P') { ev.preventDefault(); togglePlay(); }
   else if (ev.key === 'r' || ev.key === 'R') { ev.preventDefault(); reset(true); }
 });
 
