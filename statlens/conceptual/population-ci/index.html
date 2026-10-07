@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Confidence Intervals by Repeated Sampling | StatLens</title>
+    <meta name="description" content="Draw sample after sample from a population you choose, build the true sampling distribution of the mean, and see where a confidence interval's margin of error actually comes from.">
+    <meta name="keywords" content="confidence interval, margin of error, sampling distribution, repeated sampling, population mean, standard error, bootstrap comparison, coverage, mean, simulation">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .pci-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; align-items: center; margin: 0.5rem 0 0.75rem; }
+        .pci-field { display: inline-flex; flex-direction: row; align-items: center; gap: 0.5rem; }
+        .pci-field > .pci-label { color: var(--ims-gray-text); font-size: 0.9rem; white-space: nowrap; }
+        /* Five shape buttons do not fit a phone in one row. The field wraps and
+           the segmented control wraps inside it, rather than pushing the page
+           15px wider than the screen. */
+        .pci-field { flex-wrap: wrap; max-width: 100%; }
+        #shape-toggle { flex-wrap: wrap; max-width: 100%; }
+        .pci-field input[type="number"] { width: 5rem; }
+
+        .pci-step { border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.8rem 0.8rem;
+                    margin: 0.9rem 0 0; background: #fff; }
+        .pci-step > h2 { font-size: 1rem; margin: 0 0 0.35rem; color: var(--ims-dark, #114B5F); }
+        .pci-step > h2 .pci-num { display: inline-block; background: var(--ims-dark, #114B5F); color: #fff;
+                                  border-radius: 50%; width: 1.4rem; height: 1.4rem; line-height: 1.4rem;
+                                  text-align: center; font-size: 0.85rem; margin-right: 0.45rem; }
+        .pci-step .pci-sub { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0 0 0.5rem; }
+        .pci-chart { width: 100%; }
+        .pci-chart svg { display: block; width: 100%; height: auto; }
+        /* Reserve each panel's height BEFORE its chart exists. The placeholder
+           line is 22px and the chart is ~250, so the first draw shoved the page
+           down by a quarter of a screen — and the generate button the reader
+           had just pressed slid out from under the pointer onto a dot, popping
+           its tooltip. The ratios are the charts' own viewBoxes (600 wide),
+           plus room for the export row, so this holds at any width. */
+        #pop-chart    { min-height: 0; aspect-ratio: 600 / 272; }
+        #sample-chart { min-height: 0; aspect-ratio: 600 / 242; }
+        #dist-chart   { min-height: 0; aspect-ratio: 600 / 302; }
+        #ci-chart     { min-height: 0; aspect-ratio: 600 / 192; }
+        .pci-chart:has(svg) { aspect-ratio: auto; }
+
+        .pci-stats { display: flex; flex-wrap: wrap; gap: 0.35rem 1.4rem; margin: 0.45rem 0 0; font-size: 0.9rem; }
+        .pci-stats span.pci-k { color: var(--ims-gray-text); }
+        .pci-stats span.pci-v { font-family: var(--font-mono); font-weight: 700; }
+
+        /* The payoff panel: one interval, drawn, with a verdict that never
+           relies on colour alone. */
+        .pci-verdict { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0.75rem;
+                       border: 1px solid var(--border); border-left-width: 5px; border-radius: 8px;
+                       background: var(--ims-bg-soft, #f7f9fb); line-height: 1.45; margin: 0.6rem 0 0; }
+        .pci-verdict .pci-glyph { font-size: 1.25rem; font-weight: 700; flex: none; min-width: 1.2rem; text-align: center; }
+        .pci-verdict.is-yes { border-left-color: #0072B2; }
+        .pci-verdict.is-yes .pci-glyph { color: #0072B2; }
+        .pci-verdict.is-no { border-left-color: #D55E00; }
+        .pci-verdict.is-no .pci-glyph { color: #D55E00; }
+
+        .pci-note { border: 1px dashed var(--border); border-radius: 8px; padding: 0.7rem 0.85rem;
+                    margin: 1rem 0 0; background: #fff; }
+        .pci-note p { margin: 0 0 0.5rem; }
+        .pci-note p:last-child { margin-bottom: 0; }
+
+        .pci-placeholder { color: var(--ims-gray-text); font-size: 0.9rem; margin: 0.4rem 0; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#settings">Skip to Settings</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#step3">Skip to the sampling distribution</a>
+    </nav>
+
+    <main>
+        <h1>Confidence Intervals by Repeated Sampling<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p>A bootstrap interval resamples your one sample because you only get one. Here you get as many as you like: choose a population, set the sample size, and draw sample after sample from the population itself. This is the picture the bootstrap is imitating &mdash; and it is where the margin of error comes from.</p>
+
+        <section id="settings" aria-label="Population and sample settings">
+            <div class="pci-controls">
+                <div class="pci-field">
+                    <span class="pci-label" id="shape-label">Population:</span>
+                    <div class="seg-control" role="group" aria-labelledby="shape-label" id="shape-toggle"></div>
+                </div>
+                <div class="pci-field">
+                    <label class="pci-label" for="n-input">Sample size <em>n</em>:</label>
+                    <input type="number" id="n-input" min="2" max="200" step="1" value="25">
+                </div>
+                <div class="pci-field">
+                    <span class="pci-label" id="level-label">Level:</span>
+                    <div class="seg-control" role="group" aria-labelledby="level-label" id="level-toggle">
+                        <button type="button" data-level="90" aria-pressed="false">90%</button>
+                        <button type="button" data-level="95" aria-pressed="true">95%</button>
+                        <button type="button" data-level="99" aria-pressed="false">99%</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pci-step" aria-labelledby="step1-h">
+            <h2 id="step1-h"><span class="pci-num">1</span>The population</h2>
+            <p class="pci-sub">All of it &mdash; which is the one thing you never have in practice. The dashed line is &mu;.</p>
+            <div class="pci-chart" id="pop-chart"></div>
+            <div class="pci-stats" id="pop-stats"></div>
+        </section>
+
+        <section class="pci-step" aria-labelledby="step2-h">
+            <h2 id="step2-h"><span class="pci-num">2</span>One sample from it</h2>
+            <p class="pci-sub">The most recent draw of <em>n</em> values, with its mean marked.</p>
+            <div class="pci-chart" id="sample-chart"></div>
+            <div class="pci-stats" id="sample-stats"></div>
+        </section>
+
+        <section class="pci-step" id="step3" aria-labelledby="step3-h">
+            <h2 id="step3-h"><span class="pci-num">3</span>The sampling distribution of <span class="x-bar">x</span></h2>
+            <p class="pci-sub">One mean per sample. The shaded middle holds the stated percentage of them.</p>
+            <div class="pci-chart" id="dist-chart"></div>
+            <div class="pci-stats" id="dist-stats"></div>
+
+            <div class="gen-bar" id="controls" role="group" aria-label="Draw samples">
+                <button type="button" class="gen-btn" data-count="1">+1</button>
+                <button type="button" class="gen-btn" data-count="10">+10</button>
+                <button type="button" class="gen-btn" data-count="100">+100</button>
+                <button type="button" class="gen-btn" data-count="1000">+1000</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+            </div>
+        </section>
+
+        <section class="pci-step" aria-labelledby="step4-h">
+            <h2 id="step4-h"><span class="pci-num">4</span>Your interval</h2>
+            <p class="pci-sub">In practice you have one sample and no picture above it. Here is the first sample you drew, given the margin of error that picture produced.</p>
+            <div class="pci-chart" id="ci-chart"></div>
+            <div id="ci-verdict"></div>
+            <div class="pci-stats" id="ci-stats"></div>
+        </section>
+
+        <div class="pci-note discover-only">
+            <p><strong>Before you draw a thousand:</strong> the shaded middle in step 3 is centred on &mu;, but your interval in step 4 is centred on <span class="x-bar">x</span>. When does the interval reach &mu;?</p>
+            <button type="button" class="btn-secondary" id="reveal-btn" aria-expanded="false" aria-controls="reveal-answer">Show the answer</button>
+            <div id="reveal-answer" hidden></div>
+        </div>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Confidence Intervals by Repeated Sampling &mdash; Help</h2>
+        <p class="help-intro">The same four-step shape as a <a href="../../simulate/bootstrap-mean/">bootstrap mean interval</a>, with one step swapped: every repetition draws a <strong>fresh sample from the population</strong> instead of resampling your one sample.</p>
+        <ul class="help-intro">
+            <li><strong>Step 1</strong> is the whole population, with &mu; marked. You never have this in practice, which is the point of the exercise.</li>
+            <li><strong>Step 2</strong> is the most recent sample of <em>n</em>, with its mean.</li>
+            <li><strong>Step 3</strong> collects one mean per sample. The shaded middle is the central 90 / 95 / 99% of those means &mdash; it is centred on &mu;, and its half-width is the <strong>margin of error</strong>.</li>
+            <li><strong>Step 4</strong> takes the <em>first</em> sample you drew and gives it that margin: <span class="x-bar">x</span> &plusmn; <em>m</em>. That is a confidence interval.</li>
+        </ul>
+        <p><strong>Read step 3 carefully.</strong> The shaded range is <em>not</em> a confidence interval &mdash; it is the range of sample means, and it is centred on &mu;, which you would not know. It becomes an interval for &mu; only when you take its half-width over to one sample, which is step 4.</p>
+        <p><strong>The argument.</strong> The interval <span class="x-bar">x</span> &plusmn; <em>m</em> reaches &mu; exactly when <span class="x-bar">x</span> landed within <em>m</em> of &mu; &mdash; that is, exactly when <span class="x-bar">x</span> is inside the shaded middle. So the intervals that work are the ones from the shaded samples, which is the stated percentage of them. That is what the confidence level counts.</p>
+        <p><strong>What the bootstrap does about it.</strong> You cannot draw step 3, because you cannot sample the population again. The bootstrap resamples your sample instead, producing a distribution of nearly the same width centred on <span class="x-bar">x</span> rather than on &mu;. <a href="../bootstrap-shift/">Why the Percentile CI Works</a> puts those two distributions on one axis; <a href="../ci-coverage/">CI Coverage</a> runs many intervals and counts the hits.</p>
+        <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a>, and <code>?mode=present</code> hides the student prompt.</p>
+        <h3>Keyboard</h3>
+        <ul class="help-intro">
+            <li><strong>1</strong> / <strong>2</strong> / <strong>3</strong> / <strong>4</strong> &mdash; draw 1, 10, 100 or 1000 samples</li>
+            <li><strong>r</strong> &mdash; start over &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
+        </ul>
+        <button type="button" class="btn-primary">Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

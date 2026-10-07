@@ -1097,6 +1097,56 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ## Conceptual Demonstrations
 
+### Confidence Intervals by Repeated Sampling
+
+**Path:** `conceptual/population-ci/`
+**Category:** Conceptual
+**Description:** `simulate/bootstrap-mean/`'s four-step shape with the resampling step replaced: each repetition draws a **fresh sample from a population the reader chooses** (the five Sampling Lab shapes) rather than resampling one sample. Step 1 is the whole population with μ marked; step 2 the most recent sample with x̄; step 3 the sampling distribution of x̄ with its central 90/95/99% shaded; step 4 takes the **first** sample drawn and gives it that band's half-width, drawing x̄ ± m as a bar beside μ with a verdict. **The language is deliberately split:** step 3 reports a *middle 95% of sample means* and a *margin of error* — it is centred on μ and is **not** a confidence interval — and the words "confidence interval" appear only in step 4, over a bar centred on x̄. Changing the level re-shades the same simulation (more confidence costs width, watched rather than asserted); changing n clears it, because the sampling distribution depends on n.
+**Concepts:** Sampling distribution of x̄, standard error (SD of the x̄'s vs σ/√n), margin of error, confidence interval as statistic ± margin, confidence level as a success rate of a recipe, why a CI is centred on the statistic and not on the parameter, what the bootstrap substitutes for repeated sampling
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `shape` | string | Population shape: `normal`, `right-skewed` (default), `left-skewed`, `uniform`, `bimodal` | `shape=bimodal` |
+| `n` | integer | Sample size, 2–200 (default 25) | `n=40` |
+| `level` | integer | Confidence level: `90`, `95` (default), `99` | `level=99` |
+| `samples` | integer | Draw this many samples on load | `samples=1000` |
+| `seed` | string | PRNG seed — the population and the draws both reproduce | `seed=lecture` |
+| `mode` | string | `present` hides the student prompt | `mode=present` |
+
+**Compatible Datasets:** N/A (generated populations, shared with the Sampling Distribution Lab via `js/populations.js`)
+
+**Instructor Guide:** `conceptual/population-ci/guide.html`
+
+**Textbook Integration Notes:** Sits between the sampling-distribution chapters and the bootstrap-CI chapter: it is the picture the bootstrap imitates. Run it beside `simulate/bootstrap-mean/` at the same n — same shape, same width, different centre — then hand off to `conceptual/bootstrap-shift/` (both distributions on one axis) and `conceptual/ci-coverage/` (many intervals, counting the hits). **Do not describe step 3's shaded band as a confidence interval in prose linking here**; the page is built to keep that distinction and the surrounding text should match.
+
+---
+
+### Law of Large Numbers
+
+**Path:** `conceptual/law-of-large-numbers/`
+**Category:** Conceptual
+**Description:** The running value of repeated independent trials, traced against the number of trials, with a dashed line at what the model expects. Two experiments behind a toggle: **coin tosses** (proportion of heads → 0.5) and **die rolls** (average roll → 3.5). Trials are added in batches of 1 / 10 / 100 / 1000, so the wild early stretch can be watched arriving one trial at a time. Two options, both **off by default**: *Spread out the early trials* puts the trial count on a log scale (on a linear axis to 1000 the first twenty trials occupy 2% of the width and cannot be seen); *Also show the running total* draws heads − tails (dice: total − 3.5 per roll) from the **same** trials in a second panel. That second trace is the page's distinctive piece — the proportion settles while the total typically drifts further from zero, which is the direct refutation of the "law of averages". Fully seeded, so a link reproduces a lecture exactly.
+**Concepts:** Law of large numbers, long-run relative frequency, expected value, convergence of a sample proportion/mean, independence, the gambler's fallacy / "law of averages" misconception, why a proportion settles (growing denominator) while a count does not
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `exp` | string | Which experiment to open on: `coin` (default) or `die` | `exp=die` |
+| `n` | integer | Pre-run this many trials on load, so a link opens with the picture already made (capped at 200,000) | `n=1000` |
+| `seed` | string | PRNG seed — the same seed replays the identical sequence of trials | `seed=lecture3` |
+| `mode` | string | `present` hides the student prompt | `mode=present` |
+
+**Compatible Datasets:** N/A (generated trials)
+
+**Instructor Guide:** `conceptual/law-of-large-numbers/guide.html` — printable talking points, a run-sheet, the "is a coin due?" discussion question with its answer, and where the page fits.
+
+**Textbook Integration Notes:** Natural home is the **probability** chapter, *before* sampling distributions — it establishes what "long-run probability" means, which the sampling-distribution chapters then build on. Pairs with `conceptual/sampling-lab/` (what happens to the *spread* of a statistic as n grows) and `explore/random-sequence/` (real randomness is clumpier than people expect — the same intuition failure that makes a coin feel "due"). The running-total panel is the one to link for any exercise about the gambler's fallacy.
+
+---
+
 ### Sampling Distribution Lab
 
 **Path:** `conceptual/sampling-lab/`

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Law of Large Numbers | StatLens</title>
+    <meta name="description" content="Watch a running proportion of heads, or a running average die roll, settle toward its expected value as the number of trials grows — and watch the running total refuse to.">
+    <meta name="keywords" content="law of large numbers, long-run proportion, running average, coin flip, die roll, expected value, convergence, law of averages, gambler's fallacy, probability, simulation">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .lln-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; align-items: center; margin: 0.5rem 0 0.75rem; }
+        .lln-field { display: inline-flex; align-items: center; gap: 0.5rem; }
+        .lln-field > .lln-label { color: var(--ims-gray-text); font-size: 0.9rem; }
+
+        #lln-figure, #lln-total-figure { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+        #lln-figure svg, #lln-total-figure svg { display: block; width: 100%; height: auto; }
+        #lln-total-wrap { margin-top: 0.9rem; }
+
+        /* The readout is a fixed-width grid so a digit arriving cannot change
+           the layout — the same lesson the ± 2 SE slider taught (a readout that
+           grows shoves whatever is beside it). */
+        .lln-readout { display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; margin: 0.75rem 0 0.25rem;
+                       font-size: 0.95rem; }
+        .lln-readout div { min-width: 9.5rem; flex: 1 1 auto; }
+        .lln-readout .lln-value { font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem;
+                                  display: block; }
+        .lln-readout .lln-key { color: var(--ims-gray-text); font-size: 0.85rem; }
+
+        .lln-extras { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; margin: 0.6rem 0 0; }
+        /* `flex-direction` is set explicitly: a global rule stacks labels above
+           their inputs, which put each tick box on its own line above its text. */
+        .lln-extras label { display: inline-flex; flex-direction: row; align-items: center;
+                            gap: 0.45rem; font-size: 0.92rem; cursor: pointer; }
+        .lln-extras input[type="checkbox"] { flex: none; margin: 0; width: 1.05rem; height: 1.05rem; }
+
+        .lln-note { border: 1px dashed var(--border); border-radius: 8px; padding: 0.7rem 0.85rem;
+                    margin: 1rem 0 0; background: #fff; }
+        .lln-note p { margin: 0 0 0.5rem; }
+        .lln-note p:last-child { margin-bottom: 0; }
+
+        @media (max-width: 600px) {
+            .lln-readout div { min-width: 8.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#settings">Skip to Settings</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Figure</a>
+    </nav>
+
+    <main>
+        <h1>Law of Large Numbers<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p>Toss a coin over and over and the <strong>proportion</strong> of heads settles down near 0.5. Roll a die over and over and the <strong>average</strong> roll settles near 3.5. Add trials a few at a time and watch the line stop thrashing &mdash; not because anything corrects it, but because each new trial counts for less.</p>
+
+        <section id="settings" aria-label="Experiment settings">
+            <div class="lln-controls">
+                <div class="lln-field">
+                    <span class="lln-label" id="exp-label">Experiment:</span>
+                    <div class="seg-control" role="group" aria-labelledby="exp-label" id="exp-toggle">
+                        <button type="button" data-exp="coin" aria-pressed="true">Coin tosses</button>
+                        <button type="button" data-exp="die" aria-pressed="false">Die rolls</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="chart" aria-label="Running value figure">
+            <div id="lln-figure"></div>
+
+            <div class="lln-readout" id="readout" role="status" aria-live="off"></div>
+
+            <div class="gen-bar" id="controls" role="group" aria-label="Add trials">
+                <button type="button" class="gen-btn" data-count="1">+1</button>
+                <button type="button" class="gen-btn" data-count="10">+10</button>
+                <button type="button" class="gen-btn" data-count="100">+100</button>
+                <button type="button" class="gen-btn" data-count="1000">+1000</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+            </div>
+
+            <div class="lln-extras">
+                <label><input type="checkbox" id="log-toggle"> Spread out the early trials</label>
+                <label><input type="checkbox" id="total-toggle"> Also show the running total</label>
+            </div>
+
+            <div id="lln-total-wrap" hidden>
+                <div id="lln-total-figure"></div>
+                <p class="lln-note" id="total-note"></p>
+            </div>
+
+            <div class="lln-note discover-only">
+                <p><strong>Before you add a thousand:</strong> the proportion of heads is 0.40 after 10 tosses. Over the next 1000 tosses, does the coin produce <em>extra</em> heads to make up for it?</p>
+                <button type="button" class="btn-secondary" id="reveal-btn" aria-expanded="false" aria-controls="reveal-answer">Show the answer</button>
+                <div id="reveal-answer" hidden></div>
+            </div>
+        </section>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Law of Large Numbers &mdash; Help</h2>
+        <p class="help-intro">The long-run <strong>proportion</strong> (or <strong>average</strong>) of independent trials settles toward the value the probability model predicts. This page runs the trials and draws that settling.</p>
+        <ul class="help-intro">
+            <li><strong>The blue line</strong> is the running value after each trial &mdash; the proportion of tosses so far that were heads, or the average of the rolls so far.</li>
+            <li><strong>The dashed line</strong> is what the model expects: 0.5 for a fair coin, 3.5 for a fair die.</li>
+            <li><strong>Add trials</strong> a few at a time. Early on the line jumps about; later a single trial barely moves it.</li>
+        </ul>
+        <p><strong>Why it settles.</strong> Nothing corrects a run of tails. The line calms down because the denominator grows: one more toss changes a proportion out of 20 by up to 0.05, and a proportion out of 2000 by at most 0.0005. The early trials are never cancelled &mdash; they are outvoted.</p>
+        <p><strong>&ldquo;Spread out the early trials&rdquo;</strong> puts the trial count on a log scale, so the first ten trials get as much width as the last nine hundred. The wild early stretch is where the law is doing its visible work, and on an ordinary axis it is squeezed into a sliver.</p>
+        <p><strong>&ldquo;Also show the running total&rdquo;</strong> draws heads minus tails (or the total roll minus 3.5 per roll). This is the half that gets left out: the <em>proportion</em> converges while the <em>total</em> wanders further and further from zero. A coin is never &ldquo;due&rdquo;.</p>
+        <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a> with talking points, and <code>?mode=present</code> hides the student prompt.</p>
+        <h3>Keyboard</h3>
+        <ul class="help-intro">
+            <li><strong>1</strong> / <strong>2</strong> / <strong>3</strong> / <strong>4</strong> &mdash; add 1, 10, 100 or 1000 trials</li>
+            <li><strong>r</strong> &mdash; start over &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
+        </ul>
+        <button type="button" class="btn-primary">Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+</body>
+</html>

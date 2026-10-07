@@ -218,6 +218,15 @@ Does not currently consume `seed` or `direction` from URL parameters. The direct
 
 ### Standalone simulation pages (no additional URL parameters)
 
+`conceptual/population-ci/` — `shape` (`normal` | `right-skewed` (default) | `left-skewed` |
+`uniform` | `bimodal`), `n` (sample size 2–200, default 25), `level` (`90` | `95` | `99`),
+`samples` (draw this many on load), `seed` (the population AND the draws reproduce), and `mode`.
+No data parameters: the population is generated.
+
+`conceptual/law-of-large-numbers/` — `exp` (`coin` | `die`, default `coin`), `n` (pre-run this many
+trials on load, capped at 200,000), `seed` (replays the identical sequence of trials), and `mode`
+(`present` hides the student prompt). No data parameters: the trials are generated, not loaded.
+
 `randomization-chisq/` — uses `initDataPanel` for data loading (`dataset`, `data`, `csv`, `json`) plus `seed`, `readout`, and `plot=only` (see those rows), but no other simulation-specific parameters.
 
 `bootstrap-slope/` has its own engine (draws bootstrap regression lines on a scatterplot) and now honors `seed`, `readout=false`, `plot=only`, `ci`, and `ci_method` on top of data loading (`dataset`, `csv`, `json`). `?ci=` sets the confidence level (50–99.9); `?ci_method=` picks `percentile` / `se` / `both`; `plot=only` auto-runs the 1000-resample bootstrap distribution at the given `seed`.

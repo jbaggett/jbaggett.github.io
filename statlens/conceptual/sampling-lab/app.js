@@ -7,7 +7,8 @@
 
 import { createResampleStore } from '../../js/resample-store.js';
 import { attachResamplePeek, createPeekElement } from '../../js/resample-peek.js';
-import { createRng, randNormal } from '../../js/prng.js';
+import { createRng } from '../../js/prng.js';
+import { generateQuantPopulation } from '../../js/populations.js';
 import { mean, sd } from '../../js/stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
 import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
@@ -134,40 +135,10 @@ function generatePopulation(shape, rng) {
     for (let i = 0; i < POP_SIZE; i++) vals.push(i < ones ? 1 : 0);
     return vals;
   }
-  // Draw from `make` until the value lands in [lo, hi]. The skewed shapes are
-  // otherwise unbounded exponentials, so a rare draw can land far past the
-  // plotted domain and overflow into the page. Redrawing (rather than clamping)
-  // keeps the distribution's natural shape — it just tapers to a clean edge with
-  // no pile-up spike. μ/σ come from this bounded population, so the sampling
-  // distribution still centres honestly on the μ line. (A teaching demo; the
-  // rejected tail is <1% and invisible for the already-bounded shapes.)
-  const draw = (/** @type {() => number} */ make, /** @type {number} */ lo, /** @type {number} */ hi) => {
-    let x;
-    do { x = make(); } while (x < lo || x > hi);
-    return x;
-  };
-  switch (shape) {
-    case 'normal':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => randNormal(50, 10, rng), 15, 85));
-      break;
-    case 'right-skewed':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => -Math.log(1 - rng()) / 0.1, 0, 50));
-      break;
-    case 'left-skewed':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => 50 - (-Math.log(1 - rng()) / 0.1), 0, 50));
-      break;
-    case 'uniform':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(rng() * 100);
-      break;
-    case 'bimodal':
-      for (let i = 0; i < POP_SIZE; i++) {
-        vals.push(draw(() => (rng() < 0.5 ? randNormal(30, 5, rng) : randNormal(70, 5, rng)), 10, 90));
-      }
-      break;
-    default:
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => randNormal(50, 10, rng), 15, 85));
-  }
-  return vals;
+  // The five quantitative shapes live in js/populations.js, because a second
+  // page needed the same ones and a copy would have drifted. The draw sequence
+  // is unchanged, so every seeded link still produces the same population.
+  return generateQuantPopulation(shape, rng, POP_SIZE);
 }
 
 // ─── State ───

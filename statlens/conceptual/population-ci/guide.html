@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instructor Guide: Confidence Intervals by Repeated Sampling | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ims-blue: #569BBD;
+            --ims-dark: #114B5F;
+            --ims-red: #F05133;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Atkinson Hyperlegible', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        h1 {
+            color: var(--ims-dark);
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--ims-blue);
+            padding-bottom: 0.75rem;
+        }
+        h2 {
+            color: var(--ims-dark);
+            font-size: 1.15rem;
+            margin: 1.5rem 0 0.5rem;
+            border-left: 4px solid var(--ims-blue);
+            padding-left: 0.75rem;
+        }
+        h3 {
+            font-size: 1rem;
+            margin: 1rem 0 0.3rem;
+            color: #444;
+        }
+        p, li { font-size: 0.9rem; margin-bottom: 0.4rem; }
+        ul, ol { padding-left: 1.5rem; }
+        ul li { margin-bottom: 0.3rem; }
+
+        .ask-box {
+            background: #e8f4fd;
+            border-left: 4px solid var(--ims-blue);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .ask-box strong { color: var(--ims-dark); }
+
+        .tip-box {
+            background: #fff8e1;
+            border-left: 4px solid #f9a825;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .misconception {
+            background: #fce4ec;
+            border-left: 4px solid var(--ims-red);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .misconception strong { color: #c62828; }
+
+        .timing {
+            display: inline-block;
+            background: var(--ims-dark);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #ddd;
+        }
+
+        a { color: var(--ims-blue); }
+        a:hover { color: var(--ims-dark); }
+
+        .launch-link {
+            display: inline-block;
+            background: var(--ims-blue);
+            color: white;
+            text-decoration: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        .launch-link:hover { background: var(--ims-dark); color: white; }
+
+        @media print {
+            body { padding: 0.5in; max-width: none; }
+            .launch-link { display: none; }
+            .no-print { display: none; }
+            h2 { break-after: avoid; }
+            .ask-box, .tip-box, .misconception { break-inside: avoid; }
+        }
+    </style>
+</head><body>
+
+<h1>Instructor Guide: Confidence Intervals by Repeated Sampling</h1>
+<p class="subtitle">Companion notes for the StatLens conceptual demo &mdash; where a margin of error comes from, and why the bootstrap can stand in for it</p>
+
+<p><a class="launch-link" href="index.html?mode=present">Launch in Presentation Mode</a></p>
+
+<h2>Overview <span class="timing">~12 min</span></h2>
+<p>The same four steps as a bootstrap mean interval, with one swapped: every repetition draws a
+<strong>fresh sample from the population</strong> instead of resampling the one sample you have. Choose the
+population shape, set <em>n</em>, press +1000, and the sampling distribution of <span class="xb">x&#772;</span>
+builds. Its middle 90 / 95 / 99% is shaded; the half-width of that shaded band is the margin of error; step 4
+gives that margin to one sample and draws the interval.</p>
+
+<div class="tip-box">
+    <strong>Why this is not just the Sampling Distribution Lab.</strong> The Lab is about the <em>spread</em> of
+    a statistic and how it responds to <em>n</em>. This page is about the <em>interval</em>: where its width
+    comes from, and why the interval around <span class="xb">x&#772;</span> succeeds exactly when
+    <span class="xb">x&#772;</span> was typical.
+</div>
+
+<h2>The point to be careful about</h2>
+<div class="misconception">
+    <strong>The shaded band in step 3 is NOT a confidence interval.</strong> It is the central range of
+    <em>sample means</em>, and it is centred on &mu; &mdash; which in real life you do not know. Saying
+    &ldquo;95% confidence interval&rdquo; over that band teaches the commonest CI error there is: that the
+    interval is a range the statistic falls into, rather than a range built around the statistic. The page keeps
+    them apart deliberately &mdash; step 3 says <em>middle 95% of sample means</em> and <em>margin of error</em>;
+    the words &ldquo;confidence interval&rdquo; appear only in step 4, over a bar centred on
+    <span class="xb">x&#772;</span>.
+</div>
+
+<p>The equivalence to draw out loud:</p>
+<p style="text-align:center"><strong>|<span class="xb">x&#772;</span> &minus; &mu;| &le; <em>m</em>
+&nbsp;&nbsp;&hArr;&nbsp;&nbsp; &mu; is inside [<span class="xb">x&#772;</span> &plusmn; <em>m</em>]</strong></p>
+<p>Left-hand side: <span class="xb">x&#772;</span> landed in the shaded band. Right-hand side: the interval
+captured &mu;. One fact, read from either end &mdash; which is why the page reports both and they never disagree.</p>
+
+<h2>Running it</h2>
+<ol>
+    <li><strong>Start on a skewed population.</strong> It makes the point that the <em>sampling distribution</em>
+        becomes symmetric even when the population is not &mdash; worth noticing before anything else.</li>
+    <li><strong>Press +1 a few times.</strong> Each press redraws step 2 (a new sample) and drops one mean into
+        step 3. Ask what step 3 would look like after a thousand.</li>
+    <li><strong>Press +1000.</strong> Compare <em>SD of the</em> <span class="xb">x&#772;</span><em>'s</em> with
+        &sigma;/&radic;<em>n</em> in the readout. They should agree closely &mdash; this is the standard error
+        formula arriving as an observation rather than an assertion.</li>
+    <li><strong>Change the level to 99%.</strong> The samples stand; only the shaded middle widens. The margin
+        grows, and in step 4 the interval gets longer. &ldquo;More confidence costs width&rdquo; becomes
+        something students watch rather than something they are told.</li>
+    <li><strong>Change <em>n</em>.</strong> Everything clears &mdash; the sampling distribution depends on
+        <em>n</em>, so the old means are not comparable. Rebuild at a larger <em>n</em> and watch the band and
+        the interval both narrow.</li>
+</ol>
+
+<div class="ask-box">
+    <strong>Discussion question.</strong> The shaded middle in step 3 is centred on &mu;, but your interval in
+    step 4 is centred on <span class="xb">x&#772;</span>. When does the interval reach &mu;? <em>Answer:</em>
+    exactly when <span class="xb">x&#772;</span> landed inside the shaded band &mdash; the two statements are the
+    same distance read from opposite ends.
+</div>
+
+<h2>Where the bootstrap comes in</h2>
+<p>Step 3 is impossible in practice: one sample is all anyone gets. The bootstrap substitutes the sample for
+the population and resamples <em>that</em>, producing a distribution of roughly the same width, centred on
+<span class="xb">x&#772;</span> rather than on &mu;. Running this page beside
+<a href="../../simulate/bootstrap-mean/">Bootstrap: One Mean</a> with the same <em>n</em> makes the comparison
+concrete &mdash; same shape of picture, same width, different centre.</p>
+<p><a href="../bootstrap-shift/">Why the Percentile CI Works</a> puts both distributions on one axis and is the
+natural follow-on. <a href="../ci-coverage/">CI Coverage</a> then runs many intervals and counts how many
+capture &mu;, which is the claim the confidence level actually makes.</p>
+
+<h2>Links worth keeping</h2>
+<ul>
+    <li><code>?shape=right-skewed&amp;n=25&amp;seed=lecture</code> &mdash; reproduces the identical run every time.</li>
+    <li><code>?samples=1000</code> &mdash; opens with the distribution already built.</li>
+    <li><code>?level=99</code> &mdash; opens at the 99% level.</li>
+    <li><code>?mode=present</code> &mdash; hides the student prompt.</li>
+</ul>
+
+<p class="meta">StatLens &middot; Confidence Intervals by Repeated Sampling &middot; conceptual/population-ci/</p>
+
+</body>
+</html>
