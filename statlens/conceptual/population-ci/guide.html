@@ -128,82 +128,90 @@
 </head><body>
 
 <h1>Instructor Guide: Confidence Intervals by Repeated Sampling</h1>
-<p class="subtitle">Companion notes for the StatLens conceptual demo &mdash; where a margin of error comes from, and why the bootstrap can stand in for it</p>
+<p class="subtitle">Companion notes for the StatLens conceptual demo &mdash; coverage drawn on the sampling distribution, and what &ldquo;95% confident&rdquo; is a claim about</p>
 
 <p><a class="launch-link" href="index.html?mode=present">Launch in Presentation Mode</a></p>
 
 <h2>Overview <span class="timing">~12 min</span></h2>
-<p>The same four steps as a bootstrap mean interval, with one swapped: every repetition draws a
-<strong>fresh sample from the population</strong> instead of resampling the one sample you have. Choose the
-population shape, set <em>n</em>, press +1000, and the sampling distribution of <span class="xb">x&#772;</span>
-builds. Its middle 90 / 95 / 99% is shaded; the half-width of that shaded band is the margin of error; step 4
-gives that margin to one sample and draws the interval.</p>
+<p>The <a href="../sampling-lab/">Sampling Distribution Lab</a>'s three tiers &mdash; population, one sample,
+the distribution of the statistic &mdash; with one addition: every sample gets a confidence interval, and every
+dot is coloured by whether that interval caught &mu;. Blue caught it; orange missed.</p>
+
+<p>The interval is the one students actually compute, <strong>x&#772; &plusmn; t*s/&radic;n</strong>, using each
+sample's own <em>s</em>. So the widths differ dot to dot and the coverage lands <em>near</em> the stated level
+rather than exactly on it &mdash; which is the honest version and the more interesting one.</p>
 
 <div class="tip-box">
-    <strong>Why this is not just the Sampling Distribution Lab.</strong> The Lab is about the <em>spread</em> of
-    a statistic and how it responds to <em>n</em>. This page is about the <em>interval</em>: where its width
-    comes from, and why the interval around <span class="xb">x&#772;</span> succeeds exactly when
-    <span class="xb">x&#772;</span> was typical.
+    <strong>How this differs from CI Coverage.</strong> <a href="../ci-coverage/">CI Coverage</a> draws the
+    intervals as a stack of bars and counts them. This draws the same count <em>on the sampling distribution</em>,
+    so you can see <em>which samples</em> produce the misses: they are mostly the ones far from &mu;. Run them in
+    either order; they answer the same question with different pictures.
 </div>
-
-<h2>The point to be careful about</h2>
-<div class="misconception">
-    <strong>The shaded band in step 3 is NOT a confidence interval.</strong> It is the central range of
-    <em>sample means</em>, and it is centred on &mu; &mdash; which in real life you do not know. Saying
-    &ldquo;95% confidence interval&rdquo; over that band teaches the commonest CI error there is: that the
-    interval is a range the statistic falls into, rather than a range built around the statistic. The page keeps
-    them apart deliberately &mdash; step 3 says <em>middle 95% of sample means</em> and <em>margin of error</em>;
-    the words &ldquo;confidence interval&rdquo; appear only in step 4, over a bar centred on
-    <span class="xb">x&#772;</span>.
-</div>
-
-<p>The equivalence to draw out loud:</p>
-<p style="text-align:center"><strong>|<span class="xb">x&#772;</span> &minus; &mu;| &le; <em>m</em>
-&nbsp;&nbsp;&hArr;&nbsp;&nbsp; &mu; is inside [<span class="xb">x&#772;</span> &plusmn; <em>m</em>]</strong></p>
-<p>Left-hand side: <span class="xb">x&#772;</span> landed in the shaded band. Right-hand side: the interval
-captured &mu;. One fact, read from either end &mdash; which is why the page reports both and they never disagree.</p>
 
 <h2>Running it</h2>
 <ol>
-    <li><strong>Start on a skewed population.</strong> It makes the point that the <em>sampling distribution</em>
-        becomes symmetric even when the population is not &mdash; worth noticing before anything else.</li>
-    <li><strong>Press +1 a few times.</strong> Each press redraws step 2 (a new sample) and drops one mean into
-        step 3. Ask what step 3 would look like after a thousand.</li>
-    <li><strong>Press +1000.</strong> Compare <em>SD of the</em> <span class="xb">x&#772;</span><em>'s</em> with
-        &sigma;/&radic;<em>n</em> in the readout. They should agree closely &mdash; this is the standard error
-        formula arriving as an observation rather than an assertion.</li>
-    <li><strong>Change the level to 99%.</strong> The samples stand; only the shaded middle widens. The margin
-        grows, and in step 4 the interval gets longer. &ldquo;More confidence costs width&rdquo; becomes
-        something students watch rather than something they are told.</li>
-    <li><strong>Change <em>n</em>.</strong> Everything clears &mdash; the sampling distribution depends on
-        <em>n</em>, so the old means are not comparable. Rebuild at a larger <em>n</em> and watch the band and
-        the interval both narrow.</li>
+    <li><strong>Press +1 a few times.</strong> Each draw puts a sample in the middle tier with its interval
+        drawn under the axis, and drops one coloured dot into the distribution. Ask after a miss: <em>what was
+        unusual about that sample?</em></li>
+    <li><strong>Press +100.</strong> About 95 blue, about 5 orange. Ask students to describe <em>where</em> the
+        orange dots are before you say anything.</li>
+    <li><strong>Hover along the distribution.</strong> Each dot unpacks into its sample and its interval. Near
+        the middle they all reach &mu;; out in the tails they stop short.</li>
+    <li><strong>Switch to 99%.</strong> The samples do not change &mdash; only the intervals. More of them
+        reach &mu;, and every interval is wider. That trade is the whole content of &ldquo;choose a confidence
+        level&rdquo;.</li>
 </ol>
 
-<div class="ask-box">
-    <strong>Discussion question.</strong> The shaded middle in step 3 is centred on &mu;, but your interval in
-    step 4 is centred on <span class="xb">x&#772;</span>. When does the interval reach &mu;? <em>Answer:</em>
-    exactly when <span class="xb">x&#772;</span> landed inside the shaded band &mdash; the two statements are the
-    same distance read from opposite ends.
+<div class="misconception">
+    <strong>The misconception this page exists for.</strong> &ldquo;There is a 95% chance &mu; is in my
+    interval.&rdquo; Your interval either contains &mu; or it does not &mdash; there is no chance left in it once
+    the sample is drawn. The 95% is the <em>success rate of the recipe</em> across the samples you might have
+    drawn, which is exactly what the field of dots shows.
 </div>
 
-<h2>Where the bootstrap comes in</h2>
-<p>Step 3 is impossible in practice: one sample is all anyone gets. The bootstrap substitutes the sample for
-the population and resamples <em>that</em>, producing a distribution of roughly the same width, centred on
-<span class="xb">x&#772;</span> rather than on &mu;. Running this page beside
-<a href="../../simulate/bootstrap-mean/">Bootstrap: One Mean</a> with the same <em>n</em> makes the comparison
-concrete &mdash; same shape of picture, same width, different centre.</p>
-<p><a href="../bootstrap-shift/">Why the Percentile CI Works</a> puts both distributions on one axis and is the
-natural follow-on. <a href="../ci-coverage/">CI Coverage</a> then runs many intervals and counts how many
-capture &mu;, which is the claim the confidence level actually makes.</p>
+<h2>The move that makes it land <span class="timing">~4 min</span></h2>
+<p>Press <strong>Hide &mu;</strong>.</p>
+<p>Every dot goes grey, &mu; leaves all three charts, and the count is replaced by a sentence saying nothing can
+be counted. This is not the page being coy: <strong>with &mu; hidden there is genuinely no way to tell which
+intervals worked</strong> &mdash; not for the page, and not for a statistician with real data. That is the
+situation every student is in every time they compute an interval.</p>
 
-<h2>Links worth keeping</h2>
-<ul>
-    <li><code>?shape=right-skewed&amp;n=25&amp;seed=lecture</code> &mdash; reproduces the identical run every time.</li>
-    <li><code>?samples=1000</code> &mdash; opens with the distribution already built.</li>
-    <li><code>?level=99</code> &mdash; opens at the 99% level.</li>
-    <li><code>?mode=present</code> &mdash; hides the student prompt.</li>
-</ul>
+<div class="ask-box">
+    <strong>Ask, with &mu; hidden:</strong> &ldquo;Point at a dot. Did that interval catch &mu;?&rdquo; Let the
+    silence do the work. Then: &ldquo;What would you need to know to answer?&rdquo;
+</div>
+
+<p>Then press <strong>Reveal &mu;</strong>. The colours snap back. The sentence worth saying out loud: <em>your
+dot was one colour or the other the whole time. Hiding &mu; never changed which &mdash; it only took away your
+ability to see it.</em> That is why the claim has to be about the method.</p>
+
+<div class="tip-box">
+    <strong>For a lecture</strong>, open the page with <code>?parameter=hidden&amp;samples=100</code>. The class
+    meets a grey field of dots and an unanswerable question, and you reveal &mu; at the moment it pays off.
+    <code>?seed=anything</code> reproduces the identical run.
+</div>
+
+<h2>Common questions</h2>
+<h3>&ldquo;Why isn't it exactly 95?&rdquo;</h3>
+<p>Two reasons, both worth naming. It is a random sample of samples, so the count wobbles. And the interval uses
+<em>s</em> in place of &sigma; &mdash; the t distribution corrects for that on average, not in every case. At
+small <em>n</em> the coverage can sit a little under the advertised level.</p>
+
+<h3>&ldquo;Why did that dot near the middle miss?&rdquo;</h3>
+<p>Because its <em>s</em> came out unusually small, so its interval was unusually narrow. This is the detail the
+coloured-dot picture reveals that a stack of bars hides: capture is not purely a matter of being close to &mu;.
+Hover the dot and compare its <em>s</em> with the population &sigma;.</p>
+
+<h3>&ldquo;Does a bigger sample make my interval right?&rdquo;</h3>
+<p>No &mdash; it makes it narrower, not more certain to be correct. Raise <em>n</em> and the dots pull in toward
+&mu; and the intervals shrink, but the proportion that capture stays about the same. The level controls the hit
+rate; <em>n</em> controls the precision.</p>
+
+<h2>Where it fits</h2>
+<p>After sampling distributions, before or beside bootstrap intervals. The sequence that works:
+<a href="../sampling-lab/">Sampling Distributions</a> (what varies) &rarr; here (what a method built on that
+variation achieves) &rarr; <a href="../bootstrap-shift/">Why the Percentile CI Works</a> (why resampling one
+sample may stand in for sampling the population at all).</p>
 
 <p class="meta">StatLens &middot; Confidence Intervals by Repeated Sampling &middot; conceptual/population-ci/</p>
 

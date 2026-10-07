@@ -53,13 +53,13 @@
         <article class="cl-entry tool">
             <div class="cl-date">2026-10-07</div>
             <h2>Confidence Intervals by Repeated Sampling<span class="cl-tag tool">New</span></h2>
-            <p>A bootstrap interval resamples your one sample because you only get one. Here you get as many
-               as you like: pick a population, set <em>n</em>, and draw sample after sample from the population
-               itself. The middle 95% of the sample means gives the <strong>margin of error</strong> — carry it
-               over to one sample and that is a confidence interval.</p>
-            <p>This is the picture the bootstrap is imitating, so it is the natural thing to run beside
-               <a href="../simulate/bootstrap-mean/">Bootstrap: One Mean</a> — same shape, same width,
-               different centre.</p>
+            <p>Draw sample after sample from a population you pick. Each one gets the interval you would
+               actually compute, and <strong>each dot is coloured by whether that interval caught &mu;</strong> —
+               blue for yes, orange for no. Hover a dot to see the sample behind it and watch its interval reach
+               &mu;, or fail to.</p>
+            <p>Then press <strong>Hide &mu;</strong>. The colours vanish and the count disappears, because
+               without &mu; nothing can say which intervals worked &mdash; which is exactly the position you are
+               in with real data. Reveal it and they snap back: yours was one colour or the other all along.</p>
             <p><a href="../conceptual/population-ci/">Open it →</a> &middot;
                <a href="../conceptual/population-ci/guide.html">instructor guide</a></p>
         </article>

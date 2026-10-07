@@ -220,8 +220,9 @@ Does not currently consume `seed` or `direction` from URL parameters. The direct
 
 `conceptual/population-ci/` — `shape` (`normal` | `right-skewed` (default) | `left-skewed` |
 `uniform` | `bimodal`), `n` (sample size 2–200, default 25), `level` (`90` | `95` | `99`),
-`samples` (draw this many on load), `seed` (the population AND the draws reproduce), and `mode`.
-No data parameters: the population is generated.
+`samples` (draw this many on load; capped at 400 so every dot stays hoverable), `parameter=hidden`
+(open with μ hidden — the "you only get one sample" framing, with a Reveal button), `seed` (the
+population AND the draws reproduce), and `mode`. No data parameters: the population is generated.
 
 `conceptual/law-of-large-numbers/` — `exp` (`coin` | `die`, default `coin`), `n` (pre-run this many
 trials on load, capped at 200,000), `seed` (replays the identical sequence of trials), and `mode`

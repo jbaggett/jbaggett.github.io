@@ -1,69 +1,63 @@
 // @ts-check
 /**
- * Confidence Intervals by Repeated Sampling.
+ * Confidence Intervals by Repeated Sampling — coverage, drawn on the sampling
+ * distribution.
  *
- * Requested 2026-10-07 (Jeff, relaying a colleague): "demonstrate CI's by
- * sampling from a population instead of resampling from sample. this would be
- * for means and should look like the app for resampling for a mean CI. We
- * should select the population (like sampling lab distribution) and set the
- * sample size."
+ * Rebuilt 2026-10-07 on the Sampling Distribution Lab's parts, after Jeff:
+ * "it looks like the panels were grown from scratch rather than reusing
+ * previous elements. the +1, +10, buttons etc are not in the usual place." Both
+ * true. The three-tier layout, the panels, the generate bar and the stats rows
+ * are now the lab's own (lifted into `css/style.css`), so the two pages are the
+ * same shape because they are built from the same thing rather than because
+ * someone kept them matching.
  *
- * So: `simulate/bootstrap-mean/`'s shape — population, one sample, the
- * distribution of the statistic, the interval — with the resampling step
- * replaced by a fresh draw from a population the reader chooses.
+ * ── What it shows ────────────────────────────────────────────────────────
  *
- * ── The statistical care this page needs ──────────────────────────────────
+ * Every sample gets the interval a student would actually compute,
+ * x̄ ± t*·s/√n, so the widths VARY from dot to dot and the coverage lands near
+ * the advertised level rather than exactly on it. Each dot is coloured by
+ * whether its own interval caught μ; hovering one shows that sample and its
+ * interval. The misses are mostly — not exactly — the dots far from μ, and
+ * "mostly" is the honest word, because s is estimated too.
  *
- * The middle 95% of a SAMPLING distribution is not a confidence interval. It is
- * the central range of x̄ values and it is centred on μ, which nobody knows. Say
- * "95% confidence interval" over that shaded band and you have taught the
- * single most common CI misconception — that the interval is a range the
- * statistic falls in, rather than a range built around the statistic.
+ * ── The hard part, and the answer ────────────────────────────────────────
  *
- * The page therefore keeps them as two separate steps and names them
- * differently. Step 3 reports "middle 95% of sample means" and a MARGIN OF
- * ERROR (its half-width). Step 4 carries that margin over to ONE sample and
- * draws x̄ ± m, which is the interval. The equivalence is then visible rather
- * than asserted: the interval reaches μ exactly when x̄ landed inside the shaded
- * band, because both statements say |x̄ − μ| ≤ m.
- *
- * That is also what separates this page from its neighbours:
- *   conceptual/bootstrap-shift/  — bootstrap distribution vs sampling distribution
- *   conceptual/ci-coverage/      — many intervals, counting the hits
- *   conceptual/two-se/           — the same equivalence with no numbers at all
- * This one is about where the WIDTH comes from, with numbers, for a population
- * the reader picked.
- *
- * The "first sample you drew" is deliberately the one used in step 4 rather
- * than the most recent. It is frozen at the moment the simulation starts, so
- * pressing +1000 refines the margin WITHOUT moving the interval it is applied
- * to — the reader watches one fixed interval's width settle. If step 4 followed
- * the latest sample, both ends would move at once and nothing could be read.
+ * Jeff: "I'm not sure how to get across the idea that IRL they get one sample
+ * mean." The control that does it already existed in the lab: **hide μ**.
+ * With μ hidden the dots CANNOT be coloured and the count CANNOT be computed —
+ * not as a teaching choice but as a fact, because nothing on the page knows
+ * which intervals worked. That is exactly the student's situation: one
+ * interval, no μ, no way to check. Pressing Reveal makes the colours snap on,
+ * and the sentence that lands is "yours was one of these all along; you just
+ * could not see which."
  */
 
-import * as d3Array from 'd3-array';
-import * as d3Scale from 'd3-scale';
-import * as d3Axis from 'd3-axis';
 import * as d3Selection from 'd3-selection';
 
 import { createRng, rngFromState } from '../../js/prng.js';
 import { createResampleStore } from '../../js/resample-store.js';
 import { attachResamplePeek, createPeekElement } from '../../js/resample-peek.js';
 import { generateQuantPopulation, POPULATION_SHAPES } from '../../js/populations.js';
-import { mean, sd, quantile } from '../../js/stats.js';
+import { mean, sd } from '../../js/stats.js';
+import { setJStat, tInv } from '../../js/distributions.js';
 import { drawHistogram } from '../../js/histogram.js';
 import { drawDotplot } from '../../js/dotplot.js';
-import { createChart, addAxes, holdHeight } from '../../js/chart-utils.js';
-import { announce, initHelp } from '../../js/page-utils.js';
+import { announce, initHelp, initSettings } from '../../js/page-utils.js';
 
 // ─── Constants ───
 
 const POP_SIZE = 10000;
-const MU_COLOR = '#D55E00';       // Okabe–Ito vermillion — the parameter
-const STAT_COLOR = '#7B2D8E';     // the observed-statistic purple used everywhere
-const CAPTURE = '#0072B2';        // the interval reaches μ
-const MISS = '#D55E00';           // it does not
-const MAX_SAMPLES = 100000;
+const MU_COLOR = '#D55E00';     // Okabe–Ito vermillion — the parameter
+const CAPTURE = '#0072B2';      // this interval caught μ
+const MISS = '#D55E00';         // it did not
+const UNKNOWN = '#9AA5AB';      // μ is hidden, so nobody can say
+
+/**
+ * Every dot stays hoverable and individually coloured, which is the whole
+ * point — so the page stops where dots stop being legible rather than falling
+ * back to columns nobody can point at. Coverage has settled well before then.
+ */
+const MAX_SAMPLES = 400;
 
 // ─── State ───
 
@@ -73,26 +67,25 @@ let shape = POPULATION_SHAPES.some((s) => s.id === params.get('shape'))
   ? /** @type {string} */ (params.get('shape')) : 'right-skewed';
 let n = clampN(Number(params.get('n')) || 25);
 let level = [90, 95, 99].includes(Number(params.get('level'))) ? Number(params.get('level')) : 95;
+let truthHidden = params.get('parameter') === 'hidden';
 
 /** @type {number[]} */ let population = [];
 let mu = 0, sigma = 0;
 /** @type {() => number} */ let rng = createRng(seed);
-/** @type {number[]} */ let means = [];
-/** @type {number[]} */ let lastSample = [];
-/** The sample step 4 keeps — frozen so its interval does not move as the margin settles. */
-/** @type {number[]|null} */ let firstSample = null;
-let firstMean = NaN;
 
-/**
- * What each bar in step 3 came from, as the generator state each draw started
- * from — four numbers a sample rather than n values, so every one of 100,000
- * samples stays answerable. (The same retrieval the simulation pages use.)
- */
+/** One entry per sample: its mean and its own s, which is all an interval needs. */
+/** @type {number[]} */ let means = [];
+/** @type {number[]} */ let sds = [];
+/** @type {number[]} */ let lastSample = [];
+
 const samples = createResampleStore();
 /** @type {any} */ let peekGeom = null;
 /** @type {HTMLElement|null} */ let peekEl = null;
-/** Which sample the hover is showing, so leaving can put the real one back. */
 let peekedIndex = -1;
+/** Which sample the panel is unpacking: the hovered one, else the newest. */
+let shownIndex = -1;
+
+let jstatReady = false;
 
 /** @param {number} v */
 function clampN(v) { return Math.max(2, Math.min(200, Math.round(v))); }
@@ -100,322 +93,239 @@ function clampN(v) { return Math.max(2, Math.min(200, Math.round(v))); }
 // ─── Elements ───
 
 const el = (/** @type {string} */ id) => document.getElementById(id);
-const popChart = el('pop-chart'), sampleChart = el('sample-chart');
-const distChart = el('dist-chart');
-const popStats = el('pop-stats'), sampleStats = el('sample-stats');
-const distStats = el('dist-stats'), ciVerdict = el('ci-verdict');
+const popBox = el('pop-container'), sampleBox = el('sample-container'), distBox = el('dist-container');
+const popStats = el('pop-stats'), sampleStats = el('sample-stats'), distStats = el('dist-stats');
+const coverageEl = el('coverage'), verdictEl = el('ci-verdict');
 const shapeToggle = el('shape-toggle'), levelToggle = el('level-toggle');
+const truthBtn = el('truth-btn');
 const nInput = /** @type {HTMLInputElement|null} */ (el('n-input'));
 const revealBtn = el('reveal-btn'), revealAnswer = el('reveal-answer');
 
-// ─── Population ───
+// ─── The population and the draws ───
 
 function buildPopulation() {
-  // Seeded from the shape as well as the page seed, so switching shape and
-  // switching back gives the same population rather than a new one.
   population = generateQuantPopulation(shape, createRng(`${seed}:pop:${shape}`), POP_SIZE);
   mu = mean(population);
   sigma = sd(population);
 }
 
-/** @returns {{values: number[], mean: number}} */
-function drawSample() {
-  /** @type {number[]} */
+/** @param {() => number} r @returns {number[]} */
+function drawValues(r) {
   const s = new Array(n);
-  for (let i = 0; i < n; i++) s[i] = population[Math.floor(rng() * population.length)];
-  return { values: s, mean: mean(s) };
+  for (let i = 0; i < n; i++) s[i] = population[Math.floor(r() * population.length)];
+  return s;
 }
 
-// ─── The numbers step 3 and step 4 share ───
+/** The interval a student would compute from sample `i`, or null before jStat. */
+function intervalOf(/** @type {number} */ i) {
+  if (!jstatReady || i < 0 || i >= means.length) return null;
+  const tStar = tInv(1 - (1 - level / 100) / 2, n - 1);
+  const m = tStar * sds[i] / Math.sqrt(n);
+  return { lo: means[i] - m, hi: means[i] + m, margin: m };
+}
 
-/**
- * The central band of the sample means, and its half-width.
- * @returns {{lo: number, hi: number, margin: number}|null}
- */
-function band() {
-  if (means.length < 20) return null;
-  const a = (100 - level) / 200;
-  const lo = quantile(means, a);
-  const hi = quantile(means, 1 - a);
-  return { lo, hi, margin: (hi - lo) / 2 };
+/** Whether sample `i`'s interval caught μ. */
+function capturesOf(/** @type {number} */ i) {
+  const ci = intervalOf(i);
+  return ci ? ci.lo <= mu && mu <= ci.hi : false;
+}
+
+function coverageCount() {
+  let hits = 0;
+  for (let i = 0; i < means.length; i++) if (capturesOf(i)) hits++;
+  return hits;
 }
 
 // ─── Drawing ───
 
+/** Chart options for the μ marker — omitted entirely while it is hidden. */
+const truthMarker = () => (truthHidden
+  ? {}
+  : { observedStat: mu, observedLabel: 'μ' });
+
 function drawPopulation() {
-  if (!popChart) return;
-  popChart.innerHTML = '';
-  drawHistogram(popChart, population, {
+  if (!popBox) return;
+  popBox.innerHTML = '';
+  drawHistogram(popBox, population, {
     id: 'pci-pop',
     xLabel: 'Value',
     titleText: 'The population',
-    descText: `A ${shape.replace('-', ' ')} population of ${POP_SIZE.toLocaleString()} values, `
-      + `with mean ${mu.toFixed(2)}.`,
-    observedStat: mu,
-    observedLabel: 'μ',
+    descText: `A ${shape.replace('-', ' ')} population of ${POP_SIZE.toLocaleString()} values.`,
+    ...truthMarker(),
     animate: false,
-    numBins: 40,
+    numBins: 36,
     precision: 2,
-    viewHeight: 230,
+    viewHeight: 190,
   });
   if (popStats) {
     popStats.innerHTML =
-        `<span><span class="pci-k">N</span> <span class="pci-v">${POP_SIZE.toLocaleString()}</span></span>`
-      + `<span><span class="pci-k">μ</span> <span class="pci-v">${mu.toFixed(2)}</span></span>`
-      + `<span><span class="pci-k">σ</span> <span class="pci-v">${sigma.toFixed(2)}</span></span>`;
+        `<span class="stat-item"><span class="stat-label">N:</span> <span class="stat-value">${POP_SIZE.toLocaleString()}</span></span>`
+      + (truthHidden
+        ? '<span class="stat-item pci-unknown">μ and σ hidden</span>'
+        : `<span class="stat-item"><span class="stat-label">μ:</span> <span class="stat-value">${mu.toFixed(2)}</span></span>`
+          + `<span class="stat-item"><span class="stat-label">σ:</span> <span class="stat-value">${sigma.toFixed(2)}</span></span>`);
   }
 }
 
+/**
+ * The "One sample" tier: the sample itself, its interval drawn beneath, and the
+ * verdict. This is where a hovered dot is unpacked — so a reader moving along
+ * the distribution watches one interval after another succeed or fail.
+ */
 function drawSamplePanel() {
-  if (!sampleChart) return;
-  sampleChart.innerHTML = '';
+  if (!sampleBox) return;
+  sampleBox.innerHTML = '';
   if (!lastSample.length) {
-    sampleChart.innerHTML = '<p class="pci-placeholder">Press <strong>+1</strong> to draw a sample.</p>';
+    sampleBox.innerHTML = '<p class="pci-placeholder">Press <strong>+1</strong> to draw a sample.</p>';
     if (sampleStats) sampleStats.innerHTML = '';
+    if (verdictEl) verdictEl.innerHTML = '';
     return;
   }
   const m = mean(lastSample);
-  const opts = {
+  const ci = intervalOf(shownIndex);
+
+  // One axis for the sample and its interval, and it has to hold μ as well —
+  // an interval that misses is the case worth seeing, and it only reads as a
+  // miss if the thing it missed is on the picture.
+  const lo = Math.min(...lastSample, ci ? ci.lo : Infinity, truthHidden ? Infinity : mu);
+  const hi = Math.max(...lastSample, ci ? ci.hi : -Infinity, truthHidden ? -Infinity : mu);
+  const pad = (hi - lo) * 0.06 || 1;
+
+  const result = drawDotplot(sampleBox, lastSample, {
     id: 'pci-sample',
     xLabel: 'Value',
     titleText: 'The most recent sample',
     descText: `${n} values with mean ${m.toFixed(2)}.`,
-    observedStat: m,
-    observedLabel: 'x̄',
+    ...truthMarker(),
     animate: false,
     precision: 2,
-    viewHeight: 200,
-    // Same axis as the population, so "a sample is a piece of that" is visible
-    // rather than something the reader has to reconstruct from two scales.
-    domain: /** @type {[number, number]} */ ([
-      /** @type {number} */ (d3Array.min(population)),
-      /** @type {number} */ (d3Array.max(population)),
-    ]),
-  };
-  if (n <= 60) drawDotplot(sampleChart, lastSample, opts);
-  else drawHistogram(sampleChart, lastSample, { ...opts, numBins: 20 });
+    viewHeight: 170,
+    domain: /** @type {[number, number]} */ ([lo - pad, hi + pad]),
+    margin: { top: 18, right: 20, bottom: 74, left: 44 },
+  });
+  if (ci) drawIntervalUnderAxis(result, ci);
 
   if (sampleStats) {
     sampleStats.innerHTML =
-        `<span><span class="pci-k">n</span> <span class="pci-v">${n}</span></span>`
-      + `<span><span class="pci-k">x̄</span> <span class="pci-v">${m.toFixed(2)}</span></span>`
-      + `<span><span class="pci-k">s</span> <span class="pci-v">${sd(lastSample).toFixed(2)}</span></span>`;
+        `<span class="stat-item"><span class="stat-label">n:</span> <span class="stat-value">${n}</span></span>`
+      + `<span class="stat-item"><span class="stat-label">x̄:</span> <span class="stat-value">${m.toFixed(2)}</span></span>`
+      + `<span class="stat-item"><span class="stat-label">s:</span> <span class="stat-value">${sd(lastSample).toFixed(2)}</span></span>`
+      + (ci ? `<span class="stat-item"><span class="stat-label">${level}% CI:</span> `
+        + `<span class="stat-value">(${ci.lo.toFixed(2)}, ${ci.hi.toFixed(2)})</span></span>` : '');
   }
+  drawVerdict(ci);
 }
 
 /**
- * Step 3 — the sampling distribution, with the interval drawn on its own axis.
- *
- * The interval used to be a separate panel with its own scale, which made the
- * reader compare two pictures to see the one fact that matters. On one axis the
- * fact is simply visible: the bar beneath the axis is the SAME WIDTH as the
- * shaded band, slid off μ and onto the mean of the sample actually drawn.
- * (Jeff, 2026-10-07: "show the central 95% width and use that as the CI width
- * centred on the observed x̄ … or we could put it below the axis".)
- *
- * Which is also why μ and the observed x̄ are both marked here: the distance
- * between them is the thing the verdict is about, and it should be readable off
- * the picture rather than from two numbers in a readout.
- */
-function drawDistribution() {
-  if (!distChart) return;
-  distChart.innerHTML = '';
-  if (!means.length) {
-    distChart.innerHTML = '<p class="pci-placeholder">No samples yet \u2014 press <strong>+1</strong>.</p>';
-    if (distStats) distStats.innerHTML = '';
-    if (ciVerdict) ciVerdict.innerHTML = '';
-    return;
-  }
-  const b = band();
-  const haveCI = !!(b && firstSample);
-  const lo = haveCI ? firstMean - b.margin : NaN;
-  const hi = haveCI ? firstMean + b.margin : NaN;
-
-  // The axis has to hold the means, μ, and both ends of the interval — the
-  // interval can reach past the sample means when x̄ was an unusual one, and
-  // clipping it would hide exactly the case worth looking at.
-  const loEnd = Math.min(d3Array.min(means) ?? mu, mu, haveCI ? lo : Infinity);
-  const hiEnd = Math.max(d3Array.max(means) ?? mu, mu, haveCI ? hi : -Infinity);
-  const pad = (hiEnd - loEnd) * 0.04 || 1;
-
-  const result = drawHistogram(distChart, means, {
-    id: 'pci-dist',
-    xLabel: 'Sample mean (x\u0304)',
-    titleText: 'Sampling distribution of the sample mean',
-    descText: b
-      ? `${means.length} sample means. The middle ${level}% run from ${b.lo.toFixed(2)} to `
-        + `${b.hi.toFixed(2)}.` + (haveCI
-          ? ` Your interval, the same width centred on x\u0304 = ${firstMean.toFixed(2)}, runs `
-            + `${lo.toFixed(2)} to ${hi.toFixed(2)} and ${lo <= mu && mu <= hi ? 'contains' : 'misses'} `
-            + `\u03BC = ${mu.toFixed(2)}.` : '')
-      : `${means.length} sample means.`,
-    observedStat: mu,
-    observedLabel: '\u03BC',
-    ciLines: b ? /** @type {[number, number]} */ ([b.lo, b.hi]) : undefined,
-    // The MIDDLE is the marked region, as on every bootstrap CI page.
-    isTail: b ? ((/** @type {number} */ v) => v >= b.lo && v <= b.hi) : undefined,
-    animate: false,
-    precision: 2,
-    domain: /** @type {[number, number]} */ ([loEnd - pad, hiEnd + pad]),
-    // Short and wide on purpose. The SVG scales to its container, so a tall
-    // viewBox becomes a tall chart on a wide column — and the whole page is
-    // meant to fit one screen. 320 leaves ~200 user units of plot above a
-    // bottom margin that has to hold ticks, the axis title AND the interval.
-    viewHeight: 320,
-    margin: { top: 24, right: 22, bottom: 96, left: 56 },
-  });
-
-  wirePeek(result);
-  if (haveCI) drawIntervalOnAxis(result, lo, hi);
-
-  if (distStats) {
-    const se = sd(means);
-    const theory = sigma / Math.sqrt(n);
-    distStats.innerHTML =
-        `<span><span class="pci-k">Samples</span> <span class="pci-v">${means.length.toLocaleString()}</span></span>`
-      + `<span><span class="pci-k">SD of the x\u0304's</span> <span class="pci-v">${se.toFixed(3)}</span></span>`
-      + `<span><span class="pci-k">\u03C3/\u221An</span> <span class="pci-v">${theory.toFixed(3)}</span></span>`
-      + (b
-        ? `<span><span class="pci-k">Middle ${level}% of x\u0304's</span> `
-          + `<span class="pci-v">${b.lo.toFixed(2)} to ${b.hi.toFixed(2)}</span></span>`
-          + `<span><span class="pci-k">Margin of error</span> `
-          + `<span class="pci-v">\u00b1 ${b.margin.toFixed(2)}</span></span>`
-        : `<span class="pci-placeholder">Twenty samples needed before a middle ${level}% means anything.</span>`);
-  }
-  drawVerdict(b, lo, hi, haveCI);
-}
-
-/**
- * The observed sample's mean, and its interval, under the distribution's axis.
+ * The interval as a bar under the sample's axis.
  * @param {{frame: any, xScale: any}} result
- * @param {number} lo @param {number} hi
+ * @param {{lo: number, hi: number}} ci
  */
-function drawIntervalOnAxis(result, lo, hi) {
+function drawIntervalUnderAxis(result, ci) {
   const { frame, xScale } = result;
+  // addAxes puts the axis title at height + margin.bottom - 8, so the bar goes
+  // above it rather than at a guessed offset.
+  const barY = frame.height + 34;
+  if (barY >= frame.height + frame.margin.bottom - 14) return;
+  const colour = truthHidden ? UNKNOWN : (ci.lo <= mu && mu <= ci.hi ? CAPTURE : MISS);
   const g = d3Selection.select(frame.inner).select('.annotations');
-  const captures = lo <= mu && mu <= hi;
-  const colour = captures ? CAPTURE : MISS;
-
-  // The axis title is placed by addAxes at `height + margin.bottom - 8`, so the
-  // bar and its labels are laid out against that rather than guessed at — the
-  // first attempt drew the x̄ label straight through "Sample mean (x̄)".
-  const titleY = frame.height + frame.margin.bottom - 8;
-  const barY = frame.height + 54;
-  const statLabelY = frame.height + 39;
-  const endsY = frame.height + 71;
-  if (barY >= titleY) return;   // not enough margin; better nothing than a pile-up
-
-  // The observed statistic, carried from the distribution down to the bar — the
-  // line IS the argument: where the sample landed, and where its interval went.
-  const px = xScale(firstMean);
-  g.append('line')
-    .attr('class', 'pci-xbar')
-    .attr('x1', px).attr('x2', px).attr('y1', 0).attr('y2', barY)
-    .attr('stroke', STAT_COLOR).attr('stroke-width', 2.5);
-  // Beside the line, not on it — centred, the line ran straight through the
-  // text. It flips to the other side near the right edge so it cannot overflow.
-  const nearRight = px > frame.width - 90;
-  g.append('text')
-    .attr('x', px + (nearRight ? -7 : 7)).attr('y', statLabelY)
-    .attr('text-anchor', nearRight ? 'end' : 'start')
-    .attr('font-size', 12).attr('font-weight', 700).attr('fill', STAT_COLOR)
-    .text(`x\u0304 = ${firstMean.toFixed(2)}`);
-
   g.append('line')
     .attr('class', 'pci-ci-bar')
-    .attr('x1', xScale(lo)).attr('x2', xScale(hi)).attr('y1', barY).attr('y2', barY)
-    .attr('stroke', colour).attr('stroke-width', 7).attr('stroke-linecap', 'round');
-  for (const v of [lo, hi]) {
+    .attr('x1', xScale(ci.lo)).attr('x2', xScale(ci.hi)).attr('y1', barY).attr('y2', barY)
+    .attr('stroke', colour).attr('stroke-width', 6).attr('stroke-linecap', 'round');
+  for (const v of [ci.lo, ci.hi]) {
     g.append('line')
-      .attr('x1', xScale(v)).attr('x2', xScale(v)).attr('y1', barY - 9).attr('y2', barY + 9)
-      .attr('stroke', colour).attr('stroke-width', 3);
-    g.append('text')
-      .attr('x', xScale(v)).attr('y', endsY).attr('text-anchor', 'middle')
-      .attr('font-size', 11).attr('font-weight', 700).attr('fill', colour)
-      .text(v.toFixed(2));
+      .attr('x1', xScale(v)).attr('x2', xScale(v)).attr('y1', barY - 7).attr('y2', barY + 7)
+      .attr('stroke', colour).attr('stroke-width', 2.5);
   }
 }
 
-/** @param {{lo:number,hi:number,margin:number}|null} b */
-function drawVerdict(b, lo, hi, haveCI) {
-  if (!ciVerdict) return;
-  if (!haveCI || !b) {
-    ciVerdict.innerHTML = `<p class="pci-placeholder">${means.length
-      ? `Draw at least 20 samples to get a margin of error.`
-      : ''}</p>`;
+/** @param {{lo:number,hi:number}|null} ci */
+function drawVerdict(ci) {
+  if (!verdictEl) return;
+  if (!ci) { verdictEl.innerHTML = ''; return; }
+  if (truthHidden) {
+    verdictEl.innerHTML = '<div class="pci-verdict is-unknown">'
+      + '<span class="pci-glyph" aria-hidden="true">?</span>'
+      + `<span>This interval runs <strong>${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}</strong>. `
+      + 'Did it catch μ? <strong>Nothing on this page can tell you</strong> — and neither '
+      + 'could you, with real data.</span></div>';
     return;
   }
-  const captures = lo <= mu && mu <= hi;
-  const inside = firstMean >= b.lo && firstMean <= b.hi;
-  ciVerdict.innerHTML =
-    `<div class="pci-verdict ${captures ? 'is-yes' : 'is-no'}">`
-    + `<span class="pci-glyph" aria-hidden="true">${captures ? '\u2713' : '\u2717'}</span>`
-    + `<span>The interval <strong>${captures ? 'contains' : 'misses'}</strong> \u03BC, and x\u0304 is `
-    + `<strong>${inside ? 'inside' : 'outside'}</strong> the shaded middle. `
-    + `These always agree: the bar is the band's width, moved onto x\u0304.</span></div>`;
+  const ok = ci.lo <= mu && mu <= ci.hi;
+  verdictEl.innerHTML = `<div class="pci-verdict ${ok ? 'is-yes' : 'is-no'}">`
+    + `<span class="pci-glyph" aria-hidden="true">${ok ? '✓' : '✗'}</span>`
+    + `<span><strong>${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}</strong> `
+    + `${ok ? 'contains' : '<strong>misses</strong>'} μ = ${mu.toFixed(2)}.</span></div>`;
 }
 
-/**
- * Hovering a bar in step 3 puts THAT sample into step 2.
- *
- * Here a dot is a whole SAMPLE rather than a resample: every bar is a batch of
- * samples that happened to have similar means, and hovering says which one.
- *
- * @param {{frame: any, xScale: any, yScale: any, bins?: any[]}} result
- */
-function wirePeek(result) {
-  if (!distChart) return;
-  if (!peekEl) peekEl = createPeekElement(distChart);
-  peekGeom = { xScale: result.xScale, yScale: result.yScale, frame: result.frame,
-               bins: result.bins ?? null };
-  attachResamplePeek({
-    container: distChart,
-    peek: /** @type {HTMLElement} */ (peekEl),
-    geom: peekGeom,
-    stats: () => means,
-    onLeave: () => {
-      if (peekedIndex === -1) return;
-      peekedIndex = -1;
-      if (lastSample.length) drawSamplePanel();
-    },
-    describe: (i, approx) => {
-      const rec = samples.get(i);
-      if (!rec?.st) return null;
-      if (i !== peekedIndex) {
-        peekedIndex = i;
-        showPeekedSample(replaySample(rec.st));
-      }
-      return {
-        title: `Sample ${i + 1}${approx ? ' (one of the samples in this bar)' : ''}`,
-        detail: `shown in step 2 \u2014 x\u0304 = ${means[i].toFixed(2)}`,
-      };
-    },
+function drawDistribution() {
+  if (!distBox) return;
+  distBox.innerHTML = '';
+  if (!means.length) {
+    distBox.innerHTML = '<p class="pci-placeholder">No samples yet.</p>';
+    if (distStats) distStats.innerHTML = '';
+    if (coverageEl) coverageEl.innerHTML = '';
+    return;
+  }
+  const result = drawDotplot(distBox, means, {
+    id: 'pci-dist',
+    xLabel: 'Sample mean (x̄)',
+    titleText: 'Sampling distribution of the sample mean',
+    descText: truthHidden
+      ? `${means.length} sample means. μ is hidden, so no interval can be checked.`
+      : `${means.length} sample means; ${coverageCount()} of their intervals contain μ.`,
+    ...truthMarker(),
+    animate: false,
+    precision: 2,
+    viewHeight: 300,
   });
+  colourByCapture();
+  wirePeek(result);
+
+  if (distStats) {
+    distStats.innerHTML =
+        `<span class="stat-item"><span class="stat-label">Samples:</span> <span class="stat-value">${means.length}</span></span>`
+      + `<span class="stat-item"><span class="stat-label">SD of the x̄'s:</span> <span class="stat-value">${means.length > 1 ? sd(means).toFixed(3) : '—'}</span></span>`
+      + (truthHidden ? ''
+        : `<span class="stat-item"><span class="stat-label">σ/√n:</span> <span class="stat-value">${(sigma / Math.sqrt(n)).toFixed(3)}</span></span>`);
+  }
+  drawCoverage();
 }
 
 /**
- * The sample a stored generator state produced — n lookups into the population,
- * replayed rather than kept.
- * @param {ReadonlyArray<number>} state
- * @returns {number[]}
+ * Colour each dot by whether its own interval caught μ.
+ *
+ * Done after the draw, through the `data-stat-index` mark each dot carries,
+ * because capture is NOT a function of the dot's value: two samples with the
+ * same mean and different s get different intervals, and one can catch μ while
+ * the other misses. The renderer's own colouring takes a value predicate, which
+ * cannot express that.
  */
-function replaySample(state) {
-  const r = rngFromState(state);
-  const values = new Array(n);
-  for (let k = 0; k < n; k++) values[k] = population[Math.floor(r() * population.length)];
-  return values;
+function colourByCapture() {
+  const dots = distBox?.querySelectorAll('[data-stat-index]');
+  if (!dots?.length) return;
+  for (const dot of dots) {
+    const i = Number(dot.getAttribute('data-stat-index'));
+    const colour = truthHidden ? UNKNOWN : (capturesOf(i) ? CAPTURE : MISS);
+    dot.setAttribute('fill', colour);
+    dot.setAttribute('stroke', colour);
+  }
 }
 
-/**
- * Draw a hovered sample into step 2 without losing the one actually drawn last,
- * so leaving the chart can put it back.
- * @param {number[]} values
- */
-function showPeekedSample(values) {
-  const keep = lastSample;
-  lastSample = values;
-  drawSamplePanel();
-  lastSample = keep;
+function drawCoverage() {
+  if (!coverageEl) return;
+  if (!means.length) { coverageEl.innerHTML = ''; return; }
+  if (truthHidden) {
+    coverageEl.innerHTML = '<span class="pci-unknown">μ is hidden, so no dot can be coloured '
+      + 'and nothing can be counted — which is the position you are in with real data.</span>';
+    return;
+  }
+  const hits = coverageCount();
+  const pct = (100 * hits / means.length).toFixed(1);
+  coverageEl.innerHTML = `<span class="pci-big">${hits}</span> of `
+    + `<span class="pci-big">${means.length}</span> intervals contain μ `
+    + `(<span class="pci-big">${pct}%</span>), against the <strong>${level}%</strong> asked for.`;
 }
 
 function redraw() {
@@ -424,30 +334,78 @@ function redraw() {
   drawDistribution();
 }
 
+// ─── Hover ───
+
+/** @param {{frame: any, xScale: any, yScale?: any, countToY?: any, bins?: any[]}} result */
+function wirePeek(result) {
+  if (!distBox) return;
+  if (!peekEl) peekEl = createPeekElement(distBox);
+  peekGeom = { xScale: result.xScale, yScale: result.yScale ?? result.countToY,
+               frame: result.frame, bins: result.bins ?? null };
+  attachResamplePeek({
+    container: distBox,
+    peek: /** @type {HTMLElement} */ (peekEl),
+    geom: peekGeom,
+    stats: () => means,
+    onLeave: () => {
+      if (peekedIndex === -1) return;
+      peekedIndex = -1;
+      shownIndex = means.length - 1;
+      const rec = samples.get(shownIndex);
+      if (rec?.st) lastSample = replaySample(rec.st);
+      drawSamplePanel();
+    },
+    describe: (i, approx) => {
+      const rec = samples.get(i);
+      if (!rec?.st) return null;
+      if (i !== peekedIndex) {
+        peekedIndex = i;
+        shownIndex = i;
+        lastSample = replaySample(rec.st);
+        drawSamplePanel();
+      }
+      const ci = intervalOf(i);
+      return {
+        title: `Sample ${i + 1}${approx ? ' (one of several here)' : ''}`,
+        detail: ci
+          ? `x̄ = ${means[i].toFixed(2)}, interval ${ci.lo.toFixed(2)} to ${ci.hi.toFixed(2)}`
+            + (truthHidden ? '' : ` — ${capturesOf(i) ? 'contains' : 'misses'} μ`)
+          : `x̄ = ${means[i].toFixed(2)}`,
+      };
+    },
+  });
+}
+
+/** @param {ReadonlyArray<number>} state */
+function replaySample(state) { return drawValues(rngFromState(state)); }
+
 // ─── Running ───
 
 /** @param {number} count */
 function addSamples(count) {
-  if (means.length >= MAX_SAMPLES) { announce('Enough samples.'); return; }
+  if (means.length >= MAX_SAMPLES) {
+    announce(`Stopped at ${MAX_SAMPLES} samples — every dot stays hoverable.`);
+    return;
+  }
   const take = Math.min(count, MAX_SAMPLES - means.length);
   for (let i = 0; i < take; i++) {
     const st = /** @type {any} */ (rng).getState();
-    const s = drawSample();
     samples.rememberState(means.length, st);
-    lastSample = s.values;
-    means.push(s.mean);
-    if (!firstSample) { firstSample = s.values; firstMean = s.mean; }
+    const values = drawValues(rng);
+    lastSample = values;
+    means.push(mean(values));
+    sds.push(sd(values));
   }
+  peekedIndex = -1;
+  shownIndex = means.length - 1;
   redraw();
-  const b = band();
   announce(`${take} more sample${take === 1 ? '' : 's'}; ${means.length} in all.`
-    + (b ? ` Middle ${level}% of the sample means: ${b.lo.toFixed(2)} to ${b.hi.toFixed(2)}, `
-         + `margin ${b.margin.toFixed(2)}.` : ''));
+    + (truthHidden ? '' : ` ${coverageCount()} of their intervals contain μ.`));
 }
 
 function reset(message = 'Started over.') {
-  means = []; lastSample = []; firstSample = null; firstMean = NaN;
-  samples.clear(); peekedIndex = -1;
+  means = []; sds = []; lastSample = [];
+  samples.clear(); peekedIndex = -1; shownIndex = -1;
   rng = createRng(`${seed}:${shape}:${n}`);
   redraw();
   announce(message);
@@ -469,7 +427,7 @@ if (shapeToggle) {
       b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.shape === shape));
     }
     buildPopulation();
-    reset(`${shape.replace('-', ' ')} population: μ = ${mu.toFixed(2)}, σ = ${sigma.toFixed(2)}.`);
+    reset(`${shape.replace('-', ' ')} population.`);
   });
 }
 
@@ -480,10 +438,21 @@ levelToggle?.addEventListener('click', (ev) => {
   for (const b of levelToggle.querySelectorAll('button[data-level]')) {
     b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.level) === level));
   }
-  // The samples stand — only which middle is shaded changes. That is the point
-  // of the control: a wider level is a wider margin from the SAME simulation.
+  // The samples stand: only the intervals change. That is the control's whole
+  // point — more confidence is wider intervals and more hits, from one run.
   redraw();
-  announce(`${level} percent level.`);
+  announce(truthHidden ? `${level} percent level.`
+    : `${level} percent level. ${coverageCount()} of ${means.length} now contain μ.`);
+});
+
+truthBtn?.addEventListener('click', () => {
+  truthHidden = !truthHidden;
+  truthBtn.textContent = truthHidden ? 'Reveal μ' : 'Hide μ';
+  truthBtn.setAttribute('aria-pressed', String(truthHidden));
+  redraw();
+  announce(truthHidden
+    ? 'μ hidden. The dots lose their colours, because nothing can tell which intervals worked.'
+    : `μ revealed. ${coverageCount()} of ${means.length} intervals contain it.`);
 });
 
 nInput?.addEventListener('change', () => {
@@ -491,7 +460,7 @@ nInput?.addEventListener('change', () => {
   nInput.value = String(v);
   if (v === n) return;
   n = v;
-  reset(`Sample size ${n}. Everything cleared, because the sampling distribution depends on n.`);
+  reset(`Sample size ${n}. Cleared, because the sampling distribution depends on n.`);
 });
 
 for (const btn of document.querySelectorAll('.gen-btn')) {
@@ -505,14 +474,12 @@ revealBtn?.addEventListener('click', () => {
   const open = revealAnswer.hidden;
   revealAnswer.hidden = !open;
   revealBtn.setAttribute('aria-expanded', String(open));
-  revealBtn.textContent = open ? 'Hide the answer' : 'Show the answer';
   if (open && !revealAnswer.innerHTML) {
     revealAnswer.innerHTML =
-      '<p>Exactly when <span class="x-bar">x</span> landed inside the shaded middle. Both statements '
-      + 'say the same thing &mdash; that the distance between <span class="x-bar">x</span> and &mu; is '
-      + 'no more than the margin &mdash; read from opposite ends. So the intervals that work are the '
-      + 'ones built from shaded samples, and that is the stated percentage of them. Nothing about '
-      + 'your particular interval is 95% likely; the 95% is the success rate of the recipe.</p>';
+      '<p>It is the success rate of the <em>recipe</em>, not a probability about your interval. '
+      + 'Reveal μ and about 95 of every 100 dots turn blue — yours was one colour or the '
+      + 'other all along, and hiding μ did not change which. What you lose without μ is '
+      + 'only the ability to <em>see</em> it, which is why the claim has to be about the method.</p>';
   }
 });
 
@@ -525,23 +492,25 @@ document.addEventListener('keydown', (ev) => {
 });
 
 initHelp();
+initSettings();
 
 if (nInput) nInput.value = String(n);
 for (const b of levelToggle?.querySelectorAll('button[data-level]') ?? []) {
   b.setAttribute('aria-pressed', String(Number(/** @type {HTMLElement} */ (b).dataset.level) === level));
 }
+if (truthBtn && truthHidden) {
+  truthBtn.textContent = 'Reveal μ';
+  truthBtn.setAttribute('aria-pressed', 'true');
+}
 buildPopulation();
 rng = createRng(`${seed}:${shape}:${n}`);
 redraw();
 
-// Each panel keeps the tallest height it has had. Without it the first draw
-// swaps a one-line placeholder for a chart, everything below jumps, and the
-// generate button the reader just pressed slides out from under the pointer —
-// which then lands on a dot and pops its tooltip. Same failure as the mechanism
-// strip on the one-proportion pages (2026-10-06).
-for (const id of ['pop-chart', 'sample-chart', 'dist-chart']) {
-  holdHeight(/** @type {HTMLElement|null} */ (el(id)));
-}
-
-const preset = Number(params.get('samples'));
-if (Number.isFinite(preset) && preset > 0) addSamples(Math.min(preset, MAX_SAMPLES));
+// The intervals need a t critical value, so the opening draw waits for jStat.
+import('jstat').then((jstat) => {
+  setJStat(/** @type {any} */ (jstat).default || jstat);
+  jstatReady = true;
+  const preset = Number(params.get('samples'));
+  if (Number.isFinite(preset) && preset > 0) addSamples(Math.min(preset, MAX_SAMPLES));
+  else redraw();
+});

@@ -1124,8 +1124,9 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 **Path:** `conceptual/population-ci/`
 **Category:** Conceptual
-**Description:** the resampling step of `simulate/bootstrap-mean/` replaced by a **fresh sample from a population the reader chooses** (the five Sampling Lab shapes). A two-column layout meant to fit one screen: the population (μ marked) and the most recent sample stack in a narrow left rail, and the sampling distribution of x̄ takes the rest. **Everything about the interval is on that one axis** — μ, the observed x̄, the shaded central 90/95/99% of the sample means, and, beneath the axis, a bar of exactly the band's width centred on x̄ instead of on μ. The point is then visible rather than asserted: the interval is the band slid sideways, and it reaches μ exactly when x̄ was near enough. **The language is deliberately split:** the shaded band is reported as a *middle 95% of sample means* with a *margin of error* — it is centred on μ and is **not** a confidence interval — and "confidence interval" is used only of the bar centred on x̄. Changing the level re-shades the same simulation (more confidence costs width, watched rather than asserted); changing n clears it, because the sampling distribution depends on n. Hovering a bar shows the sample behind it.
-**Concepts:** Sampling distribution of x̄, standard error (SD of the x̄'s vs σ/√n), margin of error, confidence interval as statistic ± margin, confidence level as a success rate of a recipe, why a CI is centred on the statistic and not on the parameter, what the bootstrap substitutes for repeated sampling
+**Description:** the Sampling Distribution Lab's three tiers — population, one sample, the distribution of the statistic — built from the **same shared parts** (`.lab-layout` / `.chart-panel` / `.stats-row` / the standard generate bar, all in `css/style.css`), with one addition: **every sample gets a confidence interval, and every dot is coloured by whether that interval caught μ.** The interval is the one a student would actually compute, x̄ ± t*·s/√n using that sample's own s, so the **widths differ from dot to dot** and the coverage lands *near* the stated level rather than exactly on it. Blue caught μ, orange missed; mostly the misses are far from μ — *mostly*, because an unluckily small s makes a narrow interval that can miss from close by. Hovering a dot puts that sample in the One sample tier with its interval drawn beneath the axis. Changing the confidence level **re-measures the same samples** rather than resampling, so wider-means-more-hits is watched rather than asserted.
+**The control that carries the lesson:** **Hide μ**. With μ hidden the page *cannot* colour a dot or count a hit — not as a teaching choice but as a fact, because nothing knows which intervals worked. That is the reader's real situation: one interval, no μ, no way to check. Revealing snaps the colours back: yours was one colour or the other all along, and hiding μ only removed your ability to see it — which is why the 95% is a claim about the *method*.
+**Concepts:** confidence interval as statistic ± margin, t interval with estimated s, coverage as the success rate of a recipe, why the level is not a probability about your interval, sampling distribution of x̄, standard error (SD of the x̄'s vs σ/√n), the cost of higher confidence
 
 **URL Parameters:**
 
@@ -1134,7 +1135,8 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 | `shape` | string | Population shape: `normal`, `right-skewed` (default), `left-skewed`, `uniform`, `bimodal` | `shape=bimodal` |
 | `n` | integer | Sample size, 2–200 (default 25) | `n=40` |
 | `level` | integer | Confidence level: `90`, `95` (default), `99` | `level=99` |
-| `samples` | integer | Draw this many samples on load | `samples=1000` |
+| `samples` | integer | Draw this many on load (capped at 400, so every dot stays hoverable) | `samples=100` |
+| `parameter` | string | `hidden` opens with μ already hidden — the "you only get one sample" framing, with a Reveal button | `parameter=hidden` |
 | `seed` | string | PRNG seed — the population and the draws both reproduce | `seed=lecture` |
 | `mode` | string | `present` hides the student prompt | `mode=present` |
 
@@ -1142,7 +1144,7 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 **Instructor Guide:** `conceptual/population-ci/guide.html`
 
-**Textbook Integration Notes:** Sits between the sampling-distribution chapters and the bootstrap-CI chapter: it is the picture the bootstrap imitates. Run it beside `simulate/bootstrap-mean/` at the same n — same shape, same width, different centre — then hand off to `conceptual/bootstrap-shift/` (both distributions on one axis) and `conceptual/ci-coverage/` (many intervals, counting the hits). **Do not describe step 3's shaded band as a confidence interval in prose linking here**; the page is built to keep that distinction and the surrounding text should match.
+**Textbook Integration Notes:** This is coverage drawn **on the sampling distribution**, where `conceptual/ci-coverage/` draws it as a stack of interval bars. The two are worth linking to each other: the stack shows the intervals, this shows *which samples* produce the misses — and the colouring makes the answer visible. Natural order is sampling distributions → here → `conceptual/bootstrap-shift/` (why a bootstrap may stand in for this sampling at all). For a lecture, open with `?parameter=hidden` and reveal μ at the moment the point lands.
 
 ---
 

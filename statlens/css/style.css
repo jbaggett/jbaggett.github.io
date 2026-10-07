@@ -6501,3 +6501,58 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .ss-desc { display: block; font-size: 0.86rem; margin-top: 0.1rem; }
 .ss-why { display: block; font-size: 0.76rem; color: var(--ims-gray-text, #666); margin-top: 0.15rem; }
 .ss-empty { margin: 0; padding: 0.7rem 0.8rem; font-size: 0.9rem; }
+
+
+/* ===== The three-tier lab layout =====
+   population → one sample → the distribution of the statistic, with the
+   first two stacked in a narrow left rail. Grown in conceptual/sampling-lab/
+   and lifted here when conceptual/population-ci/ needed the same structure —
+   the tiers are what both pages ARE, so a copy would let them drift. */
+.lab-layout { display: grid; grid-template-columns: 1fr; gap: 0.6rem; margin: 0.6rem 0; }
+.lab-left { display: flex; flex-direction: column; gap: 0.6rem; min-width: 0; }
+.lab-right { min-width: 0; }
+@media (min-width: 820px) {
+    .lab-layout { grid-template-columns: 0.82fr 1.18fr; align-items: start; }
+}
+/* Scoped to pages that USE the layout. Unscoped (as it was when it lived in one
+   page's own <style>) this widened every page on the site the moment it moved
+   into the shared sheet — practice/correlation went from 800px to 1180px. */
+@media (min-width: 820px) { main:has(.lab-layout) { max-width: 1180px; } }
+.chart-panel {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    position: relative;
+}
+/* Distinct left-accent per tier so the three read as different roles. */
+.tier-population  { border-left: 4px solid var(--ims-blue, #569BBD); }
+.tier-sample      { border-left: 4px solid var(--ims-highlight, #E07020); }
+.tier-sampling    { border-left: 4px solid var(--ims-dark, #114B5F); }
+.chart-panel h3 {
+    font-size: 0.85rem;
+    margin: 0 0 0.15rem;
+    color: var(--ims-gray-text);
+    display: flex; align-items: baseline; gap: 0.5rem;
+}
+.tier-tag {
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #fff; padding: 0.05rem 0.4rem; border-radius: 3px;
+}
+.tier-population .tier-tag { background: var(--ims-blue, #569BBD); }
+.tier-sample .tier-tag     { background: var(--ims-highlight, #E07020); }
+.tier-sampling .tier-tag   { background: var(--ims-dark, #114B5F); }
+.chart-panel svg { font-family: var(--font-body); }
+
+/* The compact stats row under a lab panel, and the reveal control that
+   withholds the true parameter (REQ-056). Shared by the Sampling Lab and
+   conceptual/population-ci/. */
+.stats-row {
+    display: flex; flex-wrap: wrap; gap: 1.5rem; margin: 0.5rem 0; font-size: 0.85rem;
+}
+.stats-row .stat-item { display: flex; gap: 0.3rem; }
+.stats-row .stat-label { color: var(--ims-gray-text); }
+.stats-row .stat-value { font-family: var(--font-mono); font-weight: 600; }
+.stats-row .stat-item[hidden] { display: none; }
+/* REQ-056 reveal control — small, sits inline with the parameter row. */
+#truth-btn { font-size: 0.8rem; padding: 0.15rem 0.55rem; }
+#truth-btn[hidden] { display: none; }
