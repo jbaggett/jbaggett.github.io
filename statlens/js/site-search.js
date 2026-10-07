@@ -72,9 +72,37 @@ function score(e, terms) {
   return total;
 }
 
+/**
+ * Function words, dropped before matching.
+ *
+ * Every term has to land somewhere, which is what keeps "two means" from
+ * returning everything containing "two". But a student does not type keywords,
+ * they type a question — "is my coin fair" found nothing, because no keyword
+ * list contains "my". Stripping these keeps the strictness where it matters and
+ * removes it where it was only ever an accident of phrasing.
+ */
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'am', 'be', 'was', 'were', 'do', 'does', 'did',
+  'my', 'me', 'i', 'it', 'its', 'this', 'that', 'these', 'those', 'of', 'for',
+  'to', 'in', 'on', 'at', 'by', 'with', 'and', 'or', 'but', 'if', 'then',
+  'can', 'should', 'would', 'will', 'there', 'here',
+  // Question words. "how do I compare two groups" found nothing because no
+  // keyword list contains "how", and "what is a p-value" ranked by whichever
+  // description happened to contain the word "what".
+  'how', 'what', 'why', 'when', 'where', 'which', 'who', 'whose',
+]);
+
+/** @param {string} q @returns {string[]} */
+function termsOf(q) {
+  const all = q.toLowerCase().split(/\s+/).map((t) => t.trim()).filter(Boolean);
+  const kept = all.filter((t) => !STOPWORDS.has(t));
+  // "is it" is all function words; rather than return nothing, search them.
+  return kept.length ? kept : all;
+}
+
 /** @param {string} q @returns {Entry[]} */
 function search(q) {
-  const terms = q.toLowerCase().split(/\s+/).map((t) => t.trim()).filter(Boolean);
+  const terms = termsOf(q);
   if (!terms.length || !entries) return [];
   return entries
     .map((e) => ({ e, s: score(e, terms) }))
@@ -86,7 +114,7 @@ function search(q) {
 
 /** Which keywords actually matched, so the result can say why it is there. */
 function matchedKeywords(/** @type {Entry} */ e, /** @type {string} */ q) {
-  const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+  const terms = termsOf(q);
   return e.k.split(',').map((k) => k.trim())
     .filter((k) => terms.some((t) => k.toLowerCase().includes(t)))
     .slice(0, 3);
@@ -183,4 +211,4 @@ export function initSiteSearch() {
 
 // Exported for the tests, which should not have to drive a browser to check
 // that "two means" does not match a page that only knows the word "two".
-export const __test = { score, search, setEntries: (/** @type {Entry[]} */ e) => { entries = e; } };
+export const __test = { score, search, termsOf, setEntries: (/** @type {Entry[]} */ e) => { entries = e; } };
