@@ -115,6 +115,26 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 ---
 
+## Finding a tool
+
+Every public page now carries `<meta name="description">` and `<meta name="keywords">`. The
+keywords deliberately hold **both vocabularies** — the words a student would type ("before and
+after", "is my coin fair", "margin of error") and the formal name of the method ("paired t-test",
+"permutation test", "one-proportion z-test") — and deliberately **no chapter numbers**, because the
+textbook is remixed and a chapter tag would go stale in 75 files.
+
+| Where | What |
+|---|---|
+| **`find/`** | Every indexed page in one static, printable list, grouped by section, each with its description and keywords visible. Generated from the pages themselves, so a new tool appears as soon as it has the meta tags. Works with scripting off — it is the fallback for the search box. |
+| **Search box (home page)** | Filters as you type over title, description and keywords. Keyboard: ↓/↑ step the results, Enter opens one, Escape closes. A query that matches nothing points at `find/`. |
+| **`search-index.json`** | The same data as a flat list, generated alongside `find/`. Stable shape: `{pages: [{p, t, d, k}]}` — path, title, description, keywords. Usable by the textbook project if it ever wants to link or check tool coverage programmatically. |
+
+Regenerate both with `node scripts/build-find.mjs`; `--check` fails if they are stale, which a unit
+test asserts. The authored wording lives in `scripts/page-metadata.mjs`, but **the pages are the
+source of truth** — the builder reads their head tags.
+
+---
+
 ## Shared Chart Affordances (no URL parameter — always on)
 
 Every simulation and sampling-distribution chart carries these. They need no

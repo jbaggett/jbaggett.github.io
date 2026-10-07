@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>StatLens — Statistics Toolkit</title>
+    <meta name="description" content="A free, accessible, mobile-friendly statistics toolkit: simulation-based inference, distribution calculators, traditional tests, and tools for exploring data.">
+    <meta name="keywords" content="statistics tools, stats calculator, simulation based inference, bootstrap, randomization test, confidence interval, hypothesis test, p-value, StatKey alternative, free statistics software, intro stats">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -467,6 +469,37 @@
             }
         } catch (e) { /* private mode — just show the callout */ }
     </script>
+    <style>
+        /* Tool search. The results panel overlays the page rather than pushing
+           it, so the layout under the pointer does not move as you type. */
+        .site-search { position: relative; margin: 0 0 1rem; }
+        .site-search input[type="search"] {
+            width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem;
+            padding: 0.65rem 0.85rem; border: 2px solid var(--border, #ccc); border-radius: 8px;
+            background: #fff;
+        }
+        .site-search input[type="search"]:focus-visible {
+            outline: 2px solid var(--ims-blue, #569BBD); outline-offset: 2px;
+            border-color: var(--ims-blue, #569BBD);
+        }
+        .site-search-hint { margin: 0.35rem 0 0; font-size: 0.85rem; color: var(--ims-gray-text, #666); }
+        .site-search-results {
+            position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 4px);
+            background: #fff; border: 1px solid var(--border, #ccc); border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.13); max-height: 60vh; overflow-y: auto;
+        }
+        .ss-result {
+            display: block; padding: 0.55rem 0.8rem; text-decoration: none; color: inherit;
+            border-bottom: 1px solid var(--border, #eee);
+        }
+        .ss-result:last-child { border-bottom: none; }
+        .ss-result:hover, .ss-result.is-active { background: #eaf3f8; }
+        .ss-result:focus-visible { outline: 2px solid var(--ims-blue, #569BBD); outline-offset: -2px; }
+        .ss-title { display: block; font-weight: 700; color: var(--ims-dark, #114B5F); }
+        .ss-desc { display: block; font-size: 0.86rem; margin-top: 0.1rem; }
+        .ss-why { display: block; font-size: 0.76rem; color: var(--ims-gray-text, #666); margin-top: 0.15rem; }
+        .ss-empty { margin: 0; padding: 0.7rem 0.8rem; font-size: 0.9rem; }
+    </style>
 </head>
 <body>
     <nav class="skip-links" aria-label="Skip links">
@@ -495,6 +528,25 @@
                 <p class="hint">Anything helps — confusing controls, notation you'd change, a chart that misleads, or plain bugs. &nbsp;<button type="button" class="reviewer-dismiss">Don't show this again</button></p>
             </div>
         </details>
+
+        <!-- ═══ Search ══════════════════════════════════════════════════
+             The three views below organise 200+ links, which helps only if you
+             already know which bucket your tool is in. This is for when you do
+             not — it matches titles, descriptions and the keywords every page
+             now carries, in both student and technical wording. `find/` is the
+             static fallback and works with scripting off.
+             ═══════════════════════════════════════════════════════════════ -->
+        <div class="site-search">
+            <label class="sr-only" for="site-search-input">Search StatLens tools</label>
+            <input type="search" id="site-search-input" autocomplete="off"
+                   role="combobox" aria-expanded="false" aria-controls="site-search-results"
+                   aria-autocomplete="list" aria-describedby="site-search-hint"
+                   placeholder="Search tools — try “p-value”, “coin”, or “before and after”">
+            <div id="site-search-results" class="site-search-results" role="listbox"
+                 aria-label="Search results" hidden></div>
+            <p id="site-search-status" class="sr-only" role="status" aria-live="polite"></p>
+            <p id="site-search-hint" class="site-search-hint">or <a href="find/">see every page in one list</a></p>
+        </div>
 
         <!-- ═══ View switcher ═══════════════════════════════════════════ -->
         <fieldset class="view-switcher" aria-label="Choose landing page layout">
@@ -1311,6 +1363,10 @@
         // Deliberately NOT synced on load: arriving at the bare home page should
         // leave a bare URL. Share still carries the choice either way, since it
         // asks the provider rather than reading the address bar.
+    </script>
+    <script type="module">
+        import { initSiteSearch } from './js/site-search.js';
+        initSiteSearch();
     </script>
     <script src="js/page-number.js"></script>
     <script src="js/feedback.js"></script>

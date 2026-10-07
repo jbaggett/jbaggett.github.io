@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Find a Tool | StatLens</title>
+    <meta name="description" content="Every StatLens page in one list, grouped and with its keywords, so you can search the whole site with your browser's own find.">
+    <meta name="keywords" content="index, all tools, site index, find a tool, catalog, list of tools, search">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../manifest.json">
+
+    <style>
+        .fx-intro { margin: 0 0 1.2rem; }
+        .fx-section { margin: 0 0 1.8rem; }
+        .fx-section h2 { font-size: 1.1rem; margin: 0 0 0.2rem; color: var(--ims-dark, #114B5F); }
+        .fx-blurb { margin: 0 0 0.7rem; color: var(--ims-gray-text); font-size: 0.9rem; }
+        .fx-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.85rem;
+                   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+        .fx-list li { border: 1px solid var(--border); border-left-width: 4px;
+                      border-left-color: var(--ims-blue, #569BBD); border-radius: 8px;
+                      padding: 0.6rem 0.75rem; background: #fff; }
+        .fx-list a { font-weight: 700; }
+        .fx-desc { margin: 0.25rem 0 0.35rem; font-size: 0.9rem; }
+        .fx-kw { margin: 0; font-size: 0.78rem; color: var(--ims-gray-text); line-height: 1.5; }
+        .fx-count { font-family: var(--font-mono); }
+        @media print {
+            .fx-list { grid-template-columns: 1fr 1fr; }
+            .fx-list li { break-inside: avoid; }
+            .header-actions, .skip-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#find-main">Skip to the list</a>
+    </nav>
+    <main id="find-main">
+        <h1>Find a Tool<span class="header-actions"><a class="home-btn" href="../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p class="fx-intro">Every StatLens page, grouped, with the words that describe it &mdash; so your browser's own find (<kbd>Ctrl</kbd>+<kbd>F</kbd>, or <kbd>&#8984;</kbd>+<kbd>F</kbd>) will turn up anything on the site. <span class="fx-count">74</span> pages. There is also a search box on the <a href="../">home page</a>.</p>
+
+        <section class="fx-section" aria-labelledby="sec-simulate">
+            <h2 id="sec-simulate">Simulation-based inference</h2>
+            <p class="fx-blurb">Bootstrap intervals and randomization tests, built by simulating repetitions.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../simulate/randomization-anova/">ANOVA Randomization Test</a>
+                    <p class="fx-desc">Test whether several group means differ by permuting the labels and recomputing the F statistic.</p>
+                    <p class="fx-kw">randomization test · ANOVA · several groups · three or more groups · F statistic · permutation · comparing many means · p-value</p>
+                </li>
+                <li>
+                    <a href="../simulate/bootstrap-two-props/">Bootstrap CI: Diff in Proportions</a>
+                    <p class="fx-desc">Confidence interval for the difference between two proportions, by resampling each group separately.</p>
+                    <p class="fx-kw">bootstrap · two proportions · difference in proportions · compare two percentages · success rate · risk difference · confidence interval</p>
+                </li>
+                <li>
+                    <a href="../simulate/bootstrap-prop/">Bootstrap CI: One Proportion</a>
+                    <p class="fx-desc">Build a confidence interval for a population proportion by resampling your sample with replacement.</p>
+                    <p class="fx-kw">bootstrap · confidence interval for a proportion · percentage · rate · resampling · p-hat · margin of error · what fraction · one sample</p>
+                </li>
+                <li>
+                    <a href="../simulate/bootstrap-mean/">Bootstrap CI: One Sample</a>
+                    <p class="fx-desc">Build a confidence interval for a population mean by resampling your sample with replacement, thousands of times.</p>
+                    <p class="fx-kw">bootstrap · confidence interval for a mean · resampling · average · mean · margin of error · percentile interval · how precise is my average · one sample · x-bar</p>
+                </li>
+                <li>
+                    <a href="../simulate/bootstrap-paired/">Bootstrap CI: Paired Differences</a>
+                    <p class="fx-desc">Confidence interval for a mean difference when each subject is measured twice — resample the differences.</p>
+                    <p class="fx-kw">bootstrap · paired data · before and after · matched pairs · mean difference · repeated measures · confidence interval · same subjects twice</p>
+                </li>
+                <li>
+                    <a href="../simulate/bootstrap-slope/">Bootstrap CI: Regression Slope</a>
+                    <p class="fx-desc">Confidence interval for a regression slope, by resampling the (x, y) pairs.</p>
+                    <p class="fx-kw">bootstrap · regression slope · line of best fit · confidence interval for slope · scatterplot · linear relationship · resampling pairs</p>
+                </li>
+                <li>
+                    <a href="../simulate/bootstrap-two-means/">Bootstrap CI: Two Samples</a>
+                    <p class="fx-desc">Confidence interval for the difference between two group means, by resampling each group separately.</p>
+                    <p class="fx-kw">bootstrap · two groups · difference in means · compare two averages · treatment and control · confidence interval · independent samples</p>
+                </li>
+                <li>
+                    <a href="../simulate/goodness-of-fit/">Chi-Square Goodness-of-Fit Simulation</a>
+                    <p class="fx-desc">Test whether counts across several categories match a claimed set of probabilities, by simulation.</p>
+                    <p class="fx-kw">goodness of fit · chi-square · categories · expected counts · is the die fair · simulation · one categorical variable · p-value</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-chisq/">Chi-Square Randomization Test</a>
+                    <p class="fx-desc">Test independence in a contingency table by shuffling the group assignment and recomputing chi-square.</p>
+                    <p class="fx-kw">randomization test · chi-square · contingency table · two-way table · independence · association · categorical variables · p-value</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-correlation/">Correlation Randomization Test</a>
+                    <p class="fx-desc">Test whether two quantitative variables are related by shuffling one against the other and recomputing r.</p>
+                    <p class="fx-kw">randomization test · correlation · r · association · shuffle · scatterplot · are these related · p-value · linear relationship</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-diff-means/">Randomization Test: Diff in Means</a>
+                    <p class="fx-desc">Test whether two groups differ on average by shuffling the group labels — the permutation test.</p>
+                    <p class="fx-kw">randomization test · permutation test · shuffle · two groups · difference in means · treatment and control · p-value · does the treatment work · experiment</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-diff-props/">Randomization Test: Diff in Proportions</a>
+                    <p class="fx-desc">Test whether two groups differ in their success rate by shuffling the group labels.</p>
+                    <p class="fx-kw">randomization test · permutation test · shuffle · two proportions · difference in proportions · success rate · p-value · does the treatment work</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-one-prop/">Randomization Test: One Proportion</a>
+                    <p class="fx-desc">Test a claim about a single proportion by simulating what chance alone would produce under the null.</p>
+                    <p class="fx-kw">randomization test · simulation · one proportion · is it fair · coin · p-value · null hypothesis · chance alone · could this be luck · exact test</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-paired/">Randomization Test: Paired Differences</a>
+                    <p class="fx-desc">Test a mean difference on paired data by randomly flipping the sign of each difference.</p>
+                    <p class="fx-kw">randomization test · paired data · before and after · sign flip · matched pairs · mean difference · p-value · same subjects twice</p>
+                </li>
+                <li>
+                    <a href="../simulate/randomization-one-mean/">Randomization Test: Single Mean</a>
+                    <p class="fx-desc">Test a claim about a single mean by shifting the data to the null value and resampling.</p>
+                    <p class="fx-kw">randomization test · one mean · single mean · shifted bootstrap · p-value · null hypothesis · is the average different · one sample test</p>
+                </li>
+                <li>
+                    <a href="../simulate/">Simulation Tools</a>
+                    <p class="fx-desc">Bootstrap confidence intervals and randomization hypothesis tests, built by simulating thousands of repetitions you can watch and hover.</p>
+                    <p class="fx-kw">simulation · bootstrap · randomization test · permutation test · resampling · confidence interval · p-value · shuffle · null distribution</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-explore">
+            <h2 id="sec-explore">Exploring data</h2>
+            <p class="fx-blurb">Summaries and plots for one variable or two, quantitative or categorical.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../explore/psychic/">Are You Psychic?</a>
+                    <p class="fx-desc">Guess coin flips, then see where your score falls in the distribution of pure guessing — hypothesis testing before the vocabulary.</p>
+                    <p class="fx-kw">are you psychic · coin flip · guessing · chance alone · could this be luck · p-value intuition · null distribution · game · ESP</p>
+                </li>
+                <li>
+                    <a href="../explore/grouped/">Compare Groups</a>
+                    <p class="fx-desc">Compare a quantitative variable across groups with side-by-side boxplots, dotplots, and per-group statistics.</p>
+                    <p class="fx-kw">compare groups · side by side boxplots · grouped statistics · by group · treatment and control · means by group · comparing distributions</p>
+                </li>
+                <li>
+                    <a href="../explore/multi/">Data Explorer</a>
+                    <p class="fx-desc">Explore a whole dataset at once — pick variables, switch plot types, and compare several at a time.</p>
+                    <p class="fx-kw">data explorer · multiple variables · multivariate · variable picker · explore dataset · choose a plot · EDA workflow</p>
+                </li>
+                <li>
+                    <a href="../explore/dotplot-editor/">Dotplot Editor</a>
+                    <p class="fx-desc">Click a number line to add and remove points, and watch the mean, median, and standard deviation move as you do.</p>
+                    <p class="fx-kw">dotplot editor · build a dataset · mean vs median · standard deviation · variability · outlier · resistant · what happens to the mean · sandbox</p>
+                </li>
+                <li>
+                    <a href="../explore/">Explore Tools</a>
+                    <p class="fx-desc">Summarise and visualise a dataset: one variable or two, quantitative or categorical, with the plots and statistics that go with each.</p>
+                    <p class="fx-kw">explore data · summary statistics · descriptive statistics · graphs · histogram · boxplot · scatterplot · bar chart · EDA</p>
+                </li>
+                <li>
+                    <a href="../explore/one-cat/">One Categorical Variable</a>
+                    <p class="fx-desc">Summarise one categorical variable: counts, proportions, and a bar chart.</p>
+                    <p class="fx-kw">one categorical variable · bar chart · frequency table · proportion · percentage · counts · pie chart · category</p>
+                </li>
+                <li>
+                    <a href="../explore/descriptive/">One Quantitative Variable</a>
+                    <p class="fx-desc">Summarise one quantitative variable: histogram, dotplot, boxplot, mean, median, standard deviation, quartiles.</p>
+                    <p class="fx-kw">descriptive statistics · one quantitative variable · mean · median · standard deviation · quartiles · IQR · histogram · boxplot · dotplot · five number summary · centre and spread</p>
+                </li>
+                <li>
+                    <a href="../explore/regression-by-eye/">Regression by Eye</a>
+                    <p class="fx-desc">Fit a line by dragging it, see your residuals, then compare against the least-squares fit.</p>
+                    <p class="fx-kw">regression by eye · fit a line · least squares · residuals · sum of squared errors · line of best fit · guess the line · game</p>
+                </li>
+                <li>
+                    <a href="../explore/scatterplot-editor/">Scatterplot Editor</a>
+                    <p class="fx-desc">Drag, add, and remove points and watch the regression line, r, R², and slope respond.</p>
+                    <p class="fx-kw">scatterplot editor · influential point · leverage · outlier · correlation · regression line · what happens to r · drag points · sandbox</p>
+                </li>
+                <li>
+                    <a href="../explore/random-sequence/">Stump the Chump</a>
+                    <p class="fx-desc">Type a sequence of heads and tails that looks random, then see how it compares to a real one. Real randomness is clumpier than people expect.</p>
+                    <p class="fx-kw">stump the chump · fake randomness · runs · streaks · clumpy · human randomness · gamblers fallacy · coin flip · game</p>
+                </li>
+                <li>
+                    <a href="../explore/categorical/">Two Categorical Variables</a>
+                    <p class="fx-desc">Two categorical variables: contingency table, conditional proportions, and a segmented or side-by-side bar chart.</p>
+                    <p class="fx-kw">two categorical variables · contingency table · two-way table · cross tabulation · conditional proportion · segmented bar chart · association</p>
+                </li>
+                <li>
+                    <a href="../explore/regression/">Two Quantitative Variables</a>
+                    <p class="fx-desc">Two quantitative variables: scatterplot, correlation, least-squares line, residuals, and R².</p>
+                    <p class="fx-kw">regression · scatterplot · correlation · r · least squares line · line of best fit · residuals · R squared · slope · intercept · linear relationship</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-conceptual">
+            <h2 id="sec-conceptual">Concepts and demonstrations</h2>
+            <p class="fx-blurb">The ideas behind the methods, made interactive.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../conceptual/ci-coverage/">CI Coverage</a>
+                    <p class="fx-desc">Build an interval from each of many samples and count how many capture the parameter — what “95% confident” actually counts.</p>
+                    <p class="fx-kw">coverage · confidence level · what does 95% mean · capture rate · confidence interval interpretation · repeated sampling · long run</p>
+                </li>
+                <li>
+                    <a href="../conceptual/">Conceptual Demos</a>
+                    <p class="fx-desc">Interactive demonstrations of the ideas behind the methods — sampling distributions, confidence intervals, power, and errors.</p>
+                    <p class="fx-kw">concepts · demonstrations · sampling distribution · confidence interval · power · type I error · CLT · teaching demos</p>
+                </li>
+                <li>
+                    <a href="../conceptual/population-ci/">Confidence Intervals by Repeated Sampling</a>
+                    <p class="fx-desc">Draw sample after sample from a population you choose, and see where a confidence interval’s margin of error actually comes from.</p>
+                    <p class="fx-kw">confidence interval · margin of error · repeated sampling · sampling distribution · standard error · why does the bootstrap work · population vs sample · mean</p>
+                </li>
+                <li>
+                    <a href="../conceptual/decision-errors/">Decision Errors</a>
+                    <p class="fx-desc">Type I and Type II errors as the two ways a test can be wrong, with the trade-off between them made visible.</p>
+                    <p class="fx-kw">type I error · type II error · false positive · false negative · alpha · beta · power · significance level · decision errors · trade-off</p>
+                </li>
+                <li>
+                    <a href="../conceptual/law-of-large-numbers/">Law of Large Numbers</a>
+                    <p class="fx-desc">Toss a coin or roll a die over and over: the running proportion settles toward what the model predicts, while the running total wanders further from zero.</p>
+                    <p class="fx-kw">law of large numbers · long run proportion · running average · coin flip · die roll · expected value · convergence · law of averages · gamblers fallacy · is the coin due · probability</p>
+                </li>
+                <li>
+                    <a href="../conceptual/power-sim/">Power Lab</a>
+                    <p class="fx-desc">Run a study over and over and watch how often it detects a real effect — power, as a fraction you can see.</p>
+                    <p class="fx-kw">power · sample size · effect size · type II error · how many subjects do I need · detect a difference · alpha · study design</p>
+                </li>
+                <li>
+                    <a href="../conceptual/sampling-bias/">Sampling Bias Lab</a>
+                    <p class="fx-desc">Pick a “representative” sample by eye, then compare it with a random one — bias you can see in your own choices.</p>
+                    <p class="fx-kw">sampling bias · convenience sample · random sample · representative · Gettysburg address · biased · why randomise · sampling</p>
+                </li>
+                <li>
+                    <a href="../conceptual/sampling-designs/">Sampling Designs</a>
+                    <p class="fx-desc">Simple random, stratified, cluster, and convenience sampling compared on the same population, with their costs and their spread.</p>
+                    <p class="fx-kw">sampling designs · simple random sample · stratified · cluster sampling · convenience sample · multistage · study design · how to sample</p>
+                </li>
+                <li>
+                    <a href="../conceptual/sampling-lab/">Sampling Distribution Lab</a>
+                    <p class="fx-desc">Pick a population, set the sample size, and watch the sampling distribution of a mean or proportion build up.</p>
+                    <p class="fx-kw">sampling distribution · central limit theorem · CLT · standard error · sample size · population vs sample · x-bar · p-hat · why does the shape change</p>
+                </li>
+                <li>
+                    <a href="../conceptual/two-se/">Why ± 2 SE Works</a>
+                    <p class="fx-desc">The argument behind every “statistic ± 2 SE” interval, drawn with no numbers on the axis at all.</p>
+                    <p class="fx-kw">two standard errors · empirical rule · 68 95 99.7 · confidence interval · margin of error · why plus or minus 2 · capture · standard error</p>
+                </li>
+                <li>
+                    <a href="../conceptual/bootstrap-shift/">Why the Percentile CI Works</a>
+                    <p class="fx-desc">The bootstrap distribution and the true sampling distribution on one axis — why a percentile interval works, and where it strains.</p>
+                    <p class="fx-kw">bootstrap · percentile interval · sampling distribution · why does the bootstrap work · shift · plug-in principle · standard error</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-inference">
+            <h2 id="sec-inference">Traditional inference</h2>
+            <p class="fx-blurb">Theory-based intervals and tests using t, z, F and chi-square.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../inference/goodness-of-fit/">Chi-Square Goodness-of-Fit Test</a>
+                    <p class="fx-desc">Chi-square goodness-of-fit test: do observed counts match the claimed probabilities?</p>
+                    <p class="fx-kw">goodness of fit · chi-square · expected counts · categories · is the die fair · one categorical variable · p-value</p>
+                </li>
+                <li>
+                    <a href="../inference/chisq/">Chi-Square Test of Independence</a>
+                    <p class="fx-desc">Chi-square test of independence for a two-way table, with expected counts and contributions.</p>
+                    <p class="fx-kw">chi-square test · independence · two-way table · contingency table · expected counts · categorical · association · p-value</p>
+                </li>
+                <li>
+                    <a href="../inference/estimate/two-means/">Confidence Interval for a Difference in Means</a>
+                    <p class="fx-desc">Confidence interval for the difference between two population means.</p>
+                    <p class="fx-kw">confidence interval for a difference in means · two groups · margin of error · t interval · compare two averages</p>
+                </li>
+                <li>
+                    <a href="../inference/estimate/two-props/">Confidence Interval for a Difference in Proportions</a>
+                    <p class="fx-desc">Confidence interval for the difference between two population proportions.</p>
+                    <p class="fx-kw">confidence interval for a difference in proportions · two groups · margin of error · z interval · compare two rates</p>
+                </li>
+                <li>
+                    <a href="../inference/estimate/one-mean/">Confidence Interval for a Mean</a>
+                    <p class="fx-desc">Confidence interval for a population mean using the t distribution.</p>
+                    <p class="fx-kw">confidence interval for a mean · t interval · margin of error · critical value · t star · estimate the average</p>
+                </li>
+                <li>
+                    <a href="../inference/estimate/paired/">Confidence Interval for a Mean Difference (Paired)</a>
+                    <p class="fx-desc">Confidence interval for a mean difference on paired data.</p>
+                    <p class="fx-kw">confidence interval · paired data · mean difference · before and after · matched pairs · t interval</p>
+                </li>
+                <li>
+                    <a href="../inference/estimate/one-prop/">Confidence Interval for a Proportion</a>
+                    <p class="fx-desc">Confidence interval for a population proportion using the normal approximation.</p>
+                    <p class="fx-kw">confidence interval for a proportion · z interval · margin of error · critical value · z star · estimate a percentage</p>
+                </li>
+                <li>
+                    <a href="../inference/estimate/slope/">Confidence Interval for a Regression Slope</a>
+                    <p class="fx-desc">Confidence interval for a regression slope.</p>
+                    <p class="fx-kw">confidence interval for a slope · regression · t interval · margin of error · linear relationship</p>
+                </li>
+                <li>
+                    <a href="../inference/multiple-comparisons/">Multiple Comparisons</a>
+                    <p class="fx-desc">What happens to error rates when you run many tests, and how Bonferroni and friends respond.</p>
+                    <p class="fx-kw">multiple comparisons · Bonferroni · family-wise error · false discovery · many tests · post hoc · p-hacking · adjusted p-value</p>
+                </li>
+                <li>
+                    <a href="../inference/mlr/">Multiple Linear Regression</a>
+                    <p class="fx-desc">Multiple linear regression: fit a model with several predictors and read standard software output.</p>
+                    <p class="fx-kw">multiple regression · multiple linear regression · several predictors · coefficients · adjusted R squared · model output · MLR</p>
+                </li>
+                <li>
+                    <a href="../inference/one-prop/">One-Proportion z-Test</a>
+                    <p class="fx-desc">One-proportion z-test for a claim about a population proportion.</p>
+                    <p class="fx-kw">one proportion z-test · z test · proportion · percentage · success rate · p-value · normal approximation · is it fair</p>
+                </li>
+                <li>
+                    <a href="../inference/one-mean/">One-Sample t-Test</a>
+                    <p class="fx-desc">One-sample t-test for a population mean, with conditions, test statistic, and p-value.</p>
+                    <p class="fx-kw">one sample t-test · t test · mean · hypothesis test · p-value · test statistic · degrees of freedom · is the average different</p>
+                </li>
+                <li>
+                    <a href="../inference/anova/">One-Way ANOVA</a>
+                    <p class="fx-desc">One-way ANOVA: an F-test for whether several group means differ, with the decomposition table.</p>
+                    <p class="fx-kw">ANOVA · F test · several groups · three or more groups · sum of squares · mean square · comparing many means · p-value</p>
+                </li>
+                <li>
+                    <a href="../inference/paired/">Paired t-Test</a>
+                    <p class="fx-desc">Paired t-test on the differences when each subject is measured twice.</p>
+                    <p class="fx-kw">paired t-test · before and after · matched pairs · mean difference · repeated measures · dependent samples · same subjects twice</p>
+                </li>
+                <li>
+                    <a href="../inference/slope/">Regression Slope t-Test</a>
+                    <p class="fx-desc">T-test for a regression slope: is there a real linear relationship?</p>
+                    <p class="fx-kw">regression slope t-test · slope · is the relationship real · linear regression · p-value · standard error of slope · scatterplot</p>
+                </li>
+                <li>
+                    <a href="../inference/">Traditional Inference</a>
+                    <p class="fx-desc">Theory-based confidence intervals and hypothesis tests using the t, z, F, and chi-square distributions, with conditions checked.</p>
+                    <p class="fx-kw">traditional inference · t-test · z-test · formula based · theory based · confidence interval · hypothesis test · conditions · central limit theorem</p>
+                </li>
+                <li>
+                    <a href="../inference/two-props/">Two-Proportion z-Test</a>
+                    <p class="fx-desc">Two-proportion z-test for a difference between two success rates.</p>
+                    <p class="fx-kw">two proportion z-test · difference in proportions · compare two percentages · pooled proportion · p-value · risk difference</p>
+                </li>
+                <li>
+                    <a href="../inference/two-means/">Two-Sample t-Test</a>
+                    <p class="fx-desc">Two-sample t-test for a difference in means, with Welch and pooled options.</p>
+                    <p class="fx-kw">two sample t-test · difference in means · compare two groups · Welch · pooled variance · p-value · independent samples</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-distribution">
+            <h2 id="sec-distribution">Distribution calculators</h2>
+            <p class="fx-blurb">Probabilities and critical values, in place of a printed table.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../distribution/binomial/">Binomial Distribution Calculator</a>
+                    <p class="fx-desc">Probabilities for a number of successes in a fixed number of independent trials.</p>
+                    <p class="fx-kw">binomial distribution · exactly k successes · coin flips · number of successes · probability · n and p · discrete distribution</p>
+                </li>
+                <li>
+                    <a href="../distribution/chisq/">Chi-Square Distribution Calculator</a>
+                    <p class="fx-desc">Areas and critical values under a chi-square curve.</p>
+                    <p class="fx-kw">chi-square distribution · chi square table · degrees of freedom · critical value · right skewed · goodness of fit</p>
+                </li>
+                <li>
+                    <a href="../distribution/">Distribution Calculators</a>
+                    <p class="fx-desc">Look up probabilities and critical values on the normal, t, chi-square, F, and binomial distributions.</p>
+                    <p class="fx-kw">distribution calculator · probability · critical value · table replacement · normal table · t table · area under the curve</p>
+                </li>
+                <li>
+                    <a href="../distribution/f/">F Distribution Calculator</a>
+                    <p class="fx-desc">Areas and critical values under an F curve with two degrees-of-freedom parameters.</p>
+                    <p class="fx-kw">F distribution · F table · ANOVA · numerator degrees of freedom · denominator · critical value · variance ratio</p>
+                </li>
+                <li>
+                    <a href="../distribution/normal/">Normal Distribution Calculator</a>
+                    <p class="fx-desc">Areas and critical values under a normal curve, with draggable boundaries.</p>
+                    <p class="fx-kw">normal distribution · z score · bell curve · standard normal · area under the curve · z table · percentile · critical value</p>
+                </li>
+                <li>
+                    <a href="../distribution/power/">Power &amp; Error Visualizer</a>
+                    <p class="fx-desc">Null and alternative distributions side by side, with Type I error, Type II error, and power shaded.</p>
+                    <p class="fx-kw">power · type I error · type II error · alpha · beta · effect size · sample size · two distributions · shaded regions</p>
+                </li>
+                <li>
+                    <a href="../distribution/t/">t Distribution Calculator</a>
+                    <p class="fx-desc">Areas and critical values under a t curve for any degrees of freedom.</p>
+                    <p class="fx-kw">t distribution · t score · degrees of freedom · t table · critical value · t star · heavier tails</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-practice">
+            <h2 id="sec-practice">Practice and games</h2>
+            <p class="fx-blurb">Short repeatable exercises that build intuition.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../practice/conclusions/">Conclusion Practice</a>
+                    <p class="fx-desc">Practise writing formal and plain-language conclusions for a completed test.</p>
+                    <p class="fx-kw">writing conclusions · interpretation · formal conclusion · plain language · p-value interpretation · practice · how do I write it up</p>
+                </li>
+                <li>
+                    <a href="../practice/correlation/">Guess the Correlation</a>
+                    <p class="fx-desc">See a scatterplot, guess the correlation, and find out how close you were.</p>
+                    <p class="fx-kw">guess the correlation · r · scatterplot · estimate correlation · game · practice · how strong is the relationship</p>
+                </li>
+                <li>
+                    <a href="../practice/">Practice &amp; Games</a>
+                    <p class="fx-desc">Short repeatable exercises that build intuition and skill.</p>
+                    <p class="fx-kw">practice · games · drills · build intuition · quiz yourself</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-data">
+            <h2 id="sec-data">Data</h2>
+            <p class="fx-blurb">The bundled datasets, contributed ones, and a builder for your own.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../data/builder/">Dataset Builder</a>
+                    <p class="fx-desc">Turn a file or a pasted table into a StatLens link you can hand to students.</p>
+                    <p class="fx-kw">dataset builder · upload csv · make a link · custom data · paste data · share a dataset · instructor tool</p>
+                </li>
+                <li>
+                    <a href="../data/">Datasets</a>
+                    <p class="fx-desc">The datasets bundled with StatLens, with their variables, sources, and the tools that accept them.</p>
+                    <p class="fx-kw">datasets · data · sample data · variables · sources · IMS datasets · openintro</p>
+                </li>
+                <li>
+                    <a href="../data/extra/">Extra Datasets</a>
+                    <p class="fx-desc">Datasets contributed by instructors, hosted here and loadable by link.</p>
+                    <p class="fx-kw">extra datasets · contributed data · instructor datasets · custom data · csv link</p>
+                </li>
+            </ul>
+        </section>
+
+        <section class="fx-section" aria-labelledby="sec-_teaching">
+            <h2 id="sec-_teaching">For instructors</h2>
+            <p class="fx-blurb">Course integration, activities, and the instructor utilities.</p>
+            <ul class="fx-list">
+                <li>
+                    <a href="../activities/">Activities Catalog</a>
+                    <p class="fx-desc">Guided step-by-step activity panels that attach to a tool page — predict, run, and confront.</p>
+                    <p class="fx-kw">activities · guided · walkthrough · lesson · step by step · predict then reveal · classroom activity</p>
+                </li>
+                <li>
+                    <a href="../instructors/">For Instructors</a>
+                    <p class="fx-desc">How to use StatLens in a course: linking, seeding for graded work, embedding, and the instructor tools.</p>
+                    <p class="fx-kw">for instructors · teaching · course integration · embed · seed · LMS · Canvas · MyOpenMath · assignments</p>
+                </li>
+                <li>
+                    <a href="../tools/">Instructor Tools</a>
+                    <p class="fx-desc">Instructor utilities: the tool catalog, link building, and dataset preparation.</p>
+                    <p class="fx-kw">instructor tools · link builder · tool catalog · dataset tools · teaching utilities</p>
+                </li>
+                <li>
+                    <a href="../ims/">StatLens for IMS — Introduction to Modern Statistics</a>
+                    <p class="fx-desc">How StatLens lines up with Introduction to Modern Statistics, chapter by chapter.</p>
+                    <p class="fx-kw">IMS · Introduction to Modern Statistics · openintro · textbook mapping · course alignment</p>
+                </li>
+            </ul>
+        </section>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Find a Tool &mdash; Help</h2>
+        <p class="help-intro">Every StatLens page in one list, grouped by what it is for, each with a one-line description and the words that describe it.</p>
+        <ul class="help-intro">
+            <li>Use your browser's own find (<kbd>Ctrl</kbd>+<kbd>F</kbd>, or <kbd>&#8984;</kbd>+<kbd>F</kbd>) to search the whole page &mdash; the keywords under each entry are there so that works.</li>
+            <li>The keywords carry both everyday wording (&ldquo;before and after&rdquo;, &ldquo;is my coin fair&rdquo;) and the formal name (&ldquo;paired t-test&rdquo;, &ldquo;permutation test&rdquo;), so either will find the tool.</li>
+            <li>The <a href="../">home page</a> has a search box that does the same thing as you type.</li>
+            <li>This page prints cleanly, if a paper list is useful.</li>
+        </ul>
+        <p>This list is generated from the pages themselves, so a new tool appears here as soon as it has a description.</p>
+        <button type="button" class="btn-primary">Close</button>
+    </dialog>
+
+    <script type="module">
+        import { initHelp, initSettings } from '../js/page-utils.js';
+        initHelp();
+        // The gear is in the header on every page, so it has to work here too —
+        // it builds its own dialog, and the settings it holds (display density,
+        // reduced motion) apply to this page like any other.
+        initSettings();
+    </script>
+    <script src="../js/page-number.js"></script>
+    <script src="../js/feedback.js"></script>
+</body>
+</html>
