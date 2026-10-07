@@ -1622,51 +1622,72 @@ export function initSimPage(config) {
    * a worse version of something the page can draw. Only re-rendered when the
    * index changes, because in column mode `describe` runs on every mousemove.
    */
+  /** The centred differences a paired randomization shuffles the signs of. */
+  function centredPairedDiffs() {
+    const diffs = data2.map((v, i) => v - data1[i]);
+    const nullDiff = getNullValue();
+    return nullDiff === 0 ? diffs : diffs.map((d) => d - nullDiff);
+  }
+
   /**
    * The draw behind repetition `i`, replayed from the generator state kept for
    * it. Storing the indices instead cost n numbers a dot and ran out at large
    * n — on Ames (n = 2,930) only the newest 34 of 1,000 survived, so hovering
    * any older dot did nothing. Replaying costs one draw, only when asked.
+   *
+   * It returns VALUES rather than indices. A shuffle's indices point into the
+   * POOLED array, not into `data1`, so the old index-mapping would have read a
+   * randomization's draw off the wrong list — and for a paired bootstrap, whose
+   * indices select PAIRS, it was already showing the "before" values instead of
+   * the resampled differences.
+   *
    * @param {number} i
-   * @returns {{idx: ArrayLike<number>, idx2?: ArrayLike<number>}|null}
+   * @returns {{g1: number[], g2?: number[], pairedOriginal?: number[]}|null}
    */
   function drawBehind(i) {
     const rec = resamples.get(i);
-    if (!rec) return null;
-    if (rec.idx) return { idx: rec.idx, idx2: rec.idx2 };
-    if (!rec.st) return null;
+    if (!rec?.st) return null;
     const r = rngFromState(rec.st);
     // The same branch the generate loop took: the configuration does not change
     // while a run's statistics stand, so this reproduces that draw exactly.
+    if (config.mode === 'randomization') {
+      if (config.paired && data2.length > 0) {
+        const original = centredPairedDiffs();
+        return { g1: signFlip(original, r).values, pairedOriginal: original };
+      }
+      if (config.twoGroup && data2.length > 0) {
+        const { first, second } = shuffleLabels(data1, data2, r);
+        return { g1: first.values, g2: second.values };
+      }
+      return null;
+    }
     if (config.paired && data2.length > 0) {
-      const { indices } = resamplePairedDiffs(data1, data2, r);
-      return indices ? { idx: indices } : null;
+      return { g1: resamplePairedDiffs(data1, data2, r).values };
     }
     if (config.twoGroup && data2.length > 0) {
       const { first, second } = resampleGroups(data1, data2, r);
-      return (first.indices && second.indices)
-        ? { idx: first.indices, idx2: second.indices } : null;
+      return { g1: first.values, g2: second.values };
     }
-    const { indices } = resampleOne(data1, r);
-    return indices ? { idx: indices } : null;
+    return { g1: resampleOne(data1, r).values };
   }
 
   function showPeeked(i) {
     if (i === peekedIndex) return;
-    const rec = drawBehind(i);
-    if (!rec?.idx) return;
+    const d = drawBehind(i);
+    if (!d?.g1?.length) return;
     peekedIndex = i;
-    const g1 = Array.from(rec.idx, (k) => data1[k]).filter((v) => v != null);
-    if (rec.idx2) {
-      // Both groups, because a two-group statistic is a comparison and half of
-      // one is not a resample.
-      const g2 = Array.from(rec.idx2, (k) => data2[k]).filter((v) => v != null);
-      if (g1.length && g2.length) {
-        showTwoGroupMechanism(/** @type {number[]} */ (g1), /** @type {number[]} */ (g2), false, false);
-      }
+    if (d.pairedOriginal) {
+      // A sign-flip is a comparison with what it flipped, so both go up.
+      showPairedMechanism(d.pairedOriginal, d.g1, false);
       return;
     }
-    if (g1.length) showResample(/** @type {number[]} */ (g1), false, true, false);
+    if (d.g2?.length) {
+      // Both groups, because a two-group statistic is a comparison and half of
+      // one is not a draw.
+      showTwoGroupMechanism(d.g1, d.g2, false, false);
+      return;
+    }
+    showResample(d.g1, false, true, false);
   }
   /** Put Step 2 back to the resample the simulation actually last drew. */
   function restorePeeked() {
@@ -2129,8 +2150,12 @@ export function initSimPage(config) {
 
       /** @type {number[]} */ let lastFlipped = [];
       for (let i = 0; i < count; i++) {
+        // Four numbers per shuffle, so any dot can be hovered later and the
+        // sign-flip behind it replayed. (Jeff, 2026-10-07.)
+        const st = rng.getState();
         const flipped = signFlip(centeredDiffs, rng).values;
         lastFlipped = flipped;
+        resamples.rememberState(allStats.length, st);
         allStats.push(mean(flipped));
       }
 
@@ -2195,6 +2220,7 @@ export function initSimPage(config) {
       /** @type {number[]} */ let lastG1 = [];
       /** @type {number[]} */ let lastG2 = [];
       for (let i = 0; i < count; i++) {
+        const st = rng.getState();
         const { first, second } = shuffleLabels(data1, data2, rng);
         const g1 = first.values, g2 = second.values;
         // Which pooled observation landed in which group — what the deal
@@ -2203,6 +2229,7 @@ export function initSimPage(config) {
         lastRsIdx2 = second.indices ?? null;
         lastG1 = g1;
         lastG2 = g2;
+        resamples.rememberState(allStats.length, st);
         const stat = config.testStat(g1, g2);
         allStats.push(stat);
       }

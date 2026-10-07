@@ -46,7 +46,9 @@ import * as d3Scale from 'd3-scale';
 import * as d3Axis from 'd3-axis';
 import * as d3Selection from 'd3-selection';
 
-import { createRng } from '../../js/prng.js';
+import { createRng, rngFromState } from '../../js/prng.js';
+import { createResampleStore } from '../../js/resample-store.js';
+import { attachResamplePeek, createPeekElement } from '../../js/resample-peek.js';
 import { generateQuantPopulation, POPULATION_SHAPES } from '../../js/populations.js';
 import { mean, sd, quantile } from '../../js/stats.js';
 import { drawHistogram } from '../../js/histogram.js';
@@ -80,6 +82,17 @@ let mu = 0, sigma = 0;
 /** The sample step 4 keeps — frozen so its interval does not move as the margin settles. */
 /** @type {number[]|null} */ let firstSample = null;
 let firstMean = NaN;
+
+/**
+ * What each bar in step 3 came from, as the generator state each draw started
+ * from — four numbers a sample rather than n values, so every one of 100,000
+ * samples stays answerable. (The same retrieval the simulation pages use.)
+ */
+const samples = createResampleStore();
+/** @type {any} */ let peekGeom = null;
+/** @type {HTMLElement|null} */ let peekEl = null;
+/** Which sample the hover is showing, so leaving can put the real one back. */
+let peekedIndex = -1;
 
 /** @param {number} v */
 function clampN(v) { return Math.max(2, Math.min(200, Math.round(v))); }
@@ -199,7 +212,7 @@ function drawDistribution() {
     return;
   }
   const b = band();
-  drawHistogram(distChart, means, {
+  const result = drawHistogram(distChart, means, {
     id: 'pci-dist',
     xLabel: 'Sample mean (x̄)',
     titleText: 'Sampling distribution of the sample mean',
@@ -218,6 +231,8 @@ function drawDistribution() {
     precision: 2,
     viewHeight: 260,
   });
+
+  wirePeek(result);
 
   if (distStats) {
     const se = sd(means);
@@ -326,6 +341,72 @@ function drawInterval() {
   }
 }
 
+/**
+ * Hovering a bar in step 3 puts THAT sample into step 2.
+ *
+ * "I want the sampling labs and differences of props and means to have
+ * hoverable dots that show the original samples, this should extend to the new
+ * app." (Jeff, 2026-10-07.) Here a dot is a whole SAMPLE rather than a
+ * resample, which makes the question more direct still: every bar is a batch of
+ * samples that happened to have similar means, and hovering says which one.
+ *
+ * @param {{frame: any, xScale: any, yScale: any, bins?: any[]}} result
+ */
+function wirePeek(result) {
+  if (!distChart) return;
+  if (!peekEl) peekEl = createPeekElement(distChart);
+  peekGeom = { xScale: result.xScale, yScale: result.yScale, frame: result.frame,
+               bins: result.bins ?? null };
+  attachResamplePeek({
+    container: distChart,
+    peek: /** @type {HTMLElement} */ (peekEl),
+    geom: peekGeom,
+    stats: () => means,
+    onLeave: () => {
+      if (peekedIndex === -1) return;
+      peekedIndex = -1;
+      if (lastSample.length) drawSamplePanel();
+    },
+    describe: (i, approx) => {
+      const rec = samples.get(i);
+      if (!rec?.st) return null;
+      if (i !== peekedIndex) {
+        peekedIndex = i;
+        showPeekedSample(replaySample(rec.st));
+      }
+      return {
+        title: `Sample ${i + 1}${approx ? ' (one of the samples in this bar)' : ''}`,
+        detail: `shown in step 2 \u2014 x\u0304 = ${means[i].toFixed(2)}`,
+      };
+    },
+  });
+}
+
+/**
+ * The sample a stored generator state produced — n lookups into the population,
+ * replayed rather than kept.
+ * @param {ReadonlyArray<number>} state
+ * @returns {number[]}
+ */
+function replaySample(state) {
+  const r = rngFromState(state);
+  const values = new Array(n);
+  for (let k = 0; k < n; k++) values[k] = population[Math.floor(r() * population.length)];
+  return values;
+}
+
+/**
+ * Draw a hovered sample into step 2 without losing the one actually drawn last,
+ * so leaving the chart can put it back.
+ * @param {number[]} values
+ */
+function showPeekedSample(values) {
+  const keep = lastSample;
+  lastSample = values;
+  drawSamplePanel();
+  lastSample = keep;
+}
+
 function redraw() {
   drawPopulation();
   drawSamplePanel();
@@ -340,7 +421,9 @@ function addSamples(count) {
   if (means.length >= MAX_SAMPLES) { announce('Enough samples.'); return; }
   const take = Math.min(count, MAX_SAMPLES - means.length);
   for (let i = 0; i < take; i++) {
+    const st = /** @type {any} */ (rng).getState();
     const s = drawSample();
+    samples.rememberState(means.length, st);
     lastSample = s.values;
     means.push(s.mean);
     if (!firstSample) { firstSample = s.values; firstMean = s.mean; }
@@ -354,6 +437,7 @@ function addSamples(count) {
 
 function reset(message = 'Started over.') {
   means = []; lastSample = []; firstSample = null; firstMean = NaN;
+  samples.clear(); peekedIndex = -1;
   rng = createRng(`${seed}:${shape}:${n}`);
   redraw();
   announce(message);
