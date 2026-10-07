@@ -126,7 +126,7 @@ textbook is remixed and a chapter tag would go stale in 75 files.
 | Where | What |
 |---|---|
 | **`find/`** | Every indexed page in one static, printable list, grouped by section, each with its description and keywords visible. Generated from the pages themselves, so a new tool appears as soon as it has the meta tags. Works with scripting off — it is the fallback for the search box. |
-| **Search box (home page)** | Filters as you type over title, description and keywords. Keyboard: ↓/↑ step the results, Enter opens one, Escape closes. A query that matches nothing points at `find/`. |
+| **Search overlay (home page)** | Opened by the magnifying glass in the header, by `/`, or by Ctrl/Cmd-K. Filters as you type over title, description and keywords; ↓/↑ step the results, Enter opens one, Escape closes. A query that matches nothing points at `find/`. It is an overlay rather than a field in the page so the landing page's top band stays clear. |
 | **`search-index.json`** | The same data as a flat list, generated alongside `find/`. Stable shape: `{pages: [{p, t, d, k}]}` — path, title, description, keywords. Usable by the textbook project if it ever wants to link or check tool coverage programmatically. |
 
 Regenerate both with `node scripts/build-find.mjs`; `--check` fails if they are stale, which a unit

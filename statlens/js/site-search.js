@@ -16,6 +16,13 @@
  * should not pay for it on load, and a reader who never searches never
  * downloads it. `find/` is the static fallback and is linked from here, so the
  * site stays navigable with JavaScript off or if this fetch fails.
+ *
+ * It lives in an overlay rather than in the page. Jeff, 2026-10-07, looking at
+ * the band between the banner and the content: "we need to declutter. the
+ * search bar could be replaced by a magnifiying glass button at the top that
+ * opens a seach overlay or similar." A search box is chrome for a reader who
+ * already knows what they want — which, on a landing page that lists every tool
+ * three different ways, is most of them.
  */
 
 const INDEX_URL = new URL('../search-index.json', import.meta.url).href;
@@ -199,6 +206,14 @@ export function initSiteSearch() {
         /** @type {HTMLAnchorElement} */ (opts[active]).click();
       }
     } else if (ev.key === 'Escape') {
+      // Inside the overlay, Escape means "leave".
+      //
+      // It has to be done here rather than left to the <dialog>, because
+      // Chrome's `input[type=search]` swallows the first Escape to clear its
+      // own value — so the native close needed TWO presses, and the first one
+      // looked like nothing happening.
+      const dlg = /** @type {HTMLDialogElement|null} */ (input.closest('dialog'));
+      if (dlg?.open) { ev.preventDefault(); dlg.close(); return; }
       if (list.hidden) { input.value = ''; } else { close(); }
     }
   });
@@ -206,6 +221,51 @@ export function initSiteSearch() {
   document.addEventListener('click', (ev) => {
     if (!list.hidden && !list.contains(/** @type {Node} */ (ev.target))
         && ev.target !== input) close();
+  });
+
+  return { close, clear: () => { input.value = ''; close(); } };
+}
+
+/**
+ * The overlay: a button in the header, `/` or Ctrl/Cmd-K, Escape to leave.
+ *
+ * `/` is the shortcut readers already know from GitHub and Wikipedia, and it
+ * costs nothing because no page is listening for a bare slash. It is ignored
+ * while a field has focus, so typing a slash into a search box or a data entry
+ * field still types a slash.
+ */
+export function initSiteSearchDialog() {
+  const dialog = /** @type {HTMLDialogElement|null} */ (document.getElementById('site-search-dialog'));
+  const openBtn = document.querySelector('.search-btn');
+  if (!dialog) return;
+  const api = initSiteSearch();
+  const input = /** @type {HTMLInputElement|null} */ (document.getElementById('site-search-input'));
+
+  const open = () => {
+    if (dialog.open) return;
+    dialog.showModal();
+    input?.focus();
+    input?.select();
+  };
+
+  openBtn?.addEventListener('click', open);
+  dialog.querySelector('.ss-close')?.addEventListener('click', () => dialog.close());
+
+  // Clicking the backdrop — outside the dialog's own box — closes it.
+  dialog.addEventListener('click', (ev) => {
+    if (ev.target === dialog) dialog.close();
+  });
+  dialog.addEventListener('close', () => api?.clear());
+
+  document.addEventListener('keydown', (ev) => {
+    if (dialog.open) return;
+    const t = /** @type {HTMLElement} */ (ev.target);
+    const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable;
+    if ((ev.key === '/' && !typing && !ev.metaKey && !ev.ctrlKey && !ev.altKey)
+        || (ev.key.toLowerCase() === 'k' && (ev.metaKey || ev.ctrlKey))) {
+      ev.preventDefault();
+      open();
+    }
   });
 }
 
