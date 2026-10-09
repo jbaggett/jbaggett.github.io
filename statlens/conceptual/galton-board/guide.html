@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instructor Guide: Galton Board | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ims-blue: #569BBD;
+            --ims-dark: #114B5F;
+            --ims-red: #F05133;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Atkinson Hyperlegible', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        h1 {
+            color: var(--ims-dark);
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--ims-blue);
+            padding-bottom: 0.75rem;
+        }
+        h2 {
+            color: var(--ims-dark);
+            font-size: 1.15rem;
+            margin: 1.5rem 0 0.5rem;
+            border-left: 4px solid var(--ims-blue);
+            padding-left: 0.75rem;
+        }
+        h3 {
+            font-size: 1rem;
+            margin: 1rem 0 0.3rem;
+            color: #444;
+        }
+        p, li { font-size: 0.9rem; margin-bottom: 0.4rem; }
+        ul, ol { padding-left: 1.5rem; }
+        ul li { margin-bottom: 0.3rem; }
+
+        .ask-box {
+            background: #e8f4fd;
+            border-left: 4px solid var(--ims-blue);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .ask-box strong { color: var(--ims-dark); }
+
+        .tip-box {
+            background: #fff8e1;
+            border-left: 4px solid #f9a825;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .misconception {
+            background: #fce4ec;
+            border-left: 4px solid var(--ims-red);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .misconception strong { color: #c62828; }
+
+        .timing {
+            display: inline-block;
+            background: var(--ims-dark);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #ddd;
+        }
+
+        a { color: var(--ims-blue); }
+        a:hover { color: var(--ims-dark); }
+
+        .launch-link {
+            display: inline-block;
+            background: var(--ims-blue);
+            color: white;
+            text-decoration: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        .launch-link:hover { background: var(--ims-dark); color: white; }
+
+        @media print {
+            body { padding: 0.5in; max-width: none; }
+            .launch-link { display: none; }
+            .no-print { display: none; }
+            h2 { break-after: avoid; }
+            .ask-box, .tip-box, .misconception { break-inside: avoid; }
+        }
+    </style>
+</head><body>
+
+<h1>Instructor Guide: Galton Board</h1>
+<p class="subtitle">Companion notes for the StatLens demo &mdash; the binomial distribution, assembled one ball at a time</p>
+
+<p><a class="launch-link" href="index.html?mode=present">Launch in Presentation Mode</a></p>
+
+<h2>Overview <span class="timing">~8 min</span></h2>
+<p>A ball meets <em>n</em> rows of pegs and goes right at each with probability <em>p</em>. The bin it lands in
+<strong>is</strong> the number of rights &mdash; so the pile that builds underneath is a Binomial(<em>n</em>,
+<em>p</em>) distribution being drawn in front of the class. The exact probabilities are overlaid in purple,
+scaled to the number of balls dropped, and the normal approximation can be switched on in orange.</p>
+
+<div class="tip-box">
+    <strong>Controls worth knowing.</strong> <em>Rows of pegs</em> is <em>n</em>; the <em>p</em> slider tilts
+    the board. <strong>+1</strong> and <strong>+10</strong> animate, <strong>+100</strong> and
+    <strong>+1000</strong> go straight into the bins (a hundred balls falling at once is a smear), and
+    <strong>&#9654;</strong> runs a steady stream. Changing <em>n</em> or <em>p</em> clears the board, because
+    the earlier balls fell through a different experiment.
+</div>
+
+<h2>A run that works</h2>
+<ol>
+    <li><strong>Drop one ball</strong> and narrate it: left, right, right, left &hellip; "we are flipping a coin
+        at every peg." Ask what the bin number is counting <em>before</em> you say.</li>
+    <li><strong>Drop ten.</strong> Ask which bin will fill fastest and why. The usual answer is "the middle";
+        the useful follow-up is <em>why</em> &mdash; there are many paths to the middle and exactly one to each
+        edge.</li>
+    <li><strong>+1000.</strong> The pile snaps onto the purple curve. That curve was there from the start; the
+        balls are only finding it.</li>
+    <li><strong>Turn on the normal approximation</strong> at <em>n</em> = 20, <em>p</em> = 0.5. It lies almost
+        on top of the exact values.</li>
+    <li><strong>Now set <em>p</em> = 0.15 and <em>n</em> = 10.</strong> The pile is visibly skewed and the normal
+        curve is visibly wrong &mdash; it leans past zero and sits off-centre. This is the np &ge; 10 condition
+        arriving as something students can see rather than a rule to remember.</li>
+</ol>
+
+<div class="ask-box">
+    <strong>Discussion question.</strong> There is exactly one path to the leftmost bin and exactly one to the
+    rightmost, but thousands to the middle. Where do those path counts show up in the formula? <em>Answer:</em>
+    they are the binomial coefficient &mdash; the pegs are literally building Pascal's triangle, and a bin's
+    probability is "how many routes lead here" times "how likely each route is".
+</div>
+
+<h2>Honesty about the physics</h2>
+<div class="misconception">
+    <strong>This board is not a physics simulation, and that is deliberate.</strong> Each ball's bounces are
+    decided by a seeded coin first and then drawn. Real Galton boards do <em>not</em> produce exact binomials
+    &mdash; pegs are imperfect, balls spin, neighbours interfere &mdash; so a faithful physics engine would
+    produce a pile that only resembles the curve beside it. If a student asks whether a real one would do this:
+    <em>nearly, and the gap is a nice question</em>. It also means <em>p</em> can be set to anything, which no
+    physical board can do.
+</div>
+<p>What <em>is</em> honest is the motion: every hop is a projectile arc (constant horizontal speed, accelerating
+downward), the ball squashes where it meets a peg, and the whole thing is paced by the clock, so it runs at the
+same speed on any machine.</p>
+
+<h2>Where it fits</h2>
+<p>The probability chapter, beside the binomial distribution itself. It pairs with the
+<a href="../../distribution/binomial/">Binomial Calculator</a> (the same distribution as numbers rather than a
+pile) and with the <a href="../law-of-large-numbers/">Law of Large Numbers</a>. For the normal approximation
+thread, follow with <a href="../sampling-lab/">Sampling Distributions</a>.</p>
+
+<h2>Links worth keeping</h2>
+<ul>
+    <li><code>?rows=20&amp;p=0.5&amp;balls=1000</code> &mdash; opens with a full, symmetric pile.</li>
+    <li><code>?rows=10&amp;p=0.15&amp;balls=1000&amp;normal=true</code> &mdash; the skewed case, with the normal
+        approximation failing visibly.</li>
+    <li><code>?seed=lecture</code> &mdash; the identical sequence of balls every time.</li>
+</ul>
+
+<p class="meta">StatLens &middot; Galton Board &middot; conceptual/galton-board/</p>
+
+</body>
+</html>

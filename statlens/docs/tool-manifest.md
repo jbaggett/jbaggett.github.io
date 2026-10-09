@@ -1148,6 +1148,34 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ---
 
+### Galton Board
+
+**Path:** `conceptual/galton-board/`
+**Category:** Conceptual
+**Description:** A ball meets *n* rows of pegs and goes right at each with probability *p*; the bin it lands in **is** the number of rights, so the pile that builds underneath is a Binomial(*n*, *p*) distribution being drawn one ball at a time. The **exact binomial** is overlaid in purple, scaled to the number of balls dropped (so "the pile is growing into the curve" is a fair comparison and not two y-axes that happen to agree), and the **normal approximation** (mean *np*, SD √(npq)) can be switched on in orange. +1 and +10 animate; +100 and +1000 land directly, because a hundred balls at once is a smear; ▶ runs a steady stream. Changing *n* or *p* clears the board.
+**Deliberately not a physics simulation.** Each ball's bounces are decided by a seeded coin and *then* drawn, rather than simulated with collisions. Real Galton boards do not produce exact binomials — pegs are imperfect, balls spin and interfere — so a faithful physics engine would produce a pile that merely resembles the curve beside it. The **motion** is honest (each hop is a projectile arc, the ball squashes at contact, and the whole thing is clock-paced so it runs at the same speed on any machine); the **counts** are exactly binomial. It also lets *p* ≠ 0.5, which no physical board can do, and which is where the binomial stops looking symmetric.
+**Concepts:** Binomial distribution, number of successes in n trials, binomial coefficient as "how many routes lead here" (the pegs build Pascal's triangle), mean np and SD √(npq), normal approximation to the binomial and when it fails (small np), skew when p ≠ 0.5
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `rows` | integer | Rows of pegs = *n*, 3–20 (default 12) | `rows=20` |
+| `p` | float | Chance of bouncing right, 0.05–0.95 (default 0.5) | `p=0.15` |
+| `balls` | integer | Drop this many on load | `balls=1000` |
+| `normal` | string | `true` shows the normal approximation on load | `normal=true` |
+| `exact` | string | `false` hides the exact binomial curve | `exact=false` |
+| `seed` | string | PRNG seed — the same sequence of balls every time | `seed=lecture` |
+| `mode` | string | `present` hides the student prompt | `mode=present` |
+
+**Compatible Datasets:** N/A (generated)
+
+**Instructor Guide:** `conceptual/galton-board/guide.html`
+
+**Textbook Integration Notes:** Probability chapter, beside the binomial itself; pairs with `distribution/binomial/` (the same distribution as numbers rather than a pile). The link worth having for the **normal approximation conditions** is `?rows=10&p=0.15&balls=1000&normal=true` — the pile is visibly skewed and the normal curve visibly wrong, so np ≥ 10 arrives as something a student can see rather than a rule to memorise.
+
+---
+
 ### Law of Large Numbers
 
 **Path:** `conceptual/law-of-large-numbers/`

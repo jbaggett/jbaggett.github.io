@@ -224,6 +224,12 @@
    "k": "for instructors, teaching, course integration, embed, seed, LMS, Canvas, MyOpenMath, assignments"
   },
   {
+   "p": "conceptual/galton-board/",
+   "t": "Galton Board",
+   "d": "Drop balls through a field of pegs and watch the binomial distribution pile up underneath, with the exact probabilities and the normal approximation drawn over it.",
+   "k": "galton board, quincunx, bean machine, plinko, binomial distribution, normal approximation, coin flips, number of successes, central limit theorem, probability, bell curve, simulation"
+  },
+  {
    "p": "practice/correlation/",
    "t": "Guess the Correlation",
    "d": "See a scatterplot, guess the correlation, and find out how close you were.",

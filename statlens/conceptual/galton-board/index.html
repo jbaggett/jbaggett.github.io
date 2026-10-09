@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Galton Board | StatLens</title>
+    <meta name="description" content="Drop balls through a field of pegs and watch the binomial distribution pile up underneath, with the exact probabilities and the normal approximation drawn over it.">
+    <meta name="keywords" content="galton board, quincunx, bean machine, plinko, binomial distribution, normal approximation, coin flips, number of successes, central limit theorem, probability, bell curve, simulation">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .gb-controls { display: flex; flex-wrap: wrap; gap: 0.6rem 1.5rem; align-items: center;
+                       margin: 0.6rem 0 0.4rem; }
+        .gb-field { display: inline-flex; flex-direction: row; align-items: center; gap: 0.5rem;
+                    flex-wrap: wrap; max-width: 100%; }
+        .gb-field > .gb-label { color: var(--ims-gray-text); font-size: 0.9rem; white-space: nowrap; }
+        .gb-field > label.gb-label { display: inline; }
+        .gb-field input[type="number"] { width: 4.5rem; }
+        .gb-field input[type="range"] { width: 8.5rem; }
+        .gb-readout { font-family: var(--font-mono); font-weight: 700; min-width: 2.6rem; }
+
+        #board { width: 100%; border: 1px solid var(--border); border-radius: 8px; background: #fff;
+                 aspect-ratio: 760 / 560; }
+        #board svg { display: block; width: 100%; height: auto; }
+
+        .gb-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.3rem; margin: 0.5rem 0 0;
+                     font-size: 0.86rem; color: var(--ims-gray-text); }
+        .gb-legend label { display: inline-flex; flex-direction: row; align-items: center; gap: 0.4rem; cursor: pointer; }
+        .gb-legend input[type="checkbox"] { flex: none; margin: 0; width: 1.05rem; height: 1.05rem; }
+        .gb-swatch { display: inline-block; width: 1.1rem; height: 0; border-top-width: 3px;
+                     border-top-style: solid; vertical-align: middle; }
+        .gb-swatch.exact { border-top-color: #7B2D8E; }
+        .gb-swatch.normal { border-top-color: #D55E00; border-top-style: dashed; }
+
+        .gb-note { border: 1px dashed var(--border); border-radius: 8px; padding: 0.6rem 0.85rem;
+                   margin: 0.9rem 0 0; background: #fff; font-size: 0.93rem; }
+        .gb-note p { margin: 0 0 0.4rem; }
+        .gb-note p:last-child { margin-bottom: 0; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#settings">Skip to Settings</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#board">Skip to the board</a>
+    </nav>
+
+    <main>
+        <h1>Galton Board<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p>Every ball meets a peg and goes left or right, over and over, and ends up in the bin that counts how many times it went right. That count is a <strong>binomial</strong> random variable &mdash; so the pile that builds up underneath <em>is</em> the binomial distribution, one ball at a time.</p>
+
+        <section id="settings" aria-label="Board settings">
+            <div class="gb-controls">
+                <div class="gb-field">
+                    <label class="gb-label" for="rows-input">Rows of pegs <em>n</em>:</label>
+                    <input type="number" id="rows-input" min="3" max="20" step="1" value="12">
+                </div>
+                <div class="gb-field">
+                    <label class="gb-label" for="p-input">Chance of going right <em>p</em>:</label>
+                    <input type="range" id="p-input" min="0.05" max="0.95" step="0.05" value="0.5">
+                    <span class="gb-readout" id="p-readout">0.50</span>
+                </div>
+            </div>
+
+            <div class="generate-bar" id="controls" role="group" aria-label="Drop balls">
+                <button type="button" class="gen-btn" data-count="1">+1</button>
+                <button type="button" class="gen-btn" data-count="10">+10</button>
+                <button type="button" class="gen-btn" data-count="100">+100</button>
+                <button type="button" class="gen-btn" data-count="1000">+1000</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Clear the board" title="Clear the board">&#x21BA;</button>
+                <span class="gen-label">Balls</span>
+            </div>
+        </section>
+
+        <div id="board"></div>
+
+        <div class="gb-legend">
+            <label><input type="checkbox" id="exact-toggle" checked>
+                <span class="gb-swatch exact" aria-hidden="true"></span> Exact binomial</label>
+            <label><input type="checkbox" id="normal-toggle">
+                <span class="gb-swatch normal" aria-hidden="true"></span> Normal approximation</label>
+        </div>
+
+        <div class="stats-row" id="board-stats"></div>
+
+        <div class="gb-note discover-only">
+            <p><strong>Before you drag <em>p</em>:</strong> the board is symmetric when <em>p</em> = 0.5. Slide it to 0.25 and predict &mdash; which bin fills up, and does the pile stay the same shape?</p>
+        </div>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Galton Board &mdash; Help</h2>
+        <p class="help-intro">A ball meets <em>n</em> pegs on the way down and goes right at each one with probability <em>p</em>. The bin it lands in is the number of rights &mdash; so the pile is a <strong>Binomial(<em>n</em>, <em>p</em>)</strong> distribution being drawn by hand.</p>
+        <ul class="help-intro">
+            <li><strong>Rows of pegs</strong> is <em>n</em>, the number of trials. <strong>Chance of going right</strong> is <em>p</em>. Changing either clears the board, because balls that fell through a different board are not the same experiment.</li>
+            <li><strong>+1</strong> and <strong>+10</strong> animate; <strong>+100</strong> and <strong>+1000</strong> go straight into the bins, because a hundred balls at once is a smear rather than a demonstration. <strong>&#9654;</strong> drops them in a steady stream.</li>
+            <li>The <strong>purple curve</strong> is the exact Binomial(<em>n</em>, <em>p</em>) probability for each bin, scaled to the number of balls dropped &mdash; so the pile growing into it is a fair comparison and not two y-axes that happen to agree.</li>
+            <li>The <strong>orange dashed curve</strong> is the normal approximation, mean <em>np</em> and SD &radic;(<em>npq</em>). Turn it on at <em>n</em> = 4 and at <em>n</em> = 20 to see when it starts being worth using.</li>
+        </ul>
+        <p><strong>A note on the physics.</strong> Each ball's bounces are decided first, by a seeded coin, and then drawn &mdash; rather than simulated with collisions and allowed to produce whatever distribution the geometry happens to give. Real Galton boards do not produce exact binomials: pegs are not perfectly symmetric, balls spin, and neighbours interfere. The motion here is honest &mdash; every hop is a projectile arc, and the ball squashes where it strikes &mdash; but the <em>counts</em> are exactly binomial, which is what the board is here to show. It also lets <em>p</em> be something other than 0.5, which no physical board can do.</p>
+        <p>For the same distribution as a calculator rather than a pile, see the <a href="../../distribution/binomial/">Binomial Distribution Calculator</a>. For why the normal curve shows up at all, see <a href="../sampling-lab/">Sampling Distributions</a> and the <a href="../law-of-large-numbers/">Law of Large Numbers</a>.</p>
+        <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a>, and <code>?mode=present</code> hides the student prompt.</p>
+        <h3>Keyboard</h3>
+        <ul class="help-intro">
+            <li><strong>1</strong> / <strong>2</strong> / <strong>3</strong> / <strong>4</strong> &mdash; drop 1, 10, 100 or 1000 balls</li>
+            <li><strong>p</strong> &mdash; play / stop &nbsp;&middot;&nbsp; <strong>r</strong> &mdash; clear the board &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
+        </ul>
+        <button type="button" class="btn-primary">Close</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
+</body>
+</html>

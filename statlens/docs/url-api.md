@@ -224,6 +224,10 @@ Does not currently consume `seed` or `direction` from URL parameters. The direct
 (open with μ hidden — the "you only get one sample" framing, with a Reveal button), `seed` (the
 population AND the draws reproduce), and `mode`. No data parameters: the population is generated.
 
+`conceptual/galton-board/` — `rows` (rows of pegs = n, 3–20, default 12), `p` (chance of
+bouncing right, 0.05–0.95, default 0.5), `balls` (drop this many on load), `normal=true` (show the
+normal approximation), `exact=false` (hide the exact binomial curve), `seed`, and `mode`.
+
 `conceptual/law-of-large-numbers/` — `exp` (`coin` | `die`, default `coin`), `n` (pre-run this many
 trials on load, capped at 200,000), `seed` (replays the identical sequence of trials), and `mode`
 (`present` hides the student prompt). No data parameters: the trials are generated, not loaded.
