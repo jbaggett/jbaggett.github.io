@@ -182,6 +182,35 @@ scaled to the number of balls dropped, and the normal approximation can be switc
 downward), the ball squashes where it meets a peg, and the whole thing is paced by the clock, so it runs at the
 same speed on any machine.</p>
 
+<h2>The Physical board <span class="timing">~5 min</span></h2>
+<p>The <strong>Board: Ideal / Physical</strong> toggle swaps the decide-then-draw board for a real little
+world &mdash; gravity, bounces off the pegs, balls bouncing off <em>each other</em>, piles that rest. Nothing
+decides where a ball lands; it falls and ends up somewhere.</p>
+
+<p>Its pile is <strong>not</strong> binomial, and that is why both boards exist. The curve stays drawn over it
+(scaled to the pile, so the comparison is fair) and a line underneath reports how far the spread has drifted
+from &radic;(npq) &mdash; saying nothing until 60 balls have fallen, because a gap at <em>n</em> = 10 is noise.</p>
+
+<div class="ask-box">
+    <strong>The demonstration worth doing.</strong> Pour 100 balls with <em>balls hit each other</em> turned
+    OFF, and note the shape. Clear, turn it ON, and pour again with the tap wide open. Same board, same pegs,
+    same <em>n</em> &mdash; and the pile deforms, because the balls are no longer falling independently.
+    Independence is the binomial assumption students nod past fastest, and this is the only way I know to
+    <em>show</em> it failing.
+</div>
+
+<p>The other knobs each break a different assumption: <strong>ball size</strong> and <strong>peg size</strong>
+(a ball too big for the gap skips a row, so it no longer makes exactly <em>n</em> decisions) and
+<strong>bounciness</strong> (a lively ball travels sideways across several pegs, or back upward).
+<strong>Slow motion</strong> quarters the speed without changing the physics &mdash; the way to actually watch
+a bounce, and to see the spin stripe turn.</p>
+
+<div class="tip-box">
+    <strong>Both boards reproduce.</strong> <code>?seed=</code> gives the identical run even in Physical mode:
+    the world advances in fixed steps and balls are released against its own clock rather than yours, so a slow
+    machine gets the same pile, just drawn less often.
+</div>
+
 <h2>Where it fits</h2>
 <p>The probability chapter, beside the binomial distribution itself. It pairs with the
 <a href="../../distribution/binomial/">Binomial Calculator</a> (the same distribution as numbers rather than a

@@ -1153,7 +1153,11 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 **Path:** `conceptual/galton-board/`
 **Category:** Conceptual
 **Description:** A ball meets *n* rows of pegs and goes right at each with probability *p*; the bin it lands in **is** the number of rights, so the pile that builds underneath is a Binomial(*n*, *p*) distribution being drawn one ball at a time. The **exact binomial** is overlaid in purple, scaled to the number of balls dropped (so "the pile is growing into the curve" is a fair comparison and not two y-axes that happen to agree), and the **normal approximation** (mean *np*, SD √(npq)) can be switched on in orange. +1 and +10 animate; +100 and +1000 land directly, because a hundred balls at once is a smear; ▶ runs a steady stream. Changing *n* or *p* clears the board.
-**Deliberately not a physics simulation.** Each ball's bounces are decided by a seeded coin and *then* drawn, rather than simulated with collisions. Real Galton boards do not produce exact binomials — pegs are imperfect, balls spin and interfere — so a faithful physics engine would produce a pile that merely resembles the curve beside it. The **motion** is honest (each hop is a projectile arc, the ball squashes at contact, and the whole thing is clock-paced so it runs at the same speed on any machine); the **counts** are exactly binomial. It also lets *p* ≠ 0.5, which no physical board can do, and which is where the binomial stops looking symmetric.
+**Two boards, and the comparison is the content.**
+- **Ideal** decides each bounce with a seeded coin and *then* draws the path, so the counts are **exactly** Binomial(*n*, *p*). This is the board to link when a chapter means "here is the binomial". The motion is still honest (projectile arcs, a squash at contact) but nothing is simulated. It also allows *p* ≠ 0.5, which no physical board can do.
+- **Physical** is a real little world: gravity, bounces off pegs, ball-to-ball collisions, piles that rest. Nothing decides where a ball lands. **The pile is not binomial** — and the sliders each break a different assumption the model makes: *ball size* and *peg size* (a ball too big for the gap skips a row, so it no longer makes exactly *n* decisions), *bounciness* (it can travel sideways or back upward), and **balls hit each other** (this breaks *independence between balls*, the assumption students nod past fastest — drop them one at a time and the pile behaves; open the tap and watch it deform). A **slow motion** toggle quarters the speed without changing the physics. A line under the board reports how far the observed spread has drifted from √(npq), and deliberately says nothing before 60 balls, because a 25% gap at *n* = 10 is ordinary noise rather than a broken model.
+
+**Both modes are reproducible.** `?seed=` gives the identical run, physics included: the world advances in fixed steps and balls are released against *its* clock rather than the wall clock, so a slow machine produces the same pile (verified identical at 1× and 3× CPU throttle).
 **Concepts:** Binomial distribution, number of successes in n trials, binomial coefficient as "how many routes lead here" (the pegs build Pascal's triangle), mean np and SD √(npq), normal approximation to the binomial and when it fails (small np), skew when p ≠ 0.5
 
 **URL Parameters:**
@@ -1165,7 +1169,8 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 | `balls` | integer | Drop this many on load | `balls=1000` |
 | `normal` | string | `true` shows the normal approximation on load | `normal=true` |
 | `exact` | string | `false` hides the exact binomial curve | `exact=false` |
-| `seed` | string | PRNG seed — the same sequence of balls every time | `seed=lecture` |
+| `board` | string | `physical` opens the real-physics board; anything else is the ideal one. (Not `mode`, which is reserved site-wide for `discover`/`present`.) | `board=physical` |
+| `seed` | string | PRNG seed — the same sequence of balls every time, in **both** modes | `seed=lecture` |
 | `mode` | string | `present` hides the student prompt | `mode=present` |
 
 **Compatible Datasets:** N/A (generated)

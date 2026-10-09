@@ -53,6 +53,18 @@
         .gb-swatch.exact { border-top-color: #7B2D8E; }
         .gb-swatch.normal { border-top-color: #D55E00; border-top-style: dashed; }
 
+        /* `display: flex` on .gb-controls is an author rule and so beats the
+           browser's own `[hidden] { display: none }`, which left the physics
+           knobs on screen in Ideal mode. */
+        .gb-controls[hidden] { display: none; }
+        .gb-physics { padding: 0.45rem 0.7rem; border: 1px solid var(--border); border-radius: 8px;
+                      background: var(--ims-bg-soft, #f7f9fb); }
+        .gb-check { display: inline-flex; flex-direction: row; align-items: center; gap: 0.4rem;
+                    font-size: 0.9rem; cursor: pointer; }
+        .gb-check input[type="checkbox"] { flex: none; margin: 0; width: 1.05rem; height: 1.05rem; }
+        .gb-drift { margin: 0.4rem 0 0; font-size: 0.9rem; }
+        .gb-drift.is-off { color: #B44A12; font-weight: 600; }
+
         .gb-note { border: 1px dashed var(--border); border-radius: 8px; padding: 0.6rem 0.85rem;
                    margin: 0.9rem 0 0; background: #fff; font-size: 0.93rem; }
         .gb-note p { margin: 0 0 0.4rem; }
@@ -77,10 +89,40 @@
                     <label class="gb-label" for="rows-input">Rows of pegs <em>n</em>:</label>
                     <input type="number" id="rows-input" min="3" max="20" step="1" value="12">
                 </div>
-                <div class="gb-field">
+                <div class="gb-field" id="p-field">
                     <label class="gb-label" for="p-input">Chance of going right <em>p</em>:</label>
                     <input type="range" id="p-input" min="0.05" max="0.95" step="0.05" value="0.5">
                     <span class="gb-readout" id="p-readout">0.50</span>
+                </div>
+                <div class="gb-field">
+                    <span class="gb-label" id="mode-label">Board:</span>
+                    <div class="seg-control" role="group" aria-labelledby="mode-label" id="mode-toggle">
+                        <button type="button" data-mode="ideal" aria-pressed="true">Ideal</button>
+                        <button type="button" data-mode="physical" aria-pressed="false">Physical</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Only in Physical mode: the knobs that break the model, one at a
+                 time. Hidden in Ideal mode, where none of them mean anything. -->
+            <div class="gb-controls gb-physics" id="physics-controls" hidden>
+                <div class="gb-field">
+                    <label class="gb-label" for="pegr-input">Peg size:</label>
+                    <input type="range" id="pegr-input" min="2" max="11" step="0.5" value="5">
+                </div>
+                <div class="gb-field">
+                    <label class="gb-label" for="ballr-input">Ball size:</label>
+                    <input type="range" id="ballr-input" min="3" max="13" step="0.5" value="7">
+                </div>
+                <div class="gb-field">
+                    <label class="gb-label" for="bounce-input">Bounciness:</label>
+                    <input type="range" id="bounce-input" min="0" max="0.8" step="0.05" value="0.38">
+                </div>
+                <div class="gb-field">
+                    <label class="gb-check"><input type="checkbox" id="interact-toggle" checked> Balls hit each other</label>
+                </div>
+                <div class="gb-field">
+                    <label class="gb-check"><input type="checkbox" id="slowmo-toggle"> Slow motion</label>
                 </div>
             </div>
 
@@ -104,6 +146,7 @@
         </div>
 
         <div class="stats-row" id="board-stats"></div>
+        <p class="gb-drift" id="drift"></p>
 
         <div class="gb-note discover-only">
             <p><strong>Before you drag <em>p</em>:</strong> the board is symmetric when <em>p</em> = 0.5. Slide it to 0.25 and predict &mdash; which bin fills up, and does the pile stay the same shape?</p>
@@ -121,13 +164,23 @@
             <li>The <strong>purple curve</strong> is the exact Binomial(<em>n</em>, <em>p</em>) probability for each bin, scaled to the number of balls dropped &mdash; so the pile growing into it is a fair comparison and not two y-axes that happen to agree.</li>
             <li>The <strong>orange dashed curve</strong> is the normal approximation, mean <em>np</em> and SD &radic;(<em>npq</em>). Turn it on at <em>n</em> = 4 and at <em>n</em> = 20 to see when it starts being worth using.</li>
         </ul>
-        <p><strong>A note on the physics.</strong> Each ball's bounces are decided first, by a seeded coin, and then drawn &mdash; rather than simulated with collisions and allowed to produce whatever distribution the geometry happens to give. Real Galton boards do not produce exact binomials: pegs are not perfectly symmetric, balls spin, and neighbours interfere. The motion here is honest &mdash; every hop is a projectile arc, and the ball squashes where it strikes &mdash; but the <em>counts</em> are exactly binomial, which is what the board is here to show. It also lets <em>p</em> be something other than 0.5, which no physical board can do.</p>
+        <h3>Two boards</h3>
+        <p><strong>Ideal</strong> decides each bounce with a coin and then draws the path. The counts are <em>exactly</em> Binomial(<em>n</em>, <em>p</em>), which is what makes it the board to point at when you mean &ldquo;this is the binomial distribution&rdquo;. The motion is still honest &mdash; projectile arcs, a squash at each peg &mdash; but nothing is being simulated.</p>
+        <p><strong>Physical</strong> drops real balls into a real little world: gravity, bounces off pegs, bounces off each other, piles that rest. Nothing decides where a ball should land; it falls and ends up somewhere. <strong>The pile this produces is not binomial</strong>, and that is the point of having both. The curve stays drawn over it, scaled to the pile, and a line underneath reports how far the spread has drifted from &radic;(npq).</p>
+        <p>The knobs in Physical mode each break a different thing the binomial model assumes:</p>
+        <ul class="help-intro">
+            <li><strong>Ball size</strong> and <strong>peg size</strong> &mdash; a ball too big for the gap can skip a row or ride a diagonal, so it no longer makes exactly <em>n</em> decisions.</li>
+            <li><strong>Bounciness</strong> &mdash; a lively ball can travel sideways across several pegs, or back upward. Same violation, more obvious.</li>
+            <li><strong>Balls hit each other</strong> &mdash; this is the interesting one. It breaks <em>independence between balls</em>, the assumption students nod past fastest. Drop them one at a time and the pile behaves; open the tap and watch it deform, on the same board with the same pegs.</li>
+        </ul>
+        <p><strong>Slow motion</strong> quarters the speed without changing the physics, which is the way to actually see a bounce.</p>
+        <p>Both boards are reproducible: <code>?seed=</code> gives the identical run every time, including in Physical mode &mdash; the world advances in fixed steps and the balls are released against its own clock rather than yours, so a slow machine gets the same pile, just drawn less often.</p>
         <p>For the same distribution as a calculator rather than a pile, see the <a href="../../distribution/binomial/">Binomial Distribution Calculator</a>. For why the normal curve shows up at all, see <a href="../sampling-lab/">Sampling Distributions</a> and the <a href="../law-of-large-numbers/">Law of Large Numbers</a>.</p>
         <p><strong>Instructors:</strong> there is a <a href="guide.html" target="_blank" rel="noopener">printable guide</a>, and <code>?mode=present</code> hides the student prompt.</p>
         <h3>Keyboard</h3>
         <ul class="help-intro">
             <li><strong>1</strong> / <strong>2</strong> / <strong>3</strong> / <strong>4</strong> &mdash; drop 1, 10, 100 or 1000 balls</li>
-            <li><strong>p</strong> &mdash; play / stop &nbsp;&middot;&nbsp; <strong>r</strong> &mdash; clear the board &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
+            <li><strong>p</strong> &mdash; play / stop the tap &nbsp;&middot;&nbsp; <strong>r</strong> &mdash; clear the board &nbsp;&middot;&nbsp; <strong>?</strong> &mdash; this help</li>
         </ul>
         <button type="button" class="btn-primary">Close</button>
     </dialog>

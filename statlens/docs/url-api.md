@@ -225,8 +225,12 @@ Does not currently consume `seed` or `direction` from URL parameters. The direct
 population AND the draws reproduce), and `mode`. No data parameters: the population is generated.
 
 `conceptual/galton-board/` — `rows` (rows of pegs = n, 3–20, default 12), `p` (chance of
-bouncing right, 0.05–0.95, default 0.5), `balls` (drop this many on load), `normal=true` (show the
-normal approximation), `exact=false` (hide the exact binomial curve), `seed`, and `mode`.
+bouncing right, or the board's tilt in physical mode; 0.05–0.95, default 0.5), `balls` (drop this
+many on load), `normal=true` (show the normal approximation), `exact=false` (hide the exact
+binomial curve), `board=physical` (the real-physics board — gravity, bounces, ball-to-ball
+collisions; its pile is NOT binomial, which is the point of having both), `seed` (reproduces the
+identical run in both modes), and the usual `mode` for the activity mode. The board parameter is
+deliberately **not** called `mode`, which is reserved site-wide for `discover`/`present`.
 
 `conceptual/law-of-large-numbers/` — `exp` (`coin` | `die`, default `coin`), `n` (pre-run this many
 trials on load, capped at 200,000), `seed` (replays the identical sequence of trials), and `mode`

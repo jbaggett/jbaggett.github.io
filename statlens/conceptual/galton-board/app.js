@@ -46,6 +46,7 @@ import * as d3Scale from 'd3-scale';
 import * as d3Shape from 'd3-shape';
 
 import { createRng } from '../../js/prng.js';
+import { createWorld, DT } from './physics.js';
 import { announce, initHelp, initSettings } from '../../js/page-utils.js';
 import { prefersReducedMotion } from '../../js/settings.js';
 
@@ -91,6 +92,35 @@ let playing = false;
 /** @type {number|null} */ let rafId = null;
 let lastRelease = 0;
 
+/**
+ * 'ideal' is the decide-then-draw board: exactly Binomial(n, p).
+ * 'physical' is a real little world — gravity, bounces, balls hitting each
+ * other — whose pile is NOT binomial, which is the whole reason to have both.
+ */
+// `board=`, not `mode=`: `mode` is the frozen site-wide parameter for
+// discover/present (docs/url-api.md), and overloading it would be a contract
+// break for the sake of one page's convenience.
+let mode = params.get('board') === 'physical' ? 'physical' : 'ideal';
+let slowmo = false;
+let pegR = 5, ballR = 7;
+/** @type {ReturnType<typeof createWorld>|null} */ let world = null;
+let physAccum = 0;
+let physLast = 0;
+/** Balls that have come to rest and been counted. */
+let settledIds = new Set();
+/**
+ * Release times, in SIMULATED seconds, still waiting to be poured.
+ *
+ * Simulated, not wall-clock, and that is the difference between `?seed=` being
+ * a promise here and not. The world advances in fixed steps, so a given number
+ * of steps always produces the same physics — but if balls were released when
+ * the WALL clock said so, a slower machine would release them at different
+ * points in that sequence and get a different pile. Scheduling against the
+ * world's own clock makes the whole run reproducible.
+ */
+/** @type {number[]} */ let pending = [];
+let simTime = 0;
+
 function clamp(/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) {
   return Math.max(lo, Math.min(hi, Math.round(v)));
 }
@@ -107,6 +137,15 @@ const rowsInput = /** @type {HTMLInputElement|null} */ (el('rows-input'));
 const pInput = /** @type {HTMLInputElement|null} */ (el('p-input'));
 const pReadout = el('p-readout');
 const normalToggle = /** @type {HTMLInputElement|null} */ (el('normal-toggle'));
+const modeToggle = el('mode-toggle');
+const physicsBox = el('physics-controls');
+const driftEl = el('drift');
+const pField = el('p-field');
+const pegrInput = /** @type {HTMLInputElement|null} */ (el('pegr-input'));
+const ballrInput = /** @type {HTMLInputElement|null} */ (el('ballr-input'));
+const bounceInput = /** @type {HTMLInputElement|null} */ (el('bounce-input'));
+const interactToggle = /** @type {HTMLInputElement|null} */ (el('interact-toggle'));
+const slowmoToggle = /** @type {HTMLInputElement|null} */ (el('slowmo-toggle'));
 const exactToggle = /** @type {HTMLInputElement|null} */ (el('exact-toggle'));
 /** @type {HTMLButtonElement|null} */ let playBtn = null;
 
@@ -268,6 +307,7 @@ function drawBins() {
       .attr('stroke', '#DDE4E8').attr('stroke-width', 1);
 
     if (!counts[b]) continue;
+    if (mode === 'physical') continue;   // the pile IS the balls, drawn by physics
     if (asBalls) {
       for (let i = 0; i < counts[b]; i++) {
         bins.append('circle')
@@ -324,8 +364,24 @@ function drawCurves() {
 
   const maxCount = Math.max(1, ...counts);
   const h = g.binBottom - g.binTop;
-  const scale = h / Math.max(maxCount, 6);
   const pmf = binomialPmf();
+
+  // How tall one ball's worth of pile is.
+  //
+  // In Ideal mode the bins are single-file stacks, so a ball is one disc high.
+  // In Physical mode a bin is several balls WIDE — about colGap/2r of them —
+  // so the same count makes a pile a quarter as tall, and a curve scaled for
+  // stacks towers absurdly over it. Scaling to the pile is what keeps "the
+  // balls are growing into the curve" an honest statement in both modes.
+  let scale;
+  if (mode === 'physical') {
+    const perLayer = Math.max(1, Math.floor(g.colGap / (2 * ballR)));
+    scale = (2 * ballR * 0.9) / perLayer;
+    // Never taller than the bin: a huge pile should flatten, not escape.
+    scale = Math.min(scale, h / Math.max(maxCount, 6));
+  } else {
+    scale = h / Math.max(maxCount, 6);
+  }
 
   if (showExact) {
     const pts = pmf.map((q, k) => /** @type {[number, number]} */ (
@@ -390,6 +446,126 @@ function redraw() {
   drawBins();
   drawCurves();
   drawStats();
+  drawDrift();
+  if (mode === 'physical') drawPhysical();
+}
+
+// ─── The physical board ───
+
+/** Build (or rebuild) the world to match the current geometry and knobs. */
+function buildWorld() {
+  const g = geometry();
+  /** @type {Array<{x: number, y: number}>} */
+  const pegList = [];
+  for (let r = 0; r < rows; r++) {
+    for (let k = 0; k <= r; k++) pegList.push(pegXY(r, k));
+  }
+  const dividers = [];
+  for (let b = 0; b <= rows + 1; b++) dividers.push(binX(b) - g.colGap / 2);
+
+  world = createWorld({
+    pegs: pegList,
+    pegR,
+    floorY: g.binBottom,
+    leftX: binX(0) - g.colGap / 2,
+    rightX: binX(rows) + g.colGap / 2,
+    dividers,
+    binTop: g.binTop,
+  });
+  world.params.restitution = bounceInput ? Number(bounceInput.value) : 0.38;
+  world.params.interact = interactToggle ? interactToggle.checked : true;
+  settledIds = new Set();
+}
+
+/**
+ * Release one ball into the physical world.
+ *
+ * The only randomness is a sub-pixel nudge off dead centre, from the page's
+ * seeded generator. Without it every ball would take the identical path — a
+ * perfectly centred ball on a perfectly symmetric board is a knife edge, and
+ * the real thing is nudged by air, dust and the hopper.
+ */
+function releasePhysical() {
+  if (!world) return;
+  const g = geometry();
+  const jitter = (rng() - 0.5) * ballR * 0.9;
+  // The tilt is how `p` survives into the physical board: a board leaning
+  // right sends balls right, rather than a coin deciding for them.
+  const tilt = (p - 0.5) * 120;
+  world.add(g.cx + jitter, g.padTop - g.rowGap * 1.2, tilt, ballR);
+}
+
+/** Count any ball that has just come to rest, by where it rests. */
+function harvestSettled() {
+  if (!world) return false;
+  let changed = false;
+  for (const b of world.balls) {
+    if (!b.resting || settledIds.has(b.id)) continue;
+    settledIds.add(b.id);
+    const g = geometry();
+    const bin = Math.max(0, Math.min(rows, Math.round((b.x - g.cx) / g.colGap + rows / 2)));
+    counts[bin] += 1;
+    dropped += 1;
+    changed = true;
+  }
+  return changed;
+}
+
+/** The physical pile, drawn as the balls actually lie. */
+function drawPhysical() {
+  if (!svg || !world) return;
+  const layer = svg.select('.balls');
+  layer.selectAll('*').remove();
+  for (const b of world.balls) {
+    const sq = b.squash;
+    // Squash along the contact normal: scale down on the normal, out on the
+    // tangent, which is what a struck ball does.
+    const ang = Math.atan2(b.squashNy, b.squashNx) * 180 / Math.PI;
+    const gg = layer.append('g')
+      .attr('transform', `translate(${b.x},${b.y}) rotate(${ang})`);
+    gg.append('ellipse')
+      .attr('rx', b.r * (1 - sq * 0.3)).attr('ry', b.r * (1 + sq * 0.22))
+      .attr('fill', b.resting ? BALL_SETTLED : BALL);
+    // A stripe so the spin is visible — a plain disc rotating looks like a
+    // plain disc, and the spin is half of what makes a bounce read as physical.
+    gg.append('line')
+      .attr('transform', `rotate(${b.angle * 180 / Math.PI - ang})`)
+      .attr('x1', -b.r * 0.72).attr('x2', b.r * 0.72).attr('y1', 0).attr('y2', 0)
+      .attr('stroke', b.resting ? '#2E6E8E' : '#A64B0B')
+      .attr('stroke-width', Math.max(1, b.r * 0.26))
+      .attr('stroke-linecap', 'round');
+  }
+}
+
+/** How far the physical pile has drifted from the binomial it is imitating. */
+function drawDrift() {
+  if (!driftEl) return;
+  if (mode !== 'physical' || !dropped) { driftEl.textContent = ''; driftEl.className = 'gb-drift'; return; }
+  const mean = counts.reduce((a, c, k) => a + c * k, 0) / dropped;
+  const sd = Math.sqrt(counts.reduce((a, c, k) => a + c * (k - mean) ** 2, 0) / Math.max(1, dropped - 1));
+  const npq = Math.sqrt(rows * p * (1 - p));
+  const off = Math.abs(sd - npq) / npq;
+
+  // A handful of balls says nothing. The SD of an SD is large at small n, and
+  // a tool that cries "the model is broken!" after ten balls has taught the
+  // opposite of what it should. Sixty is where a 25% gap stops being ordinary
+  // noise for the board sizes this page allows.
+  if (dropped < 60) {
+    driftEl.className = 'gb-drift';
+    driftEl.innerHTML = `Spread ${sd.toFixed(2)} against \u221a(npq) = ${npq.toFixed(2)}, `
+      + `from ${dropped} ball${dropped === 1 ? '' : 's'} \u2014 far too few to tell `
+      + `a real difference from ordinary noise. Keep pouring.`;
+    return;
+  }
+  driftEl.className = off > 0.2 ? 'gb-drift is-off' : 'gb-drift';
+  driftEl.innerHTML = off > 0.2
+    ? `This pile is <strong>not</strong> the binomial drawn over it \u2014 its spread is `
+      + `${(off * 100).toFixed(0)}% ${sd > npq ? 'wider' : 'narrower'} than \u221a(npq), `
+      + `over ${dropped} balls. Something about this board is breaking an assumption `
+      + `the model makes.`
+    : `Spread ${sd.toFixed(2)} against \u221a(npq) = ${npq.toFixed(2)} over ${dropped} balls. `
+      + `This board is behaving itself \u2014 try bigger balls, more bounce, or letting them `
+      + `collide.`;
 }
 
 // ─── Dropping ───
@@ -410,6 +586,14 @@ function landNow(/** @type {Uint8Array} */ path) {
 
 /** @param {number} count */
 function drop(count) {
+  if (mode === 'physical') {
+    // There is no fast path here: a physical ball's bin is wherever it ends
+    // up, so it has to actually fall. Big batches become a long pour.
+    for (let i = 0; i < Math.min(count, 120); i++) pending.push(simTime + i * 0.09);
+    ensureLoop();
+    announce(`Pouring ${Math.min(count, 120)} balls.`);
+    return;
+  }
   if (count <= ANIMATE_UP_TO && !prefersReducedMotion()) {
     const now = performance.now();
     for (let i = 0; i < count; i++) {
@@ -426,6 +610,7 @@ function drop(count) {
 
 function tick(/** @type {number} */ now) {
   rafId = null;
+  if (mode === 'physical') { tickPhysical(now); return; }
   // Release a new ball on schedule while playing — by the clock, so the stream
   // is the same rate on any machine.
   if (playing && now - lastRelease >= RELEASE_MS) {
@@ -453,6 +638,45 @@ function ensureLoop() {
   if (rafId === null) rafId = requestAnimationFrame(tick);
 }
 
+/**
+ * One frame of the physical board.
+ *
+ * The world only ever advances in whole steps of DT. A frame works out how
+ * many it has earned from the clock and takes that many — so a 120Hz monitor
+ * and a loaded laptop run the same simulation, just drawn more or less often.
+ * The step budget per frame is capped: after a background tab, catching up
+ * honestly would freeze the page, so the world simply loses that time.
+ */
+function tickPhysical(/** @type {number} */ now) {
+  if (!world) buildWorld();
+  if (!physLast) physLast = now;
+  const rate = slowmo ? 0.25 : 1;
+  physAccum += Math.min(0.25, (now - physLast) / 1000) * rate;
+  physLast = now;
+
+  let steps = 0;
+  while (physAccum >= DT && steps < 10) {
+    // Releases are interleaved with the steps, against the world's own clock,
+    // so the run is the same on any machine.
+    while (pending.length && simTime >= pending[0]) { pending.shift(); releasePhysical(); }
+    if (playing && simTime - lastRelease >= RELEASE_MS / 1000) {
+      lastRelease = simTime;
+      releasePhysical();
+    }
+    world?.step();
+    simTime += DT;
+    physAccum -= DT;
+    steps++;
+  }
+  if (physAccum > DT * 10) physAccum = 0;
+
+  if (harvestSettled()) { drawBins(); drawCurves(); drawStats(); drawDrift(); }
+  drawPhysical();
+
+  const busy = playing || pending.length || (world && world.balls.some((b) => !b.resting));
+  if (busy) ensureLoop();
+}
+
 function setPlayButton() {
   if (!playBtn) return;
   playBtn.textContent = playing ? '■' : '▶';
@@ -473,10 +697,14 @@ function reset(message = 'Board cleared.') {
   setPlayButton();
   if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
   falling = [];
+  pending = [];
+  simTime = 0;
+  lastRelease = 0;
   counts = new Array(rows + 1).fill(0);
   dropped = 0;
   rng = createRng(`${seed}:${rows}:${p}`);
   buildBoard();
+  if (mode === 'physical') { buildWorld(); physAccum = 0; physLast = 0; }
   redraw();
   announce(message);
 }
@@ -532,6 +760,49 @@ exactToggle?.addEventListener('change', () => {
   announce(showExact ? 'Exact binomial shown.' : 'Exact binomial hidden.');
 });
 
+modeToggle?.addEventListener('click', (ev) => {
+  const btn = /** @type {HTMLElement} */ (ev.target).closest('button[data-mode]');
+  if (!btn) return;
+  const next = /** @type {string} */ (/** @type {HTMLElement} */ (btn).dataset.mode);
+  if (next === mode) return;
+  mode = next;
+  for (const b of modeToggle.querySelectorAll('button[data-mode]')) {
+    b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.mode === mode));
+  }
+  if (physicsBox) physicsBox.hidden = mode !== 'physical';
+  // `p` means something different in each board — a coin's bias in one, a lean
+  // of the whole apparatus in the other — so it stays, but the label would lie
+  // if it still said "chance". The hint on the field says which.
+  if (pField) {
+    pField.querySelector('.gb-label').innerHTML = mode === 'physical'
+      ? 'Tilt the board <em>p</em>:' : 'Chance of going right <em>p</em>:';
+  }
+  reset(mode === 'physical'
+    ? 'Physical board. The balls now fall and bounce for themselves, and the pile is whatever that produces.'
+    : 'Ideal board. Every bounce is a coin flip, so the pile is exactly binomial.');
+});
+
+pegrInput?.addEventListener('input', () => {
+  pegR = Number(pegrInput.value);
+  if (world) { world.setPegR(pegR); }
+  buildBoard();
+  if (mode === 'physical') { buildWorld(); redraw(); }
+});
+ballrInput?.addEventListener('input', () => { ballR = Number(ballrInput.value); });
+bounceInput?.addEventListener('input', () => {
+  if (world) world.params.restitution = Number(bounceInput.value);
+});
+interactToggle?.addEventListener('change', () => {
+  if (world) world.params.interact = interactToggle.checked;
+  announce(interactToggle.checked
+    ? 'Balls collide with each other \u2014 their paths are no longer independent.'
+    : 'Balls pass through each other \u2014 each one falls as if it were alone.');
+});
+slowmoToggle?.addEventListener('change', () => {
+  slowmo = slowmoToggle.checked;
+  announce(slowmo ? 'Slow motion.' : 'Normal speed.');
+});
+
 document.addEventListener('keydown', (ev) => {
   if (/^(INPUT|TEXTAREA|SELECT)$/.test(/** @type {HTMLElement} */ (ev.target).tagName)) return;
   if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
@@ -548,9 +819,17 @@ if (rowsInput) rowsInput.value = String(rows);
 if (pInput) pInput.value = String(p);
 if (pReadout) pReadout.textContent = p.toFixed(2);
 if (normalToggle) normalToggle.checked = showNormal;
+if (physicsBox) physicsBox.hidden = mode !== 'physical';
+for (const b of modeToggle?.querySelectorAll('button[data-mode]') ?? []) {
+  b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.mode === mode));
+}
+if (mode === 'physical' && pField) {
+  pField.querySelector('.gb-label').innerHTML = 'Tilt the board <em>p</em>:';
+}
 if (exactToggle) exactToggle.checked = showExact;
 
 buildBoard();
+if (mode === 'physical') buildWorld();
 redraw();
 
 const preset = Number(params.get('balls'));
