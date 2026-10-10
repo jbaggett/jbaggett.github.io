@@ -68,6 +68,13 @@ const EXPERIMENTS = {
     countName: 'Heads so far',
     /** @param {number} sum @param {number} n */
     countText: (sum, n) => `${sum} of ${n}`,
+    prompt: 'suppose the proportion of heads is 0.40 after 10 tosses. Over the next 1000 '
+      + 'tosses, does the coin produce <em>extra</em> heads to make up for it?',
+    answer: '<strong>No.</strong> The coin has no memory, so the next 1000 tosses give about 500 '
+      + 'heads whatever happened in the first 10. That leaves about 504 heads in 1010 tosses '
+      + '\u2014 a proportion of about 0.499. The four missing heads were never repaid; they were '
+      + 'outvoted. Tick <em>Also show the running total</em> to watch the shortfall persist while '
+      + 'the proportion settles anyway.',
   },
   die: {
     label: 'Die rolls',
@@ -85,11 +92,37 @@ const EXPERIMENTS = {
     countName: 'Total of the rolls',
     /** @param {number} sum @param {number} n */
     countText: (sum, n) => `${sum} in ${n} ${n === 1 ? 'roll' : 'rolls'}`,
+    prompt: 'suppose the average roll is 3.1 after 10 rolls. Over the next 1000 rolls, does the '
+      + 'die produce <em>extra</em> high numbers to make up for it?',
+    answer: '<strong>No.</strong> The die has no memory, so the next 1000 rolls average about 3.5 '
+      + 'whatever happened in the first 10. That leaves an average of about 3.496 over 1010 rolls. '
+      + 'The four pips it was short were never repaid; they were outvoted. Tick <em>Also show the '
+      + 'running total</em> to watch the shortfall persist while the average settles anyway.',
   },
 };
 
 /** At most this many points are drawn; beyond it the trace is thinned. */
 const MAX_POINTS = 1400;
+
+/**
+ * How many raw outcomes the tape keeps.
+ *
+ * The chart shows a running average, which is an abstraction over the thing
+ * being done. The instructor this page was built for wanted the thing being
+ * done — "LLN guy wants to see the rolls or die tosses" (Jeff, 2026-10-10) —
+ * and ten is about what fits on a phone at a readable chip size.
+ */
+const TAPE_LEN = 10;
+
+/** Pip layouts, on a 0–1 square. A die face is read, not spelled. */
+const PIPS = {
+  1: [[0.5, 0.5]],
+  2: [[0.28, 0.28], [0.72, 0.72]],
+  3: [[0.28, 0.28], [0.5, 0.5], [0.72, 0.72]],
+  4: [[0.28, 0.28], [0.72, 0.28], [0.28, 0.72], [0.72, 0.72]],
+  5: [[0.28, 0.28], [0.72, 0.28], [0.5, 0.5], [0.28, 0.72], [0.72, 0.72]],
+  6: [[0.28, 0.26], [0.72, 0.26], [0.28, 0.5], [0.72, 0.5], [0.28, 0.74], [0.72, 0.74]],
+};
 
 /**
  * Continuous play, paced by the CLOCK rather than by frames.
@@ -156,6 +189,12 @@ let totals = /** @type {number[]} */ ([]);
 let logScale = false;
 let showTotal = false;
 
+/** The last few raw outcomes, newest last. */
+let recent = /** @type {number[]} */ ([]);
+/** Set when exactly one trial just arrived, so only that chip animates. */
+let animateNewest = false;
+/** @type {number} */ let tumbleTimer = 0;
+
 // ─── Elements ───
 
 const figureEl = document.getElementById('lln-figure');
@@ -167,6 +206,9 @@ const expToggle = document.getElementById('exp-toggle');
 const logToggle = /** @type {HTMLInputElement|null} */ (document.getElementById('log-toggle'));
 const totalToggle = /** @type {HTMLInputElement|null} */ (document.getElementById('total-toggle'));
 const resetBtn = document.getElementById('reset-btn');
+const tapeEl = document.getElementById('tape');
+const tapeLabelEl = document.getElementById('tape-label');
+const promptEl = document.getElementById('reveal-prompt');
 const revealBtn = document.getElementById('reveal-btn');
 const revealAnswer = document.getElementById('reveal-answer');
 
@@ -334,7 +376,108 @@ function drawReadout() {
     + `<span class="lln-value">${dev.toFixed(e.precision)}</span></div>`;
 }
 
+/**
+ * The reflection prompt, which is about whichever experiment is running.
+ *
+ * It used to be hard-coded in the markup and asked about heads and coins under
+ * both — so switching to Die rolls left a question about coins sitting under a
+ * chart of die averages, and the revealed answer was cached on first open and
+ * never changed at all.
+ */
+function drawPrompt() {
+  const e = exp();
+  if (promptEl) promptEl.innerHTML = '<strong>Before you add a thousand:</strong> ' + e.prompt;
+  if (revealAnswer && !revealAnswer.hidden) revealAnswer.innerHTML = `<p>${e.answer}</p>`;
+}
+
+/** Keep the ring at TAPE_LEN, newest last. */
+function pushRecent(/** @type {number} */ v) {
+  recent.push(v);
+  if (recent.length > TAPE_LEN) recent.splice(0, recent.length - TAPE_LEN);
+}
+
+/** One die face, drawn as pips on a 0–1 square. */
+function pipSvg(/** @type {number} */ face) {
+  const dots = (PIPS[/** @type {keyof typeof PIPS} */ (face)] || [])
+    .map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.1" fill="#114B5F"/>`).join('');
+  return `<svg viewBox="0 0 1 1" aria-hidden="true">${dots}</svg>`;
+}
+
+/** How a single outcome reads in words, for the tape's label. */
+function outcomeWord(/** @type {number} */ v) {
+  return experiment === 'coin' ? (v === 1 ? 'heads' : 'tails') : String(v);
+}
+
+/**
+ * The tape of recent outcomes.
+ *
+ * Rebuilt whole on every redraw, which is cheap at ten chips and means it can
+ * never drift out of step with the trial counter. During play that is once per
+ * REDRAW_MS, not once per trial.
+ */
+function drawTape() {
+  if (!tapeEl || !tapeLabelEl) return;
+  const e = exp();
+  if (tumbleTimer) { clearInterval(tumbleTimer); tumbleTimer = 0; }
+
+  tapeLabelEl.textContent = n === 0
+    ? `The ${e.trialsWord} will appear here`
+    : `The last ${Math.min(TAPE_LEN, n)} ${Math.min(TAPE_LEN, n) === 1 ? e.trialWord : e.trialsWord}`
+      + (n > TAPE_LEN ? ` (of ${n.toLocaleString()})` : '');
+
+  if (!recent.length) {
+    tapeEl.innerHTML = `<span class="lln-tape-empty">Add a ${e.trialWord} to begin.</span>`;
+    tapeEl.setAttribute('aria-label', `No ${e.trialsWord} yet.`);
+    return;
+  }
+
+  tapeEl.innerHTML = recent.map((v, i) => {
+    const newest = i === recent.length - 1 ? ' is-newest' : '';
+    if (experiment === 'coin') {
+      return `<span class="lln-chip${v === 1 ? ' is-heads' : ''}${newest}">${v === 1 ? 'H' : 'T'}</span>`;
+    }
+    return `<span class="lln-chip is-die${newest}">${pipSvg(v)}</span>`;
+  }).join('');
+
+  // Said in words, because pips and single letters are not. Not a live region:
+  // the readout beside it already announces, and a chattier one during play
+  // would be unusable.
+  tapeEl.setAttribute('aria-label',
+    `The last ${recent.length} ${recent.length === 1 ? e.trialWord : e.trialsWord}, oldest first: `
+    + recent.map(outcomeWord).join(', ') + '.');
+
+  if (animateNewest && !prefersReducedMotion()) runNewestAnimation();
+}
+
+/** Spin the coin, or tumble the die, on the chip that just arrived. */
+function runNewestAnimation() {
+  const chip = /** @type {HTMLElement|null} */ (tapeEl?.lastElementChild);
+  if (!chip || !chip.classList.contains('lln-chip')) return;
+
+  if (experiment === 'coin') { chip.classList.add('is-flipping'); return; }
+
+  chip.classList.add('is-tumbling');
+  // The faces flashed on the way down are DECORATION, and they are computed
+  // from n rather than drawn from `rng` — a cosmetic draw would advance the
+  // seeded stream and change every outcome after it, so `?seed=` would stop
+  // meaning anything the moment someone turned animation on.
+  const landed = recent[recent.length - 1];
+  let i = 0;
+  tumbleTimer = window.setInterval(() => {
+    i += 1;
+    if (i > 4) {
+      clearInterval(tumbleTimer);
+      tumbleTimer = 0;
+      chip.innerHTML = pipSvg(landed);
+      return;
+    }
+    chip.innerHTML = pipSvg(1 + ((n * 7 + i * 3) % 6));
+  }, 65);
+}
+
 function redraw() {
+  drawTape();
+  drawPrompt();
   drawMain();
   drawTotal();
   drawReadout();
@@ -352,12 +495,18 @@ function addTrials(count) {
   }
   const take = Math.min(count, room);
   for (let i = 0; i < take; i++) {
-    sum += e.draw(rng);
+    const v = e.draw(rng);
+    sum += v;
     n += 1;
     running.push(sum / n);
     totals.push(e.total(sum, n));
+    pushRecent(v);
   }
+  // One trial at a time is the only case worth animating: at +1000, or at the
+  // 2,000 a second play reaches, a per-outcome animation is a strobe.
+  animateNewest = take === 1;
   redraw();
+  animateNewest = false;
   const value = running[n - 1];
   announce(`${take} more ${take === 1 ? e.trialWord : e.trialsWord}. `
     + `${e.valueName} after ${n}: ${value.toFixed(e.precision)}, `
@@ -384,10 +533,12 @@ function sampleOnly(/** @type {number} */ count) {
   const room = MAX_TRIALS - n;
   const take = Math.min(count, room);
   for (let i = 0; i < take; i++) {
-    sum += e.draw(rng);
+    const v = e.draw(rng);
+    sum += v;
     n += 1;
     running.push(sum / n);
     totals.push(e.total(sum, n));
+    pushRecent(v);
   }
   return take;
 }
@@ -446,6 +597,7 @@ function reset(fresh = false) {
   if (fresh) seed = newSeed();
   sum = 0; n = 0;
   running = []; totals = [];
+  recent = [];
   rng = createRng(`${seed}:${experiment}`);
   redraw();
   announce(fresh ? 'Started over with a new sequence of trials.' : 'Started over.');
@@ -512,14 +664,7 @@ revealBtn?.addEventListener('click', () => {
   revealAnswer.hidden = !open;
   revealBtn.setAttribute('aria-expanded', String(open));
   revealBtn.textContent = open ? 'Hide the answer' : 'Show the answer';
-  if (open && !revealAnswer.innerHTML) {
-    revealAnswer.innerHTML =
-      '<p><strong>No.</strong> The coin has no memory, so the next 1000 tosses give about 500 heads '
-      + 'whatever happened in the first 10. That leaves about 504 heads in 1010 tosses &mdash; a '
-      + 'proportion of about 0.499. The four missing heads were never repaid; they were outvoted. '
-      + 'Tick <em>Also show the running total</em> to watch the shortfall persist while the '
-      + 'proportion settles anyway.</p>';
-  }
+  if (open) revealAnswer.innerHTML = `<p>${exp().answer}</p>`;
 });
 
 document.addEventListener('keydown', (ev) => {
@@ -545,6 +690,3 @@ const preset = Number(params.get('n'));
 if (Number.isFinite(preset) && preset > 0) addTrials(Math.min(preset, MAX_TRIALS));
 else redraw();
 
-// Reduced motion costs nothing here — the trace is drawn, not animated — but the
-// setting is read so the page participates in the same contract as the others.
-void prefersReducedMotion;

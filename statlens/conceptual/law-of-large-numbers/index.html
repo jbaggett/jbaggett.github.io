@@ -55,6 +55,52 @@
                             gap: 0.45rem; font-size: 0.92rem; cursor: pointer; }
         .lln-extras input[type="checkbox"] { flex: none; margin: 0; width: 1.05rem; height: 1.05rem; }
 
+        /* ── The tape: the last few raw outcomes, newest on the right ──
+           Requested by the instructor the page was built for (via Jeff,
+           2026-10-10): "LLN guy wants to see the rolls or die tosses." The
+           chart shows a running average, which is an abstraction over the
+           thing being done; the tape is the thing being done. */
+        .lln-tape-wrap { margin: 0.6rem 0 0; }
+        .lln-tape-label { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0 0 0.3rem; }
+        .lln-tape { display: flex; gap: 0.3rem; align-items: center; min-height: 40px; }
+        .lln-chip { flex: none; width: 34px; height: 34px; border-radius: 50%;
+                    display: grid; place-items: center; font-weight: 700; font-size: 1rem;
+                    border: 2px solid #0072B2; background: #fff; color: #0072B2;
+                    font-family: var(--font-mono); }
+        .lln-chip.is-heads { background: #0072B2; color: #fff; }
+        /* A die is not a coin: square, with pips. */
+        .lln-chip.is-die { border-radius: 7px; border-color: #114B5F; padding: 3px; }
+        .lln-chip.is-die svg { width: 100%; height: 100%; display: block; }
+        /* The newest gets a ring, never a colour or an opacity — the oldest
+           chips stay at full contrast so the row is readable end to end. */
+        .lln-chip.is-newest { box-shadow: 0 0 0 3px rgba(123, 45, 142, 0.35); }
+        .lln-tape-empty { color: var(--ims-gray-text); font-size: 0.9rem; }
+
+        /* A coin spinning edge-on, twice. Squashing one axis beats a 3D
+           rotateY here: with a single element, rotateY mirrors the letter for
+           half of every turn. */
+        @keyframes lln-flip {
+            0%   { transform: scaleX(1); }
+            25%  { transform: scaleX(0.06); }
+            50%  { transform: scaleX(1); }
+            75%  { transform: scaleX(0.06); }
+            100% { transform: scaleX(1); }
+        }
+        .lln-chip.is-flipping { animation: lln-flip 0.42s ease-in-out; }
+        @keyframes lln-tumble {
+            0%   { transform: rotate(-16deg) translateY(-7px); }
+            60%  { transform: rotate(8deg) translateY(0); }
+            100% { transform: rotate(0deg) translateY(0); }
+        }
+        .lln-chip.is-tumbling { animation: lln-tumble 0.34s ease-out; }
+        @media (prefers-reduced-motion: reduce) {
+            .lln-chip.is-flipping, .lln-chip.is-tumbling { animation: none; }
+        }
+        @media (max-width: 600px) {
+            .lln-chip { width: 28px; height: 28px; font-size: 0.9rem; }
+            .lln-tape { gap: 0.22rem; }
+        }
+
         .lln-note { border: 1px dashed var(--border); border-radius: 8px; padding: 0.7rem 0.85rem;
                     margin: 1rem 0 0; background: #fff; }
         .lln-note p { margin: 0 0 0.5rem; }
@@ -92,6 +138,11 @@
         <section id="chart" aria-label="Running value figure">
             <div id="lln-figure"></div>
 
+            <div class="lln-tape-wrap">
+                <p class="lln-tape-label" id="tape-label">The last few tosses</p>
+                <div class="lln-tape" id="tape" role="img" aria-labelledby="tape-label"></div>
+            </div>
+
             <div class="lln-readout" id="readout" role="status" aria-live="off"></div>
 
             <div class="gen-bar" id="controls" role="group" aria-label="Add trials">
@@ -113,7 +164,7 @@
             </div>
 
             <div class="lln-note discover-only">
-                <p><strong>Before you add a thousand:</strong> the proportion of heads is 0.40 after 10 tosses. Over the next 1000 tosses, does the coin produce <em>extra</em> heads to make up for it?</p>
+                <p id="reveal-prompt"></p>
                 <button type="button" class="btn-secondary" id="reveal-btn" aria-expanded="false" aria-controls="reveal-answer">Show the answer</button>
                 <div id="reveal-answer" hidden></div>
             </div>
