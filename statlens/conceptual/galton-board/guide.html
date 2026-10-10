@@ -184,31 +184,47 @@ same speed on any machine.</p>
 
 <h2>The Physical board <span class="timing">~5 min</span></h2>
 <p>The <strong>Board: Ideal / Physical</strong> toggle swaps the decide-then-draw board for a real little
-world &mdash; gravity, bounces off the pegs, balls bouncing off <em>each other</em>, piles that rest. Nothing
-decides where a ball lands; it falls and ends up somewhere.</p>
+world: a full field of pins, gravity, beads bouncing off the pins and off <em>each other</em>, pouring out of
+a hopper at the top. Nothing decides where a bead lands &mdash; it falls, gets knocked about, and comes out of
+the bottom of the field somewhere. Where it comes out is what the bars underneath count.</p>
 
-<p>Its pile is <strong>not</strong> binomial, and that is why both boards exist. The curve stays drawn over it
-(scaled to the pile, so the comparison is fair) and a line underneath reports how far the spread has drifted
-from &radic;(npq) &mdash; saying nothing until 60 balls have fallen, because a gap at <em>n</em> = 10 is noise.</p>
+<p>Its histogram is <strong>not</strong> binomial, and that is why both boards exist. The curve stays drawn
+over the bars and a line underneath reports how far the observed spread has drifted from &radic;(npq) &mdash;
+saying nothing until 60 beads have fallen, because a gap at <em>n</em> = 10 is noise.</p>
 
 <div class="ask-box">
-    <strong>The demonstration worth doing.</strong> Pour 100 balls with <em>balls hit each other</em> turned
-    OFF, and note the shape. Clear, turn it ON, and pour again with the tap wide open. Same board, same pegs,
-    same <em>n</em> &mdash; and the pile deforms, because the balls are no longer falling independently.
+    <strong>Watch the stream, not the bars.</strong> Before anything is counted, the plume of beads widens as
+    it falls and then <em>stops</em> widening a few rows from the bottom. That shape is the distribution,
+    being drawn in beads. The bars underneath are only the bookkeeping.
+</div>
+
+<div class="ask-box">
+    <strong>The demonstration worth doing.</strong> Pour 100 beads with <em>beads hit each other</em> turned
+    OFF, and note the spread the line reports. Clear, turn it ON, and pour again. Same board, same pins,
+    same <em>n</em> &mdash; and the histogram widens, because the beads are no longer falling independently.
     Independence is the binomial assumption students nod past fastest, and this is the only way I know to
     <em>show</em> it failing.
 </div>
 
-<p>The other knobs each break a different assumption: <strong>ball size</strong> and <strong>peg size</strong>
-(a ball too big for the gap skips a row, so it no longer makes exactly <em>n</em> decisions) and
-<strong>bounciness</strong> (a lively ball travels sideways across several pegs, or back upward).
-<strong>Slow motion</strong> quarters the speed without changing the physics &mdash; the way to actually watch
-a bounce, and to see the spin stripe turn.</p>
+<p>The other knobs each break a different assumption. <strong>Peg size</strong> and <strong>bead size</strong>
+set the <em>clearance</em> between two pins relative to the bead: a bead much smaller than the gap can fall
+between two pins without being deflected at all, so it stops making <em>n</em> decisions and the histogram
+narrows toward a spike. <strong>Bounciness</strong> lets a lively bead travel sideways across several pins, or
+back upward &mdash; the same violation, more obvious. <strong>Slow motion</strong> quarters the speed without
+changing the physics, which is the way to actually watch one bead meet one pin.</p>
+
+<div class="tip-box">
+    <strong>Every seed is a different board.</strong> The pins are not on a perfect lattice &mdash; they are
+    set a few per cent out of true, as a hand-built board's are, from the seed. That crookedness is worth a
+    spread anywhere between about 1.45 and 2.05 against a &radic;(npq) of 1.73 at <em>n</em> = 12, and a lean
+    of up to a third of a bin. A real board is not the ideal board, and two real boards are not each other.
+</div>
 
 <div class="tip-box">
     <strong>Both boards reproduce.</strong> <code>?seed=</code> gives the identical run even in Physical mode:
-    the world advances in fixed steps and balls are released against its own clock rather than yours, so a slow
-    machine gets the same pile, just drawn less often.
+    the world advances in fixed steps and beads are released against its own clock rather than yours, so a
+    slow machine gets the same histogram, just drawn less often. Verified identical at 1&times; and
+    4&times; CPU throttle.
 </div>
 
 <h2>Where it fits</h2>

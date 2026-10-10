@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Why t* and not 1.96 | StatLens</title>
+    <meta name="description" content="Plugging s in for sigma makes the interval the wrong length. See how far short it falls, and why t* is bigger than z*.">
+    <meta name="keywords" content="t star, critical value, why t instead of z, 1.96, margin of error, sigma unknown, sample standard deviation, degrees of freedom, confidence interval width, t distribution, coverage">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "jstat": "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
+        }
+    }
+    </script>
+    <style>
+        /* Okabe–Ito vermillion (#D55E00) is 3.86:1 on white — fine for a bar or
+           a line, which needs 3:1, and short of the 4.5:1 that TEXT needs. This
+           page says "misses" in words more often than it draws it, so the text
+           gets a darkened vermillion at 5.3:1 and the figure's geometry keeps
+           the palette colour. */
+        :root { --wts-miss-text: #B34D00; }
+        .wts-controls { display: grid; grid-template-columns: auto 1fr auto; gap: 0.5rem 0.8rem;
+                        align-items: center; max-width: 560px; margin: 0.75rem 0; }
+        /* `display: block` is load-bearing: the global `label { display: flex;
+           flex-direction: column }` otherwise makes every inline child its own
+           row, so "Sample size", "n" and ":" stacked three high beside the
+           slider. */
+        .wts-controls .wts-row-label { display: block; font-size: 0.92rem; white-space: nowrap; }
+        .wts-controls input[type="range"] { width: 100%; }
+        .wts-readout { font-family: var(--font-mono); font-weight: 700; min-width: 3.4rem; white-space: nowrap; }
+        .wts-conf { grid-column: 2 / -1; display: flex; align-items: center; }
+        @media (max-width: 600px) {
+            .wts-controls { grid-template-columns: 1fr auto; }
+            .wts-controls .wts-row-label { grid-column: 1 / -1; margin-bottom: -0.25rem; }
+            .wts-conf { grid-column: 1 / -1; }
+        }
+
+        /* The three recipes: the control AND the comparison, in one place. */
+        .wts-recipes { display: grid; gap: 0.35rem; margin: 0.9rem 0 0.4rem; max-width: 640px; }
+        .wts-recipe { display: grid; grid-template-columns: auto 1fr auto; gap: 0.7rem;
+                      align-items: center; min-height: 48px; padding: 0.35rem 0.7rem;
+                      border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+                      background: var(--ims-bg-soft, #f7f9fb); }
+        .wts-recipe:hover { border-color: #569BBD; }
+        .wts-recipe.is-on { border-color: #114B5F; border-width: 2px; padding: calc(0.35rem - 1px) calc(0.7rem - 1px);
+                            background: #fff; }
+        .wts-recipe input { width: 20px; height: 20px; margin: 0; flex: none; }
+        .wts-recipe .wts-formula { display: flex; align-items: center; gap: 0.3rem; font-size: 1.05rem; }
+        .wts-recipe .wts-len { font-family: var(--font-mono); font-size: 0.95rem; white-space: nowrap; }
+        .wts-recipe .wts-len em { font-style: normal; color: var(--ims-gray-text); }
+        .wts-sub { color: var(--ims-gray-text); font-size: 0.85rem; }
+        .frac { display: inline-grid; justify-items: center; line-height: 1.05; vertical-align: -0.55em; }
+        .frac .num { border-bottom: 1.5px solid currentColor; padding: 0 0.18rem; }
+        .frac .den { padding: 0 0.18rem; }
+        .s-hat { color: #7B2D8E; font-weight: 700; }
+
+        .wts-slider-row { display: flex; flex-wrap: wrap; gap: 0.6rem 0.9rem; align-items: center; margin: 0.6rem 0; }
+        .wts-slider-row input[type="range"] { flex: 1 1 220px; min-width: 160px; }
+
+        .wts-coverage { width: 100%; border-collapse: collapse; margin: 0.6rem 0; max-width: 640px; font-size: 0.95rem; }
+        .wts-coverage th, .wts-coverage td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--border); }
+        /* The site's `th` colour is the mid IMS blue, which is 2.89:1 on this
+           table's background — under the 4.5:1 a header needs. */
+        .wts-coverage th { color: #114B5F; }
+        .wts-coverage td.num { font-family: var(--font-mono); text-align: right; }
+        .wts-coverage tr.is-on td { background: #eef5f9; }
+        .wts-coverage .short { color: var(--wts-miss-text); font-weight: 700; }
+        .wts-coverage .ok { color: #0072B2; font-weight: 700; }
+
+        .wts-verdict { font-weight: 700; margin: 0.4rem 0; }
+        .wts-verdict .wts-glyph { display: inline-block; width: 1.4em; }
+        .wts-verdict.is-yes { color: #0072B2; }
+        .wts-verdict.is-no { color: var(--wts-miss-text); }
+
+        .wts-prompt { border: 1px dashed var(--border); border-radius: 8px; padding: 0.6rem 0.85rem; margin: 1rem 0; }
+        .wts-prompt p { margin: 0 0 0.4rem; }
+
+        @media (max-width: 600px) {
+            .wts-recipe { grid-template-columns: auto 1fr; }
+            .wts-recipe .wts-len { grid-column: 2; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#settings">Skip to Settings</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Figure</a>
+    </nav>
+
+    <main>
+        <h1>Why <em>t*</em> and not 1.96<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p>The axis is marked in <strong>true</strong> standard errors, &sigma;/&radic;<span style="text-decoration:overline">n</span>, so every margin of error can be measured against the same ruler. You have one sample. You do not have &sigma; &mdash; only <span class="s-hat">s</span>. Pick a recipe for the margin of error and watch whether the interval still reaches &mu;.</p>
+
+        <section id="settings" aria-label="Figure settings">
+            <div class="wts-controls">
+                <span class="wts-row-label" id="level-label">Confidence:</span>
+                <div class="wts-conf">
+                    <div class="seg-control" role="group" aria-labelledby="level-label" id="level-toggle">
+                        <button type="button" data-level="90" aria-pressed="false">90%</button>
+                        <button type="button" data-level="95" aria-pressed="true">95%</button>
+                        <button type="button" data-level="99" aria-pressed="false">99%</button>
+                    </div>
+                </div>
+
+                <label class="wts-row-label" for="n-input">Sample size <em>n</em>:</label>
+                <input type="range" id="n-input" min="3" max="60" step="1" value="13">
+                <span class="wts-readout" id="n-readout">13</span>
+
+                <label class="wts-row-label" for="s-input">This sample&rsquo;s <span class="s-hat">s</span>:</label>
+                <input type="range" id="s-input" min="0.3" max="2" step="0.01" value="0.9">
+                <span class="wts-readout" id="s-readout">0.90&#8201;&sigma;</span>
+            </div>
+
+            <div class="wts-recipes" role="radiogroup" aria-label="Margin of error recipe" id="recipes"></div>
+            <p class="wts-sub" id="recipe-note"></p>
+        </section>
+
+        <section id="chart" aria-label="Sampling distribution figure">
+            <div id="wts-figure"></div>
+
+            <div class="wts-slider-row" id="controls">
+                <label for="stat-pos" id="stat-pos-label">Where this sample&rsquo;s mean landed:</label>
+                <input type="range" id="stat-pos" min="-3.5" max="3.5" step="0.05" value="1.9"
+                       aria-labelledby="stat-pos-label">
+                <span class="wts-readout" id="stat-readout"></span>
+            </div>
+
+            <p class="wts-verdict" id="verdict"></p>
+
+            <div class="wts-slider-row">
+                <button type="button" id="draw-btn" class="btn-primary">Draw a sample</button>
+                <button type="button" id="draw100-btn" class="btn-secondary">Draw 100</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Reset the tally" title="Reset the tally">&#x21BA;</button>
+            </div>
+
+            <div id="coverage-wrap"></div>
+
+            <div class="wts-prompt discover-only">
+                <p><strong>Before you draw:</strong> the second recipe uses the same 1.96, just with <span class="s-hat">s</span> in place of &sigma;. Over many samples, would you expect it to capture &mu; <em>more</em> than 95% of the time, <em>less</em>, or exactly 95%?</p>
+                <button type="button" class="btn-secondary" id="reveal-btn" aria-expanded="false" aria-controls="prompt-answer">Show the answer</button>
+                <div class="wts-answer" id="prompt-answer" hidden></div>
+            </div>
+        </section>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Why <em>t*</em> and not 1.96 &mdash; Help</h2>
+        <p class="help-intro">A confidence interval for a mean is <em>x̄</em> &plusmn; (multiplier) &times; (standard error). The honest margin is <em>z</em>*&sigma;/&radic;n &mdash; but &sigma; is a fact about the population, and you do not have it. You have <span class="s-hat">s</span>, computed from the same sample that gave you <em>x̄</em>. This page is about what that substitution costs and how <em>t</em>* pays for it.</p>
+        <ul class="help-intro">
+            <li>The axis is in <strong>true</strong> standard errors. Nothing on it depends on your sample, so all three margins can be laid against the same ruler and compared.</li>
+            <li>The <strong>shaded band</strong> is the middle (confidence)% of the sampling distribution &mdash; the sample means for which a correctly-sized interval reaches &mu;.</li>
+            <li><strong>This sample&rsquo;s <span class="s-hat">s</span></strong> is a slider because <span class="s-hat">s</span> is a different number in every sample. Set it below &sigma; and the second recipe falls short; set it above and the interval is longer than it needed to be.</li>
+            <li><strong>Draw a sample</strong> takes <em>n</em> real observations, computes <em>x̄</em> and <span class="s-hat">s</span> from them, and tallies which recipes captured &mu;. That tally is the actual argument &mdash; one sample proves nothing.</li>
+        </ul>
+        <h3>The three recipes</h3>
+        <ul class="help-intro">
+            <li><em>z</em>*&sigma;/&radic;n &mdash; the right length, always, and <strong>unusable</strong>: it needs &sigma;.</li>
+            <li><em>z</em>*<span class="s-hat">s</span>/&radic;n &mdash; usable, and <strong>too short on average</strong>. Not because <span class="s-hat">s</span> is biased (it barely is), but because <span class="s-hat">s</span> is <em>variable</em>: half the time it comes in low, and those are the samples whose interval misses. Its real coverage is 2&nbsp;F<sub>t</sub>(<em>z</em>*, n&minus;1) &minus; 1, below the advertised level at every <em>n</em>.</li>
+            <li><em>t</em>*<span class="s-hat">s</span>/&radic;n &mdash; usable, and <strong>right</strong>. <em>t</em>* is defined as the number that makes the long-run coverage come out exactly as advertised when the standard error is estimated.</li>
+        </ul>
+        <h3>What <em>t</em>* does and does not do</h3>
+        <p><em>t</em>* does <strong>not</strong> repair the <span class="s-hat">s</span> you happen to have. In a sample where <span class="s-hat">s</span> came in low, the <em>t</em> interval is still shorter than it should be; in a sample where <span class="s-hat">s</span> came in high, it is longer than it needed to be. What <em>t</em>* fixes is the <strong>rate</strong>: over all samples, exactly the advertised fraction capture &mu;. Drag the <span class="s-hat">s</span> slider to see one sample get it wrong in each direction, then draw a few hundred and watch the rate come right anyway.</p>
+        <p>Raise <em>n</em> and <em>t</em>* slides down toward <em>z</em>*: with a lot of data, <span class="s-hat">s</span> is a reliable stand-in for &sigma; and the correction stops mattering. That is why the two recipes agree in large samples and why the distinction is a small-sample one.</p>
+        <h3>URL parameters</h3>
+        <p><code>?ci=</code> 90 / 95 / 99 &middot; <code>?n=</code> sample size &middot; <code>?s=</code> this sample&rsquo;s s as a fraction of &sigma; &middot; <code>?xbar=</code> where the mean landed, in true SE &middot; <code>?me=</code> 1, 2 or 3 to pick the recipe &middot; <code>?seed=</code> &middot; <code>?mode=present</code></p>
+        <p><a href="guide.html" target="_blank" rel="noopener">Instructor guide</a> (opens in a new tab).</p>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
+</body>
+</html>

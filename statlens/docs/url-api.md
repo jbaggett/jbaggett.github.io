@@ -227,8 +227,9 @@ population AND the draws reproduce), and `mode`. No data parameters: the populat
 `conceptual/galton-board/` — `rows` (rows of pegs = n, 3–20, default 12), `p` (chance of
 bouncing right, or the board's tilt in physical mode; 0.05–0.95, default 0.5), `balls` (drop this
 many on load), `normal=true` (show the normal approximation), `exact=false` (hide the exact
-binomial curve), `board=physical` (the real-physics board — gravity, bounces, ball-to-ball
-collisions; its pile is NOT binomial, which is the point of having both), `seed` (reproduces the
+binomial curve), `board=physical` (the real-physics board — a field of pins, a
+hopper pouring beads, gravity, bounces off the pins and off each other; its histogram is NOT
+binomial, which is the point of having both), `seed` (reproduces the
 identical run in both modes), and the usual `mode` for the activity mode. The board parameter is
 deliberately **not** called `mode`, which is reserved site-wide for `discover`/`present`.
 
@@ -854,6 +855,25 @@ parameter below changes a symbol or a position — none of them loads anything.
 
 `mode=present` (global) hides the student reflection prompt for projection. The companion printable is
 `conceptual/two-se/guide.html`.
+
+### Why t* and not 1.96 (`conceptual/why-t-star/`)
+
+Also no data. The axis is in **true** standard errors (internally σ = 1, μ = 0), so every margin of error
+below is directly comparable against it.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `ci` | string | `95` | Confidence level: `90`, `95` or `99`. Alias `level`. | `?ci=99` |
+| `n` | integer | `13` | Sample size, clamped 3–60. Drives t* and the df in the long-run coverage column. 13 is the default because t* at 12 df is 1.112 × z*, which reproduces Todd Will's board. | `?n=5` |
+| `s` | float | `0.9` | This sample's s as a fraction of σ, clamped 0.3–2. Below 1 the `z*s/√n` interval is short; above 1 it is long. | `?s=1.25` |
+| `xbar` | float | `1.9` | Where the sample mean landed, in true SE from μ. Clamped −3.5…3.5. Alias `z`. | `?xbar=2.1` |
+| `me` | integer | `1` | Which margin of error is drawn: `1` = z*σ/√n, `2` = z*s/√n, `3` = t*s/√n. | `?me=2` |
+| `seed` | string | `why-t-star` | PRNG seed for **Draw a sample** and **Draw 100**. | `?seed=lecture7` |
+
+`mode=present` (global) hides the student reflection prompt. The companion printable is
+`conceptual/why-t-star/guide.html`.
+
+---
 
 ---
 

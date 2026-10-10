@@ -1155,9 +1155,9 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 **Description:** A ball meets *n* rows of pegs and goes right at each with probability *p*; the bin it lands in **is** the number of rights, so the pile that builds underneath is a Binomial(*n*, *p*) distribution being drawn one ball at a time. The **exact binomial** is overlaid in purple, scaled to the number of balls dropped (so "the pile is growing into the curve" is a fair comparison and not two y-axes that happen to agree), and the **normal approximation** (mean *np*, SD √(npq)) can be switched on in orange. +1 and +10 animate; +100 and +1000 land directly, because a hundred balls at once is a smear; ▶ runs a steady stream. Changing *n* or *p* clears the board.
 **Two boards, and the comparison is the content.**
 - **Ideal** decides each bounce with a seeded coin and *then* draws the path, so the counts are **exactly** Binomial(*n*, *p*). This is the board to link when a chapter means "here is the binomial". The motion is still honest (projectile arcs, a squash at contact) but nothing is simulated. It also allows *p* ≠ 0.5, which no physical board can do.
-- **Physical** is a real little world: gravity, bounces off pegs, ball-to-ball collisions, piles that rest. Nothing decides where a ball lands. **The pile is not binomial** — and the sliders each break a different assumption the model makes: *ball size* and *peg size* (a ball too big for the gap skips a row, so it no longer makes exactly *n* decisions), *bounciness* (it can travel sideways or back upward), and **balls hit each other** (this breaks *independence between balls*, the assumption students nod past fastest — drop them one at a time and the pile behaves; open the tap and watch it deform). A **slow motion** toggle quarters the speed without changing the physics. A line under the board reports how far the observed spread has drifted from √(npq), and deliberately says nothing before 60 balls, because a 25% gap at *n* = 10 is ordinary noise rather than a broken model.
+- **Physical** is a real little world: a full field of pins, a hopper pouring beads at the top, gravity, bounces off the pins and off each other. Nothing decides where a bead lands — it falls, gets knocked about, and comes out of the bottom of the field somewhere; where it comes out is what the bars underneath count. The plume visibly widens as it falls and stops widening before the bottom, which is the distribution being drawn in beads before anything is counted. **The histogram is not binomial** — and the sliders each break a different assumption the model makes: *peg size* and *bead size*, which together set the clearance between two pins relative to the bead (a bead much smaller than the gap falls through undeflected and stops making *n* decisions); *bounciness* (a lively bead travels sideways across several pins, or back upward); and **beads hit each other** (this breaks *independence between beads*, the assumption students nod past fastest — pour with it off, then on, and compare). The pins are also a few per cent out of true, from the seed, as a hand-built board's are: every seed is a slightly different board, worth a spread of roughly 1.45–2.05 against a √(npq) of 1.73 at *n* = 12. A **slow motion** toggle quarters the speed without changing the physics. A line under the board reports how far the observed spread has drifted from √(npq), and deliberately says nothing before 60 beads, because a 25% gap at *n* = 10 is ordinary noise rather than a broken model.
 
-**Both modes are reproducible.** `?seed=` gives the identical run, physics included: the world advances in fixed steps and balls are released against *its* clock rather than the wall clock, so a slow machine produces the same pile (verified identical at 1× and 3× CPU throttle).
+**Both modes are reproducible.** `?seed=` gives the identical run, physics included: the world advances in fixed steps and balls are released against *its* clock rather than the wall clock, so a slow machine produces the same pile (verified identical at 1× and 4× CPU throttle).
 **Concepts:** Binomial distribution, number of successes in n trials, binomial coefficient as "how many routes lead here" (the pegs build Pascal's triangle), mean np and SD √(npq), normal approximation to the binomial and when it fails (small np), skew when p ≠ 0.5
 
 **URL Parameters:**
@@ -1316,6 +1316,35 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 **Instructor guide:** `conceptual/two-se/guide.html` — printable, with talking points, the four moves to make in ~8 minutes, three misconceptions and the link recipes.
 
 **Textbook Integration Notes:** For the confidence-interval chapter (Ch. 9), as the motivation **before** any interval is computed — it answers "why would adding and subtracting 2 SE have anything to do with 95%?" Sequence it after `conceptual/sampling-lab/` has established what a sampling distribution is. Drag slowly out past `p+2SE` and stop on the frame where both verdicts flip together; that simultaneity is the argument. Then switch to 99.7% to make the precision/confidence trade visible. Pairs with `conceptual/bootstrap-shift/` (the same argument for percentile intervals, with real data on the axis) and `conceptual/ci-coverage/` (what the coverage actually comes out to). The one thing to say out loud: this figure assumes SE is **known**, and in practice it is estimated — which is exactly why real coverage runs under the advertised rate at small *n*.
+
+---
+
+### Why t* and not 1.96
+
+**Path:** `conceptual/why-t-star/`
+**Category:** Conceptual
+**Description:** Where the multiplier in a confidence interval comes from, and what substituting *s* for σ costs. The axis is marked in **true** standard errors (σ/√n), so all three candidate margins can be laid against one ruler: `z*σ/√n` (right, and uncomputable), `z*s/√n` (computable, and too short) and `t*s/√n`. A radio list shows all three lengths at once with a reaches/misses verdict for the current x̄, so the comparison does not depend on clicking back and forth and remembering. Sliders set **n** (which drives t*) and **this sample's s as a fraction of σ**, and a draggable x̄ moves the interval. **Draw a sample** takes *n* real observations, computes x̄ and *s* from them, and scores all three recipes on the same draws — the tally is the actual argument, since one sample proves nothing. A fourth column gives each recipe's exact long-run coverage; for `z*s/√n` that is 2·F_t(z*, n−1) − 1, which is below the advertised level at every *n*. Built from Todd Will's Mathematica demonstration (via Jeff, Oct 2026); `?n=13&s=0.9` reproduces his board almost exactly, because t*(12 df) really is 1.112 × z*.
+**Concepts:** Why t* rather than z*; the cost of estimating the standard error; the t distribution as the consequence of a random denominator; degrees of freedom and t* → z* as n grows; why the correction is a small-sample matter; coverage as a long-run rate rather than a property of one interval
+
+**The thing it is careful about.** t* does **not** repair the *s* you happen to have — it is one fixed number for a given n and level and cannot know which way your *s* went. In a sample where *s* came in low the t interval is still too short; where it came in high it is longer than it needed to be. What t* fixes is the **rate**. The s-slider and the tally exist so that a student cannot come away with "t* corrects for s being small", which is false and is what a demo with s pinned at 0.9σ teaches. Nor is the bias in *s* the mechanism: at n = 13, E[s]/σ ≈ 0.979 (2% low) while t*/z* = 1.112 (11% bigger). The other nine points are the **variability** of s.
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `ci` | string | Confidence level: `90`, `95` (default), `99`. Alias `level`. | `?ci=99` |
+| `n` | integer | Sample size, 3–60 (default 13). Drives t* and the df in the coverage column. | `?n=5` |
+| `s` | float | This sample's *s* as a fraction of σ, 0.3–2 (default 0.9 — Todd's). | `?s=1.25` |
+| `xbar` | float | Where the sample mean landed, in **true** SE from μ, −3.5 to 3.5 (default 1.9). Alias `z`. | `?xbar=2.1` |
+| `me` | integer | Which margin is drawn: `1` = z*σ/√n (default), `2` = z*s/√n, `3` = t*s/√n. | `?me=2` |
+| `seed` | string | PRNG seed for **Draw a sample** / **Draw 100**. | `?seed=lecture7` |
+| `mode` | string | `present` hides the student reflection prompt (global parameter). | `?mode=present` |
+
+**Compatible Datasets:** N/A — generated. σ = 1 and μ = 0 internally, so the axis is in true SE and every margin is directly comparable.
+
+**Instructor guide:** `conceptual/why-t-star/guide.html` — printable, with the five moves in ~10 minutes, a coverage table at n = 5 / 13 / 40, the misconception the demo creates if you stop early, and the link recipes.
+
+**Textbook Integration Notes:** Immediately before the first one-sample t interval, and immediately after `conceptual/two-se/` — that page establishes the capture argument with the multiplier taken for granted, and this one asks where the multiplier comes from. The link worth having is `?n=5&me=2`: a "95%" interval that captures 88% of the time, which makes the correction feel necessary rather than ceremonial. Then `?n=40&me=2` (94.3%) for why nobody worries about it in a large sample. Pairs with `distribution/t/` for looking t* up and `conceptual/ci-coverage/` for the same rate measured on real data.
 
 ---
 

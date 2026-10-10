@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Why t* and not 1.96 &mdash; Instructor Guide | StatLens</title>
+    <meta name="description" content="Instructor talking points for the why-t-star demo: what plugging s in for sigma costs, and what t* actually fixes.">
+    <meta name="robots" content="noindex">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <style>
+        main { max-width: 780px; }
+        .subtitle { color: var(--ims-gray-text); margin-top: -0.4rem; }
+        .timing { font-size: 0.8rem; font-weight: 400; color: var(--ims-gray-text); }
+        .ask-box, .tip-box { border-left: 4px solid #569BBD; background: #f4f9fc;
+                             padding: 0.7rem 0.95rem; border-radius: 0 6px 6px 0; margin: 1rem 0; }
+        .tip-box { border-left-color: #D89A9E; background: #fdf5f6; }
+        .warn-box { border-left: 4px solid #D55E00; background: #fdf3ec;
+                    padding: 0.7rem 0.95rem; border-radius: 0 6px 6px 0; margin: 1rem 0; }
+        code { font-family: var(--font-mono); font-size: 0.92em; background: #eef2f4;
+               padding: 0.08em 0.3em; border-radius: 3px; }
+        table.g { border-collapse: collapse; margin: 0.8rem 0; }
+        table.g th, table.g td { border: 1px solid var(--border); padding: 0.35rem 0.7rem; text-align: left; }
+        table.g td.n { font-family: var(--font-mono); text-align: right; }
+        .s-hat { color: #7B2D8E; font-weight: 700; }
+        @media print {
+            .no-print { display: none !important; }
+            body { font-size: 11pt; }
+            main { max-width: none; }
+            .ask-box, .tip-box, .warn-box { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+<main>
+<h1>Why <em>t*</em> and not 1.96<span class="header-actions no-print"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a></span></h1>
+<p class="subtitle">Instructor notes &mdash; what plugging <span class="s-hat">s</span> in for &sigma; costs, and what <em>t*</em> actually buys</p>
+
+<p class="no-print"><a href="./">&larr; Open the demo</a> &middot; print this page for the lectern.</p>
+
+<h2>The one-sentence version</h2>
+<p>A confidence interval is <em>x̄</em> &plusmn; multiplier &times; SE. The honest margin needs &sigma;, which you do not have. Substituting <span class="s-hat">s</span> keeps the multiplier honest-looking and makes the interval the wrong length &mdash; <strong>too short, on average</strong> &mdash; and <em>t*</em> is the number chosen to put the long-run capture rate back where the label says.</p>
+
+<h2>Running it <span class="timing">~10 min</span></h2>
+<ol>
+    <li><strong>Open on recipe 1</strong> (<code>?me=1</code>, the default). Point at the axis: it is in <em>true</em> standard errors, so nothing on it depends on the sample. The shaded band is the middle 95% of sample means &mdash; the ones a correctly-sized interval reaches &mu; from. Drag <em>x̄</em> in and out of the band and the interval flips with it, which is last lesson&rsquo;s picture (<a href="../two-se/">Why &plusmn;2 SE Works</a>).</li>
+    <li><strong>Ask what is wrong with recipe 1</strong> before you click anything. The answer is not that it is inaccurate &mdash; it is exactly right. It is that <strong>&sigma; is not a number you have</strong>. That distinction is worth a minute.</li>
+    <li><strong>Click recipe 2.</strong> Nothing changes except the letter in the numerator &mdash; same 1.96 &mdash; and the interval visibly shortens, because this sample&rsquo;s <span class="s-hat">s</span> came in at 0.90&thinsp;&sigma;. At the default position <em>x̄</em> = 1.90 SE, it now <strong>misses</strong>. Say the uncomfortable part out loud: this <em>x̄</em> is inside the middle 95%. It is a perfectly typical sample. And the interval missed anyway.</li>
+    <li><strong>Click recipe 3.</strong> <em>t*</em> = 2.179 instead of 1.960, the interval lengthens back to 1.961 SE, and &mu; is caught again.</li>
+    <li><strong>Now break it.</strong> Drag <strong>This sample&rsquo;s <span class="s-hat">s</span></strong> up past 1.0. Recipe 2 is now too <em>long</em>, and recipe 3 is longer still. This is the step most demos skip, and it is the one that stops students believing something false.</li>
+</ol>
+
+<div class="warn-box">
+    <strong>The misconception this demo can create if you stop at step 4.</strong> &ldquo;<em>t*</em> corrects for <span class="s-hat">s</span> being too small.&rdquo; It does not. <em>t*</em> is one fixed number for a given <em>n</em> and level; it cannot know which way your <span class="s-hat">s</span> went. In a sample where <span class="s-hat">s</span> came in low, the <em>t</em> interval is <em>still</em> too short. What <em>t*</em> fixes is the <strong>rate</strong>, over all samples &mdash; which is why the tally, not the single picture, is the proof.
+</div>
+
+<h2>The tally is the argument <span class="timing">~5 min</span></h2>
+<p>Press <strong>Draw&nbsp;100</strong> three or four times. All three recipes are scored on the <em>same</em> samples, so the comparison is clean. The right-hand column is exact arithmetic rather than the tally, and the simulation walks onto it:</p>
+
+<table class="g">
+    <thead><tr><th>Margin of error</th><th>Long-run capture at 95%, <em>n</em>&nbsp;=&nbsp;13</th><th><em>n</em>&nbsp;=&nbsp;5</th><th><em>n</em>&nbsp;=&nbsp;40</th></tr></thead>
+    <tbody>
+        <tr><td><em>z*</em>&sigma;/&radic;n</td><td class="n">95.0%</td><td class="n">95.0%</td><td class="n">95.0%</td></tr>
+        <tr><td><em>z*</em><span class="s-hat">s</span>/&radic;n</td><td class="n">92.6%</td><td class="n">87.8%</td><td class="n">94.3%</td></tr>
+        <tr><td><em>t*</em><span class="s-hat">s</span>/&radic;n</td><td class="n">95.0%</td><td class="n">95.0%</td><td class="n">95.0%</td></tr>
+    </tbody>
+</table>
+
+<p>Set <em>n</em> = 5 if you want the gap to be unmissable: a &ldquo;95%&rdquo; interval that captures 88% of the time. Set <em>n</em> = 40 and the two usable recipes nearly agree &mdash; which is the honest reason nobody worries about this in a large sample, and why the distinction is a small-sample one.</p>
+
+<div class="ask-box">
+    <strong>Discussion question.</strong> <span class="s-hat">s</span> is very nearly unbiased &mdash; at <em>n</em> = 13 its average is about 0.98&thinsp;&sigma;, two per cent low. But <em>t*</em> is eleven per cent bigger than <em>z*</em>. Where do the other nine points come from?
+    <p style="margin:0.5rem 0 0"><em>The answer:</em> not from bias, from <strong>variability</strong>. The losses and the gains are not symmetric. A sample whose <span class="s-hat">s</span> comes in low gets a short interval &mdash; and a short interval is exactly what you cannot afford. A sample whose <span class="s-hat">s</span> comes in high gets a long one, but it was going to capture &mu; anyway, so the extra length buys nothing back. Dividing by a <em>random</em> quantity gives (<em>x̄</em>&minus;&mu;)/(<span class="s-hat">s</span>/&radic;n) heavier tails than a normal, and heavier tails need a wider multiplier. That is the <em>t</em> distribution, and that is the whole of it.</p>
+</div>
+
+<h2>Where it fits</h2>
+<p>Immediately before the first one-sample <em>t</em> interval, and immediately after <a href="../two-se/">Why &plusmn;2 SE Works</a> &mdash; that page establishes the capture argument with the multiplier taken for granted, and this one asks where the multiplier comes from. It pairs with <a href="../ci-coverage/">Confidence Interval Coverage</a>, which measures the same rate for intervals built on real data, and with <a href="../../distribution/t/"><em>t</em> Distribution Calculator</a> for looking <em>t*</em> up directly.</p>
+
+<h3>Links worth having ready</h3>
+<ul>
+    <li><code>?n=13&amp;s=0.9&amp;xbar=1.9&amp;me=1</code> &mdash; the opening position (this is also the default).</li>
+    <li><code>?n=5&amp;me=2</code> &mdash; the small-sample version, where <em>z*</em><span class="s-hat">s</span>/&radic;n runs at 87.8%.</li>
+    <li><code>?n=40&amp;me=2</code> &mdash; the large-sample version, where it is 94.3% and nobody cares.</li>
+    <li><code>?s=1.25&amp;me=3</code> &mdash; the sample where <span class="s-hat">s</span> came in <em>high</em> and <em>t*</em> makes an already-long interval longer.</li>
+</ul>
+
+<h2>Credit</h2>
+<p>Todd Will has taught this in Mathematica, and asked for it here (via Jeff, October 2026). His version fixes <span class="s-hat">s</span> = 0.9&thinsp;&sigma; and defines <em>t*</em> = <em>z*</em> &divide; 0.9 so the third recipe lands exactly on the first. <code>?n=13&amp;s=0.9</code> reproduces that almost to the decimal, because <em>t*</em> at 12 df really is 1.112 &times; <em>z*</em>. The <span class="s-hat">s</span> slider and the tally are the additions, for the reason in the red box above.</p>
+
+<p class="no-print"><a href="./">&larr; Back to the demo</a></p>
+</main>
+</body>
+</html>

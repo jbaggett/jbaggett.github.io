@@ -108,18 +108,18 @@
             <div class="gb-controls gb-physics" id="physics-controls" hidden>
                 <div class="gb-field">
                     <label class="gb-label" for="pegr-input">Peg size:</label>
-                    <input type="range" id="pegr-input" min="2" max="11" step="0.5" value="5">
+                    <input type="range" id="pegr-input" min="2" max="11" step="0.5" value="7">
                 </div>
                 <div class="gb-field">
-                    <label class="gb-label" for="ballr-input">Ball size:</label>
-                    <input type="range" id="ballr-input" min="3" max="13" step="0.5" value="7">
+                    <label class="gb-label" for="ballr-input">Bead size:</label>
+                    <input type="range" id="ballr-input" min="2" max="13" step="0.5" value="5">
                 </div>
                 <div class="gb-field">
                     <label class="gb-label" for="bounce-input">Bounciness:</label>
-                    <input type="range" id="bounce-input" min="0" max="0.8" step="0.05" value="0.38">
+                    <input type="range" id="bounce-input" min="0" max="0.8" step="0.01" value="0.2">
                 </div>
                 <div class="gb-field">
-                    <label class="gb-check"><input type="checkbox" id="interact-toggle" checked> Balls hit each other</label>
+                    <label class="gb-check"><input type="checkbox" id="interact-toggle" checked> Beads hit each other</label>
                 </div>
                 <div class="gb-field">
                     <label class="gb-check"><input type="checkbox" id="slowmo-toggle"> Slow motion</label>
@@ -166,12 +166,13 @@
         </ul>
         <h3>Two boards</h3>
         <p><strong>Ideal</strong> decides each bounce with a coin and then draws the path. The counts are <em>exactly</em> Binomial(<em>n</em>, <em>p</em>), which is what makes it the board to point at when you mean &ldquo;this is the binomial distribution&rdquo;. The motion is still honest &mdash; projectile arcs, a squash at each peg &mdash; but nothing is being simulated.</p>
-        <p><strong>Physical</strong> drops real balls into a real little world: gravity, bounces off pegs, bounces off each other, piles that rest. Nothing decides where a ball should land; it falls and ends up somewhere. <strong>The pile this produces is not binomial</strong>, and that is the point of having both. The curve stays drawn over it, scaled to the pile, and a line underneath reports how far the spread has drifted from &radic;(npq).</p>
+        <p><strong>Physical</strong> pours real beads into a real little world: a full field of pins, gravity, bounces off the pins, bounces off each other. Nothing decides where a bead should land &mdash; it falls, it gets knocked about, and it comes out of the bottom somewhere. Where it comes out is what the bars underneath count. <strong>The histogram this produces is not binomial</strong>, and that is the point of having both boards. The curve stays drawn over the bars, and a line underneath reports how far the spread has drifted from &radic;(npq).</p>
+        <p>Watch the stream rather than the bars for a moment: the plume of beads widens as it falls, and it has stopped widening by the time it reaches the bottom. That shape <em>is</em> the distribution, being drawn in beads before any counting happens.</p>
         <p>The knobs in Physical mode each break a different thing the binomial model assumes:</p>
         <ul class="help-intro">
-            <li><strong>Ball size</strong> and <strong>peg size</strong> &mdash; a ball too big for the gap can skip a row or ride a diagonal, so it no longer makes exactly <em>n</em> decisions.</li>
-            <li><strong>Bounciness</strong> &mdash; a lively ball can travel sideways across several pegs, or back upward. Same violation, more obvious.</li>
-            <li><strong>Balls hit each other</strong> &mdash; this is the interesting one. It breaks <em>independence between balls</em>, the assumption students nod past fastest. Drop them one at a time and the pile behaves; open the tap and watch it deform, on the same board with the same pegs.</li>
+            <li><strong>Bead size</strong> and <strong>peg size</strong> &mdash; what matters is the gap between two pegs. A bead too big for it can skip a row, ride a diagonal, or stop getting through at all, so it no longer makes exactly <em>n</em> independent decisions.</li>
+            <li><strong>Bounciness</strong> &mdash; a lively bead can travel sideways across several pegs, or back upward. Same violation, more obvious.</li>
+            <li><strong>Beads hit each other</strong> &mdash; this is the interesting one. It breaks <em>independence between beads</em>, the assumption students nod past fastest. Send one bead at a time and the histogram behaves; open the tap and watch it deform, on the same board with the same pins.</li>
         </ul>
         <p><strong>Slow motion</strong> quarters the speed without changing the physics, which is the way to actually see a bounce.</p>
         <p>Both boards are reproducible: <code>?seed=</code> gives the identical run every time, including in Physical mode &mdash; the world advances in fixed steps and the balls are released against its own clock rather than yours, so a slow machine gets the same pile, just drawn less often.</p>

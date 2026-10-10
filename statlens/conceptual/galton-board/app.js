@@ -53,6 +53,7 @@ import { prefersReducedMotion } from '../../js/settings.js';
 // ─── Look ───
 
 const BALL = '#E07020';        // the warm "a thing that was drawn" orange
+const BEAD = '#2A2A2A';        // the physical board's beads: small, dark, many
 const BALL_SETTLED = '#569BBD';// once it is part of the pile it is data
 const PEG = '#8FA6B2';
 const CURVE = '#7B2D8E';       // the exact binomial, in the statistic purple
@@ -60,6 +61,8 @@ const NORMAL = '#D55E00';      // the normal approximation
 
 const VIEW_W = 760;
 const VIEW_H = 560;
+/** The row spacing a 12-row field has — the reference the size sliders mean. */
+const REF_GAP = (VIEW_H * 0.56 - 44) / 12;
 
 /** How long one peg-to-peg hop takes. The whole fall is rows × this. */
 const HOP_MS = 150;
@@ -67,6 +70,35 @@ const HOP_MS = 150;
 const RELEASE_MS = 190;
 /** Past this the pile is bars rather than stacked balls. */
 const MAX_STACK_BALLS = 28;
+
+/**
+ * Beads per second out of the hopper on the physical board.
+ *
+ * Counted off the board Jeff recorded: its reservoir fell 884 → 854 → 824 in
+ * one second each, so 30 a second. That rate is most of why it is fun to watch
+ * — the stream is dense enough to read as a pouring plume rather than a queue
+ * of separate balls — and it is cheap, because at ~2 s of flight it keeps only
+ * 60-odd beads in the air at once.
+ */
+const POUR_RATE = 30;
+/**
+ * How many beads the hopper starts with.
+ *
+ * The recorded board counts down from about a thousand, and the counter is a
+ * nice piece of flavour — a pour that visibly draws down a supply. But a limit
+ * that makes a student clear a tally they wanted to keep is a liability, so
+ * ours is stocked well past any plausible session.
+ */
+const HOPPER = 5000;
+/**
+ * A hard ceiling on beads in the air.
+ *
+ * With pegs and beads both cranked up, the gap between pegs closes and beads
+ * genuinely cannot get through — a jam, which is a true thing about a real
+ * board and worth seeing. But the hopper would keep pouring onto it forever,
+ * so the pour stalls here instead and resumes when the jam clears.
+ */
+const MAX_IN_FLIGHT = 240;
 /** Animating more than this at once is a smear, so bigger batches go straight in. */
 const ANIMATE_UP_TO = 12;
 
@@ -102,23 +134,28 @@ let lastRelease = 0;
 // break for the sake of one page's convenience.
 let mode = params.get('board') === 'physical' ? 'physical' : 'ideal';
 let slowmo = false;
-let pegR = 5, ballR = 7;
+// Pegs wider than the beads, as on the recorded board (pillar 0.35 cm,
+// bead 0.25 cm). The clearance between two pegs is what deflects a bead;
+// beads bigger than the gap is a knob, not a starting point.
+let pegR = 7, ballR = 5;
 /** @type {ReturnType<typeof createWorld>|null} */ let world = null;
 let physAccum = 0;
 let physLast = 0;
-/** Balls that have come to rest and been counted. */
-let settledIds = new Set();
+/** The hopper. A finite supply is what makes the stream feel like a pour. */
+let reservoir = HOPPER;
+/** Beads still to be poured from the last +N (or an unbounded play). */
+let queued = 0;
 /**
- * Release times, in SIMULATED seconds, still waiting to be poured.
+ * When the next bead is released, in SIMULATED seconds.
  *
  * Simulated, not wall-clock, and that is the difference between `?seed=` being
  * a promise here and not. The world advances in fixed steps, so a given number
- * of steps always produces the same physics — but if balls were released when
+ * of steps always produces the same physics — but if beads were released when
  * the WALL clock said so, a slower machine would release them at different
  * points in that sequence and get a different pile. Scheduling against the
  * world's own clock makes the whole run reproducible.
  */
-/** @type {number[]} */ let pending = [];
+let nextRelease = 0;
 let simTime = 0;
 
 function clamp(/** @type {number} */ v, /** @type {number} */ lo, /** @type {number} */ hi) {
@@ -146,6 +183,7 @@ const ballrInput = /** @type {HTMLInputElement|null} */ (el('ballr-input'));
 const bounceInput = /** @type {HTMLInputElement|null} */ (el('bounce-input'));
 const interactToggle = /** @type {HTMLInputElement|null} */ (el('interact-toggle'));
 const slowmoToggle = /** @type {HTMLInputElement|null} */ (el('slowmo-toggle'));
+const genLabel = document.querySelector('.gen-label');
 const exactToggle = /** @type {HTMLInputElement|null} */ (el('exact-toggle'));
 /** @type {HTMLButtonElement|null} */ let playBtn = null;
 
@@ -167,6 +205,99 @@ function geometry() {
 }
 
 /** The peg at row r (0-based), offset k from the left of that row. */
+/**
+ * The physical board's lattice: pegs across the FULL width, offset row to row.
+ *
+ * The ideal board draws a triangle, because that is exactly where a coin-flip
+ * path can go. A real Galton board is a full field of pins, and the difference
+ * is not cosmetic: in a triangle a bead that wanders sideways meets nothing,
+ * and the plume cannot spread. Across a full field it keeps being deflected
+ * wherever it goes — which is what makes the falling cloud widen into the
+ * distribution before it ever reaches the bottom. That widening plume is the
+ * thing worth watching. (From the board Jeff recorded, 2026-10-08.)
+ */
+function fieldGeometry() {
+  const padX = 24, top = 44;
+  const bottom = VIEW_H * 0.56;
+  const usable = VIEW_W - padX * 2;
+  const rowGap = (bottom - top) / Math.max(1, rows);
+
+  // Pegs and beads are sized RELATIVE to the row spacing, not in fixed pixels.
+  //
+  // The field band is a fixed height, so twenty rows sit twice as close as ten.
+  // With fixed-pixel pegs, a twenty-row board had pegs overlapping their
+  // neighbours in the row above — measured: 600 of 600 beads stuck, the board
+  // simply sealed shut. Sizing to the spacing means the sliders set the thing
+  // that actually matters anyway, the CLEARANCE between two pegs relative to
+  // the bead, and every row count builds a board that works.
+  // …but only up to a point. At three rows the spacing is four times the
+  // reference and the "beads" become boulders that cannot leave the hopper.
+  const k = Math.min(2, rowGap / REF_GAP);
+  const pr = pegR * k, br = ballR * k;
+
+  // Column spacing is set by the bead the board has to pass, and by nothing
+  // else. A real board is built this way: pins close enough that a bead cannot
+  // sail between two of them untouched, far enough that it can get through.
+  //
+  // The first build instead spaced pegs by the hex ratio, rowGap/0.866, and the
+  // gap that left was wide enough to fall through: 100 beads landed with SD
+  // 0.68 against a target of 1.73 — a spike, not a binomial. Keeping the hex
+  // ratio as a FLOOR was no better at low row counts, where the rows are far
+  // apart and the floor reopens the same gap: at 5 rows, SD 1.73 against a
+  // target of 1.12. Spacing to the bead alone holds the ratio between 0.95 and
+  // 1.17 of √(npq) at every row count from 3 to 20.
+  const colGap = 2 * pr + 2 * br + rowGap * 0.09;
+  // The reachable part of the board is rows/2 columns either side of centre —
+  // that is what "number of times it went right" can reach. The pins run a few
+  // columns past that, as a real board's do, so a bead that bounces out of the
+  // plume still has something to land on. Much wider than that and the board is
+  // mostly empty field with a thin stream down the middle.
+  const halfW = Math.min(usable / 2, (rows / 2 + 4.5) * colGap);
+  const cols = Math.ceil((halfW * 2) / colGap) + 2;
+  return { padX, top, bottom, usable, rowGap, colGap, cols, pr, br, halfW, cx: VIEW_W / 2,
+           barTop: bottom + 26, barBottom: VIEW_H - 40 };
+}
+
+/**
+ * Every peg in the physical field — on a lattice, but not a perfect one.
+ *
+ * The jitter is the part that matters. On a mathematically perfect lattice a
+ * bead lands square on each peg's crown, and a deterministic simulation has no
+ * way to fall off one side rather than the other: it resolves the tie the same
+ * way every time, so the bead goes right, left, right, left and arrives back
+ * where it started. Traced: a bead oscillating between x = 381 and x = 393 for
+ * twelve rows, every bead landing in the middle bin.
+ *
+ * Real pins are set by hand and are out by a fraction of a millimetre, and that
+ * is enough to decide every one of those ties. Ours are out by up to 8% of the
+ * spacing, from the page's seeded generator — so a given `?seed=` is a
+ * particular board with its own particular crookedness, the same for everyone
+ * who opens the link, and a different seed is a different board. Over five
+ * seeds at n = 12 that is worth a spread of 1.45 to 2.06 against a √(npq) of
+ * 1.73, and a lean of up to a third of a bin either way: real boards are not
+ * the ideal board, and two real boards are not each other.
+ *
+ * Don't raise it much. At 30% of the spacing the displaced pegs close the gaps
+ * and the board seals shut — measured, 150 of 150 beads stuck.
+ */
+function fieldPegs() {
+  const f = fieldGeometry();
+  const jit = createRng(`pegs:${seed}:${rows}`);
+  const amp = f.colGap * 0.08;
+  /** @type {Array<{x: number, y: number}>} */
+  const out = [];
+  for (let r = 0; r < rows; r++) {
+    const offset = (r % 2) ? f.colGap / 2 : 0;
+    for (let c = -Math.ceil(f.cols / 2); c <= Math.ceil(f.cols / 2); c++) {
+      const x = f.cx + c * f.colGap + offset;
+      if (Math.abs(x - f.cx) > f.halfW) continue;
+      out.push({ x: x + (jit() - 0.5) * amp,
+                 y: f.top + (r + 0.5) * f.rowGap + (jit() - 0.5) * amp });
+    }
+  }
+  return out;
+}
+
 function pegXY(/** @type {number} */ r, /** @type {number} */ k) {
   const g = geometry();
   // Row r holds r+1 pegs, centred: offsets -r/2 … +r/2.
@@ -243,6 +374,7 @@ const normalPdf = (/** @type {number} */ x, /** @type {number} */ m, /** @type {
 
 function buildBoard() {
   if (!boardBox) return;
+  if (mode === 'physical') { buildField(); return; }
   boardBox.innerHTML = '';
   const g = geometry();
 
@@ -307,7 +439,6 @@ function drawBins() {
       .attr('stroke', '#DDE4E8').attr('stroke-width', 1);
 
     if (!counts[b]) continue;
-    if (mode === 'physical') continue;   // the pile IS the balls, drawn by physics
     if (asBalls) {
       for (let i = 0; i < counts[b]; i++) {
         bins.append('circle')
@@ -366,22 +497,9 @@ function drawCurves() {
   const h = g.binBottom - g.binTop;
   const pmf = binomialPmf();
 
-  // How tall one ball's worth of pile is.
-  //
-  // In Ideal mode the bins are single-file stacks, so a ball is one disc high.
-  // In Physical mode a bin is several balls WIDE — about colGap/2r of them —
-  // so the same count makes a pile a quarter as tall, and a curve scaled for
-  // stacks towers absurdly over it. Scaling to the pile is what keeps "the
-  // balls are growing into the curve" an honest statement in both modes.
-  let scale;
-  if (mode === 'physical') {
-    const perLayer = Math.max(1, Math.floor(g.colGap / (2 * ballR)));
-    scale = (2 * ballR * 0.9) / perLayer;
-    // Never taller than the bin: a huge pile should flatten, not escape.
-    scale = Math.min(scale, h / Math.max(maxCount, 6));
-  } else {
-    scale = h / Math.max(maxCount, 6);
-  }
+  // One ball's worth of height: the bins are single-file stacks here, so a
+  // ball is one disc, and the curve is scaled to the same thing the stacks are.
+  const scale = h / Math.max(maxCount, 6);
 
   if (showExact) {
     const pts = pmf.map((q, k) => /** @type {[number, number]} */ (
@@ -428,112 +546,293 @@ function drawFalling(/** @type {number} */ now) {
 
 function drawStats() {
   if (!statsEl) return;
+  const hopper = mode === 'physical'
+    ? `<span class="stat-item"><span class="stat-label">Hopper:</span> `
+      + `<span class="stat-value">${reservoir.toLocaleString()}</span></span>`
+    : '';
   if (!dropped) {
-    statsEl.innerHTML = '<span class="stat-item">Drop a ball to begin.</span>';
+    statsEl.innerHTML = (mode === 'physical'
+      ? '<span class="stat-item">Open the tap to begin.</span>'
+      : '<span class="stat-item">Drop a ball to begin.</span>') + hopper;
     return;
   }
   const mean = counts.reduce((a, c, k) => a + c * k, 0) / dropped;
   const variance = counts.reduce((a, c, k) => a + c * (k - mean) ** 2, 0) / Math.max(1, dropped - 1);
   statsEl.innerHTML =
-      `<span class="stat-item"><span class="stat-label">Balls:</span> <span class="stat-value">${dropped.toLocaleString()}</span></span>`
+      `<span class="stat-item"><span class="stat-label">${mode === 'physical' ? 'Beads' : 'Balls'}:</span> <span class="stat-value">${dropped.toLocaleString()}</span></span>`
     + `<span class="stat-item"><span class="stat-label">Mean bin:</span> <span class="stat-value">${mean.toFixed(2)}</span></span>`
     + `<span class="stat-item"><span class="stat-label">np:</span> <span class="stat-value">${(rows * p).toFixed(2)}</span></span>`
     + `<span class="stat-item"><span class="stat-label">SD:</span> <span class="stat-value">${Math.sqrt(variance).toFixed(2)}</span></span>`
-    + `<span class="stat-item"><span class="stat-label">√(npq):</span> <span class="stat-value">${Math.sqrt(rows * p * (1 - p)).toFixed(2)}</span></span>`;
+    + `<span class="stat-item"><span class="stat-label">√(npq):</span> <span class="stat-value">${Math.sqrt(rows * p * (1 - p)).toFixed(2)}</span></span>`
+    + hopper;
 }
 
 function redraw() {
+  if (mode === 'physical') {
+    drawFieldTally();
+    drawStats();
+    drawDrift();
+    drawPhysical();
+    return;
+  }
   drawBins();
   drawCurves();
   drawStats();
   drawDrift();
-  if (mode === 'physical') drawPhysical();
 }
 
 // ─── The physical board ───
 
-/** Build (or rebuild) the world to match the current geometry and knobs. */
-function buildWorld() {
-  const g = geometry();
-  /** @type {Array<{x: number, y: number}>} */
-  const pegList = [];
-  for (let r = 0; r < rows; r++) {
-    for (let k = 0; k <= r; k++) pegList.push(pegXY(r, k));
-  }
-  const dividers = [];
-  for (let b = 0; b <= rows + 1; b++) dividers.push(binX(b) - g.colGap / 2);
-
-  world = createWorld({
-    pegs: pegList,
-    pegR,
-    floorY: g.binBottom,
-    leftX: binX(0) - g.colGap / 2,
-    rightX: binX(rows) + g.colGap / 2,
-    dividers,
-    binTop: g.binTop,
-  });
-  world.params.restitution = bounceInput ? Number(bounceInput.value) : 0.38;
-  world.params.interact = interactToggle ? interactToggle.checked : true;
-  settledIds = new Set();
+/** Where bin `b` of the tally sits, in field coordinates. */
+function fieldBinX(/** @type {number} */ b) {
+  const f = fieldGeometry();
+  return f.cx + (b - rows / 2) * f.colGap;
 }
 
 /**
- * Release one ball into the physical world.
+ * The physical board: a field of pins, a hopper, and a tally underneath.
  *
- * The only randomness is a sub-pixel nudge off dead centre, from the page's
- * seeded generator. Without it every ball would take the identical path — a
- * perfectly centred ball on a perfectly symmetric board is a knife edge, and
- * the real thing is nudged by air, dust and the hopper.
+ * Note what is NOT here — bin walls, and a floor for beads to pile on. On the
+ * recorded board the beads fall straight out of the bottom of the pin field
+ * and the histogram below is drawn, not stacked. Both of our earlier attempts
+ * piled real beads into real bins, and both had the same two problems: a bin
+ * is several beads wide, so the pile was a quarter the height of the curve
+ * over it and had to be rescaled by a fudge factor; and resting stacks are the
+ * expensive, jittery part of any impulse solver. Letting them fall through and
+ * counting where they exit costs nothing, never jitters, and the bars it draws
+ * are on the same footing as every other histogram on this site.
  */
-function releasePhysical() {
-  if (!world) return;
-  const g = geometry();
-  const jitter = (rng() - 0.5) * ballR * 0.9;
-  // The tilt is how `p` survives into the physical board: a board leaning
-  // right sends balls right, rather than a coin deciding for them.
-  const tilt = (p - 0.5) * 120;
-  world.add(g.cx + jitter, g.padTop - g.rowGap * 1.2, tilt, ballR);
+function buildField() {
+  if (!boardBox) return;
+  boardBox.innerHTML = '';
+  const f = fieldGeometry();
+
+  svg = d3Selection.select(boardBox).append('svg')
+    .attr('viewBox', `0 0 ${VIEW_W} ${VIEW_H}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .attr('role', 'img')
+    .attr('aria-label', `A field of ${rows} rows of pegs with beads falling through it`)
+    .style('width', '100%')
+    .style('height', 'auto');
+
+  // The hopper: a funnel whose throat is one lattice cell wide. That width is
+  // not decoration — see `releasePhysical` for what it is holding up.
+  const throat = f.colGap / 2;
+  const hy = f.top - f.rowGap * 0.95;
+  svg.append('path')
+    .attr('d', `M ${f.cx - throat * 3.2} 5 L ${f.cx - throat} ${hy} L ${f.cx - throat} ${hy + 6}`
+             + ` M ${f.cx + throat * 3.2} 5 L ${f.cx + throat} ${hy} L ${f.cx + throat} ${hy + 6}`)
+    .attr('fill', 'none').attr('stroke', PEG).attr('stroke-width', 2.5)
+    .attr('stroke-linejoin', 'round');
+
+  const pegs = svg.append('g').attr('class', 'pegs');
+  for (const { x, y } of fieldPegs()) {
+    pegs.append('circle').attr('cx', x).attr('cy', y).attr('r', f.pr).attr('fill', PEG);
+  }
+
+  // The line beads fall past on their way out, and are counted at.
+  svg.append('line')
+    .attr('x1', f.cx - f.halfW - f.colGap / 2).attr('x2', f.cx + f.halfW + f.colGap / 2)
+    .attr('y1', f.bottom + f.rowGap * 0.6).attr('y2', f.bottom + f.rowGap * 0.6)
+    .attr('stroke', '#DDE4E8').attr('stroke-width', 1).attr('stroke-dasharray', '4,4');
+
+  svg.append('g').attr('class', 'bars');
+  svg.append('g').attr('class', 'curves');
+  svg.append('g').attr('class', 'balls');
+
+  // The tally's baseline.
+  svg.append('line')
+    .attr('x1', fieldBinX(0) - f.colGap).attr('x2', fieldBinX(rows) + f.colGap)
+    .attr('y1', f.barBottom).attr('y2', f.barBottom)
+    .attr('stroke', '#444').attr('stroke-width', 2);
+
+  drawFieldTally();
 }
 
-/** Count any ball that has just come to rest, by where it rests. */
+/**
+ * The tally of exits, as bars, with the binomial drawn over it.
+ *
+ * Bars and curve share one scale — counts per bead-worth of height — so "the
+ * tally is growing into the curve" is a statement about the picture.
+ */
+function drawFieldTally() {
+  if (!svg) return;
+  const f = fieldGeometry();
+  const bars = svg.select('.bars');
+  const curves = svg.select('.curves');
+  bars.selectAll('*').remove();
+  curves.selectAll('*').remove();
+
+  const h = f.barBottom - f.barTop;
+  const scale = h / Math.max(Math.max(1, ...counts), 6);
+  const w = f.colGap * 0.86;
+
+  for (let b = 0; b <= rows; b++) {
+    if (!counts[b]) continue;
+    bars.append('rect')
+      .attr('x', fieldBinX(b) - w / 2).attr('y', f.barBottom - counts[b] * scale)
+      .attr('width', w).attr('height', counts[b] * scale)
+      .attr('fill', BALL_SETTLED).attr('rx', 1);
+  }
+
+  const every = f.colGap < 26 ? (f.colGap < 16 ? 4 : 2) : 1;
+  for (let b = 0; b <= rows; b++) {
+    if (b % every !== 0 && b !== rows) continue;
+    bars.append('text')
+      .attr('x', fieldBinX(b)).attr('y', f.barBottom + 15)
+      .attr('text-anchor', 'middle').attr('font-size', 12)
+      .attr('fill', 'var(--ims-gray-text, #666)')
+      .text(b);
+  }
+  bars.append('text')
+    .attr('x', f.cx).attr('y', f.barBottom + 33)
+    .attr('text-anchor', 'middle').attr('font-size', 13).attr('font-weight', 700)
+    .attr('fill', 'var(--ims-gray-text, #666)')
+    .text('Number of times the bead went right');
+
+  svg.attr('aria-label', dropped
+    ? `A field of ${rows} rows of pegs with beads falling through it, over a histogram `
+      + `of where ${dropped} beads came out: tallest bar at ${counts.indexOf(Math.max(...counts))}, `
+      + `against a binomial mean of ${(rows * p).toFixed(1)}.`
+    : `A field of ${rows} rows of pegs. No beads have been poured yet.`);
+
+  if (!dropped) return;
+  const pmf = binomialPmf();
+  if (showExact) {
+    const pts = pmf.map((q, k) => /** @type {[number, number]} */ (
+      [fieldBinX(k), f.barBottom - q * dropped * scale]));
+    curves.append('path')
+      .attr('class', 'exact-curve')
+      .attr('fill', 'none').attr('stroke', CURVE).attr('stroke-width', 2.5)
+      .attr('d', d3Shape.line().curve(d3Shape.curveMonotoneX)(pts) ?? '');
+    for (const [x, y] of pts) {
+      curves.append('circle').attr('cx', x).attr('cy', y).attr('r', 2.5).attr('fill', CURVE);
+    }
+  }
+  if (showNormal) {
+    const mu = rows * p, sg = Math.sqrt(rows * p * (1 - p));
+    /** @type {Array<[number, number]>} */
+    const pts = [];
+    for (let k = -0.5; k <= rows + 0.5; k += 0.1) {
+      pts.push([fieldBinX(k), f.barBottom - normalPdf(k, mu, sg) * dropped * scale]);
+    }
+    curves.append('path')
+      .attr('class', 'normal-curve')
+      .attr('fill', 'none').attr('stroke', NORMAL).attr('stroke-width', 2.5)
+      .attr('stroke-dasharray', '7,4')
+      .attr('d', d3Shape.line()(pts) ?? '');
+  }
+}
+
+
+/**
+ * Build the world for the physical field.
+ *
+ * No bin dividers and no floor: beads fall out of the bottom of the field, get
+ * tallied by where they exit, and are removed. That is how the recorded board
+ * behaves, and it is also a large simplification — nothing rests, so there are
+ * no stacks to keep from jittering and no sleeping to manage, which is what
+ * lets hundreds of beads be in the air at once.
+ */
+function buildWorld() {
+  const f = fieldGeometry();
+  world = createWorld({
+    pegs: fieldPegs(),
+    pegR: f.pr,
+    floorY: VIEW_H * 4,      // far below: beads are removed long before this
+    leftX: f.cx - f.halfW - f.colGap / 2,
+    rightX: f.cx + f.halfW + f.colGap / 2,
+    dividers: [],            // nothing to confine; the field is open
+    binTop: VIEW_H * 4,      // nothing ever sleeps
+  });
+  world.params.restitution = bounceInput ? Number(bounceInput.value) : 0.2;
+  // Low, and that is not a detail. Friction here turns a bead's sideways slide
+  // into spin, and spin does nothing — so a high value just glues beads to the
+  // peg they landed on. Measured at 0.9: transit 22 s a bead and a spread of
+  // 1.1 against 1.73. At 0.05 the bead rolls off and goes on with its walk.
+  world.params.friction = 0.05;
+  // Heavier than the ideal board's notional gravity: a bead only has one row
+  // gap to re-accelerate in after each bounce, and at 900 it dawdles through
+  // the field for seconds. This is the knob that sets how long a bead is in
+  // the air, and so how dense the stream looks at a given pour rate.
+  world.params.gravity = 2800;
+  world.params.interact = interactToggle ? interactToggle.checked : true;
+}
+
+/**
+ * Beads per second for the board as it is currently built.
+ *
+ * A bead has to clear the throat before the next one arrives, and that takes
+ * longer for a fat bead. At a flat 30 a second a five-row board — whose beads
+ * are twice the size — jammed at the hopper, and the jam, not the pins, decided
+ * where the beads went: the histogram came out nearly flat.
+ */
+function pourRate() {
+  return Math.max(8, Math.min(45, POUR_RATE * (5 / fieldGeometry().br)));
+}
+
+/**
+ * Drop one bead into the top of the field, from the hopper.
+ * @returns {boolean} false if it could not — empty hopper, or a jam.
+ */
+function releasePhysical() {
+  if (!world || reservoir <= 0) return false;
+  if (world.balls.length >= MAX_IN_FLIGHT) return false;
+  const f = fieldGeometry();
+  // The hopper's throat is one lattice cell wide, and that width matters more
+  // than it looks. The first row has a peg directly under the hopper, so a
+  // bead released exactly on centre lands exactly on the peg's crown — a knife
+  // edge, which a deterministic simulation does not fall off. Measured: with a
+  // ±2px nudge, every one of six beads balanced its way down the centre column
+  // and landed in bin 6, taking 10 seconds about it. Spread across the cell,
+  // each bead meets its first peg off-centre and deflects, which is the whole
+  // mechanism.
+  const jitter = (rng() - 0.5) * f.colGap;
+  const tilt = (p - 0.5) * 90;      // `p` leans the whole apparatus
+  world.add(f.cx + jitter, f.top - f.rowGap * 0.8, tilt, f.br);
+  reservoir -= 1;
+  return true;
+}
+
+/**
+ * Tally and remove every bead that has fallen out of the field.
+ *
+ * The bin is where it EXITS, which is the honest reading: the bead's horizontal
+ * position after `rows` rows of deflection.
+ */
 function harvestSettled() {
   if (!world) return false;
+  const f = fieldGeometry();
   let changed = false;
-  for (const b of world.balls) {
-    if (!b.resting || settledIds.has(b.id)) continue;
-    settledIds.add(b.id);
-    const g = geometry();
-    const bin = Math.max(0, Math.min(rows, Math.round((b.x - g.cx) / g.colGap + rows / 2)));
+  for (let i = world.balls.length - 1; i >= 0; i--) {
+    const b = world.balls[i];
+    // They keep falling past the pins and into the bars, which is where they
+    // are counted and removed. Vanishing at the edge of the pin field read as
+    // a glitch; dropping into the histogram reads as the histogram being made
+    // of the beads, which is the whole claim.
+    if (b.y < f.barBottom - b.r) continue;
+    const bin = Math.max(0, Math.min(rows,
+      Math.round((b.x - f.cx) / f.colGap + rows / 2)));
     counts[bin] += 1;
     dropped += 1;
+    world.balls.splice(i, 1);
     changed = true;
   }
   return changed;
 }
 
-/** The physical pile, drawn as the balls actually lie. */
+/** The beads in flight — small, dark, and many. */
 function drawPhysical() {
   if (!svg || !world) return;
   const layer = svg.select('.balls');
   layer.selectAll('*').remove();
   for (const b of world.balls) {
     const sq = b.squash;
-    // Squash along the contact normal: scale down on the normal, out on the
-    // tangent, which is what a struck ball does.
     const ang = Math.atan2(b.squashNy, b.squashNx) * 180 / Math.PI;
-    const gg = layer.append('g')
-      .attr('transform', `translate(${b.x},${b.y}) rotate(${ang})`);
-    gg.append('ellipse')
-      .attr('rx', b.r * (1 - sq * 0.3)).attr('ry', b.r * (1 + sq * 0.22))
-      .attr('fill', b.resting ? BALL_SETTLED : BALL);
-    // A stripe so the spin is visible — a plain disc rotating looks like a
-    // plain disc, and the spin is half of what makes a bounce read as physical.
-    gg.append('line')
-      .attr('transform', `rotate(${b.angle * 180 / Math.PI - ang})`)
-      .attr('x1', -b.r * 0.72).attr('x2', b.r * 0.72).attr('y1', 0).attr('y2', 0)
-      .attr('stroke', b.resting ? '#2E6E8E' : '#A64B0B')
-      .attr('stroke-width', Math.max(1, b.r * 0.26))
-      .attr('stroke-linecap', 'round');
+    layer.append('ellipse')
+      .attr('transform', `translate(${b.x},${b.y}) rotate(${ang})`)
+      .attr('rx', b.r * (1 - sq * 0.28)).attr('ry', b.r * (1 + sq * 0.2))
+      .attr('fill', BEAD);
   }
 }
 
@@ -546,26 +845,25 @@ function drawDrift() {
   const npq = Math.sqrt(rows * p * (1 - p));
   const off = Math.abs(sd - npq) / npq;
 
-  // A handful of balls says nothing. The SD of an SD is large at small n, and
-  // a tool that cries "the model is broken!" after ten balls has taught the
-  // opposite of what it should. Sixty is where a 25% gap stops being ordinary
-  // noise for the board sizes this page allows.
+  // A handful of beads says nothing: the SD of an SD is large at small n, and a
+  // tool that cries "the model is broken!" after ten beads teaches the opposite
+  // of what it should.
   if (dropped < 60) {
     driftEl.className = 'gb-drift';
     driftEl.innerHTML = `Spread ${sd.toFixed(2)} against \u221a(npq) = ${npq.toFixed(2)}, `
-      + `from ${dropped} ball${dropped === 1 ? '' : 's'} \u2014 far too few to tell `
+      + `from ${dropped} bead${dropped === 1 ? '' : 's'} \u2014 far too few to tell `
       + `a real difference from ordinary noise. Keep pouring.`;
     return;
   }
   driftEl.className = off > 0.2 ? 'gb-drift is-off' : 'gb-drift';
   driftEl.innerHTML = off > 0.2
-    ? `This pile is <strong>not</strong> the binomial drawn over it \u2014 its spread is `
+    ? `These bars are <strong>not</strong> the binomial drawn over them \u2014 their spread is `
       + `${(off * 100).toFixed(0)}% ${sd > npq ? 'wider' : 'narrower'} than \u221a(npq), `
-      + `over ${dropped} balls. Something about this board is breaking an assumption `
+      + `over ${dropped} beads. Something about this board is breaking an assumption `
       + `the model makes.`
-    : `Spread ${sd.toFixed(2)} against \u221a(npq) = ${npq.toFixed(2)} over ${dropped} balls. `
-      + `This board is behaving itself \u2014 try bigger balls, more bounce, or letting them `
-      + `collide.`;
+    : `Spread ${sd.toFixed(2)} against \u221a(npq) = ${npq.toFixed(2)} over ${dropped} beads. `
+      + `This board is behaving itself \u2014 try bigger beads, more bounce, or turning off `
+      + `<em>Beads hit each other</em> and comparing.`;
 }
 
 // ─── Dropping ───
@@ -587,11 +885,14 @@ function landNow(/** @type {Uint8Array} */ path) {
 /** @param {number} count */
 function drop(count) {
   if (mode === 'physical') {
-    // There is no fast path here: a physical ball's bin is wherever it ends
-    // up, so it has to actually fall. Big batches become a long pour.
-    for (let i = 0; i < Math.min(count, 120); i++) pending.push(simTime + i * 0.09);
+    // There is no fast path here: a physical bead's bin is wherever it ends up,
+    // so it has to actually fall. A big batch becomes a long pour.
+    const n = Math.min(count, reservoir - queued);
+    if (n <= 0) { announce('The hopper is empty. Clear the board to refill it.'); return; }
+    queued += n;
+    if (!nextRelease) nextRelease = simTime;
     ensureLoop();
-    announce(`Pouring ${Math.min(count, 120)} balls.`);
+    announce(`Pouring ${n} bead${n === 1 ? '' : 's'}.`);
     return;
   }
   if (count <= ANIMATE_UP_TO && !prefersReducedMotion()) {
@@ -655,13 +956,21 @@ function tickPhysical(/** @type {number} */ now) {
   physLast = now;
 
   let steps = 0;
+  let poured = false;
   while (physAccum >= DT && steps < 10) {
     // Releases are interleaved with the steps, against the world's own clock,
     // so the run is the same on any machine.
-    while (pending.length && simTime >= pending[0]) { pending.shift(); releasePhysical(); }
-    if (playing && simTime - lastRelease >= RELEASE_MS / 1000) {
-      lastRelease = simTime;
-      releasePhysical();
+    if ((queued > 0 || playing) && simTime >= nextRelease) {
+      if (releasePhysical()) {
+        if (queued > 0) queued -= 1;
+        poured = true;
+        nextRelease = simTime + 1 / pourRate();
+      } else {
+        // Empty hopper or a jam. Either way, come back shortly rather than
+        // burning the backlog the instant a space appears.
+        nextRelease = simTime + 0.2;
+        if (reservoir <= 0) { queued = 0; playing = false; setPlayButton(); }
+      }
     }
     world?.step();
     simTime += DT;
@@ -670,10 +979,11 @@ function tickPhysical(/** @type {number} */ now) {
   }
   if (physAccum > DT * 10) physAccum = 0;
 
-  if (harvestSettled()) { drawBins(); drawCurves(); drawStats(); drawDrift(); }
+  if (harvestSettled()) { drawFieldTally(); drawDrift(); drawStats(); }
+  else if (poured) drawStats();              // the hopper is counting down
   drawPhysical();
 
-  const busy = playing || pending.length || (world && world.balls.some((b) => !b.resting));
+  const busy = playing || queued > 0 || (world && world.balls.length > 0);
   if (busy) ensureLoop();
 }
 
@@ -697,8 +1007,10 @@ function reset(message = 'Board cleared.') {
   setPlayButton();
   if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
   falling = [];
-  pending = [];
+  queued = 0;
+  reservoir = HOPPER;
   simTime = 0;
+  nextRelease = 0;
   lastRelease = 0;
   counts = new Array(rows + 1).fill(0);
   dropped = 0;
@@ -777,18 +1089,21 @@ modeToggle?.addEventListener('click', (ev) => {
     pField.querySelector('.gb-label').innerHTML = mode === 'physical'
       ? 'Tilt the board <em>p</em>:' : 'Chance of going right <em>p</em>:';
   }
+  if (genLabel) genLabel.textContent = mode === 'physical' ? 'Beads' : 'Balls';
   reset(mode === 'physical'
     ? 'Physical board. The balls now fall and bounce for themselves, and the pile is whatever that produces.'
     : 'Ideal board. Every bounce is a coin flip, so the pile is exactly binomial.');
 });
 
-pegrInput?.addEventListener('input', () => {
-  pegR = Number(pegrInput.value);
-  if (world) { world.setPegR(pegR); }
+// Both diameters change the lattice — the board is spaced for the bead it has
+// to pass — so both rebuild the field and the world under it.
+function resizeParts() {
+  if (world) world.setPegR(fieldGeometry().pr);
   buildBoard();
   if (mode === 'physical') { buildWorld(); redraw(); }
-});
-ballrInput?.addEventListener('input', () => { ballR = Number(ballrInput.value); });
+}
+pegrInput?.addEventListener('input', () => { pegR = Number(pegrInput.value); resizeParts(); });
+ballrInput?.addEventListener('input', () => { ballR = Number(ballrInput.value); resizeParts(); });
 bounceInput?.addEventListener('input', () => {
   if (world) world.params.restitution = Number(bounceInput.value);
 });
@@ -823,8 +1138,9 @@ if (physicsBox) physicsBox.hidden = mode !== 'physical';
 for (const b of modeToggle?.querySelectorAll('button[data-mode]') ?? []) {
   b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.mode === mode));
 }
-if (mode === 'physical' && pField) {
-  pField.querySelector('.gb-label').innerHTML = 'Tilt the board <em>p</em>:';
+if (mode === 'physical') {
+  if (pField) pField.querySelector('.gb-label').innerHTML = 'Tilt the board <em>p</em>:';
+  if (genLabel) genLabel.textContent = 'Beads';
 }
 if (exactToggle) exactToggle.checked = showExact;
 
@@ -833,4 +1149,9 @@ if (mode === 'physical') buildWorld();
 redraw();
 
 const preset = Number(params.get('balls'));
-if (Number.isFinite(preset) && preset > 0) drop(Math.min(preset, 100000));
+// The physical board is nothing BUT motion, so a `?balls=` link must not start
+// it pouring at someone who has asked for less of that. The buttons still work
+// — a pour they started themselves, and can stop, is a different thing.
+if (Number.isFinite(preset) && preset > 0 && !(mode === 'physical' && prefersReducedMotion())) {
+  drop(Math.min(preset, 100000));
+}
