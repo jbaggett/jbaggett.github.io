@@ -259,7 +259,7 @@ Accepted by pages under `distribution/`. Parsed by `js/url-params.js`, consumed 
 |-----------|------|---------|-------------|---------|
 | `mu` | float | `0` | Mean of the normal distribution. | `?mu=100` |
 | `sigma` | float | `1` | Standard deviation (must be > 0). | `?sigma=15` |
-| `tail` | string | `left` | Region to shade: `left`, `right`, `between` (shade the middle band between two bounds), or `symmetric` (shade the two outer tails; bounds mirror the mean). Legacy `both` is accepted as an alias for `symmetric`. | `?tail=between` |
+| `tail` | string | **`right`** | Region to shade: `left`, `right`, `between` (shade the middle band between two bounds), or `symmetric` (shade the two outer tails; bounds mirror the mean). Legacy `both` is accepted as an alias for `symmetric`. **The page opens on the right tail** at z = 1.96 — 0.9750 to the left, 0.0250 shaded — changed 2026-10-12; it was `left` before. Any link that names `tail` is unaffected. | `?tail=between` |
 | `lo` | float | _(HTML default)_ | Primary boundary: the cut for `left`/`right`, the magnitude for `symmetric`, or the lower bound of a `between` band. | `?lo=-1` |
 | `hi` | float | _(HTML default)_ | Upper boundary — only used by `between`. | `?hi=2` |
 

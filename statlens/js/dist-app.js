@@ -299,9 +299,24 @@ export function initDistCalculator(config) {
   function fullRender() {
     const params = getDistParams();
 
-    // Validate parameters
+    // Validate parameters.
+    //
+    // `isFinite` first, and it is load-bearing: a field the user has cleared
+    // parses to NaN, and `NaN < p.min` is FALSE, so an empty box used to sail
+    // through this check and poison currentCdf/currentInv for every later call.
+    // Measured (Jeff, 2026-10-12): clearing σ and typing ".5" left the pills
+    // reading NaN, and then — because the next keystroke captured a NaN
+    // quantile and skipped the restore — the bound stayed at 2.96 while σ
+    // became 0.5, so the left region settled on 1.0000 instead of 0.9750.
+    // A half-typed number is not a distribution; keep the last good curve and
+    // say so on the input.
     for (const p of config.params) {
-      if (p.min != null && params[p.paramKey] < p.min) {
+      const v = params[p.paramKey];
+      if (!isFinite(v)) {
+        showError(paramInputs[p.paramKey], 'Enter a number');
+        return;
+      }
+      if (p.min != null && v < p.min) {
         showError(paramInputs[p.paramKey], `Must be ≥ ${p.min}`);
         return;
       }
@@ -922,7 +937,8 @@ export function initDistCalculator(config) {
   function captureQuantiles() {
     if (!currentCdf) return null;
     const tail = getTail();
-    const clamp = (/** @type {number} */ q) => Math.min(1 - 1e-12, Math.max(1e-12, q));
+    const clamp = (/** @type {number} */ q) =>
+      isFinite(q) ? Math.min(1 - 1e-12, Math.max(1e-12, q)) : NaN;
     if (isSym(tail)) {
       // One degree of freedom: the partner is the mirror, so hold what the user
       // actually typed rather than the sorted lower bound — otherwise a value
@@ -942,6 +958,7 @@ export function initDistCalculator(config) {
   /** Put the bounds back at the same quantiles under the NEW parameters. */
   function restoreQuantiles(held) {
     if (!held || !currentInv || held.tail !== getTail()) return;
+    if (!isFinite(held.lo) || (held.hi != null && !isFinite(held.hi))) return;
     const lo = currentInv(held.lo);
     if (isFinite(lo)) inputX.value = formatForInput(lo);
     if (held.hi != null && inputX2 && !isSym(held.tail)) {
