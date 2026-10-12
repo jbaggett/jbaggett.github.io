@@ -31,6 +31,9 @@ import * as d3Selection from 'd3-selection';
  * @property {(params: Record<string, number>) => object} domainParams
  * @property {string} xSymbol - Symbol for x-axis (e.g., "x", "z", "t", "chi-sq", "F")
  * @property {((params: Record<string, number>) => string)} [xSymbolFactory] - Dynamic symbol based on params
+ * @property {boolean} [holdProbabilityOnParamChange] - When a distribution parameter
+ *   changes, keep the shaded probability and move the bound(s) to the same quantile
+ *   instead of keeping the bound and recomputing the probability. Normal only so far.
  */
 
 /**
@@ -134,6 +137,11 @@ export function initDistCalculator(config) {
   }
 
   // --- State ---
+  /**
+   * Has `between` been given its opening band yet? A URL that supplied `hi`
+   * already chose one, and must be honoured as given.
+   */
+  let betweenSeeded = urlHi != null && isFinite(urlHi);
   /** @type {ReturnType<typeof drawCurve>|null} */
   let curveState = null;
   /** Current PDF function */
@@ -349,6 +357,38 @@ export function initDistCalculator(config) {
     clearAnnotations();
     addInteractiveLayer(tail);
     computeAndDisplay(tail);
+    refreshMirrorBox(tail);
+  }
+
+  /**
+   * Put symmetric's pair in the boxes lower-first.
+   *
+   * Only safe where the user is not mid-keystroke in the primary box — a mode
+   * click or a parameter change — never from `updateShading`, which runs 150 ms
+   * after every keypress and would rewrite "2.5" to "−2.5000" under the caret.
+   * While typing, the primary box keeps what was typed and the second shows its
+   * mirror, which the label says.
+   */
+  function normalizeSymmetricBoxes(tail) {
+    if (!inputX2 || !isSym(tail)) return;
+    const { lo, hi } = pairBounds(tail);
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    inputX.value = formatForInput(lo);
+    inputX2.value = formatForInput(hi);
+  }
+
+  /**
+   * Keep symmetric mode's read-only upper box showing the bound actually shaded.
+   * `pairBounds` mirrors about the centre, so this is that same partner — the
+   * box and the picture cannot disagree.
+   */
+  function refreshMirrorBox(tail) {
+    if (!inputX2 || !isSym(tail)) return;
+    const { lo, hi } = pairBounds(tail);
+    if (!isFinite(lo) || !isFinite(hi)) return;
+    const a = parseFloat(inputX.value);
+    const partner = Math.abs(a - lo) <= Math.abs(a - hi) ? hi : lo;
+    inputX2.value = formatForInput(partner);
   }
 
   /**
@@ -867,6 +907,77 @@ export function initDistCalculator(config) {
     }
   }
 
+  /**
+   * Where each bound sits on the CURRENT distribution, as a probability.
+   *
+   * This is how "hold the probability, move the x" is implemented, and it is
+   * deliberately expressed in quantiles rather than in z: a quantile means the
+   * same thing on every distribution this module drives, and for the normal it
+   * reduces to exactly the z the request asks for, since
+   * Φ⁻¹(q; μ, σ) = μ + zσ when q = Φ((x − μ)/σ).
+   *
+   * Capture BEFORE the parameters change (while `currentCdf` is still the old
+   * one); restore after.
+   */
+  function captureQuantiles() {
+    if (!currentCdf) return null;
+    const tail = getTail();
+    const clamp = (/** @type {number} */ q) => Math.min(1 - 1e-12, Math.max(1e-12, q));
+    if (isSym(tail)) {
+      // One degree of freedom: the partner is the mirror, so hold what the user
+      // actually typed rather than the sorted lower bound — otherwise a value
+      // entered above center silently flips below it.
+      const a = parseFloat(inputX.value);
+      return isFinite(a) ? { tail, lo: clamp(currentCdf(a)) } : null;
+    }
+    if (isPair(tail)) {
+      const { lo, hi } = pairBounds(tail);
+      if (!isFinite(lo) || !isFinite(hi)) return null;
+      return { tail, lo: clamp(currentCdf(lo)), hi: clamp(currentCdf(hi)) };
+    }
+    const x = parseFloat(inputX.value);
+    return isFinite(x) ? { tail, lo: clamp(currentCdf(x)) } : null;
+  }
+
+  /** Put the bounds back at the same quantiles under the NEW parameters. */
+  function restoreQuantiles(held) {
+    if (!held || !currentInv || held.tail !== getTail()) return;
+    const lo = currentInv(held.lo);
+    if (isFinite(lo)) inputX.value = formatForInput(lo);
+    if (held.hi != null && inputX2 && !isSym(held.tail)) {
+      const hi = currentInv(held.hi);
+      if (isFinite(hi)) inputX2.value = formatForInput(hi);
+    }
+  }
+
+  /**
+   * A distribution parameter changed (μ, σ, df, n, p…).
+   *
+   * Two things were wrong here, both reported by Todd Will via the textbook
+   * agent (REQ-074, 2026-10-12). The Probability box is written only by
+   * `syncProbFromX`, which `fullRender` never called — so typing μ=100, σ=15
+   * left the box reading 0.9750 while the summary line beside it said 0.0000,
+   * and a student copying the box got a wrong answer. And the bound stayed
+   * where it was, which put it six and a half SDs off the plot.
+   *
+   * Jeff's call on the second one: "keep the probabilities static and change
+   * the X value(s) when either mu or sigma is changed." That is what
+   * `holdProbabilityOnParamChange` buys — and it is opt-in per page, because
+   * whether the t, χ², F and binomial calculators should do the same when df,
+   * n or p changes is a separate question still with Jeff.
+   */
+  function onParamChange() {
+    const held = config.holdProbabilityOnParamChange ? captureQuantiles() : null;
+    fullRender();
+    if (held) {
+      restoreQuantiles(held);
+      normalizeSymmetricBoxes(getTail());
+      updateShading();
+    }
+    // Unconditional: the box follows the bounds on every page, held or not.
+    syncProbFromX(getTail());
+  }
+
   // --- Result computation and display ---
   /** @param {'left'|'right'|'both'|'between'|'symmetric'} tail */
   function computeAndDisplay(tail) {
@@ -918,10 +1029,23 @@ export function initDistCalculator(config) {
     // Second bound input: only meaningful (and editable) for `between`.
     // Toggle the hidden attribute AND inline display (a CSS `display` rule on the
     // label would otherwise override the hidden attribute and keep it visible).
+    // The second bound is shown for both paired modes, but it is only EDITABLE
+    // for `between`. Symmetric has a single degree of freedom — the partner is
+    // the mirror about the centre — so its box is a read-only readout.
+    //
+    // It used to be hidden in symmetric mode while still holding whatever value
+    // the previous mode left in it, which is how a student could come back from
+    // Between and see an upper box of 1.8416 against a bound of 2.2816 actually
+    // shaded (REQ-074 defect 4). Showing the real partner is both the fix and
+    // the more useful readout.
     if (labelX2) {
-      const show = tail === 'between';
+      const show = isPair(tail);
       labelX2.hidden = !show;
       labelX2.style.display = show ? '' : 'none';
+    }
+    if (inputX2) {
+      inputX2.readOnly = isSym(tail);
+      inputX2.tabIndex = isSym(tail) ? -1 : 0;
     }
     // Relabel the primary bound. Falls back to the page's input label when there's
     // no dedicated #label-x (t/chisq/F), so dynamic symbols still relabel.
@@ -932,17 +1056,32 @@ export function initDistCalculator(config) {
       const txt = tail === 'between' ? `Lower ${sym}` : (xSym === 'z' ? 'z score' : `${sym} value`);
       if (primaryLabel.childNodes[0]) primaryLabel.childNodes[0].textContent = txt + ' ';
     }
-    if (labelX2 && labelX2.childNodes[0]) labelX2.childNodes[0].textContent = `Upper ${sym} `;
-    // First entry into `between`: seed a .1 | .7 | .2 band — left tail 0.10,
-    // middle 0.70, right tail 0.20 — so it opens with a clear, deliberately
-    // asymmetric three-region split (not a symmetric one that looks like the
-    // Symmetric mode). Only seeds when the two bounds aren't already a real band.
-    if (tail === 'between' && inputX2 && currentInv) {
+    // Symmetric's second box is the mirror, not a free upper bound, and saying
+    // so stops it reading as something you can type into.
+    if (labelX2 && labelX2.childNodes[0]) {
+      labelX2.childNodes[0].textContent = (isSym(tail) ? `Mirrored ${sym}` : `Upper ${sym}`) + ' ';
+    }
+    // First entry into `between`: seed the centred 95% band, μ ± 1.96σ.
+    //
+    // It used to seed a .1 | .7 | .2 split, chosen to look deliberately
+    // asymmetric so it could not be mistaken for Symmetric mode. In practice it
+    // read as an arbitrary 10th-to-80th-percentile band that no one had asked
+    // for (REQ-074 defect 3). 95% is the band a student is actually looking
+    // for, and the modes are told apart by WHICH region is shaded — middle
+    // versus the two outer tails — which is visible at a glance.
+    // Seeded on the FIRST entry into the mode. Testing "are the two bounds
+    // equal?" was not enough: arriving from Left with x = 129.4 and a second box
+    // still holding its page default of 1.96 looked like a real band, so the
+    // mode opened on P(1.96 ≤ x ≤ 129.4) — two bounds that were never chosen
+    // together. A URL that supplied `hi` counts as already seeded.
+    if (tail === 'between' && inputX2 && currentInv && !betweenSeeded) {
+      betweenSeeded = true;
       const a = parseFloat(inputX.value);
       const b = parseFloat(inputX2.value);
-      if (!isFinite(a) || !isFinite(b) || Math.abs(b - a) < 1e-9) {
-        const lo = currentInv(0.10);
-        const hi = currentInv(0.80);
+      if (true) {
+        void a; void b;
+        const lo = currentInv(0.025);
+        const hi = currentInv(0.975);
         if (isFinite(lo)) inputX.value = formatForInput(lo);
         if (isFinite(hi)) inputX2.value = formatForInput(hi);
       }
@@ -954,13 +1093,14 @@ export function initDistCalculator(config) {
     r.addEventListener('change', () => {
       syncBoundInputsUI();
       buildPresetButtons();
+      normalizeSymmetricBoxes(getTail());
       syncProbFromX(getTail());
       updateShading();
     });
   }
 
   // Debounced handlers for form inputs
-  const debouncedFullRender = debounce(fullRender, 200);
+  const debouncedParamChange = debounce(onParamChange, 200);
 
   // Bound inputs → update probability + chart
   const debouncedXUpdate = debounce(() => {
@@ -989,7 +1129,7 @@ export function initDistCalculator(config) {
       if (paramDisplay) paramDisplay.textContent = numInput.value;
     };
     numInput.addEventListener('input', () => { updateParamDisplay(); });
-    numInput.addEventListener('input', debouncedFullRender);
+    numInput.addEventListener('input', debouncedParamChange);
 
     // Look for a paired range slider (id = "slider-{paramKey}")
     const slider = /** @type {HTMLInputElement} */ (
@@ -1000,7 +1140,7 @@ export function initDistCalculator(config) {
       slider.addEventListener('input', () => {
         numInput.value = slider.value;
         if (paramDisplay) paramDisplay.textContent = slider.value;
-        fullRender();
+        onParamChange();
       });
       // Sync number input → slider
       numInput.addEventListener('input', () => {
@@ -1040,7 +1180,7 @@ export function initDistCalculator(config) {
         numInput.value = String(next);
         if (slider) slider.value = String(Math.min(parseFloat(slider.max), Math.max(parseFloat(slider.min), next)));
         if (paramDisplay) paramDisplay.textContent = String(next);
-        fullRender();
+        onParamChange();
       };
 
       minusBtn.addEventListener('click', () => step(-stepVal));

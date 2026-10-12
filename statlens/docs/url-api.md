@@ -263,7 +263,15 @@ Accepted by pages under `distribution/`. Parsed by `js/url-params.js`, consumed 
 | `lo` | float | _(HTML default)_ | Primary boundary: the cut for `left`/`right`, the magnitude for `symmetric`, or the lower bound of a `between` band. | `?lo=-1` |
 | `hi` | float | _(HTML default)_ | Upper boundary — only used by `between`. | `?hi=2` |
 
-> **Region modes.** `between` and `symmetric` are the two-boundary modes. `between` reveals a second bound input (upper bound) and shades the **middle**; `symmetric` keeps a single bound and mirrors it about the mean to shade **both outer tails**. Every region shows a probability pill, and pills are click-to-edit. In `between`, editing any region sets it to the typed value and splits the remaining probability across the other two regions **in proportion to their current sizes** (so the band keeps its shape); in `symmetric`, editing a tail sets each tail's area and editing the middle sets the central probability. Deep-link a band with `?tail=between&lo=-1&hi=2`.
+> **Region modes.** `between` and `symmetric` are the two-boundary modes. `between` reveals a second bound input (upper bound) and shades the **middle**, opening on the centred 95% band, μ ± 1.96σ; `symmetric` keeps a single free bound, mirrors it about the mean to shade **both outer tails**, and shows that mirror in a read-only second box. Every region shows a probability pill, and pills are click-to-edit. In `between`, editing any region sets it to the typed value and splits the remaining probability across the other two regions **in proportion to their current sizes** (so the band keeps its shape); in `symmetric`, editing a tail sets each tail's area and editing the middle sets the central probability. Deep-link a band with `?tail=between&lo=-1&hi=2`.
+
+> **Changing μ or σ holds the probability and moves the bound(s)** (Jeff's call, REQ-074,
+> 2026-10-12). Each bound keeps its standardized position, so x becomes μ + zσ — type μ = 100,
+> σ = 15 under a left tail of 0.9750 and the bound moves from 1.96 to 129.4 rather than being
+> stranded six SDs off the plot. **`lo` and `hi` on load are exempt** and are honoured exactly as
+> given: activities deep-link specific bounds, and the hold rule applies only to interactive edits
+> afterwards. The t, χ² and F pages do **not** do this — changing df leaves the bound where it is
+> (though their Probability box now tracks it, which it did not before).
 
 ### t (`distribution/t/`)
 
