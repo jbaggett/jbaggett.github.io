@@ -72,6 +72,25 @@ const centerNote = document.getElementById('center-note');
 const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
   document.querySelectorAll('.gen-btn'));
 
+/**
+ * x̄ and p̂ as MARKUP, for anything written into the DOM.
+ *
+ * `x̄` is an x plus U+0304 COMBINING MACRON, and the bar is laid out by the font
+ * rather than by us: in Atkinson Hyperlegible it lands to the RIGHT of the
+ * glyph rather than over it, so the tile read "one dot per sample's x‾"
+ * (Jeff, 2026-10-13). The site already solved this once — `.x-bar` in
+ * style.css is a span with a border-top — and this is just that, available to
+ * the strings this page builds in JS. The same reasoning is why
+ * `conceptual/two-se/` draws the bar as SVG geometry.
+ *
+ * p̂ is left as its combining character on purpose: U+0302 COMBINING CIRCUMFLEX
+ * sits over the p correctly in this font (checked at 3× on both labels), so it
+ * needs no span. It is the macron, not combining marks in general, that is
+ * broken here.
+ */
+const X_BAR_HTML = '<span class="x-bar">x</span>';
+const P_HAT_HTML = 'p\u0302';
+
 /** Population type: 'quant' (sampling dist of x̄) or 'cat' (sampling dist of p̂). */
 let popType = 'quant';
 const isCat = () => popType === 'cat';
@@ -543,7 +562,7 @@ function renderCurrentSample(showMean = true) {
   }
   if (sampleStatLine) {
     sampleStatLine.innerHTML = showMean
-      ? `<span id="sample-stat-value">x̄ = ${m.toFixed(2)}</span> &nbsp;(n = ${lastSample.length})`
+      ? `<span id="sample-stat-value">${X_BAR_HTML} = ${m.toFixed(2)}</span> &nbsp;(n = ${lastSample.length})`
       : '';
   }
 }
@@ -571,7 +590,7 @@ function renderSampleMarbles(showStat) {
   sampleContainer.appendChild(grid);
   if (sampleStatLine) {
     sampleStatLine.innerHTML = showStat
-      ? `<span id="sample-stat-value">p̂ = ${succ}/${n} = ${(succ / n).toFixed(3)}</span>`
+      ? `<span id="sample-stat-value">${P_HAT_HTML} = ${succ}/${n} = ${(succ / n).toFixed(3)}</span>`
       : '';
   }
 }
@@ -1379,7 +1398,9 @@ function applyModeLabels() {
       : 'The center of the sampling distribution sits at μ for every n — increasing n does not move the center, it only shrinks the spread.';
   }
   const samplingSubtitle = document.querySelector('#sampling-title span:last-child');
-  if (samplingSubtitle) samplingSubtitle.textContent = cat ? "one dot per sample's p̂" : "one dot per sample's x̄";
+  if (samplingSubtitle) {
+    samplingSubtitle.innerHTML = `one dot per sample's ${cat ? P_HAT_HTML : X_BAR_HTML}`;
+  }
   if (shapeControl) shapeControl.hidden = cat;
   if (pControl) pControl.hidden = !cat;
   applyTruth();   // owns the parameter readouts; must win over the line above

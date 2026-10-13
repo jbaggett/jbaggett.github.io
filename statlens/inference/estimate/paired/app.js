@@ -95,6 +95,27 @@ function populateVarSelectors(cols) {
   var2Select.value = cols[1];
 }
 
+/**
+ * A letter with a proper overline, as a DOM node.
+ *
+ * `x̄` is a letter plus U+0304 COMBINING MACRON, and the bar is placed by the
+ * font: in Atkinson Hyperlegible it lands to the RIGHT of the glyph instead of
+ * over it (Jeff, 2026-10-13, on the sampling lab). `.x-bar` in style.css is the
+ * site's fix — a span with a border-top.
+ *
+ * A NODE rather than an HTML string on purpose: this summary interpolates
+ * column names that came out of a CSV the student uploaded, and swapping the
+ * whole line to innerHTML to get one overline would hand those names to the
+ * HTML parser.
+ * @param {string} letter
+ */
+function barred(letter) {
+  const span = document.createElement('span');
+  span.className = 'x-bar';
+  span.textContent = letter;
+  return span;
+}
+
 function loadFromSelections() {
   if (!currentRows || numericCols.length < 2) return;
   const col1 = var1Select.value;
@@ -120,7 +141,11 @@ function loadFromSelections() {
     const name = dataPanel.currentSourceName;
     const prefix = name ? `${name}: ` : '';
     const d = detectPrecision(diffs);
-    dataSummary.textContent = `${prefix}${diffs.length} pairs (${col1} − ${col2}), d̄ = ${formatStat(mean(diffs), d)}, s_d = ${formatStat(sd(diffs), d)}`;
+    dataSummary.replaceChildren(
+      document.createTextNode(`${prefix}${diffs.length} pairs (${col1} − ${col2}), `),
+      barred('d'),
+      document.createTextNode(` = ${formatStat(mean(diffs), d)}, s_d = ${formatStat(sd(diffs), d)}`),
+    );
   }
   build();
   announce(`Loaded ${diffs.length} paired differences (${col1} − ${col2}).`);

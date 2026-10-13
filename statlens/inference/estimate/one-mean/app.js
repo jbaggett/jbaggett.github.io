@@ -136,12 +136,37 @@ function handleDataset(ds, _meta) {
  * @param {string} varName
  * @param {number[]} values
  */
+/**
+ * A letter with a proper overline, as a DOM node.
+ *
+ * `x̄` is a letter plus U+0304 COMBINING MACRON, and the bar is placed by the
+ * font: in Atkinson Hyperlegible it lands to the RIGHT of the glyph instead of
+ * over it (Jeff, 2026-10-13, on the sampling lab). `.x-bar` in style.css is the
+ * site's fix — a span with a border-top.
+ *
+ * A NODE rather than an HTML string on purpose: this summary interpolates
+ * column names that came out of a CSV the student uploaded, and swapping the
+ * whole line to innerHTML to get one overline would hand those names to the
+ * HTML parser.
+ * @param {string} letter
+ */
+function barred(letter) {
+  const span = document.createElement('span');
+  span.className = 'x-bar';
+  span.textContent = letter;
+  return span;
+}
+
 function updateDataSummary(varName, values) {
   if (!dataSummary) return;
   const name = dataPanel.currentSourceName;
   const prefix = name ? `${name}: ` : '';
   const d = detectPrecision(values);
-  dataSummary.textContent = `${prefix}${varName}: n = ${values.length}, x̄ = ${formatStat(mean(values), d)}, s = ${formatStat(sd(values), d)}`;
+  dataSummary.replaceChildren(
+    document.createTextNode(`${prefix}${varName}: n = ${values.length}, `),
+    barred('x'),
+    document.createTextNode(` = ${formatStat(mean(values), d)}, s = ${formatStat(sd(values), d)}`),
+  );
 }
 
 /**

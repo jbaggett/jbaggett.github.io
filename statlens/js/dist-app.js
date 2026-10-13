@@ -1231,9 +1231,53 @@ export function initDistCalculator(config) {
     });
   }
 
+  /**
+   * Where the page's DEFAULT bound belongs once a link has moved the curve.
+   *
+   * REQ-076 (textbook agent, 2026-10-13): `?mu=10&sigma=0.05&tail=right` opened
+   * with the bound at the HTML default of **1.96 in raw units** — six thousand
+   * standard deviations out — and reported P = 1.0000. Five live textbook links
+   * did this. It is REQ-074's bug on the load path: there too, the bound's
+   * meaningful position is its QUANTILE, not its raw value.
+   *
+   * So the default 1.96 is read as "the 0.975 quantile of the page's default
+   * distribution" and placed at that quantile of the one the link asked for,
+   * which for the normal is exactly the μ + 1.96σ the request specifies.
+   *
+   * Three things deliberately left alone:
+   *  - an explicit `lo`/`hi`, which REQ-074 already guarantees is untransformed;
+   *  - a link that sets no distribution parameter, where the default is already
+   *    consistent with the curve;
+   *  - `between`, which seeds its own μ ± 1.96σ band on first entry and came
+   *    out of production correct.
+   * @returns {number|null} the quantile to restore after the first render
+   */
+  function defaultBoundQuantile() {
+    if (!config.holdProbabilityOnParamChange) return null;
+    if (urlLo != null && isFinite(urlLo)) return null;
+    if (!config.params.some((p) => urlParams[p.paramKey] != null)) return null;
+    const tail = getTail();
+    if (isPair(tail) && !isSym(tail)) return null;
+    const defaults = {};
+    for (const p of config.params) defaults[p.paramKey] = p.defaultValue;
+    const x0 = parseFloat(inputX.value);
+    if (!isFinite(x0)) return null;
+    const q = config.cdfFactory(defaults)(x0);
+    return isFinite(q) ? Math.min(1 - 1e-12, Math.max(1e-12, q)) : null;
+  }
+
   // --- Initial render ---
+  const openingQ = defaultBoundQuantile();
   buildPresetButtons();
   fullRender(); // also calls syncBoundInputsUI() once currentInv is ready
+  if (openingQ != null && currentInv) {
+    const x = currentInv(openingQ);
+    if (isFinite(x)) {
+      inputX.value = formatForInput(x);
+      normalizeSymmetricBoxes(getTail());
+      updateShading();
+    }
+  }
   syncProbFromX(getTail());
 }
 
