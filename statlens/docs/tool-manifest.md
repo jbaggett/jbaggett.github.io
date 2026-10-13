@@ -165,6 +165,16 @@ described in the page's `aria-live` region.
 **Description:** Displays histogram, dotplot, or boxplot with full summary statistics (mean, median, SD, Q1, Q3, IQR, range, min, max) for a single quantitative variable. Includes bin frequency table, density curve overlay, relative frequency toggle, and group filter when data has a categorical variable.
 **Concepts:** Distribution shape, center, spread, five-number summary, histogram bin width, dotplot vs histogram comparison, outlier identification
 
+**Proportion mode** (`?param=prop`). The same axis, in true standard errors √(p(1−p)/n), with **two** recipes instead of three: `z*√(p(1−p)/n)` (right, and uncomputable — it needs the p you are estimating) and `z*√(p̂(1−p̂)/n)` (what you actually compute). There is no third row, and that absence is the content: **no multiplier repairs this one**, because how far short it falls depends on p. That is the course's own reason for simulating.
+
+The toggle also exposes a structural difference rather than just a change of letters. For a mean, x̄ and *s* are two separate numbers, so the page needs two knobs. For a proportion there is only p̂, and it is both the estimate **and** the quantity inside the standard error — so that mode has one knob where the other has two, and p̂ landing nearer 0.5 than p inflates the estimated SE while p̂ landing further out shrinks it.
+
+The long-run column in proportion mode is an **exact binomial sum** over the n+1 attainable values of p̂, not a normal approximation — p̂ is k/n and nothing else, and the discreteness is part of why the interval misbehaves. The defaults (p = 0.2, n = 50) put *np* at exactly 10, the course's success-failure boundary: the condition is **met** and the interval still runs at 93.8%. Drop to p = 0.1, n = 40 and it is 91.4%.
+
+**Expert mode only** (`?expert=true`): two shaded strips decomposing the shortfall — ordinary samples whose interval misses anyway, and unusual ones that reach p regardless because their estimated SE came out large. Off for students by design (Jeff, 2026-10-13); the phrase "acceptance region" deliberately never appears.
+
+**Provenance:** both modes are built from Todd Will's Mathematica demonstrations, relayed by Jeff — the mean in October 2026, the proportion on 2026-10-12 with the brief "showing the effect of replacing p with p̂, a parallel to showing the effect of replacing σ with s". Putting them in one page with a toggle makes that parallel structural rather than asserted. His notebook integrates a normal for the coverage and labels it approximate; ours sums the binomial.
+
 **URL Parameters:**
 
 | Parameter | Type | Description | Example |
@@ -1319,11 +1329,13 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ---
 
-### Why t* and not 1.96
+### What Estimating the Standard Error Costs
 
 **Path:** `conceptual/why-t-star/`
 **Category:** Conceptual
-**Description:** Where the multiplier in a confidence interval comes from, and what substituting *s* for σ costs. The axis is marked in **true** standard errors (σ/√n), so all three candidate margins can be laid against one ruler: `z*σ/√n` (right, and uncomputable), `z*s/√n` (computable, and too short) and `t*s/√n`. A radio list shows all three lengths at once with a reaches/misses verdict for the current x̄, so the comparison does not depend on clicking back and forth and remembering. Sliders set **n** (which drives t*) and **this sample's s as a fraction of σ**, and a draggable x̄ moves the interval. **Draw a sample** takes *n* real observations, computes x̄ and *s* from them, and scores all three recipes on the same draws — the tally is the actual argument, since one sample proves nothing. A fourth column gives each recipe's exact long-run coverage; for `z*s/√n` that is 2·F_t(z*, n−1) − 1, which is below the advertised level at every *n*. Built from Todd Will's Mathematica demonstration (via Jeff, Oct 2026); `?n=13&s=0.9` reproduces his board almost exactly, because t*(12 df) really is 1.112 × z*.
+**Description:** Where the multiplier in a confidence interval comes from, and what substituting an *estimate* of the standard error costs. **Two parameter families behind a toggle** (`?param=`), because the same picture carries both substitutions — σ → *s* for a mean, p → p̂ for a proportion.
+
+**Mean mode.** What substituting *s* for σ costs. The axis is marked in **true** standard errors (σ/√n), so all three candidate margins can be laid against one ruler: `z*σ/√n` (right, and uncomputable), `z*s/√n` (computable, and too short) and `t*s/√n`. A radio list shows all three lengths at once with a reaches/misses verdict for the current x̄, so the comparison does not depend on clicking back and forth and remembering. Sliders set **n** (which drives t*) and **this sample's s as a fraction of σ**, and a draggable x̄ moves the interval. **Draw a sample** takes *n* real observations, computes x̄ and *s* from them, and scores all three recipes on the same draws — the tally is the actual argument, since one sample proves nothing. A fourth column gives each recipe's exact long-run coverage; for `z*s/√n` that is 2·F_t(z*, n−1) − 1, which is below the advertised level at every *n*. Built from Todd Will's Mathematica demonstration (via Jeff, Oct 2026); `?n=13&s=0.9` reproduces his board almost exactly, because t*(12 df) really is 1.112 × z*.
 **Concepts:** Why t* rather than z*; the cost of estimating the standard error; the t distribution as the consequence of a random denominator; degrees of freedom and t* → z* as n grows; why the correction is a small-sample matter; coverage as a long-run rate rather than a property of one interval
 
 **The thing it is careful about.** t* does **not** repair the *s* you happen to have — it is one fixed number for a given n and level and cannot know which way your *s* went. In a sample where *s* came in low the t interval is still too short; where it came in high it is longer than it needed to be. What t* fixes is the **rate**. The s-slider and the tally exist so that a student cannot come away with "t* corrects for s being small", which is false and is what a demo with s pinned at 0.9σ teaches. Nor is the bias in *s* the mechanism: at n = 13, E[s]/σ ≈ 0.979 (2% low) while t*/z* = 1.112 (11% bigger). The other nine points are the **variability** of s.

@@ -864,22 +864,27 @@ parameter below changes a symbol or a position — none of them loads anything.
 `mode=present` (global) hides the student reflection prompt for projection. The companion printable is
 `conceptual/two-se/guide.html`.
 
-### Why t* and not 1.96 (`conceptual/why-t-star/`)
+### What Estimating the SE Costs (`conceptual/why-t-star/`)
 
-Also no data. The axis is in **true** standard errors (internally σ = 1, μ = 0), so every margin of error
-below is directly comparable against it.
+Also no data. The axis is in **true** standard errors, so every margin of error below is directly
+comparable against it. Two parameter families behind a toggle — the mean (σ → s) and the proportion
+(p → p̂). The path stays `why-t-star` though the page now covers both; the title changed on
+2026-10-13 and no URL did.
 
 | Parameter | Type | Default | Description | Example |
 |-----------|------|---------|-------------|---------|
+| `param` | string | `mean` | Which parameter: `mean` (σ → s, three recipes, t\* repairs it) or `prop` (p → p̂, two recipes, nothing repairs it). | `?param=prop` |
+| `p` | float | `0.2` | **Proportion mode only.** The true proportion, clamped 0.02–0.98. | `?p=0.1` |
 | `ci` | string | `95` | Confidence level: `90`, `95` or `99`. Alias `level`. | `?ci=99` |
-| `n` | integer | `13` | Sample size, clamped 3–60. Drives t* and the df in the long-run coverage column. 13 is the default because t* at 12 df is 1.112 × z*, which reproduces Todd Will's board. | `?n=5` |
-| `s` | float | `0.9` | This sample's s as a fraction of σ, clamped 0.3–2. Below 1 the `z*s/√n` interval is short; above 1 it is long. | `?s=1.25` |
+| `n` | integer | `13` / `50` | Sample size, clamped 3–60. In mean mode 13 (t\* at 12 df is 1.112 × z\*, which reproduces Todd Will's board); in proportion mode **50**, which with p = 0.2 puts np at exactly 10 — the success-failure boundary, where the condition is met and the interval still runs 93.8%. | `?n=5` |
+| `s` | float | `0.9` | **Mean mode only.** This sample's s as a fraction of σ, clamped 0.3–2. Below 1 the `z*s/√n` interval is short; above 1 it is long. Proportion mode has no such knob — p̂ is both the estimate and the thing inside the SE, which is the difference the toggle exposes. | `?s=1.25` |
 | `xbar` | float | `1.9` | Where the sample mean landed, in true SE from μ. Clamped −3.5…3.5. Alias `z`. | `?xbar=2.1` |
-| `me` | integer | `1` | Which margin of error is drawn: `1` = z*σ/√n, `2` = z*s/√n, `3` = t*s/√n. | `?me=2` |
+| `me` | integer | `1` | Which margin of error is drawn. Mean: `1` = z*σ/√n, `2` = z*s/√n, `3` = t*s/√n. Proportion: `1` = z*√(p(1−p)/n), `2` = z*√(p̂(1−p̂)/n). | `?me=2` |
 | `seed` | string | `why-t-star` | PRNG seed for **Draw a sample** and **Draw 100**. | `?seed=lecture7` |
 
-`mode=present` (global) hides the student reflection prompt. The companion printable is
-`conceptual/why-t-star/guide.html`.
+`mode=present` (global) hides the student reflection prompt. **`expert=true`** (global) adds the two
+shaded strips that decompose the proportion mode's coverage shortfall; they are off for students.
+The companion printable is `conceptual/why-t-star/guide.html`.
 
 ---
 

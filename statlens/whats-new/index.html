@@ -39,6 +39,27 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-10-13</div>
+            <h2>What Estimating the SE Costs &mdash; now for proportions too<span class="cl-tag tool">Updated</span></h2>
+            <p>The page formerly called &ldquo;Why <em>t</em>* and not 1.96&rdquo; has a
+               <strong>Mean / Proportion</strong> toggle. Same axis, same question, one substitution
+               changed: for a mean you put <em>s</em> where &sigma; should be; for a proportion you put
+               <em>p&#770;</em> where <em>p</em> should be &mdash; and <em>p&#770;</em> is the very
+               number the interval is built around, so it is both the estimate and the thing inside
+               the standard error.</p>
+            <p>Mean mode has three recipes and the third one, <em>t</em>*, fixes it exactly.
+               Proportion mode has <strong>two</strong>, and the missing third is the lesson: nothing
+               repairs it, because how far short it falls depends on <em>p</em>. At
+               <a href="../conceptual/why-t-star/?param=prop&amp;p=0.2&amp;n=50">p = 0.2, n = 50</a>
+               &mdash; where <em>np</em> = 10 and the success-failure condition is <em>met</em> &mdash;
+               a &ldquo;95%&rdquo; interval really captures 93.8%. At p = 0.05, n = 20 it captures 64%.
+               That is the course's own reason for simulating, as a picture.</p>
+            <p><a href="../conceptual/why-t-star/?param=prop">Open the proportion mode &rarr;</a> &middot;
+               <a href="../conceptual/why-t-star/">the mean mode</a> &middot;
+               <a href="../conceptual/why-t-star/guide.html">instructor guide</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-10-10</div>
             <h2>Law of Large Numbers: see the tosses<span class="cl-tag tool">Updated</span></h2>
             <p>The chart traces a running average, which is an abstraction over the thing you are

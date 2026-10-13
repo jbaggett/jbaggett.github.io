@@ -440,16 +440,16 @@
    "k": "two sample t-test, difference in means, compare two groups, Welch, pooled variance, p-value, independent samples"
   },
   {
+   "p": "conceptual/why-t-star/",
+   "t": "What Estimating the Standard Error Costs",
+   "d": "You never have the true standard error. See what substituting s for sigma, or p-hat for p, costs the interval — and why t* repairs one and nothing repairs the other.",
+   "k": "t star, critical value, why t instead of z, 1.96, margin of error, sigma unknown, sample standard deviation, degrees of freedom, confidence interval width, t distribution, coverage, proportion confidence interval, success-failure condition, np at least 10, estimated standard error, Wald interval, why simulate"
+  },
+  {
    "p": "conceptual/two-se/",
    "t": "Why ± 2 SE Works",
    "d": "The argument behind every “statistic ± 2 SE” interval, drawn with no numbers on the axis at all.",
    "k": "two standard errors, empirical rule, 68 95 99.7, confidence interval, margin of error, why plus or minus 2, capture, standard error"
-  },
-  {
-   "p": "conceptual/why-t-star/",
-   "t": "Why t* and not 1.96",
-   "d": "Plugging s in for sigma makes the interval the wrong length. See how far short it falls, and why t* is bigger than z*.",
-   "k": "t star, critical value, why t instead of z, 1.96, margin of error, sigma unknown, sample standard deviation, degrees of freedom, confidence interval width, t distribution, coverage"
   },
   {
    "p": "conceptual/bootstrap-shift/",
