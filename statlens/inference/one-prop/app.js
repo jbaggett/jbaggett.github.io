@@ -248,6 +248,33 @@ function syncNullDisplay() {
 inputP0.addEventListener('input', syncNullDisplay);
 syncNullDisplay();
 
+/**
+ * Changing p₀ recomputes the test, it does not just relabel the hypothesis.
+ *
+ * This page had only the mirror above, so typing a new null value moved the
+ * "H₀: p = 0.261" line and left the statistic — and the whole worked formula —
+ * computed from the old one. Reported by Crystal Vesperman via Canvas
+ * (2026-10-13) after students hit it; reproduced on production with 30/100 and
+ * p₀ = 0.261, where the page showed p₀ = 0.500 and z = −4.000 under a
+ * hypothesis line reading 0.261. The right answer is z = 0.888, which is not
+ * significant, so the error flips the conclusion.
+ *
+ * Every sibling page (one-mean, two-props, two-means, paired) already had this
+ * listener beside its mirror; this one was missed. The comment under "Event
+ * listeners" below has described the intended behaviour correctly the whole
+ * time — it was the code that was missing.
+ *
+ * Split in two on purpose: `input` recomputes only once the typed value is a
+ * usable proportion, so a half-typed "0." does not fire `compute`'s validation
+ * message into the live region on every keystroke; `change` fires on blur
+ * whatever the value, so an entry left invalid still says so.
+ */
+inputP0.addEventListener('input', () => {
+  const p0 = Number(inputP0.value);
+  if (currentN >= 1 && Number.isFinite(p0) && p0 > 0 && p0 < 1) compute();
+});
+inputP0.addEventListener('change', () => { if (currentN >= 1) compute(); });
+
 // ── Event listeners ─────────────────────────────────────────────────
 // No Compute button — every input recomputes live. Null value, success outcome, and
 // summary fields recompute on change/typing; confidence level recomputes on change.

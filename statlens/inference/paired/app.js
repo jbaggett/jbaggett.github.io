@@ -107,6 +107,10 @@ function loadFromSelections() {
   if (!currentRows || numericCols.length < 2) return;
   const col1 = var1Select.value;
   const col2 = var2Select.value;
+  // Unreachable in the UI now — `resolveCollision` moves the other slot aside
+  // before this runs — but a dataset with a single numeric column could still
+  // get here, and silently differencing a column from itself is worse than
+  // saying so.
   if (col1 === col2) { announce('Please select two different variables.'); return; }
 
   var1Name = col1;
@@ -186,8 +190,36 @@ const dataPanel = initDataPanel({
 });
 
 // ── Variable selector change listeners ────────────────────────────
-var1Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
-var2Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
+/**
+ * Two slots may not hold the same column — and the slot you just touched wins.
+ *
+ * This used to be enforced inside `loadFromSelections`, which announced
+ * "Please select two different variables" and returned. The announcement goes
+ * to the live region, so a sighted student saw nothing: the page sat showing
+ * `var1 = amazon`, `var2 = amazon` and a mean difference of 12.762, which is
+ * the answer for ucla − amazon and impossible for the pair on screen. Found by
+ * sweeping every inference page for controls that move without moving the
+ * numbers, after Crystal Vesperman reported the same pathology on one-prop.
+ *
+ * The behaviour now matches `js/variable-picker.js`, which the simulate pages
+ * have used all along: the OTHER slot moves aside to a different column and the
+ * change goes through. One situation, one behaviour.
+ * @param {HTMLSelectElement} changed @param {HTMLSelectElement} other
+ */
+function resolveCollision(changed, other) {
+  if (changed.value !== other.value) return;
+  const alt = numericCols.find(c => c !== changed.value);
+  if (alt) other.value = alt;
+}
+
+var1Select.addEventListener('change', () => {
+  resolveCollision(var1Select, var2Select);
+  if (currentRows) loadFromSelections();
+});
+var2Select.addEventListener('change', () => {
+  resolveCollision(var2Select, var1Select);
+  if (currentRows) loadFromSelections();
+});
 
 // ── Summary input handler ────────────────────────────────────────
 /** Is the "Enter Summary" tab the active data source? */
