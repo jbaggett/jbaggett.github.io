@@ -4,7 +4,7 @@
   "params": { "dataset": "brexit", "labels": "names" },
   "steps": [
     {
-      "instruction": "A survey asked 847 people how they think the UK government's Brexit negotiations are going. The responses are loaded as a **bar chart** with numeric labels hidden. Use only the bar heights to answer.",
+      "instruction": "A survey asked 1,643 people how they think the UK government's Brexit negotiations are going. The responses are loaded as a **bar chart** with numeric labels hidden. Use only the bar heights to answer.",
       "observe": "Which response is most common? Which is least common? Are any categories close in size? Try to rank all five from most to least common.",
       "reveal": "**Very badly** is the tallest bar, followed by **Fairly well**, **Fairly badly**, **Very well**, and **Don't know**. Bar charts make ranking easy because our eyes compare bar lengths quickly — even when two bars are close. Check the **Show values** box to see the exact counts."
     },

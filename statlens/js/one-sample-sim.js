@@ -16,7 +16,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags, obsLegendHTML }
+import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags, obsLegendHTML, MAX_MARBLES }
   from './prop-bootstrap-mech.js';
 import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
@@ -47,12 +47,26 @@ import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartTo
 export function initOneSamplePage(config) {
   const isProp = config.mode === 'one-prop';
   /**
-   * Above this many observations the darts are not thrown — the dots still
-   * appear, all at once. Sixty flyers is already a downpour; a hundred and
-   * twenty is a screen of moving objects that says nothing the first thirty
-   * did not. (The dot block itself survives to 120; see hasIndividualView.)
+   * The dart scoop runs whenever the dots are shown individually — one rule,
+   * not two separately tuned numbers. `MAX_MARBLES` in prop-bootstrap-mech.js
+   * is the dot block's own ceiling, so if you can see the dots, you see them
+   * thrown.
+   *
+   * This used to be 60, on the reasoning that "sixty flyers is already a
+   * downpour; a hundred and twenty is a screen of moving objects that says
+   * nothing the first thirty did not". Raised 2026-10-16 after Jeff hit it on
+   * `?dataset=medical_consultant`, which has n = 62 and so sat two
+   * observations above the cutoff with no animation at all and no indication
+   * why.
+   *
+   * Measured before changing it, because the old reasoning deserved a test:
+   * at n = 62 and at n = 120 the animation takes the SAME ~2.13 s, since it is
+   * paced by the clock rather than per dart. The board at 120 is denser, but it
+   * still reads as darts landing either side of the p₀ split — it is not slower,
+   * and nothing is lost but white space. The real cost of the old value was a
+   * dataset in the course materials that silently showed nothing.
    */
-  const DART_MAX = 60;
+  const DART_MAX = MAX_MARBLES;
   // These pages simulate against a stated null value, so the source panel is
   // the data moved onto the null rather than the data as observed.
   // One-prop's null NAMES a population; one-mean's is the data moved onto the

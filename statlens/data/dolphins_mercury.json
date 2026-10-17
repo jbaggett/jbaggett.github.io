@@ -1,1 +1,88 @@
-{"id":"dolphins_mercury","name":"Dolphins Mercury","description":"Mercury levels (ppm) in muscle tissue of 19 Risso's dolphins. Classic small-sample bootstrap CI example.","source":"IMS textbook","chapter":"IMS Ch. 19","type":"bootstrap","variables":[{"name":"mercury","label":"Mercury (ppm)","type":"numeric"}],"rows":[{"mercury":2.56},{"mercury":1.67},{"mercury":1.59},{"mercury":2.28},{"mercury":2.44},{"mercury":2.73},{"mercury":3.12},{"mercury":4.54},{"mercury":4.62},{"mercury":5.07},{"mercury":5.35},{"mercury":5.43},{"mercury":5.74},{"mercury":6.58},{"mercury":7.45},{"mercury":8.72},{"mercury":10.29},{"mercury":13.23},{"mercury":16.03}],"inferenceContexts":[{"test":"one-mean","response":"mercury","nullValue":5,"alternative":"greater","parameter":"the population mean mercury level in Risso's dolphins","claim":"the average mercury level in Risso's dolphins exceeds the 5 ppm safety threshold"}]}
+{
+  "id": "dolphins_mercury",
+  "name": "Dolphin Mercury",
+  "description": "Mercury levels (ppm) in muscle tissue of 19 dolphins. A small-sample bootstrap CI example.",
+  "source": "unverified",
+  "type": "bootstrap",
+  "variables": [
+    {
+      "name": "mercury",
+      "label": "Mercury (ppm)",
+      "type": "numeric"
+    }
+  ],
+  "rows": [
+    {
+      "mercury": 2.56
+    },
+    {
+      "mercury": 1.67
+    },
+    {
+      "mercury": 1.59
+    },
+    {
+      "mercury": 2.28
+    },
+    {
+      "mercury": 2.44
+    },
+    {
+      "mercury": 2.73
+    },
+    {
+      "mercury": 3.12
+    },
+    {
+      "mercury": 4.54
+    },
+    {
+      "mercury": 4.62
+    },
+    {
+      "mercury": 5.07
+    },
+    {
+      "mercury": 5.35
+    },
+    {
+      "mercury": 5.43
+    },
+    {
+      "mercury": 5.74
+    },
+    {
+      "mercury": 6.58
+    },
+    {
+      "mercury": 7.45
+    },
+    {
+      "mercury": 8.72
+    },
+    {
+      "mercury": 10.29
+    },
+    {
+      "mercury": 13.23
+    },
+    {
+      "mercury": 16.03
+    }
+  ],
+  "inferenceContexts": [
+    {
+      "test": "one-mean",
+      "response": "mercury",
+      "nullValue": 5,
+      "alternative": "greater",
+      "parameter": "the population mean mercury level in these dolphins",
+      "claim": "the average mercury level in these dolphins exceeds the 5 ppm safety threshold"
+    }
+  ],
+  "studyDescription": "Mercury concentrations measured in the muscle tissue of 19 dolphins. The values average 5.76 ppm with a standard deviation of 3.95 ppm. Marine mammals accumulate mercury through their diet, and tissue concentrations are used as an indicator of contamination in the waters they feed in. The sample is small, which is what makes it a bootstrap example.",
+  "sourceDetail": "Provenance unverified. This set was previously labelled as IMS’s 19 Risso’s dolphins and as IMS Ch. 19; it is neither. IMS’s Risso’s dolphin data has a mean of about 4.4 ppm and an SD of about 2.3, while these 19 values are 5.76 and 3.95. The species, the study and the year are not known, so no citation is claimed here rather than repeating one that does not hold. Flagged by the textbook audit of 2026-10-07 (REQ-073 item 10).",
+  "variableDescriptions": {
+    "mercury": "Mercury concentration in the animal’s muscle tissue, in parts per million."
+  }
+}

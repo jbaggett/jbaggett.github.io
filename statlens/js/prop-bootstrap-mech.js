@@ -18,7 +18,7 @@
 import { prefersReducedMotion } from './chart-utils.js';
 import { animateResampleDraw } from './mechanisms/draw-animation.js';
 
-const MAX_MARBLES = 120;   // above this, no per-observation display survives
+export const MAX_MARBLES = 120;   // above this, no per-observation display survives
 
 /**
  * Whether a sample of n can be drawn one mark per observation at all.

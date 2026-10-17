@@ -1,0 +1,391 @@
+{
+  "id": "ucla_textbooks_f18",
+  "name": "UCLA Textbook Prices (Fall 2018)",
+  "description": "Prices ($) of 68 textbooks at the UCLA bookstore vs. Amazon, Fall 2018. Are bookstore prices higher on average? (IMS Ch. 20)",
+  "source": "IMS (Introduction to Modern Statistics)",
+  "chapter": "IMS Ch. 20",
+  "type": "paired",
+  "sourceDetail": "OpenIntro IMS Ch. 20; openintro::ucla_textbooks_f18, restricted to the 68 courses where both a new bookstore price and a new Amazon price were recorded. Extracted from the installed R package rather than transcribed, so the values are the package's. Added 2026-10-16: the course links for ci-for-means and hypothesis-tests-means had been pointing at `textbooks`, which is the 2010 OpenIntro Statistics sample (n = 73, mean difference 12.76) and a different study (REQ-073 item 9).",
+  "studyDescription": "A sample of 68 courses at UCLA in Fall 2018. For each course, the price of a new copy of the required textbook was recorded at the UCLA bookstore and at Amazon on the same day. Because the two prices are for the same book, the observations are paired and the analysis is of the differences.",
+  "variables": [
+    {
+      "name": "course",
+      "label": "Course",
+      "type": "categorical"
+    },
+    {
+      "name": "ucla",
+      "label": "UCLA bookstore price ($)",
+      "type": "numeric"
+    },
+    {
+      "name": "amazon",
+      "label": "Amazon price ($)",
+      "type": "numeric"
+    }
+  ],
+  "variableDescriptions": {
+    "course": "The subject abbreviation and course number the textbook was required for.",
+    "ucla": "Price of a new copy at the UCLA bookstore, in dollars.",
+    "amazon": "Price of a new copy on Amazon the same day, in dollars."
+  },
+  "context": {
+    "population": "UCLA courses in Fall 2018",
+    "parameter": "the mean difference in price between the bookstore and Amazon",
+    "unit": "dollars",
+    "nullClaim": "the mean difference in price is zero"
+  },
+  "inferenceContexts": [
+    {
+      "test": "paired",
+      "var1": "ucla",
+      "var2": "amazon",
+      "nullValue": 0,
+      "alternative": "greater",
+      "parameter": "the mean difference in price (UCLA bookstore minus Amazon)",
+      "claim": "textbooks cost more at the UCLA bookstore than on Amazon"
+    }
+  ],
+  "rows": [
+    {
+      "course": "AM IND M10",
+      "ucla": 47.97,
+      "amazon": 47.45
+    },
+    {
+      "course": "ANTHRO 2",
+      "ucla": 14.26,
+      "amazon": 13.55
+    },
+    {
+      "course": "ART&ARC 10",
+      "ucla": 13.5,
+      "amazon": 12.53
+    },
+    {
+      "course": "NA M60W",
+      "ucla": 49.26,
+      "amazon": 54.95
+    },
+    {
+      "course": "ASTR 4",
+      "ucla": 119.97,
+      "amazon": 124.8
+    },
+    {
+      "course": "COMM 10",
+      "ucla": 16.95,
+      "amazon": 11.77
+    },
+    {
+      "course": "COM LIT 2CW",
+      "ucla": 11.96,
+      "amazon": 10.87
+    },
+    {
+      "course": "NA 10",
+      "ucla": 26.75,
+      "amazon": 38.94
+    },
+    {
+      "course": "ENGL 19",
+      "ucla": 9.96,
+      "amazon": 8.99
+    },
+    {
+      "course": "ENGCOMP 1A",
+      "ucla": 39.97,
+      "amazon": 35
+    },
+    {
+      "course": "FILM TV 4",
+      "ucla": 132.75,
+      "amazon": 78.67
+    },
+    {
+      "course": "FRNCH 2",
+      "ucla": 149.97,
+      "amazon": 152.95
+    },
+    {
+      "course": "FRNCH 3",
+      "ucla": 149.97,
+      "amazon": 152.95
+    },
+    {
+      "course": "HIST 3A",
+      "ucla": 43.96,
+      "amazon": 41.99
+    },
+    {
+      "course": "HIST 12B",
+      "ucla": 12.77,
+      "amazon": 12.23
+    },
+    {
+      "course": "HIST 1A",
+      "ucla": 114.96,
+      "amazon": 119.95
+    },
+    {
+      "course": "NA 1",
+      "ucla": 29.97,
+      "amazon": 36.95
+    },
+    {
+      "course": "Undergraduate 19",
+      "ucla": 19.95,
+      "amazon": 19.95
+    },
+    {
+      "course": "LIFESCI 20",
+      "ucla": 11.96,
+      "amazon": 10.87
+    },
+    {
+      "course": "LING 19",
+      "ucla": 17.26,
+      "amazon": 16.79
+    },
+    {
+      "course": "MATH 32A",
+      "ucla": 103.97,
+      "amazon": 112.99
+    },
+    {
+      "course": "MATH 32B",
+      "ucla": 103.97,
+      "amazon": 112.99
+    },
+    {
+      "course": "MECH&AE M20",
+      "ucla": 72.96,
+      "amazon": 60.35
+    },
+    {
+      "course": "M E STD M50A",
+      "ucla": 12.46,
+      "amazon": 13.49
+    },
+    {
+      "course": "MCD BIO 50",
+      "ucla": 50.96,
+      "amazon": 49.31
+    },
+    {
+      "course": "MUSCLG 5",
+      "ucla": 55.46,
+      "amazon": 55.74
+    },
+    {
+      "course": "MUSCLG M6A",
+      "ucla": 89.96,
+      "amazon": 100.19
+    },
+    {
+      "course": "NA 10",
+      "ucla": 186.96,
+      "amazon": 111.76
+    },
+    {
+      "course": "PORTGSE M35",
+      "ucla": 133.96,
+      "amazon": 133.75
+    },
+    {
+      "course": "SPAN 4",
+      "ucla": 229.27,
+      "amazon": 229.37
+    },
+    {
+      "course": "SPAN 7A",
+      "ucla": 145.97,
+      "amazon": 146.95
+    },
+    {
+      "course": "NA 14A",
+      "ucla": 63.95,
+      "amazon": 57.23
+    },
+    {
+      "course": "NA 35A",
+      "ucla": 19.99,
+      "amazon": 17
+    },
+    {
+      "course": "WL ARTS M23",
+      "ucla": 47.97,
+      "amazon": 47.45
+    },
+    {
+      "course": "ASTR 5",
+      "ucla": 56.96,
+      "amazon": 43.08
+    },
+    {
+      "course": "COM LIT 19",
+      "ucla": 11.96,
+      "amazon": 12.29
+    },
+    {
+      "course": "ENGL 19",
+      "ucla": 15.27,
+      "amazon": 14.4
+    },
+    {
+      "course": "ENGL 85",
+      "ucla": 12.26,
+      "amazon": 14
+    },
+    {
+      "course": "ENGCOMP 1",
+      "ucla": 71.97,
+      "amazon": 41.49
+    },
+    {
+      "course": "ENGCOMP 3",
+      "ucla": 78.97,
+      "amazon": 76.7
+    },
+    {
+      "course": "ETHNMUS M6A",
+      "ucla": 89.96,
+      "amazon": 98.2
+    },
+    {
+      "course": "NA 2",
+      "ucla": 138.97,
+      "amazon": 136.92
+    },
+    {
+      "course": "LIFESCI 15",
+      "ucla": 159.96,
+      "amazon": 126.71
+    },
+    {
+      "course": "LING 11",
+      "ucla": 45.96,
+      "amazon": 50.95
+    },
+    {
+      "course": "LING 1",
+      "ucla": 17.26,
+      "amazon": 16.79
+    },
+    {
+      "course": "MUSCLG 12W",
+      "ucla": 29.5,
+      "amazon": 30.33
+    },
+    {
+      "course": "NA 54B",
+      "ucla": 118.96,
+      "amazon": 97.92
+    },
+    {
+      "course": "PHILOS 6",
+      "ucla": 14.76,
+      "amazon": 13.39
+    },
+    {
+      "course": "PHILOS 31",
+      "ucla": 89.97,
+      "amazon": 89.89
+    },
+    {
+      "course": "POL SCI 40",
+      "ucla": 89.97,
+      "amazon": 87.88
+    },
+    {
+      "course": "SOCIOL 19",
+      "ucla": 27.46,
+      "amazon": 29.95
+    },
+    {
+      "course": "SPAN 5",
+      "ucla": 229.27,
+      "amazon": 229.37
+    },
+    {
+      "course": "SPAN 7B",
+      "ucla": 145.97,
+      "amazon": 146.95
+    },
+    {
+      "course": "AF AMER 19",
+      "ucla": 6.97,
+      "amazon": 7.94
+    },
+    {
+      "course": "EPS SCI 1",
+      "ucla": 179.97,
+      "amazon": 158.96
+    },
+    {
+      "course": "ART HIS 27",
+      "ucla": 19.95,
+      "amazon": 14.95
+    },
+    {
+      "course": "ASIA AM 10",
+      "ucla": 14.96,
+      "amazon": 12.23
+    },
+    {
+      "course": "NA 20",
+      "ucla": 27.97,
+      "amazon": 29.95
+    },
+    {
+      "course": "A&O SCI 2",
+      "ucla": 99.99,
+      "amazon": 86.49
+    },
+    {
+      "course": "CHIN 1A",
+      "ucla": 59.99,
+      "amazon": 56.99
+    },
+    {
+      "course": "CHIN 4",
+      "ucla": 66.96,
+      "amazon": 66.99
+    },
+    {
+      "course": "CLUSTER 70A",
+      "ucla": 10.96,
+      "amazon": 9.99
+    },
+    {
+      "course": "RUSSN 31",
+      "ucla": 19.96,
+      "amazon": 23.2
+    },
+    {
+      "course": "RUSSN 1",
+      "ucla": 34.26,
+      "amazon": 29.36
+    },
+    {
+      "course": "RELIGN M10",
+      "ucla": 35.96,
+      "amazon": 32.4
+    },
+    {
+      "course": "KOREA 1A",
+      "ucla": 24.96,
+      "amazon": 23.79
+    },
+    {
+      "course": "KOREA 1",
+      "ucla": 24.96,
+      "amazon": 23.79
+    },
+    {
+      "course": "JEWISH M10",
+      "ucla": 35.96,
+      "amazon": 32.4
+    }
+  ]
+}

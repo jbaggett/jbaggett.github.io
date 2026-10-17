@@ -413,7 +413,7 @@ function update({ announceChange = true } = {}) {
   if (textKey !== paintedText) samenessEl.innerHTML = hit
     ? `Both true &mdash; and they are the same statement.`
       + `<span class="tse-hint">The gap between ${s.statHtml} and ${s.param} is one distance. Reading it from`
-      + ` ${s.param} says the sample was typical; reading it from ${s.statHtml} says the interval reaches back.</span>`
+      + ` ${s.param} says the sample was typical; reading it from ${s.statHtml} says the interval captures ${s.param}.</span>`
     : `Both false &mdash; and they are the same statement.`
       + `<span class="tse-hint">This is one of the ${(100 - Number(level)).toFixed(1).replace(/\.0$/, '')}% of samples that`
       + ` lands outside the band, and those are exactly the samples whose interval misses.</span>`;

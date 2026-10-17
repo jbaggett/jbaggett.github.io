@@ -1,1 +1,647 @@
-{"id":"opportunity_cost","name":"Opportunity Cost","description":"150 participants: does reminding about saving change purchase decisions? IMS Ch. 11.","source":"openintro","chapter":"IMS Ch. 11","type":"randomization_prop","variables":[{"name":"group","label":"Treatment Group","type":"categorical"},{"name":"decision","label":"Decision","type":"categorical"}],"rows":[{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"control","decision":"not buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"},{"group":"treatment","decision":"not buy video"}],"inferenceContexts":[{"test":"two-props","groupVar":"group","responseVar":"decision","successLabel":"buy video","group1":"control","group2":"treatment","alternative":"greater","parameter":"the difference in purchase rates between the control and opportunity cost groups","claim":"reminding people about saving money reduces the likelihood of buying"}]}
+{
+  "id": "opportunity_cost",
+  "name": "Opportunity Cost",
+  "description": "150 students: does reminding them that unspent money can be spent later make them decline a purchase? (IMS Ch. 11)",
+  "source": "openintro",
+  "chapter": "IMS Ch. 11",
+  "type": "randomization_prop",
+  "variables": [
+    {
+      "name": "group",
+      "label": "Treatment Group",
+      "type": "categorical"
+    },
+    {
+      "name": "decision",
+      "label": "Decision",
+      "type": "categorical"
+    }
+  ],
+  "rows": [
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "control",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    },
+    {
+      "group": "treatment",
+      "decision": "not buy video"
+    }
+  ],
+  "inferenceContexts": [
+    {
+      "test": "two-props",
+      "groupVar": "group",
+      "responseVar": "decision",
+      "successLabel": "buy video",
+      "group1": "control",
+      "group2": "treatment",
+      "alternative": "greater",
+      "parameter": "the difference in purchase rates between the control and opportunity cost groups",
+      "claim": "reminding people about saving makes them less likely to buy"
+    }
+  ],
+  "context": {
+    "population": "the 150 students in the study",
+    "parameter": "the difference in the proportion who bought (control minus treatment)",
+    "nullClaim": "the reminder changes no one’s decision",
+    "successLabel": "buy video"
+  },
+  "studyDescription": "One hundred and fifty students at a university in the southwestern United States were randomly assigned to one of two versions of a scenario about buying a $14.99 video. Both versions offered the same option (A), \"Buy this entertaining video.\" The treatment group’s option (B) added a clause reminding them that the money could be kept for other purchases; the control group’s did not. The outcome recorded was which option the student chose. This was a randomized experiment.",
+  "variableDescriptions": {
+    "group": "Which version of the scenario the student was randomly assigned: control, or treatment with the opportunity-cost reminder.",
+    "decision": "Which option the student chose — to buy the video, or not to buy it."
+  },
+  "sourceDetail": "OpenIntro IMS Ch. 11; original study Frederick S, Novemsky N, Wang J, Dhar R, Nowlis S (2009), \"Opportunity cost neglect\".\n\nDIRECTION, and why it differs from the chapter (REQ-073 item 7, checked 2026-10-16). The tool counts BUYING as the success and reports control − treatment: 56/75 − 41/75 = 0.747 − 0.547 = +0.200. The course chapter (randomization-tests, § opportunity cost) counts NOT buying and reports treatment − control: 34/75 − 19/75 = 0.453 − 0.253 = +0.200. Both are correct and both give +0.200 — complementary success with the groups swapped is the same number — but they attach it to opposite sentences.\n\nAligning the tool to the chapter was ATTEMPTED and reverted: the success label is settable from this file, but the GROUP ORDER is not — `group1`/`group2` here are read by nothing, and the page derives its order from the data. Setting success to \"not buy\" alone leaves the page showing control − treatment = −0.200 against a \"greater\" alternative, which is worse than the mismatch it was meant to fix. Making the tool match the chapter needs a code change (a settable group order, or a URL parameter), not a metadata one."
+}

@@ -22,7 +22,7 @@
 // the shell caches the right files and the cache name carries the site with it.
 const BASE = self.location.pathname.replace(/sw\.js$/, '');
 const SITE = BASE.replace(/^\/|\/$/g, '').replace(/\//g, '-') || 'root';
-const CACHE_NAME = `${SITE}@12221e7e`;
+const CACHE_NAME = `${SITE}@3c117ade`;
 
 // App shell — the core files needed for the app to work, relative to BASE
 const APP_SHELL = [

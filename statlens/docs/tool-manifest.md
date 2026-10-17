@@ -277,7 +277,7 @@ The long-run column in proportion mode is an **exact binomial sum** over the n+1
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a two-variable categorical dataset | `dataset=ask` |
+| `dataset` | string | Pre-load a two-variable categorical dataset | `dataset=ask` (the 3×2 iPod disclosure experiment, χ² = 40.13, df 2) |
 
 **Compatible Datasets:** Datasets where `hasNumeric === false`, `hasCategorical === true`, and there are 2+ categorical variables. Includes: `sex_discrimination`, `opportunity_cost`, `cpr`, `yawn`, `ask`, `diabetes2`, `lizard_habitat`, `immigration`, `heart_transplant`, `malaria`, `migraine`, `fish_oil_18`, `mammogram`, `resume`, `ucb_admit`, `cards`, `burger`, `dream`, `biontech_adolescents`, `sinusitis`, `smallpox`, `smoking`, `drug_use`
 
@@ -678,7 +678,7 @@ button changes that). A colour key under the strip names both outcomes.
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` |
+| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` (iPod disclosure, 3×2) |
 | `seed` | string | Deterministic seed | `seed=demo` |
 
 **Imported data:** the two columns are chosen by the shared variable picker (`js/variable-picker.js`), which skips row-label columns like `id` and shows a selector whenever there is a choice. Bundled datasets use their own metadata.
@@ -1013,7 +1013,7 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` |
+| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` (iPod disclosure, 3×2) |
 
 **Compatible Datasets:** Datasets with `type === 'chisq'` or two-variable categorical data.
 
