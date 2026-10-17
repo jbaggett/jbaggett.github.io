@@ -433,13 +433,29 @@
     "chapter": "",
     "n": 500,
     "variables": [
-      "best_burger_place",
-      "gender"
+      {
+        "name": "best_burger_place",
+        "label": "Best Burger Place",
+        "type": "categorical"
+      },
+      {
+        "name": "gender",
+        "label": "Gender",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 5,
-    "minGroupN": 60
+    "minGroupN": 60,
+    "studyDescription": "A survey asked 500 people to name their favorite burger chain from a list of options. Respondents also reported their gender. The data were collected via an observational survey.",
+    "sourceDetail": "openintro::burger. Survey on favourite burger restaurant by gender, n = 500. Replaced 2026-10-17: this file held five restaurant categories; the source has seven, same n (REQ-077 sweep).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "best_burger_place": "The respondent's favorite burger restaurant chain (e.g., In-N-Out Burger, Five Guys, etc.)",
+      "gender": "The respondent's self-reported gender (Male or Female)"
+    },
+    "context": "A survey asked 500 people to name their favorite burger chain from a list of options."
   },
   {
     "id": "caosexam",
@@ -887,13 +903,29 @@
     "chapter": "",
     "n": 910,
     "variables": [
-      "ideology",
-      "stance"
+      {
+        "name": "ideology",
+        "label": "Political Ideology",
+        "type": "categorical"
+      },
+      {
+        "name": "stance",
+        "label": "Stance on DREAM Act",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 270
+    "minGroupN": 270,
+    "studyDescription": "A survey of 910 people asked respondents about their stance on the DREAM Act, which would provide a path to citizenship for undocumented immigrants brought to the US as children. Responses were recorded along with each respondent's self-identified political ideology. This was an observational survey.",
+    "sourceDetail": "openintro::dream (IMS Ch. 4). Survey on the DREAM Act by political ideology, n = 910. Replaced 2026-10-17: this file held ideology 340 / 300 / 270, the right n with the wrong split; the source is Conservative 372 / Moderate 363 / Liberal 175 (REQ-077 sweep).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "ideology": "The respondent's self-identified political ideology: Conservative, Moderate, or Liberal",
+      "stance": "The respondent's stance on the DREAM Act: Accept or Reject"
+    },
+    "context": "A survey asked respondents about their stance on the DREAM Act, which would provide a path to citizenship for undocumented immigrants brought to the US as children. Responses are broken down by political ideology."
   },
   {
     "id": "drug_use",
@@ -961,16 +993,27 @@
   {
     "id": "env_regulation",
     "name": "Environmental Regulation Views",
-    "description": "Survey of 705 Americans on environmental regulation: necessary vs. does more harm. IMS Ch. 2.",
+    "description": "Survey of 705 Americans: are regulations necessary, or will the private marketplace ensure businesses act responsibly? (Pew; IMS Ch. 2)",
     "chapter": "",
     "n": 705,
     "variables": [
-      "statement"
+      {
+        "name": "statement",
+        "label": "Statement",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 161
+    "minGroupN": 161,
+    "studyDescription": "A Pew Research Center survey asked 705 American adults to choose between two statements about environmental regulation: that regulations are necessary to make businesses act responsibly, or that the private marketplace will ensure it. A third group answered \"Don’t know\". This is an observational survey.",
+    "sourceDetail": "openintro::env_regulation (IMS Ch. 2). Pew Research Center survey on environmental regulation versus the private marketplace, n = 705. These are the summary counts as published in the openintro package (CC BY-SA); Pew’s own terms restrict redistributing full datasets, so only the published tabulation is carried here. Replaced 2026-10-17: this file held 363 / 181 / 161 under a different middle category (\"Regulations do more harm\"), which is not the question Pew asked (REQ-077).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "statement": "Which of the two statements the respondent chose, or \"Don’t know\"."
+    },
+    "context": "A survey asked 705 American adults: Which of the following statements do you think is the better approach for addressing environmental problems? Regulations are necessary to protect the environment, or regulations frequently do more harm than good."
   },
   {
     "id": "epa2021_mpg",
@@ -2063,13 +2106,33 @@
     "chapter": "",
     "n": 6224,
     "variables": [
-      "group",
-      "outcome"
+      {
+        "name": "group",
+        "label": "Inoculation Status",
+        "type": "categorical"
+      },
+      {
+        "name": "outcome",
+        "label": "Outcome",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 2,
-    "minGroupN": 238
+    "minGroupN": 238,
+    "studyDescription": "Historical data on smallpox inoculation outcomes. Records whether individuals who were inoculated or not inoculated contracted smallpox. This is observational data — individuals chose whether or not to be inoculated.",
+    "sourceDetail": "openintro::smallpox. Smallpox outcomes among 6,224 people in Boston, 1721, by whether they were inoculated. Replaced 2026-10-17: this file put six surviving people on the wrong side of the inoculation split — 238 inoculated rather than 244, giving 3.82% inoculated where the course chapter (probability-rules) states 3.92%, 14.11% and 2.46%. The source reproduces all three figures exactly (REQ-077 sweep).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "result": "Whether the individual contracted smallpox (lived or died)",
+      "inoculated": "Whether the individual was inoculated against smallpox"
+    },
+    "context": {
+      "population": "individuals during outbreak",
+      "parameter": "difference in death rate",
+      "nullClaim": "inoculation has no effect on smallpox outcomes"
+    }
   },
   {
     "id": "smoking",
@@ -2154,16 +2217,32 @@
   {
     "id": "supreme_court",
     "name": "Supreme Court Approval",
-    "description": "Poll of 976 Americans on approval of the US Supreme Court. IMS Ch. 2.",
+    "description": "Poll of 976 Americans: do you approve of the US Supreme Court? 44% approve (NYT/CBS, June 2012). IMS Ch. 2.",
     "chapter": "",
     "n": 976,
     "variables": [
-      "answer"
+      {
+        "name": "answer",
+        "label": "Answer",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 197
+    "minGroupN": 197,
+    "studyDescription": "A New York Times / CBS News telephone poll in June 2012 asked 976 American adults whether they approved of the way the US Supreme Court was handling its job. Responses are recorded as approve or not; 429 of the 976 approved. This is an observational survey at one point in time.",
+    "sourceDetail": "openintro::supreme_court (IMS Ch. 2). New York Times / CBS News poll, June 2012, n = 976: 44% approve (429/976). Replaced 2026-10-17: this file held Approve 458 / Disapprove 321 / Don't know 197 — a three-category split that matched no source, where openintro's is BINARY (approve / not). The category structure was wrong, not just the counts (REQ-077).",
+    "source": "openintro",
+    "type": "bootstrap_prop",
+    "variableDescriptions": {
+      "answer": "Whether the respondent approved of the Supreme Court’s handling of its job."
+    },
+    "context": {
+      "population": "American adults in June 2012",
+      "parameter": "the proportion who approve of the Supreme Court",
+      "successLabel": "approve"
+    }
   },
   {
     "id": "tappers_listeners",

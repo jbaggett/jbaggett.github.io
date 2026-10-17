@@ -158,6 +158,7 @@ export function initTabs(opts) {
  * Call this on any page that has a help dialog.
  */
 export function initHelp() {
+  initSimErrorHelp();
   const helpDialog = /** @type {HTMLDialogElement|null} */ (
     document.getElementById('page-help')
     || document.getElementById('keyboard-help'));
@@ -2869,6 +2870,88 @@ export function setPageTitle(pageLabel, datasetName, opts) {
  * @param {string} o.detailsHTML - HTML shown inside the collapsed panel (the rule text and/or a chart mount point)
  * @param {(panel: HTMLElement) => void} [o.onFirstExpand] - called once, the first time the panel opens (for lazy chart drawing)
  */
+/**
+ * The "?" beside a simulated answer's ±, and what it opens.
+ *
+ * REQ-078 (textbook agent, 2026-10-17), from a course-wide decision: every
+ * simulation page shows a ±, and the hint beside it says what it DOES
+ * ("run it again and it could shift…") without ever saying what it IS. The book
+ * now names it **simulation error** and makes one point the tool has to echo:
+ *
+ *   it depends on N, the number of simulations — never on n, the sample size.
+ *
+ * Conflating those two is a documented misconception (the "Watkins trap"), and
+ * it is the reason the second sentence of each popover exists.
+ *
+ * "Margin of error" is deliberately NOT used here. That phrase is reserved for
+ * confidence intervals; the textbook agent checked that no StatLens page spends
+ * it on the simulation ± and asked us to keep it that way.
+ *
+ * Returns a STRING because all three call sites build their results panel with
+ * innerHTML, which would throw away any listener attached to the button. The
+ * click handling is delegated from the document instead, wired once below.
+ *
+ * @param {object} o
+ * @param {'pvalue'|'ci'} o.kind which ± is being explained
+ * @param {number} [o.n] number of simulations / resamples, for the Detailed line
+ * @param {number} [o.phat] the p-value itself, for the Detailed line
+ * @returns {string}
+ */
+export function simErrorHelpHTML(o) {
+  const id = `sim-err-${++simErrorSeq}`;
+  const body = o.kind === 'pvalue'
+    ? `<span class="sen-p"><strong>Simulation error.</strong> Your p-value is the share of simulated
+         studies at least as extreme as your data, so a fresh set of simulations gives a
+         slightly different share \u2014 the \u00b1 is about how far it could move.</span>
+       <span class="sen-p">More simulations shrink it. It does <strong>not</strong> depend on your
+         sample size, and shrinking it does not change the evidence.</span>`
+    : `<span class="sen-p"><strong>Simulation error.</strong> The interval\u2019s ends come from your
+         resamples, so a fresh run could move each end by about this much.</span>
+       <span class="sen-p">More resamples shrink it \u2014 but they do <strong>not</strong> make the
+         interval narrower. Only a larger sample does that.</span>`;
+
+  // Detailed mode only. For the p-value this is the actual formula; for a
+  // bootstrap end it is not, because the margin is computed per CI method
+  // (a quantile standard error for percentile, a different one for ±z·SE), so
+  // printing one formula would be printing the wrong one.
+  const detail = o.kind === 'pvalue'
+    ? `<span class="expert-only sen-p sen-formula">\u2248 1.96 \u00d7 \u221a(p\u0302(1\u2212p\u0302)/N), where N is the
+         number of simulations${o.n ? ` \u2014 here N = ${o.n.toLocaleString()}` : ''}.</span>`
+    : `<span class="expert-only sen-p sen-formula">Each end is a quantile of your resamples, so its wobble
+         shrinks like 1/\u221aB, where B is the number of resamples${o.n ? ` \u2014 here B = ${o.n.toLocaleString()}` : ''}.
+         The exact expression depends on which interval method is selected.</span>`;
+
+  // A <span>, not a <div>, and spans inside: this is emitted INSIDE a <p class="hint">,
+  // and a <div> there makes the parser close the paragraph and re-parent the note.
+  // That silently moved the layout on three pages before it was caught.
+  return `<button type="button" class="sim-error-help" aria-expanded="false"
+            aria-controls="${id}" aria-label="What does the plus-or-minus mean?">?</button>`
+    + `<span id="${id}" class="sim-error-note" hidden>${body}${detail}</span>`;
+}
+
+let simErrorSeq = 0;
+let simErrorWired = false;
+
+/**
+ * Wire the "?" buttons once, by delegation.
+ *
+ * Called from `initHelp` so every page that already sets up its help dialog
+ * gets this for free and no page has to remember.
+ */
+export function initSimErrorHelp() {
+  if (simErrorWired) return;
+  simErrorWired = true;
+  document.addEventListener('click', (e) => {
+    const btn = /** @type {HTMLElement} */ (e.target)?.closest?.('.sim-error-help');
+    if (!btn) return;
+    const panel = document.getElementById(btn.getAttribute('aria-controls') || '');
+    if (!panel) return;
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!open));
+    panel.hidden = open;
+  });
+}
+
 export function renderConditionsCheckpoint(el, o) {
   if (!el) return;
   const alts = o.alts || (o.altHref ? [{ label: o.altLabel || 'alternative', href: o.altHref }] : []);

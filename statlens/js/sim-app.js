@@ -29,7 +29,7 @@ import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR, ciRegionMass,} from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from './page-utils.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton, simErrorHelpHTML} from './page-utils.js';
 import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
@@ -5337,7 +5337,8 @@ export function initSimPage(config) {
       mcLine = tiny
         ? `<p class="hint">Run it again and the ends could barely move at this precision — already steady.</p>`
         : `<p class="hint">Run it again and the ends could shift <strong>±${lo}</strong> and
-             <strong>±${hi}</strong>. <strong>More resamples → tighter.</strong></p>`;
+             <strong>±${hi}</strong>${simErrorHelpHTML({ kind: 'ci', n: stats.length })}.
+             <strong>More resamples → tighter.</strong></p>`;
     }
 
     // What the bounds actually hold.
@@ -5496,7 +5497,7 @@ export function initSimPage(config) {
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
-      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it could shift <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More shuffles → tighter.</strong></p>
+      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it could shift <strong>±${mcMargin.toFixed(3)}</strong>${simErrorHelpHTML({ kind: 'pvalue', n: N })}. <strong>More shuffles → tighter.</strong></p>
       ${tieNote}
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     ` : `

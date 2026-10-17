@@ -20,28 +20,52 @@
     "best_burger_place": "The respondent's favorite burger restaurant chain (e.g., In-N-Out Burger, Five Guys, etc.)",
     "gender": "The respondent's self-reported gender (Male or Female)"
   },
-  "sourceDetail": "OpenIntro datasets (openintro R package). IMS Ch. 2.",
+  "sourceDetail": "openintro::burger. Survey on favourite burger restaurant by gender, n = 500. Replaced 2026-10-17: this file held five restaurant categories; the source has seven, same n (REQ-077 sweep).",
   "context": "A survey asked 500 people to name their favorite burger chain from a list of options.",
   "rows": [
     {
-      "best_burger_place": "In-N-Out Burger",
+      "best_burger_place": "Five Guys Burgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "In-N-Out Burger",
+      "best_burger_place": "Five Guys Burgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "In-N-Out Burger",
+      "best_burger_place": "Five Guys Burgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "In-N-Out Burger",
+      "best_burger_place": "Five Guys Burgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "In-N-Out Burger",
+      "best_burger_place": "Five Guys Burgers",
       "gender": "Male"
+    },
+    {
+      "best_burger_place": "Five Guys Burgers",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Five Guys Burgers",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Five Guys Burgers",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Five Guys Burgers",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Five Guys Burgers",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Five Guys Burgers",
+      "gender": "Female"
     },
     {
       "best_burger_place": "In-N-Out Burger",
@@ -417,279 +441,279 @@
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
-      "gender": "Female"
+      "gender": "Male"
     },
     {
       "best_burger_place": "In-N-Out Burger",
@@ -870,905 +894,877 @@
     {
       "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
-    },
-    {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Five Guys",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Male"
+      "best_burger_place": "In-N-Out Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "In-N-Out Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
-      "gender": "Female"
+      "best_burger_place": "Fat Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "Fat Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "Fat Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "Fat Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "Fat Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Wendy's",
+      "best_burger_place": "Fat Burger",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Male"
+      "best_burger_place": "Fat Burger",
+      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Male"
-    },
-    {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Tommy's Hamburgers",
       "gender": "Female"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
+      "best_burger_place": "Umami Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
+      "best_burger_place": "Umami Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
+      "best_burger_place": "Umami Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
+      "best_burger_place": "Umami Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
-      "gender": "Female"
+      "best_burger_place": "Umami Burger",
+      "gender": "Male"
     },
     {
-      "best_burger_place": "McDonald's",
+      "best_burger_place": "Umami Burger",
       "gender": "Female"
     },
     {
@@ -1877,150 +1873,154 @@
     },
     {
       "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Other",
+      "gender": "Female"
+    },
+    {
+      "best_burger_place": "Not Sure",
       "gender": "Male"
     },
     {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
       "gender": "Male"
     },
     {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
       "gender": "Male"
     },
     {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
+      "gender": "Male"
+    },
+    {
+      "best_burger_place": "Not Sure",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
       "gender": "Female"
     },
     {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
-      "gender": "Female"
-    },
-    {
-      "best_burger_place": "Other",
+      "best_burger_place": "Not Sure",
       "gender": "Female"
     }
   ]

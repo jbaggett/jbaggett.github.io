@@ -27,7 +27,7 @@ import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
 import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion, attachAxisRuler, holdHeight } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from './page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton, simErrorHelpHTML} from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -1890,7 +1890,8 @@ export function initOneSamplePage(config) {
       <p>Extreme count: ${extremeCount} of ${N} (${dirLabel})</p>
       <p>${pLine}</p>
       ${extremeCount === 0 ? '' : `<p class="hint">Run it again and the p-value could shift
-         <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More simulations → tighter</strong>;
+         <strong>±${mcMargin.toFixed(3)}</strong>${simErrorHelpHTML({ kind: 'pvalue', n: N })}.
+         <strong>More simulations → tighter</strong>;
          once it stops shrinking, more clicking will not change your conclusion.</p>`}
       <p class="interpretation">${extremeCount} of ${N} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
     `;
