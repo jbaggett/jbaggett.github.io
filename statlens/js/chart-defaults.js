@@ -345,6 +345,10 @@ export function createBinAdjuster(parent, opts) {
  * @param {string} opts.id - SVG id
  * @param {string} opts.xLabel
  * @param {string} [opts.titleText]
+ * @param {string} [opts.descText] - What the chart shows, for the SVG's
+ *   accessible name. Without it the name is the title alone, which says
+ *   nothing about the content — and nothing at all on an empty chart whose
+ *   only content is the observed statistic (REQ-069).
  * @param {[number,number]} [opts.domain]
  * @param {number} [opts.observedStat]
  * @param {[number,number]} [opts.ciLines]
@@ -421,6 +425,7 @@ export function renderSimChart(container, stats, opts) {
       id: opts.id,
       xLabel: opts.xLabel,
       titleText: opts.titleText ?? 'Null Distribution',
+      descText: opts.descText,
       isExtreme: regionPred,
       observedStat: opts.observedStat,
       ciLines: opts.ciLines,
@@ -456,6 +461,7 @@ export function renderSimChart(container, stats, opts) {
       id: opts.id,
       xLabel: opts.xLabel,
       titleText: opts.titleText ?? 'Null Distribution',
+      descText: opts.descText,
       isTail: regionPred,
       observedStat: opts.observedStat,
       ciLines: opts.ciLines,
@@ -472,6 +478,7 @@ export function renderSimChart(container, stats, opts) {
       id: opts.id,
       xLabel: opts.xLabel,
       titleText: opts.titleText ?? 'Null Distribution',
+      descText: opts.descText,
       isTail: regionPred,
       observedStat: opts.observedStat,
       ciLines: opts.ciLines,

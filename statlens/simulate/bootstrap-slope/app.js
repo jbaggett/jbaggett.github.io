@@ -233,6 +233,18 @@ function showDataLoaded() {
 
   renderScatter();
 
+  // The axis for the not-yet-built distribution. Its width comes from the
+  // slope's own standard error, which `linreg` already returns — the bootstrap
+  // slopes will scatter around the observed slope on roughly that scale, so
+  // ±4 SE reaches past where the bulk will land. The other bootstrap pages get
+  // this from their 2,000-resample pilot; this page has no pilot, and the
+  // closed-form SE is the same quantity that pilot is estimating.
+  if (isFinite(reg.se_slope) && reg.se_slope > 0) {
+    const reach = 4 * reg.se_slope;
+    renderHist([], -1, undefined, undefined, undefined,
+      [observedSlope - reach, observedSlope + reach]);
+  }
+
   setPageTitle(baseTitle, currentSourceName, { n: xData.length });
   announce(`Data loaded: n = ${xData.length}`);
 
@@ -491,7 +503,12 @@ function renderScatter() {
 function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts, ci, hlDomain, hlThresholds) {
   if (!histContainer) return;
   const n = slopes.length;
-  if (n === 0) { histContainer.innerHTML = ''; return; }
+  // n === 0 used to blank the container. It now draws the axis with the
+  // observed slope marked, so the chart says what the resamples will pile up
+  // around before any have been drawn (REQ-069, extended to the bootstrap
+  // pages at Jeff's call, 2026-10-18). A domain must be supplied for that —
+  // there are no statistics to derive one from.
+  if (n === 0 && !hlDomain) { histContainer.innerHTML = ''; return; }
 
   // The CI method drives the picture, not just the results box (see js/ci-method.js).
   const normalCI = (ci && n > 1) ? normalApproxCI(slopes, getCiLevel()) : null;
@@ -523,6 +540,21 @@ function renderHist(slopes, highlightIndex = -1, highlightIndices, prevBinCounts
     id: 'slope-dist',
     xLabel: 'Bootstrap Slope',
     titleText: 'Bootstrap Distribution of Slope',
+    // What the chart shows, for a screen reader; the title alone said nothing
+    // about the content, and nothing at all about the one value on the empty
+    // chart. `?observed=off` withholds the marker on purpose, so naming it
+    // would both lie and give the number away.
+    descText: (() => {
+      const shown = new URLSearchParams(location.search).get('observed') !== 'off';
+      const at = shown && isFinite(observedSlope)
+        ? `observed slope = ${observedSlope.toFixed(dataPrecision + 1)}` : '';
+      if (n === 0) {
+        return at
+          ? `No resamples yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No resamples yet — press a generate button to build the distribution.';
+      }
+      return [`${n.toLocaleString()} resamples`, at].filter(Boolean).join(', ');
+    })(),
     regionPredicate: regionPred,
     observedStat: observedSlope,
     ciLines: shownCI ?? undefined,

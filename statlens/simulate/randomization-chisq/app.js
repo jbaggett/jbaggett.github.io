@@ -282,6 +282,20 @@ function showDataLoaded() {
     if (mechObservedChisq) mechObservedChisq.textContent = formatStat(observedChisq, 2);
   }
 
+  // REQ-069 (Todd): draw the distribution's axis with the observed statistic
+  // on it before anything is shuffled, so the student can see what the shuffles
+  // will be compared against. The range comes from the reference distribution
+  // the shuffles will approximate — χ²(df) has mean df and SD √(2df), so
+  // df + 4√(2df) reaches well past where the bulk will land — widened when the
+  // observed is further out than that. Computed closed-form rather than from
+  // `chisqInv`, because this page carries no jStat and an axis range is not
+  // worth a CDN dependency; the contract's pin was no theoretical CURVE, which
+  // this is not.
+  const chisqDf = Math.max(1, (rowLabels.length - 1) * (colLabels.length - 1));
+  const nullReach = chisqDf + 4 * Math.sqrt(2 * chisqDf);
+  renderChart([], observedChisq, -1, undefined, undefined,
+    [0, Math.max(nullReach, observedChisq * 1.15)]);
+
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
   announce(`Data loaded: ${rowLabels.length} × ${colLabels.length} table, n = ${totalN}`);
 
@@ -477,6 +491,21 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Chi-Square Statistic (χ²)',
+    // What the chart shows, for a screen reader. The title alone said nothing
+    // about the content, and on the empty chart REQ-069 added it said nothing
+    // at all about the one value drawn on it. `?observed=off` is reasoning
+    // mode: the marker is withheld on purpose, so naming it here would both
+    // lie and give away the number the mode exists to withhold.
+    descText: (() => {
+      const shown = new URLSearchParams(location.search).get('observed') !== 'off';
+      const at = shown && isFinite(observed) ? `observed = ${observed.toFixed(3)}` : '';
+      if (stats.length === 0) {
+        return at
+          ? `No simulations yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No simulations yet — press a generate button to build the distribution.';
+      }
+      return [`${stats.length.toLocaleString()} shuffles`, at].filter(Boolean).join(', ');
+    })(),
     // Match the page's own readout: formatStat(observedChisq, 2) = 3 decimals.
     precision: 3,
     titleText: words.distribution,

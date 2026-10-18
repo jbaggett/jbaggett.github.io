@@ -40,6 +40,26 @@
 
         <article class="cl-entry tool">
             <div class="cl-date">2026-10-17</div>
+            <h2>Randomization distributions now show what the shuffles are up against<span class="cl-tag tool">Tool</span></h2>
+            <p>Every simulation tool now marks its <strong>observed statistic</strong> on the
+               distribution <em>before</em> you generate anything &mdash; so the question the
+               method asks is on screen from the start. On a randomization test the mark shows what
+               the shuffles get compared against; on a bootstrap it shows what the resamples will
+               pile up around. Chi-square, correlation and ANOVA drew no chart at all until the
+               first shuffle; they now draw an axis sized from the reference distribution. No tail
+               is shaded: that is still yours to discover. The charts also describe themselves to a
+               screen reader now.</p>
+            <p><a href="../simulate/randomization-diff-props/?dataset=opportunity_cost">Two proportions</a> &middot;
+               <a href="../simulate/randomization-paired/?dataset=textbooks">Paired</a> &middot;
+               <a href="../simulate/randomization-chisq/?dataset=ask">Chi-square</a> &middot;
+               <a href="../simulate/randomization-correlation/?dataset=possum">Correlation</a> &middot;
+               <a href="../simulate/randomization-anova/?dataset=fastfood_anova">ANOVA</a> &middot;
+               <a href="../simulate/bootstrap-mean/?dataset=ames_price">Bootstrap mean</a> &middot;
+               <a href="../simulate/bootstrap-slope/?dataset=babies_crawl">Bootstrap slope</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-17</div>
             <h2>Paired tools say which difference they took &mdash; and let you reverse it<span class="cl-tag tool">Tool</span></h2>
             <p>All four paired pages now name the order in the real column names &mdash;
                <em>difference = before &minus; after</em> &mdash; with a <strong>&#x21C4;</strong> that reads it

@@ -912,11 +912,7 @@ export function initSimPage(config) {
       if (nullDisplayMirror) nullDisplayMirror.textContent = nullValueInput.value || '0';
       // Re-render chart + results if simulation has run
       if (allStats.length > 0) {
-        const nullDiff = getNullValue();
-        const rawObserved = config.paired
-          ? mean(pairedDiffs())
-          : config.testStat(data1, data2);
-        const observedStat = rawObserved - nullDiff;
+        const observedStat = /** @type {number} */ (observedStatistic());
         const direction = getDirection();
         renderChart(allStats, null, observedStat, direction);
         const { pValue, extremeCount } = permutationPValue(allStats, observedStat, direction);
@@ -955,6 +951,24 @@ export function initSimPage(config) {
     return pairedSwapped
       ? data1.map((v, i) => v - data2[i])
       : data2.map((v, i) => v - data1[i]);
+  }
+
+  /**
+   * The observed statistic, shifted by the null value the page is testing.
+   *
+   * Written out at each of the places that re-render after a control moves; now
+   * one function, because `renderEmptyChart` needs it too — REQ-069 marks it on
+   * the distribution before any shuffle has happened.
+   * @returns {number|null} null when there is not enough data yet
+   */
+  function observedStatistic() {
+    if (data1.length === 0) return null;
+    if (config.paired) {
+      if (data2.length === 0) return null;
+      return mean(pairedDiffs()) - getNullValue();
+    }
+    if (!config.testStat || data2.length === 0) return null;
+    return config.testStat(data1, data2) - getNullValue();
   }
 
   /** "after − before", with the real column names, in the current order. */
@@ -1418,13 +1432,49 @@ export function initSimPage(config) {
     // Lock the dotplot bin grid so dots don't shift as domain grows. For a
     // discrete statistic the grid is not a choice — it is the set of values the
     // statistic can actually take (see discreteGridStep).
+    //
+    // ⚠ This is computed from the PILOT range, before the observed statistic
+    // widens the domain below. The grid is part of what a `?seed=` link
+    // reproduces, so widening it would redraw every existing seeded picture
+    // (the statistics would be identical and the dots would sit differently),
+    // and REQ-069 is a change to what is on screen before the first shuffle,
+    // not to the output afterwards.
     const gridNumBins = userBinCount ?? 40;
     const gridBinWidth = discreteGridStep()
       ?? (preSimDomain[1] - preSimDomain[0]) / gridNumBins;
     lockedDotGrid = { binWidth: gridBinWidth, binOrigin: preSimDomain[0] };
 
-    // Render empty chart (no observed stat line — just axes)
-    renderChart([]);
+    // REQ-069 (Todd): mark the observed statistic before anything has been
+    // shuffled, so the student can see what the shuffles are going to be
+    // compared against. On a real effect the observed sits well outside the
+    // pilot's range — on `textbooks` the sign-flip null spans about ±4 and the
+    // observed is −12.8 — so the domain has to reach it or the marker is drawn
+    // off the axis. Widening here also removes a jump that was already there:
+    // the domain grew to take in the observed on the first +1, because
+    // `preSimDomain` is only a floor. It still grows on the side where extreme
+    // shuffles land — that is honest, more shuffles find more extreme values —
+    // but it no longer has to move to bring the OBSERVED into view.
+    // Bootstrap pages too, at Jeff's call (2026-10-18): the statistic the
+    // resamples are going to pile up around is as much "what is this chart
+    // about" as the randomization observed is, and leaving it off meant the
+    // marker appeared on the first +1 — a smaller version of the very jump
+    // Todd complained about. The bootstrap statistic is whichever one the page
+    // is resampling (mean, median, …), so it comes from `computeObservedStat`
+    // rather than the null-shifted `observedStatistic`.
+    const observed = config.mode === 'bootstrap'
+      ? (computeObservedStat() ?? null)
+      : observedStatistic();
+    if (observed != null && isFinite(observed)) {
+      const reach = (preSimDomain[1] - preSimDomain[0]) * 0.08;
+      preSimDomain = [
+        Math.min(preSimDomain[0], observed - reach),
+        Math.max(preSimDomain[1], observed + reach),
+      ];
+    }
+
+    // No `direction`: there is nothing to shade yet, and Todd asked for the
+    // observed statistic, not the region that will count as extreme.
+    renderChart([], null, observed ?? undefined, undefined);
   }
 
   function updateHypothesisDisplay() {
@@ -1874,11 +1924,7 @@ export function initSimPage(config) {
       altDirectionBtn.dataset.value = vals[next];
       altDirectionBtn.textContent = labels[next];
       if (allStats.length > 0) {
-        const nullDiff = getNullValue();
-        const rawObserved = config.paired
-          ? mean(pairedDiffs())
-          : config.testStat(data1, data2);
-        const observedStat = rawObserved - nullDiff;
+        const observedStat = /** @type {number} */ (observedStatistic());
         const direction = getDirection();
         renderChart(allStats, null, observedStat, direction);
         const { pValue, extremeCount } = permutationPValue(allStats, observedStat, direction);
@@ -4816,7 +4862,13 @@ export function initSimPage(config) {
   function computeObservedStat() {
     if (config.mode !== 'bootstrap' || data1.length === 0) return undefined;
     if (config.paired && data2.length === data1.length && data2.length > 0) {
-      return mean(data1.map((v, i) => data2[i] - v));
+      // Through `pairedDiffs()`. This read `data1.map((v, i) => data2[i] - v)`
+      // — the same subtraction with the operands swapped and the variables
+      // renamed, which is why no grep for the expression found it when REQ-079
+      // routed the others. The ⇄ then left the marker on the far side of its
+      // own distribution: the panel read `ucla − amazon: 12.672` while the
+      // chart drew `observed = −12.762`. (D-35.)
+      return mean(pairedDiffs());
     }
     if (config.twoGroup && typeof config.testStat === 'function') {
       return config.testStat(data1, data2);
@@ -4848,8 +4900,10 @@ export function initSimPage(config) {
     /** @type {number[]} */
     let jack;
     if (config.paired && data2.length === data1.length && data2.length > 0) {
-      const diffs = data1.map((v, i) => data2[i] - v);
-      jack = jackknife1(diffs, statFn);
+      // Same bypass as computeObservedStat had — the jackknife has to see the
+      // differences in the order the page is reading them, or the BCa bounds
+      // come back for the opposite difference. (D-35.)
+      jack = jackknife1(pairedDiffs(), statFn);
     } else if (config.twoGroup && data2.length > 0) {
       // Jackknife over the pooled observations: leave out each point from its
       // own group and recompute the difference statistic.
@@ -4987,6 +5041,39 @@ export function initSimPage(config) {
     const ciLineColor = (ciMethod === 'se') ? NORMAL_CI_COLOR : PERCENTILE_CI_COLOR;
     ci = shownCI;
     const titleText = words.distribution;
+    /**
+     * What the chart is showing, for a screen reader.
+     *
+     * `descText` has always been accepted by the chart helpers and never
+     * supplied here, so the SVG's accessible name was the title alone — fine
+     * when the title was the whole story, wrong now that REQ-069 draws a chart
+     * whose ONLY content is the observed statistic. An empty distribution that
+     * announces "Randomization Distribution" and nothing else tells a screen
+     * reader reader less than the page tells everyone else.
+     */
+    const descText = (() => {
+      // `?observed=off` is reasoning mode: the marker is deliberately withheld
+      // so the student places the cutoff from the problem text. Saying "observed
+      // X is marked on the axis" would both lie and hand over the answer the
+      // mode exists to withhold.
+      const markerShown = new URLSearchParams(location.search).get('observed') !== 'off';
+      // The same precision the marker's own label uses, so what is spoken and
+      // what is drawn agree to the digit.
+      const prec = config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1;
+      // `toFixed`, not `formatStat`: the marker's own label is built with
+      // `value.toFixed(precision)` (js/histogram.js renderOverlayLine), and
+      // formatStat's type rules round differently, so the two disagreed by a
+      // digit — "observed = -12.762" drawn, "-12.7616" spoken.
+      const at = (markerShown && observedStat != null && isFinite(observedStat))
+        ? `observed = ${observedStat.toFixed(prec)}` : '';
+      if (n === 0) {
+        return at
+          ? `No simulations yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No simulations yet — press a generate button to build the distribution.';
+      }
+      const unit = config.mode === 'bootstrap' ? 'resamples' : 'shuffles';
+      return [`${n.toLocaleString()} ${unit}`, at].filter(Boolean).join(', ');
+    })();
     let xLabel;
     if (config.mode === 'bootstrap') {
       if (config.proportion) {
@@ -5112,6 +5199,7 @@ export function initSimPage(config) {
         id: 'sim-chart',
         xLabel,
         titleText,
+        descText,
         isExtreme: regionPredicate,
         splitRanks,
         observedStat,
@@ -5150,6 +5238,7 @@ export function initSimPage(config) {
         id: 'sim-chart',
         xLabel,
         titleText,
+        descText,
         isTail: regionPredicate,
         splitRanks,
         observedStat: observedStat ?? undefined,
@@ -5168,6 +5257,7 @@ export function initSimPage(config) {
         id: 'sim-chart',
         xLabel,
         titleText,
+        descText,
         isTail: regionPredicate,
         splitRanks,
         observedStat: observedStat ?? undefined,
