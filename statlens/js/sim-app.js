@@ -427,7 +427,7 @@ export function initSimPage(config) {
     if (seed != null && seed !== '') params.seed = seed;
     // Which way round a paired difference is being read (omit the default, so
     // every link written before REQ-079 keeps meaning what it meant).
-    if (config.paired && pairedSwapped) params.order = 'swap';
+    if (config.paired && orderSwapped) params.order = 'swap';
     // Alternative-hypothesis direction (randomization pages).
     if (altDirectionBtn) {
       const dirMap = { right: 'greater', left: 'less', both: 'two-sided' };
@@ -944,11 +944,95 @@ export function initSimPage(config) {
    * along with it. (REQ-079; the standardisation this stops short of is
    * `docs/BETWEEN_SEMESTERS.md` item 1.)
    */
-  let pairedSwapped = config.paired === true && urlParams.order === 'swap';
+  let orderSwapped = urlParams.order === 'swap';
+
+  /**
+   * `?order=swap` on a TWO-GROUP page, waiting for data to arrive.
+   *
+   * Paired keeps a flag because its differences are computed in one place.
+   * Two-group reverses by exchanging the arrays, which can only happen once
+   * there are arrays — so this is a one-shot applied at the first load, and
+   * cleared so a later manual Reverse is not undone by it.
+   */
+  let pendingOrderSwap = config.twoGroup === true && urlParams.order === 'swap';
+
+  /**
+   * The two groups in CANONICAL order — the order they loaded in, whatever
+   * the reader has since chosen to read the difference as.
+   *
+   * **The generator must see this and only this.** `shuffleLabels` concatenates
+   * the two groups before permuting positions, so handing it the DISPLAY order
+   * made one seed produce a different partition: reversing the reading
+   * re-randomized the null distribution and moved the p-value (4/1000 → 9/1000
+   * on `opportunity_cost`, with balanced groups — so not a sample-size
+   * artefact). A student could read that wobble as "reversing changed the
+   * evidence", which is the opposite of what the control is for.
+   *
+   * Reading order is a display choice and must not reach the draws. The paired
+   * pages never had this problem: `resampleOne` and `signFlip` consume the PRNG
+   * by position, never by value, so their draws were already order-independent.
+   * (Jeff's design, 2026-10-18.)
+   */
+  function canonPair() {
+    return orderSwapped ? { a: data2, b: data1 } : { a: data1, b: data2 };
+  }
+
+  /**
+   * Reverse the reading of everything already simulated, instead of throwing
+   * it away.
+   *
+   * Reversing used to reset. That was defensible when the draws depended on the
+   * order — the old distribution really had been generated for a different
+   * question — but it also meant a reader lost 10,000 shuffles to a relabelling,
+   * and watched the p-value land somewhere slightly different. Now that the
+   * draws are canonical, every statistic for the reversed reading is EXACTLY the
+   * negation of the one this shuffle already produced, so the mirrored
+   * distribution is the same evidence seen from the other side. Flipping the
+   * tail with it leaves the count identical.
+   */
+  function mirrorSimulation() {
+    for (let i = 0; i < allStats.length; i++) allStats[i] = -allStats[i];
+    if (lastObserved != null) lastObserved = -lastObserved;
+    if (lastCI) lastCI = [-lastCI[1], -lastCI[0]];
+    if (preSimDomain) {
+      preSimDomain = [-preSimDomain[1], -preSimDomain[0]];
+      // Bin WIDTH is invariant under a mirror; only where the grid starts moves.
+      if (lockedDotGrid) lockedDotGrid = { ...lockedDotGrid, binOrigin: preSimDomain[0] };
+    }
+  }
+
+  /** Redraw chart, results and the source panel for the reversed reading. */
+  function rerenderAfterOrderChange() {
+    // The source panel shows the two groups side by side under their names, so
+    // it has to follow the reading too. `showDataLoaded` does not rebuild it.
+    if (config.twoGroup && !config.paired && data2.length > 0) renderTwoGroupOriginal();
+    if (allStats.length === 0) { renderEmptyChart(); return; }
+    const direction = getDirection();
+    if (config.mode === 'randomization' && lastObserved != null) {
+      renderChart(allStats, lastCI, lastObserved, direction);
+      const { pValue, extremeCount } = permutationPValue(allStats, lastObserved, direction);
+      displayRandomizationResults(allStats, lastObserved, pValue, extremeCount, direction);
+      return;
+    }
+    // Bootstrap: `showDataLoaded` has just put the "click a generate button"
+    // placeholder back over a perfectly good interval, so recompute it from the
+    // mirrored statistics rather than leaving the reader to re-run.
+    if (allStats.length >= 10) {
+      const ciLevel = getCiLevel();
+      const result = bootstrapCI([...allStats], ciLevel);
+      displayBootstrapResults(allStats, result.ci, result.se, ciLevel);
+      renderChart(allStats, allStats.length >= 20 ? result.ci : null, computeObservedStat());
+    } else {
+      renderChart(allStats, lastCI, lastObserved, direction);
+    }
+  }
+
+  /** Canonical statistic → the one being displayed. */
+  function orderSign() { return orderSwapped ? -1 : 1; }
 
   /** The paired differences, in the order the page is currently reading them. */
   function pairedDiffs() {
-    return pairedSwapped
+    return orderSwapped
       ? data1.map((v, i) => v - data2[i])
       : data2.map((v, i) => v - data1[i]);
   }
@@ -973,24 +1057,11 @@ export function initSimPage(config) {
 
   /** "after − before", with the real column names, in the current order. */
   function pairedOrderLabel() {
-    return pairedSwapped
+    return orderSwapped
       ? `${group1Name} − ${group2Name}`
       : `${group2Name} − ${group1Name}`;
   }
 
-  /**
-   * The ⇄ that reverses the reading, riding the "Mean diff (…)" readout.
-   *
-   * It is emitted as part of `#data-summary`, which is rebuilt with innerHTML
-   * on every load, so the click is taken by delegation on the container — a
-   * listener bound to the button would be thrown away with it. (Same reason as
-   * the simulation-error "?" in page-utils.)
-   */
-  function pairedSwapHTML() {
-    return ` <button type="button" class="paired-swap" data-paired-swap ` +
-      `title="Read the difference the other way round" ` +
-      `aria-label="Reverse the difference order — currently ${pairedOrderLabel()}">\u21C4</button>`;
-  }
 
   // Raw categorical data for proportion tests (needed for re-encoding on success change)
   /** @type {string[]} */
@@ -1247,6 +1318,13 @@ export function initSimPage(config) {
       dataPrecision = Math.min(2, detectPrecision(data1));
     }
 
+    if (pendingOrderSwap && data2.length > 0) {
+      pendingOrderSwap = false;
+      [data1, data2] = [data2, data1];
+      [group1Name, group2Name] = [group2Name, group1Name];
+      [rawOutcomes1, rawOutcomes2] = [rawOutcomes2, rawOutcomes1];
+    }
+
     if (dataPreview) dataPreview.hidden = false;
     if (dataSummary) {
       const namePrefix = currentSourceName && currentSourceName !== 'data' ? `${currentSourceName}: ` : '';
@@ -1255,8 +1333,7 @@ export function initSimPage(config) {
         const m = mean(diffs);
         dataSummary.innerHTML =
           `${namePrefix}${data1.length} pairs | ${group1Name}: <span class="x-bar">x</span> = ${formatStat(mean(data1), dataPrecision)} | ` +
-          `${group2Name}: <span class="x-bar">x</span> = ${formatStat(mean(data2), dataPrecision)} | Mean diff (${pairedOrderLabel()}) = ${formatStat(m, dataPrecision)}` +
-          pairedSwapHTML();
+          `${group2Name}: <span class="x-bar">x</span> = ${formatStat(mean(data2), dataPrecision)} | Mean diff (${pairedOrderLabel()}) = ${formatStat(m, dataPrecision)}`;
       } else if (config.proportion && !config.twoGroup) {
         const p1 = mean(data1);
         const s1 = data1.filter(v => v === 1).length;
@@ -1348,12 +1425,23 @@ export function initSimPage(config) {
       hypothesisDisplay.hidden = false;
       if (config.twoGroup) updateHypothesisDisplay();
     }
-    // Show group order (two-sample bootstrap)
+    // Which way round the difference is read — stated on every page that takes
+    // one, in the same place, with the control beside it. It used to appear only
+    // on the two-sample BOOTSTRAP pages; the randomization pages hid the same
+    // button inside the H₀ row and the paired pages put a bare arrow in the data
+    // summary, so one idea had three spellings. (2026-10-18.)
     const groupOrderEl = document.getElementById('group-order');
     const groupOrderLabel = document.getElementById('group-order-label');
-    if (config.mode === 'bootstrap' && config.twoGroup && groupOrderEl && groupOrderLabel) {
+    if (groupOrderEl && groupOrderLabel && (config.paired || (config.twoGroup && data2.length > 0))) {
       groupOrderEl.hidden = false;
-      groupOrderLabel.textContent = `${group1Name} − ${group2Name}`;
+      const order = config.paired ? pairedOrderLabel() : `${group1Name} − ${group2Name}`;
+      groupOrderLabel.textContent = order;
+      // The order goes in the button's name too. The adjacent span is a
+      // separate stop for a screen reader, so a user who lands on the button
+      // alone would otherwise be told what it does but not to what.
+      if (swapGroupsBtn) {
+        swapGroupsBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+      }
     }
     // Update document.title with dataset context
     const totalN = config.twoGroup || config.paired ? data1.length + data2.length : data1.length;
@@ -1400,8 +1488,9 @@ export function initSimPage(config) {
         for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(diffs, preRng).values));
       } else if (config.twoGroup && data2.length > 0) {
         for (let i = 0; i < PRE_SIM_N; i++) {
-          const g = resampleGroups(data1, data2, preRng);
-          preStats.push(statFn(g.first.values) - statFn(g.second.values));
+          const cp = canonPair();
+          const g = resampleGroups(cp.a, cp.b, preRng);
+          preStats.push((statFn(g.first.values) - statFn(g.second.values)) * orderSign());
         }
       } else {
         for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(data1, preRng).values));
@@ -1415,8 +1504,9 @@ export function initSimPage(config) {
       }
     } else if (config.testStat) {
       for (let i = 0; i < PRE_SIM_N; i++) {
-        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, preRng);
-        preStats.push(config.testStat(g1, g2));
+        const cp = canonPair();
+        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(cp.a, cp.b, preRng);
+        preStats.push(config.testStat(g1, g2) * orderSign());
       }
     }
 
@@ -1752,7 +1842,8 @@ export function initSimPage(config) {
         return { g1: signFlip(original, r).values, pairedOriginal: original };
       }
       if (config.twoGroup && data2.length > 0) {
-        const { first, second } = shuffleLabels(data1, data2, r);
+        const cp = canonPair();
+        const { first, second } = shuffleLabels(cp.a, cp.b, r);
         return { g1: first.values, g2: second.values };
       }
       return null;
@@ -1762,7 +1853,8 @@ export function initSimPage(config) {
       return { g1: resampleOne(pairedDiffs(), r).values };
     }
     if (config.twoGroup && data2.length > 0) {
-      const { first, second } = resampleGroups(data1, data2, r);
+      const cpR = canonPair();
+      const { first, second } = resampleGroups(cpR.a, cpR.b, r);
       return { g1: first.values, g2: second.values };
     }
     return { g1: resampleOne(data1, r).values };
@@ -1858,13 +1950,28 @@ export function initSimPage(config) {
     return /** @type {const} */ ('both');
   }
 
-  // Paired difference order (REQ-079). The ⇄ is rebuilt with the summary, so
-  // the container takes the click.
-  if (config.paired && dataSummary) {
-    dataSummary.addEventListener('click', (e) => {
-      const t = /** @type {HTMLElement} */ (e.target);
-      if (t.closest('[data-paired-swap]')) setPairedOrder(!pairedSwapped);
-    });
+  /**
+   * Flip a one-sided alternative, because reversing the difference reversed
+   * what it is a claim about.
+   *
+   * "μ₁ − μ₂ > 0" read the other way round is "μ₂ − μ₁ < 0" — the same claim,
+   * so the p-value must not move. Two-sided needs nothing. This used to live
+   * inside the paired swap only; the two-group swap did NOT do it, so reversing
+   * the groups on a one-sided randomization silently changed the p-value from
+   * p to 1 − p while looking like a relabelling. (2026-10-18.)
+   */
+  function flipAlternative() {
+    if (config.mode !== 'randomization' || !altDirectionBtn) return;
+    const flip = /** @type {Record<string, string>} */ ({ greater: 'less', less: 'greater' });
+    const next = flip[altDirectionBtn.dataset.value || 'greater'];
+    if (!next) return;
+    const vals = (altDirectionBtn.dataset.values || '').split(',');
+    const labels = (altDirectionBtn.dataset.labels || '').split(',');
+    const idx = vals.indexOf(next);
+    if (idx >= 0) {
+      altDirectionBtn.dataset.value = vals[idx];
+      altDirectionBtn.textContent = labels[idx];
+    }
   }
 
   /**
@@ -1880,37 +1987,34 @@ export function initSimPage(config) {
    * @param {boolean} swapped
    */
   function setPairedOrder(swapped) {
-    if (swapped === pairedSwapped) return;
-    pairedSwapped = swapped;
-    if (config.mode === 'randomization' && altDirectionBtn) {
-      const flip = /** @type {Record<string, string>} */ ({ greater: 'less', less: 'greater' });
-      const next = flip[altDirectionBtn.dataset.value || 'greater'];
-      if (next) {
-        const vals = (altDirectionBtn.dataset.values || '').split(',');
-        const labels = (altDirectionBtn.dataset.labels || '').split(',');
-        const idx = vals.indexOf(next);
-        if (idx >= 0) {
-          altDirectionBtn.dataset.value = vals[idx];
-          altDirectionBtn.textContent = labels[idx];
-        }
-      }
-    }
-    // Every difference changed sign, so nothing already simulated describes
-    // this reading — same reason changing a column resets.
-    if (allStats.length > 0) resetSimulation();
+    if (swapped === orderSwapped) return;
+    orderSwapped = swapped;
+    flipAlternative();
+    mirrorSimulation();
     showDataLoaded();
+    rerenderAfterOrderChange();
     announce(`Difference now reads ${pairedOrderLabel()}.`);
   }
 
-  // Swap groups button
+  // ONE order control for both shapes (2026-10-18). It used to be two: a
+  // "⇄ Swap" that exchanged the two groups and a separate "⇄" that reversed
+  // the paired reading — near-identical glyphs, different places, and on the
+  // two-group pages a third double-arrow ("Change data") sat a few hundred
+  // pixels away meaning something else entirely.
   if (swapGroupsBtn) {
     swapGroupsBtn.addEventListener('click', () => {
+      if (config.paired) { setPairedOrder(!orderSwapped); return; }
       [data1, data2] = [data2, data1];
       [group1Name, group2Name] = [group2Name, group1Name];
       [rawOutcomes1, rawOutcomes2] = [rawOutcomes2, rawOutcomes1];
-      if (allStats.length > 0) resetSimulation();
+      // The same correction the paired swap already made: a one-sided
+      // alternative is a claim about a signed difference and has to travel
+      // with it, or reversing the groups moves the p-value to 1 − p.
+      flipAlternative();
+      mirrorSimulation();
       showDataLoaded();
-      announce(`Swapped groups: ${group1Name} − ${group2Name}`);
+      rerenderAfterOrderChange();
+      announce(`Difference now reads ${group1Name} − ${group2Name}.`);
     });
   }
 
@@ -2163,7 +2267,8 @@ export function initSimPage(config) {
         /** @type {number[]} */ let lastRs2 = [];
         for (let i = 0; i < count; i++) {
           const st = rng.getState();
-          const { first, second } = resampleGroups(data1, data2, rng);
+          const cp = canonPair();
+          const { first, second } = resampleGroups(cp.a, cp.b, rng);
           const rs1 = first.values;
           const rs2 = second.values;
           lastRs1 = rs1;
@@ -2174,7 +2279,7 @@ export function initSimPage(config) {
           lastRsIdx1 = first.indices ?? null;
           lastRsIdx2 = second.indices ?? null;
           resamples.rememberState(allStats.length, st);
-          const stat = statFn(rs1) - statFn(rs2);
+          const stat = (statFn(rs1) - statFn(rs2)) * orderSign();
           allStats.push(stat);
         }
         twoGroupMorphMs = showTwoGroupMechanism(lastRs1, lastRs2, false, count === 1);
@@ -2365,7 +2470,8 @@ export function initSimPage(config) {
       /** @type {number[]} */ let lastG2 = [];
       for (let i = 0; i < count; i++) {
         const st = rng.getState();
-        const { first, second } = shuffleLabels(data1, data2, rng);
+        const cp = canonPair();
+        const { first, second } = shuffleLabels(cp.a, cp.b, rng);
         const g1 = first.values, g2 = second.values;
         // Which pooled observation landed in which group — what the deal
         // animation flies, and what says how many crossed over.
@@ -2374,7 +2480,7 @@ export function initSimPage(config) {
         lastG1 = g1;
         lastG2 = g2;
         resamples.rememberState(allStats.length, st);
-        const stat = config.testStat(g1, g2);
+        const stat = config.testStat(g1, g2) * orderSign();
         allStats.push(stat);
       }
 
@@ -3473,6 +3579,10 @@ export function initSimPage(config) {
    * @param {boolean} [highlight] - Highlight diff value (+1 animation, auto-fades via CSS)
    */
   function showTwoGroupMechanism(g1, g2, _flash = false, highlight = false) {
+    // The draw comes back in CANONICAL order; the panels are labelled in the
+    // reader's order. Without this the strip showed group A's values under
+    // group B's name as soon as the reading was reversed.
+    if (orderSwapped) { const t = g1; g1 = g2; g2 = t; }
     if (!mechResampleContent || !mechanismDescEl) return 0;
 
     // Remember the latest grouping so the toggle can re-render it.

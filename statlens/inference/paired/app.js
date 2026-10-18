@@ -41,8 +41,9 @@ const inputConf = /** @type {HTMLInputElement} */ (document.getElementById('inpu
 const varSelectors = /** @type {HTMLElement} */ (document.getElementById('variable-selectors'));
 const var1Select = /** @type {HTMLSelectElement} */ (document.getElementById('var1-select'));
 const var2Select = /** @type {HTMLSelectElement} */ (document.getElementById('var2-select'));
-const diffOrderLabel = document.getElementById('diff-order-label');
-const swapOrderBtn = document.getElementById('swap-order');
+const groupOrderEl = document.getElementById('group-order');
+const groupOrderLabel = document.getElementById('group-order-label');
+const swapOrderBtn = document.getElementById('swap-groups');
 const dataSummary = document.getElementById('data-summary');
 
 // ── State ──────────────────────────────────────────────────────────
@@ -244,7 +245,10 @@ function syncDiffOrder() {
   const order = (var1Select.value && var2Select.value)
     ? `${var1Select.value} − ${var2Select.value}`
     : '';
-  if (diffOrderLabel) diffOrderLabel.textContent = order || '…';
+  if (groupOrderLabel) groupOrderLabel.textContent = order || '…';
+  // The row is the same one the two-group pages use, in the same place
+  // and with the same button — one idea, one control (2026-10-18).
+  if (groupOrderEl) groupOrderEl.hidden = !order;
   // Tabbing to the button out of context, "Reverse the difference order" does
   // not say what it would become — the order it reverses is in the adjacent
   // text, which a screen reader reaches separately. So it goes in the name.

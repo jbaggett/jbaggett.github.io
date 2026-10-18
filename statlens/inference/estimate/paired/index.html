@@ -135,15 +135,6 @@
             <label for="var2-select">Variable 2:
                 <select id="var2-select"></select>
             </label>
-            <!-- REQ-079: the order is already changeable here by picking the two
-                 columns; this says which way round it currently reads and
-                 reverses both slots in one go. -->
-            <p id="diff-order" class="diff-order">
-                difference = <span id="diff-order-label">…</span>
-                <button type="button" class="paired-swap" id="swap-order"
-                        title="Read the difference the other way round"
-                        aria-label="Reverse the difference order">&#x21C4;</button>
-            </p>
         </div>
 
         <!-- Parameters -->
@@ -160,6 +151,12 @@
                     <button type="button" data-level="99">99%</button>
                 </span>
                 <span class="hint">— or drag the critical values on the plot</span>
+            </div>
+            <div id="group-order" class="group-order" hidden>
+                <span id="group-order-label"></span>
+                <button type="button" id="swap-groups" class="btn-secondary btn-sm order-swap"
+                        aria-label="Reverse the difference order"
+                        title="Reverse the difference order">⇅ Reverse</button>
             </div>
         </section>
 

@@ -92,8 +92,6 @@
                         <input type="number" id="null-value" value="0" step="any"
                                class="input-narrow" aria-label="Null hypothesis mean difference">
                     </span>
-                    <button type="button" id="swap-groups" class="btn-secondary btn-sm"
-                            aria-label="Swap group order" title="Swap group order">⇄ Swap</button>
                 </div>
                 <div class="hypothesis-row">
                     <span class="hypothesis-label">Hₐ:</span>
@@ -105,6 +103,12 @@
                             data-value="greater">&gt;</button>
                     <span class="standard-only">0</span>
                     <span id="null-display" class="null-value-mirror expert-only">0</span>
+                </div>
+                <div id="group-order" class="group-order" hidden>
+                    <span id="group-order-label"></span>
+                    <button type="button" id="swap-groups" class="btn-secondary btn-sm order-swap"
+                            aria-label="Reverse the difference order"
+                            title="Reverse the difference order">⇅ Reverse</button>
                 </div>
                 <p id="seed-notice" class="seed-notice" hidden></p>
             </div>
