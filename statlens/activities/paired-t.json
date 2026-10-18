@@ -28,10 +28,10 @@
     {
       "instruction": "Pick a paired-data dataset (each row is a matched pair: same subject before/after, twin pairs, matched cases and controls, etc.). Confirm the data are truly paired before continuing.",
       "observe": "What is the parameter of interest here - a single mean, a difference of two independent means, or the mean of the WITHIN-pair differences?",
-      "reveal": "The parameter is μ<sub>D</sub>, the mean of the within-pair differences (e.g., mean of afterᵢ - beforeᵢ). Analyzing paired data as if it were two independent groups throws away the pairing and inflates the standard error."
+      "reveal": "The parameter is μ<sub>D</sub>, the mean of the within-pair differences (e.g., mean of beforeᵢ − afterᵢ: first column minus second). Analyzing paired data as if it were two independent groups throws away the pairing and inflates the standard error."
     },
     {
-      "instruction": "The tool computes the differences Dᵢ = value2ᵢ - value1ᵢ automatically. Look at the displayed distribution of Dᵢ.",
+      "instruction": "The tool computes the differences Dᵢ automatically and names the order it used just under the two variable pickers — **difference = sixth − thirteenth**, for instance. Read that line before anything else: it tells you which way round a positive Dᵢ points. The ⇄ beside it reverses the order if you would rather read it the other way (it flips a one-sided Hₐ with it, so the p-value does not move — only the sentence does). Look at the displayed distribution of Dᵢ.",
       "observe": "Does the distribution of DIFFERENCES look roughly symmetric? Any outliers? What matters for the paired t is the distribution of D, not the two originals.",
       "reveal": "Only the distribution of the DIFFERENCES needs to look approximately normal (or n large enough for CLT). The two original distributions can be wildly skewed and the paired t still works - as long as the differences are well-behaved."
     },

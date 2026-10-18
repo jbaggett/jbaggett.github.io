@@ -9,7 +9,7 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { createSharedScale } from './mechanisms/entities.js';
-import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
+import { resampleOne, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
 import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animatePoolAndDealMarks, animateCombineStats,
   cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
@@ -425,6 +425,9 @@ export function initSimPage(config) {
     const params = {};
     // Seed — always pin so the link reproduces the same simulation.
     if (seed != null && seed !== '') params.seed = seed;
+    // Which way round a paired difference is being read (omit the default, so
+    // every link written before REQ-079 keeps meaning what it meant).
+    if (config.paired && pairedSwapped) params.order = 'swap';
     // Alternative-hypothesis direction (randomization pages).
     if (altDirectionBtn) {
       const dirMap = { right: 'greater', left: 'less', both: 'two-sided' };
@@ -737,7 +740,7 @@ export function initSimPage(config) {
 
     if (config.paired && data2.length > 0) {
       // Paired: bootstrap the mean difference
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       center = mean(diffs);
       se = sd(diffs) / Math.sqrt(diffs.length);
       label = 'N(d\u0304, SE)';
@@ -911,7 +914,7 @@ export function initSimPage(config) {
       if (allStats.length > 0) {
         const nullDiff = getNullValue();
         const rawObserved = config.paired
-          ? mean(data2.map((v, i) => v - data1[i]))
+          ? mean(pairedDiffs())
           : config.testStat(data1, data2);
         const observedStat = rawObserved - nullDiff;
         const direction = getDirection();
@@ -932,6 +935,48 @@ export function initSimPage(config) {
   let data2 = [];
   let group1Name = 'Group 1';
   let group2Name = 'Group 2';
+
+  /**
+   * Which way round the paired difference reads.
+   *
+   * `false` is `second − first`, which is what both paired pages have always
+   * computed — so it stays the default, because every seeded link, textbook
+   * sentence and MyOpenMath stored answer was recorded against it. The order is
+   * a reading convention rather than a result: swapping negates every
+   * difference and mirrors the distribution, so a two-sided p-value is
+   * unchanged, and a one-sided one is preserved by flipping the alternative
+   * along with it. (REQ-079; the standardisation this stops short of is
+   * `docs/BETWEEN_SEMESTERS.md` item 1.)
+   */
+  let pairedSwapped = config.paired === true && urlParams.order === 'swap';
+
+  /** The paired differences, in the order the page is currently reading them. */
+  function pairedDiffs() {
+    return pairedSwapped
+      ? data1.map((v, i) => v - data2[i])
+      : data2.map((v, i) => v - data1[i]);
+  }
+
+  /** "after − before", with the real column names, in the current order. */
+  function pairedOrderLabel() {
+    return pairedSwapped
+      ? `${group1Name} − ${group2Name}`
+      : `${group2Name} − ${group1Name}`;
+  }
+
+  /**
+   * The ⇄ that reverses the reading, riding the "Mean diff (…)" readout.
+   *
+   * It is emitted as part of `#data-summary`, which is rebuilt with innerHTML
+   * on every load, so the click is taken by delegation on the container — a
+   * listener bound to the button would be thrown away with it. (Same reason as
+   * the simulation-error "?" in page-utils.)
+   */
+  function pairedSwapHTML() {
+    return ` <button type="button" class="paired-swap" data-paired-swap ` +
+      `title="Read the difference the other way round" ` +
+      `aria-label="Reverse the difference order — currently ${pairedOrderLabel()}">\u21C4</button>`;
+  }
 
   // Raw categorical data for proportion tests (needed for re-encoding on success change)
   /** @type {string[]} */
@@ -1192,11 +1237,12 @@ export function initSimPage(config) {
     if (dataSummary) {
       const namePrefix = currentSourceName && currentSourceName !== 'data' ? `${currentSourceName}: ` : '';
       if (config.paired) {
-        const diffs = data2.map((v, i) => v - data1[i]);
+        const diffs = pairedDiffs();
         const m = mean(diffs);
         dataSummary.innerHTML =
           `${namePrefix}${data1.length} pairs | ${group1Name}: <span class="x-bar">x</span> = ${formatStat(mean(data1), dataPrecision)} | ` +
-          `${group2Name}: <span class="x-bar">x</span> = ${formatStat(mean(data2), dataPrecision)} | Mean diff (${group2Name} \u2212 ${group1Name}) = ${formatStat(m, dataPrecision)}`;
+          `${group2Name}: <span class="x-bar">x</span> = ${formatStat(mean(data2), dataPrecision)} | Mean diff (${pairedOrderLabel()}) = ${formatStat(m, dataPrecision)}` +
+          pairedSwapHTML();
       } else if (config.proportion && !config.twoGroup) {
         const p1 = mean(data1);
         const s1 = data1.filter(v => v === 1).length;
@@ -1336,7 +1382,7 @@ export function initSimPage(config) {
     if (config.mode === 'bootstrap') {
       const statFn = getBootstrapStat().fn;
       if (config.paired && data2.length > 0) {
-        const diffs = data2.map((v, i) => v - data1[i]);
+        const diffs = pairedDiffs();
         for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(diffs, preRng).values));
       } else if (config.twoGroup && data2.length > 0) {
         for (let i = 0; i < PRE_SIM_N; i++) {
@@ -1348,7 +1394,7 @@ export function initSimPage(config) {
       }
     } else if (config.paired && data2.length > 0) {
       // Paired randomization: sign-flip pre-sim
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       for (let i = 0; i < PRE_SIM_N; i++) {
         const flipped = signFlip(diffs, preRng).values;
         preStats.push(mean(flipped));
@@ -1624,7 +1670,7 @@ export function initSimPage(config) {
    */
   /** The centred differences a paired randomization shuffles the signs of. */
   function centredPairedDiffs() {
-    const diffs = data2.map((v, i) => v - data1[i]);
+    const diffs = pairedDiffs();
     const nullDiff = getNullValue();
     return nullDiff === 0 ? diffs : diffs.map((d) => d - nullDiff);
   }
@@ -1662,7 +1708,8 @@ export function initSimPage(config) {
       return null;
     }
     if (config.paired && data2.length > 0) {
-      return { g1: resamplePairedDiffs(data1, data2, r).values };
+      // Same ordering rule as the draw loop — see the note there.
+      return { g1: resampleOne(pairedDiffs(), r).values };
     }
     if (config.twoGroup && data2.length > 0) {
       const { first, second } = resampleGroups(data1, data2, r);
@@ -1761,6 +1808,50 @@ export function initSimPage(config) {
     return /** @type {const} */ ('both');
   }
 
+  // Paired difference order (REQ-079). The ⇄ is rebuilt with the summary, so
+  // the container takes the click.
+  if (config.paired && dataSummary) {
+    dataSummary.addEventListener('click', (e) => {
+      const t = /** @type {HTMLElement} */ (e.target);
+      if (t.closest('[data-paired-swap]')) setPairedOrder(!pairedSwapped);
+    });
+  }
+
+  /**
+   * Reverse which way round the differences are read.
+   *
+   * A one-sided alternative is a claim about a *signed* difference, so the
+   * reading has to carry it: "μᵈ > 0" on `after − before` is "μᵈ < 0" on
+   * `before − after`. Flipping both together leaves the evidence — the
+   * p-value — untouched and reverses only the sentence, which is the whole
+   * point of offering the swap rather than a second page. `?direction=` is
+   * NOT flipped at load: an author who writes both params means both.
+   *
+   * @param {boolean} swapped
+   */
+  function setPairedOrder(swapped) {
+    if (swapped === pairedSwapped) return;
+    pairedSwapped = swapped;
+    if (config.mode === 'randomization' && altDirectionBtn) {
+      const flip = /** @type {Record<string, string>} */ ({ greater: 'less', less: 'greater' });
+      const next = flip[altDirectionBtn.dataset.value || 'greater'];
+      if (next) {
+        const vals = (altDirectionBtn.dataset.values || '').split(',');
+        const labels = (altDirectionBtn.dataset.labels || '').split(',');
+        const idx = vals.indexOf(next);
+        if (idx >= 0) {
+          altDirectionBtn.dataset.value = vals[idx];
+          altDirectionBtn.textContent = labels[idx];
+        }
+      }
+    }
+    // Every difference changed sign, so nothing already simulated describes
+    // this reading — same reason changing a column resets.
+    if (allStats.length > 0) resetSimulation();
+    showDataLoaded();
+    announce(`Difference now reads ${pairedOrderLabel()}.`);
+  }
+
   // Swap groups button
   if (swapGroupsBtn) {
     swapGroupsBtn.addEventListener('click', () => {
@@ -1785,7 +1876,7 @@ export function initSimPage(config) {
       if (allStats.length > 0) {
         const nullDiff = getNullValue();
         const rawObserved = config.paired
-          ? mean(data2.map((v, i) => v - data1[i]))
+          ? mean(pairedDiffs())
           : config.testStat(data1, data2);
         const observedStat = rawObserved - nullDiff;
         const direction = getDirection();
@@ -2004,10 +2095,17 @@ export function initSimPage(config) {
         // Drawn by INDEX so the mechanism panel can say which observations were
         // taken. Identical PRNG consumption to resample(), so seeded links are
         // unaffected — see sampleIndicesWithReplacement.
-        const diffs = data2.map((v, i) => v - data1[i]);
+        // Through `pairedDiffs()`, NOT `resamplePairedDiffs(data1, data2, …)`:
+        // that helper subtracts in its own fixed order, so calling it here
+        // bypassed the reading the page is showing and left the label saying
+        // `ucla − amazon` over `amazon − ucla` numbers. `resampleOne` on the
+        // ordered differences is what it does anyway, with identical PRNG
+        // consumption — seeded links and the golden master are unaffected.
+        // (REQ-079.)
+        const diffs = pairedDiffs();
         for (let i = 0; i < count; i++) {
           const st = rng.getState();
-          const { values: rs, indices: idx } = resamplePairedDiffs(data1, data2, rng);
+          const { values: rs, indices: idx } = resampleOne(diffs, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
           resamples.rememberState(allStats.length, st);
@@ -2141,7 +2239,7 @@ export function initSimPage(config) {
       markGenerated();
     } else if (config.paired) {
       // ─── Paired randomization: sign-flip test ───
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       const nullDiff = getNullValue();
       // Center diffs around 0 under H₀: μ_d = δ₀
       const centeredDiffs = nullDiff === 0 ? diffs : diffs.map(d => d - nullDiff);
@@ -2339,7 +2437,7 @@ export function initSimPage(config) {
       // one-sample bootstrap, so they go through the mean mechanism below
       // whenever it applies, and these tiles are the Tiles rendering and the
       // large-n fallback rather than the only thing paired can show.
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       const sortedDiffs = [...diffs].sort((a, b) => a - b);
       const container = document.createElement('div');
       container.className = 'sample-dots';
@@ -3666,7 +3764,7 @@ export function initSimPage(config) {
    */
   function resampleSourceValues() {
     return (config.paired && data2.length > 0)
-      ? data2.map((v, i) => v - data1[i])
+      ? pairedDiffs()
       : data1;
   }
 
@@ -5172,8 +5270,8 @@ export function initSimPage(config) {
     let statLabel, paramLabel, paramName;
     if (config.paired) {
       statLabel = 'Mean Difference';
-      paramLabel = `Mean Difference (${group2Name} − ${group1Name})`;
-      paramName = `true mean difference (${group2Name} − ${group1Name})`;
+      paramLabel = `Mean Difference (${pairedOrderLabel()})`;
+      paramName = `true mean difference (${pairedOrderLabel()})`;
     } else if (config.proportion) {
       statLabel = 'Sample Proportion';
       paramLabel = config.twoGroup

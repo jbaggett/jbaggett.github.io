@@ -40,6 +40,8 @@ const confPills = /** @type {HTMLElement} */ (document.querySelector('.conf-pill
 const varSelectors = /** @type {HTMLElement} */ (document.getElementById('variable-selectors'));
 const var1Select = /** @type {HTMLSelectElement} */ (document.getElementById('var1-select'));
 const var2Select = /** @type {HTMLSelectElement} */ (document.getElementById('var2-select'));
+const diffOrderLabel = document.getElementById('diff-order-label');
+const swapOrderBtn = document.getElementById('swap-order');
 const dataSummary = document.getElementById('data-summary');
 
 // ── State ──────────────────────────────────────────────────────────
@@ -93,6 +95,14 @@ function populateVarSelectors(cols) {
   }
   var1Select.value = cols[0];
   var2Select.value = cols[1];
+  // `?order=swap` starts the page reading the difference the other way round.
+  // Absent, the order is this page's long-standing `var1 − var2` on the first
+  // two numeric columns — unchanged, so old links are untouched.
+  if (new URLSearchParams(window.location.search).get('order') === 'swap'
+      && cols.length > 1) {
+    [var1Select.value, var2Select.value] = [var2Select.value, var1Select.value];
+  }
+  syncDiffOrder();
 }
 
 /**
@@ -198,8 +208,63 @@ const dataPanel = initDataPanel({
   },
 });
 
-var1Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
-var2Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
+/**
+ * Two slots, two different columns: the OTHER slot moves aside rather than the
+ * change being refused. Matches `inference/paired` and `js/variable-picker.js`
+ * — the refusal only reached the live region, so a sighted student saw the
+ * page keep the previous answer under a changed pair. (REQ-079 sweep.)
+ * @param {HTMLSelectElement} changed @param {HTMLSelectElement} other
+ */
+function resolveCollision(changed, other) {
+  if (changed.value !== other.value) return;
+  const alt = numericCols.find(c => c !== changed.value);
+  if (alt) other.value = alt;
+}
+
+var1Select.addEventListener('change', () => {
+  resolveCollision(var1Select, var2Select);
+  if (currentRows) loadFromSelections();
+  syncDiffOrder();
+});
+var2Select.addEventListener('change', () => {
+  resolveCollision(var2Select, var1Select);
+  if (currentRows) loadFromSelections();
+  syncDiffOrder();
+});
+
+// ── Difference order (REQ-079) ───────────────────────────────────
+// This page has always computed `var1 − var2`, and keeps doing so: the order
+// is reversed by exchanging the two columns, not by changing the formula. So
+// every link and stored answer written before this control existed still means
+// what it meant.
+
+/** Keep the readout saying which way round the difference is being taken. */
+function syncDiffOrder() {
+  const order = (var1Select.value && var2Select.value)
+    ? `${var1Select.value} − ${var2Select.value}`
+    : '';
+  if (diffOrderLabel) diffOrderLabel.textContent = order || '…';
+  // Tabbing to the button out of context, "Reverse the difference order" does
+  // not say what it would become — the order it reverses is in the adjacent
+  // text, which a screen reader reaches separately. So it goes in the name.
+  if (swapOrderBtn && order) {
+    swapOrderBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+  }
+}
+
+if (swapOrderBtn) {
+  swapOrderBtn.addEventListener('click', () => {
+    if (numericCols.length < 2) return;
+    const a = var1Select.value, b = var2Select.value;
+    if (!a || !b || a === b) return;
+    var1Select.value = b;
+    var2Select.value = a;
+    if (currentRows) loadFromSelections();
+    syncDiffOrder();
+    announce(`Difference now reads ${var1Select.value} − ${var2Select.value}.`);
+  });
+}
+
 
 // ── Summary input ──────────────────────────────────────────────────
 function summaryActive() {

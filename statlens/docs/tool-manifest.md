@@ -447,6 +447,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a categorical dataset | `dataset=medical_consultant` |
 | `seed` | string | Deterministic seed | `seed=exam2q3` |
 | `ci` | integer | Confidence level | `ci=95` |
+| `order` | string | `swap` reads the difference the other way round (default: `second − first`). A ⇄ beside the "Mean diff (…)" readout does the same live, and flips a one-sided alternative with the sign so the p-value is unchanged. | `order=swap` |
 | `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Datasets with `type === 'bootstrap_prop'`. Includes: `medical_consultant`, `transplant_survival`, `stent30`
@@ -459,7 +460,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 
 **Path:** `simulate/bootstrap-paired/`
 **Category:** Simulate
-**Description:** Bootstrap confidence interval for paired mean differences. Computes differences (var1 - var2) for each pair, then bootstraps the differences. Shows mechanism strip with paired data and the resampled differences.
+**Description:** Bootstrap confidence interval for paired mean differences. Computes differences (`second − first`, i.e. the second selected column minus the first) for each pair, then bootstraps the differences. The page names the order it is using and offers a ⇄ to reverse it. (This line read `var1 - var2` until 2026-10-17 and was wrong; the behaviour is unchanged.) Shows mechanism strip with paired data and the resampled differences.
 **Concepts:** Paired data, mean difference, bootstrap CI for paired differences, dependent samples
 
 **URL Parameters:**
@@ -660,6 +661,7 @@ button changes that). A colour key under the strip names both outcomes.
 | `dataset` | string | Pre-load a paired dataset | `dataset=textbooks` |
 | `seed` | string | Deterministic seed for reproducibility | `seed=exam2q1` |
 | `direction` | string | Alternative: `less`, `greater`, or `two-sided` | `direction=less` |
+| `order` | string | `swap` reads the difference the other way round (default: `second − first`). A ⇄ beside the "Mean diff (…)" readout does the same live, and flips a one-sided alternative with the sign so the p-value is unchanged. | `order=swap` |
 
 **Compatible Datasets:** Datasets with `type === 'paired'`. Includes: `textbooks`, `hsb2_read_write`, `friday_traffic`, `helium`, `twins`, `prison`
 
@@ -957,10 +959,11 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a paired dataset | `dataset=textbooks` |
+| `order` | string | `swap` reads the difference the other way round (default: `var1 − var2` on the first two numeric columns). A ⇄ beside the "difference = …" readout does the same live. | `order=swap` |
 
 **Compatible Datasets:** Datasets with `type === 'paired'`. Same as Bootstrap: Paired Differences.
 
-**Textbook Integration Notes:** Use for Ch. 21 (paired data). The variable selectors let students choose which variable is "before" and which is "after," reinforcing the direction of the difference.
+**Textbook Integration Notes:** Use for Ch. 21 (paired data). The variable selectors let students choose which variable is "before" and which is "after," reinforcing the direction of the difference; a `difference = …` readout names the current order and a ⇄ reverses both slots at once (flipping a one-sided alternative with it, so the p-value does not move).
 
 ---
 
@@ -1111,7 +1114,7 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 
 Estimation-only companions to the hypothesis-test pages above, under `inference/estimate/`. They mirror how the simulation side splits bootstrap (CI) from randomization (test): **no hypotheses and no p-value** — the student sets a confidence level (number box, 90/95/99 preset pills, or by **dragging the critical values** on a standardized t- or z-curve) and reads the interval, worked out. The curve reuses the distribution-calculator marker layer (editable probability pills, editable ±critical-value axis boxes, snap points at common levels) via the shared `js/critical-value-figure.js`. Each page cross-links to its bootstrap CI counterpart and a conditions check. The combined test-and-CI pages above stay live in parallel.
 
-Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel inputs (paste, file, summary) as the matching test page. Confidence level is a UI control, not a URL parameter.
+Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel inputs (paste, file, summary) as the matching test page. Confidence level is a UI control, not a URL parameter. The paired page also takes **`order=swap`** to read the difference the other way round than its `var1 − var2` default, and shows a `difference = …` readout with a ⇄ that reverses it.
 
 | Page | Path | Parameter (population) | Distribution / df |
 |------|------|------------------------|-------------------|
