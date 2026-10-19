@@ -138,13 +138,23 @@ export function initWorking(opts) {
     // A withheld line has to LOOK withheld, or "what comes next?" is a question
     // about a blank space. The question goes in the note column, where its
     // answer will appear — which is also what teaches that column's job.
-    if (shown < steps.length) {
+    //
+    // The row is also the CONTROL. The button bar sits below the list, so it
+    // moved down a line with every press and on a phone it began off the
+    // bottom of the screen entirely: you could type an expression and find
+    // nothing to press. The affordance belongs where the question is, which is
+    // the one place that is adjacent to the working at any screen size.
+    if (shown < steps.length && !suppressed) {
       const li = el('li', 'll-wstep ll-wstep-ghost', '');
+      const tap = el('button', 'll-wstep-tap', '');
+      tap.type = 'button';
+      tap.setAttribute('aria-label', `${L.next.replace(/[^\w\s]/g, '').trim()} — ${ghost}`);
       const eq = el('div', 'll-wstep-eq', '');
       eq.setAttribute('aria-hidden', 'true');
       eq.innerHTML = tex(chain ? '{}={}\\;\\cdots' : '\\cdots', { displayStyle: true });
-      li.append(eq);
-      li.append(el('div', 'll-wstep-notes', ghost));
+      tap.append(eq, el('div', 'll-wstep-notes', ghost));
+      tap.addEventListener('click', () => advance(shown + 1));
+      li.append(tap);
       list.append(li);
     }
 

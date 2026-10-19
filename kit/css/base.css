@@ -67,6 +67,20 @@ a { color: var(--accent); }
 }
 
 .ll-controls { display: flex; flex-wrap: wrap; gap: 0.8rem 1.2rem; align-items: flex-end; }
+
+/* A phone has about 780px and the setup panel was spending 433 of them — 144
+   on its own padding and gaps alone — which is why the tool began below the
+   fold. Tightened only where it is whitespace, never by shrinking text: the
+   type stays at full size, every control keeps its 44px target, and nothing is
+   hidden. */
+@media (max-width: 759px) {
+  .ll-lede { margin-bottom: 0.7rem; }
+  .ll-panel { padding: 0.6rem 0.75rem; margin: 0.7rem 0; }
+  .ll-controls { gap: 0.5rem 1rem; }
+  .ll-palette { margin-top: 0.25rem; }
+  .ll-panel > .ll-hint { margin: 0.35rem 0 0; }
+  #work h2, #work > h2 { margin-bottom: 0.4rem; }
+}
 .ll-controls label { display: inline-flex; flex-direction: column; gap: 0.2rem; font-size: 0.9rem; }
 /* Flex at the top level, not only inside .ll-controls — a plain button row
    needs it too, and without it the mobile wrap rule below has nothing to act on. */
@@ -98,6 +112,24 @@ button.ll-primary:hover { background: #2F6A8F; }
 
 .ll-segmented { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
 .ll-segmented button { border-radius: 5px; padding: 0.35rem 0.7rem; font-size: 0.9rem; }
+
+/* On a phone a wrapped row of examples cost 142px of the first screen — three
+   stacked rows — and pushed the tool itself below the fold. One row that
+   scrolls sideways costs 48px and hides nothing: every example is still there,
+   a swipe away, and the faded right edge says so. */
+@media (max-width: 759px) {
+  .ll-segmented {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    /* Room for the focus ring, which a clipped overflow would otherwise cut. */
+    padding: 3px 0;
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.5rem), transparent);
+  }
+  .ll-segmented button { flex: 0 0 auto; scroll-snap-align: start; }
+}
 
 /* ── Charts ──────────────────────────────────────────────────────────────── */
 
@@ -287,7 +319,7 @@ button.ll-primary:hover { background: #2F6A8F; }
 /* Desktop: the notes move into a margin of their own, level with the line they
    describe, so the equalities stack in one unbroken column. */
 @media (min-width: 760px) {
-  .ll-wstep { grid-template-columns: minmax(0, 1fr) 12.5rem; }
+  .ll-wstep, .ll-wstep-tap { grid-template-columns: minmax(0, 1fr) 12.5rem; }
   .ll-wstep-notes {
     grid-column: 2; grid-row: 1;
     margin-top: 0;
@@ -299,8 +331,37 @@ button.ll-primary:hover { background: #2F6A8F; }
   .ll-note + .ll-note::before { content: none; }
 }
 
-.ll-wstep-ghost { color: var(--ims-gray-text); }
+.ll-wstep-ghost { color: var(--ims-gray-text); padding: 0; }
 .ll-wstep-ghost .ll-wstep-notes { font-style: italic; }
+
+/* The withheld row IS the control — see `working.js`. It has to keep looking
+   like a row of working rather than becoming a button, so it borrows the row's
+   own grid and none of a button's chrome, and earns its affordance from the
+   hover and focus states instead. */
+.ll-wstep-tap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0 0.4rem;
+  align-items: start;
+  width: 100%;
+  padding: 0.55rem 0.2rem;
+  /* A button resets none of this for itself. */
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  /* 44px even when the row's own content is shorter. */
+  min-height: 44px;
+}
+.ll-wstep-tap:hover { background: #EAF3F8; }
+.ll-wstep-tap:hover .ll-wstep-notes { color: var(--ims-blue-text); }
+.ll-wstep-tap:focus-visible {
+  outline: 2px solid var(--ims-blue-text);
+  outline-offset: -2px;
+}
 
 .ll-wstep-final { background: #F7FBF8; }
 .ll-wstep-final .ll-wstep-eq .katex { font-size: 1.36em; }
@@ -309,6 +370,13 @@ button.ll-primary:hover { background: #2F6A8F; }
   display: flex; flex-wrap: wrap; gap: 0.5rem;
   align-items: center; margin-top: 0.9rem;
 }
+
+/* Pinning this bar to the bottom of a phone screen was the first fix tried for
+   "there is no button to push", and it was wrong twice over: it covered the
+   withheld row — the question the button answers — and once that row became
+   the control itself (see `working.js`) there was nothing left for it to fix.
+   The bar stays in the flow; what made it reachable was giving the first
+   screen back to the tool. */
 
 
 /* ── Dialog ──────────────────────────────────────────────────────────────── */
