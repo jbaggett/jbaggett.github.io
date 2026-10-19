@@ -42,6 +42,31 @@ export function parseEquation(/** @type {string} */ src) {
 }
 
 /**
+ * Guess which letter depends on which, from the equation itself.
+ *
+ * Nobody should have to tell the page that V = (4/3)πr³ is about dV/dr. Three
+ * readings, in order: x and y together mean dy/dx; a side that is a lone
+ * variable names itself the dependent one; otherwise a conventional independent
+ * letter is preferred. Falls back to y and x when it cannot tell.
+ *
+ * @returns {{dep:string, v:string}}
+ */
+export function pickLetters(lhs, rhs) {
+  const free = [...new Set([...freeVariables(lhs), ...freeVariables(rhs)])];
+  if (free.includes('x') && free.includes('y')) return { dep: 'y', v: 'x' };
+  if (free.length < 2) return { dep: free[0] || 'y', v: 'x' };
+
+  const lone = (/** @type {any} */ n) => (n.type === 'var' ? n.name : null);
+  const named = lone(lhs) || lone(rhs);
+
+  // The letters a course reaches for when it means "the thing varying".
+  const prefer = ['x', 't', 'u', 'r'].find(c => free.includes(c) && c !== named);
+  const v = prefer || free.find(c => c !== named) || free[0];
+  const dep = (named && named !== v) ? named : (free.find(c => c !== v) || 'y');
+  return { dep, v };
+}
+
+/**
  * @typedef {{text:string, kind:'transition'|'diagnosis'}} Note
  * @typedef {{tex:string, notes:Note[]}} WorkStep
  *

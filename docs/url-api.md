@@ -380,13 +380,18 @@ way a hand sketch goes astray.
 | Parameter | Type | Default | Meaning |
 |---|---|---|---|
 | `eq` | equation | `x^2 + y^2 = 25` | Both sides, with one `=` between them. |
+| `dep`, `var` | letter | guessed | Which derivative to find, as d`dep`/d`var`. Omit both and the page reads them off the equation: `x` and `y` together give d*y*/d*x*; a side that is a lone variable names itself the dependent one, so `V = (4/3)pi r^3` opens as d*V*/d*r*. |
 | `steps` | `all` | first line only | Reveal the whole derivation at load. |
 | `controls` | list | all | `f`, `steps`, `point`. |
 | `preset` | key | — | `circle`, `folium`, `ellipse`, `hyper`. |
 
-*x* is the variable and *y* the dependent one. Anything unreadable is reported
-on the page; an equation with no *y* in it is declined rather than answered,
-since there is nothing implicit about it.
+Any two letters work, not just *x* and *y*. An equation the chosen letters do
+not both appear in is declined rather than answered — and so is the related-rates
+shape, where several quantities each depend on a *t* that is not in the equation,
+which needs more than one dependent variable and is not what this page does.
+
+An explicit function works too: the working stops as soon as the derivative
+stands alone, with no gather, factor or divide steps.
 
 ## CalcLens — Tilt and Bend
 

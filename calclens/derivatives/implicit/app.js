@@ -20,7 +20,8 @@ import { fmt } from 'kit/format.js';
 import { initShare } from 'kit/share.js';
 import { MARK } from '../../js/mark.js';
 import { toLatex } from '../../js/expr.js';
-import { parseEquation, implicitSteps, slopeAt } from '../../js/implicit.js';
+import { parseEquation, implicitSteps, slopeAt, pickLetters } from '../../js/implicit.js';
+import { freeVariables } from '../../js/expr.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
 
@@ -33,6 +34,7 @@ const PRESETS = {
 
 let work = null;
 let current = null;   // { lhs, rhs, answer } once a derivation succeeds
+let touched = false;  // has the reader chosen the letters themselves?
 
 function wantsAll() {
   const v = getParams().raw.get('steps');
@@ -58,17 +60,53 @@ function rebuild() {
   $('#eq-error').hidden = true;
   $('#eq-input').setAttribute('aria-invalid', 'false');
   $('#eq-preview').innerHTML = tex(`${toLatex(parsed.lhs)} = ${toLatex(parsed.rhs)}`);
-  updateUrl({ eq: src });
 
-  const r = implicitSteps(parsed.lhs, parsed.rhs);
+  // Fill the d_/d_ boxes from the equation, unless the reader has set them.
+  // Re-guessing after they have chosen would silently overrule them.
+  const free = new Set([...freeVariables(parsed.lhs), ...freeVariables(parsed.rhs)]);
+  if (!touched || !free.has($('#wrt-dep').value.trim())) {
+    const g = pickLetters(parsed.lhs, parsed.rhs);
+    $('#wrt-dep').value = g.dep;
+    $('#wrt-var').value = g.v;
+  }
+  const dep = $('#wrt-dep').value.trim();
+  const v = $('#wrt-var').value.trim();
+  $('#lbl-x').textContent = v;
+  $('#lbl-y').textContent = dep;
+  updateUrl({ eq: src, dep, var: v });
+
+  const bad = letterProblem(dep, v, free);
+  $('#wrt-error').hidden = !bad;
+  if (bad) {
+    $('#wrt-error').textContent = bad;
+    current = null; work.set([]); $('#blocked').hidden = true; $('#point').hidden = true;
+    return;
+  }
+
+  const r = implicitSteps(parsed.lhs, parsed.rhs, { v, dep });
   work.set(r.steps.map(s => ({ tex: s.tex, notes: s.notes })), { openAll: wantsAll() });
 
   $('#blocked').hidden = !r.blocked;
   if (r.blocked) $('#blocked').innerHTML = `<p><b>Not an implicit problem.</b> ${r.blocked}</p>`;
 
-  current = r.answer ? { ...parsed, answer: r.answer } : null;
+  current = r.answer ? { ...parsed, answer: r.answer, v, dep } : null;
   $('#point').hidden = !current;
   $('#slope-out').textContent = '';
+}
+
+/** Why the chosen pair will not work, or '' if it will. */
+function letterProblem(dep, v, free) {
+  if (!/^[A-Za-z]$/.test(dep) || !/^[A-Za-z]$/.test(v)) {
+    return 'Each box takes a single letter.';
+  }
+  if (dep === v) return 'The two letters have to be different.';
+  if (!free.has(v)) {
+    return `There is no ${v} in this equation, so nothing in it varies with ${v}. `
+      + `(Several quantities each depending on ${v} is a related-rates problem, `
+      + `which this page does not do.)`;
+  }
+  if (!free.has(dep)) return `There is no ${dep} in this equation.`;
+  return '';
 }
 
 function showSlope() {
@@ -80,7 +118,7 @@ function showSlope() {
     out.textContent = 'Give a number for each of x and y.';
     return;
   }
-  const r = slopeAt(current.lhs, current.rhs, current.answer, x, y);
+  const r = slopeAt(current.lhs, current.rhs, current.answer, x, y, { v: current.v, dep: current.dep });
   if (!r) {
     out.className = 'im-off';
     out.textContent = `The equation is not defined at (${fmt(x, 3)}, ${fmt(y, 3)}).`;
@@ -97,8 +135,9 @@ function showSlope() {
   }
   out.className = '';
   out.innerHTML = `At (${fmt(x, 3)}, ${fmt(y, 3)}): `
-    + tex(`\\frac{dy}{dx} = ${fmt(r.slope, 4)}`)
-    + ` — from ${tex(`\\frac{dy}{dx} = ${toLatex(current.answer)}`)} with both numbers put in.`;
+    + tex(`\\frac{d${current.dep}}{d${current.v}} = ${fmt(r.slope, 4)}`)
+    + ` — from ${tex(`\\frac{d${current.dep}}{d${current.v}} = ${toLatex(current.answer)}`)} `
+    + 'with both numbers put in.';
   announce(`Slope ${fmt(r.slope, 4)}.`);
 }
 
@@ -107,10 +146,16 @@ initPage({
     initShare({ mark: MARK });
     const params = getParams(PRESETS);
     if (params.raw.get('eq')) $('#eq-input').value = params.raw.get('eq');
+    if (params.raw.get('dep') && params.raw.get('var')) {
+      $('#wrt-dep').value = params.raw.get('dep');
+      $('#wrt-var').value = params.raw.get('var');
+      touched = true;
+    }
 
     setTex($('#help-tex1'), 'x^2 + y^2 = 25');
     setTex($('#help-tex2'), "\\frac{d}{dx}\\left[y^2\\right] = 2y\\cdot y'", { display: true });
     setTex($('#help-tex3'), "\\frac{d}{dx}\\left[y^2\\right] = 2y");
+    setTex($('#help-tex4'), '\\frac{d\\square}{d\\square}');
 
     work = initWorking({
       mount: $('#work-mount'),
@@ -139,6 +184,9 @@ initPage({
 
     for (const b of document.querySelectorAll('.preset')) {
       b.addEventListener('click', () => { $('#eq-input').value = b.dataset.eq; rebuild(); });
+    }
+    for (const id of ['#wrt-dep', '#wrt-var']) {
+      $(id).addEventListener('input', () => { touched = true; rebuild(); });
     }
     $('#slope-btn').addEventListener('click', showSlope);
     for (const id of ['#px', '#py']) {

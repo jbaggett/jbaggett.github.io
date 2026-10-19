@@ -30,6 +30,15 @@
 </script>
 
 <style>
+  /* A fraction, not two labelled boxes: it shows what you are computing rather
+     than describing it. */
+  #wrt { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 1.05rem; }
+  #wrt .wrt-frac { display: inline-flex; flex-direction: column; align-items: stretch; }
+  #wrt .wrt-frac > span { display: flex; align-items: baseline; gap: 0.1rem; padding: 0.1rem 0.2rem; }
+  #wrt .wrt-frac > span:first-child { border-bottom: 1.5px solid var(--fg); }
+  #wrt input { width: 2.4rem; min-width: 2.4rem; text-align: center; padding: 0.1rem 0.2rem;
+               font: inherit; font-style: italic; }
+  #wrt-error { margin: 0.35rem 0 0; }
   #point-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; margin-top: 0.8rem; }
   #point-row label { display: flex; flex-direction: column; gap: 0.2rem; }
   #point-row input { width: 5.5rem; }
@@ -76,6 +85,18 @@
                autocapitalize="off" spellcheck="false" aria-describedby="eq-error eq-syntax">
       </label>
     </div>
+    <div class="ll-controls" data-control="wrt" style="margin-top:0.6rem; align-items:flex-end;">
+      <div id="wrt">
+        <span>Find</span>
+        <span class="wrt-frac" role="group" aria-label="Which derivative to find">
+          <span>d<input type="text" id="wrt-dep" maxlength="2" value="y" autocomplete="off"
+                        spellcheck="false" aria-label="The variable being differentiated"></span>
+          <span>d<input type="text" id="wrt-var" maxlength="2" value="x" autocomplete="off"
+                        spellcheck="false" aria-label="The variable to differentiate with respect to"></span>
+        </span>
+      </div>
+    </div>
+    <p class="ll-error" id="wrt-error" role="alert" hidden></p>
     <p class="ll-error" id="eq-error" role="alert" hidden></p>
     <div class="ll-preview" id="eq-preview"></div>
     <div class="ll-palette" id="eq-palette"></div>
@@ -107,8 +128,8 @@
       number until you say <em>where</em> on the curve you are.
     </p>
     <div id="point-row">
-      <label for="px"><span><i>x</i> =</span><input type="number" id="px" value="3" step="any"></label>
-      <label for="py"><span><i>y</i> =</span><input type="number" id="py" value="4" step="any"></label>
+      <label for="px"><span><i id="lbl-x">x</i> =</span><input type="number" id="px" value="3" step="any"></label>
+      <label for="py"><span><i id="lbl-y">y</i> =</span><input type="number" id="py" value="4" step="any"></label>
       <button type="button" id="slope-btn" class="ll-primary">Slope here</button>
     </div>
     <p id="slope-out"></p>
@@ -132,6 +153,15 @@
      most common error on this topic, and it is the only thing that makes
      implicit differentiation different from the differentiation you already
      know. Everything after it is algebra.</p>
+
+  <h3>Any two letters</h3>
+  <p>The <span class="ll-math" id="help-tex4"></span> box says which derivative
+     to find, and it is filled in from the equation: <i>V</i> = (4/3)π<i>r</i>³
+     opens as d<i>V</i>/d<i>r</i>, <i>s</i>² + <i>t</i>² = 9 as d<i>s</i>/d<i>t</i>.
+     Change either letter to ask a different question of the same equation.</p>
+  <p>What this cannot do is <b>related rates</b>, where several letters all
+     depend on <i>t</i> at once — d<i>V</i>/d<i>t</i> = 4π<i>r</i>²·d<i>r</i>/d<i>t</i>
+     has two dependent quantities, and this page handles one.</p>
 
   <h3>It handles an ordinary function too</h3>
   <p>Put in <i>y</i> = 3<i>x</i>³ + sin <i>x</i> and the working stops the moment
