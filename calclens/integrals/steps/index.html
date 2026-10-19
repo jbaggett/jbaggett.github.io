@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Worked Integral | CalcLens</title>
+<meta name="description" content="Work an indefinite integral one rule at a time, with the substitution written out and the rule named beside the line that used it.">
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  .wi-rules { margin-top: 1.2rem; }
+  .wi-rule-list { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
+  .wi-rule-list li { display: flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; align-items: baseline; }
+  .wi-rule-list b { font-weight: 600; min-width: 13rem; }
+  @media (max-width: 480px) { .wi-rule-list b { min-width: 0; width: 100%; } }
+
+  /* The answer, when the working is out of reach. Not styled as an error: the
+     student's setup was probably fine and the technique is the obstacle. */
+  .wi-outside { border-left: 4px solid var(--ll-accent, #569BBD); padding: 0.5rem 0 0.5rem 0.9rem; }
+  .wi-outside .wi-answer { margin: 0.5rem 0 0; }
+  .wi-sub { color: var(--ll-muted, #5a6672); }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the integrand</a>
+  <a href="#work">Skip to the working</a>
+</nav>
+
+<main>
+  <h1>Worked Integral
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Type an integrand and antidifferentiate it <b>one rule at a time</b>. When a
+    substitution is needed, the page writes out which <i>u</i> it chose and why
+    — that choice is the whole of the technique.
+    <span class="ll-hint">Try to name <i>u</i> before you press the button.
+    Carrying out the substitution is the easy half.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The integrand">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 300px;">
+        <span class="ll-math" id="int-label"></span>
+        <input type="text" id="fn-input" value="2x cos(x^2)" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error fn-syntax">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+    <p class="ll-hint" id="fn-syntax" data-control="f">
+      Write it as you would say it: <code>2x cos(x^2)</code>, <code>x^5</code>,
+      <code>1/x</code>, <code>sin(x)^3 cos(x)</code>, <code>x/(x^2+1)</code>,
+      <code>1/(x^2+4)</code>, <code>x sqrt(2x+1)</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example integrands" data-control="f">
+      <button type="button" class="preset" data-f="x^5">power</button>
+      <button type="button" class="preset" data-f="3x^2 + sin(x)">sum</button>
+      <button type="button" class="preset" data-f="2x cos(x^2)">substitution</button>
+      <button type="button" class="preset" data-f="sin(x)^3 cos(x)">inside a power</button>
+      <button type="button" class="preset" data-f="x/(x^2+1)">on the bottom</button>
+      <button type="button" class="preset" data-f="1/(x^2+4)">arctan</button>
+      <button type="button" class="preset" data-f="x sqrt(2x+1)">backwards</button>
+    </div>
+  </section>
+
+  <section id="work" aria-label="The working">
+    <h2>The working</h2>
+    <div id="work-mount"></div>
+    <div class="wi-outside" id="outside" hidden>
+      <p id="outside-why"></p>
+      <p class="ll-math wi-answer" id="outside-answer" hidden></p>
+    </div>
+  </section>
+
+  <section class="wi-rules" id="rules-used" aria-label="Rules used" hidden>
+    <h2>Rules used</h2>
+    <ul class="wi-rule-list" id="rule-list"></ul>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Worked Integral</h2>
+  <p>Type any integrand of one variable. The page antidifferentiates it the way
+     you would on paper: one rule per line, with the rule named beside the line
+     that used it.</p>
+
+  <h3>Where the constant comes from</h3>
+  <p>An integral is not equal to an antiderivative. It is equal to an
+     antiderivative <b>plus a constant</b>, so <span class="ll-math" id="help-tex1"></span>
+     and the <i>+ C</i> appears on the exact line where the last integral sign
+     disappears — not at the end as an afterthought. Lines that still carry an
+     integral sign never show it, because the constant has not been earned yet.</p>
+
+  <h3>Substitution is a choice, so it is written down</h3>
+  <p>The page could integrate <span class="ll-math" id="help-tex2"></span> by
+     looking up cosine and dividing by 3. That is the move students learn as a
+     reflex and then misapply to
+     <span class="ll-math" id="help-tex3"></span>, where dividing by 2<i>x</i>
+     is not allowed. So nothing composite is looked up: the substitution is
+     named, <i>du</i> is worked out, and the integral is rewritten in <i>u</i>
+     before anything is integrated.</p>
+  <p>Each substitution line says what <i>u</i> is and what made it the one to
+     try — the rest of the integrand being exactly <i>du</i>. The <i>x</i> goes
+     back in as its own labelled line at the end, because forgetting that step
+     is how a correct substitution still earns no marks.</p>
+
+  <h3>How far it goes</h3>
+  <p>Up to and including substitution: the table, sums, constant multiples,
+     multiplying out, and a change of variable. That is the Calculus 1 toolkit.</p>
+  <p>Beyond it, the page says which technique the integral needs —
+     <b>integration by parts</b>, <b>partial fractions</b>,
+     <b>trigonometric substitution</b> — and stops. Those are Calculus 2. If you
+     get one of those messages your setup was most likely fine; the obstacle is
+     a method you have not met yet.</p>
+  <p>Some integrands, <span class="ll-math" id="help-tex4"></span> among them,
+     have no antiderivative in elementary terms at all. No technique will find
+     one, and the page says so rather than guessing.</p>
+
+  <h3>If your answer looks different</h3>
+  <p>Two antiderivatives of the same function can differ by a constant and by a
+     great deal of algebra, so a correct answer need not match the last line
+     here. <a href="../../tools/check-answer/">Check My Answer</a> compares two
+     answers numerically and will settle it.</p>
+
+  <h3>Putting this in a slide or a page</h3>
+  <pre class="ll-code">?f=2x cos(x^2)&amp;embed=true&amp;steps=all&amp;controls=none</pre>
+  <p>gives the finished working with no input box. Leave <code>steps</code> off
+     and the class advances it a line at a time. See
+     <code>docs/url-api.md</code> for every parameter.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>N</kbd></dt><dd>Next step</dd>
+    <dt><kbd>A</kbd></dt><dd>Show all the working</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

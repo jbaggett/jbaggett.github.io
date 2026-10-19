@@ -57,14 +57,22 @@
         The height of <i>f</i> is the slope of <i>A</i> — the Fundamental Theorem,
         on screen.</span>
     </a>
+    <a class="ll-card" href="integrals/steps/">
+      <strong>Worked Integral</strong>
+      <span>An antiderivative one rule at a time, with the substitution written
+        out — which <i>u</i>, what <i>du</i> is, and what made it the one to
+        try. The choice of <i>u</i> is the whole technique, so it is never
+        skipped over.</span>
+    </a>
     <div class="ll-card ll-soon">
       <strong>Riemann Sums</strong>
       <span>Left, right, midpoint and trapezoid rectangles with an <i>n</i> slider
         and a live error table.</span>
     </div>
     <div class="ll-card ll-soon">
-      <strong>u-Substitution</strong>
-      <span>Watch the region transform when the variable changes — and see why
+      <strong>u-Substitution, geometrically</strong>
+      <span>The <em>picture</em> behind the algebra Worked Integral writes out:
+        watch the region itself transform when the variable changes, and see why
         <i>du</i> is not decoration.</span>
     </div>
   </div>
@@ -185,17 +193,34 @@
 
   <h2 id="about">About this prototype</h2>
   <p>
-    CalcLens has its own small computer algebra system — about 950 lines in
-    <code>js/expr.js</code> — rather than a general library. Calculus 1 needs a
-    narrow catalogue of functions, but it needs the answers printed the way the
-    course prints them: <i>ln x</i> rather than <i>log(x)</i>,
-    <i>x</i>³⁄3 rather than <i>0.3333x</i>³. Owning the printer is the point.
+    CalcLens has its own small computer algebra system — about 1,700 lines in
+    <code>js/expr.js</code>, with the step-by-step working in four modules
+    beside it — rather than a general library. Calculus 1 needs a narrow
+    catalogue of functions, but it needs the answers printed the way the course
+    prints them: <i>ln x</i> rather than <i>log(x)</i>, <i>x</i>³⁄3 rather than
+    <i>0.3333x</i>³. Owning the printer is the point, and it is also what lets a
+    tool show the <em>working</em> rather than only the answer.
   </p>
   <p>
     Student answers are checked by evaluating both sides at a spread of points,
     not by symbolic comparison. That never rejects a correct answer for being
     written in an unexpected form, and it hands back a specific counterexample
     when the answer is genuinely wrong.
+  </p>
+  <p>
+    The pages that show working — the derivative, the integral, the difference
+    quotient, implicit differentiation — all obey one rule: <b>only genuine
+    equalities go after an <i>=</i></b>. Writing <i>lim</i> … = 0/0 is false,
+    and it is the exact error students reproduce on exams, so an observation
+    like &ldquo;substituting gives 0/0&rdquo; goes in the margin instead. The
+    same reasoning puts <i>+ C</i> on the line where the last integral sign
+    disappears rather than at the end as an afterthought.
+  </p>
+  <p>
+    Where a technique is out of reach, the page <em>names</em> it — integration
+    by parts, partial fractions, trigonometric substitution — and says it is not
+    a mistake on the student's part. A tool honest about its edge is worth more
+    than one that is vague about it.
   </p>
   <p class="ll-hint">
     Notes on the architecture, the supported syntax and what is still missing

@@ -24,6 +24,10 @@ import { tex } from './tex.js';
 import { announce } from './page.js';
 
 /**
+ * A note's text may carry inline maths between `\(` and `\)`, which is how a
+ * note says "du = 2x dx" without spelling it in Unicode. Everything outside
+ * those delimiters is set as plain text and never as markup.
+ *
  * @typedef {{text:string, kind?:'transition'|'diagnosis'}} Note
  * @typedef {{tex:string, notes?:Note[]}} WorkStep
  */
@@ -33,6 +37,31 @@ function el(/** @type {string} */ tag, /** @type {string} */ cls, /** @type {str
   if (cls) n.className = cls;
   if (text) n.textContent = text;
   return n;
+}
+
+/**
+ * One note, with its `\(…\)` spans set as maths.
+ *
+ * Notes legitimately need symbols: a substitution step whose whole content is
+ * du = 2x dx cannot say so in prose, and spelling it with Unicode primes and
+ * combining marks is what makes a phone render it as floating accents. Only the
+ * delimited parts are handed to the maths renderer; the prose between them goes
+ * in as text, so a note can never introduce markup.
+ *
+ * @param {Note} note
+ * @returns {HTMLElement}
+ */
+function noteSpan(note) {
+  const span = el('span', `ll-note ll-note-${note.kind || 'transition'}`, '');
+  // split() on a capturing group alternates: even parts are prose, odd are maths.
+  String(note.text).split(/\\\((.+?)\\\)/s).forEach((part, i) => {
+    if (!part) return;
+    if (i % 2 === 0) { span.append(document.createTextNode(part)); return; }
+    const m = el('span', 'll-note-math', '');
+    m.innerHTML = tex(part);
+    span.append(m);
+  });
+  return span;
 }
 
 /**
@@ -100,9 +129,7 @@ export function initWorking(opts) {
 
       if (s.notes && s.notes.length) {
         const box = el('div', 'll-wstep-notes', '');
-        for (const n of s.notes) {
-          box.append(el('span', `ll-note ll-note-${n.kind || 'transition'}`, n.text));
-        }
+        for (const n of s.notes) box.append(noteSpan(n));
         li.append(box);
       }
       list.append(li);

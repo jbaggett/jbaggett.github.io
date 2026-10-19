@@ -499,6 +499,28 @@ apply here — `steps=all` is the spelling for "show me the answer".
 calclens/derivatives/steps/?f=sin(3x^2)&embed=true&steps=all&controls=none
 ```
 
+## CalcLens — Worked Integral
+
+`calclens/integrals/steps/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `2x cos(x^2)` | The **integrand** — what sits between the ∫ and the `dx`, not the whole integral. Write it in whatever letter the problem uses; `3t^2` works and the page then writes `dt`. |
+| `var` | letter | inferred | Only used when the expression has more than one letter, or none to infer from. The expression always wins. |
+| `steps` | `all` | first line only | Reveal the whole derivation at load. For a worked example on a slide; leave it off and the class advances a line at a time. |
+| `controls` | list | all | Which control groups to show: `f`, `steps`. Taking `steps` away also opens the working, since there would otherwise be no way to advance it. |
+| `preset` | key | — | `power`, `sum`, `usub`, `inner`, `bottom`, `arctan`, `backwards`. |
+
+Scope is the Calculus 1 toolkit: the table, sums, constant multiples, multiplying
+out, and substitution. An integral needing **integration by parts**, **partial
+fractions** or **trigonometric substitution** is declined by name, and the
+answer is still shown when there is one. Linking to an integral outside the
+scope therefore produces a page that says so rather than one that breaks.
+
+```
+calclens/integrals/steps/?f=2x cos(x^2)&embed=true&steps=all&controls=none
+```
+
 ## CalcLens — Check My Answer
 
 `calclens/tools/check-answer/`

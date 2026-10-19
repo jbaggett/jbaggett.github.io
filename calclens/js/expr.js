@@ -47,12 +47,39 @@
 /** A NOT-YET-TAKEN derivative. Only `steps.js` builds these: they let a line of
  *  working be printed while some derivatives are still pending, which is how a
  *  person writes the product rule out before evaluating either half.
- *  @typedef {{type:'deriv',arg:Node,v:string}} DerivNode */
+ *  @typedef {{type:'deriv',arg:Node,v:string}} DerivNode
+ *  @typedef {{type:'integ',arg:Node,v:string}} IntegNode */
 /** @typedef {NumNode|VarNode|ConstNode|AddNode|MulNode|PowNode|FnNode|DerivNode} Node */
 
 export const num = (/** @type {number} */ value) => ({ type: 'num', value });
 export const vr = (/** @type {string} */ name) => ({ type: 'var', name });
 export const cst = (/** @type {string} */ name) => ({ type: 'const', name });
+
+/**
+ * Rate notation: a dependent letter's derivative written dV/dt, not V′.
+ *
+ * Related rates is the one place where prime notation actively obstructs. V′
+ * and r′ hide WHAT each rate is a rate of, and keeping track of which quantity
+ * is changing is the entire skill being taught; Stewart writes dV/dt
+ * throughout. So the symbol is still just a variable name — nothing downstream
+ * has to know — and the printer renders the names shaped like a rate as a
+ * fraction.
+ */
+export const rateSymbol = (/** @type {string} */ name, /** @type {string} */ v) => `d${name}/d${v}`;
+/** Does this variable name mean "the rate of A with respect to B"? */
+export const RATE_RE = /^d([A-Za-z]\w*)\/d([A-Za-z]\w*)$/;
+
+/**
+ * Every symbol ever handed out as "the derivative of a dependent letter".
+ *
+ * A derivative symbol sorts after the letter it came from — 2y·ẏ, not 2ẏ·y —
+ * and a name is all the sort has to go on. `y'` and `dy/dt` are recognisable by
+ * their spelling, but a caller may ask for `\dot{y}` or anything else, so the
+ * ones issued are remembered. It only ever grows, which is bounded in practice
+ * by the handful of symbols a page asks for.
+ * @type {Set<string>}
+ */
+const PRIME_SYMBOLS = new Set();
 export const add = (/** @type {Node[]} */ ...args) => ({ type: 'add', args });
 export const mul = (/** @type {Node[]} */ ...args) => ({ type: 'mul', args });
 export const pow = (/** @type {Node} */ base, /** @type {Node} */ exp) => ({ type: 'pow', base, exp });
@@ -394,7 +421,13 @@ const incRank = (/** @type {Node} */ n) => {
   const base = n.type === 'pow' ? n.base : n;
   if (base.type !== 'var') return 0;
   // A prime sorts last too: implicit differentiation writes 3y²y′, not 3y′y².
-  return (INCREMENT_LETTERS.has(base.name) || base.name.endsWith("'")) ? 1 : 0;
+  // A rate sorts after even those — 2πrh·dr/dt, not 2πr·dr/dt·h — and it needs
+  // its OWN tier rather than sharing the increment's, because h is in
+  // INCREMENT_LETTERS and in a cone problem h is the height, an ordinary
+  // factor that belongs in front of the rate.
+  if (RATE_RE.test(base.name)) return 2;
+  return (INCREMENT_LETTERS.has(base.name) || base.name.endsWith("'")
+    || PRIME_SYMBOLS.has(base.name)) ? 1 : 0;
 };
 
 /** Print order within a product: 2x cos(x²) reads better than 2 cos(x²) x. */
@@ -403,7 +436,7 @@ function factorRank(/** @type {Node} */ n) {
   if (n.type === 'const') return 1;
   if (n.type === 'var') return 2;
   if (n.type === 'pow') return n.base.type === 'var' ? 3 : 5;
-  if (n.type === 'deriv') return 6;
+  if (n.type === 'deriv' || n.type === 'integ') return 6;
   if (n.type === 'fn') return 4;
   return 6;
 }
@@ -599,36 +632,72 @@ function simplifyFn(/** @type {string} */ name, /** @type {Node} */ arg) {
 /* ────────────────────────────── derivative ─────────────────────────────── */
 
 /**
- * A variable that is secretly a function of the one we differentiate by.
+ * The variables that are secretly functions of the one we differentiate by.
  *
  * Implicit differentiation is exactly this: in x² + y² = 25, y is not a free
  * letter, it is whatever function of x the equation forces. So d/dx[y] is not 0
- * — it is y′, and that is the single step students miss. Set while a derivative
- * is being taken; null the rest of the time.
- * @type {{name:string, prime:string}|null}
+ * — it is y′, and that is the single step students miss.
+ *
+ * Related rates needs SEVERAL at once. In V = ⁴⁄₃πr³ differentiated by t,
+ * neither V nor r is t and both depend on it, so one dependent letter cannot
+ * express the problem at all: the answer dV/dt = 4πr²·dr/dt mentions two rates.
+ * Hence a map from each dependent name to the symbol its derivative prints as.
+ * Set while a derivative is being taken; null the rest of the time.
+ * @type {Map<string,string>|null}
  */
 let DEP = null;
 
-/** Is this subtree fixed — mentioning neither the variable nor the dependent one? */
+/**
+ * Dependent variables, however the caller chose to name them.
+ *
+ * One letter for implicit differentiation (`'y'`), several for related rates
+ * (`['V','r']`), or an explicit map when the caller wants to pick the symbols
+ * itself. `opts.prime` overrides the symbol for the single-letter form, which
+ * is how the implicit tool asks for ẏ or anything else.
+ *
+ * @param {string|string[]|Record<string,string>|Map<string,string>|null} [dep]
+ * @param {string} [v]
+ * @param {{prime?:string, notation?:'prime'|'rate'}} [opts]
+ * @returns {Map<string,string>|null}
+ */
+export function normalizeDeps(dep, v = 'x', opts = {}) {
+  if (!dep) return null;
+  const sym = (/** @type {string} */ name) =>
+    (opts.notation === 'rate' ? rateSymbol(name, v) : `${name}'`);
+  /** @type {Map<string,string>} */ const m = new Map();
+  if (typeof dep === 'string') m.set(dep, opts.prime || sym(dep));
+  else if (Array.isArray(dep)) for (const name of dep) m.set(name, sym(name));
+  else for (const [name, s] of (dep instanceof Map ? dep : new Map(Object.entries(dep)))) m.set(name, s);
+  // A letter cannot depend on itself, and x′ in the middle of a d/dx would be
+  // nonsense rather than a hard error, so it is dropped here once.
+  m.delete(v);
+  for (const sym of m.values()) PRIME_SYMBOLS.add(sym);
+  return m.size ? m : null;
+}
+
+/** Is this subtree fixed — mentioning neither the variable nor any dependent one? */
 function isFixed(/** @type {Node} */ n, /** @type {string} */ v) {
   if (!isConstant(n, v)) return false;
-  return !DEP || isConstant(n, DEP.name);
+  if (!DEP) return true;
+  for (const name of DEP.keys()) if (!isConstant(n, name)) return false;
+  return true;
 }
 
 /**
  * Symbolic derivative, simplified.
  *
- * `opts.dep` names a variable that depends on `v`, so d/dx[y] comes back as the
- * symbol y′ rather than 0. Everything downstream — the product rule, the chain
- * rule, the printer — then carries it without knowing anything special.
+ * `opts.dep` names the variable — or variables — that depend on `v`, so d/dx[y]
+ * comes back as the symbol y′ rather than 0. Everything downstream — the
+ * product rule, the chain rule, the printer — then carries it without knowing
+ * anything special. `opts.notation: 'rate'` writes those symbols as dy/dx.
  *
  * @param {Node} node
  * @param {string} [v]
- * @param {{dep?:string, prime?:string}} [opts]
+ * @param {{dep?:string|string[]|Record<string,string>|Map<string,string>, prime?:string, notation?:'prime'|'rate'}} [opts]
  * @returns {Node}
  */
 export function derivative(node, v = 'x', opts = {}) {
-  DEP = opts.dep ? { name: opts.dep, prime: opts.prime || `${opts.dep}'` } : null;
+  DEP = normalizeDeps(opts.dep, v, opts);
   try { return simplify(d(node, v)); } finally { DEP = null; }
 }
 
@@ -640,11 +709,16 @@ export function derivative(node, v = 'x', opts = {}) {
  * exponent is a NEGATIVE number and which actually involve the variable count
  * as the denominator; a numeric factor like ½ is a coefficient, not a divisor.
  *
+ * @param {Node} n
+ * @param {string} v
+ * @param {string|string[]|Map<string,string>|null} [dep]
  * @returns {{num:Node, den:Node}|null}
  */
 export function asQuotient(n, v, dep) {
+  const deps = !dep ? [] : typeof dep === 'string' ? [dep]
+    : dep instanceof Map ? [...dep.keys()] : dep;
   const moves = (/** @type {Node} */ b) =>
-    !isConstant(b, v) || (dep && !isConstant(b, dep)) || !isFixed(b, v);
+    !isConstant(b, v) || deps.some(dp => !isConstant(b, dp)) || !isFixed(b, v);
   const bottom = [], top = [];
   for (const a of n.args) {
     if (a.type === 'pow' && isNum(a.exp) && numV(a.exp) < 0 && moves(a.base)) {
@@ -753,7 +827,7 @@ function d(/** @type {Node} */ n, /** @type {string} */ v) {
     case 'num': case 'const': return ZERO;
     case 'var':
       if (n.name === v) return ONE;
-      if (DEP && n.name === DEP.name) return vr(DEP.prime);
+      if (DEP && DEP.has(n.name)) return vr(/** @type {string} */ (DEP.get(n.name)));
       return ZERO;
     case 'add': return add(...n.args.map(a => d(a, v)));
     case 'mul': {
@@ -904,7 +978,7 @@ export function linearCoeffs(n, v = 'x') {
  * elementary form inside Calc 1's reach".
  * @type {Record<string, (u:Node)=>Node>}
  */
-const ANTI = {
+export const ANTI = {
   sin: u => neg(fn('cos', u)),
   cos: u => fn('sin', u),
   tan: u => neg(ln(fn('abs', fn('cos', u)))),
@@ -933,8 +1007,14 @@ const ANTI = {
  * @returns {Node|null}
  */
 export function antiderivative(node, v = 'x') {
-  const r = anti(simplify(node), v);
-  return r ? simplify(r) : null;
+  const simp = simplify(node);
+  const r = anti(simp, v);
+  if (r) return simplify(r);
+  // General u-substitution is the last resort: it is the most expensive route
+  // and the one most likely to find a FORM a student would not recognise, so
+  // the table and the linear case get first refusal.
+  const sub = findUSub(simp, v);
+  return sub ? sub.result : null;
 }
 
 function anti(/** @type {Node} */ n, /** @type {string} */ v) {
@@ -992,6 +1072,22 @@ function anti(/** @type {Node} */ n, /** @type {string} */ v) {
         return fn('atan', vr(v));
       if (Math.abs(e + 0.5) < 1e-12 && key === toText(simplify(sub(ONE, pow(vr(v), num(2))))))
         return fn('asin', vr(v));
+
+      // A numeric factor inside the base, taken outside. The rescaling
+      // substitution u = x/2 turns 1/(x² + 4) into 1/(4u² + 4), and the arctan
+      // entry only matches 1 + u² — so the 4 has to come out, exactly as it
+      // would by hand: 1/(4(u² + 1)) = ¼ · 1/(u² + 1).
+      if (base.type === 'add') {
+        const g = integerContent(base);
+        // The factor has to be worked out, not just written down: simplify
+        // leaves 9^(-1/2) standing as a power, and a 3 that never meets its
+        // own reciprocal printed the answer as 3·arcsin(x/3)/3.
+        const scale = g > 1 ? evaluate(pow(num(g), exp), {}) : NaN;
+        if (Number.isFinite(scale)) {
+          const outside = anti(simplify(mul(num(scale), pow(divideContent(base, g), exp))), v);
+          if (outside) return outside;
+        }
+      }
       return null;
     }
 
@@ -1019,6 +1115,223 @@ function uSub(/** @type {Node} */ F, /** @type {Node} */ innerArg, /** @type {st
   const lin = linearCoeffs(innerArg, v);
   if (!lin || lin.a === 0) return null;
   return lin.a === 1 ? F : div(F, num(lin.a));
+}
+
+/* ───────────────────────── general u-substitution ──────────────────────── */
+
+/**
+ * The placeholder u is substituted FOR. A name no student would type, so it can
+ * never collide with a letter already in the integrand.
+ */
+const U = '_u';
+
+/**
+ * Replace every occurrence of one subtree with another, matched canonically.
+ *
+ * `substitute` only replaces a VARIABLE, and u-substitution needs to replace an
+ * expression: every x² inside cos(x²) becomes u. Matching on `toText` is what
+ * makes that safe — it is the same canonical key simplification already uses to
+ * decide two subtrees are the same thing.
+ *
+ * @param {Node} n @param {string} key the target's `toText`
+ * @param {Node} rep
+ * @returns {Node}
+ */
+export function replaceSubtree(n, key, rep) {
+  if (toText(n) === key) return rep;
+  switch (n.type) {
+    case 'add': return add(...n.args.map(a => replaceSubtree(a, key, rep)));
+    case 'mul': return mul(...n.args.map(a => replaceSubtree(a, key, rep)));
+    case 'pow': return pow(replaceSubtree(n.base, key, rep), replaceSubtree(n.exp, key, rep));
+    case 'fn': return fn(n.name, replaceSubtree(n.arg, key, rep));
+    default: return n;
+  }
+}
+
+/**
+ * The expressions worth trying as u, best first.
+ *
+ * Order is PEDAGOGY, not search efficiency. A textbook picks the inside of a
+ * composition — the argument of a function, the base under a power — because
+ * that is the shape a student can learn to look for, so those come first and
+ * the deepest one comes first among them. Trying every subtree in arbitrary
+ * order would find *an* answer while teaching a choice nobody could repeat.
+ *
+ * @param {Node} n @param {string} v
+ * @returns {Node[]}
+ */
+export function uSubCandidates(n, v) {
+  /** @type {{node:Node, score:number}[]} */ const found = [];
+  const seen = new Set();
+  const add_ = (/** @type {Node} */ u, /** @type {number} */ score) => {
+    // u must involve x and must not BE x: ∫f(x)dx with u = x is not a
+    // substitution, it is the same integral with a new name on it.
+    if (isConstant(u, v)) return;
+    if (u.type === 'var') return;
+    const key = toText(u);
+    if (seen.has(key)) return;
+    seen.add(key);
+    found.push({ node: u, score: score + depth(u) });
+  };
+  const walk = (/** @type {Node} */ x) => {
+    switch (x.type) {
+      case 'fn':
+        // Both the inside and the whole of it: ∫2x·cos(x²) wants u = x², but
+        // ∫sin³x·cos x wants u = sin x, whose inside is a bare x and no use.
+        // The inside scores higher, so it is still tried first when it exists.
+        add_(x.arg, 100); add_(x, 90); walk(x.arg); break;
+      case 'pow':
+        // The base under a constant power — (x²+1)⁵ wants u = x²+1 — and an
+        // exponent that is a function of x, which is how e^(x²) is spelt.
+        if (isConstant(x.exp, v)) add_(x.base, 100); else { add_(x.exp, 100); add_(x, 90); }
+        walk(x.base); walk(x.exp); break;
+      case 'add': {
+        x.args.forEach(walk); add_(x, 50);
+        // ∫dx/(x² + 4) is an arctan, and the substitution a textbook teaches
+        // for it is u = x/2 — a RESCALING of the variable, which is nowhere to
+        // be found as a subexpression and so would never be proposed. Only for
+        // a² ± x², where it is the whole technique; the general case of
+        // inventing substitutions is not a road worth starting down.
+        const q = quadScale(x, v);
+        if (q) add_(q, 40);
+        break;
+      }
+      case 'mul': x.args.forEach(walk); break;
+      default: break;
+    }
+  };
+  walk(n);
+  // A linear u is tried LAST: ∫cos(3x+1)dx is already handled by the table with
+  // a division, and "divide by 3" is a smaller thing to learn than a change of
+  // variable. Only reach for the heavier machinery when the light one failed.
+  const rank = (/** @type {{node:Node,score:number}} */ c) =>
+    c.score - (linearCoeffs(c.node, v) ? 1000 : 0);
+  return found.sort((a, b) => rank(b) - rank(a)).map(c => c.node);
+}
+
+/**
+ * Divide, cancelling matching factors first.
+ *
+ * `simplify(div(f, g))` is not enough: it collects like factors by the base's
+ * canonical key, so (e^x)⁻¹·e^x survives intact — pow(pow(e,x),−1) and
+ * pow(e,x) have different keys — and the leftover x then looks to the u-sub
+ * search like a substitution that failed. Striking equal factors off against
+ * each other is exact, needs no new simplifier rule, and is what cancelling by
+ * hand looks like anyway.
+ *
+ * @param {Node} n @param {Node} d
+ * @returns {Node}
+ */
+function divideCancelling(n, d) {
+  const facs = (/** @type {Node} */ x) => (x.type === 'mul' ? [...x.args] : [x]);
+  const top = facs(n), bottom = [];
+  for (const f of facs(d)) {
+    const i = top.findIndex(t => toText(t) === toText(f));
+    if (i >= 0) top.splice(i, 1); else bottom.push(f);
+  }
+  const num_ = top.length === 0 ? ONE : top.length === 1 ? top[0] : mul(...top);
+  if (!bottom.length) return simplify(num_);
+  return simplify(div(num_, bottom.length === 1 ? bottom[0] : mul(...bottom)));
+}
+
+/**
+ * For a² ± x², the rescaling u = x/a. Null for anything else.
+ *
+ * Matched narrowly on purpose: every term must be a constant or a constant
+ * times v², which is the shape of the two inverse-trig table entries and
+ * nothing else.
+ *
+ * @param {Node} n @param {string} v
+ * @returns {Node|null}
+ */
+function quadScale(n, v) {
+  let sq = 0, con = 0;
+  for (const t of n.args) {
+    if (isConstant(t, v)) { const c = evaluate(t, {}); if (!Number.isFinite(c)) return null; con += c; continue; }
+    const factors = t.type === 'mul' ? t.args : [t];
+    let coeff = 1, square = 0;
+    for (const f of factors) {
+      if (isConstant(f, v)) { const c = evaluate(f, {}); if (!Number.isFinite(c)) return null; coeff *= c; continue; }
+      if (f.type === 'pow' && f.base.type === 'var' && f.base.name === v
+        && isNum(f.exp) && numV(f.exp) === 2 && !square) { square = 1; continue; }
+      return null;
+    }
+    if (!square) return null;
+    sq += coeff;
+  }
+  if (!sq || !con) return null;
+  const a = Math.sqrt(Math.abs(con / sq));
+  // u = x already; proposing it would be the same integral under a new name.
+  if (!Number.isFinite(a) || a === 0 || Math.abs(a - 1) < 1e-12) return null;
+  return div(vr(v), num(a));
+}
+
+/** How deep a subtree is — the tie-break that prefers the inner composition. */
+function depth(/** @type {Node} */ n) {
+  switch (n.type) {
+    case 'add': case 'mul': return 1 + Math.max(...n.args.map(depth));
+    case 'pow': return 1 + Math.max(depth(n.base), depth(n.exp));
+    case 'fn': return 1 + depth(n.arg);
+    default: return 0;
+  }
+}
+
+/**
+ * Find a substitution that turns ∫f dx into an integral in u alone.
+ *
+ * The test is the one a student is taught: divide the integrand by u′ and see
+ * whether what is left mentions x anywhere except inside u. If it does not, the
+ * substitution works; if it does, this u was the wrong choice.
+ *
+ * Linear u gets a second chance. ∫x√(2x+1)dx leaves an x behind, but u = 2x + 1
+ * can be read backwards — x = (u − 1)/2 — and that is a step Calc 1 does teach.
+ * It is only available for linear u, because solving for x is only easy there.
+ *
+ * Every result is VERIFIED by differentiating it, so a bad guess is never
+ * returned. The search is a heuristic; the check is not.
+ *
+ * @param {Node} node integrand, already simplified
+ * @param {string} v
+ * @returns {{u:Node, du:Node, inU:Node, antiInU:Node, result:Node, backSub:boolean}|null}
+ */
+export function findUSub(node, v = 'x') {
+  for (const u of uSubCandidates(node, v)) {
+    const du = derivative(u, v);
+    if (isNum(du) && numV(du) === 0) continue;
+    const key = toText(u);
+    const quotient = divideCancelling(node, du);
+    const uv = vr(U);
+
+    let inU = replaceSubtree(quotient, key, uv);
+    let backSub = false;
+    if (!isConstant(inU, v)) {
+      // Read the substitution backwards: x = (u − b)/a.
+      const lin = linearCoeffs(u, v);
+      if (!lin || lin.a === 0) continue;
+      inU = simplify(substitute(inU, v, div(sub(uv, num(lin.b)), num(lin.a))));
+      if (!isConstant(inU, v)) continue;
+      backSub = true;
+    }
+    inU = simplify(inU);
+
+    // Expanding is the second attempt, not the first: reading u = 2x + 1
+    // backwards leaves (u − 1)√u ⁄ 4, a product the table cannot match until it
+    // is multiplied out into u^(3/2) − u^(1/2). But expanding FIRST would turn
+    // tidy integrands into long polynomials for no reason.
+    const antiInU = anti(inU, U) || anti(simplify(expand(inU)), U);
+    if (!antiInU) continue;
+    const result = simplify(replaceSubtree(simplify(antiInU), U, u));
+
+    // The search guessed; this decides. d/dx of the answer must BE the
+    // integrand, checked numerically — cheaper and more robust than trying to
+    // prove it, and it makes a wrong guess impossible to return.
+    const back = derivative(result, v);
+    const same = numericallyEqual(compile(back, v), compile(node, v), { tol: 1e-7 });
+    if (!same.equal || same.checked < 8) continue;
+
+    return { u, du, inU, antiInU, result, backSub };
+  }
+  return null;
 }
 
 /* ──────────────────────── numeric answer checking ──────────────────────── */
@@ -1150,6 +1463,16 @@ export function toLatexRaw(node, opts = {}) {
   return print(node, opts);
 }
 
+/** Is there a pending integral anywhere in this subtree? */
+function hasInteg(/** @type {Node} */ n) {
+  if (!n || typeof n !== 'object') return false;
+  if (n.type === 'integ') return true;
+  if (n.args) return n.args.some(hasInteg);
+  if (n.type === 'pow') return hasInteg(n.base) || hasInteg(n.exp);
+  if (n.type === 'fn') return hasInteg(n.arg);
+  return false;
+}
+
 function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
   const wrap = (/** @type {string} */ s, /** @type {number} */ own) =>
     own < parentPrec ? `\\left(${s}\\right)` : s;
@@ -1160,7 +1483,13 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       return n.value < 0 ? wrap(`-${s}`, 1) : s;
     }
     case 'const': return n.name === 'pi' ? '\\pi' : n.name === 'tau' ? '\\tau' : n.name;
-    case 'var': return n.name;
+    case 'var': {
+      // dV/dt is carried as a variable NAME, so this is the one place that
+      // knows it is really a fraction. Same dwrap as every other fraction, so
+      // it is the same size as the rest of the line.
+      const r = RATE_RE.exec(n.name);
+      return r ? `\\frac{${dwrap(`d${r[1]}`)}}{${dwrap(`d${r[2]}`)}}` : n.name;
+    }
 
     case 'add': {
       let s = '';
@@ -1184,8 +1513,15 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       const factors = absNode.type === 'mul' ? absNode.args : [absNode];
       /** @type {Node[]} */ const top = [];
       /** @type {Node[]} */ const bottom = [];
+      // An integral sign never goes over a fraction bar. ¼∫f du is how it is
+      // written; ∫f du with a 4 underneath it is correct, unreadable and
+      // nobody's handwriting. The reciprocal then prints as a leading ¼ on its
+      // own, which is the same thing said the usual way. The integral can be
+      // nested — ¼(∫f du − ∫g du) is the same case — so the whole subtree is
+      // searched, not just the top row of factors.
+      const working = factors.some(hasInteg);
       for (const f of factors) {
-        if (f.type === 'pow' && isNum(f.exp) && numV(f.exp) < 0) {
+        if (!working && f.type === 'pow' && isNum(f.exp) && numV(f.exp) < 0) {
           bottom.push(simplifyPow(f.base, num(-numV(f.exp))));
         } else top.push(f);
       }
@@ -1193,12 +1529,17 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       // `2 cos(x²) x` — but a line of working containing pending derivatives is
       // AUTHORED order, and sorting it turned the product rule from the
       // recognisable f'g + fg' into g f' + f g'. Leave working alone.
-      if (factors.some(f => f.type === 'deriv')) {
+      if (factors.some(f => f.type === 'deriv' || f.type === 'integ')) {
         // Working: pull numbers to the front but keep everything else in the
         // order it was written, so `3cos(3x²)·d/dx[x²]` reads naturally without
         // the full sort turning f'g + fg' into g f' + f g'.
+        // A reciprocal counts as a number for this purpose: ¼ is a
+        // coefficient, and leaving it where it was written put it AFTER the
+        // integral it multiplies.
+        const coeff = (/** @type {Node} */ f) =>
+          isNum(f) || (f.type === 'pow' && isNum(f.base) && isNum(f.exp));
         const lead = (/** @type {Node[]} */ fs) =>
-          [...fs.filter(isNum), ...fs.filter(f => !isNum(f))];
+          [...fs.filter(coeff), ...fs.filter(f => !coeff(f))];
         top.splice(0, top.length, ...lead(top));
         bottom.splice(0, bottom.length, ...lead(bottom));
       } else {
@@ -1246,6 +1587,17 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       const sup = () => { SCRIPT_DEPTH += 1; const t = texOf(exp, 0); SCRIPT_DEPTH -= 1; return t; };
       if (base.type === 'const' && base.name === 'e') return wrap(`e^{${sup()}}`, 3);
       return wrap(`${texOf(base, 4)}^{${sup()}}`, 3);
+    }
+
+    case 'integ': {
+      // An integral sign reaches rightwards over everything up to its d@, so it
+      // is not itself parenthesised: the thin space before the differential is
+      // what closes it to a reader. But a SUM has to be bracketed, because
+      // ∫ sin x + 3x² dx says the 3x² is outside the integral, which is a
+      // different statement and a false one.
+      const inner = texOf(n.arg, 0);
+      const body = n.arg.type === 'add' ? `\\left[${inner}\\right]` : inner;
+      return `\\int ${body}\\,d${n.v}`;
     }
 
     case 'deriv':
@@ -1308,6 +1660,7 @@ export function toText(n) {
     case 'pow': return '(' + toText(n.base) + '^' + toText(n.exp) + ')';
     case 'fn': return n.name + '(' + toText(n.arg) + ')';
     case 'deriv': return 'D[' + toText(n.arg) + ']';
+    case 'integ': return 'I_' + n.v + '[' + toText(n.arg) + ']';
     default: return '?';
   }
 }

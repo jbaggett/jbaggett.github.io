@@ -21,7 +21,7 @@
  */
 
 import {
-  FUNCTIONS, num, vr, add, mul, pow, fn, neg, sub, div, cst, ZERO, ONE, isNum, numV, isConstant, simplify, toLatexRaw, toLatex, toText, evaluate, derivative, asQuotient,
+  FUNCTIONS, num, vr, add, mul, pow, fn, neg, sub, div, cst, ZERO, ONE, isNum, numV, isConstant, normalizeDeps, simplify, toLatexRaw, toLatex, toText, evaluate, derivative, asQuotient,
 } from './expr.js';
 
 /** Worked lines keep nested fractions full size; see expr.js `dwrap`. */
@@ -29,19 +29,23 @@ const DISPLAY = { displayFractions: true };
 const show = (/** @type {any} */ n) => toLatexRaw(n, DISPLAY);
 
 /**
- * A variable that is secretly a function of the one we differentiate by.
+ * The variables that are secretly functions of the one we differentiate by.
  *
  * Implicit differentiation needs the working, not just the answer, so the same
  * dependence expr.js understands has to reach the rule-by-rule expansion: when
  * `y` turns up, the rule that fires is "y is a function of x" and the result is
- * y′, not 0.
- * @type {{name:string, prime:string}|null}
+ * y′, not 0. Related rates needs several letters at once — see expr.js `DEP`.
+ * @type {Map<string,string>|null}
  */
 let DEP = null;
 
-/** Fixed = mentions neither the variable nor the dependent one. */
-const isFixed = (/** @type {any} */ n, /** @type {string} */ v) =>
-  isConstant(n, v) && (!DEP || isConstant(n, DEP.name));
+/** Fixed = mentions neither the variable nor any dependent one. */
+const isFixed = (/** @type {any} */ n, /** @type {string} */ v) => {
+  if (!isConstant(n, v)) return false;
+  if (!DEP) return true;
+  for (const name of DEP.keys()) if (!isConstant(n, name)) return false;
+  return true;
+};
 
 /** A pending derivative. @param {any} arg @param {string} v */
 const D = (arg, v) => ({ type: 'deriv', arg, v });
@@ -83,11 +87,12 @@ export const hasPending = (/** @type {any} */ n) => hasDeriv(n);
  * implicit differentiation needs: the two sides of an equation have to advance
  * together or the lines stop being equations.
  *
- * @param {any} n @param {string} v @param {{dep?:string, prime?:string}} [opts]
+ * @param {any} n @param {string} v
+ * @param {{dep?:string|string[]|Record<string,string>|Map<string,string>, prime?:string, notation?:'prime'|'rate'}} [opts]
  * @returns {{node:any, rules:string[]}}
  */
 export function stepOnce(n, v = 'x', opts = {}) {
-  DEP = opts.dep ? { name: opts.dep, prime: opts.prime || `${opts.dep}'` } : null;
+  DEP = normalizeDeps(opts.dep, v, opts);
   try {
     /** @type {Set<string>} */ const used = new Set();
     // Marks from the previous line are cleared first: each line is annotated
@@ -107,10 +112,10 @@ export function ruleInfo(/** @type {string} */ id, /** @type {string} */ v = 'x'
   const sub = (/** @type {string} */ t) => t.replace(/@/g, v);
   if (RULES[id]) return { name: sub(RULES[id].name), tex: sub(RULES[id].tex) };
   if (id.startsWith('dep:')) {
-    const y = id.slice(4);
+    const [y, sym] = id.slice(4).split(':');
     return {
       name: `${y} is a function of ${v}`,
-      tex: `\\frac{d}{d${v}}\\left[${y}\\right] = ${y}'`,
+      tex: `\\frac{d}{d${v}}\\left[${y}\\right] = ${toLatex(vr(sym || `${y}'`))}`,
     };
   }
   const name = id.slice(3);
@@ -138,7 +143,14 @@ function applyRule(n, v, used) {
 
   switch (n.type) {
     case 'var':
-      if (DEP && n.name === DEP.name) { used.add(`dep:${DEP.name}`); return vr(DEP.prime); }
+      if (DEP && DEP.has(n.name)) {
+        const sym = /** @type {string} */ (DEP.get(n.name));
+        // The symbol travels WITH the id: ruleInfo is asked later, by which
+        // time DEP has been cleared, and with several dependent letters the
+        // name alone no longer says what the derivative is written as.
+        used.add(`dep:${n.name}:${sym}`);
+        return vr(sym);
+      }
       used.add('variable');
       return ONE;
 
@@ -155,7 +167,7 @@ function applyRule(n, v, used) {
         return mul(...consts, D(vars.length === 1 ? vars[0] : mul(...vars), v));
       }
 
-      const q = asQuotient(n, v, DEP?.name);
+      const q = asQuotient(n, v, DEP);
       if (q) {
         used.add('quotient');
         const top = sub(mul(D(q.num, v), q.den), mul(q.num, D(q.den, v)));
@@ -312,11 +324,12 @@ function hasDeriv(/** @type {any} */ n) {
  *
  * @param {any} node   the function to differentiate
  * @param {string} [v] the variable
- * @param {{maxLines?:number}} [opts]
+ * @param {{maxLines?:number, dep?:string|string[]|Record<string,string>|Map<string,string>, prime?:string, notation?:'prime'|'rate'}} [opts]
  * @returns {{steps:Step[], answer:any, complete:boolean}}
  */
 export function derivationSteps(node, v = 'x', opts = {}) {
   const maxLines = opts.maxLines ?? 16;
+  DEP = normalizeDeps(opts.dep, v, opts);
   let cur = D(node, v);
   /** @type {Step[]} */
   const steps = [{ tex: show(cur), rules: [] }];
@@ -332,7 +345,10 @@ export function derivationSteps(node, v = 'x', opts = {}) {
     steps.push({ tex, rules: [...used] });
   }
 
-  const answer = derivative(node, v);
+  // derivative() sets and clears DEP of its own, so the dependence has to be
+  // handed on explicitly — and nothing after this line may rely on ours.
+  const answer = derivative(node, v, opts);
+  DEP = null;
   const final = toLatex(answer, DISPLAY);
   if (final !== steps[steps.length - 1].tex) steps.push({ tex: final, rules: ['simplify'] });
 
