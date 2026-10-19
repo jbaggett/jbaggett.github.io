@@ -821,6 +821,34 @@ export function linearInSymbol(node, p) {
   };
 }
 
+/**
+ * The greatest integer that divides every coefficient of a sum — its content.
+ *
+ * `6y - 3x²` has content 3. Used to cancel the common factor out of a quotient
+ * so an answer matches what a textbook prints: the folium's slope comes out of
+ * the algebra as (-3x² + 6y)/(3y² - 6x) and belongs in lowest terms.
+ *
+ * Returns 1 when any coefficient is not a whole number, since cancelling then
+ * buys nothing and risks turning exact values into decimals.
+ *
+ * @param {Node} node @returns {number}
+ */
+export function integerContent(node) {
+  const terms = node.type === 'add' ? node.args : [node];
+  let g = 0;
+  for (const t of terms) {
+    const [c] = splitCoeff(simplify(t));
+    if (!isInt(c)) return 1;
+    g = gcd(g, Math.abs(Math.round(c)));
+  }
+  return g >= 1 ? g : 1;
+}
+
+/** Divide every coefficient of a sum by k. */
+export function divideContent(/** @type {Node} */ node, /** @type {number} */ k) {
+  return k === 1 ? simplify(node) : expand(mul(node, num(1 / k)));
+}
+
 /** Convenience: nth derivative. */
 export function nthDerivative(/** @type {Node} */ node, /** @type {number} */ n, /** @type {string} */ v = 'x') {
   let out = node;

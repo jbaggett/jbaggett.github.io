@@ -16,11 +16,13 @@ import {
   num, vr, add, mul, div, ZERO,
   simplify, expand, toLatex, toLatexRaw, isConstant, isNum, numV,
   derivative, linearInSymbol, freeVariables, tryParse, evaluate,
+  integerContent, divideContent,
 } from './expr.js';
 import { beginDeriv, stepOnce, hasPending, ruleInfo } from './steps.js';
 
 /** Worked lines keep nested fractions full size; see expr.js `dwrap`. */
 const DISPLAY = { displayFractions: true };
+const gcd2 = (/** @type {number} */ a, /** @type {number} */ b) => (b ? gcd2(b, a % b) : a);
 const show = (/** @type {any} */ n) => toLatexRaw(n, DISPLAY);
 const showS = (/** @type {any} */ n) => toLatex(n, DISPLAY);
 
@@ -119,9 +121,25 @@ export function implicitSteps(lhs, rhs, opts = {}) {
   push(`${show(mul(split.a, P))} = ${show(rest)}`,
     T(`gather the ${prime} terms on one side and everything else on the other`));
 
-  const answer = simplify(div(rest, split.a));
-  push(`${prime} = ${showS(answer)}`,
-    T(`divide by the coefficient of ${prime}`),
+  const raw = simplify(div(rest, split.a));
+  push(`${prime} = ${showS(raw)}`, T(`divide by the coefficient of ${prime}`));
+
+  // Lowest terms, as its own line. The folium's slope falls out of the algebra
+  // as (-3x² + 6y)/(3y² - 6x), and a student comparing that to the book sees a
+  // different answer. Cancelling silently inside the previous step would be
+  // worse — three 3s would just vanish.
+  const g = gcd2(integerContent(rest), integerContent(split.a));
+  const answer = g > 1
+    ? simplify(div(divideContent(rest, g), divideContent(split.a, g)))
+    : raw;
+  // Only when it actually changes the line. For x² + y² = 25 the content is 2
+  // on both sides, but simplify had already folded it into the single fraction,
+  // so announcing the cancellation would print the same line twice.
+  const reduced = `${prime} = ${showS(answer)}`;
+  if (reduced !== steps[steps.length - 1].tex) {
+    push(reduced, T(`divide the top and bottom by ${g}`));
+  }
+  steps[steps.length - 1].notes.push(
     G(`it depends on BOTH ${v} and ${dep} — that is normal here, and it is why you `
       + `need a point on the curve before you get a number`));
 
