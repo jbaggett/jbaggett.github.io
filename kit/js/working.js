@@ -28,22 +28,6 @@ import { announce } from './page.js';
  * @typedef {{tex:string, notes?:Note[]}} WorkStep
  */
 
-/**
- * The `=` that opens every line after the first.
- *
- * It goes INSIDE the maths, which is the only way to get it onto the fraction
- * bar. As its own element it cannot be aligned there: the equation div scrolls
- * sideways for wide expressions, and an element with non-visible overflow stops
- * propagating its children's baseline — CSS synthesises one from its bottom
- * edge instead. So `align-items: baseline` dropped the sign to the foot of a
- * tall fraction and `start` raised it to the top, and neither is where a person
- * writes it. TeX sets a relation on the math axis, which is exactly the bar.
- *
- * The first line gets the same width as a phantom, so every expression in the
- * column still starts at one x.
- */
-const lead = (/** @type {number} */ i) => (i === 0 ? '\\phantom{{}={}}' : '{}={}');
-
 function el(/** @type {string} */ tag, /** @type {string} */ cls, /** @type {string} */ text) {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
@@ -57,11 +41,31 @@ function el(/** @type {string} */ tag, /** @type {string} */ cls, /** @type {str
  *   ghost?: string,            // the question the withheld line asks
  *   controlsName?: string,     // data-control value, for ?controls=
  *   labels?: {next?:string, all?:string, reset?:string, hint?:(n:number,total:number)=>string},
+ *   chain?: boolean,          // see `lead` below; default true
  *   onChange?: (shown:number, done:boolean) => void,
  * }} opts
  */
 export function initWorking(opts) {
-  const { mount, ghost = 'what would you do next?', controlsName, onChange } = opts;
+  const { mount, ghost = 'what would you do next?', controlsName, onChange, chain = true } = opts;
+
+  /**
+   * The `=` that opens every line after the first — in a CHAIN of equalities.
+   *
+   * It goes inside the maths, which is the only way to get it onto the fraction
+   * bar: the equation div scrolls sideways for wide expressions, and an element
+   * with non-visible overflow stops propagating its children's baseline, so CSS
+   * synthesises one from its bottom edge. As its own element the sign dropped to
+   * the foot of a tall fraction or rose to the top, and neither is where a
+   * person writes it. TeX sets a relation on the math axis, which is the bar.
+   * The first line gets the same width as a phantom so the column starts at one x.
+   *
+   * `chain: false` turns it off, because some tools emit lines that are already
+   * whole equations rather than links in a chain. Implicit differentiation is
+   * one: `2x + 2yy' = 0` needs no `=` in front of it, and prefixing one says
+   * something false.
+   */
+  const lead = (/** @type {number} */ i) =>
+    (!chain ? '' : i === 0 ? '\\phantom{{}={}}' : '{}={}');
   const L = {
     next: 'Next step ▸', all: 'Show all', reset: 'Start over',
     hint: (/** @type {number} */ n, /** @type {number} */ total) =>
@@ -111,7 +115,7 @@ export function initWorking(opts) {
       const li = el('li', 'll-wstep ll-wstep-ghost', '');
       const eq = el('div', 'll-wstep-eq', '');
       eq.setAttribute('aria-hidden', 'true');
-      eq.innerHTML = tex('{}={}\\;\\cdots', { displayStyle: true });
+      eq.innerHTML = tex(chain ? '{}={}\\;\\cdots' : '\\cdots', { displayStyle: true });
       li.append(eq);
       li.append(el('div', 'll-wstep-notes', ghost));
       list.append(li);

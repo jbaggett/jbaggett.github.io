@@ -116,6 +116,9 @@ initPage({
       mount: $('#work-mount'),
       controlsName: 'steps',
       ghost: 'what is the next move?',
+      // Each line here is a whole equation, not a link in a chain of equalities,
+      // so the renderer must not put an `=` in front of it.
+      chain: false,
     });
     applyControls(params.raw.get('controls'), params.raw.get('hide'));
     work.setSuppressed(work.controlsEl.hidden);
