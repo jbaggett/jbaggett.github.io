@@ -91,6 +91,66 @@ export function dotplotBins(values) {
  * @param {number} [options.binOrigin] - Locked bin origin for grid alignment (default: domain[0])
  * @returns {{ dots: Array<{value: number, binCenter: number, stackIndex: number}>, binWidth: number, maxStack: number, domain: [number, number] }}
  */
+/**
+ * The step the data is actually recorded in, or null if it has none.
+ *
+ * A dotplot of granular values was being binned on a grid unrelated to that
+ * granularity. On `caosexam` the paired differences are all multiples of 2.5 —
+ * 5, 7.5, 15, 17.5, 25 — and `span / numBins` gave a width of **1.54**, so the
+ * five columns snapped to bin indices 0, 2, 6, 8, 13 instead of spacing that
+ * reflects 2.5, 7.5, 2.5, 7.5. The picture misrepresented the gaps.
+ *
+ * It also made the picture depend on which way round a difference was read:
+ * negating the values re-rounded them against the same arbitrary grid, giving
+ * 0, 5, 6, 11, 13 — not the mirror of 0, 2, 6, 8, 13. Reversing "pretest −
+ * posttest" visibly re-spaced the stacks. (Jeff, 2026-10-19.)
+ *
+ * Using the data's own step fixes both at once: every distinct value gets its
+ * own column at its true position, and because the centres then sit on
+ * multiples of the step, negation maps centres onto centres — an exact mirror
+ * by construction. This is the same principle `discreteGridStep()` already
+ * applies to proportions, where the width is the gap between achievable
+ * outcomes.
+ *
+ * Returns null for genuinely continuous data, where the step is meaninglessly
+ * small and would ask for thousands of columns.
+ *
+ * ⚠ `computeDots` does NOT apply this by itself. Making it the default changed
+ * the binning of every chart in the app — three of this module's own tests
+ * caught it — and the complaint was about the mechanism panels, which is a far
+ * smaller surface. `drawMechDotplot` opts in; anything else that wants it asks.
+ *
+ * @param {number[]} values
+ * @param {number} [maxColumns] - give up beyond this many columns
+ * @returns {number|null}
+ */
+export function commonStep(values, maxColumns = 60) {
+  const uniq = [...new Set(values)].filter(Number.isFinite).sort((a, b) => a - b);
+  if (uniq.length < 2) return null;
+
+  // Work in scaled integers: a floating gcd on values like 7.5 accumulates
+  // noise and lands on a step a hair off, which snaps worse than no step.
+  let scale = 1;
+  for (let d = 0; d <= 6; d++) {
+    if (uniq.every(v => Math.abs(v * scale - Math.round(v * scale)) < 1e-6)) break;
+    scale *= 10;
+    if (d === 6) return null;   // not representable at a sane precision
+  }
+  const ints = uniq.map(v => Math.round(v * scale));
+  const gcd2 = (/** @type {number} */ a, /** @type {number} */ b) => {
+    while (b) { const t = a % b; a = b; b = t; }
+    return Math.abs(a);
+  };
+  let g = 0;
+  for (let i = 1; i < ints.length; i++) g = gcd2(g, ints[i] - ints[i - 1]);
+  if (g === 0) return null;
+
+  const step = g / scale;
+  if (!(step > 0)) return null;
+  const columns = (uniq[uniq.length - 1] - uniq[0]) / step + 1;
+  return columns <= maxColumns ? step : null;
+}
+
 export function computeDots(values, options = {}) {
   const n = values.length;
   if (n === 0) {

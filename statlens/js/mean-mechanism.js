@@ -104,6 +104,9 @@ export function createMeanMechanism(config = {}) {
         // as one of its bounds, so a shorter box IS smaller dots rather than
         // the same dots in a letterboxed frame.
         viewHeight: opts.viewHeight, margin: opts.margin,
+        // A caller that knows the step its data is recorded in says so, and the
+        // resample inherits it through `bag.binWidth` / `bag.binOrigin`.
+        binWidth: opts.binWidth, binOrigin: opts.binOrigin,
       });
     } else {
       bag = null; bagChips = [];

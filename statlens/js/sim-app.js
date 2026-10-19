@@ -22,7 +22,7 @@ import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } fr
 import { createAskPosture } from './ask-posture.js';
 import { createResampleStore } from './resample-store.js';
 import { attachResamplePeek, createPeekElement } from './resample-peek.js';
-import { drawDotplot } from './dotplot.js';
+import { drawDotplot, commonStep } from './dotplot.js';
 import { drawSpike } from './spike.js';
 import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition, attachAxisRuler} from './chart-utils.js';
 import {
@@ -2665,8 +2665,22 @@ export function initSimPage(config) {
       // The values this page resamples — the sample itself, or the paired
       // differences.
       const vals = resampleSourceValues();
+      // PAIRED only: bin on the step the differences are actually recorded in.
+      // On `caosexam` they are all multiples of 2.5 — 5, 7.5, 15, 17.5, 25 —
+      // and the default width of span/numBins = 1.54 snapped the five columns
+      // to indices 0, 2, 6, 8, 13, spacing that does not reflect the real gaps
+      // of 1 : 3 : 1 : 3. It also made the picture depend on which way round
+      // the difference was read: negating re-rounded to 0, 5, 6, 11, 13, which
+      // is not the mirror, so reversing visibly re-spaced the stacks. With the
+      // origin at zero the centres sit on multiples of the step — where the
+      // values are — so negation maps centres onto centres. (Jeff, 2026-10-19.)
+      //
+      // Paired only on purpose: applying it to every mechanism dotplot re-binned
+      // the two-group shuffle and broke its geometry tests.
+      const pairedStep = config.paired ? commonStep(vals) : null;
       meanMech.renderBag(originalContentEl, vals, mean(vals), {
         domain: meanDomain ?? undefined, meanLabel: config.paired ? 'd̄' : 'x̄',
+        ...(pairedStep != null ? { binWidth: pairedStep, binOrigin: 0 } : {}),
         ...tierDotGeometry() });
       if (config.paired) {
         if (origNEl) origNEl.textContent = `${vals.length} pairs`;
