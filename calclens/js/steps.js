@@ -21,14 +21,27 @@
  */
 
 import {
-  FUNCTIONS, num, add, mul, pow, fn, neg, sub, div, cst, ZERO, ONE,
-  isNum, numV, isConstant, simplify, toLatexRaw, toLatex, toText,
-  evaluate, derivative, asQuotient,
+  FUNCTIONS, num, vr, add, mul, pow, fn, neg, sub, div, cst, ZERO, ONE, isNum, numV, isConstant, simplify, toLatexRaw, toLatex, toText, evaluate, derivative, asQuotient,
 } from './expr.js';
 
 /** Worked lines keep nested fractions full size; see expr.js `dwrap`. */
 const DISPLAY = { displayFractions: true };
 const show = (/** @type {any} */ n) => toLatexRaw(n, DISPLAY);
+
+/**
+ * A variable that is secretly a function of the one we differentiate by.
+ *
+ * Implicit differentiation needs the working, not just the answer, so the same
+ * dependence expr.js understands has to reach the rule-by-rule expansion: when
+ * `y` turns up, the rule that fires is "y is a function of x" and the result is
+ * y′, not 0.
+ * @type {{name:string, prime:string}|null}
+ */
+let DEP = null;
+
+/** Fixed = mentions neither the variable nor the dependent one. */
+const isFixed = (/** @type {any} */ n, /** @type {string} */ v) =>
+  isConstant(n, v) && (!DEP || isConstant(n, DEP.name));
 
 /** A pending derivative. @param {any} arg @param {string} v */
 const D = (arg, v) => ({ type: 'deriv', arg, v });
@@ -55,6 +68,33 @@ export const RULES = {
 };
 
 /**
+ * Begin a derivation: the whole expression, still un-differentiated.
+ * @param {any} node @param {string} v
+ */
+export const beginDeriv = (node, v = 'x') => D(node, v);
+
+/** Is there still a `d/dx[...]` waiting to be resolved? */
+export const hasPending = (/** @type {any} */ n) => hasDeriv(n);
+
+/**
+ * Resolve every pending derivative by ONE rule each — one written line.
+ *
+ * Exported so a caller can drive two expressions in LOCKSTEP, which is what
+ * implicit differentiation needs: the two sides of an equation have to advance
+ * together or the lines stop being equations.
+ *
+ * @param {any} n @param {string} v @param {{dep?:string, prime?:string}} [opts]
+ * @returns {{node:any, rules:string[]}}
+ */
+export function stepOnce(n, v = 'x', opts = {}) {
+  DEP = opts.dep ? { name: opts.dep, prime: opts.prime || `${opts.dep}'` } : null;
+  try {
+    /** @type {Set<string>} */ const used = new Set();
+    return { node: tidy(expandOnce(n, v, used)), rules: [...used] };
+  } finally { DEP = null; }
+}
+
+/**
  * Look up a rule for display. `@` in the stored text stands for the variable in
  * play — a problem written in t should not be told that d/dx[x] = 1.
  *
@@ -64,6 +104,13 @@ export const RULES = {
 export function ruleInfo(/** @type {string} */ id, /** @type {string} */ v = 'x') {
   const sub = (/** @type {string} */ t) => t.replace(/@/g, v);
   if (RULES[id]) return { name: sub(RULES[id].name), tex: sub(RULES[id].tex) };
+  if (id.startsWith('dep:')) {
+    const y = id.slice(4);
+    return {
+      name: `${y} is a function of ${v}`,
+      tex: `\\frac{d}{d${v}}\\left[${y}\\right] = ${y}'`,
+    };
+  }
   const name = id.slice(3);
   const f = FUNCTIONS[name];
   if (!f) return { name: id, tex: '' };
@@ -85,10 +132,13 @@ export function ruleInfo(/** @type {string} */ id, /** @type {string} */ v = 'x'
  */
 function applyRule(n, v, used) {
   // Anything free of the variable is a constant, however complicated it looks.
-  if (isConstant(n, v)) { used.add('constant'); return ZERO; }
+  if (isFixed(n, v)) { used.add('constant'); return ZERO; }
 
   switch (n.type) {
-    case 'var': used.add('variable'); return ONE;
+    case 'var':
+      if (DEP && n.name === DEP.name) { used.add(`dep:${DEP.name}`); return vr(DEP.prime); }
+      used.add('variable');
+      return ONE;
 
     case 'add': used.add('sum'); return add(...n.args.map(a => D(a, v)));
 
@@ -96,14 +146,14 @@ function applyRule(n, v, used) {
       // Numeric and constant factors come out FIRST, as their own step. A
       // student who sees 3x² go through the product rule has been told
       // something false about how the work is organised.
-      const consts = n.args.filter(a => isConstant(a, v));
-      const vars = n.args.filter(a => !isConstant(a, v));
+      const consts = n.args.filter(a => isFixed(a, v));
+      const vars = n.args.filter(a => !isFixed(a, v));
       if (consts.length && vars.length) {
         used.add('coeff');
         return mul(...consts, D(vars.length === 1 ? vars[0] : mul(...vars), v));
       }
 
-      const q = asQuotient(n, v);
+      const q = asQuotient(n, v, DEP?.name);
       if (q) {
         used.add('quotient');
         return div(sub(mul(D(q.num, v), q.den), mul(q.num, D(q.den, v))), pow(q.den, num(2)));
@@ -116,13 +166,15 @@ function applyRule(n, v, used) {
 
     case 'pow': {
       const { base, exp } = n;
-      const constExp = isConstant(exp, v), constBase = isConstant(base, v);
+      const constExp = isFixed(exp, v), constBase = isFixed(base, v);
 
       if (constExp) {
         used.add('power');
         const e = evaluate(exp, {});
         const next = Number.isFinite(e) ? num(e - 1) : sub(exp, ONE);
-        if (base.type === 'var') return mul(exp, pow(base, next));
+        // Only the variable itself needs no chain factor. A dependent y is
+        // also a bare var, and d/dx[y³] without the y′ is simply wrong.
+        if (base.type === 'var' && base.name === v) return mul(exp, pow(base, next));
         used.add('chain');
         return mul(exp, pow(base, next), D(base, v));
       }
@@ -131,7 +183,7 @@ function applyRule(n, v, used) {
         const isE = base.type === 'const' && base.name === 'e';
         used.add(isE ? 'expe' : 'exponential');
         const parts = isE ? [n] : [n, ln(base)];
-        if (exp.type === 'var') return parts.length === 1 ? parts[0] : mul(...parts);
+        if (exp.type === 'var' && exp.name === v) return parts.length === 1 ? parts[0] : mul(...parts);
         used.add('chain');
         return mul(...parts, D(exp, v));
       }
@@ -143,7 +195,7 @@ function applyRule(n, v, used) {
     case 'fn': {
       used.add(`fn:${n.name}`);
       const outer = FUNCTIONS[n.name].d(n.arg);
-      if (n.arg.type === 'var') return outer;
+      if (n.arg.type === 'var' && n.arg.name === v) return outer;
       used.add('chain');
       return mul(outer, D(n.arg, v));
     }

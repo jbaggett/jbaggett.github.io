@@ -17,6 +17,7 @@ import {
   simplify, expand, toLatex, toLatexRaw, isConstant, isNum, numV,
   derivative, linearInSymbol, freeVariables, tryParse, evaluate,
 } from './expr.js';
+import { beginDeriv, stepOnce, hasPending, ruleInfo } from './steps.js';
 
 /** Worked lines keep nested fractions full size; see expr.js `dwrap`. */
 const DISPLAY = { displayFractions: true };
@@ -69,15 +70,39 @@ export function implicitSteps(lhs, rhs, opts = {}) {
     return stop(`There is no ${v} in this equation, so d${dep}/d${v} has nothing to depend on.`);
   }
 
-  push(`\\frac{d}{d${v}}\\!\\left[${show(lhs)}\\right] = \\frac{d}{d${v}}\\!\\left[${show(rhs)}\\right]`,
-    T(`differentiate both sides with respect to ${v}`));
+  // Both sides advance in LOCKSTEP, one rule per line each. Collapsing this
+  // into a single "the usual rules, applied to both sides" hid three rules
+  // firing at once on cos(x²y³) = x⁵y² — a chain rule and a product rule on the
+  // left, a product rule on the right — which is exactly the part a student
+  // cannot do yet. The two sides must step together or the lines stop being
+  // equations.
+  let L = beginDeriv(lhs, v);
+  let R = beginDeriv(rhs, v);
+  push(`${show(L)} = ${show(R)}`, T(`differentiate both sides with respect to ${v}`));
 
-  const dL = derivative(lhs, v, { dep, prime });
-  const dR = derivative(rhs, v, { dep, prime });
-  push(`${show(dL)} = ${show(dR)}`,
-    T('the usual rules, applied to both sides'),
-    G(`${dep} is a function of ${v}, so every ${dep} term picks up a ${prime} — `
-      + `that is the chain rule, and it is the step that is easy to forget`));
+  let guard = 0;
+  while ((hasPending(L) || hasPending(R)) && guard++ < 16) {
+    const a = hasPending(L) ? stepOnce(L, v, { dep, prime }) : { node: L, rules: [] };
+    const b = hasPending(R) ? stepOnce(R, v, { dep, prime }) : { node: R, rules: [] };
+    L = a.node; R = b.node;
+    const rules = [...new Set([...a.rules, ...b.rules])];
+    const line = `${show(L)} = ${show(R)}`;
+    if (line === steps[steps.length - 1].tex) continue;
+    // The dependent rule is left out of the plain list: the diagnosis below
+    // says the same thing and says more, and printing both put "y is a function
+    // of x" on the line twice.
+    const notes = rules.filter(r => !r.startsWith('dep:')).map(r => T(ruleInfo(r, v).name));
+    if (rules.some(r => r.startsWith('dep:'))) {
+      notes.push(G(`${dep} is a function of ${v}, so differentiating it leaves a ${prime} `
+        + `behind — that is the chain rule, and it is the step that is easy to forget`));
+    }
+    push(line, ...notes);
+  }
+
+  const dL = simplify(L);
+  const dR = simplify(R);
+  const tidied = `${show(dL)} = ${show(dR)}`;
+  if (tidied !== steps[steps.length - 1].tex) push(tidied, T('tidy up'));
 
   // Everything on one side, then split into (coefficient of y′)·y′ + the rest.
   const split = linearInSymbol(simplify(add(dL, mul(num(-1), dR))), prime);

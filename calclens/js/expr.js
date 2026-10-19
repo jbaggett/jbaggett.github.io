@@ -642,10 +642,12 @@ export function derivative(node, v = 'x', opts = {}) {
  *
  * @returns {{num:Node, den:Node}|null}
  */
-export function asQuotient(n, v) {
+export function asQuotient(n, v, dep) {
+  const moves = (/** @type {Node} */ b) =>
+    !isConstant(b, v) || (dep && !isConstant(b, dep)) || !isFixed(b, v);
   const bottom = [], top = [];
   for (const a of n.args) {
-    if (a.type === 'pow' && isNum(a.exp) && numV(a.exp) < 0 && !isFixed(a.base, v)) {
+    if (a.type === 'pow' && isNum(a.exp) && numV(a.exp) < 0 && moves(a.base)) {
       bottom.push(simplifyPow(a.base, num(-numV(a.exp))));
     } else top.push(a);
   }
