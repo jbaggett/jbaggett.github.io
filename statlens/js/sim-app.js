@@ -1003,9 +1003,12 @@ export function initSimPage(config) {
 
   /** Redraw chart, results and the source panel for the reversed reading. */
   function rerenderAfterOrderChange() {
-    // The source panel shows the two groups side by side under their names, so
-    // it has to follow the reading too. `showDataLoaded` does not rebuild it.
-    if (config.twoGroup && !config.paired && data2.length > 0) renderTwoGroupOriginal();
+    // Step 1 has to follow the reading too — `showDataLoaded` does not rebuild
+    // it. On the paired pages it shows the DIFFERENCES themselves, so leaving
+    // it stale put "Differences (amazon − ucla), d̄ = −12.76" directly above a
+    // result reading `ucla − amazon`. (Jeff, 2026-10-18.)
+    if (config.paired && data2.length > 0) renderOriginalSample();
+    else if (config.twoGroup && data2.length > 0) renderTwoGroupOriginal();
     if (allStats.length === 0) { renderEmptyChart(); return; }
     const direction = getDirection();
     if (config.mode === 'randomization' && lastObserved != null) {
@@ -2612,7 +2615,7 @@ export function initSimPage(config) {
         drawHistogram(container, diffs, {
           id: 'orig-hist',
           xLabel: '',
-          titleText: `Differences (${group2Name} − ${group1Name})`,
+          titleText: `Differences (${pairedOrderLabel()})`,
           numBins: Math.min(Math.ceil(Math.sqrt(diffs.length)), 40),
           animate: false,
           margin: { top: 5, right: 12, bottom: 44, left: 48 },
@@ -2631,7 +2634,7 @@ export function initSimPage(config) {
       if (origMeanEl) origMeanEl.textContent = formatStat(mean(diffs), dataPrecision);
       // Update title to show difference direction
       setPanelHeading(document.getElementById('orig-diff-title'),
-        `Differences (${group2Name} \u2212 ${group1Name})`);
+        `Differences (${pairedOrderLabel()})`);
       return;
     }
 
@@ -2661,7 +2664,7 @@ export function initSimPage(config) {
         if (origNEl) origNEl.textContent = `${vals.length} pairs`;
         if (origMeanEl) origMeanEl.textContent = formatStat(mean(vals), dataPrecision);
         setPanelHeading(document.getElementById('orig-diff-title'),
-          `Differences (${group2Name} \u2212 ${group1Name})`);
+          `Differences (${pairedOrderLabel()})`);
       }
     } else if (data1.length <= CHIP_THRESHOLD && meanRole === 'individual') {
       // Value tiles are an INDIVIDUAL display — one mark per observation — so

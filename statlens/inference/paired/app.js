@@ -91,7 +91,16 @@ function populateVarSelectors(cols) {
     return;
   }
 
-  varSelectors.hidden = false;
+  // Only when there is actually a choice to make. Every bundled paired dataset
+  // has EXACTLY two numeric columns, so these two dropdowns offered four
+  // reachable states: two of them the same-column error that `resolveCollision`
+  // exists to absorb, and the other two precisely what "⇅ Reverse" now toggles
+  // between. The simulate paired pages have never shown a picker for bundled
+  // data (js/variable-picker.js skips curated datasets deliberately); this is
+  // the same rule, applied where it had not been. The selects are still
+  // populated, so pasting a file with three or more numeric columns brings them
+  // straight back. (Jeff, 2026-10-18.)
+  varSelectors.hidden = cols.length < 3;
   var1Select.innerHTML = '';
   var2Select.innerHTML = '';
   for (const col of cols) {
