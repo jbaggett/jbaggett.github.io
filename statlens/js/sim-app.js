@@ -997,6 +997,10 @@ export function initSimPage(config) {
    */
   function mirrorSimulation() {
     for (let i = 0; i < allStats.length; i++) allStats[i] = -allStats[i];
+    // The paired resample panel holds its values in the DISPLAY reading, so it
+    // mirrors with everything else. (Two-group keeps its panel in `lastTwoG1/2`,
+    // which are canonical and need no mirroring.)
+    if (config.paired && lastResample.length > 0) lastResample = lastResample.map(v => -v);
     if (lastObserved != null) lastObserved = -lastObserved;
     if (lastCI) lastCI = [-lastCI[1], -lastCI[0]];
     if (preSimDomain) {
@@ -1012,8 +1016,29 @@ export function initSimPage(config) {
     // it. On the paired pages it shows the DIFFERENCES themselves, so leaving
     // it stale put "Differences (amazon − ucla), d̄ = −12.76" directly above a
     // result reading `ucla − amazon`. (Jeff, 2026-10-18.)
-    if (config.paired && data2.length > 0) renderOriginalSample();
-    else if (config.twoGroup && data2.length > 0) renderTwoGroupOriginal();
+    if (config.paired && data2.length > 0) {
+      renderOriginalSample();
+      // Step 2 as well: it holds the resample drawn under the old reading, and
+      // `mirrorSimulation` has just negated it. Redrawn through the same
+      // functions the live draw uses.
+      if (lastResample.length > 0) {
+        if (config.mode === 'randomization') showPairedMechanism(centredPairedDiffs(), lastResample, false);
+        else showResample(lastResample, false, false, false);
+      }
+    }
+    else if (config.twoGroup && data2.length > 0) {
+      renderTwoGroupOriginal();
+      // Step 2 holds a resample drawn under the OLD reading. Redraw it through
+      // the same function the live draw uses — `rerenderMechanismView` is the
+      // Individual|Aggregate toggle's path and renders mini histograms into
+      // `mech-hist-resamp-*` cells that the two-MEANS dot rendering never
+      // creates, so it emptied the panel. `lastTwoG1/2` are canonical and
+      // `showTwoGroupMechanism` applies the reader's order, so handing them
+      // straight back is both correct and idempotent.
+      if (lastTwoG1.length > 0 && lastTwoG2.length > 0) {
+        showTwoGroupMechanism(lastTwoG1, lastTwoG2, false, false);
+      }
+    }
     if (allStats.length === 0) { renderEmptyChart(); return; }
     const direction = getDirection();
     if (config.mode === 'randomization' && lastObserved != null) {
@@ -3378,6 +3403,10 @@ export function initSimPage(config) {
    *  animation — this is a view switch, not a simulation step. */
   function rerenderMechanismView() {
     renderTwoGroupOriginal();
+    // `lastTwoG1/2` are canonical, so the reader's order is applied here — that
+    // way a reversal redraws Step 2 correctly without re-running anything.
+    const [showG1, showG2] = orderSwapped
+      ? [lastTwoG2, lastTwoG1] : [lastTwoG1, lastTwoG2];
     if (mechResampleContent) {
       const haveResample = lastTwoG1.length > 0 && lastTwoG2.length > 0;
       if (!haveResample) {
@@ -3385,11 +3414,11 @@ export function initSimPage(config) {
         mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
       } else if (useNewPropMech2()) {
         // A view switch, not a simulation step: no draw, no deal.
-        if (config.mode === 'randomization') showTwoPropShuffle(lastTwoG1, lastTwoG2, false);
-        else showTwoPropResample(lastTwoG1, lastTwoG2, false);
+        if (config.mode === 'randomization') showTwoPropShuffle(showG1, showG2, false);
+        else showTwoPropResample(showG1, showG2, false);
       } else {
-        mechResampleContent.innerHTML = buildTwoGroupHTML(lastTwoG1, lastTwoG2, false);
-        renderTwoGroupCharts(lastTwoG1, lastTwoG2, 'resamp');
+        mechResampleContent.innerHTML = buildTwoGroupHTML(showG1, showG2, false);
+        renderTwoGroupCharts(showG1, showG2, 'resamp');
       }
     }
     updateMechCardLegend();
@@ -3619,15 +3648,19 @@ export function initSimPage(config) {
    * @param {boolean} [highlight] - Highlight diff value (+1 animation, auto-fades via CSS)
    */
   function showTwoGroupMechanism(g1, g2, _flash = false, highlight = false) {
+    // Remember the latest grouping in CANONICAL order, BEFORE the display swap
+    // below. Storing the displayed order meant a later re-render reproduced the
+    // order that was current when the draw happened — so Step 2 kept the old
+    // grouping after a reversal while Step 1 followed, and the two panels
+    // showed the groups the opposite way round. (Jeff, 2026-10-19.)
+    lastTwoG1 = g1;
+    lastTwoG2 = g2;
+
     // The draw comes back in CANONICAL order; the panels are labelled in the
     // reader's order. Without this the strip showed group A's values under
     // group B's name as soon as the reading was reversed.
     if (orderSwapped) { const t = g1; g1 = g2; g2 = t; }
     if (!mechResampleContent || !mechanismDescEl) return 0;
-
-    // Remember the latest grouping so the toggle can re-render it.
-    lastTwoG1 = g1;
-    lastTwoG2 = g2;
 
     // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
     if (useNewPropMech2()) {
