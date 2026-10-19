@@ -23,6 +23,7 @@ import { createAskPosture } from './ask-posture.js';
 import { createResampleStore } from './resample-store.js';
 import { attachResamplePeek, createPeekElement } from './resample-peek.js';
 import { drawDotplot, commonStep } from './dotplot.js';
+import { setPairedOrderSource } from './dataset-actions.js';
 import { drawSpike } from './spike.js';
 import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition, attachAxisRuler} from './chart-utils.js';
 import {
@@ -945,6 +946,10 @@ export function initSimPage(config) {
    * `docs/BETWEEN_SEMESTERS.md` item 1.)
    */
   let orderSwapped = urlParams.order === 'swap';
+  // The data-bar buttons build their link and their click closure once, when
+  // the panel collapses, so they cannot see a later reversal. Tell them how to
+  // ask, or the data view shows the opposite sign from the page. (2026-10-19.)
+  if (config.paired) setPairedOrderSource(() => orderSwapped);
 
   /**
    * `?order=swap` on a TWO-GROUP page, waiting for data to arrive.

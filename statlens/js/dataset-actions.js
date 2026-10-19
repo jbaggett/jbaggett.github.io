@@ -143,13 +143,37 @@ function varInfo(ds) {
  * @param {any} ds - Full dataset JSON
  * @returns {any}
  */
-export function withPairedDifference(ds) {
+let pairedOrderSource = () => false;
+
+/**
+ * Let a page say which way round it is currently reading its differences.
+ *
+ * The action buttons are built ONCE, when the data panel collapses, so their
+ * link and their click closure cannot see a reversal that happens afterwards.
+ * Without this a student who pressed ⇅ Reverse and then opened the data view
+ * saw `d = posttest − pretest` and +17.5 under a page reading
+ * `d = pretest − posttest` — the opposite sign from the one on screen.
+ * (Jeff, 2026-10-19.)
+ *
+ * @param {() => boolean} fn - true when the reading is reversed
+ */
+export function setPairedOrderSource(fn) {
+  pairedOrderSource = typeof fn === 'function' ? fn : () => false;
+}
+
+/** Is the page currently reading its differences the other way round? */
+export function pairedOrderReversed() {
+  try { return pairedOrderSource() === true; } catch { return false; }
+}
+
+export function withPairedDifference(ds, reversed = pairedOrderReversed()) {
   if (!ds || ds.type !== 'paired' || !Array.isArray(ds.variables) || !Array.isArray(ds.rows)) return ds;
   const nums = ds.variables.filter((/** @type {any} */ v) => v.type === 'numeric');
   if (nums.length !== 2) return ds;                     // nothing unambiguous to derive
   if (ds.variables.some((/** @type {any} */ v) => v.name === 'difference')) return ds;
 
-  const [first, second] = nums;
+  // Follow the page's reading, so the table cannot contradict what is on screen.
+  const [first, second] = reversed ? [nums[1], nums[0]] : nums;
   // `Number(null)` is 0 and `Number('')` is 0, so coercing first turns a MISSING
   // measurement into a real-looking difference — a blank posttest of 42.5
   // became −42.5 rather than being declined. Check the raw cell first.
@@ -394,12 +418,23 @@ export function renderDatasetActions(panel, ds) {
   // Explore — only when we're not already in the right explorer.
   const explorer = explorerFor(ds);
   if (explorer && !isCurrentPage(explorer.path)) {
-    group.appendChild(makeActionButton({
+    const exploreBtn = makeActionButton({
       icon: 'explore',
       label: 'Explore this dataset',
       title: `Open this dataset in the ${explorer.kind} explorer`,
       href: explorer.href,
-    }));
+    });
+    // The href is fixed when the panel collapses, but the reading can be
+    // reversed afterwards — so carry the current order at the moment the link
+    // is followed, rather than the one it was built with.
+    if (ds.type === 'paired') {
+      exploreBtn.addEventListener('click', () => {
+        const a = /** @type {HTMLAnchorElement} */ (exploreBtn);
+        const base = explorer.href.split('&order=')[0];
+        a.href = pairedOrderReversed() ? `${base}&order=swap` : base;
+      });
+    }
+    group.appendChild(exploreBtn);
   }
 
   // Preview

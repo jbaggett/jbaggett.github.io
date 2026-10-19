@@ -563,7 +563,10 @@ const dataPanel = initDataPanel({
   // one-variable tool needs. (A categorical-only dataset is still blocked.)
   deepLinkFilter: (/** @type {any} */ ds) => ds.hasNumeric === true,
   onDataset: (ds, meta) => {
-    ds = withPairedDifference(ds);
+    // `?order=swap` arrives from the paired tool's Explore button, so the
+    // derived column here reads the way the page the reader came from did.
+    ds = withPairedDifference(ds,
+      new URLSearchParams(window.location.search).get('order') === 'swap');
     loadedDataset = ds;
     showCrosslink(meta);
     const matchingVars = ds.variables.filter(

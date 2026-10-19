@@ -14,6 +14,7 @@ import { initTabs, initDataPanel, announce, initHelp, initHypToggle, getActiveTa
 
 initHelp();
 import { parseCSV } from '../../js/csv-parser.js';
+import { setPairedOrderSource } from '../../js/dataset-actions.js';
 import { formatStat, detectPrecision, mean, sd } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { linkFormula } from '../../js/formula-link.js';
@@ -248,6 +249,18 @@ var2Select.addEventListener('change', () => {
 // is reversed by exchanging the two columns, not by changing the formula. So
 // every link and stored answer written before this control existed still means
 // what it meant.
+
+// Same for the data-bar buttons here: the order is whichever way round the two
+// selects currently are, against the page's natural (first two numeric) order.
+setPairedOrderSource(() => {
+  const cols = numericCols || [];
+  if (cols.length < 2) return false;
+  // These pages read `var1 − var2`; `withPairedDifference` defaults to
+  // `second − first`. So the page's NATURAL order is already the reverse of the
+  // helper's, and "reversed" here means var1 is still the first column. Getting
+  // this backwards put the table's sign opposite the page's on both pages.
+  return var1Select.value === cols[0];
+});
 
 /** Keep the readout saying which way round the difference is being taken. */
 function syncDiffOrder() {
