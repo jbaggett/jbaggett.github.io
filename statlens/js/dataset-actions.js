@@ -120,6 +120,60 @@ function varInfo(ds) {
  * @param {any} ds - Full dataset JSON
  * @returns {{ path: string, href: string, kind: string } | null}
  */
+/**
+ * A paired dataset, plus the column it is actually about.
+ *
+ * Paired data arrives as two measurements per row, and every paired tool works
+ * on the DIFFERENCE between them — but the data buttons showed only the two
+ * originals. The table listed `pretest` and `posttest`; the Explore button
+ * opened the one-variable explorer where you could pick either column and not
+ * the thing the test is about. (Jeff, 2026-10-19; the textbook agent's
+ * REQ-068 A greenlit the same idea.)
+ *
+ * The derived column is `second − first` in the dataset's own column order,
+ * which is what the simulate paired pages compute, and it is LABELLED with the
+ * subtraction so nothing rests on the reader guessing. (The parametric pages
+ * default to `first − second`; that split is `BETWEEN_SEMESTERS` item 1, and
+ * naming the order here is exactly what stops the derived column inheriting
+ * the ambiguity.)
+ *
+ * Returns the dataset unchanged when it is not paired, or when the two columns
+ * cannot be differenced.
+ *
+ * @param {any} ds - Full dataset JSON
+ * @returns {any}
+ */
+export function withPairedDifference(ds) {
+  if (!ds || ds.type !== 'paired' || !Array.isArray(ds.variables) || !Array.isArray(ds.rows)) return ds;
+  const nums = ds.variables.filter((/** @type {any} */ v) => v.type === 'numeric');
+  if (nums.length !== 2) return ds;                     // nothing unambiguous to derive
+  if (ds.variables.some((/** @type {any} */ v) => v.name === 'difference')) return ds;
+
+  const [first, second] = nums;
+  // `Number(null)` is 0 and `Number('')` is 0, so coercing first turns a MISSING
+  // measurement into a real-looking difference — a blank posttest of 42.5
+  // became −42.5 rather than being declined. Check the raw cell first.
+  const num = (/** @type {any} */ v) => {
+    if (v === null || v === undefined || v === '') return NaN;
+    const n = Number(v);
+    return isFinite(n) ? n : NaN;
+  };
+  const rows = ds.rows.map((/** @type {any} */ r) => {
+    const a = num(r[first.name]), b = num(r[second.name]);
+    // toFixed(10) keeps 0.3 − 0.1 from printing as 0.19999999999999998.
+    return { ...r, difference: (isFinite(a) && isFinite(b)) ? +(b - a).toFixed(10) : null };
+  });
+  // Every row has to have one, or the column is a trap in the table.
+  if (rows.some((/** @type {any} */ r) => r.difference === null)) return ds;
+
+  return {
+    ...ds,
+    variables: [...ds.variables,
+      { name: 'difference', label: `d = ${second.name} \u2212 ${first.name}`, type: 'numeric' }],
+    rows,
+  };
+}
+
 export function explorerFor(ds) {
   if (!ds || !ds.id) return null;
   const { numeric, categorical } = varInfo(ds);
@@ -192,6 +246,9 @@ const PREVIEW_ROW_CAP = 500;
  * @param {HTMLElement|null} [opener] - Element to return focus to on close
  */
 export function openDatasetPreview(ds, opener = null) {
+  // Paired data is about the difference, so the table shows it (see
+  // `withPairedDifference`). A no-op for every other dataset.
+  ds = withPairedDifference(ds);
   if (!ds || !ds.rows || !ds.variables) return;
   const { vars } = varInfo(ds);
   const cols = vars.map(v => v.name);
