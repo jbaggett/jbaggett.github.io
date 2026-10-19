@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implicit Differentiation | CalcLens</title>
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  #point-row { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: flex-end; margin-top: 0.8rem; }
+  #point-row label { display: flex; flex-direction: column; gap: 0.2rem; }
+  #point-row input { width: 5.5rem; }
+  #slope-out { margin: 0.6rem 0 0; }
+  #slope-out.im-off { color: var(--bad); }
+  #blocked { border-left: 3px solid var(--highlight-orange-dark); background: var(--surface);
+             padding: 0.7rem 0.9rem; border-radius: 0 4px 4px 0; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the equation</a>
+  <a href="#work">Skip to the working</a>
+</nav>
+
+<main>
+  <h1>Implicit Differentiation
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Type an equation in <i>x</i> and <i>y</i> and get d<i>y</i>/d<i>x</i>, one
+    move at a time. The whole difficulty is a single step: <b><i>y</i> is not a
+    free letter.</b> It is whatever function of <i>x</i> the equation forces, so
+    every <i>y</i> you differentiate picks up a <i>y</i>′.
+    <span class="ll-hint">Say what the next line should be before you press the
+    button — the forgotten <i>y</i>′ is the whole exam question.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The equation">
+    <div class="ll-controls" data-control="f">
+      <label for="eq-input" style="flex:1 1 320px;">
+        <span>Equation</span>
+        <input type="text" id="eq-input" value="x^2 + y^2 = 25" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="eq-error eq-syntax">
+      </label>
+    </div>
+    <p class="ll-error" id="eq-error" role="alert" hidden></p>
+    <div class="ll-preview" id="eq-preview"></div>
+    <div class="ll-palette" id="eq-palette"></div>
+    <p class="ll-hint" id="eq-syntax" data-control="f">
+      Both sides, with an <code>=</code> between them. Write it as you would say
+      it: <code>x^2 + y^2 = 25</code>, <code>x^3 + y^3 = 6xy</code>,
+      <code>sin(y) + x^2 = y</code>, <code>xy = 1</code>.
+    </p>
+    <div class="ll-segmented" role="group" aria-label="Example equations" data-control="f">
+      <button type="button" class="preset" data-eq="x^2 + y^2 = 25">circle</button>
+      <button type="button" class="preset" data-eq="x^3 + y^3 = 6xy">folium</button>
+      <button type="button" class="preset" data-eq="x^2/9 + y^2/4 = 1">ellipse</button>
+      <button type="button" class="preset" data-eq="xy = 1">xy = 1</button>
+      <button type="button" class="preset" data-eq="sin(y) + x^2 = y">sin(y) + x^2 = y</button>
+      <button type="button" class="preset" data-eq="x^2*y + y^3 = 2x">x^2 y + y^3 = 2x</button>
+    </div>
+  </section>
+
+  <section id="work" aria-label="The working">
+    <h2>The working</h2>
+    <div id="work-mount"></div>
+    <div id="blocked" hidden></div>
+  </section>
+
+  <section id="point" class="ll-panel" aria-label="The slope at a point" data-control="point" hidden>
+    <h3 style="margin-top:0">A number, once you have a point</h3>
+    <p class="ll-hint" style="margin-top:0">
+      d<i>y</i>/d<i>x</i> depends on <b>both</b> letters here, so it is not a
+      number until you say <em>where</em> on the curve you are.
+    </p>
+    <div id="point-row">
+      <label for="px"><span><i>x</i> =</span><input type="number" id="px" value="3" step="any"></label>
+      <label for="py"><span><i>y</i> =</span><input type="number" id="py" value="4" step="any"></label>
+      <button type="button" id="slope-btn" class="ll-primary">Slope here</button>
+    </div>
+    <p id="slope-out"></p>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Implicit Differentiation</h2>
+  <p>Some curves are not the graph of a function. The circle
+     <span class="ll-math" id="help-tex1"></span> fails the vertical line test,
+     so you cannot write <i>y</i> = something and differentiate it. But the
+     equation still forces a relationship, and near any point on it <i>y</i>
+     <em>is</em> a function of <i>x</i> — just one you never write down.</p>
+
+  <h3>The one step that matters</h3>
+  <p>Because <i>y</i> is a function of <i>x</i>, the chain rule applies to it:</p>
+  <p class="ll-math" id="help-tex2"></p>
+  <p>Writing <span class="ll-math" id="help-tex3"></span> instead is the single
+     most common error on this topic, and it is the only thing that makes
+     implicit differentiation different from the differentiation you already
+     know. Everything after it is algebra.</p>
+
+  <h3>The four moves</h3>
+  <ol>
+    <li>Differentiate <b>both sides</b> with respect to <i>x</i>.</li>
+    <li>Apply the usual rules — and put a <i>y</i>′ on every <i>y</i> term.</li>
+    <li>Gather the <i>y</i>′ terms on one side, everything else on the other.</li>
+    <li>Divide by whatever multiplies <i>y</i>′.</li>
+  </ol>
+  <p>Step 3 works because <i>y</i>′ only ever appears to the first power — the
+     chain rule can multiply by it once and no more — so the equation is always
+     linear in <i>y</i>′ and always solvable.</p>
+
+  <h3>Why the answer has a y in it</h3>
+  <p>That is not a mistake and it does not need "fixing". It is the honest
+     answer: on the circle, the slope at <i>x</i> = 3 is −3/4 on the top half
+     and +3/4 on the bottom. Without saying which <i>y</i> you mean, there is no
+     one slope. Use the box underneath to put in a point — it will tell you if
+     the point is not on the curve, because a slope at a point that is not there
+     means nothing.</p>
+
+  <h3>Where else to look</h3>
+  <p>For the ordinary rules applied one at a time, use
+     <a href="../steps/">Worked Derivative</a>.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>N</kbd></dt><dd>Next step</dd>
+    <dt><kbd>A</kbd></dt><dd>Show all the working</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

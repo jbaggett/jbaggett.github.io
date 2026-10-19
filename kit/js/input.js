@@ -83,6 +83,19 @@ export function initExpressionInput(opts) {
 
   input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, debounce); });
   input.addEventListener('change', () => { clearTimeout(timer); run(); });
+  // Enter means "I have finished typing", so the field gives focus up. Without
+  // that, the single-letter shortcuts on the worked-steps pages — N for the
+  // next line, A for all of them — land in the box instead: pressing A after
+  // typing turned `6xy` into `6axy` and silently re-derived a different
+  // problem. The guard in working.js stops the double action but cannot stop a
+  // focused text field from accepting a letter, which is its job.
+  input.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    clearTimeout(timer);
+    run();
+    input.blur();
+  });
   if (palette) initPalette(palette, input, run, paletteItems);
   run();
 

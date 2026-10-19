@@ -392,7 +392,9 @@ const gcd = (/** @type {number} */ a, /** @type {number} */ b) => (b < 1e-9 ? a 
 const INCREMENT_LETTERS = new Set(['h', 'k', 'dx', 'dt']);
 const incRank = (/** @type {Node} */ n) => {
   const base = n.type === 'pow' ? n.base : n;
-  return base.type === 'var' && INCREMENT_LETTERS.has(base.name) ? 1 : 0;
+  if (base.type !== 'var') return 0;
+  // A prime sorts last too: implicit differentiation writes 3y²y′, not 3y′y².
+  return (INCREMENT_LETTERS.has(base.name) || base.name.endsWith("'")) ? 1 : 0;
 };
 
 /** Print order within a product: 2x cos(x²) reads better than 2 cos(x²) x. */
@@ -597,13 +599,37 @@ function simplifyFn(/** @type {string} */ name, /** @type {Node} */ arg) {
 /* ────────────────────────────── derivative ─────────────────────────────── */
 
 /**
+ * A variable that is secretly a function of the one we differentiate by.
+ *
+ * Implicit differentiation is exactly this: in x² + y² = 25, y is not a free
+ * letter, it is whatever function of x the equation forces. So d/dx[y] is not 0
+ * — it is y′, and that is the single step students miss. Set while a derivative
+ * is being taken; null the rest of the time.
+ * @type {{name:string, prime:string}|null}
+ */
+let DEP = null;
+
+/** Is this subtree fixed — mentioning neither the variable nor the dependent one? */
+function isFixed(/** @type {Node} */ n, /** @type {string} */ v) {
+  if (!isConstant(n, v)) return false;
+  return !DEP || isConstant(n, DEP.name);
+}
+
+/**
  * Symbolic derivative, simplified.
+ *
+ * `opts.dep` names a variable that depends on `v`, so d/dx[y] comes back as the
+ * symbol y′ rather than 0. Everything downstream — the product rule, the chain
+ * rule, the printer — then carries it without knowing anything special.
+ *
  * @param {Node} node
  * @param {string} [v]
+ * @param {{dep?:string, prime?:string}} [opts]
  * @returns {Node}
  */
-export function derivative(node, v = 'x') {
-  return simplify(d(node, v));
+export function derivative(node, v = 'x', opts = {}) {
+  DEP = opts.dep ? { name: opts.dep, prime: opts.prime || `${opts.dep}'` } : null;
+  try { return simplify(d(node, v)); } finally { DEP = null; }
 }
 
 /**
@@ -619,7 +645,7 @@ export function derivative(node, v = 'x') {
 export function asQuotient(n, v) {
   const bottom = [], top = [];
   for (const a of n.args) {
-    if (a.type === 'pow' && isNum(a.exp) && numV(a.exp) < 0 && !isConstant(a.base, v)) {
+    if (a.type === 'pow' && isNum(a.exp) && numV(a.exp) < 0 && !isFixed(a.base, v)) {
       bottom.push(simplifyPow(a.base, num(-numV(a.exp))));
     } else top.push(a);
   }
@@ -723,7 +749,10 @@ export function substitute(n, v, rep) {
 function d(/** @type {Node} */ n, /** @type {string} */ v) {
   switch (n.type) {
     case 'num': case 'const': return ZERO;
-    case 'var': return n.name === v ? ONE : ZERO;
+    case 'var':
+      if (n.name === v) return ONE;
+      if (DEP && n.name === DEP.name) return vr(DEP.prime);
+      return ZERO;
     case 'add': return add(...n.args.map(a => d(a, v)));
     case 'mul': {
       // A quotient is stored as u·v⁻¹, and differentiating it AS a product is
@@ -743,7 +772,7 @@ function d(/** @type {Node} */ n, /** @type {string} */ v) {
     }
     case 'pow': {
       const { base, exp } = n;
-      const constExp = isConstant(exp, v), constBase = isConstant(base, v);
+      const constExp = isFixed(exp, v), constBase = isFixed(base, v);
       if (constExp && constBase) return ZERO;
       // Power rule + chain rule. The new exponent is evaluated rather than left
       // as a subtraction: x^(2/3) was differentiating to 2x^(2/3 − 1)/3, which
@@ -761,6 +790,33 @@ function d(/** @type {Node} */ n, /** @type {string} */ v) {
     case 'fn': return mul(FUNCTIONS[n.name].d(n.arg), d(n.arg, v));
     default: return ZERO;
   }
+}
+
+/**
+ * Split an expression into A·p + B, where p is a symbol it is linear in.
+ *
+ * Differentiating any relation implicitly always leaves something linear in y′
+ * — the chain rule can only ever multiply by it once — so this is all the
+ * algebra "solve for dy/dx" needs. Unlike {@link linearCoeffs} the coefficients
+ * stay SYMBOLIC: for x² + y² = 25 they are 2y and 2x, not numbers.
+ *
+ * @param {Node} node @param {string} p
+ * @returns {{a:Node, b:Node}|null} null if it is not linear in p
+ */
+export function linearInSymbol(node, p) {
+  const ex = expand(node);
+  const terms = ex.type === 'add' ? ex.args : [ex];
+  const withP = [], without = [];
+  for (const t of terms) {
+    if (isConstant(t, p)) { without.push(t); continue; }
+    const q = simplify(mul(t, pow(vr(p), num(-1))));
+    if (!isConstant(q, p)) return null;      // p appears more than once over
+    withP.push(q);
+  }
+  return {
+    a: withP.length ? simplify(add(...withP)) : ZERO,
+    b: without.length ? simplify(add(...without)) : ZERO,
+  };
 }
 
 /** Convenience: nth derivative. */

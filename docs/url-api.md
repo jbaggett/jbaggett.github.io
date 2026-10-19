@@ -373,6 +373,21 @@ being merely wrong: "you chose rising, but it ends lower than it starts". That
 mismatch — the shape and the numbers telling different stories — is the usual
 way a hand sketch goes astray.
 
+## CalcLens — Implicit Differentiation
+
+`calclens/derivatives/implicit/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `eq` | equation | `x^2 + y^2 = 25` | Both sides, with one `=` between them. |
+| `steps` | `all` | first line only | Reveal the whole derivation at load. |
+| `controls` | list | all | `f`, `steps`, `point`. |
+| `preset` | key | — | `circle`, `folium`, `ellipse`, `hyper`. |
+
+*x* is the variable and *y* the dependent one. Anything unreadable is reported
+on the page; an equation with no *y* in it is declined rather than answered,
+since there is nothing implicit about it.
+
 ## CalcLens — Tilt and Bend
 
 `calclens/derivatives/bending/`
