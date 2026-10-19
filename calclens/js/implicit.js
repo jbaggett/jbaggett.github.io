@@ -118,8 +118,17 @@ export function implicitSteps(lhs, rhs, opts = {}) {
   // expand, not simplify: negating a sum leaves -(3x² - 6y) sitting in brackets,
   // and nobody writes the next line of their work that way.
   const rest = expand(mul(num(-1), split.b));
-  push(`${show(mul(split.a, P))} = ${show(rest)}`,
-    T(`gather the ${prime} terms on one side and everything else on the other`));
+  // Gathering and factoring are two moves, and the second is the one students
+  // stall on: seeing 3y²y′ − 6xy′ and not recognising that y′ comes out of it.
+  const gathered = `${show(expand(mul(split.a, P)))} = ${show(rest)}`;
+  push(gathered, T(`gather the ${prime} terms on one side and everything else on the other`));
+
+  // Only when there is something to factor. With a single y′ term the two lines
+  // are the same line, and 2yy′ = −2x does not need saying twice.
+  const factored = `${show(mul(split.a, P))} = ${show(rest)}`;
+  if (factored !== gathered) {
+    push(factored, T(`factor the ${prime} out of the left-hand side`));
+  }
 
   const raw = simplify(div(rest, split.a));
   push(`${prime} = ${showS(raw)}`, T(`divide by the coefficient of ${prime}`));
