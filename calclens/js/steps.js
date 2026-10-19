@@ -90,7 +90,9 @@ export function stepOnce(n, v = 'x', opts = {}) {
   DEP = opts.dep ? { name: opts.dep, prime: opts.prime || `${opts.dep}'` } : null;
   try {
     /** @type {Set<string>} */ const used = new Set();
-    return { node: tidy(expandOnce(n, v, used)), rules: [...used] };
+    // Marks from the previous line are cleared first: each line is annotated
+    // with the rules that fired on IT, not with every rule used so far.
+    return { node: tidy(expandOnce(stripTags(n), v, used)), rules: [...used] };
   } finally { DEP = null; }
 }
 
@@ -156,12 +158,16 @@ function applyRule(n, v, used) {
       const q = asQuotient(n, v, DEP?.name);
       if (q) {
         used.add('quotient');
-        return div(sub(mul(D(q.num, v), q.den), mul(q.num, D(q.den, v))), pow(q.den, num(2)));
+        const top = sub(mul(D(q.num, v), q.den), mul(q.num, D(q.den, v)));
+        top.tag = 'QR';
+        return div(top, pow(q.den, num(2)));
       }
 
       used.add('product');
-      return add(...n.args.map((_, i) =>
+      const prod = add(...n.args.map((_, i) =>
         mul(...n.args.map((b, j) => (i === j ? D(b, v) : b)))));
+      prod.tag = 'PR';
+      return prod;
     }
 
     case 'pow': {
@@ -176,7 +182,9 @@ function applyRule(n, v, used) {
         // also a bare var, and d/dx[y³] without the y′ is simply wrong.
         if (base.type === 'var' && base.name === v) return mul(exp, pow(base, next));
         used.add('chain');
-        return mul(exp, pow(base, next), D(base, v));
+        const ch = mul(exp, pow(base, next), D(base, v));
+        ch.tag = 'CR';
+        return ch;
       }
 
       if (constBase) {
@@ -185,7 +193,9 @@ function applyRule(n, v, used) {
         const parts = isE ? [n] : [n, ln(base)];
         if (exp.type === 'var' && exp.name === v) return parts.length === 1 ? parts[0] : mul(...parts);
         used.add('chain');
-        return mul(...parts, D(exp, v));
+        const ch = mul(...parts, D(exp, v));
+        ch.tag = 'CR';
+        return ch;
       }
 
       used.add('logdiff');
@@ -197,7 +207,9 @@ function applyRule(n, v, used) {
       const outer = FUNCTIONS[n.name].d(n.arg);
       if (n.arg.type === 'var' && n.arg.name === v) return outer;
       used.add('chain');
-      return mul(outer, D(n.arg, v));
+      const ch = mul(outer, D(n.arg, v));
+      ch.tag = 'CR';
+      return ch;
     }
 
     default: return ZERO;
@@ -227,7 +239,8 @@ function tidy(/** @type {any} */ n) {
     case 'add': {
       const args = flat('add', n.args.map(tidy)).filter(a => !(isNum(a) && numV(a) === 0));
       if (!args.length) return ZERO;
-      return args.length === 1 ? args[0] : add(...args);
+      if (args.length === 1) return args[0];
+      return keepTag(add(...args), n);
     }
     case 'mul': {
       // Nesting has to go: the chain rule builds mul(cos(3x²), mul(3, mul(2, x)))
@@ -237,7 +250,8 @@ function tidy(/** @type {any} */ n) {
       if (args.some(a => isNum(a) && numV(a) === 0)) return ZERO;
       const kept = args.filter(a => !(isNum(a) && numV(a) === 1));
       if (!kept.length) return ONE;
-      return kept.length === 1 ? kept[0] : mul(...kept);
+      if (kept.length === 1) return kept[0];
+      return keepTag(mul(...kept), n);
     }
     // x^1 is the power rule's own output (x^(2-1)), and nobody leaves it written.
     case 'pow': {
@@ -252,9 +266,33 @@ function tidy(/** @type {any} */ n) {
   }
 }
 
+/** Carry a rule mark across a rebuild. */
+function keepTag(/** @type {any} */ built, /** @type {any} */ from) {
+  if (from.tag) built.tag = from.tag;
+  return built;
+}
+
+/** Drop every mark — a new line annotates only the rules IT used. */
+function stripTags(/** @type {any} */ n) {
+  if (!n || typeof n !== 'object') return n;
+  const out = { ...n };
+  delete out.tag;
+  if (out.args) out.args = out.args.map(stripTags);
+  if (out.type === 'pow') { out.base = stripTags(out.base); out.exp = stripTags(out.exp); }
+  if (out.type === 'fn') out.arg = stripTags(out.arg);
+  if (out.type === 'deriv') out.arg = stripTags(out.arg);
+  return out;
+}
+
 function flat(/** @type {string} */ t, /** @type {any[]} */ args) {
   const out = [];
-  for (const a of args) { if (a.type === t) out.push(...a.args); else out.push(a); }
+  for (const a of args) {
+    // A marked node keeps its identity: absorbing it into the parent destroys
+    // the operator the mark is meant to sit on, and the chain rule's CR would
+    // silently disappear from a line where a product rule also fired.
+    if (a.type === t && !a.tag) out.push(...a.args);
+    else out.push(a);
+  }
   return out;
 }
 
@@ -287,7 +325,7 @@ export function derivationSteps(node, v = 'x', opts = {}) {
   while (hasDeriv(cur) && guard++ < maxLines) {
     /** @type {Set<string>} */
     const used = new Set();
-    cur = tidy(expandOnce(cur, v, used));
+    cur = tidy(expandOnce(stripTags(cur), v, used));
     const tex = show(cur);
     // A pass that changed nothing visible is not a step worth a line.
     if (tex === steps[steps.length - 1].tex) continue;

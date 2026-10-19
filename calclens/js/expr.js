@@ -1167,8 +1167,14 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       n.args.forEach((t, i) => {
         const { negative, node: abs } = stripSign(t);
         const piece = texOf(abs, 2);
-        if (i === 0) s += negative ? `-${piece}` : piece;
-        else s += negative ? ` - ${piece}` : ` + ${piece}`;
+        if (i === 0) { s += negative ? `-${piece}` : piece; return; }
+        const op = negative ? '-' : '+';
+        // The rule's own mark, on the sign the rule put there. A product rule
+        // introduces the +, a quotient rule the −; writing PR or QR above it is
+        // how the work is annotated on a board, and it says WHICH PART of a
+        // long line each rule was responsible for — which a list in the margin
+        // cannot. Only the first join is marked: one application, one mark.
+        s += ` ${i === 1 && n.tag ? `\\overset{\\text{${n.tag}}}{${op}}` : op} ${piece}`;
       });
       return wrap(s, 1);
     }
@@ -1209,6 +1215,15 @@ function texOf(/** @type {Node} */ n, /** @type {number} */ parentPrec = 0) {
       // pair on the numerator of every quotient-rule answer.
       const half = (/** @type {Node[]} */ fs) =>
         (fs.length === 1 ? texOf(fs[0], 0) : joinFactors(fs));
+      // A chain rule's mark goes on the dot before the inner derivative, which
+      // is always the last factor. The dot is forced for a marked product even
+      // where juxtaposition would do, because the mark needs something to sit on.
+      if (n.tag && top.length > 1 && !bottom.length) {
+        const parts = top.map(f => texOf(f, 2));
+        const lead = parts.slice(0, -1).join('');
+        const body0 = `${lead}\\overset{\\text{${n.tag}}}{\\cdot}${parts[parts.length - 1]}`;
+        return wrap(negative ? `-${body0}` : body0, 2);
+      }
       const joinTop = top.length ? half(top) : '1';
       const body = bottom.length
         ? `\\frac{${dwrap(joinTop)}}{${dwrap(half(bottom))}}`
