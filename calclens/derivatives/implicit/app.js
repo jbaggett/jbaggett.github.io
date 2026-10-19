@@ -41,7 +41,15 @@ function wantsAll() {
   return v === 'all' || v === 'true';
 }
 
-function rebuild() {
+/**
+ * @param {{fromEquation?:boolean}} [opts] Re-reading the letters off the
+ *   equation is only ever right when the EQUATION changed. Doing it while
+ *   someone edits a letter box makes the box unchangeable: a half-typed or
+ *   emptied value is not a letter the equation contains, so the guess fires and
+ *   overwrites the keystroke. Typing could never get from one valid letter to
+ *   another, because the way through is always invalid.
+ */
+function rebuild(opts = {}) {
   const src = $('#eq-input').value;
   const parsed = parseEquation(src);
 
@@ -64,7 +72,8 @@ function rebuild() {
   // Fill the d_/d_ boxes from the equation, unless the reader has set them.
   // Re-guessing after they have chosen would silently overrule them.
   const free = new Set([...freeVariables(parsed.lhs), ...freeVariables(parsed.rhs)]);
-  if (!touched || !free.has($('#wrt-dep').value.trim())) {
+  const stale = !free.has($('#wrt-dep').value.trim()) || !free.has($('#wrt-var').value.trim());
+  if (opts.fromEquation && (!touched || stale)) {
     const g = pickLetters(parsed.lhs, parsed.rhs);
     $('#wrt-dep').value = g.dep;
     $('#wrt-var').value = g.v;
@@ -168,22 +177,22 @@ initPage({
     applyControls(params.raw.get('controls'), params.raw.get('hide'));
     work.setSuppressed(work.controlsEl.hidden);
 
-    initPalette($('#eq-palette'), $('#eq-input'), rebuild);
-    rebuild();
+    initPalette($('#eq-palette'), $('#eq-input'), () => rebuild({ fromEquation: true }));
+    rebuild({ fromEquation: true });
 
     let timer = null;
     $('#eq-input').addEventListener('input', () => {
-      clearTimeout(timer); timer = setTimeout(rebuild, 260);
+      clearTimeout(timer); timer = setTimeout(() => rebuild({ fromEquation: true }), 260);
     });
-    $('#eq-input').addEventListener('change', () => { clearTimeout(timer); rebuild(); });
+    $('#eq-input').addEventListener('change', () => { clearTimeout(timer); rebuild({ fromEquation: true }); });
     $('#eq-input').addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
       // Enter commits and hands focus back, so N and A work as shortcuts
       // instead of being typed into the equation.
-      if (e.key === 'Enter') { e.preventDefault(); clearTimeout(timer); rebuild(); $('#eq-input').blur(); }
+      if (e.key === 'Enter') { e.preventDefault(); clearTimeout(timer); rebuild({ fromEquation: true }); $('#eq-input').blur(); }
     });
 
     for (const b of document.querySelectorAll('.preset')) {
-      b.addEventListener('click', () => { $('#eq-input').value = b.dataset.eq; rebuild(); });
+      b.addEventListener('click', () => { $('#eq-input').value = b.dataset.eq; rebuild({ fromEquation: true }); });
     }
     for (const id of ['#wrt-dep', '#wrt-var']) {
       $(id).addEventListener('input', () => { touched = true; rebuild(); });
