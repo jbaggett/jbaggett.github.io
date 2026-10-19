@@ -1282,6 +1282,11 @@ function joinFactors(/** @type {Node[]} */ factors) {
   let out = '';
   parts.forEach((p, i) => {
     if (i > 0 && /^(?:[0-9]|\\frac)/.test(p) && /[0-9}]$/.test(out)) out += ' \\cdot ';
+    // A control sequence swallows the letters after it: \pi next to x became
+    // `\pix`, an undefined command, and `throwOnError: false` renders that as
+    // red literal source rather than failing. Every expression multiplying pi
+    // or tau by a variable was broken this way.
+    else if (i > 0 && /\\[a-zA-Z]+$/.test(out) && /^[a-zA-Z]/.test(p)) out += ' ';
     out += p;
   });
   return out;
