@@ -14,7 +14,7 @@
 
 import {
   num, vr, add, mul, div, ZERO,
-  simplify, expand, toLatex, toLatexRaw, isConstant, isNum, numV,
+  simplify, expand, toLatex, toLatexRaw, toText, isConstant, isNum, numV,
   derivative, linearInSymbol, freeVariables, tryParse, evaluate,
   integerContent, divideContent,
 } from './expr.js';
@@ -106,6 +106,25 @@ export function implicitSteps(lhs, rhs, opts = {}) {
   const tidied = `${show(dL)} = ${show(dR)}`;
   if (tidied !== steps[steps.length - 1].tex) push(tidied, T('tidy up'));
 
+  // ── already solved? ────────────────────────────────────────────────────
+  // An explicit function put through this machinery — y = 3x³ + sin(x) — comes
+  // out as y′ = … on the tidy-up line, and the three moves that follow are all
+  // no-ops: "1y′ = …", then the same line again, then the same line a third
+  // time. Stopping here makes one tool serve explicit and implicit alike, which
+  // is the honest position anyway: implicit differentiation CONTAINS the
+  // ordinary kind, it is not a different procedure.
+  const solvedLeft = toText(dL) === prime && isConstant(dR, prime);
+  const solvedRight = toText(dR) === prime && isConstant(dL, prime);
+  if (solvedLeft || solvedRight) {
+    const ans = solvedLeft ? dR : dL;
+    if (solvedRight) push(`${prime} = ${showS(ans)}`, T(`write it with ${prime} on the left`));
+    steps[steps.length - 1].notes.push(
+      G(`${dep} was given explicitly, so there was nothing to gather — the same `
+        + `machinery just does ordinary differentiation, which is why it is one `
+        + `procedure and not two`));
+    return { steps, answer: ans, blocked: null };
+  }
+
   // Everything on one side, then split into (coefficient of y′)·y′ + the rest.
   const split = linearInSymbol(simplify(add(dL, mul(num(-1), dR))), prime);
   if (!split) {
@@ -148,9 +167,11 @@ export function implicitSteps(lhs, rhs, opts = {}) {
   if (reduced !== steps[steps.length - 1].tex) {
     push(reduced, T(`divide the top and bottom by ${g}`));
   }
-  steps[steps.length - 1].notes.push(
-    G(`it depends on BOTH ${v} and ${dep} — that is normal here, and it is why you `
-      + `need a point on the curve before you get a number`));
+  if (!isConstant(answer, dep)) {
+    steps[steps.length - 1].notes.push(
+      G(`it depends on BOTH ${v} and ${dep} — that is normal here, and it is why you `
+        + `need a point on the curve before you get a number`));
+  }
 
   return { steps, answer, blocked: null };
 }
