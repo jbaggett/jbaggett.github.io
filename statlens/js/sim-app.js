@@ -2020,6 +2020,16 @@ export function initSimPage(config) {
   if (swapGroupsBtn) {
     swapGroupsBtn.addEventListener('click', () => {
       if (config.paired) { setPairedOrder(!orderSwapped); return; }
+      // BOTH halves, together. The arrays swap so the panels and summaries read
+      // the new way; the flag says the display is no longer canonical, which is
+      // what `canonPair()` un-swaps for the draws, what `orderSign()` negates
+      // the statistic by, and what mirrors the dot grid's origin.
+      //
+      // Setting only the arrays — which is what this did until 2026-10-19 —
+      // made the button and `?order=swap` disagree: the CI and SE mirrored
+      // perfectly while the dot grid kept its old half-bin phase, so reversing
+      // visibly re-spaced the distribution. (Jeff, on diamonds_99_1ct.)
+      orderSwapped = !orderSwapped;
       [data1, data2] = [data2, data1];
       [group1Name, group2Name] = [group2Name, group1Name];
       [rawOutcomes1, rawOutcomes2] = [rawOutcomes2, rawOutcomes1];
@@ -5133,13 +5143,32 @@ export function initSimPage(config) {
     // Shuffles equal to the observed get their own column, sitting on the line
     // where they belong, and the note under the p-value says they count.
     if (discreteGridStep() != null) return /** @type {number} */ (observed);
-    if (!config.twoGroup) return origin;
+    if (!config.twoGroup) {
+      // The locked origin belongs to the CANONICAL reading, so mirror it when
+      // the display is reversed — the centres then land on the negations of the
+      // centres they had, which is what makes the stacks mirror.
+      return orderSwapped ? -(/** @type {number} */ (origin)) : origin;
+    }
     // Continuous statistic: there is no achievable grid to land on, so the best
     // available is a bin BOUNDARY on the observed — no bin can then hold values
     // from both sides of the line.
     // Left tail: ties are extreme on the low side, so tip them below the line.
-    const tieNudge = direction === 'less' ? w * 1e-9 : -w * 1e-9;
-    return /** @type {number} */ (observed) - w / 2 + tieNudge;
+    //
+    // ⚠ Built in the CANONICAL reading and then mirrored, rather than from the
+    // displayed observed directly. "Boundary half a bin BELOW the observed" is
+    // not a mirror-symmetric rule: reversing negates the observed but left the
+    // boundary below it again, when it needs to move above. That half-bin phase
+    // shift re-binned every stack, so reversing visibly re-spaced the
+    // distribution while the CI and SE mirrored perfectly. (Jeff, 2026-10-19,
+    // on diamonds_99_1ct.)
+    const obs = /** @type {number} */ (observed);
+    const canonObs = orderSwapped ? -obs : obs;
+    const canonDir = orderSwapped
+      ? (direction === 'less' ? 'greater' : direction === 'greater' ? 'less' : direction)
+      : direction;
+    const tieNudge = canonDir === 'less' ? w * 1e-9 : -w * 1e-9;
+    const canonOrigin = canonObs - w / 2 + tieNudge;
+    return orderSwapped ? -canonOrigin : canonOrigin;
   }
 
   function renderChart(stats, ci, observedStat, direction) {
