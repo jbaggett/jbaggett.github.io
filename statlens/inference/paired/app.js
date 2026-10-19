@@ -251,8 +251,11 @@ var2Select.addEventListener('change', () => {
 
 /** Keep the readout saying which way round the difference is being taken. */
 function syncDiffOrder() {
+  // Named, not bare: **d = pretest − posttest**. Lower-case d is the individual
+  // difference for one pair; the mean of them is d̄, which the results panel
+  // writes separately. (Jeff, 2026-10-18.)
   const order = (var1Select.value && var2Select.value)
-    ? `${var1Select.value} − ${var2Select.value}`
+    ? `d = ${var1Select.value} − ${var2Select.value}`
     : '';
   if (groupOrderLabel) groupOrderLabel.textContent = order || '…';
   // The row is the same one the two-group pages use, in the same place

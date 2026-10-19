@@ -1437,7 +1437,15 @@ export function initSimPage(config) {
     const groupOrderLabel = document.getElementById('group-order-label');
     if (groupOrderEl && groupOrderLabel && (config.paired || (config.twoGroup && data2.length > 0))) {
       groupOrderEl.hidden = false;
-      const order = config.paired ? pairedOrderLabel() : `${group1Name} − ${group2Name}`;
+      // On the paired pages the quantity has a name, so the row says what it
+      // is rather than leaving "after − before" floating: **d = after − before**.
+      // Lower-case d — this is the individual difference for one pair, not the
+      // mean of them, which the page writes d̄ elsewhere. (Jeff, 2026-10-18.)
+      // Two-group pages keep the bare order, because their difference is
+      // x̄₁ − x̄₂ or p̂₁ − p̂₂ — a different symbol, not d.
+      const order = config.paired
+        ? `d = ${pairedOrderLabel()}`
+        : `${group1Name} − ${group2Name}`;
       groupOrderLabel.textContent = order;
       // The order goes in the button's name too. The adjacent span is a
       // separate stop for a screen reader, so a user who lands on the button
