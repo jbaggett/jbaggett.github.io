@@ -143,7 +143,17 @@ function applyRule(n, used, subs) {
     // ∫2x·cos(x²) dx with the 2 pulled out first becomes 2∫cos(u)/2 du, and
     // the next line cancels the 2 against the ½ it just created. Substituting
     // on the whole product gives ∫cos u du in one move instead of three.
-    if (consts.length && rest.length && !uSub()) {
+    //
+    // But only when the substitution is doing something. On ∫e^u/2 du the
+    // search happily offers w = e^u, which renames the integrand without
+    // simplifying it, and the working then claimed dw = 0·du. A substitution
+    // whose u IS the whole non-constant part is that kind of substitution, so
+    // the constant comes out instead and the table takes it from there.
+    const renaming = () => {
+      const r = uSub();
+      return r && toText(r.u) === toText(prod(rest));
+    };
+    if (consts.length && rest.length && (!uSub() || renaming())) {
       mark('coeff');
       return mul(...consts, I(prod(rest), v));
     }
@@ -231,10 +241,36 @@ function applyRule(n, used, subs) {
   if (s) {
     const name = freshName(f, subs);
     mark('usub');
-    subs.push({ name, expr: s.u });
-    return I(replaceSubtree(s.inU, '_u', vr(name)), name);
+    const inU = replaceSubtree(s.inU, '_u', vr(name));
+    // `coeff` is what the integrand's differential piece is a multiple of. For
+    // ∫x·cos(x²)dx the substitution gives du = 2x dx, but the integrand holds
+    // x dx — so the note has to solve for that, and the number it solves to is
+    // the constant left sitting in front of the new integrand.
+    // `v` travels with the substitution: a nested one is made INSIDE an
+    // integral already in u, and a note that called it dw/dx would be naming a
+    // variable the line does not contain.
+    subs.push({ name, expr: s.u, v, backSub: s.backSub, coeff: numericFactor(inU) });
+    return I(inU, name);
   }
   return null;
+}
+
+/**
+ * The numeric factor out in front, with 1 for "none".
+ *
+ * A reciprocal is stored as a power — ½ is `pow(2, -1)` — so looking only for
+ * `num` nodes finds nothing in `cos(u)/2`, which is exactly the case this is
+ * for.
+ */
+function numericFactor(/** @type {any} */ n) {
+  if (isNum(n)) return numV(n);
+  if (n.type !== 'mul') return 1;
+  let c = 1;
+  for (const a of n.args) {
+    if (isNum(a)) c *= numV(a);
+    else if (a.type === 'pow' && isNum(a.base) && isNum(a.exp)) c *= numV(a.base) ** numV(a.exp);
+  }
+  return c;
 }
 
 /** A letter for u that is not already spoken for in this problem. */
@@ -405,17 +441,7 @@ export function integralSteps(node, v = 'x', opts = {}) {
     // The substitution gets its own words, because the choice of u is the whole
     // content of the step and a rule name does not convey it.
     if ([...used].some(id => id.startsWith('usub|'))) {
-      for (const s of subs.slice(before)) {
-        const du = simplify(derivative(s.expr, v));
-        // Every piece of maths inside the delimiters, including the ones that
-        // LOOK like plain text: `x^{2}` renders as literal x^{2} otherwise,
-        // which reads as a typo rather than as a power.
-        notes.push(T(`let \\(${s.name} = ${showS(s.expr)}\\), so `
-          + `\\(\\frac{d${s.name}}{d${v}} = ${showS(du)}\\) and `
-          + `\\(d${s.name} = ${showS(du)}\\,d${v}\\)`));
-        notes.push(G(`the rest of the integrand is exactly \\(${showS(du)}\\,d${v}\\), `
-          + `which is what makes this substitution the one to try`));
-      }
+      for (const s of subs.slice(before)) notes.push(...subNotes(s, s.v || v, T, G));
     }
     push(tail(cur, hasPending(cur)), ...notes);
   }
@@ -465,6 +491,63 @@ export function rulesUsed(steps) {
     }
   }
   return seen;
+}
+
+/**
+ * The margin for a substitution step: what u is, and — the step that matters —
+ * the differential solved for the piece the integrand actually holds.
+ *
+ * `du = 2x dx` is true of ∫x·cos(x²)dx and does not help: the integrand has
+ * x dx. Saying "the rest of the integrand is exactly 2x dx" was simply false
+ * there. What a student is taught to do, and what this now says, is solve for
+ * what they need — ½du = x dx — and that is also the line that explains where
+ * the ½ in front of the next integral came from.
+ *
+ * @param {{name:string, expr:any, v?:string, backSub?:boolean, coeff?:number}} s
+ * @param {string} v the variable this substitution was made in — not always the
+ *   page's, since a nested substitution happens inside an integral already in u
+ * @returns {Note[]}
+ */
+function subNotes(s, v, T, G) {
+  const du = simplify(derivative(s.expr, v));
+  const d = (/** @type {string} */ body) => `\\(${body}\\)`;
+  // Nobody writes "1 dx". A coefficient of one is not written at all.
+  const diff = (/** @type {any} */ n, /** @type {string} */ letter) =>
+    (isNum(n) && Math.abs(numV(n) - 1) < 1e-12 ? `d${letter}` : `${showS(n)}\\,d${letter}`);
+  /** @type {Note[]} */ const notes = [];
+
+  // Every piece of maths inside the delimiters, including the ones that LOOK
+  // like plain text: `x^{2}` renders as literal x^{2} otherwise, which reads as
+  // a typo rather than as a power.
+  notes.push(T(`let ${d(`${s.name} = ${showS(s.expr)}`)}, so `
+    + `${d(`\\frac{d${s.name}}{d${v}} = ${showS(du)}`)} and `
+    + `${d(`d${s.name} = ${diff(du, v)}`)}`));
+
+  if (s.backSub) {
+    // A linear u read backwards. The differential is the easy half; the point
+    // worth making is that an x survived and has to be rewritten too.
+    const lin = linearCoeffs(s.expr, v) || { a: 1, b: 0 };
+    notes.push(T(`solve for ${d(`d${v}`)}: `
+      + `${d(`d${v} = ${diff(simplify(div(ONE, num(lin.a))), s.name)}`)}`));
+    notes.push(G(`there is still an ${d(v)} left over, so the substitution is read `
+      + `backwards as well: ${d(`${v} = ${showS(div(sub(vr(s.name), num(lin.b)), num(lin.a)))}`)}`));
+    return notes;
+  }
+
+  const c = s.coeff ?? 1;
+  const piece = simplify(mul(num(c), du));
+  if (Math.abs(c - 1) > 1e-12) {
+    // One span, with the relation inside it. An `=` set in prose between two
+    // maths fragments is the same mistake as an `=` in its own column: TeX
+    // spaces a relation, and the browser's text does not.
+    notes.push(T(`solve for the piece the integrand actually has: `
+      + `${d(`${diff(num(c), s.name)} = ${diff(piece, v)}`)}`));
+  }
+  // "and nothing else in x" was wrong: cos(x²) is in x. What makes the
+  // substitution work is that everything else is a function of u.
+  notes.push(G(`the integrand holds ${d(diff(piece, v))}, and all the rest of it is a `
+    + `function of ${d(s.name)} — which is what makes this substitution the one to try`));
+  return notes;
 }
 
 /**
