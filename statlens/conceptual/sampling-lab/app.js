@@ -10,12 +10,20 @@ import { attachResamplePeek, createPeekElement } from '../../js/resample-peek.js
 import { createRng } from '../../js/prng.js';
 import { generateQuantPopulation } from '../../js/populations.js';
 import { mean, sd } from '../../js/stats.js';
-import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
+import { drawHistogram, computeBins, snappedPropThresholds, riceBins, renderOverlayLine } from '../../js/histogram.js';
 import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
 import { attachAxisRuler } from '../../js/chart-utils.js';
 import { animateDartScoop } from '../../js/mechanisms/draw-animation.js';
-import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart } from '../../js/page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart, initDisplayToggle } from '../../js/page-utils.js';
+import { applySettings } from '../../js/settings.js';
+
+// The lab had no Simple | Detailed control, because until now it had nothing to
+// put behind one. `initDisplayToggle` self-places after the h1 and self-gates on
+// an `.expert-only` element existing — which the results summary now builds, so
+// it is watched for rather than present at load.
+applySettings();
+initDisplayToggle();
 import { resolveChartType } from '../../js/chart-defaults.js';
 import * as d3Shape from 'd3-shape';
 import * as d3Scale from 'd3-scale';
@@ -477,6 +485,46 @@ function restorePeekedSample() {
  *
  * @param {{frame: any, xScale: any, yScale?: any, countToY?: any, bins?: any[]}} result
  */
+/**
+ * Where the simulated centre actually landed.
+ *
+ * The lab deliberately omitted the mean of the sample means (REQ-030, the
+ * Watkins trap): students shown that number watch it approach μ as n grows and
+ * conclude the sampling distribution's centre improves with n — which is false.
+ * It equals μ at every n; only the ESTIMATE of it gets less noisy.
+ *
+ * The number is the trap, not the idea. Measured on this lab's own scale:
+ *
+ *     n       |x̄̄ − μ|   SD of x̄'s    gap as a FRACTION of the spread
+ *     2         0.106      3.055              0.035
+ *    10         0.036      1.363              0.026
+ *   100         0.014      0.430              0.033
+ *
+ * The raw gap falls 7.5×; the DRAWN gap does not move, because both scale as
+ * 1/√n and cancel — gap/spread = 1/√k, which depends only on how many samples
+ * have been drawn. So a marker on this chart is invariant in n by construction
+ * and carries no false signal, while a printed figure carries it plainly.
+ *
+ * Hence: the marker is always on, the number lives behind Detailed with its own
+ * uncertainty, and the note ties tightening to MORE samples rather than bigger
+ * ones. (Jeff, 2026-10-21.)
+ */
+function drawMeanOfMeansMarker(result) {
+  // Hidden-truth mode exists so the reader estimates the parameter; a marker
+  // sitting on it would hand the answer over.
+  if (truthHidden || sampleMeans.length < 2) return;
+  const { frame, xScale } = result;
+  if (!frame || !xScale) return;
+  const overlays = d3Selection.select(frame.inner).select('.overlays');
+  if (overlays.empty()) return;
+  const m = mean(sampleMeans);
+  if (!isFinite(m)) return;
+  // #C2410C, not the #E07020 used for resample lines: this label is TEXT, and
+  // the lighter orange is 3.23:1 on white — fine for a rule, a fail for words.
+  renderOverlayLine(overlays, m, xScale, frame.height, '#C2410C',
+    `mean of ${lab().stat}'s`, statPrecision(), `mean of ${lab().stat}'s`, true);
+}
+
 function finishSamplingChart(result) {
   peekGeom = {
     xScale: result.xScale,
@@ -485,6 +533,7 @@ function finishSamplingChart(result) {
     bins: result.bins ?? null,
   };
   wireSamplePeek();
+  drawMeanOfMeansMarker(result);
   attachAxisRuler({
     frame: result.frame,
     xScale: result.xScale,
@@ -1289,12 +1338,32 @@ function displayInterpretation() {
   const statSd = sd(sampleMeans);
   const theorySE = popSigma / Math.sqrt(n);
 
+  /**
+   * The centre, reported honestly — behind Detailed, with its own uncertainty.
+   *
+   * Bare, this number is the Watkins trap: it approaches μ as n grows and reads
+   * as "the centre improves with n". With its Monte-Carlo margin attached the
+   * VERDICT is the same at every n — indistinguishable from μ — which is the
+   * true statement, and what shrinks it is drawing MORE samples, not bigger
+   * ones. (See `drawMeanOfMeansMarker` for the measurements.)
+   */
+  const centreLine = () => {
+    const centre = mean(sampleMeans);
+    const margin = 2 * statSd / Math.sqrt(k);     // ±2 SE of the mean of the statistics
+    const sym = isCat() ? '\\hat{p}' : '\\bar{x}';
+    const within = Math.abs(centre - popMu) <= margin;
+    return `<p class="expert-only">Mean of the \\(${sym}\\)'s \\(= ${centre.toFixed(4)}\\) &plusmn; ${margin.toFixed(4)}`
+      + (truthHidden ? '' : ` &ensp;(\\(${isCat() ? 'p' : '\\mu'} = ${popMu.toFixed(4)}\\)${within ? ' — indistinguishable' : ''})`)
+      + `<br><span class="hint">The centre is \\(${isCat() ? 'p' : '\\mu'}\\) for <em>every</em> \\(n\\). Drawing <strong>more samples</strong> pins it down; a larger \\(n\\) narrows the distribution instead.</span></p>`;
+  };
+
   let html;
   if (isCat()) {
     const p = popMu;
     html = `<p><strong>Sampling Distribution of \\(\\hat{p}\\)</strong> — ${k} samples of size \\(n = ${n}\\)</p>`;
     html += `<p>Population proportion: \\(p = ${p.toFixed(3)}\\)</p>`;
     html += `<p>SD of \\(\\hat{p}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sqrt{p(1-p)/n} = ${theorySE.toFixed(4)}\\))</p>`;
+    html += centreLine();
     if (k >= 100) {
       const np = n * p, nq = n * (1 - p);
       const ok = np >= 10 && nq >= 10;
@@ -1310,6 +1379,7 @@ function displayInterpretation() {
     }
     // Honest framing (REQ-030): lead with spread vs theory, not the mean-of-means.
     html += `<p>SD of \\(\\bar{x}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sigma/\\sqrt{n} = ${theorySE.toFixed(4)}\\))</p>`;
+    html += centreLine();
     if (k >= 100) {
       html += `<p class="interpretation">The Central Limit Theorem says the sampling distribution of \\(\\bar{x}\\) is approximately normal with mean \\(\\mu\\) and standard deviation \\(\\sigma/\\sqrt{n}\\), regardless of the population shape — as long as \\(n\\) is large enough. `;
       if (n >= 30) {

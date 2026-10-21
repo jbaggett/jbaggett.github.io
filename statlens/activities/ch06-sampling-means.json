@@ -1,0 +1,120 @@
+{
+  "title": "What If We Drew Again? Sample Means from a Skewed Population",
+  "tool": "conceptual/sampling-lab",
+  "params": {
+    "type": "quant",
+    "shape": "right-skewed",
+    "n": "10",
+    "seed": "ch6mean120"
+  },
+  "steps": [
+    {
+      "instruction": "The **Population** panel shows a strongly **right-skewed** population — most values sit low, with a few large values stretching a long tail to the right. Its true mean **μ** is marked. We can't see a whole population in real life, but here we can. We'll draw samples of **n = 10** and track the **mean** \\(\\bar{x}^*\\) of each sample.",
+      "observe": "Find **μ** marked on the Population panel. A single sample of 10 values will rarely have a mean exactly equal to μ — that sample-to-sample wobble is what we're about to study."
+    },
+    {
+      "instruction": "**Before you draw anything, commit to a prediction.** In the chapter, samples of runners gave proportions that piled up at the population's proportion. Now imagine taking *hundreds* of samples of n = 10 from this skewed population and plotting each sample's mean \\(\\bar{x}\\).",
+      "gate": {
+        "question": "The population is right-skewed. Where will those sample means (\\(\\bar{x}\\)) pile up?",
+        "choices": [
+          {
+            "text": "Centered around μ, the population mean",
+            "feedback": "You've committed — now draw samples and watch where the center of the pile actually lands."
+          },
+          {
+            "text": "Pulled to the right of μ, toward the long tail",
+            "feedback": "You've committed — the skew is tempting. Draw samples and check where the center really falls."
+          },
+          {
+            "text": "Spread evenly across all values",
+            "feedback": "You've committed — draw and see whether the means spread out evenly or cluster somewhere."
+          }
+        ]
+      },
+      "phase": "predict"
+    },
+    {
+      "instruction": "Click **+1** once. The **One sample** panel shows your 10 drawn values; they collapse to a single **mean** \\(\\bar{x}^*\\), which drops as one dot into the **Sampling distribution** panel at the bottom. Click **+1** a few more times.",
+      "requires": {
+        "metric": "samples",
+        "atLeast": 5,
+        "hint": "Click **+1** a few times (at least 5 draws), then continue."
+      },
+      "observe": "Each dot is **one sample's mean** — not one observation. The \\(\\bar{x}\\)'s bounce around from sample to sample, but where do they seem to gather?"
+    },
+    {
+      "instruction": "Now click **+1000** to draw a thousand samples quickly and let the sampling distribution fill in.",
+      "requires": {
+        "metric": "samples",
+        "atLeast": 500,
+        "hint": "Click **+1000** to draw at least 500 sample means, then answer below."
+      },
+      "observe": "Look at the **Sampling distribution** panel and its **SD of \\(\\bar{x}\\)'s** readout: the typical distance of a sample mean from μ. The chapter calls that SD the **standard error**.",
+      "gate": {
+        "question": "Even though the population is strongly right-skewed, where is the distribution of \\(\\bar{x}\\) centered, and how does its shape compare to the population?",
+        "choices": [
+          {
+            "text": "Centered at μ, and less skewed (more symmetric) than the population",
+            "correct": true
+          },
+          {
+            "text": "Centered to the right of μ, and just as skewed as the population"
+          },
+          {
+            "text": "Flat — every value equally likely"
+          }
+        ],
+        "feedback": "It centers at **μ**, and averaging just 10 values already pulls the shape toward symmetric: the skew is fading. Your **{{samples}}** sample means have an SD of **{{statSD}}**: that is how far a sample mean typically lands from μ. Watch what happens to the shape, and to that SD, when you increase n next.",
+        "retryFeedback": "Look at where the dots pile up relative to the μ line, and compare the shape of the **Sampling distribution** panel to the skewed **Population** panel."
+      }
+    },
+    {
+      "instruction": "Two different changes affect this picture in two different ways. First click **+1000 again** (more samples, same n = 10). Then click **Freeze this distribution to compare**, change **Sample size (n) to 100**, and draw **+1000** — so you see both at once.",
+      "requires": {
+        "metric": "n",
+        "equals": 100,
+        "hint": "Freeze the n = 10 distribution, set **Sample size (n)** to **100**, and draw **+1000**."
+      },
+      "observe": "Compare the frozen n = 10 distribution to the new n = 100 one, and watch the **SD of \\(\\bar{x}\\)'s** readout drop.",
+      "gate": {
+        "question": "Which change made the sampling distribution **narrower** — and which just filled it in more smoothly?",
+        "choices": [
+          {
+            "text": "Drawing more samples narrowed it"
+          },
+          {
+            "text": "Increasing the sample size to n = 100 narrowed it",
+            "correct": true
+          },
+          {
+            "text": "Both narrowed it equally"
+          }
+        ],
+        "feedback": "Only a larger **n** narrows it. More samples (more dots) just fill in the *same* n = 10 distribution more smoothly; its spread doesn't change. A larger n produces a *different*, narrower distribution, because each mean now averages over more values, so the highs and lows cancel more. The SD readout at n = 100 is about a third of the one at n = 10. And the n = 100 distribution is close to bell-shaped, while the center stayed at μ the whole time.",
+        "retryFeedback": "Compare the frozen n = 10 distribution to the n = 100 one — same center at μ, different width. Then recall what adding more dots at n = 10 did to the width."
+      }
+    },
+    {
+      "instruction": "You've built the sampling distribution of a sample mean from scratch — starting from a skewed population. Before you read the summary, put the key ideas in your own words.",
+      "respond": {
+        "prompts": [
+          {
+            "id": "why_center",
+            "label": "Why does the sampling distribution of \\(\\bar{x}\\) end up centered at μ, even though the population's long tail is all on the right?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          },
+          {
+            "id": "spread_reason",
+            "label": "Why does a larger n shrink the spread, when drawing more samples doesn't?",
+            "placeholder": "Your reasoning",
+            "rows": 2
+          }
+        ],
+        "answer": "A strong answer: averaging has no built-in lean, so over many samples the means that come out too high balance the ones that come out too low, and the pile sits at μ. A big value from the tail gets averaged with ordinary ones, so it can't drag a mean far. A larger n shrinks the spread because each mean rests on more values, so more of the highs and lows cancel. Drawing more samples only shows the same distribution in more detail."
+      },
+      "reveal": "The sample mean \\(\\bar{x}\\) varies from sample to sample, but predictably: its distribution is **centered at the population mean μ**, it **narrows as n grows**, and it becomes close to **bell-shaped** as n grows, even when the population itself is skewed. **More samples** sharpen the picture of that distribution; a **larger n** changes it. Its standard deviation, the **standard error**, is how far a sample mean typically lands from μ. Why the shape turns bell-shaped, and a shortcut for the spread, come at the end of the unit.",
+      "phase": "explain"
+    }
+  ]
+}
