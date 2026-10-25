@@ -519,6 +519,39 @@ function restorePeekedSample() {
  */
 const LABEL_ROW_2 = 33;
 
+/**
+ * Draw a short line sample just before a label, in the label's own style.
+ *
+ * @param {Element|null} parent - the overlays group
+ * @param {SVGTextElement|undefined} textEl
+ * @param {string} colour
+ * @param {string|null} dash - stroke-dasharray, or null for a solid rule
+ * @param {{width:number}} frame
+ */
+function addLabelSwatch(parent, textEl, colour, dash, frame) {
+  if (!parent || !textEl) return;
+  let bb;
+  try { bb = textEl.getBBox(); } catch { return; }    // not laid out yet
+  if (!bb || !bb.width) return;
+  const SWATCH = 13, GAP = 4;
+  const midY = bb.y + bb.height / 2;
+  // Normally to the LEFT of the text. Near the left edge there is no room, so
+  // it goes to the right instead rather than hanging outside the plot.
+  const leftFits = bb.x - GAP - SWATCH >= 0;
+  const x1 = leftFits ? bb.x - GAP - SWATCH : bb.x + bb.width + GAP;
+  if (!leftFits && x1 + SWATCH > frame.width) return;  // no room either side
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', String(x1));
+  line.setAttribute('x2', String(x1 + SWATCH));
+  line.setAttribute('y1', String(midY));
+  line.setAttribute('y2', String(midY));
+  line.setAttribute('stroke', colour);
+  line.setAttribute('stroke-width', '2.5');
+  line.setAttribute('class', 'label-swatch');
+  if (dash) line.setAttribute('stroke-dasharray', dash);
+  parent.appendChild(line);
+}
+
 function drawMeanOfMeansMarker(result) {
   // Hidden-truth mode exists so the reader estimates the parameter; a marker
   // sitting on it would hand the answer over.
@@ -539,6 +572,31 @@ function drawMeanOfMeansMarker(result) {
   // result was "meanμ of 9.32= 9.83". Give it its own row rather than relying on
   // a de-collider that cannot see it. (Jeff, 2026-10-25.)
   if (label) label.setAttribute('y', String(LABEL_ROW_2));
+
+  // A line sample in front of each label, matching its own marker: solid for
+  // the parameter, dashed for the simulated centre.
+  //
+  // Direct labelling normally beats a legend because the name sits next to the
+  // thing — but these two lines COINCIDE by design, so "directly above its
+  // line" does not tell them apart and identification falls back on colour.
+  // That is the legend's weakness reintroduced, and it breaks the rule about
+  // never using colour alone. The swatch is a legend inlined into the label:
+  // the numbers stay on the chart, the names stay adjacent, and the cue is a
+  // dash pattern rather than a hue. (Jeff, 2026-10-25.)
+  const node = overlays.node();
+  const byFill = (fill) => /** @type {SVGTextElement|undefined} */ (
+    [...node.querySelectorAll('text')]
+      .find((t) => (t.getAttribute('fill') || '').toUpperCase() === fill));
+  // The swatch copies its OWN marker's dash rather than repeating a literal, so
+  // the two cannot drift apart if the marker's style ever changes.
+  const markerDash = (fill) => {
+    const l = [...node.querySelectorAll('line:not(.label-swatch)')]
+      .find((e) => (e.getAttribute('stroke') || '').toUpperCase() === fill);
+    return l ? l.getAttribute('stroke-dasharray') : null;
+  };
+  for (const fill of ['#7B2D8E', '#C2410C']) {
+    addLabelSwatch(node, byFill(fill), fill, markerDash(fill), frame);
+  }
 }
 
 function finishSamplingChart(result) {
