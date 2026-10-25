@@ -509,6 +509,16 @@ function restorePeekedSample() {
  * uncertainty, and the note ties tightening to MORE samples rather than bigger
  * ones. (Jeff, 2026-10-21.)
  */
+/**
+ * Second label row, below the parameter's (which `renderOverlayLine` fixes at 10).
+ *
+ * 14 was not enough: the viewBox is scaled up to the container, so a label that
+ * is ~21 CSS px tall occupies ~20 units of a 600-unit viewBox, and two rows 14
+ * apart still overlapped. Measured, not guessed — the boxes came back 335–356
+ * and 350–371.
+ */
+const LABEL_ROW_2 = 33;
+
 function drawMeanOfMeansMarker(result) {
   // Hidden-truth mode exists so the reader estimates the parameter; a marker
   // sitting on it would hand the answer over.
@@ -521,8 +531,14 @@ function drawMeanOfMeansMarker(result) {
   if (!isFinite(m)) return;
   // #C2410C, not the #E07020 used for resample lines: this label is TEXT, and
   // the lighter orange is 3.23:1 on white — fine for a rule, a fail for words.
-  renderOverlayLine(overlays, m, xScale, frame.height, '#C2410C',
+  const label = renderOverlayLine(overlays, m, xScale, frame.height, '#C2410C',
     `mean of ${lab().stat}'s`, statPrecision(), `mean of ${lab().stat}'s`, true);
+  // These two markers COINCIDE by design — that is the whole point — so their
+  // labels collide every time, and this one is drawn after the chart's own
+  // collision pass has run, so nothing moves it. Both printed at y = 10 and the
+  // result was "meanμ of 9.32= 9.83". Give it its own row rather than relying on
+  // a de-collider that cannot see it. (Jeff, 2026-10-25.)
+  if (label) label.setAttribute('y', String(LABEL_ROW_2));
 }
 
 function finishSamplingChart(result) {
