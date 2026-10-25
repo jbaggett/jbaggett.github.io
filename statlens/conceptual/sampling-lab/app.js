@@ -1354,7 +1354,17 @@ function displayInterpretation() {
     const within = Math.abs(centre - popMu) <= margin;
     return `<p class="expert-only">Mean of the \\(${sym}\\)'s \\(= ${centre.toFixed(4)}\\) &plusmn; ${margin.toFixed(4)}`
       + (truthHidden ? '' : ` &ensp;(\\(${isCat() ? 'p' : '\\mu'} = ${popMu.toFixed(4)}\\)${within ? ' — indistinguishable' : ''})`)
-      + `<br><span class="hint">The centre is \\(${isCat() ? 'p' : '\\mu'}\\) for <em>every</em> \\(n\\). Drawing <strong>more samples</strong> pins it down; a larger \\(n\\) narrows the distribution instead.</span></p>`;
+      // ⚠ This used to read "drawing more samples pins it down; a larger n
+      // narrows the distribution INSTEAD" — which is false, and contradicted the
+      // ± printed directly above it (±0.2525 at n = 5, ±0.0579 at n = 100). The
+      // margin on this estimate is σ/√(nk), so a larger n sharpens it too.
+      //
+      // Jeff, 2026-10-25: "isn't this the same issue with a finite sample from
+      // any population … our population is a population of sample means, but
+      // it's the same issue isn't it?" It is exactly that, and saying so is a
+      // better line than the one it replaces: the thing that changes with n is
+      // the PRECISION of an estimate, never the quantity being estimated.
+      + `<br><span class="hint">The centre is \\(${isCat() ? 'p' : '\\mu'}\\) for <em>every</em> \\(n\\) — what changes is how precisely these ${k.toLocaleString()} samples have <em>estimated</em> it. More samples sharpen that estimate, and so does a larger \\(n\\) (the margin shrinks like \\(1/\\sqrt{nk}\\)); neither moves the centre.</span></p>`;
   };
 
   let html;
