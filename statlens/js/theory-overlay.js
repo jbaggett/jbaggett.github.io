@@ -28,6 +28,31 @@ const SQRT2PI = Math.sqrt(2 * Math.PI);
  * @param {number} sigma
  * @returns {number}
  */
+/**
+ * Normal CDF, in closed form.
+ *
+ * Abramowitz & Stegun 7.1.26 for erf — |error| < 1.5e-7, which is four orders
+ * of magnitude finer than the three decimals any readout here prints. Written
+ * out rather than imported because `js/distributions.js` wraps jStat, and the
+ * simulation pages do not load it; pulling a CDN dependency onto every one of
+ * them for a single tail probability is the trade the chi-square axis refused
+ * for the same reason. (REQ-082.)
+ *
+ * @param {number} x @param {number} mu @param {number} sigma
+ * @returns {number}
+ */
+export function normalCdf(x, mu, sigma) {
+  if (!(sigma > 0)) return NaN;
+  const z = (x - mu) / (sigma * Math.SQRT2);
+  const sign = z < 0 ? -1 : 1;
+  const a = Math.abs(z);
+  const t = 1 / (1 + 0.3275911 * a);
+  const poly = t * (0.254829592 + t * (-0.284496736
+    + t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))));
+  const erf = sign * (1 - poly * Math.exp(-a * a));
+  return 0.5 * (1 + erf);
+}
+
 export function normalPdf(x, mu, sigma) {
   const z = (x - mu) / sigma;
   return Math.exp(-0.5 * z * z) / (sigma * SQRT2PI);

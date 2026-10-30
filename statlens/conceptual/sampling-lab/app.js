@@ -13,7 +13,7 @@ import { mean, sd } from '../../js/stats.js';
 import { drawHistogram, computeBins, snappedPropThresholds, riceBins, renderOverlayLine } from '../../js/histogram.js';
 import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
-import { attachAxisRuler } from '../../js/chart-utils.js';
+import { attachAxisRuler, setLabelText } from '../../js/chart-utils.js';
 import { animateDartScoop } from '../../js/mechanisms/draw-animation.js';
 import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart, initDisplayToggle } from '../../js/page-utils.js';
 import { applySettings } from '../../js/settings.js';
@@ -571,7 +571,18 @@ function drawMeanOfMeansMarker(result) {
   // collision pass has run, so nothing moves it. Both printed at y = 10 and the
   // result was "meanμ of 9.32= 9.83". Give it its own row rather than relying on
   // a de-collider that cannot see it. (Jeff, 2026-10-25.)
-  if (label) label.setAttribute('y', String(LABEL_ROW_2));
+  if (label) {
+    label.setAttribute('y', String(LABEL_ROW_2));
+    // NAME only, no value. The chart answers "where is the centre?" — which is
+    // the part that is invariant in n and carries no false signal. The NUMBER
+    // lives in the Detailed readout, the one place it comes with its margin and
+    // its verdict; printed here it would be a bare figure a reader could
+    // compare across n, which is the whole hazard. (Jeff, 2026-10-26: "what
+    // marker are you discussing" — the label had the value in it all along, so
+    // dropping only the Detailed line would have kept the bare number and
+    // thrown away the honest framing.)
+    setLabelText(label, `mean of ${lab().stat}'s`);
+  }
 
   // A line sample in front of each label, matching its own marker: solid for
   // the parameter, dashed for the simulated centre.

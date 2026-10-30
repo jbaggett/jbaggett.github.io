@@ -31,7 +31,7 @@ import {
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR, ciRegionMass,} from './ci-method.js';
 import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton, simErrorHelpHTML} from './page-utils.js';
-import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
+import { normalPdf, normalCdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
@@ -660,8 +660,15 @@ export function initSimPage(config) {
   // ─── Theory overlay toggle ───
   /** @type {HTMLInputElement|null} */
   let theoryCheckbox = null;
-  let theoryOverlayOn = false;
-  if (toggleFieldset && config.mode === 'bootstrap') {
+  // `?theory=on` opens the page with the curve already drawn, WITHOUT expert
+  // mode — which the toggle itself still sits behind, and which exposes a row
+  // of controls the bridge chapter's students have not met. Default off, so
+  // every existing link is untouched. (REQ-082.)
+  let theoryOverlayOn = urlParams.theory === 'on';
+  // Randomization pages now get this too: the overlay did not exist there at
+  // all — not behind expert mode, nowhere — and the bridge chapter needs to lay
+  // a normal curve over the shuffles. (REQ-082.)
+  if (toggleFieldset) {
     theoryCheckbox = createTheoryToggle(toggleFieldset, (checked) => {
       theoryOverlayOn = checked;
       if (allStats.length > 0) {
@@ -739,7 +746,23 @@ export function initSimPage(config) {
     let se = 0;
     let label = 'N(est, SE)';
 
-    if (config.paired && data2.length > 0) {
+    if (config.mode === 'randomization') {
+      // The theoretical NULL distribution, so it is centred at the null value
+      // — exactly, by construction of the permutation test — and not at the
+      // mean of the shuffles, which is only an estimate of that centre and
+      // would make the curve chase simulation noise. (Same distinction the
+      // Sampling Distribution Lab draws between μ and the mean of the sample
+      // means.)
+      //
+      // Its spread is the SD of the simulated statistics. That is an empirical
+      // quantity, and deliberately so: the bridge chapter's move is "every pile
+      // came out bell-shaped — here is the bell, with the spread your own pile
+      // has", and that spread IS the standard error. (REQ-082.)
+      center = getNullValue();
+      se = sd(stats);
+      const nullTxt = center === 0 ? '0' : formatStat(center, dataPrecision);
+      label = `N(${nullTxt}, SE)`;
+    } else if (config.paired && data2.length > 0) {
       // Paired: bootstrap the mean difference
       const diffs = pairedDiffs();
       center = mean(diffs);
@@ -5522,9 +5545,11 @@ export function initSimPage(config) {
       });
     }
 
-    // Theory overlay (histogram or dotplot, bootstrap mode only). The ±SE and Both
-    // methods switch it on: the normal curve is where that interval comes from.
-    if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot') && config.mode === 'bootstrap') {
+    // Theory overlay (histogram or dotplot). On bootstrap pages the ±SE and Both
+    // methods switch it on — the normal curve is where that interval comes from.
+    // On randomization pages it is the null model laid over the shuffles, opened
+    // by `?theory=on`.
+    if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot')) {
       applyTheoryOverlay(stats);
     }
 
@@ -5820,6 +5845,33 @@ export function initSimPage(config) {
    * @param {number} extremeCount
    * @param {'left'|'right'|'both'} direction
    */
+  /**
+   * The same tail, read off the normal curve instead of counted.
+   *
+   * Only when the curve is actually on screen, so the default readout is
+   * untouched. It is the Compare beat's second number: the simulated p-value
+   * and the model's answer to the same question, side by side. (REQ-082.)
+   */
+  function normalTailHTML(stats, observedStat, direction) {
+    if (!theoryOverlayOn || config.mode !== 'randomization') return '';
+    if (!stats || stats.length < 2 || !isFinite(observedStat)) return '';
+    const mu = getNullValue();
+    const sigma = sd(stats);
+    if (!(sigma > 0)) return '';
+    const below = normalCdf(observedStat, mu, sigma);
+    // `direction` here is the TAIL vocabulary — 'right' / 'left' / 'both', what
+    // `getDirection()` returns — not the alternative's 'greater' / 'less'.
+    // Checking for the latter matched nothing and silently sent every tail down
+    // the two-sided branch: the sex_discrimination link reported 0.021 where the
+    // right tail is 0.011. Caught by checking the number against an exact
+    // permutation calculation rather than trusting it. (REQ-082.)
+    const tail = direction === 'left' ? below
+      : direction === 'right' ? 1 - below
+      : 2 * Math.min(below, 1 - below);
+    if (!isFinite(tail)) return '';
+    return ` <span class="theory-tail">· normal curve ${tail.toFixed(3)}</span>`;
+  }
+
   function displayRandomizationResults(stats, observedStat, pValue, extremeCount, direction) {
     if (posture.active && !posture.complete()) {
       resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
@@ -5874,7 +5926,7 @@ export function initSimPage(config) {
       : '';
     const pLine = extremeCount === 0
       ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
-      : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
+      : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>${normalTailHTML(stats, observedStat, direction)}`;
     // REQ-055: report what the student can see, to the same 3 decimals. Not
     // when `?readout=false` is on — that mode exists to make them read the
     // p-value off the chart themselves, and posting it would answer the
