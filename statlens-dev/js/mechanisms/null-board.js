@@ -60,13 +60,17 @@ const MIN_BOARD_H = 120;
  * @param {() => number} [opts.rand] - seeded, so a `?seed=` link redraws identically
  * @param {number} [opts.width]
  * @param {number} [opts.height]
- * @param {number} [opts.maxDarts]   - above this, the scatter is not drawn
+ * @param {number} [opts.maxDarts]   - above this, the scatter is not drawn.
+ *   The limit is LEGIBILITY, not cost: these are static circles, so drawing
+ *   them is cheap, but past a point the scatter stops reading as individual
+ *   observations and becomes a wash. 600 keeps `mendel_peas` (n = 556, the
+ *   canonical goodness-of-fit example) and drops `stock_geometric` (n = 1,362).
  * @returns {{ dartEls: SVGCircleElement[] }|null}
  */
 export function renderNullBoard(container, opts) {
   if (!container) return null;
   const { categories, props, counts = [], rand = Math.random,
-    width = 300, height = 150, maxDarts = 300 } = opts;
+    width = 300, height = 150, maxDarts = 600 } = opts;
   if (!categories?.length || !props?.length) return null;
 
   const total = props.reduce((a, b) => a + b, 0);
