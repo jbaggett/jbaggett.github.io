@@ -173,6 +173,12 @@ export const PAGE_LABELS = {
   // entity: GOF's source panel is the null population you throw darts at, and
   // the observed counts enter at the end as the thing you compare against —
   // exactly the distinction `statedPopulation` was split out to carry.
+  //
+  // Its draw panel takes a THIRD name, "Your Observed Sample", while Step 1's
+  // toggle is showing the data rather than a draw. That is not the drift this
+  // table exists to catch: the panel is holding a different thing, and a
+  // different thing may have a different name. The drift was one panel renaming
+  // itself while holding the same thing, which is what got fixed above.
   'goodness-of-fit': { source: 'Population under H₀', draw: 'This Simulation' },
 };
 

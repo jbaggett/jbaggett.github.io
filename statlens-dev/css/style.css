@@ -6626,7 +6626,26 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .null-board-cat { font-size: 9.5px; fill: var(--ims-green, #114B5F); }
 .null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
 /* Dark dot, white halo: readable on every band fill without relying on one. */
-.null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8; }
+/* The observed χ², on its way to its own purple marker. Matches
+   chart-utils' STAT_OBSERVED exactly — a flyer that lands on a line of a
+   different colour reads as two different quantities. */
+.gof-observed-flyer {
+  position: fixed; z-index: 60; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+  border-radius: 50%; background: #7B2D8E; border: 1.5px solid #fff;
+  pointer-events: none;
+}
+.gof-tally--observed .con-total { color: #7B2D8E; }
+.null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8;
+  /* So the landing scale is about the dot's own centre, not the SVG origin. */
+  transform-box: fill-box; transform-origin: center; }
+/* Each dart drops in and sticks, with a small overshoot — the same "stick" the
+   one-proportion scoop uses. `both` keeps it invisible until its turn, so the
+   board fills rather than appearing. Skipped entirely under reduced motion:
+   rainDarts returns before setting any of this. */
+@keyframes nb-dart-land {
+  from { opacity: 0; transform: translateY(-9px) scale(0.2); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
 /* Ties a dodged label back to its band. Thin and pale: it is a pointer, not
    a mark to read, and it must not compete with the darts over the fill. */
 .null-board-leader { stroke: var(--ims-green, #114B5F); stroke-width: 0.5; opacity: 0.55; }
@@ -6638,15 +6657,32 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .gof-tally th, .gof-tally td { padding: 0.12rem 0.35rem; text-align: left; }
 .gof-tally thead th { font-size: 0.72rem; color: var(--ims-gray-text, #666); border-bottom: 1px solid #ccd6dc; white-space: nowrap; }
 .gof-tally .num { text-align: right; font-variant-numeric: tabular-nums; }
-.gof-tally tbody th { font-weight: 500; white-space: nowrap; }
+/* Dark, not the inherited IMS blue: #569BBD on white is 2.90:1, below the 4.5
+   a WCAG AA body text needs, and the row tint underneath it does not help. The
+   row's colour identity is the TINT; the name on top of it has to be readable.
+   (Measured 2026-10-30, on a table this session introduced.) */
+.gof-tally tbody th { font-weight: 500; white-space: nowrap; color: var(--ims-green, #114B5F); }
 .gof-tally .obs { font-weight: 700; }
-.gof-tally .exp { color: var(--ims-gray-text, #666); }
-.gof-tally .con { border-radius: 3px; background: color-mix(in srgb, var(--ims-blue, #569BBD) calc(var(--share, 0) * 55%), transparent); }
-.gof-tally tfoot th, .gof-tally tfoot td { border-top: 1px solid #ccd6dc; font-weight: 700; padding-top: 0.22rem; }
+/* #595959, not the shared --ims-gray-text (#6B6B6B): that grey is 5.13:1 on
+   white but only 4.31:1 once the row tint is under it, and expected counts are
+   text. Still clearly lighter than the bold observed beside it. */
+.gof-tally .exp { color: #595959; }
+.gof-tally tbody tr {
+  /* The row carries its own band colour, pale, instead of a swatch beside the
+     name: the table and the board then read as one picture without a second
+     little object to decode. Jeff, 2026-10-30: "maybe we could have a pale
+     background color in each of the rows corresponding to the population
+     colors, it might be better than the colored squares."
+     Never the only cue — the name is in the row, and the ORDER matches the
+     board top to bottom. */
+  background: color-mix(in srgb, var(--band, transparent) 15%, transparent);
+}
+/* Share of χ², as a NEUTRAL darkening rather than more blue: it now lands on
+   top of seven different row tints, and a blue wash over a pink row read as a
+   third colour that meant nothing. Neutral reads as "more" over any hue. */
+.gof-tally .con { border-radius: 3px; background: color-mix(in srgb, #2A3C44 calc(var(--share, 0) * 26%), transparent); }
+.gof-tally tfoot th, .gof-tally tfoot td { border-top: 1px solid #ccd6dc; font-weight: 700; padding-top: 0.22rem; color: var(--ims-green, #114B5F); }
 .gof-tally .con-total { white-space: nowrap; color: var(--ims-green, #114B5F); }
-/* The category's own band colour, so the table and the board read as one
-   picture — alongside the name, never instead of it. */
-.gof-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; border: 1px solid #333; margin-right: 0.3rem; vertical-align: -1px; }
 
 /* ── Band → tally flight (GOF) ───────────────────────────────────────────
    One flyer per CATEGORY, not per observation: the claim being made is about

@@ -104,14 +104,14 @@
         </section>
 
         <!-- Mechanism strip, following randomization-one-prop: the null population,
-             then one draw from it. The OBSERVED counts are deliberately not here —
-             they are not part of the repeating mechanism. They appear as the marker
-             on the distribution and, decomposed, in the results sidebar beside the
-             p-value, which is where the comparison is actually made. (Jeff, 2026-10-30.) -->
+             then one draw from it. The observed counts are not a third panel — they
+             are not part of the repeating mechanism — but Step 1's toggle will run
+             this same apparatus on them, so the reader can watch their own sample be
+             scattered on H₀ and scored by the same arithmetic. (Jeff, 2026-10-30.) -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Simulation mechanism" hidden>
             <div class="mechanism-panels">
                 <div class="mechanism-panel" data-entity="source">
-                    <h2 class="mechanism-title">Population under H<sub>0</sub></h2>
+                    <h2 class="mechanism-title"><span>Population under H<sub>0</sub></span></h2>
                     <div id="mech-null-board" class="null-board-wrap"></div>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">&rarr;</div>

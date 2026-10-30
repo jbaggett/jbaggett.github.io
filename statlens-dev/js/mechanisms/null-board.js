@@ -221,6 +221,58 @@ export function renderNullBoard(container, opts) {
 }
 
 /**
+ * Throw the sample at the board.
+ *
+ * The darts are ALREADY where they belong — `renderNullBoard` placed them to
+ * match counts the statistical rng had already decided. This only governs when
+ * each one arrives, so the reader watches a sample being taken instead of
+ * finding one that was always there. (Jeff, 2026-10-30: "It would be nice if
+ * there was some animation, somehow, with the sample from the population.")
+ *
+ * The k-band sibling of `animateDartScoop`, which cannot be reused: that one
+ * splits a board left|right on a single proportion and asks each dart whether
+ * it was a success. Here the band a dart lands in IS its category, and there
+ * are up to seven of them.
+ *
+ * ⚠ The launch order is SHUFFLED. The darts are created band by band, so
+ * animating them in document order would fill the board top-down by category —
+ * a picture that says "first we draw the Whites, then the Blacks", when the
+ * whole claim is that each observation is an independent draw from p₀. Same
+ * reasoning as `animateDartScoop`, which learned it first. (Jeff, 2026-10-03.)
+ *
+ * @param {Element[]} darts - the board's dart circles, as rendered
+ * @param {object} [opts]
+ * @param {() => number} [opts.rand] - decoration only; never the page's rng
+ * @param {number} [opts.max] - decline above this many (the board declines too)
+ * @param {() => void} [opts.onDone]
+ * @returns {number} ms the rain will take (0 if it was skipped)
+ */
+export function rainDarts(darts, { rand = Math.random, max = 600, onDone } = {}) {
+  const done = () => { if (onDone) onDone(); };
+  if (prefersReducedMotion() || !darts?.length || darts.length > max) { done(); return 0; }
+
+  const n = darts.length;
+  // A rat-a-tat that stays about half a second whether n is 20 or 500: the
+  // cadence is the point, not one dart per beat.
+  const STAGGER = Math.min(520 / n, 9);
+  const DUR = 280;
+
+  const order = darts.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    const t = order[i]; order[i] = order[j]; order[j] = t;
+  }
+  order.forEach((idx, pos) => {
+    const d = /** @type {SVGElement} */ (darts[idx]);
+    d.style.animation = `nb-dart-land ${DUR}ms cubic-bezier(.34,1.56,.64,1) ${pos * STAGGER}ms both`;
+  });
+
+  const total = (n - 1) * STAGGER + DUR;
+  setTimeout(done, total);
+  return total;
+}
+
+/**
  * Fly the darts of each band into that band's row in the tally.
  *
  * The step between the two panels: the board shows where the observations

@@ -7,7 +7,8 @@
  */
 
 import { createRng } from '../../js/prng.js';
-import { renderNullBoard, BAND_FILLS, flyBandsToTally } from '../../js/mechanisms/null-board.js';
+import { prefersReducedMotion } from '../../js/settings.js';
+import { renderNullBoard, BAND_FILLS, flyBandsToTally, rainDarts } from '../../js/mechanisms/null-board.js';
 import { wordsFor } from '../../js/mechanisms/vocabulary.js';
 import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 
@@ -58,6 +59,13 @@ initPlayPause(genBtns, resetBtn);
 /** @type {number[]} */ let p0 = [];
 /** @type {number[]} */ let expected = [];
 let observedChisq = 0;
+/** 'sim' shows a draw from H₀ in the strip; 'observed' shows the data's own counts. */
+let stripMode = 'sim';
+/** @type {number[]} The most recent simulated sample, to come back to. */
+let lastSimSample = [];
+let lastSimChisq = 0;
+/** @type {NodeListOf<HTMLButtonElement>|null} */
+let stripToggleBtns = null;
 let totalN = 0;
 let currentSourceName = '';
 // The dataset behind the loaded counts, kept so the panel can collapse onto it
@@ -237,6 +245,7 @@ function showDataLoaded() {
     mechanismInitialized = true;
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
+    initStripToggle();
   }
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
 
@@ -250,6 +259,146 @@ function showDataLoaded() {
     if (target && !plotOnly) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
   announce(`Data loaded: ${categories.length} categories, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}.`);
+}
+
+/**
+ * Step 1 and Step 2, painted for whichever sample is being shown.
+ *
+ * Both views use the SAME board and the SAME table — only the counts differ.
+ * That is the point of the toggle Jeff asked for (2026-10-30: "a toggle in
+ * Step 1 that can show the orginal observed sample and the connected table and
+ * a purple dot that flies to the observed value"): the reader watches one
+ * apparatus run twice, once on a sample from H₀ and once on their own data,
+ * and the comparison the p-value makes becomes a thing they have seen rather
+ * than a number they are told.
+ *
+ * The bands never change. They are H₀, and H₀ is the same whichever sample is
+ * scattered on it — which is exactly why the observed sample looks wrong on
+ * them when it does.
+ *
+ * @param {boolean} [latest] - mark this as the newest draw
+ * @returns {{ dartEls: SVGCircleElement[] }|null} the board, for the dart rain
+ */
+function paintStrip(latest = false) {
+  const showObserved = stripMode === 'observed';
+  const counts = showObserved ? observed : lastSimSample;
+  if (!counts?.length) return null;
+
+  /** @type {{ dartEls: SVGCircleElement[] }|null} */ let board = null;
+  if (mechNullBoard) {
+    // Its own RNG, seeded from the page seed — the dart positions are
+    // decoration and must not consume the stream the STATISTICS come from, or
+    // the numbers would move. Same reason `renderEmptyChart` uses a separate
+    // `presim-` generator in sim-app. The observed view gets its own stream
+    // name so its scatter is stable no matter how many simulations have run.
+    const boardRng = createRng(showObserved ? `obs-${seed}` : `darts-${seed}-${allStats.length}`);
+    board = renderNullBoard(mechNullBoard, {
+      categories, props: p0, counts, rand: boardRng,
+      width: 300, height: Math.max(110, 26 * categories.length),
+    });
+  }
+  if (mechSimulated) mechSimulated.innerHTML = tallyTableHTML(counts, { flyable: true, observed: showObserved });
+  if (simTitleEl) {
+    // A different NAME for a different entity, which is not the drift
+    // `vocabulary.js` catalogues — that was one panel renaming itself while
+    // holding the same thing. This panel really is holding your data now.
+    simTitleEl.textContent = showObserved ? 'Your Observed Sample'
+      : (latest ? words.draw : words.drawLatest);
+  }
+  if (mechanismDescEl) {
+    mechanismDescEl.textContent = showObserved
+      ? 'Your own counts, scored against the same p₀'
+      : 'Draw n observations from the hypothesized distribution p₀';
+    mechanismDescEl.hidden = false;
+  }
+  return board;
+}
+
+/**
+ * The observed χ², flying to its marker on the null distribution.
+ *
+ * `animateDropToChart` cannot do this one: it aims at the newest SIMULATED
+ * value, which it finds by looking for the chart's orange highlight. The
+ * observed statistic is a fixed purple line, and the whole point of the flight
+ * is that your data lands somewhere specific in a distribution that was built
+ * without it.
+ */
+function flyObservedToMarker() {
+  if (prefersReducedMotion() || !chartContainer) return;
+  const svg = chartContainer.querySelector('svg');
+  const source = document.querySelector('[data-chi-cell]');
+  // The purple overlay line IS the observed marker; see js/histogram.js, which
+  // draws it with chart-utils' STAT_OBSERVED.
+  const marker = svg?.querySelector('.overlays line[stroke="#7B2D8E"]');
+  if (!svg || !source || !marker) return;
+
+  const from = source.getBoundingClientRect();
+  const to = marker.getBoundingClientRect();
+  if (!from.width || !to.height) return;
+
+  const dot = document.createElement('span');
+  dot.className = 'gof-observed-flyer';
+  dot.style.left = `${from.left + from.width / 2}px`;
+  dot.style.top = `${from.top + from.height / 2}px`;
+  document.body.appendChild(dot);
+
+  const dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+  const dy = (to.top + to.height * 0.75) - (from.top + from.height / 2);
+  dot.animate([
+    { transform: 'translate(0,0) scale(0.6)', opacity: 0 },
+    { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 26}px) scale(1)`, opacity: 1, offset: 0.5 },
+    { transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 1 },
+  ], { duration: 620, easing: 'cubic-bezier(.4,0,.3,1)' }).onfinish = () => {
+    dot.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220 }).onfinish = () => dot.remove();
+  };
+}
+
+/** Show the observed sample, or the latest simulated one, in the strip. */
+function setStripMode(mode) {
+  if (mode === stripMode) return;
+  stripMode = mode;
+  syncStripToggle();
+  const board = paintStrip();
+  if (mode !== 'observed') return;
+  announce('Showing your observed sample, scored against the hypothesized distribution.');
+  const rain = createRng(`obsrain-${seed}`);
+  rainDarts(board?.dartEls ?? [], {
+    rand: rain,
+    onDone: () => flyBandsToTally({
+      board: mechNullBoard?.querySelector('.null-board') ?? null,
+      table: mechSimulated,
+      onDone: flyObservedToMarker,
+    }),
+  });
+}
+
+/** Reflect `stripMode` on the two toggle buttons. */
+function syncStripToggle() {
+  if (!stripToggleBtns) return;
+  for (const b of stripToggleBtns) {
+    b.setAttribute('aria-pressed', String(b.dataset.view === stripMode));
+  }
+}
+
+/**
+ * The toggle itself, in the Step 1 heading — the same seg-control the one-mean
+ * page puts there, at the far end of the title rather than on a row below it.
+ */
+function initStripToggle() {
+  const titleEl = document.querySelector('#mechanism-strip .mechanism-panel[data-entity="source"] .mechanism-title');
+  if (!titleEl || stripToggleBtns) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'seg-control mech-null-toggle';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'Scatter a simulated sample or your own data on the null');
+  wrap.innerHTML =
+    '<button type="button" data-view="sim" aria-pressed="true">Simulated</button>'
+    + '<button type="button" data-view="observed" aria-pressed="false">Your data</button>';
+  titleEl.appendChild(wrap);
+  stripToggleBtns = wrap.querySelectorAll('button');
+  for (const b of stripToggleBtns) {
+    b.addEventListener('click', () => setStripMode(b.dataset.view === 'observed' ? 'observed' : 'sim'));
+  }
 }
 
 /**
@@ -267,23 +416,29 @@ function showDataLoaded() {
  * contributed nothing. On `jury`, 5.89 is White 0.25 against Black 2.37,
  * Hispanic 1.94 and Other 1.34 — the dataset's actual story.
  *
- * The count column is headed "Simulated (o)", not "Observed": the data-entry
- * table at the top of this same page has an "Observed" column holding the REAL
- * counts, and two columns on one screen under one word, holding different
- * numbers, is the collision `js/mechanisms/vocabulary.js` exists to catch. The
- * letters also make the third column self-explaining. The data's own counts are
- * not in this strip at all; they are the marker on the distribution, and the
- * results sidebar carries their decomposition.
+ * The count column is headed "Simulated (o)" in the simulation view, not
+ * "Observed": the data-entry table at the top of this same page has an
+ * "Observed" column holding the REAL counts, and two columns on one screen
+ * under one word, holding different numbers, is the collision
+ * `js/mechanisms/vocabulary.js` exists to catch. The letters also make the
+ * third column self-explaining.
+ *
+ * In the OBSERVED view the same table is run on the data's own counts, where
+ * "Observed (o)" is then the honest heading because it is the only count on
+ * screen. The two views share this function deliberately: the reader is being
+ * shown that one arithmetic is applied to both, and a separate renderer would
+ * eventually drift into looking like a different calculation.
  *
  * @param {number[]} counts
  * @param {object} [opts]
  * @param {boolean} [opts.flyable] - tag the observed cells so darts can land on them
+ * @param {boolean} [opts.observed] - this is the data's own sample, not a draw
  */
 function tallyTableHTML(counts, opts = {}) {
   const chi = chiSqOf(counts);
-  let html = '<table class="gof-tally"><thead><tr>'
+  let html = `<table class="gof-tally${opts.observed ? ' gof-tally--observed' : ''}"><thead><tr>`
     + '<th scope="col">Category</th>'
-    + '<th scope="col" class="num">Simulated (o)</th>'
+    + `<th scope="col" class="num">${opts.observed ? 'Observed' : 'Simulated'} (o)</th>`
     + '<th scope="col" class="num">Expected (e)</th>'
     + '<th scope="col" class="num">(o\u2212e)\u00b2/e</th>'
     + '</tr></thead><tbody>';
@@ -294,8 +449,8 @@ function tallyTableHTML(counts, opts = {}) {
     // without reading every number — tint, not colour, because the number is
     // already there and colour must never be the only cue.
     const share = chi > 0 ? contrib / chi : 0;
-    html += `<tr>
-      <th scope="row"><span class="gof-swatch" style="background:${BAND_FILLS[i % BAND_FILLS.length]}"></span>${esc(categories[i])}</th>
+    html += `<tr style="--band:${BAND_FILLS[i % BAND_FILLS.length]}">
+      <th scope="row">${esc(categories[i])}</th>
       <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}>${counts[i]}</td>
       <td class="num exp">${e.toFixed(1)}</td>
       <td class="num con" style="--share:${share.toFixed(3)}">${contrib.toFixed(2)}</td>
@@ -345,14 +500,9 @@ function generateSimulations(count) {
     mechanismInitialized = true;
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
+    initStripToggle();
   }
   const prevLength = allStats.length;
-  // From the vocabulary module, not hardcoded: this panel shipped as
-  // "This Simulation" and was then rewritten to "This Sample under H₀" on the
-  // first draw — one panel, two names, which is the drift
-  // `js/mechanisms/vocabulary.js` catalogues. One-prop reads the same two words
-  // for the same act, and since 2026-10-30 this page declares the same kind.
-  if (simTitleEl) simTitleEl.textContent = count === 1 ? words.draw : words.drawLatest;
 
   /** @type {number[]} */ let lastSample = [];
   let lastChisq = 0;
@@ -364,34 +514,64 @@ function generateSimulations(count) {
     lastChisq = chi2;
   }
 
+  /**
+   * Draws the chart. Assigned below, once its arguments exist; the single-draw
+   * animation chain finishes by calling it, so the statistic arrives in the
+   * distribution at the end of the sentence rather than before it was counted.
+   */
+  let runChart = () => {};
+
   const updateMech = () => {
     // Where that sample came from: the null as a field of areas, with the
     // sample scattered across it. Its own RNG, seeded from the page seed — the
     // dart positions are decoration and must not consume the stream the
     // STATISTICS come from, or the numbers would move. Same reason
     // `renderEmptyChart` uses a separate `presim-` generator in sim-app.
-    if (mechNullBoard) {
-      const boardRng = createRng(`darts-${seed}-${allStats.length}`);
-      renderNullBoard(mechNullBoard, {
-        categories, props: p0, counts: lastSample, rand: boardRng,
-        width: 300, height: Math.max(110, 26 * categories.length),
-      });
-    }
-    if (mechSimulated) mechSimulated.innerHTML = tallyTableHTML(lastSample, { flyable: true });
-    // …then carry each band's tally across to its row, on a single draw. On a
-    // batch there is nothing to watch, and 1,000 flights would be noise.
-    if (count === 1) {
-      flyBandsToTally({
-        board: mechNullBoard?.querySelector('.null-board') ?? null,
-        table: mechSimulated,
-      });
-    }
+    lastSimSample = lastSample;
+    lastSimChisq = lastChisq;
+    // Pressing +1 while looking at your own data means you want the simulation
+    // back; it would be strange to draw a sample and not be shown it. The
+    // BUTTONS have to follow: setting the mode without syncing them left "Your
+    // data" lit above a table of simulated counts — a control lying about what
+    // is on screen.
+    stripMode = 'sim';
+    syncStripToggle();
+    const board = paintStrip(count === 1);
     if (mechSimulatedChisq) {
       mechSimulatedChisq.textContent = formatStat(lastChisq, 2);
       mechSimulatedChisq.classList.toggle('highlight-last', count === 1);
     }
+
+    // On a batch there is nothing to watch, and 1,000 flights would be noise.
+    if (count !== 1) { runChart(); return; }
+
+    // One draw, told in order: the darts rain onto the null, each band's tally
+    // crosses to its row, and only then does the χ² leave for the distribution.
+    //
+    // It used to run the other way round — the chart rendered on a 150ms timer
+    // while the table was still being replaced on a 200ms one, so the statistic
+    // set off from the previous draw's total before this draw's had been
+    // counted. Nothing asserted the order, because every test reads the settled
+    // state. Chaining the phases is what makes the strip a sentence rather than
+    // three things that happen to start at once.
+    const dartRng = createRng(`rain-${seed}-${allStats.length}`);
+    rainDarts(board?.dartEls ?? [], {
+      rand: dartRng,
+      onDone: () => flyBandsToTally({
+        board: mechNullBoard?.querySelector('.null-board') ?? null,
+        table: mechSimulated,
+        onDone: () => {
+          runChart();
+          // The χ² flies from the TABLE's total, where it was just computed,
+          // rather than from a separate line repeating it — the statistic
+          // leaves the place the reader watched it add up. (Jeff, 2026-10-30.)
+          const dropSource = document.querySelector('[data-chi-cell]')
+            || document.getElementById('mech-simulated-chisq');
+          if (dropSource && chartContainer) animateDropToChart(dropSource, chartContainer);
+        },
+      }),
+    });
   };
-  if (count === 1) setTimeout(updateMech, 200); else updateMech();
   if (mechanismDescEl) {
     mechanismDescEl.textContent = 'Draw n observations from the hypothesized distribution p₀';
     mechanismDescEl.hidden = false;
@@ -406,18 +586,12 @@ function generateSimulations(count) {
   const { pValue, extremeCount } = computePValue(allStats, observedChisq);
   displayResults(allStats, observedChisq, pValue, extremeCount);
 
+  runChart = () => renderChart(
+    allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
   if (count === 1) {
-    setTimeout(() => {
-      renderChart(allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
-      // The χ² flies from the TABLE's total, where it was just computed, rather
-      // than from a separate line repeating it — the statistic leaves the place
-      // the reader watched it add up. (Jeff, 2026-10-30.)
-      const dropSource = document.querySelector('[data-chi-cell]')
-        || document.getElementById('mech-simulated-chisq');
-      if (dropSource && chartContainer) animateDropToChart(dropSource, chartContainer);
-    }, 150);
+    setTimeout(updateMech, 200);
   } else {
-    renderChart(allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
+    updateMech();
   }
   if (resetBtn) resetBtn.hidden = false;
   announce(`Generated ${count} sample${count > 1 ? 's' : ''}. Total: ${allStats.length}`);
