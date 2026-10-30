@@ -695,7 +695,7 @@ button changes that). A colour key under the strip names both outcomes.
 
 **Path:** `simulate/goodness-of-fit/`
 **Category:** Simulate
-**Description:** Simulation-based goodness-of-fit test for a single categorical variable against a specified distribution p₀. Repeatedly draws a fresh multinomial sample of size n *from* p₀ (seeded), computes the χ² goodness-of-fit statistic Σ(O−E)²/E each time, and builds the null distribution; the observed χ² is marked and the p-value is the right-tail fraction. The mechanism strip shows observed counts vs. one simulated sample under H₀ (with dashed expected-count markers). Load a `type: gof` dataset or enter categories + observed counts + hypothesized proportions manually.
+**Description:** Simulation-based goodness-of-fit test for a single categorical variable against a specified distribution p₀. Repeatedly draws a fresh multinomial sample of size n *from* p₀ (seeded), computes the χ² goodness-of-fit statistic Σ(O−E)²/E each time, and builds the null distribution; the observed χ² is marked and the p-value is the right-tail fraction. The mechanism strip shows the null as a field of bands whose heights are p₀, with the sample as darts thrown at it, then carries each band's tally into a category / observed / expected / (o−e)²/e table that totals to χ². A **Simulated | Your data** toggle in Step 1 runs the same board and table on the observed counts and flies that χ² to its marker on the distribution. Load a `type: gof` dataset or enter categories + observed counts + hypothesized proportions manually.
 **Concepts:** Goodness-of-fit test, multinomial sampling, chi-square statistic, expected counts (n·p₀), simulation-based inference, null distribution, p-value
 
 **URL Parameters:**
