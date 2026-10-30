@@ -7,6 +7,7 @@
  */
 
 import { createRng } from '../../js/prng.js';
+import { renderNullBoard } from '../../js/mechanisms/null-board.js';
 import { wordsFor } from '../../js/mechanisms/vocabulary.js';
 import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 
@@ -31,6 +32,7 @@ const datasetDesc = document.getElementById('dataset-desc');
 const mechanismStrip = document.getElementById('mechanism-strip');
 const mechObserved = document.getElementById('mech-observed');
 const mechSimulated = document.getElementById('mech-simulated');
+const mechNullBoard = document.getElementById('mech-null-board');
 const mechObservedChisq = document.getElementById('mech-observed-chisq');
 const mechSimulatedChisq = document.getElementById('mech-simulated-chisq');
 const mechanismDescEl = document.getElementById('mechanism-description');
@@ -348,6 +350,18 @@ function generateSimulations(count) {
 
   if (count === 1 && mechObserved && mechSimulated) flyDataStream(mechObserved, mechSimulated);
   const updateMech = () => {
+    // Where that sample came from: the null as a field of areas, with the
+    // sample scattered across it. Its own RNG, seeded from the page seed — the
+    // dart positions are decoration and must not consume the stream the
+    // STATISTICS come from, or the numbers would move. Same reason
+    // `renderEmptyChart` uses a separate `presim-` generator in sim-app.
+    if (mechNullBoard) {
+      const boardRng = createRng(`darts-${seed}-${allStats.length}`);
+      renderNullBoard(mechNullBoard, {
+        categories, props: p0, counts: lastSample, rand: boardRng,
+        width: 300, height: Math.max(110, 26 * categories.length),
+      });
+    }
     if (mechSimulated) mechSimulated.innerHTML = miniBarsHTML(lastSample);
     if (mechSimulatedChisq) {
       mechSimulatedChisq.textContent = formatStat(lastChisq, 2);

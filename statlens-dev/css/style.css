@@ -6614,3 +6614,16 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   .group-order { flex-wrap: wrap; }
   .order-swap { min-height: 44px; }
 }
+
+/* ── The null model as a dart field (GOF mechanism) ──────────────────────
+   Band heights ARE the hypothesised proportions, so a uniformly-thrown dart
+   lands in a band with exactly that probability — the picture is the sampling
+   model, not an illustration of it. Names sit in a left gutter on white rather
+   than on the fill, so label contrast never depends on which colour a category
+   happened to get. */
+.null-board-wrap { margin: 0.2rem 0 0.45rem; }
+.null-board { display: block; max-width: 320px; }
+.null-board-cat { font-size: 9.5px; fill: var(--ims-green, #114B5F); }
+.null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
+/* Dark dot, white halo: readable on every band fill without relying on one. */
+.null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8; }
