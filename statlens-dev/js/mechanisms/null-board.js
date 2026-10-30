@@ -104,6 +104,11 @@ export function renderNullBoard(container, opts) {
     const h = (props[i] / total) * boardH;
 
     const rect = document.createElementNS(NS, 'rect');
+    // Classed, like every other element in this SVG. `flyBandsToTally` and the
+    // height assertions both used to select a bare `rect`, which was correct
+    // only while bands were the sole rects here — a frame or a backdrop added
+    // later would have joined them silently and flown from the wrong box.
+    rect.setAttribute('class', 'null-board-band');
     rect.setAttribute('x', String(LABEL_W));
     rect.setAttribute('y', String(y));
     rect.setAttribute('width', String(fieldW));
@@ -183,7 +188,7 @@ export function flyBandsToTally({ board, table, duration = 520, onDone }) {
   if (prefersReducedMotion() || !board || !table) { done(); return 0; }
 
   const cells = [...table.querySelectorAll('[data-tally-cell]')];
-  const bands = [...board.querySelectorAll('rect')];
+  const bands = [...board.querySelectorAll('.null-board-band')];
   if (!cells.length || !bands.length) { done(); return 0; }
 
   const layer = document.createElement('div');
