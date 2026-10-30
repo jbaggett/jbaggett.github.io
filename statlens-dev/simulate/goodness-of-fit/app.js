@@ -7,18 +7,22 @@
  */
 
 import { createRng } from '../../js/prng.js';
-import { renderNullBoard } from '../../js/mechanisms/null-board.js';
+import { renderNullBoard, BAND_FILLS, flyBandsToTally } from '../../js/mechanisms/null-board.js';
 import { wordsFor } from '../../js/mechanisms/vocabulary.js';
 import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 
 /** These pages break an association by permuting one side of it. */
-const words = wordsFor('permuteAssociation');
+// `statedPopulation`, not `permuteAssociation`: nothing is permuted here. H₀
+// names the proportions outright and the darts are drawn from them, which is
+// the one-proportion test's mechanism with k categories instead of 2. Both
+// spell `distribution` 'Null Distribution', so no displayed string moves.
+const words = wordsFor('statedPopulation');
 // Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
 applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
@@ -30,7 +34,6 @@ const dataPreview = document.getElementById('data-preview');
 const datasetSelect = /** @type {HTMLSelectElement} */ (document.getElementById('dataset-select'));
 const datasetDesc = document.getElementById('dataset-desc');
 const mechanismStrip = document.getElementById('mechanism-strip');
-const mechObserved = document.getElementById('mech-observed');
 const mechSimulated = document.getElementById('mech-simulated');
 const mechNullBoard = document.getElementById('mech-null-board');
 const mechObservedChisq = document.getElementById('mech-observed-chisq');
@@ -222,7 +225,7 @@ function showDataLoaded() {
   if (h0El) h0El.innerHTML = categories.map((c, i) => `p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}`).join(', ');
   if (hypBox) hypBox.hidden = false;
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Draw simulated samples to build the null distribution.</p>';
-  if (mechObserved) mechObserved.innerHTML = miniBarsHTML(observed);
+  // The observed counts are no longer in the strip (see index.html).
   if (mechObservedChisq) mechObservedChisq.textContent = formatStat(observedChisq, 2);
 
   // The strip opens as soon as there is data, with the observed panel already
@@ -255,48 +258,56 @@ function showDataLoaded() {
  * @param {number[]} counts
  */
 /**
- * One row per category: the observed count as a bar, the expected count as a
- * dashed tick, and — new — what that gap COSTS, (o−e)²/e.
+ * Step 2: the tally this draw produced, and what it costs.
  *
- * χ² was a number that arrived from nowhere. The bars showed that a category
- * was off its expected count, and the statistic appeared underneath, but
- * nothing connected the two: a reader could not see that one category was
- * carrying the whole statistic while another contributed nothing. Todd Will's
- * sketch (via Jeff, 2026-10-30) decomposes it — on his example χ² = 4.100 is
- * Red 2.25 + Blue 0.25 + Green 1.60 + Yellow 0.00 — and the column is the part
- * of that sketch that needs no animation at all.
+ * Todd Will's four columns — category, observed, expected, (o−e)²/e — with the
+ * total that IS χ². Replacing the bar chart was the point: χ² used to arrive as
+ * a number with nothing connecting it to the counts above it, so a reader could
+ * not see that one category was carrying the whole statistic while another
+ * contributed nothing. On `jury`, 5.89 is White 0.25 against Black 2.37,
+ * Hispanic 1.94 and Other 1.34 — the dataset's actual story.
  *
- * The contribution is also the bar's own explanation, which is why it goes
- * here rather than in a separate table: same row, the deviation and its price.
+ * The count column is headed "Simulated (o)", not "Observed": the data-entry
+ * table at the top of this same page has an "Observed" column holding the REAL
+ * counts, and two columns on one screen under one word, holding different
+ * numbers, is the collision `js/mechanisms/vocabulary.js` exists to catch. The
+ * letters also make the third column self-explaining. The data's own counts are
+ * not in this strip at all; they are the marker on the distribution, and the
+ * results sidebar carries their decomposition.
+ *
+ * @param {number[]} counts
+ * @param {object} [opts]
+ * @param {boolean} [opts.flyable] - tag the observed cells so darts can land on them
  */
-function miniBarsHTML(counts) {
-  const maxVal = Math.max(...counts, ...expected, 1);
-  // A header, so the last column is not an unexplained number. `tex()` is not
-  // used: this is inside a panel that is rebuilt on every draw, and the page's
-  // typesetting pass has long since run — the same trap the GOF conditions
-  // panel fell into (Todd, 2026-10-28).
-  let html = '<div class="gof-bars">'
-    + '<div class="gof-bar-row gof-bar-head" aria-hidden="true">'
-    + '<span></span><span></span>'
-    + '<span class="gof-bar-val">obs</span>'
-    + '<span class="gof-bar-contrib-head">(o\u2212e)\u00b2/e</span>'
-    + '</div>';
+function tallyTableHTML(counts, opts = {}) {
+  const chi = chiSqOf(counts);
+  let html = '<table class="gof-tally"><thead><tr>'
+    + '<th scope="col">Category</th>'
+    + '<th scope="col" class="num">Simulated (o)</th>'
+    + '<th scope="col" class="num">Expected (e)</th>'
+    + '<th scope="col" class="num">(o\u2212e)\u00b2/e</th>'
+    + '</tr></thead><tbody>';
   for (let i = 0; i < categories.length; i++) {
-    const w = (counts[i] / maxVal) * 100;
-    const ew = (expected[i] / maxVal) * 100;
     const e = expected[i];
     const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
-    // Shade the contribution by its share of the total, so the category
-    // carrying the statistic is findable without reading every number.
-    const share = chiSqOf(counts) > 0 ? contrib / chiSqOf(counts) : 0;
-    html += `<div class="gof-bar-row">
-      <span class="gof-bar-cat" title="${esc(categories[i])}">${esc(categories[i])}</span>
-      <span class="gof-bar-track"><span class="gof-bar-fill" style="width:${w.toFixed(1)}%"></span><span class="gof-bar-exp" style="left:${ew.toFixed(1)}%" title="expected ${expected[i].toFixed(1)}"></span></span>
-      <span class="gof-bar-val">${counts[i]}</span>
-      <span class="gof-bar-contrib" style="--share:${share.toFixed(3)}" title="(${counts[i]} − ${e.toFixed(1)})² / ${e.toFixed(1)} = ${contrib.toFixed(2)}">${contrib.toFixed(2)}</span>
-    </div>`;
+    // Tinted by share of the total, so the category carrying χ² is findable
+    // without reading every number — tint, not colour, because the number is
+    // already there and colour must never be the only cue.
+    const share = chi > 0 ? contrib / chi : 0;
+    html += `<tr>
+      <th scope="row"><span class="gof-swatch" style="background:${BAND_FILLS[i % BAND_FILLS.length]}"></span>${esc(categories[i])}</th>
+      <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}>${counts[i]}</td>
+      <td class="num exp">${e.toFixed(1)}</td>
+      <td class="num con" style="--share:${share.toFixed(3)}">${contrib.toFixed(2)}</td>
+    </tr>`;
   }
-  return html + '</div>';
+  html += `</tbody><tfoot><tr>
+    <th scope="row">Total</th>
+    <td class="num">${counts.reduce((a, b) => a + b, 0)}</td>
+    <td class="num">${expected.reduce((a, b) => a + b, 0).toFixed(0)}</td>
+    <td class="num con-total" data-chi-cell>\u03c7\u00b2 = ${chi.toFixed(3)}</td>
+  </tr></tfoot></table>`;
+  return html;
 }
 
 /** χ² for a set of counts against the page's expected counts. */
@@ -336,7 +347,12 @@ function generateSimulations(count) {
     initMechanismCollapse(mechanismStrip);
   }
   const prevLength = allStats.length;
-  if (simTitleEl) simTitleEl.innerHTML = (count === 1 ? 'This' : 'Last') + ' Sample under H<sub>0</sub>';
+  // From the vocabulary module, not hardcoded: this panel shipped as
+  // "This Simulation" and was then rewritten to "This Sample under H₀" on the
+  // first draw — one panel, two names, which is the drift
+  // `js/mechanisms/vocabulary.js` catalogues. One-prop reads the same two words
+  // for the same act, and since 2026-10-30 this page declares the same kind.
+  if (simTitleEl) simTitleEl.textContent = count === 1 ? words.draw : words.drawLatest;
 
   /** @type {number[]} */ let lastSample = [];
   let lastChisq = 0;
@@ -348,7 +364,6 @@ function generateSimulations(count) {
     lastChisq = chi2;
   }
 
-  if (count === 1 && mechObserved && mechSimulated) flyDataStream(mechObserved, mechSimulated);
   const updateMech = () => {
     // Where that sample came from: the null as a field of areas, with the
     // sample scattered across it. Its own RNG, seeded from the page seed — the
@@ -362,7 +377,15 @@ function generateSimulations(count) {
         width: 300, height: Math.max(110, 26 * categories.length),
       });
     }
-    if (mechSimulated) mechSimulated.innerHTML = miniBarsHTML(lastSample);
+    if (mechSimulated) mechSimulated.innerHTML = tallyTableHTML(lastSample, { flyable: true });
+    // …then carry each band's tally across to its row, on a single draw. On a
+    // batch there is nothing to watch, and 1,000 flights would be noise.
+    if (count === 1) {
+      flyBandsToTally({
+        board: mechNullBoard?.querySelector('.null-board') ?? null,
+        table: mechSimulated,
+      });
+    }
     if (mechSimulatedChisq) {
       mechSimulatedChisq.textContent = formatStat(lastChisq, 2);
       mechSimulatedChisq.classList.toggle('highlight-last', count === 1);
@@ -386,7 +409,11 @@ function generateSimulations(count) {
   if (count === 1) {
     setTimeout(() => {
       renderChart(allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
-      const dropSource = document.getElementById('mech-simulated-chisq');
+      // The χ² flies from the TABLE's total, where it was just computed, rather
+      // than from a separate line repeating it — the statistic leaves the place
+      // the reader watched it add up. (Jeff, 2026-10-30.)
+      const dropSource = document.querySelector('[data-chi-cell]')
+        || document.getElementById('mech-simulated-chisq');
       if (dropSource && chartContainer) animateDropToChart(dropSource, chartContainer);
     }, 150);
   } else {

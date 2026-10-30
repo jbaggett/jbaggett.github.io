@@ -6627,3 +6627,37 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
 /* Dark dot, white halo: readable on every band fill without relying on one. */
 .null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8; }
+
+/* ── Step 2: the tally this draw produced (GOF) ──────────────────────────
+   Todd Will's four columns with the total that IS χ². Replaces a bar chart
+   that showed the counts but never connected them to the statistic below. */
+.gof-tally { border-collapse: collapse; font-size: 0.78rem; width: 100%; max-width: 330px; }
+.gof-tally th, .gof-tally td { padding: 0.12rem 0.35rem; text-align: left; }
+.gof-tally thead th { font-size: 0.72rem; color: var(--ims-gray-text, #666); border-bottom: 1px solid #ccd6dc; white-space: nowrap; }
+.gof-tally .num { text-align: right; font-variant-numeric: tabular-nums; }
+.gof-tally tbody th { font-weight: 500; white-space: nowrap; }
+.gof-tally .obs { font-weight: 700; }
+.gof-tally .exp { color: var(--ims-gray-text, #666); }
+.gof-tally .con { border-radius: 3px; background: color-mix(in srgb, var(--ims-blue, #569BBD) calc(var(--share, 0) * 55%), transparent); }
+.gof-tally tfoot th, .gof-tally tfoot td { border-top: 1px solid #ccd6dc; font-weight: 700; padding-top: 0.22rem; }
+.gof-tally .con-total { white-space: nowrap; color: var(--ims-green, #114B5F); }
+/* The category's own band colour, so the table and the board read as one
+   picture — alongside the name, never instead of it. */
+.gof-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; border: 1px solid #333; margin-right: 0.3rem; vertical-align: -1px; }
+
+/* ── Band → tally flight (GOF) ───────────────────────────────────────────
+   One flyer per CATEGORY, not per observation: the claim being made is about
+   the tally, and 556 flyers would be a smear. */
+.tally-fly-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.tally-flyer {
+  position: fixed; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  border-radius: 50%; border: 1.5px solid #333;
+}
+.tally-cell-landed { animation: tally-land 420ms ease-out; }
+@keyframes tally-land {
+  0% { background: color-mix(in srgb, var(--ims-blue, #569BBD) 45%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tally-flyer, .tally-cell-landed { animation: none !important; transition: none !important; }
+}

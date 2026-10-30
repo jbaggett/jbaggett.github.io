@@ -1,4 +1,6 @@
 // @ts-check
+import { prefersReducedMotion } from '../settings.js';
+
 /**
  * The null model, drawn as a field you can throw darts at.
  *
@@ -152,4 +154,75 @@ export function renderNullBoard(container, opts) {
   container.innerHTML = '';
   container.appendChild(svg);
   return { dartEls };
+}
+
+/**
+ * Fly the darts of each band into that band's row in the tally.
+ *
+ * The step between the two panels: the board shows where the observations
+ * landed, the table shows them counted, and without this the count simply
+ * appears. Jeff, 2026-10-30: "the dots could fly from each category in the null
+ * to the aggregated observed value."
+ *
+ * One flyer per category, not per dart — 556 flyers would be a smear, and the
+ * claim being made is about the TALLY, not about individual observations. Each
+ * flyer leaves from the middle of its band and lands on its own Observed cell.
+ *
+ * @param {object} opts
+ * @param {SVGSVGElement|null} opts.board
+ * @param {HTMLElement|null} opts.table - holds `[data-tally-cell="i"]` per row
+ * @param {number} [opts.duration]
+ * @param {() => void} [opts.onDone]
+ * @returns {number} ms the flight will take (0 if it was skipped)
+ */
+export function flyBandsToTally({ board, table, duration = 520, onDone }) {
+  const done = () => { if (onDone) onDone(); };
+  // The project's own check, not a bare matchMedia: it is settings-aware, so a
+  // reader who turned motion off in StatLens gets the same answer as one whose
+  // OS says so.
+  if (prefersReducedMotion() || !board || !table) { done(); return 0; }
+
+  const cells = [...table.querySelectorAll('[data-tally-cell]')];
+  const bands = [...board.querySelectorAll('rect')];
+  if (!cells.length || !bands.length) { done(); return 0; }
+
+  const layer = document.createElement('div');
+  layer.className = 'tally-fly-layer';
+  document.body.appendChild(layer);
+
+  let landed = 0;
+  const finish = () => {
+    landed += 1;
+    if (landed < cells.length) return;
+    layer.remove();
+    done();
+  };
+
+  cells.forEach((cell, i) => {
+    const band = bands[i];
+    if (!band) { finish(); return; }
+    const from = band.getBoundingClientRect();
+    const to = cell.getBoundingClientRect();
+    if (!from.width || !to.width) { finish(); return; }
+
+    const dot = document.createElement('span');
+    dot.className = 'tally-flyer';
+    dot.style.background = band.getAttribute('fill') || '#333';
+    dot.style.left = `${from.left + from.width / 2}px`;
+    dot.style.top = `${from.top + from.height / 2}px`;
+    layer.appendChild(dot);
+
+    const dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+    const dy = (to.top + to.height / 2) - (from.top + from.height / 2);
+    // Staggered, so four flights read as four categories rather than one blur.
+    const delay = i * 70;
+    const anim = dot.animate(
+      [{ transform: 'translate(0,0) scale(1)', opacity: 0.95 },
+       { transform: `translate(${dx}px, ${dy}px) scale(0.6)`, opacity: 0.2 }],
+      { duration, delay, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'forwards' });
+    anim.onfinish = () => { cell.classList.add('tally-cell-landed'); finish(); };
+    anim.oncancel = finish;
+  });
+
+  return duration + (cells.length - 1) * 70;
 }

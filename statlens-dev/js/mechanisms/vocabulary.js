@@ -17,17 +17,17 @@
  * | Original Groups | bootstrap-two-means, bootstrap-two-props, randomization-diff-means, randomization-diff-props |
  * | Original Data | bootstrap-slope, randomization-correlation |
  * | Differences | bootstrap-paired, randomization-paired |
- * | Observed Data | randomization-one-mean, randomization-one-prop |
+ * | Observed Data | randomization-one-mean |
  * | Observed Groups | randomization-anova |
  * | Observed Table | randomization-chisq |
- * | Observed Counts | goodness-of-fit |
+ * | Population under H₀ | randomization-one-prop, goodness-of-fit |
  *
  * Much of that is *right*. "Observed Table" tells a chi-square student more
  * than "Observed Data" would, and "Differences" is the correct noun for paired
  * data. The noun should follow the data.
  *
  * The **qualifier** in front of it should not, and does. Eight pages say
- * *Original*, five say *Observed*, and no rule separates them: two
+ * *Original*, three say *Observed*, and no rule separates them: two
  * randomization pages say Original while three say Observed, for the same role.
  * That is drift, not design, and it is the kind that only shows up when the
  * strings are listed side by side.
@@ -87,7 +87,8 @@ export const VOCABULARY = {
 
   /**
    * Randomization against a null that NAMES A POPULATION — the one-proportion
-   * test, where H₀ says p₀ and you draw n independent trials from it.
+   * test, where H₀ says p₀ and you draw n independent trials from it, and
+   * goodness-of-fit, where H₀ says a whole vector p₀ and you draw n of them.
    *
    * Split off from `nullWorld` on 2026-10-03. The two had been sharing a
    * vocabulary, and sharing it was the bug: `nullWorld` is defined below as
@@ -168,7 +169,11 @@ export const PAGE_LABELS = {
   'randomization-chisq': { source: 'Observed Table', draw: 'This Shuffle' },
   'randomization-one-mean': { source: 'Observed Data', draw: 'This Simulation' },
   'randomization-one-prop': { source: 'Population under H₀', draw: 'This Simulation' },
-  'goodness-of-fit': { source: 'Observed Counts', draw: 'One Sample under H₀' },
+  // Same two names as one-prop since 2026-10-30, because it is now the same
+  // entity: GOF's source panel is the null population you throw darts at, and
+  // the observed counts enter at the end as the thing you compare against —
+  // exactly the distinction `statedPopulation` was split out to carry.
+  'goodness-of-fit': { source: 'Population under H₀', draw: 'This Simulation' },
 };
 
 /**
