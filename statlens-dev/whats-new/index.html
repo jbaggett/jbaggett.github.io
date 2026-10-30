@@ -39,6 +39,202 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-10-21</div>
+            <h2>The Sampling Distribution Lab marks where its centre landed<span class="cl-tag tool">Tool</span></h2>
+            <p>The mean of the sample means (or sample proportions) is now drawn on the sampling
+               distribution beside &mu; (or <em>p</em>), so you can <em>see</em> that the
+               distribution is centred on the parameter. Change the sample size and the two
+               markers stay on top of each other &mdash; because the centre is &mu; for
+               <em>every</em> n. What pins it down is drawing <strong>more samples</strong>; a
+               larger n narrows the distribution instead. The figure, with its own margin of
+               error, is under <strong>Detailed</strong>.</p>
+            <p><a href="../conceptual/sampling-lab/?type=quant&amp;n=5">Means, n = 5</a> &middot;
+               <a href="../conceptual/sampling-lab/?type=quant&amp;n=100">Means, n = 100</a> &middot;
+               <a href="../conceptual/sampling-lab/?type=prop&amp;p=0.3&amp;n=40">Proportions</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-18</div>
+            <h2>Every difference tool now says which difference, in the same place<span class="cl-tag tool">Tool</span></h2>
+            <p>All twelve tools that compute a difference &mdash; two means, two proportions and
+               paired, as tests and as confidence intervals &mdash; now state the order in your
+               own column or group names, with a <strong>&#x21C5; Reverse</strong> control beside
+               it. Same row, same spot, same button on every one. Reversing a one-sided test
+               flips the alternative along with the sign, so the evidence does not change &mdash;
+               only the sentence does.</p>
+            <p><a href="../simulate/randomization-diff-means/?dataset=exercise_hours">Randomization, two groups</a> &middot;
+               <a href="../simulate/bootstrap-paired/?dataset=textbooks">Bootstrap paired</a> &middot;
+               <a href="../inference/two-means/?dataset=exercise_hours">Two-means t-test</a> &middot;
+               <a href="../inference/estimate/paired/?dataset=pulserates">CI for a mean difference</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-17</div>
+            <h2>Randomization distributions now show what the shuffles are up against<span class="cl-tag tool">Tool</span></h2>
+            <p>Every simulation tool now marks its <strong>observed statistic</strong> on the
+               distribution <em>before</em> you generate anything &mdash; so the question the
+               method asks is on screen from the start. On a randomization test the mark shows what
+               the shuffles get compared against; on a bootstrap it shows what the resamples will
+               pile up around. Chi-square, correlation and ANOVA drew no chart at all until the
+               first shuffle; they now draw an axis sized from the reference distribution. No tail
+               is shaded: that is still yours to discover. The charts also describe themselves to a
+               screen reader now.</p>
+            <p><a href="../simulate/randomization-diff-props/?dataset=opportunity_cost">Two proportions</a> &middot;
+               <a href="../simulate/randomization-paired/?dataset=textbooks">Paired</a> &middot;
+               <a href="../simulate/randomization-chisq/?dataset=ask">Chi-square</a> &middot;
+               <a href="../simulate/randomization-correlation/?dataset=possum">Correlation</a> &middot;
+               <a href="../simulate/randomization-anova/?dataset=fastfood_anova">ANOVA</a> &middot;
+               <a href="../simulate/bootstrap-mean/?dataset=ames_price">Bootstrap mean</a> &middot;
+               <a href="../simulate/bootstrap-slope/?dataset=babies_crawl">Bootstrap slope</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-17</div>
+            <h2>Paired tools say which difference they took &mdash; and let you reverse it<span class="cl-tag tool">Tool</span></h2>
+            <p>All four paired pages now name the order in the real column names &mdash;
+               <em>difference = before &minus; after</em> &mdash; with a <strong>&#x21C4;</strong> that reads it
+               the other way round. On a one-sided test the alternative flips with the sign, so the p-value
+               does not move: only the sentence reverses. Every page keeps the order it has always used, so
+               existing links and answers are unchanged.</p>
+            <p><a href="../inference/paired/?dataset=pulserates">Paired t-test</a> &middot;
+               <a href="../simulate/bootstrap-paired/?dataset=textbooks">Bootstrap paired</a> &middot;
+               <a href="../simulate/randomization-paired/?dataset=pulserates">Randomization paired</a> &middot;
+               <a href="../inference/estimate/paired/?dataset=textbooks">Paired CI</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-13</div>
+            <h2>What Estimating the SE Costs &mdash; now for proportions too<span class="cl-tag tool">Updated</span></h2>
+            <p>The page formerly called &ldquo;Why <em>t</em>* and not 1.96&rdquo; has a
+               <strong>Mean / Proportion</strong> toggle. Same axis, same question, one substitution
+               changed: for a mean you put <em>s</em> where &sigma; should be; for a proportion you put
+               <em>p&#770;</em> where <em>p</em> should be &mdash; and <em>p&#770;</em> is the very
+               number the interval is built around, so it is both the estimate and the thing inside
+               the standard error.</p>
+            <p>Mean mode has three recipes and the third one, <em>t</em>*, fixes it exactly.
+               Proportion mode has <strong>two</strong>, and the missing third is the lesson: nothing
+               repairs it, because how far short it falls depends on <em>p</em>. At
+               <a href="../conceptual/why-t-star/?param=prop&amp;p=0.2&amp;n=50">p = 0.2, n = 50</a>
+               &mdash; where <em>np</em> = 10 and the success-failure condition is <em>met</em> &mdash;
+               a &ldquo;95%&rdquo; interval really captures 93.8%. At p = 0.05, n = 20 it captures 64%.
+               That is the course's own reason for simulating, as a picture.</p>
+            <p><a href="../conceptual/why-t-star/?param=prop">Open the proportion mode &rarr;</a> &middot;
+               <a href="../conceptual/why-t-star/">the mean mode</a> &middot;
+               <a href="../conceptual/why-t-star/guide.html">instructor guide</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-10</div>
+            <h2>Law of Large Numbers: see the tosses<span class="cl-tag tool">Updated</span></h2>
+            <p>The chart traces a running average, which is an abstraction over the thing you are
+               doing. Now the thing you are doing runs underneath it: a tape of the
+               <strong>last ten outcomes</strong> &mdash; H and T chips for the coin,
+               <a href="../conceptual/law-of-large-numbers/?exp=die">real pip faces</a> for the die
+               &mdash; with the newest one ringed, updating as fast as you add trials.</p>
+            <p>Add one at a time and the new chip flips or tumbles. Add a thousand and it does not,
+               because at that rate an animation per outcome is a strobe rather than a die roll.</p>
+            <p><a href="../conceptual/law-of-large-numbers/">Open it &rarr;</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-09</div>
+            <h2>Why <em>t</em>* and not 1.96<span class="cl-tag tool">New</span></h2>
+            <p>A confidence interval is <em>x̄</em> &plusmn; multiplier &times; standard error. The honest margin
+               needs &sigma;, which you do not have. This page lays all three candidates &mdash;
+               <em>z</em>*&sigma;/&radic;n, <em>z</em>*s/&radic;n and <em>t</em>*s/&radic;n &mdash; against one ruler
+               marked in <em>true</em> standard errors, so you can see the middle one come up short while the
+               sample that produced it was perfectly typical.</p>
+            <p>Then it settles the matter the only way it can be settled: all three are scored on the same
+               samples, hundreds at a time. At <em>n</em> = 5 the &ldquo;95%&rdquo; interval built with 1.96 and
+               <em>s</em> captures &mu; about <a href="../conceptual/why-t-star/?n=5&amp;me=2">88% of the
+               time</a>. <em>t</em>* is the number that puts that right &mdash; not by fixing your <em>s</em>,
+               which it cannot, but by fixing the rate.</p>
+            <p><a href="../conceptual/why-t-star/">Open it &rarr;</a> &middot;
+               <a href="../conceptual/why-t-star/guide.html">instructor guide</a> &middot;
+               its predecessor, <a href="../conceptual/two-se/">Why &plusmn;2 SE Works</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-09</div>
+            <h2>Galton Board<span class="cl-tag tool">New</span></h2>
+            <p>Drop balls through a field of pegs. Each one bounces left or right at every peg and lands in the
+               bin counting how many times it went right &mdash; so the pile underneath <em>is</em> the binomial
+               distribution, assembling itself. The exact probabilities are drawn over the pile, and the normal
+               approximation can be switched on beside them.</p>
+            <p>Set <em>p</em> away from 0.5 and the pile skews &mdash; and at
+               <a href="../conceptual/galton-board/?rows=10&amp;p=0.15&amp;balls=1000&amp;normal=true">n = 10,
+               p = 0.15</a> you can watch the normal approximation fail, which is the <em>np</em> &ge; 10
+               condition as a picture rather than a rule.</p>
+            <p>There is also a <strong>Physical board</strong>: a full field of pins, a hopper pouring
+               beads at thirty a second, real gravity, bounces off the pins and off each other. Nothing
+               decides where a bead goes &mdash; watch the plume widen as it falls and then stop widening,
+               which is the distribution being drawn in beads before anything is counted. Its histogram is
+               <em>not</em> binomial, the sliders each break a different thing the model assumes, and the
+               pins are a few per cent out of true, so every seed is a slightly different board.</p>
+            <p><a href="../conceptual/galton-board/">Open it →</a> &middot;
+               <a href="../conceptual/galton-board/?board=physical">the physical board</a> &middot;
+               <a href="../conceptual/galton-board/guide.html">instructor guide</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-07</div>
+            <h2>Search, and a page that lists everything<span class="cl-tag tool">Upgrade</span></h2>
+            <p>There is now a <strong>search on every page</strong> &mdash; the magnifying glass in the
+               header, or just press <kbd>/</kbd>. It matches what a tool is
+               called, what it does, and the words you might reach for instead — type
+               <em>before and after</em> and you get the paired tools, type <em>coin</em> and you get
+               Are You Psychic?, the binomial calculator and the Law of Large Numbers.</p>
+            <p>And <a href="../find/">Find a Tool</a> lists every page in one place, grouped, with
+               those words visible — so <kbd>Ctrl</kbd>+<kbd>F</kbd> finds anything, and it prints.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-07</div>
+            <h2>Confidence Intervals by Repeated Sampling<span class="cl-tag tool">New</span></h2>
+            <p>Draw sample after sample from a population you pick. Each one gets the interval you would
+               actually compute, and <strong>each dot is coloured by whether that interval caught &mu;</strong> —
+               blue for yes, orange for no. Hover a dot to see the sample behind it and watch its interval reach
+               &mu;, or fail to.</p>
+            <p>Then press <strong>Hide &mu;</strong>. The colours vanish and the count disappears, because
+               without &mu; nothing can say which intervals worked &mdash; which is exactly the position you are
+               in with real data. Reveal it and they snap back: yours was one colour or the other all along.</p>
+            <p><a href="../conceptual/population-ci/">Open it →</a> &middot;
+               <a href="../conceptual/population-ci/guide.html">instructor guide</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-07</div>
+            <h2>Law of Large Numbers<span class="cl-tag tool">New</span></h2>
+            <p>Toss a coin and watch the <strong>proportion of heads</strong> settle near 0.5, or roll a die
+               and watch the <strong>average</strong> settle near 3.5. Add trials 1, 10, 100 or 1000 at a time —
+               early on the line thrashes, later a single trial barely moves it.</p>
+            <p>Press <strong>&#9654;</strong> and the trials keep coming on their own &mdash; slowly at first, so you
+               can watch the line thrash, then faster as each new trial matters less. A thousand in about nine
+               seconds, ten thousand in fifteen, and the same speed on any machine. The circular arrow starts a
+               <em>different</em> run, so you can ask &ldquo;does that happen every time?&rdquo; and find out.</p>
+            <p>Two options worth knowing about: <em>Spread out the early trials</em> puts the trial count on a
+               log scale so the wild early stretch is actually visible, and <em>Also show the running total</em>
+               draws heads − tails from the same tosses. The proportion settles; the total wanders further from
+               zero. A coin is never &ldquo;due&rdquo;.</p>
+            <p><a href="../conceptual/law-of-large-numbers/">Open it →</a> &middot;
+               <a href="../conceptual/law-of-large-numbers/guide.html">instructor guide</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-10-06</div>
+            <h2>Read a value off any simulation chart<span class="cl-tag tool">Upgrade</span></h2>
+            <p>Every simulated distribution now has <strong>minor ticks</strong> between the
+               labelled ones, and you can <strong>click the strip just under the axis</strong> to
+               drop a draggable marker that reads out its own value — moved by dragging, by the arrow
+               keys, or by clicking somewhere else on the strip, and removed with <kbd>Esc</kbd>.
+               It does not snap to ticks or bins: estimating the cutoff is the point.</p>
+            <p><strong>Hovering a dot now shows the sample behind it</strong> in the page's own
+               sample panel — on dotplots, histograms and spike plots, and now on the proportion
+               side of the Sampling Distribution Lab too.</p>
+            <p><a href="../simulate/bootstrap-mean/?dataset=coast_starlight&amp;seed=7n4uqgy1">Try it on a bootstrap distribution →</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-10-04<span class="cl-tag tool">New</span></div>
             <h2>Why &plusmn; 2 SE works, with the numbers taken out</h2>
             <p><a href="../conceptual/two-se/">Why &plusmn; 2 SE Works</a> answers the question a student

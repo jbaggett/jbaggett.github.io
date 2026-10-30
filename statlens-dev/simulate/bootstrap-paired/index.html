@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap CI: Paired Differences | StatLens</title>
+    <meta name="description" content="Confidence interval for a mean difference when each subject is measured twice — resample the differences.">
+    <meta name="keywords" content="bootstrap, paired data, before and after, matched pairs, mean difference, repeated measures, confidence interval, same subjects twice">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -91,6 +93,12 @@
                         <button type="button" data-level="95">95%</button>
                         <button type="button" data-level="99">99%</button>
                     </span>
+                </div>
+                <div id="group-order" class="group-order" hidden>
+                    <span id="group-order-label"></span>
+                    <button type="button" id="swap-groups" class="btn-secondary btn-sm order-swap"
+                            aria-label="Reverse the difference order"
+                            title="Reverse the difference order">⇅ Reverse</button>
                 </div>
                 <p id="seed-notice" class="seed-notice" hidden></p>
             </div>
@@ -185,5 +193,6 @@
     </script>
     <script src="../../js/page-number.js"></script>
     <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
 </body>
 </html>

@@ -16,7 +16,7 @@ applyRequestedLayout('permuteAssociation');
 import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { chisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -271,7 +271,7 @@ function showDataLoaded() {
   gateBigBatches(genBtns, totalN);
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
-    const bigBtn = genBtns[genBtns.length - 1];
+    const bigBtn = autoRunButton(genBtns);
     requestAnimationFrame(() => bigBtn && bigBtn.click());
   }
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
@@ -281,6 +281,20 @@ function showDataLoaded() {
     mechObservedTable.innerHTML = renderTableHTML(observedTable, rowLabels, colLabels);
     if (mechObservedChisq) mechObservedChisq.textContent = formatStat(observedChisq, 2);
   }
+
+  // REQ-069 (Todd): draw the distribution's axis with the observed statistic
+  // on it before anything is shuffled, so the student can see what the shuffles
+  // will be compared against. The range comes from the reference distribution
+  // the shuffles will approximate — χ²(df) has mean df and SD √(2df), so
+  // df + 4√(2df) reaches well past where the bulk will land — widened when the
+  // observed is further out than that. Computed closed-form rather than from
+  // `chisqInv`, because this page carries no jStat and an axis range is not
+  // worth a CDN dependency; the contract's pin was no theoretical CURVE, which
+  // this is not.
+  const chisqDf = Math.max(1, (rowLabels.length - 1) * (colLabels.length - 1));
+  const nullReach = chisqDf + 4 * Math.sqrt(2 * chisqDf);
+  renderChart([], observedChisq, -1, undefined, undefined,
+    [0, Math.max(nullReach, observedChisq * 1.15)]);
 
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
   announce(`Data loaded: ${rowLabels.length} × ${colLabels.length} table, n = ${totalN}`);
@@ -364,24 +378,38 @@ function generateSimulations(count) {
     simTitleEl.textContent = count === 1 ? 'This Shuffle' : 'Last Shuffle';
   }
 
-  const outcomes = rawData.map(d => d.outcome);
-  const groups = rawData.map(d => d.group);
+  // Shuffle indices, tally in one pass.
+  //
+  // This used to scan all n observations once PER CELL, comparing strings:
+  // O(n·R·C) per shuffle for a table one pass of O(n) builds exactly. The cost
+  // is invisible on a 2×2 and is not on anything bigger — measured per 1000
+  // shuffles, before → after:
+  //
+  //      n = 1,000   2×2     32ms →  7ms
+  //      n = 10,000  2×2    318ms → 66ms
+  //      n = 1,000   4×5    119ms →  8ms
+  //      n = 10,000  4×5   1194ms → 66ms
+  //
+  // The shuffle itself is untouched — the same Fisher-Yates over the same
+  // length, so it draws from the PRNG in the same order and every seeded run
+  // produces bit-identical χ² values. That is the point of fixing it this way
+  // rather than swapping in a direct table sampler: no published MOM or Canvas
+  // link moves. (D-23(a); the direct sampler belongs on the analytic page,
+  // where there is a typed table and no animation to feed.)
+  const rowOf = new Map(rowLabels.map((g, i) => [g, i]));
+  const colOf = new Map(colLabels.map((o, i) => [o, i]));
+  const groupIdx = rawData.map(d => rowOf.get(d.group) ?? 0);
+  const outcomeIdx = rawData.map(d => colOf.get(d.outcome) ?? 0);
+  const R = rowLabels.length, C = colLabels.length;
 
   /** @type {number[][]} */
   let lastShuffledTable = [];
   let lastChisq = 0;
 
   for (let i = 0; i < count; i++) {
-    const shuffled = shufflePairing(groups, rng).values;
-    const table = rowLabels.map(g =>
-      colLabels.map(o => {
-        let ct = 0;
-        for (let k = 0; k < shuffled.length; k++) {
-          if (shuffled[k] === g && outcomes[k] === o) ct++;
-        }
-        return ct;
-      })
-    );
+    const shuffled = shufflePairing(groupIdx, rng).values;
+    const table = Array.from({ length: R }, () => new Array(C).fill(0));
+    for (let k = 0; k < shuffled.length; k++) table[shuffled[k]][outcomeIdx[k]]++;
     const chi2 = chisqStat(table);
     allStats.push(chi2);
     lastShuffledTable = table;
@@ -463,6 +491,21 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Chi-Square Statistic (χ²)',
+    // What the chart shows, for a screen reader. The title alone said nothing
+    // about the content, and on the empty chart REQ-069 added it said nothing
+    // at all about the one value drawn on it. `?observed=off` is reasoning
+    // mode: the marker is withheld on purpose, so naming it here would both
+    // lie and give away the number the mode exists to withhold.
+    descText: (() => {
+      const shown = new URLSearchParams(location.search).get('observed') !== 'off';
+      const at = shown && isFinite(observed) ? `observed = ${observed.toFixed(3)}` : '';
+      if (stats.length === 0) {
+        return at
+          ? `No simulations yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No simulations yet — press a generate button to build the distribution.';
+      }
+      return [`${stats.length.toLocaleString()} shuffles`, at].filter(Boolean).join(', ');
+    })(),
     // Match the page's own readout: formatStat(observedChisq, 2) = 3 decimals.
     precision: 3,
     titleText: words.distribution,

@@ -1,8 +1,8 @@
 {
   "id": "floridalakes",
   "name": "Florida Lakes (Mercury)",
-  "description": "Water chemistry and fish mercury for 53 Florida lakes — pH/alkalinity vs mercury (Ch. 7, 24 regression/correlation).",
-  "source": "coursepack",
+  "description": "Water chemistry and fish mercury for 53 Florida lakes — pH/alkalinity vs mercury (regression and correlation).",
+  "source": "Lange, Royals & Connor (1993)",
   "chapter": "IMS Ch. 7, 24",
   "type": "regression",
   "studyDescription": "For 53 Florida lakes, researchers recorded water-chemistry measures (pH, alkalinity, calcium, chlorophyll) and the average mercury concentration measured in fish tissue. An observational study used to relate acidity to fish mercury.",
@@ -16,7 +16,7 @@
     "std_mercury": "Mercury standardized to a 3-year-old fish.",
     "age_data": "Whether fish-age data were available (1 = yes, 0 = no)."
   },
-  "sourceDetail": "Lange, Royals & Connor (1993), via Mendenhall & Sincich and the coursepack.",
+  "sourceDetail": "Lange TR, Royals HE, Connor LL (1993), \"Influence of water chemistry on mercury concentration in largemouth bass from Florida lakes\", Transactions of the American Fisheries Society 122(1):74–84. Reproduced in Mendenhall & Sincich and in the Lock5 \"FloridaLakes\" teaching set, from which the column names here are taken. Not an OpenIntro or IMS dataset.",
   "variables": [
     {
       "name": "lake",

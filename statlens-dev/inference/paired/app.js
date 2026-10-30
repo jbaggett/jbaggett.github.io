@@ -14,6 +14,7 @@ import { initTabs, initDataPanel, announce, initHelp, initHypToggle, getActiveTa
 
 initHelp();
 import { parseCSV } from '../../js/csv-parser.js';
+import { setPairedOrderSource } from '../../js/dataset-actions.js';
 import { formatStat, detectPrecision, mean, sd } from '../../js/stats.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 import { linkFormula } from '../../js/formula-link.js';
@@ -41,6 +42,9 @@ const inputConf = /** @type {HTMLInputElement} */ (document.getElementById('inpu
 const varSelectors = /** @type {HTMLElement} */ (document.getElementById('variable-selectors'));
 const var1Select = /** @type {HTMLSelectElement} */ (document.getElementById('var1-select'));
 const var2Select = /** @type {HTMLSelectElement} */ (document.getElementById('var2-select'));
+const groupOrderEl = document.getElementById('group-order');
+const groupOrderLabel = document.getElementById('group-order-label');
+const swapOrderBtn = document.getElementById('swap-groups');
 const dataSummary = document.getElementById('data-summary');
 
 // ── State ──────────────────────────────────────────────────────────
@@ -88,7 +92,16 @@ function populateVarSelectors(cols) {
     return;
   }
 
-  varSelectors.hidden = false;
+  // Only when there is actually a choice to make. Every bundled paired dataset
+  // has EXACTLY two numeric columns, so these two dropdowns offered four
+  // reachable states: two of them the same-column error that `resolveCollision`
+  // exists to absorb, and the other two precisely what "⇅ Reverse" now toggles
+  // between. The simulate paired pages have never shown a picker for bundled
+  // data (js/variable-picker.js skips curated datasets deliberately); this is
+  // the same rule, applied where it had not been. The selects are still
+  // populated, so pasting a file with three or more numeric columns brings them
+  // straight back. (Jeff, 2026-10-18.)
+  varSelectors.hidden = cols.length < 3;
   var1Select.innerHTML = '';
   var2Select.innerHTML = '';
   for (const col of cols) {
@@ -101,12 +114,24 @@ function populateVarSelectors(cols) {
   }
   var1Select.value = cols[0];
   var2Select.value = cols.length > 1 ? cols[1] : cols[0];
+  // `?order=swap` starts the page reading the difference the other way round.
+  // Absent, the order is this page's long-standing `var1 − var2` on the first
+  // two numeric columns — unchanged, so old links are untouched.
+  if (new URLSearchParams(window.location.search).get('order') === 'swap'
+      && cols.length > 1) {
+    [var1Select.value, var2Select.value] = [var2Select.value, var1Select.value];
+  }
+  syncDiffOrder();
 }
 
 function loadFromSelections() {
   if (!currentRows || numericCols.length < 2) return;
   const col1 = var1Select.value;
   const col2 = var2Select.value;
+  // Unreachable in the UI now — `resolveCollision` moves the other slot aside
+  // before this runs — but a dataset with a single numeric column could still
+  // get here, and silently differencing a column from itself is worse than
+  // saying so.
   if (col1 === col2) { announce('Please select two different variables.'); return; }
 
   var1Name = col1;
@@ -186,8 +211,97 @@ const dataPanel = initDataPanel({
 });
 
 // ── Variable selector change listeners ────────────────────────────
-var1Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
-var2Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
+/**
+ * Two slots may not hold the same column — and the slot you just touched wins.
+ *
+ * This used to be enforced inside `loadFromSelections`, which announced
+ * "Please select two different variables" and returned. The announcement goes
+ * to the live region, so a sighted student saw nothing: the page sat showing
+ * `var1 = amazon`, `var2 = amazon` and a mean difference of 12.762, which is
+ * the answer for ucla − amazon and impossible for the pair on screen. Found by
+ * sweeping every inference page for controls that move without moving the
+ * numbers, after Crystal Vesperman reported the same pathology on one-prop.
+ *
+ * The behaviour now matches `js/variable-picker.js`, which the simulate pages
+ * have used all along: the OTHER slot moves aside to a different column and the
+ * change goes through. One situation, one behaviour.
+ * @param {HTMLSelectElement} changed @param {HTMLSelectElement} other
+ */
+function resolveCollision(changed, other) {
+  if (changed.value !== other.value) return;
+  const alt = numericCols.find(c => c !== changed.value);
+  if (alt) other.value = alt;
+}
+
+var1Select.addEventListener('change', () => {
+  resolveCollision(var1Select, var2Select);
+  if (currentRows) loadFromSelections();
+  syncDiffOrder();
+});
+var2Select.addEventListener('change', () => {
+  resolveCollision(var2Select, var1Select);
+  if (currentRows) loadFromSelections();
+  syncDiffOrder();
+});
+
+// ── Difference order (REQ-079) ───────────────────────────────────
+// This page has always computed `var1 − var2`, and keeps doing so: the order
+// is reversed by exchanging the two columns, not by changing the formula. So
+// every link and stored answer written before this control existed still means
+// what it meant.
+
+// Same for the data-bar buttons here: the order is whichever way round the two
+// selects currently are, against the page's natural (first two numeric) order.
+setPairedOrderSource(() => {
+  const cols = numericCols || [];
+  if (cols.length < 2) return false;
+  // These pages read `var1 − var2`; `withPairedDifference` defaults to
+  // `second − first`. So the page's NATURAL order is already the reverse of the
+  // helper's, and "reversed" here means var1 is still the first column. Getting
+  // this backwards put the table's sign opposite the page's on both pages.
+  return var1Select.value === cols[0];
+});
+
+/** Keep the readout saying which way round the difference is being taken. */
+function syncDiffOrder() {
+  // Named, not bare: **d = pretest − posttest**. Lower-case d is the individual
+  // difference for one pair; the mean of them is d̄, which the results panel
+  // writes separately. (Jeff, 2026-10-18.)
+  const order = (var1Select.value && var2Select.value)
+    ? `d = ${var1Select.value} − ${var2Select.value}`
+    : '';
+  if (groupOrderLabel) groupOrderLabel.textContent = order || '…';
+  // The row is the same one the two-group pages use, in the same place
+  // and with the same button — one idea, one control (2026-10-18).
+  if (groupOrderEl) groupOrderEl.hidden = !order;
+  // Tabbing to the button out of context, "Reverse the difference order" does
+  // not say what it would become — the order it reverses is in the adjacent
+  // text, which a screen reader reaches separately. So it goes in the name.
+  if (swapOrderBtn && order) {
+    swapOrderBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+  }
+}
+
+if (swapOrderBtn) {
+  swapOrderBtn.addEventListener('click', () => {
+    if (numericCols.length < 2) return;
+    const a = var1Select.value, b = var2Select.value;
+    if (!a || !b || a === b) return;
+    var1Select.value = b;
+    var2Select.value = a;
+    // A one-sided alternative is a claim about a SIGNED difference, so reversing
+    // the reading has to carry it: "μ_d > 0" on after − before is "μ_d < 0" on
+    // before − after. Flipped together, the p-value is identical and only the
+    // sentence reverses — which is the point of a swap rather than a redo.
+    const flip = { less: 'greater', greater: 'less' };
+    const nextAlt = flip[inputAlt.getValue()];
+    if (nextAlt) inputAlt.setValue(nextAlt);
+    if (currentRows) loadFromSelections();
+    syncDiffOrder();
+    announce(`Difference now reads ${var1Select.value} − ${var2Select.value}.`);
+  });
+}
+
 
 // ── Summary input handler ────────────────────────────────────────
 /** Is the "Enter Summary" tab the active data source? */

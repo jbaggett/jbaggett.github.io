@@ -9,25 +9,29 @@ import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forge
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { createSharedScale } from './mechanisms/entities.js';
-import { resampleOne, resamplePairedDiffs, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
+import { resampleOne, resampleGroups, shuffleLabels, signFlip } from './mechanisms/draws.js';
 import { dismissAirborneStat, clearDrawMarks, animateHistogramDraw, animatePoolAndDeal, animatePoolAndDealMarks, animateCombineStats,
   cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
 import { parseCSV } from './csv-parser.js';
-import { createRng } from './prng.js';
+import { createRng, rngFromState } from './prng.js';
 import { mean, median, sd, quantile, detectPrecision, formatStat, quartiles, extent} from './stats.js';
 import { bootstrapCI, permutationPValue } from './sim-engine.js';
 import * as d3Selection from 'd3-selection';
 import { drawHistogram, computeBins, snappedPropThresholds, typicalBinWidth } from './histogram.js';
-import { drawDotplot } from './dotplot.js';
+import { createAskPosture } from './ask-posture.js';
+import { createResampleStore } from './resample-store.js';
+import { attachResamplePeek, createPeekElement } from './resample-peek.js';
+import { drawDotplot, commonStep } from './dotplot.js';
+import { setPairedOrderSource } from './dataset-actions.js';
 import { drawSpike } from './spike.js';
-import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition } from './chart-utils.js';
+import { STAT_RESAMPLE, STAT_RESAMPLE_TEXT, renderSimPills, renderCutlines, formatMechStat, drawMiniBoxplot, morphMiniBoxplot, drawMiniChart, prefersReducedMotion, hasD3Transition, attachAxisRuler} from './chart-utils.js';
 import {
   ciMethodFromUrl, createCiMethodControl, normalApproxCI, zFor, zLabelFor,
   drawCiPills, drawCompareBounds, appendCiLegend, bcaCI, jackknife1, ciMonteCarloMargin,
   PERCENTILE_CI_COLOR, NORMAL_CI_COLOR, ciRegionMass,} from './ci-method.js';
-import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap} from './page-utils.js';
-import { normalPdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
+import { initPlayPause, initHelp, initMechanismCollapse, animateDropToChart, flyDataStream, initTabs, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, initDataPanel, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton, simErrorHelpHTML} from './page-utils.js';
+import { normalPdf, normalCdf, overlayTheoryCurve, removeTheoryOverlay, createTheoryToggle } from './theory-overlay.js';
 import { initAnswerReport } from './answer-report.js';
 import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartToggle, displayPrecision, isExtreme as isExtremeShared, DOTPLOT_AUTO_THRESHOLD, createBinAdjuster } from './chart-defaults.js';
 import { cardGroupsHTML, cardLegendHTML } from './sim-card-mechanism.js';
@@ -422,6 +426,9 @@ export function initSimPage(config) {
     const params = {};
     // Seed — always pin so the link reproduces the same simulation.
     if (seed != null && seed !== '') params.seed = seed;
+    // Which way round a paired difference is being read (omit the default, so
+    // every link written before REQ-079 keeps meaning what it meant).
+    if (config.paired && orderSwapped) params.order = 'swap';
     // Alternative-hypothesis direction (randomization pages).
     if (altDirectionBtn) {
       const dirMap = { right: 'greater', left: 'less', both: 'two-sided' };
@@ -653,8 +660,15 @@ export function initSimPage(config) {
   // ─── Theory overlay toggle ───
   /** @type {HTMLInputElement|null} */
   let theoryCheckbox = null;
-  let theoryOverlayOn = false;
-  if (toggleFieldset && config.mode === 'bootstrap') {
+  // `?theory=on` opens the page with the curve already drawn, WITHOUT expert
+  // mode — which the toggle itself still sits behind, and which exposes a row
+  // of controls the bridge chapter's students have not met. Default off, so
+  // every existing link is untouched. (REQ-082.)
+  let theoryOverlayOn = urlParams.theory === 'on';
+  // Randomization pages now get this too: the overlay did not exist there at
+  // all — not behind expert mode, nowhere — and the bridge chapter needs to lay
+  // a normal curve over the shuffles. (REQ-082.)
+  if (toggleFieldset) {
     theoryCheckbox = createTheoryToggle(toggleFieldset, (checked) => {
       theoryOverlayOn = checked;
       if (allStats.length > 0) {
@@ -732,9 +746,25 @@ export function initSimPage(config) {
     let se = 0;
     let label = 'N(est, SE)';
 
-    if (config.paired && data2.length > 0) {
+    if (config.mode === 'randomization') {
+      // The theoretical NULL distribution, so it is centred at the null value
+      // — exactly, by construction of the permutation test — and not at the
+      // mean of the shuffles, which is only an estimate of that centre and
+      // would make the curve chase simulation noise. (Same distinction the
+      // Sampling Distribution Lab draws between μ and the mean of the sample
+      // means.)
+      //
+      // Its spread is the SD of the simulated statistics. That is an empirical
+      // quantity, and deliberately so: the bridge chapter's move is "every pile
+      // came out bell-shaped — here is the bell, with the spread your own pile
+      // has", and that spread IS the standard error. (REQ-082.)
+      center = getNullValue();
+      se = sd(stats);
+      const nullTxt = center === 0 ? '0' : formatStat(center, dataPrecision);
+      label = `N(${nullTxt}, SE)`;
+    } else if (config.paired && data2.length > 0) {
       // Paired: bootstrap the mean difference
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       center = mean(diffs);
       se = sd(diffs) / Math.sqrt(diffs.length);
       label = 'N(d\u0304, SE)';
@@ -906,11 +936,7 @@ export function initSimPage(config) {
       if (nullDisplayMirror) nullDisplayMirror.textContent = nullValueInput.value || '0';
       // Re-render chart + results if simulation has run
       if (allStats.length > 0) {
-        const nullDiff = getNullValue();
-        const rawObserved = config.paired
-          ? mean(data2.map((v, i) => v - data1[i]))
-          : config.testStat(data1, data2);
-        const observedStat = rawObserved - nullDiff;
+        const observedStat = /** @type {number} */ (observedStatistic());
         const direction = getDirection();
         renderChart(allStats, null, observedStat, direction);
         const { pValue, extremeCount } = permutationPValue(allStats, observedStat, direction);
@@ -929,6 +955,169 @@ export function initSimPage(config) {
   let data2 = [];
   let group1Name = 'Group 1';
   let group2Name = 'Group 2';
+
+  /**
+   * Which way round the paired difference reads.
+   *
+   * `false` is `second − first`, which is what both paired pages have always
+   * computed — so it stays the default, because every seeded link, textbook
+   * sentence and MyOpenMath stored answer was recorded against it. The order is
+   * a reading convention rather than a result: swapping negates every
+   * difference and mirrors the distribution, so a two-sided p-value is
+   * unchanged, and a one-sided one is preserved by flipping the alternative
+   * along with it. (REQ-079; the standardisation this stops short of is
+   * `docs/BETWEEN_SEMESTERS.md` item 1.)
+   */
+  let orderSwapped = urlParams.order === 'swap';
+  // The data-bar buttons build their link and their click closure once, when
+  // the panel collapses, so they cannot see a later reversal. Tell them how to
+  // ask, or the data view shows the opposite sign from the page. (2026-10-19.)
+  if (config.paired) setPairedOrderSource(() => orderSwapped);
+
+  /**
+   * `?order=swap` on a TWO-GROUP page, waiting for data to arrive.
+   *
+   * Paired keeps a flag because its differences are computed in one place.
+   * Two-group reverses by exchanging the arrays, which can only happen once
+   * there are arrays — so this is a one-shot applied at the first load, and
+   * cleared so a later manual Reverse is not undone by it.
+   */
+  let pendingOrderSwap = config.twoGroup === true && urlParams.order === 'swap';
+
+  /**
+   * The two groups in CANONICAL order — the order they loaded in, whatever
+   * the reader has since chosen to read the difference as.
+   *
+   * **The generator must see this and only this.** `shuffleLabels` concatenates
+   * the two groups before permuting positions, so handing it the DISPLAY order
+   * made one seed produce a different partition: reversing the reading
+   * re-randomized the null distribution and moved the p-value (4/1000 → 9/1000
+   * on `opportunity_cost`, with balanced groups — so not a sample-size
+   * artefact). A student could read that wobble as "reversing changed the
+   * evidence", which is the opposite of what the control is for.
+   *
+   * Reading order is a display choice and must not reach the draws. The paired
+   * pages never had this problem: `resampleOne` and `signFlip` consume the PRNG
+   * by position, never by value, so their draws were already order-independent.
+   * (Jeff's design, 2026-10-18.)
+   */
+  function canonPair() {
+    return orderSwapped ? { a: data2, b: data1 } : { a: data1, b: data2 };
+  }
+
+  /**
+   * Reverse the reading of everything already simulated, instead of throwing
+   * it away.
+   *
+   * Reversing used to reset. That was defensible when the draws depended on the
+   * order — the old distribution really had been generated for a different
+   * question — but it also meant a reader lost 10,000 shuffles to a relabelling,
+   * and watched the p-value land somewhere slightly different. Now that the
+   * draws are canonical, every statistic for the reversed reading is EXACTLY the
+   * negation of the one this shuffle already produced, so the mirrored
+   * distribution is the same evidence seen from the other side. Flipping the
+   * tail with it leaves the count identical.
+   */
+  function mirrorSimulation() {
+    for (let i = 0; i < allStats.length; i++) allStats[i] = -allStats[i];
+    // The paired resample panel holds its values in the DISPLAY reading, so it
+    // mirrors with everything else. (Two-group keeps its panel in `lastTwoG1/2`,
+    // which are canonical and need no mirroring.)
+    if (config.paired && lastResample.length > 0) lastResample = lastResample.map(v => -v);
+    if (lastObserved != null) lastObserved = -lastObserved;
+    if (lastCI) lastCI = [-lastCI[1], -lastCI[0]];
+    if (preSimDomain) {
+      preSimDomain = [-preSimDomain[1], -preSimDomain[0]];
+      // Bin WIDTH is invariant under a mirror; only where the grid starts moves.
+      if (lockedDotGrid) lockedDotGrid = { ...lockedDotGrid, binOrigin: preSimDomain[0] };
+    }
+  }
+
+  /** Redraw chart, results and the source panel for the reversed reading. */
+  function rerenderAfterOrderChange() {
+    // Step 1 has to follow the reading too — `showDataLoaded` does not rebuild
+    // it. On the paired pages it shows the DIFFERENCES themselves, so leaving
+    // it stale put "Differences (amazon − ucla), d̄ = −12.76" directly above a
+    // result reading `ucla − amazon`. (Jeff, 2026-10-18.)
+    if (config.paired && data2.length > 0) {
+      renderOriginalSample();
+      // Step 2 as well: it holds the resample drawn under the old reading, and
+      // `mirrorSimulation` has just negated it. Redrawn through the same
+      // functions the live draw uses.
+      if (lastResample.length > 0) {
+        if (config.mode === 'randomization') showPairedMechanism(centredPairedDiffs(), lastResample, false);
+        else showResample(lastResample, false, false, false);
+      }
+    }
+    else if (config.twoGroup && data2.length > 0) {
+      renderTwoGroupOriginal();
+      // Step 2 holds a resample drawn under the OLD reading. Redraw it through
+      // the same function the live draw uses — `rerenderMechanismView` is the
+      // Individual|Aggregate toggle's path and renders mini histograms into
+      // `mech-hist-resamp-*` cells that the two-MEANS dot rendering never
+      // creates, so it emptied the panel. `lastTwoG1/2` are canonical and
+      // `showTwoGroupMechanism` applies the reader's order, so handing them
+      // straight back is both correct and idempotent.
+      if (lastTwoG1.length > 0 && lastTwoG2.length > 0) {
+        showTwoGroupMechanism(lastTwoG1, lastTwoG2, false, false);
+      }
+    }
+    if (allStats.length === 0) { renderEmptyChart(); return; }
+    const direction = getDirection();
+    if (config.mode === 'randomization' && lastObserved != null) {
+      renderChart(allStats, lastCI, lastObserved, direction);
+      const { pValue, extremeCount } = permutationPValue(allStats, lastObserved, direction);
+      displayRandomizationResults(allStats, lastObserved, pValue, extremeCount, direction);
+      return;
+    }
+    // Bootstrap: `showDataLoaded` has just put the "click a generate button"
+    // placeholder back over a perfectly good interval, so recompute it from the
+    // mirrored statistics rather than leaving the reader to re-run.
+    if (allStats.length >= 10) {
+      const ciLevel = getCiLevel();
+      const result = bootstrapCI([...allStats], ciLevel);
+      displayBootstrapResults(allStats, result.ci, result.se, ciLevel);
+      renderChart(allStats, allStats.length >= 20 ? result.ci : null, computeObservedStat());
+    } else {
+      renderChart(allStats, lastCI, lastObserved, direction);
+    }
+  }
+
+  /** Canonical statistic → the one being displayed. */
+  function orderSign() { return orderSwapped ? -1 : 1; }
+
+  /** The paired differences, in the order the page is currently reading them. */
+  function pairedDiffs() {
+    return orderSwapped
+      ? data1.map((v, i) => v - data2[i])
+      : data2.map((v, i) => v - data1[i]);
+  }
+
+  /**
+   * The observed statistic, shifted by the null value the page is testing.
+   *
+   * Written out at each of the places that re-render after a control moves; now
+   * one function, because `renderEmptyChart` needs it too — REQ-069 marks it on
+   * the distribution before any shuffle has happened.
+   * @returns {number|null} null when there is not enough data yet
+   */
+  function observedStatistic() {
+    if (data1.length === 0) return null;
+    if (config.paired) {
+      if (data2.length === 0) return null;
+      return mean(pairedDiffs()) - getNullValue();
+    }
+    if (!config.testStat || data2.length === 0) return null;
+    return config.testStat(data1, data2) - getNullValue();
+  }
+
+  /** "after − before", with the real column names, in the current order. */
+  function pairedOrderLabel() {
+    return orderSwapped
+      ? `${group1Name} − ${group2Name}`
+      : `${group2Name} − ${group1Name}`;
+  }
+
 
   // Raw categorical data for proportion tests (needed for re-encoding on success change)
   /** @type {string[]} */
@@ -1185,15 +1374,22 @@ export function initSimPage(config) {
       dataPrecision = Math.min(2, detectPrecision(data1));
     }
 
+    if (pendingOrderSwap && data2.length > 0) {
+      pendingOrderSwap = false;
+      [data1, data2] = [data2, data1];
+      [group1Name, group2Name] = [group2Name, group1Name];
+      [rawOutcomes1, rawOutcomes2] = [rawOutcomes2, rawOutcomes1];
+    }
+
     if (dataPreview) dataPreview.hidden = false;
     if (dataSummary) {
       const namePrefix = currentSourceName && currentSourceName !== 'data' ? `${currentSourceName}: ` : '';
       if (config.paired) {
-        const diffs = data2.map((v, i) => v - data1[i]);
+        const diffs = pairedDiffs();
         const m = mean(diffs);
         dataSummary.innerHTML =
           `${namePrefix}${data1.length} pairs | ${group1Name}: <span class="x-bar">x</span> = ${formatStat(mean(data1), dataPrecision)} | ` +
-          `${group2Name}: <span class="x-bar">x</span> = ${formatStat(mean(data2), dataPrecision)} | Mean diff (${group2Name} \u2212 ${group1Name}) = ${formatStat(m, dataPrecision)}`;
+          `${group2Name}: <span class="x-bar">x</span> = ${formatStat(mean(data2), dataPrecision)} | Mean diff (${pairedOrderLabel()}) = ${formatStat(m, dataPrecision)}`;
       } else if (config.proportion && !config.twoGroup) {
         const p1 = mean(data1);
         const s1 = data1.filter(v => v === 1).length;
@@ -1230,7 +1426,7 @@ export function initSimPage(config) {
     // already drawn with no Generate click. genBtns[3] = +1000 (data-count order).
     if (plotOnly && !plotOnlyRan) {
       plotOnlyRan = true;
-      const bigBtn = genBtns[genBtns.length - 1] || genBtns[3];
+      const bigBtn = autoRunButton(genBtns);
       // Defer so the chart container has laid out before the first draw.
       requestAnimationFrame(() => bigBtn && bigBtn.click());
     }
@@ -1285,12 +1481,31 @@ export function initSimPage(config) {
       hypothesisDisplay.hidden = false;
       if (config.twoGroup) updateHypothesisDisplay();
     }
-    // Show group order (two-sample bootstrap)
+    // Which way round the difference is read — stated on every page that takes
+    // one, in the same place, with the control beside it. It used to appear only
+    // on the two-sample BOOTSTRAP pages; the randomization pages hid the same
+    // button inside the H₀ row and the paired pages put a bare arrow in the data
+    // summary, so one idea had three spellings. (2026-10-18.)
     const groupOrderEl = document.getElementById('group-order');
     const groupOrderLabel = document.getElementById('group-order-label');
-    if (config.mode === 'bootstrap' && config.twoGroup && groupOrderEl && groupOrderLabel) {
+    if (groupOrderEl && groupOrderLabel && (config.paired || (config.twoGroup && data2.length > 0))) {
       groupOrderEl.hidden = false;
-      groupOrderLabel.textContent = `${group1Name} − ${group2Name}`;
+      // On the paired pages the quantity has a name, so the row says what it
+      // is rather than leaving "after − before" floating: **d = after − before**.
+      // Lower-case d — this is the individual difference for one pair, not the
+      // mean of them, which the page writes d̄ elsewhere. (Jeff, 2026-10-18.)
+      // Two-group pages keep the bare order, because their difference is
+      // x̄₁ − x̄₂ or p̂₁ − p̂₂ — a different symbol, not d.
+      const order = config.paired
+        ? `d = ${pairedOrderLabel()}`
+        : `${group1Name} − ${group2Name}`;
+      groupOrderLabel.textContent = order;
+      // The order goes in the button's name too. The adjacent span is a
+      // separate stop for a screen reader, so a user who lands on the button
+      // alone would otherwise be told what it does but not to what.
+      if (swapGroupsBtn) {
+        swapGroupsBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+      }
     }
     // Update document.title with dataset context
     const totalN = config.twoGroup || config.paired ? data1.length + data2.length : data1.length;
@@ -1333,27 +1548,29 @@ export function initSimPage(config) {
     if (config.mode === 'bootstrap') {
       const statFn = getBootstrapStat().fn;
       if (config.paired && data2.length > 0) {
-        const diffs = data2.map((v, i) => v - data1[i]);
+        const diffs = pairedDiffs();
         for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(diffs, preRng).values));
       } else if (config.twoGroup && data2.length > 0) {
         for (let i = 0; i < PRE_SIM_N; i++) {
-          const g = resampleGroups(data1, data2, preRng);
-          preStats.push(statFn(g.first.values) - statFn(g.second.values));
+          const cp = canonPair();
+          const g = resampleGroups(cp.a, cp.b, preRng);
+          preStats.push((statFn(g.first.values) - statFn(g.second.values)) * orderSign());
         }
       } else {
         for (let i = 0; i < PRE_SIM_N; i++) preStats.push(statFn(resampleOne(data1, preRng).values));
       }
     } else if (config.paired && data2.length > 0) {
       // Paired randomization: sign-flip pre-sim
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       for (let i = 0; i < PRE_SIM_N; i++) {
         const flipped = signFlip(diffs, preRng).values;
         preStats.push(mean(flipped));
       }
     } else if (config.testStat) {
       for (let i = 0; i < PRE_SIM_N; i++) {
-        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(data1, data2, preRng);
-        preStats.push(config.testStat(g1, g2));
+        const cp = canonPair();
+        const { first: { values: g1 }, second: { values: g2 } } = shuffleLabels(cp.a, cp.b, preRng);
+        preStats.push(config.testStat(g1, g2) * orderSign());
       }
     }
 
@@ -1369,13 +1586,49 @@ export function initSimPage(config) {
     // Lock the dotplot bin grid so dots don't shift as domain grows. For a
     // discrete statistic the grid is not a choice — it is the set of values the
     // statistic can actually take (see discreteGridStep).
+    //
+    // ⚠ This is computed from the PILOT range, before the observed statistic
+    // widens the domain below. The grid is part of what a `?seed=` link
+    // reproduces, so widening it would redraw every existing seeded picture
+    // (the statistics would be identical and the dots would sit differently),
+    // and REQ-069 is a change to what is on screen before the first shuffle,
+    // not to the output afterwards.
     const gridNumBins = userBinCount ?? 40;
     const gridBinWidth = discreteGridStep()
       ?? (preSimDomain[1] - preSimDomain[0]) / gridNumBins;
     lockedDotGrid = { binWidth: gridBinWidth, binOrigin: preSimDomain[0] };
 
-    // Render empty chart (no observed stat line — just axes)
-    renderChart([]);
+    // REQ-069 (Todd): mark the observed statistic before anything has been
+    // shuffled, so the student can see what the shuffles are going to be
+    // compared against. On a real effect the observed sits well outside the
+    // pilot's range — on `textbooks` the sign-flip null spans about ±4 and the
+    // observed is −12.8 — so the domain has to reach it or the marker is drawn
+    // off the axis. Widening here also removes a jump that was already there:
+    // the domain grew to take in the observed on the first +1, because
+    // `preSimDomain` is only a floor. It still grows on the side where extreme
+    // shuffles land — that is honest, more shuffles find more extreme values —
+    // but it no longer has to move to bring the OBSERVED into view.
+    // Bootstrap pages too, at Jeff's call (2026-10-18): the statistic the
+    // resamples are going to pile up around is as much "what is this chart
+    // about" as the randomization observed is, and leaving it off meant the
+    // marker appeared on the first +1 — a smaller version of the very jump
+    // Todd complained about. The bootstrap statistic is whichever one the page
+    // is resampling (mean, median, …), so it comes from `computeObservedStat`
+    // rather than the null-shifted `observedStatistic`.
+    const observed = config.mode === 'bootstrap'
+      ? (computeObservedStat() ?? null)
+      : observedStatistic();
+    if (observed != null && isFinite(observed)) {
+      const reach = (preSimDomain[1] - preSimDomain[0]) * 0.08;
+      preSimDomain = [
+        Math.min(preSimDomain[0], observed - reach),
+        Math.max(preSimDomain[1], observed + reach),
+      ];
+    }
+
+    // No `direction`: there is nothing to shade yet, and Todd asked for the
+    // observed statistic, not the region that will count as extreme.
+    renderChart([], null, observed ?? undefined, undefined);
   }
 
   function updateHypothesisDisplay() {
@@ -1578,22 +1831,264 @@ export function initSimPage(config) {
   });
 
   /** Map alternative hypothesis selection to tail direction. */
+  // What one dot came from, on these eleven tools too. Each branch below
+  // already keeps the drawn INDICES — the animation needs them to show which
+  // observation was taken twice and which never — so remembering a resample
+  // costs nothing extra to compute.
+  const resamples = createResampleStore();
+  /** Geometry of the last render, so a hover maps back to a statistic. */
+  let peekGeom = /** @type {any} */ (null);
+  const peekEl = createPeekElement(chartContainer);
+
+  /** @param {number} i @param {boolean} approx */
+  function describeAt(i, approx) {
+    const rec = resamples.get(i);
+    if (!rec) return null;
+    showPeeked(i);
+    // A two-group draw resamples each group, so its record is the FIRST group's
+    // indices; saying so is better than implying the whole resample is there.
+    // The VALUES are drawn in Step 2 now, so repeating them here as a list of
+    // numbers would be a worse copy of a picture the page already makes. The
+    // readout keeps only what the panel cannot say: which repetition this is,
+    // and how sure we are that it is that one. (Jeff, 2026-10-06: "the
+    // repetition should just display in the step 2 box".)
+    const notes = [];
+    if (approx) notes.push('one of the repetitions in this bar');
+    return {
+      title: `Repetition ${i + 1}${notes.length ? ` (${notes.join('; ')})` : ''}`,
+      detail: `shown in Step 2 \u2014 statistic ${formatStat(allStats[i], dataPrecision + 1)}`,
+    };
+  }
+
+  /** Which repetition Step 2 is currently showing on behalf of a hover. */
+  let peekedIndex = -1;
+
+  /**
+   * Draw the hovered repetition's resample in the Step 2 panel.
+   *
+   * Jeff, 2026-10-06: "I was hoping that the repetition should just display in
+   * the step 2 box where the resample is displayed." Which is right — Step 2 is
+   * already the picture of a resample, and a line of numbers under the chart is
+   * a worse version of something the page can draw. Only re-rendered when the
+   * index changes, because in column mode `describe` runs on every mousemove.
+   */
+  /** The centred differences a paired randomization shuffles the signs of. */
+  function centredPairedDiffs() {
+    const diffs = pairedDiffs();
+    const nullDiff = getNullValue();
+    return nullDiff === 0 ? diffs : diffs.map((d) => d - nullDiff);
+  }
+
+  /**
+   * The draw behind repetition `i`, replayed from the generator state kept for
+   * it. Storing the indices instead cost n numbers a dot and ran out at large
+   * n — on Ames (n = 2,930) only the newest 34 of 1,000 survived, so hovering
+   * any older dot did nothing. Replaying costs one draw, only when asked.
+   *
+   * It returns VALUES rather than indices. A shuffle's indices point into the
+   * POOLED array, not into `data1`, so the old index-mapping would have read a
+   * randomization's draw off the wrong list — and for a paired bootstrap, whose
+   * indices select PAIRS, it was already showing the "before" values instead of
+   * the resampled differences.
+   *
+   * @param {number} i
+   * @returns {{g1: number[], g2?: number[], pairedOriginal?: number[]}|null}
+   */
+  function drawBehind(i) {
+    const rec = resamples.get(i);
+    if (!rec?.st) return null;
+    const r = rngFromState(rec.st);
+    // The same branch the generate loop took: the configuration does not change
+    // while a run's statistics stand, so this reproduces that draw exactly.
+    if (config.mode === 'randomization') {
+      if (config.paired && data2.length > 0) {
+        const original = centredPairedDiffs();
+        return { g1: signFlip(original, r).values, pairedOriginal: original };
+      }
+      if (config.twoGroup && data2.length > 0) {
+        const cp = canonPair();
+        const { first, second } = shuffleLabels(cp.a, cp.b, r);
+        return { g1: first.values, g2: second.values };
+      }
+      return null;
+    }
+    if (config.paired && data2.length > 0) {
+      // Same ordering rule as the draw loop — see the note there.
+      return { g1: resampleOne(pairedDiffs(), r).values };
+    }
+    if (config.twoGroup && data2.length > 0) {
+      const cpR = canonPair();
+      const { first, second } = resampleGroups(cpR.a, cpR.b, r);
+      return { g1: first.values, g2: second.values };
+    }
+    return { g1: resampleOne(data1, r).values };
+  }
+
+  function showPeeked(i) {
+    if (i === peekedIndex) return;
+    const d = drawBehind(i);
+    if (!d?.g1?.length) return;
+    peekedIndex = i;
+    if (d.pairedOriginal) {
+      // A sign-flip is a comparison with what it flipped, so both go up.
+      showPairedMechanism(d.pairedOriginal, d.g1, false);
+      return;
+    }
+    if (d.g2?.length) {
+      // Both groups, because a two-group statistic is a comparison and half of
+      // one is not a draw.
+      showTwoGroupMechanism(d.g1, d.g2, false, false);
+      return;
+    }
+    showResample(d.g1, false, true, false);
+  }
+  /** Put Step 2 back to the resample the simulation actually last drew. */
+  function restorePeeked() {
+    if (peekedIndex === -1) return;
+    peekedIndex = -1;
+    if (lastResample?.length) showResample(lastResample, false, false, false);
+  }
+
+  /** A ruler the reader can place by clicking the axis (js/chart-utils.js). */
+  function wireRuler() {
+    if (!peekGeom?.frame || !peekGeom?.xScale) return;
+    attachAxisRuler({ frame: peekGeom.frame, xScale: peekGeom.xScale,
+      precision: config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1,
+      label: 'statistic' });
+  }
+
+  function wirePeek() {
+    attachResamplePeek({ container: chartContainer, peek: peekEl, geom: peekGeom,
+      stats: () => allStats, describe: describeAt, onLeave: restorePeeked });
+  }
+
+  // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
+  // js/ask-posture.js holds the mechanism; this page supplies its own symbols
+  // and its own idea of "extreme". Randomization only — a bootstrap CI has no
+  // tail to choose and no null to state, and `ask=bounds` is its analogue.
+  const posture = createAskPosture({
+    after: chartContainer,
+    // Paired is its own parameter — the mean DIFFERENCE, not a mean — and the
+    // course writes it μ_d / d̄.
+    symbols: config.paired
+      ? { param: '\u03BC\u1D48', stat: 'd\u0304' }
+      : {
+        param: config.proportion ? (config.twoGroup ? 'p\u2081 \u2212 p\u2082' : 'p')
+          : (config.twoGroup ? '\u03BC\u2081 \u2212 \u03BC\u2082' : '\u03BC'),
+        stat: config.proportion ? (config.twoGroup ? 'p\u0302\u2081 \u2212 p\u0302\u2082' : 'p\u0302')
+          : (config.twoGroup ? '\u0078\u0304\u2081 \u2212 \u0078\u0304\u2082' : '\u0078\u0304'),
+      },
+    genBtns,
+    nullInput: nullValueInput,
+    count: () => allStats.length,
+    observed: () => lastObserved ?? 0,
+    pageTail: () => getDirection(),
+    extremeCount: (stat, tail) => permutationPValue(allStats, stat, tail).extremeCount,
+    // A bootstrap tool has no tail to choose and no null to state; `bounds` is
+    // its analogue — type both ends and see what they actually capture.
+    steps: config.mode === 'bootstrap' ? ['bounds'] : ['null', 'tail', 'stat'],
+    report: (cfg) => answer.sendConfiguration(cfg),
+    insideCount: (lo, hi) => allStats.filter(v => v >= lo && v <= hi).length,
+    level: () => getCiLevel(),
+    onNullChange: () => resetSimulation(),
+    onChange: () => {
+      if (allStats.length === 0) return;
+      renderChart(allStats, lastCI, lastObserved, getDirection());
+      const d = getDirection();
+      const { pValue, extremeCount } = permutationPValue(allStats, aimedStat(lastObserved), d);
+      displayRandomizationResults(allStats, lastObserved, pValue, extremeCount, d);
+    },
+  });
+  /** Where the shading is aimed: the student's typed value when asked for. */
+  function aimedStat(/** @type {number|undefined} */ observed) {
+    return posture.asks('stat') ? /** @type {any} */ (posture.stat) : observed;
+  }
+
   function getDirection() {
+    // Unchosen is a real state under `?ask=tail`: nothing is shaded until the
+    // student says which tail counts as extreme.
+    if (posture.asks('tail')) return /** @type {any} */ (posture.tail);
     const alt = altDirectionBtn?.dataset.value ?? 'greater';
     if (alt === 'greater') return /** @type {const} */ ('right');
     if (alt === 'less') return /** @type {const} */ ('left');
     return /** @type {const} */ ('both');
   }
 
-  // Swap groups button
+  /**
+   * Flip a one-sided alternative, because reversing the difference reversed
+   * what it is a claim about.
+   *
+   * "μ₁ − μ₂ > 0" read the other way round is "μ₂ − μ₁ < 0" — the same claim,
+   * so the p-value must not move. Two-sided needs nothing. This used to live
+   * inside the paired swap only; the two-group swap did NOT do it, so reversing
+   * the groups on a one-sided randomization silently changed the p-value from
+   * p to 1 − p while looking like a relabelling. (2026-10-18.)
+   */
+  function flipAlternative() {
+    if (config.mode !== 'randomization' || !altDirectionBtn) return;
+    const flip = /** @type {Record<string, string>} */ ({ greater: 'less', less: 'greater' });
+    const next = flip[altDirectionBtn.dataset.value || 'greater'];
+    if (!next) return;
+    const vals = (altDirectionBtn.dataset.values || '').split(',');
+    const labels = (altDirectionBtn.dataset.labels || '').split(',');
+    const idx = vals.indexOf(next);
+    if (idx >= 0) {
+      altDirectionBtn.dataset.value = vals[idx];
+      altDirectionBtn.textContent = labels[idx];
+    }
+  }
+
+  /**
+   * Reverse which way round the differences are read.
+   *
+   * A one-sided alternative is a claim about a *signed* difference, so the
+   * reading has to carry it: "μᵈ > 0" on `after − before` is "μᵈ < 0" on
+   * `before − after`. Flipping both together leaves the evidence — the
+   * p-value — untouched and reverses only the sentence, which is the whole
+   * point of offering the swap rather than a second page. `?direction=` is
+   * NOT flipped at load: an author who writes both params means both.
+   *
+   * @param {boolean} swapped
+   */
+  function setPairedOrder(swapped) {
+    if (swapped === orderSwapped) return;
+    orderSwapped = swapped;
+    flipAlternative();
+    mirrorSimulation();
+    showDataLoaded();
+    rerenderAfterOrderChange();
+    announce(`Difference now reads ${pairedOrderLabel()}.`);
+  }
+
+  // ONE order control for both shapes (2026-10-18). It used to be two: a
+  // "⇄ Swap" that exchanged the two groups and a separate "⇄" that reversed
+  // the paired reading — near-identical glyphs, different places, and on the
+  // two-group pages a third double-arrow ("Change data") sat a few hundred
+  // pixels away meaning something else entirely.
   if (swapGroupsBtn) {
     swapGroupsBtn.addEventListener('click', () => {
+      if (config.paired) { setPairedOrder(!orderSwapped); return; }
+      // BOTH halves, together. The arrays swap so the panels and summaries read
+      // the new way; the flag says the display is no longer canonical, which is
+      // what `canonPair()` un-swaps for the draws, what `orderSign()` negates
+      // the statistic by, and what mirrors the dot grid's origin.
+      //
+      // Setting only the arrays — which is what this did until 2026-10-19 —
+      // made the button and `?order=swap` disagree: the CI and SE mirrored
+      // perfectly while the dot grid kept its old half-bin phase, so reversing
+      // visibly re-spaced the distribution. (Jeff, on diamonds_99_1ct.)
+      orderSwapped = !orderSwapped;
       [data1, data2] = [data2, data1];
       [group1Name, group2Name] = [group2Name, group1Name];
       [rawOutcomes1, rawOutcomes2] = [rawOutcomes2, rawOutcomes1];
-      if (allStats.length > 0) resetSimulation();
+      // The same correction the paired swap already made: a one-sided
+      // alternative is a claim about a signed difference and has to travel
+      // with it, or reversing the groups moves the p-value to 1 − p.
+      flipAlternative();
+      mirrorSimulation();
       showDataLoaded();
-      announce(`Swapped groups: ${group1Name} − ${group2Name}`);
+      rerenderAfterOrderChange();
+      announce(`Difference now reads ${group1Name} − ${group2Name}.`);
     });
   }
 
@@ -1607,11 +2102,7 @@ export function initSimPage(config) {
       altDirectionBtn.dataset.value = vals[next];
       altDirectionBtn.textContent = labels[next];
       if (allStats.length > 0) {
-        const nullDiff = getNullValue();
-        const rawObserved = config.paired
-          ? mean(data2.map((v, i) => v - data1[i]))
-          : config.testStat(data1, data2);
-        const observedStat = rawObserved - nullDiff;
+        const observedStat = /** @type {number} */ (observedStatistic());
         const direction = getDirection();
         renderChart(allStats, null, observedStat, direction);
         const { pValue, extremeCount } = permutationPValue(allStats, observedStat, direction);
@@ -1828,11 +2319,20 @@ export function initSimPage(config) {
         // Drawn by INDEX so the mechanism panel can say which observations were
         // taken. Identical PRNG consumption to resample(), so seeded links are
         // unaffected — see sampleIndicesWithReplacement.
-        const diffs = data2.map((v, i) => v - data1[i]);
+        // Through `pairedDiffs()`, NOT `resamplePairedDiffs(data1, data2, …)`:
+        // that helper subtracts in its own fixed order, so calling it here
+        // bypassed the reading the page is showing and left the label saying
+        // `ucla − amazon` over `amazon − ucla` numbers. `resampleOne` on the
+        // ordered differences is what it does anyway, with identical PRNG
+        // consumption — seeded links and the golden master are unaffected.
+        // (REQ-079.)
+        const diffs = pairedDiffs();
         for (let i = 0; i < count; i++) {
-          const { values: rs, indices: idx } = resamplePairedDiffs(data1, data2, rng);
+          const st = rng.getState();
+          const { values: rs, indices: idx } = resampleOne(diffs, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
+          resamples.rememberState(allStats.length, st);
           allStats.push(statFn(rs));
         }
       } else if (config.twoGroup && data2.length > 0) {
@@ -1840,7 +2340,9 @@ export function initSimPage(config) {
         /** @type {number[]} */ let lastRs1 = [];
         /** @type {number[]} */ let lastRs2 = [];
         for (let i = 0; i < count; i++) {
-          const { first, second } = resampleGroups(data1, data2, rng);
+          const st = rng.getState();
+          const cp = canonPair();
+          const { first, second } = resampleGroups(cp.a, cp.b, rng);
           const rs1 = first.values;
           const rs2 = second.values;
           lastRs1 = rs1;
@@ -1850,16 +2352,19 @@ export function initSimPage(config) {
           // no marks on either side. (2026-09-28.)
           lastRsIdx1 = first.indices ?? null;
           lastRsIdx2 = second.indices ?? null;
-          const stat = statFn(rs1) - statFn(rs2);
+          resamples.rememberState(allStats.length, st);
+          const stat = (statFn(rs1) - statFn(rs2)) * orderSign();
           allStats.push(stat);
         }
         twoGroupMorphMs = showTwoGroupMechanism(lastRs1, lastRs2, false, count === 1);
       } else {
         // One-sample bootstrap — by index, for the same reason.
         for (let i = 0; i < count; i++) {
+          const st = rng.getState();
           const { values: rs, indices: idx } = resampleOne(data1, rng);
           lastResampleValues = rs;
           lastResampleIndices = idx ?? null;
+          resamples.rememberState(allStats.length, st);
           allStats.push(statFn(rs));
         }
       }
@@ -1959,7 +2464,7 @@ export function initSimPage(config) {
       markGenerated();
     } else if (config.paired) {
       // ─── Paired randomization: sign-flip test ───
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       const nullDiff = getNullValue();
       // Center diffs around 0 under H₀: μ_d = δ₀
       const centeredDiffs = nullDiff === 0 ? diffs : diffs.map(d => d - nullDiff);
@@ -1968,8 +2473,12 @@ export function initSimPage(config) {
 
       /** @type {number[]} */ let lastFlipped = [];
       for (let i = 0; i < count; i++) {
+        // Four numbers per shuffle, so any dot can be hovered later and the
+        // sign-flip behind it replayed. (Jeff, 2026-10-07.)
+        const st = rng.getState();
         const flipped = signFlip(centeredDiffs, rng).values;
         lastFlipped = flipped;
+        resamples.rememberState(allStats.length, st);
         allStats.push(mean(flipped));
       }
 
@@ -2034,7 +2543,9 @@ export function initSimPage(config) {
       /** @type {number[]} */ let lastG1 = [];
       /** @type {number[]} */ let lastG2 = [];
       for (let i = 0; i < count; i++) {
-        const { first, second } = shuffleLabels(data1, data2, rng);
+        const st = rng.getState();
+        const cp = canonPair();
+        const { first, second } = shuffleLabels(cp.a, cp.b, rng);
         const g1 = first.values, g2 = second.values;
         // Which pooled observation landed in which group — what the deal
         // animation flies, and what says how many crossed over.
@@ -2042,7 +2553,8 @@ export function initSimPage(config) {
         lastRsIdx2 = second.indices ?? null;
         lastG1 = g1;
         lastG2 = g2;
-        const stat = config.testStat(g1, g2);
+        resamples.rememberState(allStats.length, st);
+        const stat = config.testStat(g1, g2) * orderSign();
         allStats.push(stat);
       }
 
@@ -2151,7 +2663,7 @@ export function initSimPage(config) {
       // one-sample bootstrap, so they go through the mean mechanism below
       // whenever it applies, and these tiles are the Tiles rendering and the
       // large-n fallback rather than the only thing paired can show.
-      const diffs = data2.map((v, i) => v - data1[i]);
+      const diffs = pairedDiffs();
       const sortedDiffs = [...diffs].sort((a, b) => a - b);
       const container = document.createElement('div');
       container.className = 'sample-dots';
@@ -2174,7 +2686,7 @@ export function initSimPage(config) {
         drawHistogram(container, diffs, {
           id: 'orig-hist',
           xLabel: '',
-          titleText: `Differences (${group2Name} − ${group1Name})`,
+          titleText: `Differences (${pairedOrderLabel()})`,
           numBins: Math.min(Math.ceil(Math.sqrt(diffs.length)), 40),
           animate: false,
           margin: { top: 5, right: 12, bottom: 44, left: 48 },
@@ -2193,7 +2705,7 @@ export function initSimPage(config) {
       if (origMeanEl) origMeanEl.textContent = formatStat(mean(diffs), dataPrecision);
       // Update title to show difference direction
       setPanelHeading(document.getElementById('orig-diff-title'),
-        `Differences (${group2Name} \u2212 ${group1Name})`);
+        `Differences (${pairedOrderLabel()})`);
       return;
     }
 
@@ -2216,14 +2728,28 @@ export function initSimPage(config) {
       // The values this page resamples — the sample itself, or the paired
       // differences.
       const vals = resampleSourceValues();
+      // PAIRED only: bin on the step the differences are actually recorded in.
+      // On `caosexam` they are all multiples of 2.5 — 5, 7.5, 15, 17.5, 25 —
+      // and the default width of span/numBins = 1.54 snapped the five columns
+      // to indices 0, 2, 6, 8, 13, spacing that does not reflect the real gaps
+      // of 1 : 3 : 1 : 3. It also made the picture depend on which way round
+      // the difference was read: negating re-rounded to 0, 5, 6, 11, 13, which
+      // is not the mirror, so reversing visibly re-spaced the stacks. With the
+      // origin at zero the centres sit on multiples of the step — where the
+      // values are — so negation maps centres onto centres. (Jeff, 2026-10-19.)
+      //
+      // Paired only on purpose: applying it to every mechanism dotplot re-binned
+      // the two-group shuffle and broke its geometry tests.
+      const pairedStep = config.paired ? commonStep(vals) : null;
       meanMech.renderBag(originalContentEl, vals, mean(vals), {
         domain: meanDomain ?? undefined, meanLabel: config.paired ? 'd̄' : 'x̄',
+        ...(pairedStep != null ? { binWidth: pairedStep, binOrigin: 0 } : {}),
         ...tierDotGeometry() });
       if (config.paired) {
         if (origNEl) origNEl.textContent = `${vals.length} pairs`;
         if (origMeanEl) origMeanEl.textContent = formatStat(mean(vals), dataPrecision);
         setPanelHeading(document.getElementById('orig-diff-title'),
-          `Differences (${group2Name} \u2212 ${group1Name})`);
+          `Differences (${pairedOrderLabel()})`);
       }
     } else if (data1.length <= CHIP_THRESHOLD && meanRole === 'individual') {
       // Value tiles are an INDIVIDUAL display — one mark per observation — so
@@ -2900,6 +3426,10 @@ export function initSimPage(config) {
    *  animation — this is a view switch, not a simulation step. */
   function rerenderMechanismView() {
     renderTwoGroupOriginal();
+    // `lastTwoG1/2` are canonical, so the reader's order is applied here — that
+    // way a reversal redraws Step 2 correctly without re-running anything.
+    const [showG1, showG2] = orderSwapped
+      ? [lastTwoG2, lastTwoG1] : [lastTwoG1, lastTwoG2];
     if (mechResampleContent) {
       const haveResample = lastTwoG1.length > 0 && lastTwoG2.length > 0;
       if (!haveResample) {
@@ -2907,11 +3437,11 @@ export function initSimPage(config) {
         mechResampleContent.innerHTML = resamplePanelPlaceholderHTML();
       } else if (useNewPropMech2()) {
         // A view switch, not a simulation step: no draw, no deal.
-        if (config.mode === 'randomization') showTwoPropShuffle(lastTwoG1, lastTwoG2, false);
-        else showTwoPropResample(lastTwoG1, lastTwoG2, false);
+        if (config.mode === 'randomization') showTwoPropShuffle(showG1, showG2, false);
+        else showTwoPropResample(showG1, showG2, false);
       } else {
-        mechResampleContent.innerHTML = buildTwoGroupHTML(lastTwoG1, lastTwoG2, false);
-        renderTwoGroupCharts(lastTwoG1, lastTwoG2, 'resamp');
+        mechResampleContent.innerHTML = buildTwoGroupHTML(showG1, showG2, false);
+        renderTwoGroupCharts(showG1, showG2, 'resamp');
       }
     }
     updateMechCardLegend();
@@ -3141,11 +3671,19 @@ export function initSimPage(config) {
    * @param {boolean} [highlight] - Highlight diff value (+1 animation, auto-fades via CSS)
    */
   function showTwoGroupMechanism(g1, g2, _flash = false, highlight = false) {
-    if (!mechResampleContent || !mechanismDescEl) return 0;
-
-    // Remember the latest grouping so the toggle can re-render it.
+    // Remember the latest grouping in CANONICAL order, BEFORE the display swap
+    // below. Storing the displayed order meant a later re-render reproduced the
+    // order that was current when the draw happened — so Step 2 kept the old
+    // grouping after a reversal while Step 1 followed, and the two panels
+    // showed the groups the opposite way round. (Jeff, 2026-10-19.)
     lastTwoG1 = g1;
     lastTwoG2 = g2;
+
+    // The draw comes back in CANONICAL order; the panels are labelled in the
+    // reader's order. Without this the strip showed group A's values under
+    // group B's name as soon as the reading was reversed.
+    if (orderSwapped) { const t = g1; g1 = g2; g2 = t; }
+    if (!mechResampleContent || !mechanismDescEl) return 0;
 
     // B4: two-proportion bootstrap uses the per-group grid/bar mechanism.
     if (useNewPropMech2()) {
@@ -3478,7 +4016,7 @@ export function initSimPage(config) {
    */
   function resampleSourceValues() {
     return (config.paired && data2.length > 0)
-      ? data2.map((v, i) => v - data1[i])
+      ? pairedDiffs()
       : data1;
   }
 
@@ -4453,6 +4991,8 @@ export function initSimPage(config) {
   }
 
   function resetSimulation() {
+    resamples.clear();
+    if (peekEl) peekEl.hidden = true;
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
     // A reset means "give me a clean tool", which includes a clean address bar.
@@ -4528,7 +5068,13 @@ export function initSimPage(config) {
   function computeObservedStat() {
     if (config.mode !== 'bootstrap' || data1.length === 0) return undefined;
     if (config.paired && data2.length === data1.length && data2.length > 0) {
-      return mean(data1.map((v, i) => data2[i] - v));
+      // Through `pairedDiffs()`. This read `data1.map((v, i) => data2[i] - v)`
+      // — the same subtraction with the operands swapped and the variables
+      // renamed, which is why no grep for the expression found it when REQ-079
+      // routed the others. The ⇄ then left the marker on the far side of its
+      // own distribution: the panel read `ucla − amazon: 12.672` while the
+      // chart drew `observed = −12.762`. (D-35.)
+      return mean(pairedDiffs());
     }
     if (config.twoGroup && typeof config.testStat === 'function') {
       return config.testStat(data1, data2);
@@ -4560,8 +5106,10 @@ export function initSimPage(config) {
     /** @type {number[]} */
     let jack;
     if (config.paired && data2.length === data1.length && data2.length > 0) {
-      const diffs = data1.map((v, i) => data2[i] - v);
-      jack = jackknife1(diffs, statFn);
+      // Same bypass as computeObservedStat had — the jackknife has to see the
+      // differences in the order the page is reading them, or the BCa bounds
+      // come back for the opposite difference. (D-35.)
+      jack = jackknife1(pairedDiffs(), statFn);
     } else if (config.twoGroup && data2.length > 0) {
       // Jackknife over the pooled observations: leave out each point from its
       // own group and recompute the difference statistic.
@@ -4651,16 +5199,39 @@ export function initSimPage(config) {
     // Shuffles equal to the observed get their own column, sitting on the line
     // where they belong, and the note under the p-value says they count.
     if (discreteGridStep() != null) return /** @type {number} */ (observed);
-    if (!config.twoGroup) return origin;
+    if (!config.twoGroup) {
+      // The locked origin belongs to the CANONICAL reading, so mirror it when
+      // the display is reversed — the centres then land on the negations of the
+      // centres they had, which is what makes the stacks mirror.
+      return orderSwapped ? -(/** @type {number} */ (origin)) : origin;
+    }
     // Continuous statistic: there is no achievable grid to land on, so the best
     // available is a bin BOUNDARY on the observed — no bin can then hold values
     // from both sides of the line.
     // Left tail: ties are extreme on the low side, so tip them below the line.
-    const tieNudge = direction === 'less' ? w * 1e-9 : -w * 1e-9;
-    return /** @type {number} */ (observed) - w / 2 + tieNudge;
+    //
+    // ⚠ Built in the CANONICAL reading and then mirrored, rather than from the
+    // displayed observed directly. "Boundary half a bin BELOW the observed" is
+    // not a mirror-symmetric rule: reversing negates the observed but left the
+    // boundary below it again, when it needs to move above. That half-bin phase
+    // shift re-binned every stack, so reversing visibly re-spaced the
+    // distribution while the CI and SE mirrored perfectly. (Jeff, 2026-10-19,
+    // on diamonds_99_1ct.)
+    const obs = /** @type {number} */ (observed);
+    const canonObs = orderSwapped ? -obs : obs;
+    const canonDir = orderSwapped
+      ? (direction === 'less' ? 'greater' : direction === 'greater' ? 'less' : direction)
+      : direction;
+    const tieNudge = canonDir === 'less' ? w * 1e-9 : -w * 1e-9;
+    const canonOrigin = canonObs - w / 2 + tieNudge;
+    return orderSwapped ? -canonOrigin : canonOrigin;
   }
 
   function renderChart(stats, ci, observedStat, direction) {
+    // Every branch funnels through here, so the student's aim is substituted
+    // once rather than in each of the four generate paths.
+    observedStat = posture.asks('stat')
+      ? /** @type {any} */ (posture.stat ?? undefined) : observedStat;
     chartContainer.innerHTML = '';
     const n = stats.length;
     // Cache params for chart type toggle re-render. lastCI stays the PERCENTILE
@@ -4695,6 +5266,39 @@ export function initSimPage(config) {
     const ciLineColor = (ciMethod === 'se') ? NORMAL_CI_COLOR : PERCENTILE_CI_COLOR;
     ci = shownCI;
     const titleText = words.distribution;
+    /**
+     * What the chart is showing, for a screen reader.
+     *
+     * `descText` has always been accepted by the chart helpers and never
+     * supplied here, so the SVG's accessible name was the title alone — fine
+     * when the title was the whole story, wrong now that REQ-069 draws a chart
+     * whose ONLY content is the observed statistic. An empty distribution that
+     * announces "Randomization Distribution" and nothing else tells a screen
+     * reader reader less than the page tells everyone else.
+     */
+    const descText = (() => {
+      // `?observed=off` is reasoning mode: the marker is deliberately withheld
+      // so the student places the cutoff from the problem text. Saying "observed
+      // X is marked on the axis" would both lie and hand over the answer the
+      // mode exists to withhold.
+      const markerShown = new URLSearchParams(location.search).get('observed') !== 'off';
+      // The same precision the marker's own label uses, so what is spoken and
+      // what is drawn agree to the digit.
+      const prec = config.proportion ? Math.max(dataPrecision + 1, 3) : dataPrecision + 1;
+      // `toFixed`, not `formatStat`: the marker's own label is built with
+      // `value.toFixed(precision)` (js/histogram.js renderOverlayLine), and
+      // formatStat's type rules round differently, so the two disagreed by a
+      // digit — "observed = -12.762" drawn, "-12.7616" spoken.
+      const at = (markerShown && observedStat != null && isFinite(observedStat))
+        ? `observed = ${observedStat.toFixed(prec)}` : '';
+      if (n === 0) {
+        return at
+          ? `No simulations yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No simulations yet — press a generate button to build the distribution.';
+      }
+      const unit = config.mode === 'bootstrap' ? 'resamples' : 'shuffles';
+      return [`${n.toLocaleString()} ${unit}`, at].filter(Boolean).join(', ');
+    })();
     let xLabel;
     if (config.mode === 'bootstrap') {
       if (config.proportion) {
@@ -4798,7 +5402,11 @@ export function initSimPage(config) {
 
     // Reasoning mode hides everything that reveals the answer on the chart: no
     // region shading, no CI bound lines. The observed-stat marker stays.
-    const ciForChart = showReadout ? ci : null;
+    // Under `?ask=bounds` the chart shades the interval the STUDENT typed, and
+    // shows nothing until both ends are in. The computed CI is what they are
+    // being asked to find, so it cannot be on screen while they look for it.
+    const askedBounds = posture.asks('bounds');
+    const ciForChart = askedBounds ? posture.bounds : (showReadout ? ci : null);
     if (!showReadout) { regionPredicate = undefined; splitRanks = undefined; }
 
     /** @type {import('./chart-utils.js').ChartFrame|undefined} */
@@ -4816,6 +5424,7 @@ export function initSimPage(config) {
         id: 'sim-chart',
         xLabel,
         titleText,
+        descText,
         isExtreme: regionPredicate,
         splitRanks,
         observedStat,
@@ -4854,6 +5463,7 @@ export function initSimPage(config) {
         id: 'sim-chart',
         xLabel,
         titleText,
+        descText,
         isTail: regionPredicate,
         splitRanks,
         observedStat: observedStat ?? undefined,
@@ -4872,6 +5482,7 @@ export function initSimPage(config) {
         id: 'sim-chart',
         xLabel,
         titleText,
+        descText,
         isTail: regionPredicate,
         splitRanks,
         observedStat: observedStat ?? undefined,
@@ -4934,11 +5545,25 @@ export function initSimPage(config) {
       });
     }
 
-    // Theory overlay (histogram or dotplot, bootstrap mode only). The ±SE and Both
-    // methods switch it on: the normal curve is where that interval comes from.
-    if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot') && config.mode === 'bootstrap') {
+    // Theory overlay (histogram or dotplot). On bootstrap pages the ±SE and Both
+    // methods switch it on — the normal curve is where that interval comes from.
+    // On randomization pages it is the null model laid over the shuffles, opened
+    // by `?theory=on`.
+    if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot')) {
       applyTheoryOverlay(stats);
     }
+
+    // Marks are rebuilt on every render, so the hover wiring goes back on —
+    // after the chart is drawn, not before, since the geometry it hit-tests
+    // against is produced by the branches above.
+    peekGeom = {
+      xScale: chartXScale,
+      yScale: lastHistResult?.yScale ?? lastDotResult?.countToY,
+      frame: chartResult,
+      bins: lastHistResult?.bins ?? null,
+    };
+    wirePeek();
+    wireRuler();
 
     lastStatIndex = -1; // Reset after rendering
     batchHighlightIndices = null;
@@ -4952,12 +5577,18 @@ export function initSimPage(config) {
   // renderSimPills and _addSimPill are now in chart-utils.js
 
   function displayBootstrapResults(stats, ci, se, ciLevel) {
+    if (posture.active && !posture.complete()) {
+      resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
+        + `The resamples are drawn; the interval is yours to find. `
+        + `${posture.missing().join(', then ')}.</p>`;
+      return;
+    }
     const m = mean(stats);
     let statLabel, paramLabel, paramName;
     if (config.paired) {
       statLabel = 'Mean Difference';
-      paramLabel = `Mean Difference (${group2Name} − ${group1Name})`;
-      paramName = `true mean difference (${group2Name} − ${group1Name})`;
+      paramLabel = `Mean Difference (${pairedOrderLabel()})`;
+      paramName = `true mean difference (${pairedOrderLabel()})`;
     } else if (config.proportion) {
       statLabel = 'Sample Proportion';
       paramLabel = config.twoGroup
@@ -5121,7 +5752,8 @@ export function initSimPage(config) {
       mcLine = tiny
         ? `<p class="hint">Run it again and the ends could barely move at this precision — already steady.</p>`
         : `<p class="hint">Run it again and the ends could shift <strong>±${lo}</strong> and
-             <strong>±${hi}</strong>. <strong>More resamples → tighter.</strong></p>`;
+             <strong>±${hi}</strong>${simErrorHelpHTML({ kind: 'ci', n: stats.length })}.
+             <strong>More resamples → tighter.</strong></p>`;
     }
 
     // What the bounds actually hold.
@@ -5213,7 +5845,41 @@ export function initSimPage(config) {
    * @param {number} extremeCount
    * @param {'left'|'right'|'both'} direction
    */
+  /**
+   * The same tail, read off the normal curve instead of counted.
+   *
+   * Only when the curve is actually on screen, so the default readout is
+   * untouched. It is the Compare beat's second number: the simulated p-value
+   * and the model's answer to the same question, side by side. (REQ-082.)
+   */
+  function normalTailHTML(stats, observedStat, direction) {
+    if (!theoryOverlayOn || config.mode !== 'randomization') return '';
+    if (!stats || stats.length < 2 || !isFinite(observedStat)) return '';
+    const mu = getNullValue();
+    const sigma = sd(stats);
+    if (!(sigma > 0)) return '';
+    const below = normalCdf(observedStat, mu, sigma);
+    // `direction` here is the TAIL vocabulary — 'right' / 'left' / 'both', what
+    // `getDirection()` returns — not the alternative's 'greater' / 'less'.
+    // Checking for the latter matched nothing and silently sent every tail down
+    // the two-sided branch: the sex_discrimination link reported 0.021 where the
+    // right tail is 0.011. Caught by checking the number against an exact
+    // permutation calculation rather than trusting it. (REQ-082.)
+    const tail = direction === 'left' ? below
+      : direction === 'right' ? 1 - below
+      : 2 * Math.min(below, 1 - below);
+    if (!isFinite(tail)) return '';
+    return ` <span class="theory-tail">· normal curve ${tail.toFixed(3)}</span>`;
+  }
+
   function displayRandomizationResults(stats, observedStat, pValue, extremeCount, direction) {
+    if (posture.active && !posture.complete()) {
+      resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
+        + `The simulation has run; it cannot tell you a p-value until you `
+        + `${posture.missing().join(', then ')}.</p>`;
+      return;
+    }
+    observedStat = aimedStat(observedStat);
     const dirLabel = direction === 'both' ? 'two-sided'
       : direction === 'right' ? 'right-tail' : 'left-tail';
     const nullDiff = getNullValue();
@@ -5260,7 +5926,7 @@ export function initSimPage(config) {
       : '';
     const pLine = extremeCount === 0
       ? `<strong>p-value = ${extremeCount}/${N} ≈ 0</strong> — none of ${N} shuffles were this extreme`
-      : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>`;
+      : `<strong>p-value = ${extremeCount}/${N} = ${pValue.toFixed(3)} ± ${mcMargin.toFixed(3)}</strong>${normalTailHTML(stats, observedStat, direction)}`;
     // REQ-055: report what the student can see, to the same 3 decimals. Not
     // when `?readout=false` is on — that mode exists to make them read the
     // p-value off the chart themselves, and posting it would answer the
@@ -5273,7 +5939,7 @@ export function initSimPage(config) {
       <p><strong>Randomization Distribution</strong> (${N} shuffles)</p>
       <p>Observed statistic: ${obsLabel}</p>
       <p>${pLine}</p>
-      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it could shift <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More shuffles → tighter.</strong></p>
+      <p class="hint">The p-value <em>is</em> the fraction of shuffles at least as extreme as the observed value (${dirLabel}). Run it again and it could shift <strong>±${mcMargin.toFixed(3)}</strong>${simErrorHelpHTML({ kind: 'pvalue', n: N })}. <strong>More shuffles → tighter.</strong></p>
       ${tieNote}
       <p class="interpretation">${extremeCount} of ${N} shuffled statistics were at least as extreme as the observed value. This provides ${strength} evidence against H₀: ${nullDesc}.</p>
     ` : `

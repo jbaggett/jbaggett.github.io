@@ -5,6 +5,7 @@
  */
 
 import { parseCSV } from '../../js/csv-parser.js';
+import { withPairedDifference } from '../../js/dataset-actions.js';
 import { mean, median, quartiles, sd, iqr, range, detectPrecision, formatStat } from '../../js/stats.js';
 import { getQuartileMethod, mountQuartileControl } from '../../js/quartile-method.js';
 import { drawHistogram, sturgesBins } from '../../js/histogram.js';
@@ -549,13 +550,23 @@ const dataPanel = initDataPanel({
   showPreview: true,
   datasetFilter: (/** @type {any} */ ds) =>
     ds.hasNumeric === true && !ds.hasCategorical &&
-    ds.type !== 'regression' && ds.type !== 'paired',
+    ds.type !== 'regression',
+  // Paired sets used to be excluded here. They belong: this tool describes one
+  // numeric variable, and a paired set has three worth describing — the two
+  // measurements and the DIFFERENCE between them, which is what every paired
+  // method is actually about. `withPairedDifference` adds that third column.
+  // (Jeff, 2026-10-19; the textbook agent's REQ-068 A, which asked for the
+  // derived column and the filter together, "both halves or neither".)
   // A `?dataset=` deep-link may point at a dataset the curated dropdown hides
   // (a regression/bootstrap/anova set, or one with a categorical column). Honor
   // it as long as it has a numeric column to describe — the only capability this
   // one-variable tool needs. (A categorical-only dataset is still blocked.)
   deepLinkFilter: (/** @type {any} */ ds) => ds.hasNumeric === true,
   onDataset: (ds, meta) => {
+    // `?order=swap` arrives from the paired tool's Explore button, so the
+    // derived column here reads the way the page the reader came from did.
+    ds = withPairedDifference(ds,
+      new URLSearchParams(window.location.search).get('order') === 'swap');
     loadedDataset = ds;
     showCrosslink(meta);
     const matchingVars = ds.variables.filter(

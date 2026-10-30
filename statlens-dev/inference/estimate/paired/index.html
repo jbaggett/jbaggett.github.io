@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Confidence Interval for a Mean Difference (Paired) | StatLens</title>
+    <meta name="description" content="Confidence interval for a mean difference on paired data.">
+    <meta name="keywords" content="confidence interval, paired data, mean difference, before and after, matched pairs, t interval">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -150,6 +152,12 @@
                 </span>
                 <span class="hint">— or drag the critical values on the plot</span>
             </div>
+            <div id="group-order" class="group-order" hidden>
+                <span id="group-order-label"></span>
+                <button type="button" id="swap-groups" class="btn-secondary btn-sm order-swap"
+                        aria-label="Reverse the difference order"
+                        title="Reverse the difference order">⇅ Reverse</button>
+            </div>
         </section>
 
         <div id="conditions-checkpoint" class="conditions-checkpoint" hidden></div>
@@ -201,5 +209,6 @@
     </script>
     <script src="../../../js/page-number.js"></script>
     <script src="../../../js/feedback.js"></script>
+    <script type="module" src="../../../js/search-mount.js"></script>
 </body>
 </html>

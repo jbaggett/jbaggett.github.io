@@ -219,7 +219,14 @@ function showResults() {
       : '';
     renderConditionsCheckpoint(conditionsCheckpoint, {
       altLabel: 'Goodness-of-Fit Simulation', altHref: simLink,
-      detailsHTML: `<p>For the chi-square goodness-of-fit test, every expected count \\(E_i = n\\,p_{0i}\\) should be at least 5.${condNote}</p>`,
+      // Through `tex()`, like every other formula on this page. Raw \\( … \\)
+      // delimiters were shipped here and the panel is filled AFTER the page's
+      // typesetting pass, so the reader saw the TeX source:
+      // "every expected count \\(E_i = n\\,p_{0i}\\) should be at least 5".
+      // (Todd Will, via the textbook agent, 2026-10-28. The only `detailsHTML`
+      // in the project that carried TeX — chisq, one-prop, two-props and the
+      // estimate pages were checked.)
+      detailsHTML: `<p>For the chi-square goodness-of-fit test, every expected count ${tex('E_i = n\\,p_{0i}')} should be at least 5.${condNote}</p>`,
     });
   }
 

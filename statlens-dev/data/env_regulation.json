@@ -1,7 +1,7 @@
 {
   "id": "env_regulation",
   "name": "Environmental Regulation Views",
-  "description": "Survey of 705 Americans on environmental regulation: necessary vs. does more harm. IMS Ch. 2.",
+  "description": "Survey of 705 Americans: are regulations necessary, or will the private marketplace ensure businesses act responsibly? (Pew; IMS Ch. 2)",
   "source": "openintro",
   "variables": [
     {
@@ -10,2127 +10,2127 @@
       "type": "categorical"
     }
   ],
-  "studyDescription": "A survey asked 705 American adults which of two statements better represents their view on environmental regulation: that regulations are necessary to protect the environment, or that regulations frequently do more harm than good. This was an observational survey.",
+  "studyDescription": "A Pew Research Center survey asked 705 American adults to choose between two statements about environmental regulation: that regulations are necessary to make businesses act responsibly, or that the private marketplace will ensure it. A third group answered \"Don’t know\". This is an observational survey.",
   "variableDescriptions": {
-    "statement": "The respondent's chosen statement: \"Regulations are necessary\" or \"Regulations do more harm than good\""
+    "statement": "Which of the two statements the respondent chose, or \"Don’t know\"."
   },
-  "sourceDetail": "OpenIntro datasets (openintro R package). IMS Ch. 2. Original source: Pew Research Center survey.",
+  "sourceDetail": "openintro::env_regulation (IMS Ch. 2). Pew Research Center survey on environmental regulation versus the private marketplace, n = 705. These are the summary counts as published in the openintro package (CC BY-SA); Pew’s own terms restrict redistributing full datasets, so only the published tabulation is carried here. Replaced 2026-10-17: this file held 363 / 181 / 161 under a different middle category (\"Regulations do more harm\"), which is not the question Pew asked (REQ-077).",
   "context": "A survey asked 705 American adults: Which of the following statements do you think is the better approach for addressing environmental problems? Regulations are necessary to protect the environment, or regulations frequently do more harm than good.",
   "rows": [
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations are necessary"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Don't know"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Regulations do more harm"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
       "statement": "Don't know"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Regulations necessary"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     },
     {
-      "statement": "Don't know"
+      "statement": "Private marketplace will ensure"
     }
   ]
 }

@@ -5,13 +5,25 @@
  * the sampling distribution of x̄ build up — CLT in action.
  */
 
-import { createRng, randNormal } from '../../js/prng.js';
+import { createResampleStore } from '../../js/resample-store.js';
+import { attachResamplePeek, createPeekElement } from '../../js/resample-peek.js';
+import { createRng } from '../../js/prng.js';
+import { generateQuantPopulation } from '../../js/populations.js';
 import { mean, sd } from '../../js/stats.js';
-import { drawHistogram, computeBins, snappedPropThresholds, riceBins } from '../../js/histogram.js';
+import { drawHistogram, computeBins, snappedPropThresholds, riceBins, renderOverlayLine } from '../../js/histogram.js';
 import { drawDotplot, computeDots, STATISTIC_FILL } from '../../js/dotplot.js';
 import { drawSpike } from '../../js/spike.js';
+import { attachAxisRuler, setLabelText } from '../../js/chart-utils.js';
 import { animateDartScoop } from '../../js/mechanisms/draw-animation.js';
-import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart } from '../../js/page-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, computeHighlights, animateDropToChart, initDisplayToggle } from '../../js/page-utils.js';
+import { applySettings } from '../../js/settings.js';
+
+// The lab had no Simple | Detailed control, because until now it had nothing to
+// put behind one. `initDisplayToggle` self-places after the h1 and self-gates on
+// an `.expert-only` element existing — which the results summary now builds, so
+// it is watched for rather than present at load.
+applySettings();
+initDisplayToggle();
 import { resolveChartType } from '../../js/chart-defaults.js';
 import * as d3Shape from 'd3-shape';
 import * as d3Scale from 'd3-scale';
@@ -67,6 +79,25 @@ const centerNote = document.getElementById('center-note');
 
 const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
   document.querySelectorAll('.gen-btn'));
+
+/**
+ * x̄ and p̂ as MARKUP, for anything written into the DOM.
+ *
+ * `x̄` is an x plus U+0304 COMBINING MACRON, and the bar is laid out by the font
+ * rather than by us: in Atkinson Hyperlegible it lands to the RIGHT of the
+ * glyph rather than over it, so the tile read "one dot per sample's x‾"
+ * (Jeff, 2026-10-13). The site already solved this once — `.x-bar` in
+ * style.css is a span with a border-top — and this is just that, available to
+ * the strings this page builds in JS. The same reasoning is why
+ * `conceptual/two-se/` draws the bar as SVG geometry.
+ *
+ * p̂ is left as its combining character on purpose: U+0302 COMBINING CIRCUMFLEX
+ * sits over the p correctly in this font (checked at 3× on both labels), so it
+ * needs no span. It is the macron, not combining marks in general, that is
+ * broken here.
+ */
+const X_BAR_HTML = '<span class="x-bar">x</span>';
+const P_HAT_HTML = 'p\u0302';
 
 /** Population type: 'quant' (sampling dist of x̄) or 'cat' (sampling dist of p̂). */
 let popType = 'quant';
@@ -131,40 +162,10 @@ function generatePopulation(shape, rng) {
     for (let i = 0; i < POP_SIZE; i++) vals.push(i < ones ? 1 : 0);
     return vals;
   }
-  // Draw from `make` until the value lands in [lo, hi]. The skewed shapes are
-  // otherwise unbounded exponentials, so a rare draw can land far past the
-  // plotted domain and overflow into the page. Redrawing (rather than clamping)
-  // keeps the distribution's natural shape — it just tapers to a clean edge with
-  // no pile-up spike. μ/σ come from this bounded population, so the sampling
-  // distribution still centres honestly on the μ line. (A teaching demo; the
-  // rejected tail is <1% and invisible for the already-bounded shapes.)
-  const draw = (/** @type {() => number} */ make, /** @type {number} */ lo, /** @type {number} */ hi) => {
-    let x;
-    do { x = make(); } while (x < lo || x > hi);
-    return x;
-  };
-  switch (shape) {
-    case 'normal':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => randNormal(50, 10, rng), 15, 85));
-      break;
-    case 'right-skewed':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => -Math.log(1 - rng()) / 0.1, 0, 50));
-      break;
-    case 'left-skewed':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => 50 - (-Math.log(1 - rng()) / 0.1), 0, 50));
-      break;
-    case 'uniform':
-      for (let i = 0; i < POP_SIZE; i++) vals.push(rng() * 100);
-      break;
-    case 'bimodal':
-      for (let i = 0; i < POP_SIZE; i++) {
-        vals.push(draw(() => (rng() < 0.5 ? randNormal(30, 5, rng) : randNormal(70, 5, rng)), 10, 90));
-      }
-      break;
-    default:
-      for (let i = 0; i < POP_SIZE; i++) vals.push(draw(() => randNormal(50, 10, rng), 15, 85));
-  }
-  return vals;
+  // The five quantitative shapes live in js/populations.js, because a second
+  // page needed the same ones and a copy would have drifted. The draw sequence
+  // is unchanged, so every seeded link still produces the same population.
+  return generateQuantPopulation(shape, rng, POP_SIZE);
 }
 
 // ─── State ───
@@ -180,6 +181,23 @@ let sampleMeans = [];
 /** Values of the most recently drawn sample (shown in the "One sample" tier). */
 /** @type {number[]} */
 let lastSample = [];
+/**
+ * Every sample that made a dot, so any dot can be asked about.
+ *
+ * "What is one dot?" is the confusion this page exists to clear up, and the One
+ * sample panel is already the picture of one — it just only ever showed the
+ * newest. Hovering a dot in the sampling distribution now draws THAT sample
+ * there instead. Values rather than indices, because a sample here is drawn
+ * from a generated population that is itself regenerated when the shape or size
+ * changes; an index into it would not survive that.
+ */
+const samples = createResampleStore();
+/** Geometry of the last sampling-distribution render, for the hit-test. */
+let peekGeom = /** @type {any} */ (null);
+/** Which dot the One sample panel is currently showing on a hover's behalf. */
+let peekedIndex = -1;
+/** @type {HTMLElement|null} */
+let peekEl = null;
 
 /** @type {(() => number)|null} */
 let rng = null;
@@ -434,6 +452,202 @@ function renderPopulation() {
  * have visibly combined into the mean — so pass showMean=false for that.
  * @param {boolean} [showMean=true]
  */
+/**
+ * Draw the hovered dot's sample in the One sample panel.
+ *
+ * That panel already IS the picture of one sample; it just only ever showed the
+ * newest. Only redrawn when the index changes, because in column view the
+ * describe callback runs on every mousemove.
+ * @param {number} i
+ */
+function showPeekedSample(i) {
+  if (i === peekedIndex) return;
+  const rec = samples.get(i);
+  if (!rec?.vals) return;
+  peekedIndex = i;
+  lastSample = Array.from(rec.vals);
+  renderCurrentSample(true);
+}
+/** Put the One sample panel back to the sample the lab actually last drew. */
+function restorePeekedSample() {
+  if (peekedIndex === -1) return;
+  peekedIndex = -1;
+  const rec = samples.get(sampleMeans.length - 1);
+  if (rec?.vals) { lastSample = Array.from(rec.vals); renderCurrentSample(true); }
+}
+/**
+ * Everything that hangs off a freshly drawn sampling distribution.
+ *
+ * There are four branches that draw it — dotplot, spike, histogram, and the
+ * categorical pair — and only two of them were wiring the hover. The proportion
+ * branches returned early, so hovering a p̂ dot showed nothing at all. One
+ * finisher, called by all four.
+ *
+ * @param {{frame: any, xScale: any, yScale?: any, countToY?: any, bins?: any[]}} result
+ */
+/**
+ * Where the simulated centre actually landed.
+ *
+ * The lab deliberately omitted the mean of the sample means (REQ-030, the
+ * Watkins trap): students shown that number watch it approach μ as n grows and
+ * conclude the sampling distribution's centre improves with n — which is false.
+ * It equals μ at every n; only the ESTIMATE of it gets less noisy.
+ *
+ * The number is the trap, not the idea. Measured on this lab's own scale:
+ *
+ *     n       |x̄̄ − μ|   SD of x̄'s    gap as a FRACTION of the spread
+ *     2         0.106      3.055              0.035
+ *    10         0.036      1.363              0.026
+ *   100         0.014      0.430              0.033
+ *
+ * The raw gap falls 7.5×; the DRAWN gap does not move, because both scale as
+ * 1/√n and cancel — gap/spread = 1/√k, which depends only on how many samples
+ * have been drawn. So a marker on this chart is invariant in n by construction
+ * and carries no false signal, while a printed figure carries it plainly.
+ *
+ * Hence: the marker is always on, the number lives behind Detailed with its own
+ * uncertainty, and the note ties tightening to MORE samples rather than bigger
+ * ones. (Jeff, 2026-10-21.)
+ */
+/**
+ * Second label row, below the parameter's (which `renderOverlayLine` fixes at 10).
+ *
+ * 14 was not enough: the viewBox is scaled up to the container, so a label that
+ * is ~21 CSS px tall occupies ~20 units of a 600-unit viewBox, and two rows 14
+ * apart still overlapped. Measured, not guessed — the boxes came back 335–356
+ * and 350–371.
+ */
+const LABEL_ROW_2 = 33;
+
+/**
+ * Draw a short line sample just before a label, in the label's own style.
+ *
+ * @param {Element|null} parent - the overlays group
+ * @param {SVGTextElement|undefined} textEl
+ * @param {string} colour
+ * @param {string|null} dash - stroke-dasharray, or null for a solid rule
+ * @param {{width:number}} frame
+ */
+function addLabelSwatch(parent, textEl, colour, dash, frame) {
+  if (!parent || !textEl) return;
+  let bb;
+  try { bb = textEl.getBBox(); } catch { return; }    // not laid out yet
+  if (!bb || !bb.width) return;
+  const SWATCH = 13, GAP = 4;
+  const midY = bb.y + bb.height / 2;
+  // Normally to the LEFT of the text. Near the left edge there is no room, so
+  // it goes to the right instead rather than hanging outside the plot.
+  const leftFits = bb.x - GAP - SWATCH >= 0;
+  const x1 = leftFits ? bb.x - GAP - SWATCH : bb.x + bb.width + GAP;
+  if (!leftFits && x1 + SWATCH > frame.width) return;  // no room either side
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', String(x1));
+  line.setAttribute('x2', String(x1 + SWATCH));
+  line.setAttribute('y1', String(midY));
+  line.setAttribute('y2', String(midY));
+  line.setAttribute('stroke', colour);
+  line.setAttribute('stroke-width', '2.5');
+  line.setAttribute('class', 'label-swatch');
+  if (dash) line.setAttribute('stroke-dasharray', dash);
+  parent.appendChild(line);
+}
+
+function drawMeanOfMeansMarker(result) {
+  // Hidden-truth mode exists so the reader estimates the parameter; a marker
+  // sitting on it would hand the answer over.
+  if (truthHidden || sampleMeans.length < 2) return;
+  const { frame, xScale } = result;
+  if (!frame || !xScale) return;
+  const overlays = d3Selection.select(frame.inner).select('.overlays');
+  if (overlays.empty()) return;
+  const m = mean(sampleMeans);
+  if (!isFinite(m)) return;
+  // #C2410C, not the #E07020 used for resample lines: this label is TEXT, and
+  // the lighter orange is 3.23:1 on white — fine for a rule, a fail for words.
+  const label = renderOverlayLine(overlays, m, xScale, frame.height, '#C2410C',
+    `mean of ${lab().stat}'s`, statPrecision(), `mean of ${lab().stat}'s`, true);
+  // These two markers COINCIDE by design — that is the whole point — so their
+  // labels collide every time, and this one is drawn after the chart's own
+  // collision pass has run, so nothing moves it. Both printed at y = 10 and the
+  // result was "meanμ of 9.32= 9.83". Give it its own row rather than relying on
+  // a de-collider that cannot see it. (Jeff, 2026-10-25.)
+  if (label) {
+    label.setAttribute('y', String(LABEL_ROW_2));
+    // NAME only, no value. The chart answers "where is the centre?" — which is
+    // the part that is invariant in n and carries no false signal. The NUMBER
+    // lives in the Detailed readout, the one place it comes with its margin and
+    // its verdict; printed here it would be a bare figure a reader could
+    // compare across n, which is the whole hazard. (Jeff, 2026-10-26: "what
+    // marker are you discussing" — the label had the value in it all along, so
+    // dropping only the Detailed line would have kept the bare number and
+    // thrown away the honest framing.)
+    setLabelText(label, `mean of ${lab().stat}'s`);
+  }
+
+  // A line sample in front of each label, matching its own marker: solid for
+  // the parameter, dashed for the simulated centre.
+  //
+  // Direct labelling normally beats a legend because the name sits next to the
+  // thing — but these two lines COINCIDE by design, so "directly above its
+  // line" does not tell them apart and identification falls back on colour.
+  // That is the legend's weakness reintroduced, and it breaks the rule about
+  // never using colour alone. The swatch is a legend inlined into the label:
+  // the numbers stay on the chart, the names stay adjacent, and the cue is a
+  // dash pattern rather than a hue. (Jeff, 2026-10-25.)
+  const node = overlays.node();
+  const byFill = (fill) => /** @type {SVGTextElement|undefined} */ (
+    [...node.querySelectorAll('text')]
+      .find((t) => (t.getAttribute('fill') || '').toUpperCase() === fill));
+  // The swatch copies its OWN marker's dash rather than repeating a literal, so
+  // the two cannot drift apart if the marker's style ever changes.
+  const markerDash = (fill) => {
+    const l = [...node.querySelectorAll('line:not(.label-swatch)')]
+      .find((e) => (e.getAttribute('stroke') || '').toUpperCase() === fill);
+    return l ? l.getAttribute('stroke-dasharray') : null;
+  };
+  for (const fill of ['#7B2D8E', '#C2410C']) {
+    addLabelSwatch(node, byFill(fill), fill, markerDash(fill), frame);
+  }
+}
+
+function finishSamplingChart(result) {
+  peekGeom = {
+    xScale: result.xScale,
+    yScale: result.yScale ?? result.countToY,
+    frame: result.frame,
+    bins: result.bins ?? null,
+  };
+  wireSamplePeek();
+  drawMeanOfMeansMarker(result);
+  attachAxisRuler({
+    frame: result.frame,
+    xScale: result.xScale,
+    precision: statPrecision(),
+    label: lab().statAxis,
+  });
+}
+
+/** Wire hover on the sampling distribution back to the samples behind it. */
+function wireSamplePeek() {
+  if (!peekEl) peekEl = createPeekElement(samplingContainer);
+  attachResamplePeek({
+    container: samplingContainer,
+    peek: /** @type {HTMLElement} */ (peekEl),
+    geom: peekGeom,
+    stats: () => sampleMeans,
+    onLeave: restorePeekedSample,
+    describe: (i, approx) => {
+      if (!samples.get(i)?.vals) return null;
+      showPeekedSample(i);
+      return {
+        title: `Sample ${i + 1}${approx ? ' (one of the samples in this bar)' : ''}`,
+        detail: `shown in the One sample panel \u2014 ${lab().statAxis} `
+          + `${sampleMeans[i].toFixed(statPrecision())}`,
+      };
+    },
+  });
+}
+
 function renderCurrentSample(showMean = true) {
   if (!sampleContainer) return;
   sampleContainer.innerHTML = '';
@@ -482,7 +696,7 @@ function renderCurrentSample(showMean = true) {
   }
   if (sampleStatLine) {
     sampleStatLine.innerHTML = showMean
-      ? `<span id="sample-stat-value">x̄ = ${m.toFixed(2)}</span> &nbsp;(n = ${lastSample.length})`
+      ? `<span id="sample-stat-value">${X_BAR_HTML} = ${m.toFixed(2)}</span> &nbsp;(n = ${lastSample.length})`
       : '';
   }
 }
@@ -510,7 +724,7 @@ function renderSampleMarbles(showStat) {
   sampleContainer.appendChild(grid);
   if (sampleStatLine) {
     sampleStatLine.innerHTML = showStat
-      ? `<span id="sample-stat-value">p̂ = ${succ}/${n} = ${(succ / n).toFixed(3)}</span>`
+      ? `<span id="sample-stat-value">${P_HAT_HTML} = ${succ}/${n} = ${(succ / n).toFixed(3)}</span>`
       : '';
   }
 }
@@ -536,10 +750,20 @@ function drawOneSample(n) {
  * @param {number} count
  */
 function drawSamples(count) {
-  // Animate single draws (means and proportions). Comparison mode re-renders
-  // instead; the animation itself no-ops gracefully when the sample isn't a
-  // dotplot (large n) or reduced motion is set.
-  if (count === 1 && !prefersReducedMotion && !frozen) {
+  // Animate single draws (means and proportions). The animation no-ops
+  // gracefully when the sample isn't a dotplot (large n) or reduced motion is
+  // set.
+  //
+  // Freezing a distribution used to switch the animation off entirely, so the
+  // moment a reader froze one to compare against, every later draw appeared
+  // without being drawn — and the comparison is exactly when it matters most to
+  // see WHICH distribution a new dot is joining. The guard was conservative
+  // rather than load-bearing: the animated path ends in the same
+  // `updateStatsAndRender` the batch path uses, so the frozen overlay and the
+  // shared axis are rebuilt identically either way, and the dot flies into
+  // `samplingContainer`, which is the live plot and does not move when a frozen
+  // one appears beside it. (Jeff, 2026-10-06.)
+  if (count === 1 && !prefersReducedMotion) {
     drawOneSampleAnimated();
     return;
   }
@@ -550,6 +774,7 @@ function drawSamples(count) {
 
   for (let i = 0; i < count; i++) {
     const { sample, sampleMean } = drawOneSample(n);
+    samples.rememberValues(sampleMeans.length, sample);
     sampleMeans.push(sampleMean);
     if (i === count - 1) lastSample = sample; // show the last sample of the batch
   }
@@ -760,6 +985,7 @@ function drawOneSampleAnimated() {
   const prevLength = sampleMeans.length;
   const { sample } = drawOneSample(n);
   const m = mean(sample);
+  samples.rememberValues(sampleMeans.length, sample);
   sampleMeans.push(m);
 
   lastSample = sample;
@@ -1112,6 +1338,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       if (showNormalCheckbox?.checked && n >= 10) {
         overlayNormalOnSpike(spikeResult, sampleMeans, binWidth);
       }
+      finishSamplingChart(spikeResult);
     } else {
       const result = drawDotplot(samplingContainer, sampleMeans, {
         id: 'sampling-dist',
@@ -1133,6 +1360,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       if (showNormalCheckbox?.checked && n >= 10) {
         overlayNormalOnDotplot(result, sampleMeans);
       }
+      finishSamplingChart(result);
     }
     return;
   }
@@ -1155,6 +1383,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
     if (showNormalCheckbox?.checked && n >= 10) {
       overlayNormalOnDotplot(result, sampleMeans);
     }
+    finishSamplingChart(result);
   } else {
     const result = drawHistogram(samplingContainer, sampleMeans, {
       id: 'sampling-dist',
@@ -1167,6 +1396,7 @@ function renderSamplingDist(highlightIndex = -1, highlightIndices, prevBinCounts
       domain,
       thresholds,
     });
+    finishSamplingChart(result);
     if (showNormalCheckbox?.checked && result?.bins?.length > 0) {
       const firstX0 = result.bins[0].x0;
       const lastX1 = result.bins[result.bins.length - 1].x1;
@@ -1193,12 +1423,42 @@ function displayInterpretation() {
   const statSd = sd(sampleMeans);
   const theorySE = popSigma / Math.sqrt(n);
 
+  /**
+   * The centre, reported honestly — behind Detailed, with its own uncertainty.
+   *
+   * Bare, this number is the Watkins trap: it approaches μ as n grows and reads
+   * as "the centre improves with n". With its Monte-Carlo margin attached the
+   * VERDICT is the same at every n — indistinguishable from μ — which is the
+   * true statement, and what shrinks it is drawing MORE samples, not bigger
+   * ones. (See `drawMeanOfMeansMarker` for the measurements.)
+   */
+  const centreLine = () => {
+    const centre = mean(sampleMeans);
+    const margin = 2 * statSd / Math.sqrt(k);     // ±2 SE of the mean of the statistics
+    const sym = isCat() ? '\\hat{p}' : '\\bar{x}';
+    const within = Math.abs(centre - popMu) <= margin;
+    return `<p class="expert-only">Mean of the \\(${sym}\\)'s \\(= ${centre.toFixed(4)}\\) &plusmn; ${margin.toFixed(4)}`
+      + (truthHidden ? '' : ` &ensp;(\\(${isCat() ? 'p' : '\\mu'} = ${popMu.toFixed(4)}\\)${within ? ' — indistinguishable' : ''})`)
+      // ⚠ This used to read "drawing more samples pins it down; a larger n
+      // narrows the distribution INSTEAD" — which is false, and contradicted the
+      // ± printed directly above it (±0.2525 at n = 5, ±0.0579 at n = 100). The
+      // margin on this estimate is σ/√(nk), so a larger n sharpens it too.
+      //
+      // Jeff, 2026-10-25: "isn't this the same issue with a finite sample from
+      // any population … our population is a population of sample means, but
+      // it's the same issue isn't it?" It is exactly that, and saying so is a
+      // better line than the one it replaces: the thing that changes with n is
+      // the PRECISION of an estimate, never the quantity being estimated.
+      + `<br><span class="hint">The centre is \\(${isCat() ? 'p' : '\\mu'}\\) for <em>every</em> \\(n\\) — what changes is how precisely these ${k.toLocaleString()} samples have <em>estimated</em> it. More samples sharpen that estimate, and so does a larger \\(n\\) (the margin shrinks like \\(1/\\sqrt{nk}\\)); neither moves the centre.</span></p>`;
+  };
+
   let html;
   if (isCat()) {
     const p = popMu;
     html = `<p><strong>Sampling Distribution of \\(\\hat{p}\\)</strong> — ${k} samples of size \\(n = ${n}\\)</p>`;
     html += `<p>Population proportion: \\(p = ${p.toFixed(3)}\\)</p>`;
     html += `<p>SD of \\(\\hat{p}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sqrt{p(1-p)/n} = ${theorySE.toFixed(4)}\\))</p>`;
+    html += centreLine();
     if (k >= 100) {
       const np = n * p, nq = n * (1 - p);
       const ok = np >= 10 && nq >= 10;
@@ -1214,6 +1474,7 @@ function displayInterpretation() {
     }
     // Honest framing (REQ-030): lead with spread vs theory, not the mean-of-means.
     html += `<p>SD of \\(\\bar{x}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sigma/\\sqrt{n} = ${theorySE.toFixed(4)}\\))</p>`;
+    html += centreLine();
     if (k >= 100) {
       html += `<p class="interpretation">The Central Limit Theorem says the sampling distribution of \\(\\bar{x}\\) is approximately normal with mean \\(\\mu\\) and standard deviation \\(\\sigma/\\sqrt{n}\\), regardless of the population shape — as long as \\(n\\) is large enough. `;
       if (n >= 30) {
@@ -1302,7 +1563,9 @@ function applyModeLabels() {
       : 'The center of the sampling distribution sits at μ for every n — increasing n does not move the center, it only shrinks the spread.';
   }
   const samplingSubtitle = document.querySelector('#sampling-title span:last-child');
-  if (samplingSubtitle) samplingSubtitle.textContent = cat ? "one dot per sample's p̂" : "one dot per sample's x̄";
+  if (samplingSubtitle) {
+    samplingSubtitle.innerHTML = `one dot per sample's ${cat ? P_HAT_HTML : X_BAR_HTML}`;
+  }
   if (shapeControl) shapeControl.hidden = cat;
   if (pControl) pControl.hidden = !cat;
   applyTruth();   // owns the parameter readouts; must win over the line above
@@ -1389,6 +1652,9 @@ function emitState(event) {
 function resetSimulation() {
   sampleMeans = [];
   lastSample = [];
+  samples.clear();
+  peekedIndex = -1;
+  if (peekEl) peekEl.hidden = true;
   rng = null;
   // Keep a fixed ?seed= reproducible across resets; otherwise reshuffle.
   seed = urlSeed || Math.random().toString(36).slice(2, 10);

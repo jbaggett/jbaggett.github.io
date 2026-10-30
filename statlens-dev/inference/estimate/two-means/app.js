@@ -44,6 +44,7 @@ const varSelectorsDiv = document.getElementById('var-selectors');
 const groupVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('group-var-select'));
 const responseVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('response-var-select'));
 const groupOrderEl = document.getElementById('group-order');
+const groupOrderLabel = document.getElementById('group-order-label');
 const swapGroupsBtn = document.getElementById('swap-groups');
 
 // ── State ──────────────────────────────────────────────────────────
@@ -53,7 +54,23 @@ let group1 = [];
 let group2 = [];
 let group1Name = 'Group 1';
 let group2Name = 'Group 2';
-let groupsSwapped = false;  // when true, Group 1/2 (and the reported difference) are reversed
+// `?order=swap` starts the page reading the difference the other way round
+// than its default (the order the data presents), so it means "reverse THIS
+// page" rather than naming an order — the only way to add the parameter
+// without changing what any existing link meant.
+//
+// It is a ONE-SHOT, consumed by the first load. Loading fresh data resets the
+// order to natural, which is right for a reader who just opened a new file but
+// would otherwise wipe the link's instruction before it ever applied.
+// (REQ-079, extended to the two-group pages 2026-10-18.)
+let pendingOrderSwap = new URLSearchParams(window.location.search).get('order') === 'swap';
+let groupsSwapped = false;
+
+/** Fresh data starts in natural order — unless a link asked otherwise, once. */
+function resetGroupOrder() {
+  groupsSwapped = pendingOrderSwap;
+  pendingOrderSwap = false;
+}  // when true, Group 1/2 (and the reported difference) are reversed
 let dataPrecision = 1;
 
 /** @type {{ headers: string[], types: string[], data: Array<Record<string,any>> } | null} */
@@ -135,7 +152,7 @@ function loadFromParsed(parsed) {
  */
 function showVarSelectors(catCols, numCols) {
   if (!varSelectorsDiv || !groupVarSelect || !responseVarSelect) return;
-  groupsSwapped = false;  // fresh data starts in natural order
+  resetGroupOrder();
   const needSelector = catCols.length > 1 || numCols.length > 1;
 
   groupVarSelect.innerHTML = '';
@@ -156,6 +173,17 @@ function showVarSelectors(catCols, numCols) {
 groupVarSelect?.addEventListener('change', extractGroups);
 responseVarSelect?.addEventListener('change', extractGroups);
 
+/** Say which way round the difference is being taken. */
+function syncOrderLabel() {
+  const order = `${group1Name} − ${group2Name}`;
+  if (groupOrderLabel) groupOrderLabel.textContent = order;
+  // Also the button's name: the adjacent span is a separate screen-reader
+  // stop, so landing on the button alone should still say what it reverses.
+  if (swapGroupsBtn) {
+    swapGroupsBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+  }
+}
+
 if (swapGroupsBtn) {
   swapGroupsBtn.addEventListener('click', () => {
     if (summaryActive()) {
@@ -169,7 +197,8 @@ if (swapGroupsBtn) {
       groupsSwapped = !groupsSwapped;
       extractGroups();
     }
-    announce(`Swapped groups: now ${group1Name} − ${group2Name}.`);
+    syncOrderLabel();
+    announce(`Difference now reads ${group1Name} − ${group2Name}.`);
   });
 }
 
@@ -206,7 +235,7 @@ function extractGroups() {
       `${namePrefix}${group1Name}: n = ${group1.length}, x̄ = ${formatStat(mean(group1), dataPrecision)} | ` +
       `${group2Name}: n = ${group2.length}, x̄ = ${formatStat(mean(group2), dataPrecision)}${varSuffix}`;
   }
-  if (groupOrderEl) groupOrderEl.hidden = false;
+  if (groupOrderEl) { groupOrderEl.hidden = false; syncOrderLabel(); }
   build();
 }
 
@@ -219,7 +248,7 @@ function clearData() {
   currentContext = null;
   currentSourceName = '';
   figure = null;
-  groupsSwapped = false;
+  resetGroupOrder();
   if (dataPreview) dataPreview.hidden = true;
   if (varSelectorsDiv) varSelectorsDiv.hidden = true;
   if (groupOrderEl) groupOrderEl.hidden = true;
@@ -268,7 +297,7 @@ function applySummaryInputs(quiet) {
 
   dataPrecision = Math.max(...[xbar1, s1, xbar2, s2].map(v => detectPrecision([v])));
   summaryStats = { xbar1, s1, n1, xbar2, s2, n2 };
-  if (groupOrderEl) groupOrderEl.hidden = false;
+  if (groupOrderEl) { groupOrderEl.hidden = false; syncOrderLabel(); }
   return true;
 }
 

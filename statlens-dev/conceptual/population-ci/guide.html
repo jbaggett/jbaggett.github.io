@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Instructor Guide: Confidence Intervals by Repeated Sampling | StatLens</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ims-blue: #569BBD;
+            --ims-dark: #114B5F;
+            --ims-red: #F05133;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Atkinson Hyperlegible', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        h1 {
+            color: var(--ims-dark);
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--ims-blue);
+            padding-bottom: 0.75rem;
+        }
+        h2 {
+            color: var(--ims-dark);
+            font-size: 1.15rem;
+            margin: 1.5rem 0 0.5rem;
+            border-left: 4px solid var(--ims-blue);
+            padding-left: 0.75rem;
+        }
+        h3 {
+            font-size: 1rem;
+            margin: 1rem 0 0.3rem;
+            color: #444;
+        }
+        p, li { font-size: 0.9rem; margin-bottom: 0.4rem; }
+        ul, ol { padding-left: 1.5rem; }
+        ul li { margin-bottom: 0.3rem; }
+
+        .ask-box {
+            background: #e8f4fd;
+            border-left: 4px solid var(--ims-blue);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+        .ask-box strong { color: var(--ims-dark); }
+
+        .tip-box {
+            background: #fff8e1;
+            border-left: 4px solid #f9a825;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+
+        .misconception {
+            background: #fce4ec;
+            border-left: 4px solid var(--ims-red);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0 6px 6px 0;
+            margin: 0.5rem 0;
+            font-size: 0.85rem;
+        }
+        .misconception strong { color: #c62828; }
+
+        .timing {
+            display: inline-block;
+            background: var(--ims-dark);
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .meta {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 2rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #ddd;
+        }
+
+        a { color: var(--ims-blue); }
+        a:hover { color: var(--ims-dark); }
+
+        .launch-link {
+            display: inline-block;
+            background: var(--ims-blue);
+            color: white;
+            text-decoration: none;
+            padding: 0.4rem 1rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin: 0.5rem 0;
+        }
+        .launch-link:hover { background: var(--ims-dark); color: white; }
+
+        @media print {
+            body { padding: 0.5in; max-width: none; }
+            .launch-link { display: none; }
+            .no-print { display: none; }
+            h2 { break-after: avoid; }
+            .ask-box, .tip-box, .misconception { break-inside: avoid; }
+        }
+    </style>
+</head><body>
+
+<h1>Instructor Guide: Confidence Intervals by Repeated Sampling</h1>
+<p class="subtitle">Companion notes for the StatLens conceptual demo &mdash; coverage drawn on the sampling distribution, and what &ldquo;95% confident&rdquo; is a claim about</p>
+
+<p><a class="launch-link" href="index.html?mode=present">Launch in Presentation Mode</a></p>
+
+<h2>Overview <span class="timing">~12 min</span></h2>
+<p>The <a href="../sampling-lab/">Sampling Distribution Lab</a>'s three tiers &mdash; population, one sample,
+the distribution of the statistic &mdash; with one addition: every sample gets a confidence interval, and every
+dot is coloured by whether that interval caught &mu;. Blue caught it; orange missed.</p>
+
+<p>The interval is the one students actually compute, <strong>x&#772; &plusmn; t*s/&radic;n</strong>, using each
+sample's own <em>s</em>. So the widths differ dot to dot and the coverage lands <em>near</em> the stated level
+rather than exactly on it &mdash; which is the honest version and the more interesting one.</p>
+
+<div class="tip-box">
+    <strong>How this differs from CI Coverage.</strong> <a href="../ci-coverage/">CI Coverage</a> draws the
+    intervals as a stack of bars and counts them. This draws the same count <em>on the sampling distribution</em>,
+    so you can see <em>which samples</em> produce the misses: they are mostly the ones far from &mu;. Run them in
+    either order; they answer the same question with different pictures.
+</div>
+
+<h2>Running it</h2>
+<ol>
+    <li><strong>Press +1 a few times.</strong> Each draw puts a sample in the middle tier with its interval
+        drawn under the axis, and drops one coloured dot into the distribution. Ask after a miss: <em>what was
+        unusual about that sample?</em></li>
+    <li><strong>Press +100.</strong> About 95 blue, about 5 orange. Ask students to describe <em>where</em> the
+        orange dots are before you say anything.</li>
+    <li><strong>Hover along the distribution.</strong> Each dot unpacks into its sample and its interval. Near
+        the middle they all reach &mu;; out in the tails they stop short.</li>
+    <li><strong>Switch to 99%.</strong> The samples do not change &mdash; only the intervals. More of them
+        reach &mu;, and every interval is wider. That trade is the whole content of &ldquo;choose a confidence
+        level&rdquo;.</li>
+</ol>
+
+<div class="misconception">
+    <strong>The misconception this page exists for.</strong> &ldquo;There is a 95% chance &mu; is in my
+    interval.&rdquo; Your interval either contains &mu; or it does not &mdash; there is no chance left in it once
+    the sample is drawn. The 95% is the <em>success rate of the recipe</em> across the samples you might have
+    drawn, which is exactly what the field of dots shows.
+</div>
+
+<h2>The move that makes it land <span class="timing">~4 min</span></h2>
+<p>Press <strong>Hide &mu;</strong>.</p>
+<p>Every dot goes grey, &mu; leaves all three charts, and the count is replaced by a sentence saying nothing can
+be counted. This is not the page being coy: <strong>with &mu; hidden there is genuinely no way to tell which
+intervals worked</strong> &mdash; not for the page, and not for a statistician with real data. That is the
+situation every student is in every time they compute an interval.</p>
+
+<div class="ask-box">
+    <strong>Ask, with &mu; hidden:</strong> &ldquo;Point at a dot. Did that interval catch &mu;?&rdquo; Let the
+    silence do the work. Then: &ldquo;What would you need to know to answer?&rdquo;
+</div>
+
+<p>Then press <strong>Reveal &mu;</strong>. The colours snap back. The sentence worth saying out loud: <em>your
+dot was one colour or the other the whole time. Hiding &mu; never changed which &mdash; it only took away your
+ability to see it.</em> That is why the claim has to be about the method.</p>
+
+<div class="tip-box">
+    <strong>For a lecture</strong>, open the page with <code>?parameter=hidden&amp;samples=100</code>. The class
+    meets a grey field of dots and an unanswerable question, and you reveal &mu; at the moment it pays off.
+    <code>?seed=anything</code> reproduces the identical run.
+</div>
+
+<h2>Common questions</h2>
+<h3>&ldquo;Why isn't it exactly 95?&rdquo;</h3>
+<p>Two reasons, both worth naming. It is a random sample of samples, so the count wobbles. And the interval uses
+<em>s</em> in place of &sigma; &mdash; the t distribution corrects for that on average, not in every case. At
+small <em>n</em> the coverage can sit a little under the advertised level.</p>
+
+<h3>&ldquo;Why did that dot near the middle miss?&rdquo;</h3>
+<p>Because its <em>s</em> came out unusually small, so its interval was unusually narrow. This is the detail the
+coloured-dot picture reveals that a stack of bars hides: capture is not purely a matter of being close to &mu;.
+Hover the dot and compare its <em>s</em> with the population &sigma;.</p>
+
+<h3>&ldquo;Does a bigger sample make my interval right?&rdquo;</h3>
+<p>No &mdash; it makes it narrower, not more certain to be correct. Raise <em>n</em> and the dots pull in toward
+&mu; and the intervals shrink, but the proportion that capture stays about the same. The level controls the hit
+rate; <em>n</em> controls the precision.</p>
+
+<h2>Where it fits</h2>
+<p>After sampling distributions, before or beside bootstrap intervals. The sequence that works:
+<a href="../sampling-lab/">Sampling Distributions</a> (what varies) &rarr; here (what a method built on that
+variation achieves) &rarr; <a href="../bootstrap-shift/">Why the Percentile CI Works</a> (why resampling one
+sample may stand in for sampling the population at all).</p>
+
+<p class="meta">StatLens &middot; Confidence Intervals by Repeated Sampling &middot; conceptual/population-ci/</p>
+
+</body>
+</html>

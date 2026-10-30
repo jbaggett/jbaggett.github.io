@@ -17,7 +17,7 @@ import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { cor, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawScatterplot } from '../../js/scatterplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, getTabHintText, getActiveTabId, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
@@ -208,7 +208,7 @@ function showDataLoaded() {
   gateBigBatches(genBtns, xValues.length);
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
-    const bigBtn = genBtns[genBtns.length - 1];
+    const bigBtn = autoRunButton(genBtns);
     requestAnimationFrame(() => bigBtn && bigBtn.click());
   }
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
@@ -228,6 +228,15 @@ function showDataLoaded() {
     });
   }
   if (mechObservedR) mechObservedR.textContent = formatStat(observedR, 4);
+
+  // REQ-069 (Todd): the axis, with the observed r marked, before any shuffle.
+  // The shuffled r is centred at 0 with SD ≈ 1/√(n−1), so 4 of those reaches
+  // past the bulk. Using the full [−1, 1] instead would squash the null into a
+  // spike for any realistic n — at n = 100 its whole spread is about ±0.4.
+  // Clamped to 1, since r cannot leave [−1, 1].
+  const sdNull = 1 / Math.sqrt(Math.max(2, xValues.length - 1));
+  const reach = Math.min(1, Math.max(4 * sdNull, Math.abs(observedR) * 1.2));
+  renderChart([], observedR, getDirection(), -1, undefined, undefined, [-reach, reach]);
 
   setPageTitle(baseTitle, currentSourceName, { n: xValues.length });
   announce(`Data loaded: n = ${xValues.length}, r = ${formatStat(observedR, 4)}`);
@@ -393,6 +402,21 @@ function renderChart(stats, observed, direction, highlightIndex = -1, highlightI
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'Correlation (r)',
+    // What the chart shows, for a screen reader. The title alone said nothing
+    // about the content, and on the empty chart REQ-069 added it said nothing
+    // at all about the one value drawn on it. `?observed=off` is reasoning
+    // mode: the marker is withheld on purpose, so naming it here would both
+    // lie and give away the number the mode exists to withhold.
+    descText: (() => {
+      const shown = new URLSearchParams(location.search).get('observed') !== 'off';
+      const at = shown && isFinite(observed) ? `observed = ${observed.toFixed(4)}` : '';
+      if (stats.length === 0) {
+        return at
+          ? `No simulations yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No simulations yet — press a generate button to build the distribution.';
+      }
+      return [`${stats.length.toLocaleString()} shuffles`, at].filter(Boolean).join(', ');
+    })(),
     titleText: words.distribution,
     observedStat: observed,
     direction,

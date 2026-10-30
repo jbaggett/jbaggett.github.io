@@ -519,12 +519,24 @@ function renderChart() {
       .attr('stroke-width', Math.max(1.5, barHeight * 0.7))
       .attr('stroke-linecap', 'round');
 
-    // Center dot (x̄)
+    // The sample mean, as a bead on the bar.
+    //
+    // It was always drawn here — and was invisible, because it was filled with
+    // the SAME colour as the bar it sits on and is barely wider than the
+    // stroke. Someone asked for the mean to be shown (via Jeff, 2026-10-08) on
+    // a chart that had been showing it all along. A pale core and a rim in the
+    // bar's own colour makes it read as a mark without inventing a new colour
+    // or a new meaning: it stays blue on a capturing interval and red on a
+    // missing one, so the capture reading is untouched.
+    const beadR = Math.max(1.8, barHeight * 0.46);
     g.append('circle')
+      .attr('class', 'ci-xbar-bead')
       .attr('cx', xScale(ci.xbar))
       .attr('cy', y)
-      .attr('r', Math.max(1.2, barHeight * 0.4))
-      .attr('fill', color);
+      .attr('r', beadR)
+      .attr('fill', '#fff')
+      .attr('stroke', color)
+      .attr('stroke-width', Math.max(0.9, beadR * 0.5));
 
     // Invisible wider hit target for hover/touch
     g.append('rect')

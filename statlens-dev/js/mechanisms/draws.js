@@ -63,6 +63,12 @@ export function resampleOne(values, rng) {
  * bootstrap of paired data resamples *pairs*, which is the same thing as
  * resampling their differences.
  *
+ * ⚠ The subtraction order is FIXED here (`second − first`). A page that lets
+ * the reader reverse the difference must subtract in its own order and call
+ * `resampleOne` on the result — sim-app does, and calling this instead was
+ * exactly how its ⇄ came to flip the label without flipping the numbers.
+ * Kept for the golden master, which pins the draw sequence. (REQ-079.)
+ *
  * @param {number[]} first
  * @param {number[]} second
  * @param {() => number} rng

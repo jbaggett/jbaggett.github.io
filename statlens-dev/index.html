@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>StatLens — Statistics Toolkit</title>
+    <meta name="description" content="A free, accessible, mobile-friendly statistics toolkit: simulation-based inference, distribution calculators, traditional tests, and tools for exploring data.">
+    <meta name="keywords" content="statistics tools, stats calculator, simulation based inference, bootstrap, randomization test, confidence interval, hypothesis test, p-value, StatKey alternative, free statistics software, intro stats">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -445,6 +447,18 @@
             background: var(--bg-alt, #f2f8fb);
             padding: 0.1rem 1rem 0.6rem;
         }
+        /* In the footer the callout sits in a centred column. The summary is a
+           `width: fit-content` block, so the footer's text-align centres the
+           words INSIDE it while the box itself stays hard left — `margin-inline`
+           is what actually moves it. Expanded, it becomes a bordered box of
+           prose with a numbered list, which does not read centred, so that goes
+           back to left-aligned and is capped to a comfortable measure. */
+        .site-footer .reviewer-callout > summary { margin-inline: auto; }
+        .site-footer .reviewer-callout[open] {
+            max-width: 42rem; margin-inline: auto; text-align: left;
+        }
+        .site-footer .reviewer-callout[open] > summary { margin-inline: 0; }
+
         .reviewer-callout-body ol { margin: 0.4rem 0 0.5rem; padding-left: 1.3rem; }
         .reviewer-callout-body li { margin: 0.3rem 0; }
         .reviewer-callout-body p { margin: 0.25rem 0; }
@@ -467,34 +481,16 @@
             }
         } catch (e) { /* private mode — just show the callout */ }
     </script>
+    <style>
+    </style>
 </head>
 <body>
     <nav class="skip-links" aria-label="Skip links">
         <a href="#main-content">Skip to content</a>
     </nav>
     <main id="main-content">
-        <h1><svg viewBox="0 0 32 32" aria-hidden="true" style="width:1.3em;height:1.3em;vertical-align:-0.15em"><circle cx="16" cy="16" r="15" fill="#569BBD"/><path d="M4 24 C4 24, 8 23, 10 20 C12 17, 13 8, 16 8 C19 8, 20 17, 22 20 C24 23, 28 24, 28 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M4 24 C4 24, 8 23, 10 20 L10 24 Z" fill="#ffffff60"/></svg> StatLens<span class="header-actions"></span></h1>
+        <h1><svg viewBox="0 0 32 32" aria-hidden="true" style="width:1.3em;height:1.3em;vertical-align:-0.15em"><circle cx="16" cy="16" r="15" fill="#569BBD"/><path d="M4 24 C4 24, 8 23, 10 20 C12 17, 13 8, 16 8 C19 8, 20 17, 22 20 C24 23, 28 24, 28 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path d="M4 24 C4 24, 8 23, 10 20 L10 24 Z" fill="#ffffff60"/></svg> StatLens<span class="header-actions"></span> <a class="header-link" href="instructors/">For&nbsp;instructors&nbsp;&rarr;</a></h1>
         <img src="hero.png" alt="Statistical visualizations: bell curve, dotplot, histogram, scatterplot with regression line, and confidence interval" style="width:100%;height:auto;margin:0 0 0.6rem;border-radius:6px">
-
-        <p style="text-align:right;margin:0 0 1rem;font-size:0.9rem;">
-            <a href="instructors/" style="color:var(--ims-blue,#569BBD);font-weight:600;text-decoration:none;">Using StatLens in your course?&nbsp; For instructors &rarr;</a>
-        </p>
-
-        <!-- Reviewer feedback callout (desktop/tablet only, dismissible) — mirrors the
-             textbook's welcome-page box. The annotation client itself is loaded by
-             js/feedback.js; this just tells colleagues to pick the private group. -->
-        <details class="reviewer-callout">
-            <summary>📝 Reviewing StatLens? Leave feedback in the margin</summary>
-            <div class="reviewer-callout-body">
-                <p>StatLens is a <strong>work in progress</strong>, and your feedback makes it better. You can comment <strong>right on the page</strong> — nothing to install.</p>
-                <ol>
-                    <li>Click the <strong><code>&lt;</code> tab</strong> on the right edge of any page to open the annotation sidebar (powered by a free tool called <a href="https://web.hypothes.is/" target="_blank" rel="noopener">Hypothesis</a>). The first time, create a free account.</li>
-                    <li><strong>Select any text</strong> on the page, click <strong>Annotate</strong>, and type your comment — it stays pinned to that exact spot.</li>
-                    <li><strong>Reviewers:</strong> if you were invited to the <a href="https://hypothes.is/groups/gG9DRY5i/145-statlens-review" target="_blank" rel="noopener"><strong>145 StatLens Review</strong></a> group, pick it at the top of the sidebar (instead of “Public”) so your notes reach the author.</li>
-                </ol>
-                <p class="hint">Anything helps — confusing controls, notation you'd change, a chart that misleads, or plain bugs. &nbsp;<button type="button" class="reviewer-dismiss">Don't show this again</button></p>
-            </div>
-        </details>
 
         <!-- ═══ View switcher ═══════════════════════════════════════════ -->
         <fieldset class="view-switcher" aria-label="Choose landing page layout">
@@ -641,9 +637,17 @@
                         <h3>Why the Percentile CI Works</h3>
                         <p>You read a confidence interval off the middle 95% of a bootstrap distribution &mdash; but why does that capture the truth? Build both distributions on one axis and check.</p>
                     </a>
+                    <a class="tool-card" href="conceptual/population-ci/">
+                        <h3>CIs by Repeated Sampling</h3>
+                        <p>Sample again and again from a population you choose. The middle 95% of the sample means is where the margin of error comes from &mdash; the picture the bootstrap is imitating.</p>
+                    </a>
                     <a class="tool-card" href="conceptual/two-se/">
                         <h3>Why &plusmn; 2 SE Works</h3>
                         <p>The same question for the &plusmn;&nbsp;2&nbsp;SE interval, with no numbers in the way: an axis marked in standard errors, a statistic you drag, and two verdicts that are never allowed to disagree.</p>
+                    </a>
+                    <a class="tool-card" href="conceptual/why-t-star/">
+                        <h3>What Estimating the SE Costs</h3>
+                        <p>And then: where does the multiplier come from? Lay the margins of error against one ruler of true standard errors and watch the one you can actually compute come up short &mdash; for a mean, and for a proportion.</p>
                     </a>
                     <a class="tool-card" href="simulate/randomization-diff-props/?activity=randomization-test-gated.json">
                         <h3>What Is a Randomization Test?</h3>
@@ -723,6 +727,14 @@
 
                 <p class="section-label">StatLens Labs</p>
                 <div class="tool-grid">
+                    <a class="tool-card" href="conceptual/galton-board/">
+                        <h3>Galton Board</h3>
+                        <p>Balls bounce left or right down a field of pegs and pile up into a binomial distribution &mdash; with the exact probabilities, and the normal approximation, drawn over the pile.</p>
+                    </a>
+                    <a class="tool-card" href="conceptual/law-of-large-numbers/">
+                        <h3>Law of Large Numbers</h3>
+                        <p>Toss a coin or roll a die over and over: the running proportion settles toward what the model predicts &mdash; while the running total wanders further from zero. A coin is never &ldquo;due&rdquo;.</p>
+                    </a>
                     <a class="tool-card" href="conceptual/ci-coverage/">
                         <h3>Confidence Interval Coverage</h3>
                         <p>Draw 100 confidence intervals and see what &ldquo;95% confidence&rdquo; really means.</p>
@@ -989,6 +1001,10 @@
                 <a class="tool-card" href="conceptual/ci-coverage/"><h3>CI Coverage</h3><p>What &ldquo;95% confidence&rdquo; really means.</p></a>
                 <a class="tool-card" href="conceptual/bootstrap-shift/"><h3>Why the Percentile CI Works</h3><p>Why the middle 95% of a bootstrap distribution is a confidence interval.</p></a>
                 <a class="tool-card" href="conceptual/two-se/"><h3>Why &plusmn; 2 SE Works</h3><p>The capture argument on a symbolic axis &mdash; no numbers.</p></a>
+                <a class="tool-card" href="conceptual/why-t-star/"><h3>What Estimating the SE Costs</h3><p>Swapping <em>s</em> for &sigma;, or p&#770; for p, and what it costs the interval.</p></a>
+                <a class="tool-card" href="conceptual/population-ci/"><h3>CIs by Repeated Sampling</h3><p>Where the margin of error comes from, by sampling the population itself.</p></a>
+                <a class="tool-card" href="conceptual/law-of-large-numbers/"><h3>Law of Large Numbers</h3><p>The proportion settles; the running total does not. A coin is never &ldquo;due&rdquo;.</p></a>
+                <a class="tool-card" href="conceptual/galton-board/"><h3>Galton Board</h3><p>Balls bounce down a peg field and pile up into the binomial distribution.</p></a>
                 <a class="tool-card" href="conceptual/decision-errors/"><h3>Decision Errors</h3><p>Run many studies; see hits, misses, and false alarms.</p></a>
                 <a class="tool-card" href="conceptual/power-sim/"><h3>Power Lab</h3><p>Empirical power converging to theory; the p-value dance.</p></a>
                 <a class="tool-card" href="simulate/randomization-diff-props/?activity=randomization-test-gated.json"><h3>Randomization Test</h3><p>Shuffle cards, build a null distribution.</p></a>
@@ -1127,6 +1143,10 @@
                 <a class="tool-card" href="conceptual/ci-coverage/"><h3>CI Coverage</h3><p>What &ldquo;95% confidence&rdquo; really means.</p></a>
                 <a class="tool-card" href="conceptual/bootstrap-shift/"><h3>Why the Percentile CI Works</h3><p>Why the middle 95% of a bootstrap distribution is a confidence interval.</p></a>
                 <a class="tool-card" href="conceptual/two-se/"><h3>Why &plusmn; 2 SE Works</h3><p>The capture argument on a symbolic axis &mdash; no numbers.</p></a>
+                <a class="tool-card" href="conceptual/why-t-star/"><h3>What Estimating the SE Costs</h3><p>Swapping <em>s</em> for &sigma;, or p&#770; for p, and what it costs the interval.</p></a>
+                <a class="tool-card" href="conceptual/population-ci/"><h3>CIs by Repeated Sampling</h3><p>Where the margin of error comes from, by sampling the population itself.</p></a>
+                <a class="tool-card" href="conceptual/law-of-large-numbers/"><h3>Law of Large Numbers</h3><p>The proportion settles; the running total does not. A coin is never &ldquo;due&rdquo;.</p></a>
+                <a class="tool-card" href="conceptual/galton-board/"><h3>Galton Board</h3><p>Balls bounce down a peg field and pile up into the binomial distribution.</p></a>
                 <a class="tool-card" href="conceptual/decision-errors/"><h3>Decision Errors</h3><p>Run many studies; see hits, misses, and false alarms.</p></a>
                 <a class="tool-card" href="conceptual/power-sim/"><h3>Power Lab</h3><p>Empirical power converging to theory; the p-value dance.</p></a>
                 <a class="tool-card" href="simulate/randomization-diff-props/?activity=randomization-test-gated.json"><h3>Randomization Test</h3><p>Shuffle cards, build a null distribution.</p></a>
@@ -1261,6 +1281,24 @@
                 </div>
             </details>
         </div>
+        <!-- Reviewer feedback callout — desktop/tablet only, dismissible; mirrors
+             the textbook's welcome-page box. The annotation client itself is loaded
+             by js/feedback.js; this just tells colleagues to pick the private group.
+             Moved down here 2026-10-07: it speaks to reviewing colleagues, and was
+             taking a line at the top of the page from everyone else. -->
+        <details class="reviewer-callout">
+            <summary>📝 Reviewing StatLens? Leave feedback in the margin</summary>
+            <div class="reviewer-callout-body">
+                <p>StatLens is a <strong>work in progress</strong>, and your feedback makes it better. You can comment <strong>right on the page</strong> — nothing to install.</p>
+                <ol>
+                    <li>Click the <strong><code>&lt;</code> tab</strong> on the right edge of any page to open the annotation sidebar (powered by a free tool called <a href="https://web.hypothes.is/" target="_blank" rel="noopener">Hypothesis</a>). The first time, create a free account.</li>
+                    <li><strong>Select any text</strong> on the page, click <strong>Annotate</strong>, and type your comment — it stays pinned to that exact spot.</li>
+                    <li><strong>Reviewers:</strong> if you were invited to the <a href="https://hypothes.is/groups/gG9DRY5i/145-statlens-review" target="_blank" rel="noopener"><strong>145 StatLens Review</strong></a> group, pick it at the top of the sidebar (instead of “Public”) so your notes reach the author.</li>
+                </ol>
+                <p class="hint">Anything helps — confusing controls, notation you'd change, a chart that misleads, or plain bugs. &nbsp;<button type="button" class="reviewer-dismiss">Don't show this again</button></p>
+            </div>
+        </details>
+
         <p><a href="instructors/" style="color:var(--ims-gray-text);font-size:0.82rem;">For Instructors</a> &middot; <a href="tools/" style="color:var(--ims-gray-text);font-size:0.82rem;">Tool Catalog</a> &middot; <a href="ims/" style="color:var(--ims-gray-text);font-size:0.82rem;">For IMS</a> &middot; <a href="activities/" style="color:var(--ims-gray-text);font-size:0.82rem;">Activities</a> &middot; <a href="whats-new/" style="color:var(--ims-gray-text);font-size:0.82rem;">What's new</a></p>
         <p>&copy; 2025&ndash;2026 Jeff Baggett. Free &amp; open source under <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">AGPL-3.0</a>.</p>
         <p>Datasets from <a href="https://www.openintro.org" target="_blank" rel="noopener">OpenIntro</a> (CC BY-SA 3.0).
@@ -1321,5 +1359,6 @@
         try { localStorage.setItem('statlens-review-callout', 'dismissed'); } catch (e) { /* ignore */ }
     });
     </script>
+    <script type="module" src="js/search-mount.js"></script>
 </body>
 </html>

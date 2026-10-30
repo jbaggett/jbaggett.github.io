@@ -8,12 +8,15 @@
  *   initOneSamplePage({ mode: 'one-mean' })
  */
 
-import { createRng } from './prng.js';
+import { createAskPosture } from './ask-posture.js';
+import { createResampleStore, describeResample } from './resample-store.js';
+import { attachResamplePeek, createPeekElement } from './resample-peek.js';
+import { createRng, rngFromState, shuffle } from './prng.js';
 import { registerShareState, syncUrl, syncUrlOnInteraction, markGenerated, forgetSeed } from './share-state.js';
 import { applyRequestedLayout } from './mechanisms/layout.js';
 import { wordsFor } from './mechanisms/vocabulary.js';
 import { drawBernoulliCount, drawFromShiftedNull } from './mechanisms/draws.js';
-import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags, obsLegendHTML }
+import { propBarHTML, populationBarHTML, renderPropResample, hasIndividualView, fitPopulationTags, obsLegendHTML, MAX_MARBLES }
   from './prop-bootstrap-mech.js';
 import { animateDartScoop, cancelDrawAnimations } from './mechanisms/draw-animation.js';
 import { proportionStep } from './grid.js';
@@ -23,8 +26,8 @@ import { drawDotplot, computeDots } from './dotplot.js';
 import { drawMechDotplot, showResampleDotplot } from './dotplot-resample.js';
 import { renderBagChips, renderResampleChips, CHIP_MAX } from './summary-cards.js';
 import { createMeanMechanism, MEAN_DOT_MAX } from './mean-mechanism.js';
-import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion } from './chart-utils.js';
-import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap} from './page-utils.js';
+import { renderSimPills, formatMechStat, drawMiniChart, morphMiniChart, prefersReducedMotion, attachAxisRuler, holdHeight } from './chart-utils.js';
+import { announce, initKeyboardShortcuts, initPlayPause, initTabs, animateDropToChart, flyDataStream, initDataPanel, computeHighlights, initHelp, initSettings, initMechanismCollapse, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, reportInputProblem, gateBigBatches, capBatch, applySimulationCap, autoRunButton, simErrorHelpHTML} from './page-utils.js';
 import { initAnswerReport } from './answer-report.js';
 import { getSetting } from './settings.js';
 import { parseParams } from './url-params.js';
@@ -44,12 +47,26 @@ import { resolveChartType, reasoningChartType, discreteColumnSpan, createChartTo
 export function initOneSamplePage(config) {
   const isProp = config.mode === 'one-prop';
   /**
-   * Above this many observations the darts are not thrown — the dots still
-   * appear, all at once. Sixty flyers is already a downpour; a hundred and
-   * twenty is a screen of moving objects that says nothing the first thirty
-   * did not. (The dot block itself survives to 120; see hasIndividualView.)
+   * The dart scoop runs whenever the dots are shown individually — one rule,
+   * not two separately tuned numbers. `MAX_MARBLES` in prop-bootstrap-mech.js
+   * is the dot block's own ceiling, so if you can see the dots, you see them
+   * thrown.
+   *
+   * This used to be 60, on the reasoning that "sixty flyers is already a
+   * downpour; a hundred and twenty is a screen of moving objects that says
+   * nothing the first thirty did not". Raised 2026-10-16 after Jeff hit it on
+   * `?dataset=medical_consultant`, which has n = 62 and so sat two
+   * observations above the cutoff with no animation at all and no indication
+   * why.
+   *
+   * Measured before changing it, because the old reasoning deserved a test:
+   * at n = 62 and at n = 120 the animation takes the SAME ~2.13 s, since it is
+   * paced by the clock rather than per dart. The board at 120 is denser, but it
+   * still reads as darts landing either side of the p₀ split — it is not slower,
+   * and nothing is lost but white space. The real cost of the old value was a
+   * dataset in the course materials that silently showed nothing.
    */
-  const DART_MAX = 60;
+  const DART_MAX = MAX_MARBLES;
   // These pages simulate against a stated null value, so the source panel is
   // the data moved onto the null rather than the data as observed.
   // One-prop's null NAMES a population; one-mean's is the data moved onto the
@@ -180,7 +197,7 @@ export function initOneSamplePage(config) {
         chartType = type;
         if (binAdjuster) binAdjuster.setMode(type);
         if (allStats.length > 0) {
-          renderChart(allStats, observedStat, getDirection());
+          renderChart(allStats, aimedStat(), getDirection());
         }
       },
     });
@@ -193,7 +210,7 @@ export function initOneSamplePage(config) {
       theoryOverlayOn = checked;
       if (allStats.length > 0 && chartContainer) {
         if (checked) {
-          renderChart(allStats, observedStat, getDirection());
+          renderChart(allStats, aimedStat(), getDirection());
         } else {
           removeTheoryOverlay(chartContainer);
         }
@@ -206,7 +223,7 @@ export function initOneSamplePage(config) {
         onChange: (bins) => {
           userBinCount = bins;
           if (allStats.length > 0) {
-            renderChart(allStats, observedStat, getDirection());
+            renderChart(allStats, aimedStat(), getDirection());
           }
         },
       });
@@ -467,6 +484,9 @@ export function initOneSamplePage(config) {
   }
 
   function getDirection() {
+    // Unchosen is a real state here: nothing is shaded and no p-value is
+    // reported until the student says which tail counts as extreme.
+    if (asks('tail')) return /** @type {any} */ (posture.tail);
     const alt = altDirectionBtn?.dataset.value ?? 'greater';
     if (alt === 'greater') return /** @type {const} */ ('right');
     if (alt === 'less') return /** @type {const} */ ('left');
@@ -591,6 +611,9 @@ export function initOneSamplePage(config) {
     mechanismInitialized = true;
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
+    // The strip is above the chart; hovering a dot fills it, and a panel that
+    // grows slides the dots out from under the pointer.
+    holdHeight(mechSimStat);
     ensureNullToggle();
     ensureMeanViewToggle();
     // The proportion page's source is its null POPULATION, which exists as soon
@@ -611,6 +634,9 @@ export function initOneSamplePage(config) {
     if (hypothesisDisplay) hypothesisDisplay.hidden = false;
     for (const btn of genBtns) btn.disabled = false;
     gateBigBatches(genBtns, isProp ? sampleN : sampleData.length);
+    // After the batch gate, never before: data arriving does not settle the null
+    // hypothesis, and this must not re-enable what gateBigBatches switched off.
+    if (inquiry) posture.sync();
     initMechanismStrip();
     resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
 
@@ -619,7 +645,7 @@ export function initOneSamplePage(config) {
     // hidden under plot=only, so there is no other way to run it).
     if (plotOnly && !plotOnlyRan) {
       plotOnlyRan = true;
-      const bigBtn = genBtns[genBtns.length - 1];
+      const bigBtn = autoRunButton(genBtns);
       if (bigBtn) requestAnimationFrame(() => bigBtn.click());
     }
   }
@@ -672,6 +698,131 @@ export function initOneSamplePage(config) {
     // Render empty chart with pre-sim axes
     renderChart([], observedStat, getDirection());
   }
+
+  // What one dot came from. The strip already shows the NEWEST resample; the
+  // store keeps the rest so any dot can be asked about, and js/resample-peek.js
+  // does the wiring — shared with sim-app.js rather than written twice.
+  const resamples = createResampleStore();
+  /** Geometry of the last render, so a hover can be mapped back to a statistic. */
+  let lastGeom = /** @type {any} */ (null);
+  const peek = createPeekElement(chartContainer);
+
+  /** @param {number} i @param {boolean} approx */
+  function describeAt(i, approx) {
+    if (!resamples.has(i)) return null;
+    // The resample is DRAWN in the panel now, so listing its values here as
+    // well would be a worse copy of a picture the page already makes.
+    showPeeked(i);
+    return {
+      title: `Repetition ${i + 1}${approx ? ' (one of the repetitions in this bar)' : ''}`,
+      detail: `shown in the ${words.draw ?? 'resample'} panel \u2014 `
+        + `${isProp ? 'p\u0302' : 'x\u0304'}* = `
+        + `${formatStat(allStats[i], isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1)}`,
+    };
+  }
+
+  /** Which repetition the mechanism panel is showing on a hover's behalf. */
+  let peekedIndex = -1;
+
+  /**
+   * Draw the hovered repetition in the mechanism panel.
+   *
+   * The panel is already the picture of a resample; it only ever showed the
+   * newest. For a MEAN the stored indices rebuild it exactly. For a PROPORTION
+   * the stored count IS the whole resample — which trial came up a success is
+   * not information, so a representative arrangement of k successes is the same
+   * draw, not an approximation of it.
+   * @param {number} i
+   */
+  function showPeeked(i) {
+    if (i === peekedIndex) return;
+    const rec = resamples.get(i);
+    if (!rec) return;
+    peekedIndex = i;
+    lastSimStat = allStats[i];
+    if (isProp && rec.k != null) {
+      // `lastSuccesses` is local to the generate function, not module state, so
+      // the panel is written directly. The dot board is rebuilt from the count:
+      // for a Bernoulli draw WHICH trial came up a success is not information,
+      // so k successes in any arrangement is the same resample, not an
+      // approximation of it.
+      if (mechSimStat) {
+        const host = mechSimStat.querySelector('.mech-prop-draw');
+        mechSimStat.innerHTML = `${rec.k} of ${rec.n} `
+          + `(p\u0302 = <span class="mech-stat-value">${fmtObs(allStats[i])}</span>)`
+          // A <div>, matching what the normal render writes — as a <span> the
+          // board laid out differently and the panel came out taller, which
+          // moved the chart the reader was pointing at.
+          + (host ? '<div class="mech-prop-draw"></div>' : '');
+        if (host) {
+          // Which trial came up a success carries nothing — but a board that
+          // shows every success first LOOKS like it does, and the dart-throw
+          // animation is built to never suggest that order. Shuffled by the
+          // repetition's own index, so the same dot always shows the same board.
+          const trials = Array.from({ length: /** @type {number} */ (rec.n) },
+            (_, j) => j < /** @type {number} */ (rec.k));
+          renderPropDraw(shuffle(trials, createRng(`peek-${i}`)), false);
+        }
+      }
+    } else {
+      const idx = rec.idx ?? (rec.st ? drawFromShiftedNull(shiftedData, rngFromState(rec.st)).indices : null);
+      if (!idx) return;
+      lastResampleArr = Array.from(idx, (k) => shiftedData[k]).filter((v) => v != null);
+      lastResampleIdx = Array.from(idx);
+      renderMeanResampleView(false);
+    }
+  }
+  /** Put the panel back to the repetition the simulation actually last drew. */
+  function restorePeeked() {
+    if (peekedIndex === -1) return;
+    peekedIndex = -1;
+    const rec = resamples.get(allStats.length - 1);
+    if (rec) { peekedIndex = -2; showPeeked(allStats.length - 1); peekedIndex = -1; }
+  }
+
+  /** A ruler the reader can place by clicking the axis (js/chart-utils.js). */
+  function wireRuler() {
+    if (!lastGeom?.frame || !lastGeom?.xScale) return;
+    attachAxisRuler({ frame: lastGeom.frame, xScale: lastGeom.xScale,
+      precision: isProp ? Math.max(3, String(sampleN).length) : dataPrecision + 1,
+      label: isProp ? 'p\u0302*' : 'x\u0304*' });
+  }
+
+  function wirePeek() {
+    attachResamplePeek({ container: chartContainer, peek, geom: lastGeom,
+      stats: () => allStats, describe: describeAt, onLeave: restorePeeked });
+  }
+
+  // ─── Inquiry posture: `?ask=` hands the decisions back ────────────────
+  // The mechanism lives in js/ask-posture.js, because the other simulation
+  // engine needs it too and two copies would drift.
+  const posture = createAskPosture({
+    after: chartContainer,
+    symbols: { param: isProp ? 'p' : '\u03BC', stat: isProp ? 'p\u0302' : '\u0078\u0304' },
+    genBtns,
+    nullInput,
+    steps: ['null', 'tail', 'stat'],
+    report: (cfg) => answer.sendConfiguration(cfg),
+    count: () => allStats.length,
+    observed: () => observedStat,
+    pageTail: () => getDirection(),
+    extremeCount: (stat, tail) => computePValue(allStats, stat, tail).extremeCount,
+    onNullChange: () => resetSimulation(),
+    onChange: () => {
+      if (allStats.length === 0) return;
+      const d = getDirection();
+      renderChart(allStats, aimedStat(), d);
+      const { pValue, extremeCount } = computePValue(allStats, aimedStat(), d);
+      displayResults(allStats, aimedStat(), pValue, extremeCount, d);
+    },
+  });
+  const inquiry = posture.active;
+  const asks = posture.asks;
+  /** The statistic the shading is aimed at — theirs when asked for, else the sample's. */
+  function aimedStat() {
+    return asks('stat') ? /** @type {any} */ (posture.stat) : observedStat;
+  }
+  const aimComplete = () => posture.complete();
 
   // ─── Data loading ───
 
@@ -994,9 +1145,9 @@ export function initOneSamplePage(config) {
       altDirectionBtn.textContent = labels[next];
       if (allStats.length > 0) {
         const direction = getDirection();
-        renderChart(allStats, observedStat, direction);
-        const { pValue, extremeCount } = computePValue(allStats, observedStat, direction);
-        displayResults(allStats, observedStat, pValue, extremeCount, direction);
+        renderChart(allStats, aimedStat(), direction);
+        const { pValue, extremeCount } = computePValue(allStats, aimedStat(), direction);
+        displayResults(allStats, aimedStat(), pValue, extremeCount, direction);
       }
     });
   }
@@ -1405,6 +1556,7 @@ export function initOneSamplePage(config) {
       for (let i = 0; i < count; i++) {
         const successes = drawBernoulliCount(n, p0, rng);
         lastSuccesses = successes;
+        resamples.rememberCount(allStats.length, successes, n);
         allStats.push(successes / n);
       }
       lastSimStat = lastSuccesses / n;
@@ -1446,12 +1598,17 @@ export function initOneSamplePage(config) {
         // animation cannot say which observation was taken twice or never —
         // this page showed dots flying with no marks at all, while
         // bootstrap-mean (which kept them) showed both. (2026-09-28.)
+        // Four numbers rather than n: the draw is replayed from the
+        // generator's state when a reader hovers that dot, so a large sample
+        // no longer runs the store out of budget and loses the older ones.
+        const st = rng.getState();
         const draw = drawFromShiftedNull(shiftedData, rng);
         const resampleArr = draw.values;
         const simMean = mean(resampleArr);
         lastSimStat = simMean;
         lastResampleArr = /** @type {number[]} */ (resampleArr);
         lastResampleIdx = draw.indices ?? null;
+        resamples.rememberState(allStats.length, st);
         allStats.push(simMean);
       }
       const hlClass = isSingle ? ' highlight-last' : '';
@@ -1512,21 +1669,22 @@ export function initOneSamplePage(config) {
       allStats, prevLength, count, computeBins,
       { domain: hlDomain, thresholds: lockedThresholds, numBins: isProp ? undefined : userBinCount });
 
-    const { pValue, extremeCount } = computePValue(allStats, observedStat, direction);
-    displayResults(allStats, observedStat, pValue, extremeCount, direction);
+    const { pValue, extremeCount } = computePValue(allStats, aimedStat(), direction);
+    displayResults(allStats, aimedStat(), pValue, extremeCount, direction);
+    if (inquiry) posture.sync();
     if (resetBtn) resetBtn.hidden = false;
 
     if (count === 1) {
       // Wait for the resample to finish building before the stat drops into the
       // sampling distribution — otherwise the drop fires out of order.
       setTimeout(() => {
-        renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
+        renderChart(allStats, aimedStat(), direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
         if (mechSimStat && chartContainer) {
           animateDropToChart(mechSimStat, chartContainer);
         }
       }, Math.max(150, mechAnimMs));
     } else {
-      renderChart(allStats, observedStat, direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
+      renderChart(allStats, aimedStat(), direction, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
     }
     announce(`Generated ${count} simulation${count > 1 ? 's' : ''}. Total: ${allStats.length}`);
     // Something has been generated, so the link is worthless without the seed.
@@ -1559,6 +1717,10 @@ export function initOneSamplePage(config) {
     /** @type {[number, number]} */
     const domain = hlDomain || [cLo, cHi];
 
+    // Until every decision the posture asked for is made, the plot carries the
+    // distribution and nothing else: no marker, no shading, no p-value. That
+    // emptiness is the prompt.
+    const aimed = !inquiry || aimComplete();
     const activeChart = getActiveChartType(stats);
     if (setToggleSelected) setToggleSelected(activeChart);
     if (binAdjuster) binAdjuster.setMode(activeChart);
@@ -1568,7 +1730,7 @@ export function initOneSamplePage(config) {
     const precision = displayPrecision(dataPrecision, { proportion: isProp, sampleN });
     const nullVal = getNullValue();
 
-    const { pValue } = n > 0 ? computePValue(stats, observed, direction) : { pValue: 0 };
+    const { pValue } = (n > 0 && aimed) ? computePValue(stats, observed, direction) : { pValue: 0 };
 
     const result = renderSimChart(chartContainer, stats, {
       chartType: activeChart,
@@ -1576,8 +1738,8 @@ export function initOneSamplePage(config) {
       xLabel,
       titleText: words.distribution,
       domain,
-      observedStat: observed,
-      direction,
+      observedStat: aimed && Number.isFinite(observed) ? observed : undefined,
+      direction: aimed ? direction : undefined,
       nullCenter: nullVal,
       // The value H₀ names, marked on the distribution it generated — the
       // distribution is centred there by construction and nothing said so.
@@ -1596,11 +1758,13 @@ export function initOneSamplePage(config) {
       precision,
       // Reasoning / figure-only mode: no tail shading or p-value pills — the
       // student reads the p-value off the histogram. Observed marker stays.
-      regionPredicate: showReadout ? undefined : () => false,
-      pillMode: (showReadout && n > 0) ? 'randomization' : undefined,
+      regionPredicate: (showReadout && aimed) ? undefined : () => false,
+      pillMode: (showReadout && aimed && n > 0) ? 'randomization' : undefined,
       pValue,
     });
 
+    lastGeom = { xScale: result.xScale, yScale: result.yScale, frame: result.frame,
+                 kind: activeChart, bins: result.bins ?? null };
     if (result.bins && result.bins.length > 0) {
       lastHistResult = { xScale: result.xScale, yScale: result.yScale, bins: result.bins, domain };
     } else if (activeChart === 'dotplot' && result.maxStack > 0) {
@@ -1618,6 +1782,10 @@ export function initOneSamplePage(config) {
     if (theoryOverlayOn && (activeChart === 'histogram' || activeChart === 'dotplot')) {
       applyTheoryOverlay();
     }
+
+    // Marks are redrawn on every render, so the hover wiring goes back on.
+    wirePeek();
+    wireRuler();
 
   }
 
@@ -1654,6 +1822,12 @@ export function initOneSamplePage(config) {
    * @param {'left'|'right'|'both'} direction
    */
   function displayResults(stats, observed, pValue, extremeCount, direction) {
+    if (inquiry && !aimComplete()) {
+      const want = posture.missing();
+      resultDiv.innerHTML = `<p class="reasoning-prompt"><strong>Your turn.</strong> `
+        + `The simulation has run; it cannot tell you a p-value until you ${want.join(', then ')}.</p>`;
+      return;
+    }
     const dirLabel = direction === 'both' ? 'two-sided'
       : direction === 'right' ? 'right-tail' : 'left-tail';
 
@@ -1716,7 +1890,8 @@ export function initOneSamplePage(config) {
       <p>Extreme count: ${extremeCount} of ${N} (${dirLabel})</p>
       <p>${pLine}</p>
       ${extremeCount === 0 ? '' : `<p class="hint">Run it again and the p-value could shift
-         <strong>±${mcMargin.toFixed(3)}</strong>. <strong>More simulations → tighter</strong>;
+         <strong>±${mcMargin.toFixed(3)}</strong>${simErrorHelpHTML({ kind: 'pvalue', n: N })}.
+         <strong>More simulations → tighter</strong>;
          once it stops shrinking, more clicking will not change your conclusion.</p>`}
       <p class="interpretation">${extremeCount} of ${N} simulated ${statName} were at least as extreme as the observed <span class="observed-highlight">${statSymbolHTML} = ${fmtObs(observed)}</span>. This provides ${strength} evidence against H\u2080: ${nullDesc}.</p>
     `;
@@ -1737,6 +1912,8 @@ export function initOneSamplePage(config) {
     // A reset means "give me a clean tool", which includes a clean address bar.
     forgetSeed();
     allStats = [];
+    resamples.clear();
+    if (peek) peek.hidden = true;
     rng = null;
     mechanismInitialized = false;
     // Keep a URL-pinned seed stable so shared links stay reproducible.

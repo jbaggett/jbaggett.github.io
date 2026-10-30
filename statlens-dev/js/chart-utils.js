@@ -332,6 +332,92 @@ export function autoReduceTicks(axisG, xAxis) {
   }
 }
 
+/**
+ * Short unlabelled ticks between the labelled ones, so a value can be read off
+ * the axis instead of guessed at.
+ *
+ * Todd Will, via the course discussion (2026-10-06): "additional tick marks on
+ * all of the plots. It's hard to ask students to estimate cutoffs with such
+ * sparsely labeled ticks." Measured at the time: the sampling lab drew THREE
+ * labelled ticks across 638px — one every 174 pixels — and the simulation
+ * charts were not much better after `autoReduceTicks` had thinned them to stop
+ * the labels colliding.
+ *
+ * Minor ticks are the standard answer because they solve the real constraint:
+ * labels crowd, marks do not. They also help where an interactive ruler cannot
+ * — a projected figure, a print-out, a screenshot in the coursepack.
+ *
+ * Call AFTER `autoReduceTicks`, since the spacing depends on which labelled
+ * ticks survived.
+ *
+ * **How many subdivisions is not a constant.** d3 only ever labels in steps of
+ * 1, 2 or 5 × 10ᵏ, and five subdivisions is only readable for two of those:
+ *
+ *     step 50  ÷5 → 10     ✓        step 10  ÷5 → 2      ✓
+ *     step 0.5 ÷5 → 0.1    ✓        step 0.2 ÷5 → 0.04   ✗
+ *
+ * A step whose mantissa is 2 wants QUARTERS, not fifths — 0.2 ÷ 4 = 0.05, so
+ * the marks fall on 0.65, 0.70, 0.75 instead of 0.64, 0.68, 0.72, 0.76. Picking
+ * the divisor from the mantissa keeps every minor tick on a 1/2/5 × 10ᵏ value,
+ * the same family the labels come from, which is what makes them countable at a
+ * glance. (Jeff, 2026-10-06: "it's easy to read the minor ticks when they align
+ * with tenths or quarters or halves, but not so easy otherwise.")
+ *
+ * @param {d3Selection.Selection<any, any, any, any>} axisG
+ * @param {{ (v: number): number, range: () => number[], invert?: (p: number) => number }} xScale
+ */
+export function addMinorTicks(axisG, xScale) {
+  const majors = axisG.selectAll('.tick').nodes()
+    .map((n) => {
+      const m = /translate\(\s*([-\d.]+)/.exec(n.getAttribute('transform') || '');
+      return m ? Number(m[1]) : NaN;
+    })
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  if (majors.length < 2) return;
+
+  axisG.selectAll('.minor-tick').remove();
+  const [lo, hi] = /** @type {number[]} */ (xScale.range()).slice().sort((a, b) => a - b);
+
+  // Choose the divisor from the labelled step's own mantissa, in DATA units —
+  // pixels cannot tell 0.2 from 0.5.
+  let divisions = 5;
+  if (typeof xScale.invert === 'function') {
+    const dataStep = Math.abs(xScale.invert(majors[1]) - xScale.invert(majors[0]));
+    if (dataStep > 0) {
+      const mag = Math.pow(10, Math.floor(Math.log10(dataStep)));
+      const mantissa = dataStep / mag;
+      // Nearest of 1, 2, 5, 10 — floating point leaves 0.2 as 2.0000000000000004.
+      const nearest = [1, 2, 5, 10].reduce((a, b) =>
+        Math.abs(b - mantissa) < Math.abs(a - mantissa) ? b : a);
+      divisions = (nearest === 2) ? 4 : 5;
+    }
+  }
+
+  const step = (majors[1] - majors[0]) / divisions;
+  if (!(step > 2)) return;   // below ~2px apart they read as a smudge, not ticks
+
+  // Extend half an interval past each end so the gap before the first label and
+  // after the last one is subdivided too — that is where reading off the axis
+  // is hardest.
+  const marks = [];
+  for (let x = majors[0] - step * divisions; x <= majors[majors.length - 1] + step * divisions; x += step) {
+    if (x < lo - 0.5 || x > hi + 0.5) continue;
+    if (majors.some((m) => Math.abs(m - x) < step / 2)) continue;
+    marks.push(x);
+  }
+  const g = axisG.append('g').attr('class', 'minor-ticks').attr('aria-hidden', 'true');
+  for (const x of marks) {
+    g.append('line')
+      .attr('class', 'minor-tick')
+      .attr('x1', x).attr('x2', x)
+      .attr('y1', 0).attr('y2', 4)
+      .attr('stroke', 'currentColor')
+      .attr('stroke-width', 1)
+      .attr('opacity', 0.45);
+  }
+}
+
 /** Up to 3 sig figs, strip trailing zeros (40.0 → 40, 1.50 → 1.5). */
 function _siClean(v) {
   return String(Number(v.toPrecision(3)));
@@ -574,7 +660,12 @@ export function createChart(container, options = {}) {
 
   inner.append('g').attr('class', 'axes');
   inner.append('g').attr('class', 'data');
-  inner.append('g').attr('class', 'overlays');
+  // Reference lines — the observed statistic, CI bounds, a truth marker — are
+  // drawn ON TOP of the data and are 2.5px wide, so they were swallowing hovers
+  // meant for the dots underneath. A dot sitting under the observed line simply
+  // could not be hovered. These are labels, not controls; interactive overlays
+  // (the distribution pages' draggable boundaries) live in `.annotations`.
+  inner.append('g').attr('class', 'overlays').style('pointer-events', 'none');
   inner.append('g').attr('class', 'annotations');
   inner.append('g').attr('class', 'chart-tooltip')
     // Stash the inner width so showTooltip can clamp a tooltip that would
@@ -622,12 +713,26 @@ export function addAxes(frame, xAxis, yAxis, xLabel, yLabel) {
     else yAxis.ticks(7);
   }
 
+  // No end caps on the x axis.
+  //
+  // d3 draws the domain path as `M x0,6 V0 H x1 V6` — the two vertical strokes
+  // at the ends are 6px long, the same length as a tick, and sit at whatever the
+  // scale's extent happens to be. They read as major ticks and almost never mark
+  // a value anyone would name. `tickSizeOuter(0)` flattens the path to a plain
+  // line. (Jeff, 2026-10-06: "an extra mark at the ends that looks similar to a
+  // major tick, but it usually isn't.")
+  if (typeof xAxis.tickSizeOuter === 'function') xAxis.tickSizeOuter(0);
+
   // X axis — render, then auto-reduce ticks if labels overlap
   const xAxisG = axes.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0, ${frame.height})`)
     .call(xAxis);
   autoReduceTicks(xAxisG, xAxis);
+  // Minor ticks go on here, after the reduction, so every chart that uses
+  // addAxes gets them — spike plots and the lab included — rather than each
+  // call site remembering to ask.
+  if (typeof xAxis.scale === 'function') addMinorTicks(xAxisG, xAxis.scale());
 
   // Y axis
   axes.append('g')
@@ -2154,4 +2259,321 @@ export function morphMiniChart(container, newValues, options = {}) {
 
   requestAnimationFrame(frame);
   return MORPH_MS;
+}
+
+/**
+ * A ruler you place by clicking the axis.
+ *
+ * Todd Will asked for denser ticks because estimating a cutoff off a sparse axis
+ * is guesswork; minor ticks answer that for a printed figure, and this answers
+ * it for a live one — click the axis strip and you get a line you can drag, with
+ * the value under it.
+ *
+ * Why a click on the axis rather than a toggle (Jeff, 2026-10-06: "Could we
+ * somehow hide it unless needed or wanted — toggle? or click in the x-ticks area
+ * to get a movable cutline?"): a toggle is permanent chrome that every reader
+ * meets on every page, to serve something most of them will not use on most
+ * visits. The axis strip is already dead space. The cost of that choice is
+ * discoverability, so the strip carries a pointer cursor and a tooltip, and the
+ * help dialog says it — findable by anyone who goes looking, invisible to
+ * everyone else.
+ *
+ * **No snapping.** The point is to estimate, and snapping would do the
+ * estimating. (Jeff: "no snapping, at least at first.") When it earns its keep
+ * it belongs on discrete statistics only, where positions between achievable
+ * values mean nothing — not on bin edges, which move when the bin count does.
+ *
+ * @param {object} opts
+ * @param {import('./types.js').ChartFrame} opts.frame
+ * @param {{ (v: number): number, invert: (p: number) => number, domain: () => number[], range: () => number[] }} opts.xScale
+ * @param {number} [opts.precision=2]
+ * @param {string} [opts.label='value']
+ */
+/**
+ * Stop a panel from shoving the page around as its contents change.
+ *
+ * The mechanism panel sits ABOVE the distribution, so anything that makes it
+ * taller slides the chart down — and hovering a dot fills that panel, which
+ * meant the dots moved out from under the pointer as you reached for them
+ * (46px on the one-proportion page). The panel keeps the tallest height it has
+ * had, so the chart stays put. It only ever grows, and the growth settles after
+ * the first full render.
+ *
+ * @param {HTMLElement|null|undefined} el
+ */
+export function holdHeight(el) {
+  if (!el || /** @type {any} */ (el).__heldHeight || typeof ResizeObserver === 'undefined') return;
+  /** @type {any} */ (el).__heldHeight = true;
+  let max = 0;
+  new ResizeObserver(() => {
+    const h = el.offsetHeight;
+    // No feedback loop: once min-height is max, offsetHeight stops at max.
+    if (h > max) { max = h; el.style.minHeight = `${max}px`; }
+  }).observe(el);
+}
+
+/**
+ * Where a pointer is, in a chart group's own coordinates.
+ *
+ * NOT `clientX - inner.getBoundingClientRect().left`. On an SVG `<g>` that box
+ * is the union of the children's boxes, and the y-axis tick labels hang to the
+ * LEFT of the group's origin — so the box starts left of local x = 0 and every
+ * reading came out too large. Jeff, 2026-10-06: "the hover dot in a histogram is
+ * displaced to the right of where the mouse cursor is." Consistently right, by
+ * about the width of the axis labels. The screen CTM is the actual mapping.
+ *
+ * @param {Element} el - the group the chart is drawn in
+ * @param {number} clientX @param {number} [clientY]
+ * @returns {{x: number, y: number}}
+ */
+export function localPoint(el, clientX, clientY = 0) {
+  const svg = /** @type {any} */ (el).ownerSVGElement ?? el;
+  const ctm = /** @type {any} */ (el).getScreenCTM?.();
+  if (ctm && typeof (/** @type {any} */ (svg).createSVGPoint) === 'function') {
+    const pt = /** @type {any} */ (svg).createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const local = pt.matrixTransform(ctm.inverse());
+    return { x: local.x, y: local.y };
+  }
+  const box = el.getBoundingClientRect();
+  return { x: clientX - box.left, y: clientY - box.top };
+}
+
+/** Placed markers, per chart container, so a redraw does not take them. */
+const rulerMemory = new WeakMap();
+
+export function attachAxisRuler({ frame, xScale, precision = 2, label = 'value' }) {
+  const inner = d3Selection.select(frame.inner);
+  if (!frame.inner || typeof xScale.invert !== 'function') return;
+  // A marker is placed to read a bound off the distribution, and the very next
+  // thing a reader does is add another thousand repetitions. The chart is drawn
+  // from scratch each time — the whole <svg> is replaced — so reading the old
+  // markers off the DOM finds nothing by the time this runs. They are kept
+  // beside the container instead, and by VALUE: the axis may have rescaled
+  // under them, and the value is what the reader meant.
+  const svgEl = /** @type {Element|null} */ (
+    /** @type {any} */ (frame.inner).ownerSVGElement ?? frame.inner.closest?.('svg'));
+  // Not the <svg>'s own parent: that wrapper div is rebuilt with the chart, so
+  // keying on it gave a fresh key every redraw and remembered nothing. The
+  // nearest ancestor carrying an id is the container the page owns, and stays.
+  const host = /** @type {Element|null} */ (
+    svgEl?.closest?.('[id]') ?? svgEl?.parentNode ?? null);
+  const carried = ((host && rulerMemory.get(host)) || []).slice(-1);
+  inner.selectAll('.axis-ruler-layer').remove();
+  noteRulerInHelp();
+
+  const [dMin, dMax] = /** @type {number[]} */ (xScale.domain());
+  const [rLo, rHi] = /** @type {number[]} */ (xScale.range()).slice().sort((a, b) => a - b);
+  const fmt = (/** @type {number} */ v) => v.toFixed(precision);
+  const nudge = (dMax - dMin) / 200;
+
+  const layer = inner.append('g').attr('class', 'axis-ruler-layer');
+  // Appended last is not the same as painted last: a page that draws its axis
+  // after this put the tick <text> above the strip and swallowed the click. One
+  // page worked and another did not for that reason alone.
+  layer.raise();
+
+  const remember = () => {
+    if (!host) return;
+    rulerMemory.set(host, layer.selectAll('.axis-ruler').nodes()
+      .map((n) => Number(/** @type {Element} */ (n).getAttribute('aria-valuenow')))
+      .filter((v) => Number.isFinite(v)));
+  };
+
+  // The strip under the plot, where the ticks live. Transparent, and the only
+  // reason the gesture is reachable at all.
+  const strip = layer.append('rect')
+    .attr('class', 'axis-ruler-strip')
+    .attr('x', rLo).attr('y', frame.height)
+    .attr('width', rHi - rLo).attr('height', 26)
+    .attr('fill', 'transparent')
+    .style('cursor', 'col-resize');
+  strip.append('title').text(`Click to place a marker you can drag along the ${label} axis`);
+
+  /** @param {number} dataX @param {boolean} [takeFocus] */
+  function addRuler(dataX, takeFocus = true) {
+    // One marker at a time (Jeff, 2026-10-06). Several at once read as clutter
+    // rather than as a measurement, and the one that answers the question is
+    // the one you just placed. Clicking elsewhere on the strip moves it there;
+    // clicking the marker itself still grabs it for a drag.
+    layer.selectAll('.axis-ruler').remove();
+    let x = Math.min(dMax, Math.max(dMin, dataX));
+    const g = layer.append('g')
+      .attr('class', 'axis-ruler')
+      .attr('tabindex', 0)
+      .attr('role', 'slider')
+      .attr('aria-label',
+        `Marker on the ${label} axis — drag or use the arrow keys to move it, Escape to remove it`)
+      .attr('aria-valuemin', fmt(dMin))
+      .attr('aria-valuemax', fmt(dMax));
+
+    // Wide enough to grab without aiming, narrow enough that two markers can be
+    // put close together: the grab area sits above the strip, so a click inside
+    // it is a grab rather than a new marker.
+    const hit = g.append('rect')
+      .attr('y', 0).attr('width', 14).attr('height', frame.height + 26)
+      .attr('fill', 'transparent')
+      .style('cursor', 'ew-resize')
+      .style('touch-action', 'none');
+    // Drawn after the hit rect and so on top of it, and a SIBLING of it — so a
+    // pointer landing exactly on the line hit the line, which has no handler,
+    // and the drag silently never started. The rect is the handle; the line is
+    // the picture of it.
+    const line = g.append('line')
+      .attr('y1', 0).attr('y2', frame.height)
+      .attr('stroke', '#444').attr('stroke-width', 2)
+      .attr('stroke-dasharray', '5,4')
+      .style('pointer-events', 'none');
+    // The pill sits IN the strip band, so left clickable it would eat the click
+    // meant to place the next marker — two markers could not be put within a
+    // pill's width of each other. It is a readout; the line is the handle.
+    const pillBg = g.append('rect')
+      .attr('class', 'axis-ruler-pill')
+      .attr('height', 20).attr('rx', 4)
+      .attr('fill', '#fff').attr('stroke', '#444')
+      .style('pointer-events', 'none');
+    const pillText = g.append('text')
+      .attr('class', 'axis-ruler-value')
+      .attr('text-anchor', 'middle').attr('font-size', 12).attr('font-weight', 700)
+      .attr('fill', '#111')
+      .style('pointer-events', 'none');
+    // A marker you cannot put away is clutter, so each carries its own dismiss.
+    // Findable, not merely present. As a bare glyph the dismiss was an 8x18px
+    // target in grey (4x9 on a phone), well under the 44px this project
+    // requires on touch, and it read as "there is no way to close this". It is
+    // a button now: a disc that looks pressable, over a hit area sized for the
+    // pointer in use.
+    // In CSS pixels, not user units: the chart scales its viewBox to the
+    // container, so a fixed 44 user units is 26 real pixels on a phone — the
+    // place the 44 is actually required. The scale is read at render time.
+    const closeCssSize = (typeof matchMedia === 'function'
+      && matchMedia('(pointer: coarse)').matches) ? 44 : 30;
+    const close = g.append('g')
+      .attr('class', 'axis-ruler-close')
+      .style('cursor', 'pointer');
+    const closeTarget = close.append('rect')
+      .attr('fill', 'transparent');
+    const closeDisc = close.append('circle')
+      .attr('class', 'axis-ruler-close-disc')
+      .attr('r', 9).attr('fill', '#fff').attr('stroke', '#444').attr('stroke-width', 1.5);
+    const closeGlyph = close.append('text')
+      .attr('class', 'axis-ruler-close-glyph')
+      .attr('text-anchor', 'middle').attr('font-size', 13).attr('font-weight', 700)
+      .attr('fill', '#444').style('pointer-events', 'none').text('×');
+    close.append('title').text('Remove this marker');
+
+    function render() {
+      const px = xScale(x);
+      hit.attr('x', px - 7);
+      line.attr('x1', px).attr('x2', px);
+      const txt = fmt(x);
+      const w = Math.max(38, txt.length * 8 + 14);
+      // The pill and its button are clamped TOGETHER, so a marker near the top
+      // of the axis cannot push the button off the edge of the chart.
+      const cx = Math.max(rLo + w / 2, Math.min(rHi - (w / 2 + 20), px));
+      // The value sits in the axis strip, not at the top of the plot. At the top
+      // it landed on the observed-statistic label and on the probability pills —
+      // and an axis reading belongs by the axis anyway. It is opaque, so where
+      // it does cover a tick label it wins cleanly rather than blurring with it.
+      const pillY = frame.height + 4;
+      pillBg.attr('x', cx - w / 2).attr('y', pillY).attr('width', w);
+      pillText.attr('x', cx).attr('y', pillY + 14).text(txt);
+      const closeCx = cx + w / 2 + 11;
+      const closeCy = pillY + 10;
+      const scale = /** @type {any} */ (frame.inner).getScreenCTM?.()?.a || 1;
+      const closeHit = closeCssSize / scale;
+      closeTarget.attr('width', closeHit).attr('height', closeHit)
+        .attr('x', closeCx - closeHit / 2).attr('y', closeCy - closeHit / 2);
+      closeDisc.attr('cx', closeCx).attr('cy', closeCy);
+      closeGlyph.attr('x', closeCx).attr('y', closeCy + 4.5);
+      g.attr('aria-valuenow', txt).attr('aria-valuetext', `${txt} on the ${label} axis`);
+      remember();
+    }
+    const setFromPointer = (/** @type {PointerEvent} */ e) => {
+      const at = localPoint(/** @type {Element} */ (frame.inner), e.clientX);
+      x = Math.min(dMax, Math.max(dMin, xScale.invert(at.x)));
+      render();
+    };
+    let dragging = false;
+    hit.on('pointerdown', function (e) {
+      dragging = true;
+      /** @type {Element} */ (this).setPointerCapture(e.pointerId);
+      e.stopPropagation();
+    });
+    hit.on('pointermove', (e) => { if (dragging) { e.preventDefault(); setFromPointer(e); } });
+    hit.on('pointerup', () => { dragging = false; });
+    hit.on('pointercancel', () => { dragging = false; });
+    close.on('click', (e) => { e.stopPropagation(); g.remove(); remember(); });
+    g.on('keydown', (e) => {
+      const k = e.key;
+      if (k === 'ArrowLeft' || k === 'ArrowRight') {
+        e.preventDefault();
+        x = Math.min(dMax, Math.max(dMin, x + (k === 'ArrowRight' ? 1 : -1) * nudge * (e.shiftKey ? 5 : 1)));
+        render();
+      } else if (k === 'Home') { e.preventDefault(); x = dMin; render(); }
+      else if (k === 'End') { e.preventDefault(); x = dMax; render(); }
+      else if (k === 'Escape' || k === 'Delete' || k === 'Backspace') { e.preventDefault(); g.remove(); remember(); }
+    });
+    render();
+    // Only a marker the reader just placed takes focus. One restored after a
+    // redraw must not, or every +1000 would yank the keyboard out of the panel.
+    if (takeFocus) /** @type {SVGGElement} */ (g.node()).focus?.();
+    return g;
+  }
+
+  // The click is taken on the SVG ROOT, not on the strip.
+  //
+  // The strip is a transparent rect, and Chromium's real pointer hit-testing
+  // would not reliably resolve to it even when `elementsFromPoint` put it on
+  // top of the stack: on a page whose chart had just been redrawn, every click
+  // landed on the <svg> instead and only started working after any scroll. The
+  // root always gets the event, and the band test is exact, so the strip is now
+  // only what gives the cursor and the tooltip.
+  const svgRoot = /** @type {Element|null} */ (
+    /** @type {any} */ (frame.inner).ownerSVGElement ?? frame.inner.closest?.('svg'));
+  if (svgRoot) {
+    d3Selection.select(svgRoot).on('click.axisruler', function (e) {
+      // A click on a marker already placed is a grab or a dismissal, not a
+      // request for another one.
+      if (/** @type {Element} */ (e.target).closest?.('.axis-ruler')) return;
+      const at = localPoint(/** @type {Element} */ (frame.inner), e.clientX, e.clientY);
+      // @ts-ignore DEBUG
+      (window.__r ||= []).push({ at, h: frame.height,
+        same: frame.inner === document.querySelector('#chart-container .chart-inner'),
+        tf: frame.inner.getAttribute('transform'),
+        host: frame.inner.closest('[id]')?.id,
+        stripInSameInner: !!frame.inner.querySelector('.axis-ruler-strip') });
+      if (at.y < frame.height || at.y > frame.height + 26) return;
+      if (at.x < rLo - 4 || at.x > rHi + 4) return;
+      addRuler(xScale.invert(at.x));
+    });
+  }
+
+  for (const v of carried) addRuler(v, false);
+}
+
+/**
+ * Say in the help dialog that the axis can be clicked.
+ *
+ * A gesture nobody can see is a gesture nobody finds, and the tooltip on the
+ * strip only helps someone already hovering there. Written from here rather
+ * than into sixteen help dialogs by hand, so the sentence exists exactly where
+ * the feature does and cannot drift away from it.
+ */
+let rulerNoted = false;
+function noteRulerInHelp() {
+  if (rulerNoted) return;
+  rulerNoted = true;
+  const dialog = document.getElementById('page-help');
+  if (!dialog || dialog.querySelector('.help-ruler-note')) return;
+  const note = document.createElement('p');
+  note.className = 'help-ruler-note';
+  note.innerHTML = '<strong>Measuring off the axis.</strong> Click the strip just '
+    + 'below the horizontal axis to drop a marker, with its value beside it '
+    + '\u2014 useful for reading a cutoff off the distribution. Drag it, or nudge '
+    + 'it with the arrow keys (Shift for bigger steps); clicking elsewhere on '
+    + 'the strip moves it there. The \u00d7 button beside the value removes it, as '
+    + 'does <kbd>Esc</kbd> while it has focus.';
+  const closeBtn = dialog.querySelector('button.btn-primary');
+  if (closeBtn) dialog.insertBefore(note, closeBtn); else dialog.appendChild(note);
 }

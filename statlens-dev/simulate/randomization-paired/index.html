@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Randomization Test: Paired Differences | StatLens</title>
+    <meta name="description" content="Test a mean difference on paired data by randomly flipping the sign of each difference.">
+    <meta name="keywords" content="randomization test, paired data, before and after, sign flip, matched pairs, mean difference, p-value, same subjects twice">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -102,6 +104,12 @@
                     <span class="standard-only">0</span>
                     <span id="null-display" class="null-value-mirror expert-only">0</span>
                 </div>
+                <div id="group-order" class="group-order" hidden>
+                    <span id="group-order-label"></span>
+                    <button type="button" id="swap-groups" class="btn-secondary btn-sm order-swap"
+                            aria-label="Reverse the difference order"
+                            title="Reverse the difference order">⇅ Reverse</button>
+                </div>
                 <p id="seed-notice" class="seed-notice" hidden></p>
             </div>
             <div class="generate-bar" role="group" aria-label="Generate shuffles">
@@ -195,5 +203,6 @@
     </script>
     <script src="../../js/page-number.js"></script>
     <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
 </body>
 </html>

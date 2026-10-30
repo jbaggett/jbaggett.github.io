@@ -1,7 +1,7 @@
 {
   "id": "supreme_court",
   "name": "Supreme Court Approval",
-  "description": "Poll of 976 Americans on approval of the US Supreme Court. IMS Ch. 2.",
+  "description": "Poll of 976 Americans: do you approve of the US Supreme Court? 44% approve (NYT/CBS, June 2012). IMS Ch. 2.",
   "source": "openintro",
   "variables": [
     {
@@ -10,2940 +10,2945 @@
       "type": "categorical"
     }
   ],
-  "studyDescription": "A poll of 976 American adults asked whether they approve or disapprove of the job the US Supreme Court is doing. This was an observational survey.",
+  "studyDescription": "A New York Times / CBS News telephone poll in June 2012 asked 976 American adults whether they approved of the way the US Supreme Court was handling its job. Responses are recorded as approve or not; 429 of the 976 approved. This is an observational survey at one point in time.",
   "variableDescriptions": {
-    "answer": "The respondent's answer: Approve or Disapprove"
+    "answer": "Whether the respondent approved of the Supreme Court’s handling of its job."
   },
-  "sourceDetail": "OpenIntro datasets (openintro R package). IMS Ch. 2. Original source: Associated Press-GfK poll.",
-  "context": "A poll asked 976 American adults whether they approve or disapprove of the job the US Supreme Court is doing.",
+  "sourceDetail": "openintro::supreme_court (IMS Ch. 2). New York Times / CBS News poll, June 2012, n = 976: 44% approve (429/976). Replaced 2026-10-17: this file held Approve 458 / Disapprove 321 / Don't know 197 — a three-category split that matched no source, where openintro's is BINARY (approve / not). The category structure was wrong, not just the counts (REQ-077).",
+  "context": {
+    "population": "American adults in June 2012",
+    "parameter": "the proportion who approve of the Supreme Court",
+    "successLabel": "approve"
+  },
   "rows": [
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "approve"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Approve"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Disapprove"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     },
     {
-      "answer": "Don't know"
+      "answer": "not"
     }
-  ]
+  ],
+  "type": "bootstrap_prop"
 }

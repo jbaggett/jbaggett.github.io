@@ -2,7 +2,7 @@
   "id": "smallpox",
   "name": "Smallpox Inoculation",
   "description": "Smallpox outcomes for inoculated vs not. Historical data. n=6,224.",
-  "source": "openintro::smallpox",
+  "source": "openintro",
   "chapter": "",
   "type": "randomization_prop",
   "variables": [
@@ -24,955 +24,955 @@
   },
   "rows": [
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "lived"
     },
     {
@@ -20593,950 +20593,954 @@
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
-      "outcome": "died"
+      "outcome": "lived"
     },
     {
       "group": "Not inoculated",
+      "outcome": "lived"
+    },
+    {
+      "group": "Inoculated",
       "outcome": "died"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "died"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "died"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "died"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "died"
     },
     {
-      "group": "Not inoculated",
+      "group": "Inoculated",
       "outcome": "died"
     },
     {
@@ -23968,955 +23972,951 @@
       "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
-    },
-    {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
-      "outcome": "lived"
+      "group": "Not inoculated",
+      "outcome": "died"
     },
     {
-      "group": "Inoculated",
+      "group": "Not inoculated",
       "outcome": "died"
     },
     {
-      "group": "Inoculated",
+      "group": "Not inoculated",
       "outcome": "died"
     },
     {
-      "group": "Inoculated",
+      "group": "Not inoculated",
       "outcome": "died"
     },
     {
-      "group": "Inoculated",
+      "group": "Not inoculated",
       "outcome": "died"
     },
     {
-      "group": "Inoculated",
+      "group": "Not inoculated",
       "outcome": "died"
     },
     {
-      "group": "Inoculated",
+      "group": "Not inoculated",
       "outcome": "died"
     }
   ],
@@ -24925,5 +24925,5 @@
     "result": "Whether the individual contracted smallpox (lived or died)",
     "inoculated": "Whether the individual was inoculated against smallpox"
   },
-  "sourceDetail": "Historical smallpox inoculation records. Dataset from OpenIntro (smallpox)."
+  "sourceDetail": "openintro::smallpox. Smallpox outcomes among 6,224 people in Boston, 1721, by whether they were inoculated. Replaced 2026-10-17: this file put six surviving people on the wrong side of the inoculation split — 238 inoculated rather than 244, giving 3.82% inoculated where the course chapter (probability-rules) states 3.92%, 14.11% and 2.46%. The source reproduces all three figures exactly (REQ-077 sweep)."
 }

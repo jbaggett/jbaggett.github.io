@@ -15,6 +15,7 @@ import { mountCriticalValueFigure } from '../../../js/critical-value-figure.js';
 import { renderConditionsDiagnostic } from '../../../js/conditions.js';
 import { initTabs, initDataPanel, announce, initHelp, getActiveTabId, getTabHintText, buildSimLink, setPageTitle } from '../../../js/page-utils.js';
 import { formatStat, detectPrecision, mean, sd } from '../../../js/stats.js';
+import { setPairedOrderSource } from '../../../js/dataset-actions.js';
 import { findContext } from '../../../js/conclusions.js';
 import { linkFormula } from '../../../js/formula-link.js';
 
@@ -40,6 +41,9 @@ const confPills = /** @type {HTMLElement} */ (document.querySelector('.conf-pill
 const varSelectors = /** @type {HTMLElement} */ (document.getElementById('variable-selectors'));
 const var1Select = /** @type {HTMLSelectElement} */ (document.getElementById('var1-select'));
 const var2Select = /** @type {HTMLSelectElement} */ (document.getElementById('var2-select'));
+const groupOrderEl = document.getElementById('group-order');
+const groupOrderLabel = document.getElementById('group-order-label');
+const swapOrderBtn = document.getElementById('swap-groups');
 const dataSummary = document.getElementById('data-summary');
 
 // ── State ──────────────────────────────────────────────────────────
@@ -80,7 +84,16 @@ function populateVarSelectors(cols) {
     announce('Need at least 2 numeric columns for paired data.');
     return;
   }
-  varSelectors.hidden = false;
+  // Only when there is actually a choice to make. Every bundled paired dataset
+  // has EXACTLY two numeric columns, so these two dropdowns offered four
+  // reachable states: two of them the same-column error that `resolveCollision`
+  // exists to absorb, and the other two precisely what "⇅ Reverse" now toggles
+  // between. The simulate paired pages have never shown a picker for bundled
+  // data (js/variable-picker.js skips curated datasets deliberately); this is
+  // the same rule, applied where it had not been. The selects are still
+  // populated, so pasting a file with three or more numeric columns brings them
+  // straight back. (Jeff, 2026-10-18.)
+  varSelectors.hidden = cols.length < 3;
   var1Select.innerHTML = '';
   var2Select.innerHTML = '';
   for (const col of cols) {
@@ -93,6 +106,35 @@ function populateVarSelectors(cols) {
   }
   var1Select.value = cols[0];
   var2Select.value = cols[1];
+  // `?order=swap` starts the page reading the difference the other way round.
+  // Absent, the order is this page's long-standing `var1 − var2` on the first
+  // two numeric columns — unchanged, so old links are untouched.
+  if (new URLSearchParams(window.location.search).get('order') === 'swap'
+      && cols.length > 1) {
+    [var1Select.value, var2Select.value] = [var2Select.value, var1Select.value];
+  }
+  syncDiffOrder();
+}
+
+/**
+ * A letter with a proper overline, as a DOM node.
+ *
+ * `x̄` is a letter plus U+0304 COMBINING MACRON, and the bar is placed by the
+ * font: in Atkinson Hyperlegible it lands to the RIGHT of the glyph instead of
+ * over it (Jeff, 2026-10-13, on the sampling lab). `.x-bar` in style.css is the
+ * site's fix — a span with a border-top.
+ *
+ * A NODE rather than an HTML string on purpose: this summary interpolates
+ * column names that came out of a CSV the student uploaded, and swapping the
+ * whole line to innerHTML to get one overline would hand those names to the
+ * HTML parser.
+ * @param {string} letter
+ */
+function barred(letter) {
+  const span = document.createElement('span');
+  span.className = 'x-bar';
+  span.textContent = letter;
+  return span;
 }
 
 function loadFromSelections() {
@@ -120,7 +162,11 @@ function loadFromSelections() {
     const name = dataPanel.currentSourceName;
     const prefix = name ? `${name}: ` : '';
     const d = detectPrecision(diffs);
-    dataSummary.textContent = `${prefix}${diffs.length} pairs (${col1} − ${col2}), d̄ = ${formatStat(mean(diffs), d)}, s_d = ${formatStat(sd(diffs), d)}`;
+    dataSummary.replaceChildren(
+      document.createTextNode(`${prefix}${diffs.length} pairs (${col1} − ${col2}), `),
+      barred('d'),
+      document.createTextNode(` = ${formatStat(mean(diffs), d)}, s_d = ${formatStat(sd(diffs), d)}`),
+    );
   }
   build();
   announce(`Loaded ${diffs.length} paired differences (${col1} − ${col2}).`);
@@ -173,8 +219,81 @@ const dataPanel = initDataPanel({
   },
 });
 
-var1Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
-var2Select.addEventListener('change', () => { if (currentRows) loadFromSelections(); });
+/**
+ * Two slots, two different columns: the OTHER slot moves aside rather than the
+ * change being refused. Matches `inference/paired` and `js/variable-picker.js`
+ * — the refusal only reached the live region, so a sighted student saw the
+ * page keep the previous answer under a changed pair. (REQ-079 sweep.)
+ * @param {HTMLSelectElement} changed @param {HTMLSelectElement} other
+ */
+function resolveCollision(changed, other) {
+  if (changed.value !== other.value) return;
+  const alt = numericCols.find(c => c !== changed.value);
+  if (alt) other.value = alt;
+}
+
+var1Select.addEventListener('change', () => {
+  resolveCollision(var1Select, var2Select);
+  if (currentRows) loadFromSelections();
+  syncDiffOrder();
+});
+var2Select.addEventListener('change', () => {
+  resolveCollision(var2Select, var1Select);
+  if (currentRows) loadFromSelections();
+  syncDiffOrder();
+});
+
+// ── Difference order (REQ-079) ───────────────────────────────────
+// This page has always computed `var1 − var2`, and keeps doing so: the order
+// is reversed by exchanging the two columns, not by changing the formula. So
+// every link and stored answer written before this control existed still means
+// what it meant.
+
+// Same for the data-bar buttons here: the order is whichever way round the two
+// selects currently are, against the page's natural (first two numeric) order.
+setPairedOrderSource(() => {
+  const cols = numericCols || [];
+  if (cols.length < 2) return false;
+  // These pages read `var1 − var2`; `withPairedDifference` defaults to
+  // `second − first`. So the page's NATURAL order is already the reverse of the
+  // helper's, and "reversed" here means var1 is still the first column. Getting
+  // this backwards put the table's sign opposite the page's on both pages.
+  return var1Select.value === cols[0];
+});
+
+/** Keep the readout saying which way round the difference is being taken. */
+function syncDiffOrder() {
+  // Named, not bare: **d = pretest − posttest**. Lower-case d is the individual
+  // difference for one pair; the mean of them is d̄, which the results panel
+  // writes separately. (Jeff, 2026-10-18.)
+  const order = (var1Select.value && var2Select.value)
+    ? `d = ${var1Select.value} − ${var2Select.value}`
+    : '';
+  if (groupOrderLabel) groupOrderLabel.textContent = order || '…';
+  // The row is the same one the two-group pages use, in the same place
+  // and with the same button — one idea, one control (2026-10-18).
+  if (groupOrderEl) groupOrderEl.hidden = !order;
+  // Tabbing to the button out of context, "Reverse the difference order" does
+  // not say what it would become — the order it reverses is in the adjacent
+  // text, which a screen reader reaches separately. So it goes in the name.
+  if (swapOrderBtn && order) {
+    swapOrderBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+  }
+}
+
+if (swapOrderBtn) {
+  swapOrderBtn.addEventListener('click', () => {
+    if (numericCols.length < 2) return;
+    const a = var1Select.value, b = var2Select.value;
+    if (!a || !b || a === b) return;
+    var1Select.value = b;
+    var2Select.value = a;
+    if (currentRows) loadFromSelections();
+    syncDiffOrder();
+    announce(`Difference now reads ${var1Select.value} − ${var2Select.value}.`);
+  });
+}
+
 
 // ── Summary input ──────────────────────────────────────────────────
 function summaryActive() {

@@ -1,906 +1,908 @@
 {
   "id": "ask",
-  "name": "iPod Question Framing",
-  "description": "219 participants: does framing an iPod purchase question differently affect the decision? Three question types (control, give up, keep) x two outcomes. IMS Ch. 18.",
+  "name": "iPod Disclosure Experiment",
+  "description": "219 sellers of a used iPod known to freeze, asked one of three scripted questions by the buyer: did they disclose the problem? (IMS Ch. 18)",
   "source": "IMS (Introduction to Modern Statistics)",
   "variables": [
     {
       "name": "question",
+      "label": "Question asked",
       "type": "categorical"
     },
     {
       "name": "decision",
+      "label": "Seller’s response",
       "type": "categorical"
     }
   ],
-  "studyDescription": "In a randomized experiment, 219 participants were presented with one of three differently worded questions about purchasing a video iPod: a control question, a \"give up\" framing (emphasizing what they would lose), or a \"keep\" framing (emphasizing what they would retain). Each participant then decided whether or not to buy the iPod.",
+  "studyDescription": "Researchers recruited 219 participants to sell a used iPod that was known to have frozen twice. Sellers were incentivised to get as much money as they could. A buyer working with the researchers asked one of three scripted questions, assigned at random: a General question (\"What can you tell me about it?\"), a Positive Assumption (\"It does not have any problems, does it?\"), or a Negative Assumption (\"What problems does it have?\"). The outcome recorded was whether the seller disclosed the freezing issue. This was a randomized experiment.",
   "variableDescriptions": {
-    "question": "How the purchase question was framed: control (neutral wording), give_up (emphasizing what would be given up), or keep (emphasizing what would be kept)",
-    "decision": "Whether the participant decided to buy the iPod or not buy it"
+    "question": "Which of the three scripted questions the buyer asked, assigned at random.",
+    "decision": "Whether the seller disclosed the freezing problem or hid it."
   },
-  "sourceDetail": "IMS (Introduction to Modern Statistics) Ch. 18. Original study: Frederick S, Novemsky N, Wang J, Dhar R, Nowlis S (2009), \"Opportunity Cost Neglect,\" Journal of Consumer Research, 36(4):553-561.",
+  "sourceDetail": "OpenIntro IMS Ch. 18; openintro::ask. Original study: Minson JA, Ruedy NE, Schweitzer ME (2018), \"There is such a thing as a stupid question: question disclosure in strategic communication\". Replaced on 2026-10-16: this id previously held Frederick et al. (2009) opportunity-cost data (control / give_up / keep × buy / not buy), which is a different study that happens also to have n = 219, under a description naming the iPod experiment (REQ-073 item 3).",
   "context": {
-    "population": "study participants",
-    "parameter": "association between question framing and purchase decision",
-    "nullClaim": "question framing and purchase decision are independent",
-    "successLabel": "buy"
+    "population": "sellers in the experiment",
+    "parameter": "association between the question asked and whether the problem was disclosed",
+    "nullClaim": "the question asked and whether the seller disclosed are independent",
+    "successLabel": "Disclose"
   },
   "rows": [
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Disclose"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Disclose"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "control",
-      "decision": "not buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "General",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "give_up",
-      "decision": "not buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Positive assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Disclose"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     },
     {
-      "question": "keep",
-      "decision": "not buy"
+      "question": "Negative assumption",
+      "decision": "Hide"
     }
   ],
   "inferenceContexts": [
@@ -908,8 +910,10 @@
       "test": "chisq",
       "rowVar": "question",
       "colVar": "decision",
-      "parameter": "there is an association between question framing and purchase decision",
-      "claim": "how the purchase question is framed affects whether people decide to buy the iPod"
+      "parameter": "there is an association between the question asked and whether the seller disclosed",
+      "claim": "the question the buyer asks changes whether the seller discloses the problem"
     }
-  ]
+  ],
+  "type": "chisq",
+  "chapter": "IMS Ch. 18"
 }

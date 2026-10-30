@@ -140,7 +140,7 @@ export function drawSpike(container, values, options = {}) {
     .nice()
     .range([frame.height, 0]);
 
-  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
+  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick).tickSizeOuter(0);
   const yAxis = d3Axis.axisLeft(yScale).tickFormat(formatTick);
   addAxes(frame, xAxis, yAxis, xLabel, yLabel);
 

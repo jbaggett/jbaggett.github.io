@@ -115,6 +115,47 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 ---
 
+## Finding a tool
+
+Every public page now carries `<meta name="description">` and `<meta name="keywords">`. The
+keywords deliberately hold **both vocabularies** — the words a student would type ("before and
+after", "is my coin fair", "margin of error") and the formal name of the method ("paired t-test",
+"permutation test", "one-proportion z-test") — and deliberately **no chapter numbers**, because the
+textbook is remixed and a chapter tag would go stale in 75 files.
+
+| Where | What |
+|---|---|
+| **`find/`** | Every indexed page in one static, printable list, grouped by section, each with its description and keywords visible. Generated from the pages themselves, so a new tool appears as soon as it has the meta tags. Works with scripting off — it is the fallback for the search box. |
+| **Search overlay (every page)** | Opened by the magnifying glass in the header cluster, by `/`, or by Ctrl/Cmd-K — on every page, so a reader mid-tool can jump to another without going home first. Filters as you type over title, description and keywords; ↓/↑ step the results, Enter opens one, Escape closes. A query that matches nothing points at `find/`. The button and overlay are built by `js/search-mount.js`, not written into each page, so there is one place to change them; results link from the site root, resolved against the module's own URL so they work at any directory depth. |
+| **`search-index.json`** | The same data as a flat list, generated alongside `find/`. Stable shape: `{pages: [{p, t, d, k}]}` — path, title, description, keywords. Usable by the textbook project if it ever wants to link or check tool coverage programmatically. |
+
+Regenerate both with `node scripts/build-find.mjs`. **`--check` fails if they are stale OR if any
+page exists that is neither indexed nor explicitly unlisted** — a new tool cannot quietly exist
+without being findable. A unit test runs it, so `npm test` catches it. A page is registered by
+having `description` + `keywords` in its `<head>`; to keep one out deliberately, add it to
+`UNLISTED` in the builder with the reason. The authored wording lives in `scripts/page-metadata.mjs`, but **the pages are the
+source of truth** — the builder reads their head tags.
+
+---
+
+## Shared Chart Affordances (no URL parameter — always on)
+
+Every simulation and sampling-distribution chart carries these. They need no
+configuration and no link changes; a textbook link to any of these tools gets
+them automatically.
+
+| Affordance | What it does | Where |
+|---|---|---|
+| **Minor ticks** | Unlabelled ticks subdivide each labelled interval (4 or 5 of them, chosen so they land on readable values), so a cutoff can be estimated between labels. | Every chart with a numeric horizontal axis. |
+| **Axis ruler** | Click the strip just below the horizontal axis to drop a draggable marker that reads its own value. Drag it, or nudge it with the arrow keys (Shift = bigger steps); clicking elsewhere on the strip moves it there. The `×` button beside the value removes it (`Esc` also works while it has focus). One marker at a time. It is **not** snapped to ticks or bin edges — estimating is the point. The marker survives adding more repetitions. | The 14 simulation pages and the Sampling Distribution Lab. |
+| **Hover a dot** | Hovering a dot, bar or spike in the distribution shows the sample or resample that produced it, in the page's own sample panel. Exact where there is one mark per repetition; the nearest column otherwise, with the readout saying so. Works at any sample size: the draw is replayed from four stored numbers rather than kept, so a dataset with n in the thousands stays fully answerable. | Every simulation page — bootstrap **and** randomization, one-sample, two-group and paired — plus the Sampling Distribution Lab (quantitative and proportion) and `conceptual/population-ci/`. |
+
+The ruler and the hover are announced to screen readers: the ruler is a
+`role="slider"` carrying an `aria-valuetext`, and the hovered repetition is
+described in the page's `aria-live` region.
+
+---
+
 ## Explore Tools
 
 ### Descriptive Statistics
@@ -123,6 +164,16 @@ These parameters are available across most pages via the shared `parseParams()` 
 **Category:** Explore
 **Description:** Displays histogram, dotplot, or boxplot with full summary statistics (mean, median, SD, Q1, Q3, IQR, range, min, max) for a single quantitative variable. Includes bin frequency table, density curve overlay, relative frequency toggle, and group filter when data has a categorical variable.
 **Concepts:** Distribution shape, center, spread, five-number summary, histogram bin width, dotplot vs histogram comparison, outlier identification
+
+**Proportion mode** (`?param=prop`). The same axis, in true standard errors √(p(1−p)/n), with **two** recipes instead of three: `z*√(p(1−p)/n)` (right, and uncomputable — it needs the p you are estimating) and `z*√(p̂(1−p̂)/n)` (what you actually compute). There is no third row, and that absence is the content: **no multiplier repairs this one**, because how far short it falls depends on p. That is the course's own reason for simulating.
+
+The toggle also exposes a structural difference rather than just a change of letters. For a mean, x̄ and *s* are two separate numbers, so the page needs two knobs. For a proportion there is only p̂, and it is both the estimate **and** the quantity inside the standard error — so that mode has one knob where the other has two, and p̂ landing nearer 0.5 than p inflates the estimated SE while p̂ landing further out shrinks it.
+
+The long-run column in proportion mode is an **exact binomial sum** over the n+1 attainable values of p̂, not a normal approximation — p̂ is k/n and nothing else, and the discreteness is part of why the interval misbehaves. The defaults (p = 0.2, n = 50) put *np* at exactly 10, the course's success-failure boundary: the condition is **met** and the interval still runs at 93.8%. Drop to p = 0.1, n = 40 and it is 91.4%.
+
+**Expert mode only** (`?expert=true`): two shaded strips decomposing the shortfall — ordinary samples whose interval misses anyway, and unusual ones that reach p regardless because their estimated SE came out large. Off for students by design (Jeff, 2026-10-13); the phrase "acceptance region" deliberately never appears.
+
+**Provenance:** both modes are built from Todd Will's Mathematica demonstrations, relayed by Jeff — the mean in October 2026, the proportion on 2026-10-12 with the brief "showing the effect of replacing p with p̂, a parallel to showing the effect of replacing σ with s". Putting them in one page with a toggle makes that parallel structural rather than asserted. His notebook integrates a normal for the coverage and labels it approximate; ours sums the binomial.
 
 **URL Parameters:**
 
@@ -226,7 +277,7 @@ These parameters are available across most pages via the shared `parseParams()` 
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a two-variable categorical dataset | `dataset=ask` |
+| `dataset` | string | Pre-load a two-variable categorical dataset | `dataset=ask` (the 3×2 iPod disclosure experiment, χ² = 40.13, df 2) |
 
 **Compatible Datasets:** Datasets where `hasNumeric === false`, `hasCategorical === true`, and there are 2+ categorical variables. Includes: `sex_discrimination`, `opportunity_cost`, `cpr`, `yawn`, `ask`, `diabetes2`, `lizard_habitat`, `immigration`, `heart_transplant`, `malaria`, `migraine`, `fish_oil_18`, `mammogram`, `resume`, `ucb_admit`, `cards`, `burger`, `dream`, `biontech_adolescents`, `sinusitis`, `smallpox`, `smoking`, `drug_use`
 
@@ -396,6 +447,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 | `dataset` | string | Pre-load a categorical dataset | `dataset=medical_consultant` |
 | `seed` | string | Deterministic seed | `seed=exam2q3` |
 | `ci` | integer | Confidence level | `ci=95` |
+| `order` | string | `swap` reads the difference the other way round (default: `second − first`). A **⇅ Reverse** control beside the stated order does the same live, and flips a one-sided alternative with the sign so the p-value is unchanged. | `order=swap` |
 | `pills` | string | Which proportions the chart's three labels show: `target` (default — the 0.025 / 0.95 / 0.025 the level asks for, boundary columns split) or `actual` (the realized shares, whole columns). Percentile method only; `ci_method=se` and `ci_method=bca` always count what they hold. The results panel reports the realized coverage when it differs: behind *Detailed* for granularity, in plain view when a bound is pinned to the smallest/largest resample. | `pills=actual` |
 
 **Compatible Datasets:** Datasets with `type === 'bootstrap_prop'`. Includes: `medical_consultant`, `transplant_survival`, `stent30`
@@ -408,7 +460,7 @@ All simulation pages share a common architecture (via `sim-app.js` or standalone
 
 **Path:** `simulate/bootstrap-paired/`
 **Category:** Simulate
-**Description:** Bootstrap confidence interval for paired mean differences. Computes differences (var1 - var2) for each pair, then bootstraps the differences. Shows mechanism strip with paired data and the resampled differences.
+**Description:** Bootstrap confidence interval for paired mean differences. Computes differences (`second − first`, i.e. the second selected column minus the first) for each pair, then bootstraps the differences. The page names the order it is using and offers a ⇄ to reverse it. (This line read `var1 - var2` until 2026-10-17 and was wrong; the behaviour is unchanged.) Shows mechanism strip with paired data and the resampled differences.
 **Concepts:** Paired data, mean difference, bootstrap CI for paired differences, dependent samples
 
 **URL Parameters:**
@@ -561,6 +613,7 @@ button changes that). A colour key under the strip names both outcomes.
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
+| `ask` | string | **Inquiry posture** — hand decisions back: `null`, `tail`, `stat`, or `all`. The tool simulates but will not report a p-value until the student states the null, chooses a tail and types the test statistic. A wrong entry is counted where it was aimed, not corrected. One step per problem. | `ask=stat` |
 | `dataset` | string | Pre-load a categorical dataset | `dataset=medical_consultant` |
 | `p` | float | Null hypothesis proportion | `p=0.10` |
 | `direction` | string | Alternative: `less`, `greater`, or `twosided` | `direction=less` |
@@ -608,6 +661,7 @@ button changes that). A colour key under the strip names both outcomes.
 | `dataset` | string | Pre-load a paired dataset | `dataset=textbooks` |
 | `seed` | string | Deterministic seed for reproducibility | `seed=exam2q1` |
 | `direction` | string | Alternative: `less`, `greater`, or `two-sided` | `direction=less` |
+| `order` | string | `swap` reads the difference the other way round (default: `second − first`). A **⇅ Reverse** control beside the stated order does the same live, and flips a one-sided alternative with the sign so the p-value is unchanged. | `order=swap` |
 
 **Compatible Datasets:** Datasets with `type === 'paired'`. Includes: `textbooks`, `hsb2_read_write`, `friday_traffic`, `helium`, `twins`, `prison`
 
@@ -626,7 +680,7 @@ button changes that). A colour key under the strip names both outcomes.
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` |
+| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` (iPod disclosure, 3×2) |
 | `seed` | string | Deterministic seed | `seed=demo` |
 
 **Imported data:** the two columns are chosen by the shared variable picker (`js/variable-picker.js`), which skips row-label columns like `id` and shows a selector whenever there is a choice. Bundled datasets use their own metadata.
@@ -905,10 +959,11 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a paired dataset | `dataset=textbooks` |
+| `order` | string | `swap` reads the difference the other way round (default: `var1 − var2` on the first two numeric columns). A **⇅ Reverse** control beside the stated order does the same live. | `order=swap` |
 
 **Compatible Datasets:** Datasets with `type === 'paired'`. Same as Bootstrap: Paired Differences.
 
-**Textbook Integration Notes:** Use for Ch. 21 (paired data). The variable selectors let students choose which variable is "before" and which is "after," reinforcing the direction of the difference.
+**Textbook Integration Notes:** Use for Ch. 21 (paired data). The variable selectors let students choose which variable is "before" and which is "after," reinforcing the direction of the difference; a readout names the current order and **⇅ Reverse** reverses both slots at once (flipping a one-sided alternative with it, so the p-value does not move).
 
 ---
 
@@ -961,7 +1016,7 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` |
+| `dataset` | string | Pre-load a categorical dataset | `dataset=ask` (iPod disclosure, 3×2) |
 
 **Compatible Datasets:** Datasets with `type === 'chisq'` or two-variable categorical data.
 
@@ -1059,7 +1114,7 @@ All inference pages compute test statistics, p-values, and confidence intervals 
 
 Estimation-only companions to the hypothesis-test pages above, under `inference/estimate/`. They mirror how the simulation side splits bootstrap (CI) from randomization (test): **no hypotheses and no p-value** — the student sets a confidence level (number box, 90/95/99 preset pills, or by **dragging the critical values** on a standardized t- or z-curve) and reads the interval, worked out. The curve reuses the distribution-calculator marker layer (editable probability pills, editable ±critical-value axis boxes, snap points at common levels) via the shared `js/critical-value-figure.js`. Each page cross-links to its bootstrap CI counterpart and a conditions check. The combined test-and-CI pages above stay live in parallel.
 
-Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel inputs (paste, file, summary) as the matching test page. Confidence level is a UI control, not a URL parameter.
+Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel inputs (paste, file, summary) as the matching test page. Confidence level is a UI control, not a URL parameter. The paired page also takes **`order=swap`** to read the difference the other way round than its `var1 − var2` default, and shows a `difference = …` readout with a ⇄ that reverses it.
 
 | Page | Path | Parameter (population) | Distribution / df |
 |------|------|------------------------|-------------------|
@@ -1078,11 +1133,96 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 ## Conceptual Demonstrations
 
+### Confidence Intervals by Repeated Sampling
+
+**Path:** `conceptual/population-ci/`
+**Category:** Conceptual
+**Description:** the Sampling Distribution Lab's three tiers — population, one sample, the distribution of the statistic — built from the **same shared parts** (`.lab-layout` / `.chart-panel` / `.stats-row` / the standard generate bar, all in `css/style.css`), with one addition: **every sample gets a confidence interval, and every dot is coloured by whether that interval caught μ.** The interval is the one a student would actually compute, x̄ ± t*·s/√n using that sample's own s, so the **widths differ from dot to dot** and the coverage lands *near* the stated level rather than exactly on it. Blue caught μ, orange missed; mostly the misses are far from μ — *mostly*, because an unluckily small s makes a narrow interval that can miss from close by. Hovering a dot puts that sample in the One sample tier with its interval drawn beneath the axis. Changing the confidence level **re-measures the same samples** rather than resampling, so wider-means-more-hits is watched rather than asserted.
+**The control that carries the lesson:** **Hide μ**. With μ hidden the page *cannot* colour a dot or count a hit — not as a teaching choice but as a fact, because nothing knows which intervals worked. That is the reader's real situation: one interval, no μ, no way to check. Revealing snaps the colours back: yours was one colour or the other all along, and hiding μ only removed your ability to see it — which is why the 95% is a claim about the *method*.
+**Concepts:** confidence interval as statistic ± margin, t interval with estimated s, coverage as the success rate of a recipe, why the level is not a probability about your interval, sampling distribution of x̄, standard error (SD of the x̄'s vs σ/√n), the cost of higher confidence
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `shape` | string | Population shape: `normal`, `right-skewed` (default), `left-skewed`, `uniform`, `bimodal` | `shape=bimodal` |
+| `n` | integer | Sample size, 2–200 (default 25) | `n=40` |
+| `level` | integer | Confidence level: `90`, `95` (default), `99` | `level=99` |
+| `samples` | integer | Draw this many on load (capped at 400, so every dot stays hoverable) | `samples=100` |
+| `parameter` | string | `hidden` opens with μ already hidden — the "you only get one sample" framing, with a Reveal button | `parameter=hidden` |
+| `seed` | string | PRNG seed — the population and the draws both reproduce | `seed=lecture` |
+| `mode` | string | `present` hides the student prompt | `mode=present` |
+
+**Compatible Datasets:** N/A (generated populations, shared with the Sampling Distribution Lab via `js/populations.js`)
+
+**Instructor Guide:** `conceptual/population-ci/guide.html`
+
+**Textbook Integration Notes:** This is coverage drawn **on the sampling distribution**, where `conceptual/ci-coverage/` draws it as a stack of interval bars. The two are worth linking to each other: the stack shows the intervals, this shows *which samples* produce the misses — and the colouring makes the answer visible. Natural order is sampling distributions → here → `conceptual/bootstrap-shift/` (why a bootstrap may stand in for this sampling at all). For a lecture, open with `?parameter=hidden` and reveal μ at the moment the point lands.
+
+---
+
+### Galton Board
+
+**Path:** `conceptual/galton-board/`
+**Category:** Conceptual
+**Description:** A ball meets *n* rows of pegs and goes right at each with probability *p*; the bin it lands in **is** the number of rights, so the pile that builds underneath is a Binomial(*n*, *p*) distribution being drawn one ball at a time. The **exact binomial** is overlaid in purple, scaled to the number of balls dropped (so "the pile is growing into the curve" is a fair comparison and not two y-axes that happen to agree), and the **normal approximation** (mean *np*, SD √(npq)) can be switched on in orange. +1 and +10 animate; +100 and +1000 land directly, because a hundred balls at once is a smear; ▶ runs a steady stream. Changing *n* or *p* clears the board.
+**Two boards, and the comparison is the content.**
+- **Ideal** decides each bounce with a seeded coin and *then* draws the path, so the counts are **exactly** Binomial(*n*, *p*). This is the board to link when a chapter means "here is the binomial". The motion is still honest (projectile arcs, a squash at contact) but nothing is simulated. It also allows *p* ≠ 0.5, which no physical board can do.
+- **Physical** is a real little world: a full field of pins, a hopper pouring beads at the top, gravity, bounces off the pins and off each other. Nothing decides where a bead lands — it falls, gets knocked about, and comes out of the bottom of the field somewhere; where it comes out is what the bars underneath count. The plume visibly widens as it falls and stops widening before the bottom, which is the distribution being drawn in beads before anything is counted. **The histogram is not binomial** — and the sliders each break a different assumption the model makes: *peg size* and *bead size*, which together set the clearance between two pins relative to the bead (a bead much smaller than the gap falls through undeflected and stops making *n* decisions); *bounciness* (a lively bead travels sideways across several pins, or back upward); and **beads hit each other** (this breaks *independence between beads*, the assumption students nod past fastest — pour with it off, then on, and compare). The pins are also a few per cent out of true, from the seed, as a hand-built board's are: every seed is a slightly different board, worth a spread of roughly 1.45–2.05 against a √(npq) of 1.73 at *n* = 12. A **slow motion** toggle quarters the speed without changing the physics. A line under the board reports how far the observed spread has drifted from √(npq), and deliberately says nothing before 60 beads, because a 25% gap at *n* = 10 is ordinary noise rather than a broken model.
+
+**Both modes are reproducible.** `?seed=` gives the identical run, physics included: the world advances in fixed steps and balls are released against *its* clock rather than the wall clock, so a slow machine produces the same pile (verified identical at 1× and 4× CPU throttle).
+**Concepts:** Binomial distribution, number of successes in n trials, binomial coefficient as "how many routes lead here" (the pegs build Pascal's triangle), mean np and SD √(npq), normal approximation to the binomial and when it fails (small np), skew when p ≠ 0.5
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `rows` | integer | Rows of pegs = *n*, 3–20 (default 12) | `rows=20` |
+| `p` | float | Chance of bouncing right, 0.05–0.95 (default 0.5) | `p=0.15` |
+| `balls` | integer | Drop this many on load | `balls=1000` |
+| `normal` | string | `true` shows the normal approximation on load | `normal=true` |
+| `exact` | string | `false` hides the exact binomial curve | `exact=false` |
+| `board` | string | `physical` opens the real-physics board; anything else is the ideal one. (Not `mode`, which is reserved site-wide for `discover`/`present`.) | `board=physical` |
+| `seed` | string | PRNG seed — the same sequence of balls every time, in **both** modes | `seed=lecture` |
+| `mode` | string | `present` hides the student prompt | `mode=present` |
+
+**Compatible Datasets:** N/A (generated)
+
+**Instructor Guide:** `conceptual/galton-board/guide.html`
+
+**Textbook Integration Notes:** Probability chapter, beside the binomial itself; pairs with `distribution/binomial/` (the same distribution as numbers rather than a pile). The link worth having for the **normal approximation conditions** is `?rows=10&p=0.15&balls=1000&normal=true` — the pile is visibly skewed and the normal curve visibly wrong, so np ≥ 10 arrives as something a student can see rather than a rule to memorise.
+
+---
+
+### Law of Large Numbers
+
+**Path:** `conceptual/law-of-large-numbers/`
+**Category:** Conceptual
+**Description:** The running value of repeated independent trials, traced against the number of trials, with a dashed line at what the model expects. Two experiments behind a toggle: **coin tosses** (proportion of heads → 0.5) and **die rolls** (average roll → 3.5). Trials are added in batches of 1 / 10 / 100 / 1000, or continuously with **play / stop**. Play is paced by the **clock, not by animation frames**, so it runs at the same trials-per-second on any machine or refresh rate (verified at 1×, 4× and 10× CPU throttling), and it **accelerates with n** — about 6/s at the start, 1,000 trials in nine seconds, 10,000 in fifteen — because the early trials each move the line visibly and the later ones do not. Two options, both **off by default**: *Spread out the early trials* puts the trial count on a log scale (on a linear axis to 1000 the first twenty trials occupy 2% of the width and cannot be seen); *Also show the running total* draws heads − tails (dice: total − 3.5 per roll) from the **same** trials in a second panel. That second trace is the page's distinctive piece — the proportion settles while the total typically drifts further from zero, which is the direct refutation of the "law of averages". A **tape of the last ten outcomes** runs under the chart — H/T chips for the coin, pip faces for the die, the newest ringed — because the trace is a running average and a running average is an abstraction over the thing being done; the tape is the thing being done. A single added trial flips or tumbles; a batch of 1000 does not, because at that rate a per-outcome animation is a strobe. The reflection prompt and its answer follow the chosen experiment. Fully seeded, so a link reproduces a lecture exactly.
+**Concepts:** Law of large numbers, long-run relative frequency, expected value, convergence of a sample proportion/mean, independence, the gambler's fallacy / "law of averages" misconception, why a proportion settles (growing denominator) while a count does not
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `exp` | string | Which experiment to open on: `coin` (default) or `die` | `exp=die` |
+| `n` | integer | Pre-run this many trials on load, so a link opens with the picture already made (capped at 200,000) | `n=1000` |
+| `seed` | string | PRNG seed — the same seed replays the identical sequence of trials | `seed=lecture3` |
+| `mode` | string | `present` hides the student prompt | `mode=present` |
+
+**Compatible Datasets:** N/A (generated trials)
+
+**Instructor Guide:** `conceptual/law-of-large-numbers/guide.html` — printable talking points, a run-sheet, the "is a coin due?" discussion question with its answer, and where the page fits.
+
+**Textbook Integration Notes:** Natural home is the **probability** chapter, *before* sampling distributions — it establishes what "long-run probability" means, which the sampling-distribution chapters then build on. Pairs with `conceptual/sampling-lab/` (what happens to the *spread* of a statistic as n grows) and `explore/random-sequence/` (real randomness is clumpier than people expect — the same intuition failure that makes a coin feel "due"). The running-total panel is the one to link for any exercise about the gambler's fallacy.
+
+---
+
 ### Sampling Distribution Lab
 
 **Path:** `conceptual/sampling-lab/`
 **Category:** Conceptual
-**Description:** Research-backed redesign of the sampling-distribution demonstrator, covering **both means (x̄) and proportions (p̂)**. A three-tier view — population → the current sample → the sampling distribution of the statistic — makes "a distribution *of statistics*" concrete: each drawn sample collapses to one value that drops into the building distribution. Designed to avoid the documented "Watkins trap": it foregrounds spread and shape vs. n (SD of the statistic compared to σ/√n or √(p(1−p)/n)) and deliberately omits the misleading mean-of-sample-means-vs-n view. A **Freeze/compare** control pins one sample size and overlays a second on a shared axis, separating "more samples (same distribution)" from "larger n (different, narrower distribution)." Proportion mode adds a p slider and builds the sampling distribution of p̂.
+**Description:** Research-backed redesign of the sampling-distribution demonstrator, covering **both means (x̄) and proportions (p̂)**. A three-tier view — population → the current sample → the sampling distribution of the statistic — makes "a distribution *of statistics*" concrete: each drawn sample collapses to one value that drops into the building distribution. Designed to avoid the documented "Watkins trap": it foregrounds spread and shape vs. n (SD of the statistic compared to σ/√n or √(p(1−p)/n)) and still omits the misleading mean-of-sample-means-**vs-n** view. **The centre itself is now marked** (2026-10-21): the mean of the statistics is drawn beside μ/p on the sampling distribution, so unbiasedness is visible. That is safe where the number is not — the drawn gap is gap÷spread = 1/√k, independent of n, so the two markers coincide whatever n is, while the raw difference falls ~7× from n=2 to n=100. The figure therefore lives behind **Detailed** with its own Monte-Carlo margin, where the verdict reads "indistinguishable from μ" at every n, and the note ties tightening to drawing *more samples* rather than bigger ones. A **Freeze/compare** control pins one sample size and overlays a second on a shared axis, separating "more samples (same distribution)" from "larger n (different, narrower distribution)." Proportion mode adds a p slider and builds the sampling distribution of p̂.
 **Concepts:** Sampling distribution as a distribution of statistics, Central Limit Theorem, standard error (σ/√n and √(p(1−p)/n)), effect of sample size vs. number of repetitions, np≥10 / n(1−p)≥10 normality condition for p̂
 
 **URL Parameters:**
@@ -1147,7 +1287,7 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 
 **Path:** `conceptual/ci-coverage/`
 **Category:** Conceptual
-**Description:** Confidence interval coverage simulator. Draws repeated samples from a known population, builds an interval for each, and visualizes which intervals capture the true population mean. Shows running coverage rate. Supports population shapes (normal, right-skewed, uniform), adjustable sample size and confidence level (90%, 95%, 99%). **Four interval methods** are selectable and directly comparable on the same population: the classical **t-interval**, and three bootstrap intervals — **percentile**, **±z·SE**, and **BCa** (600 resamples per sample; the BCa acceleration uses the shared, scipy-validated `jackknife1`/`bcaCI` in `js/ci-method.js`).
+**Description:** Confidence interval coverage simulator. Draws repeated samples from a known population, builds an interval for each, and visualizes which intervals capture the true population mean. Shows running coverage rate. Supports population shapes (normal, right-skewed, uniform), adjustable sample size and confidence level (90%, 95%, 99%). Each bar carries a **pale bead at its sample mean**, so the interval visibly hangs around x̄ and a miss can be read as "this sample's mean landed too far out" (the mark was always drawn, but filled in the bar's own colour and therefore invisible — fixed 2026-10-08). **Four interval methods** are selectable and directly comparable on the same population: the classical **t-interval**, and three bootstrap intervals — **percentile**, **±z·SE**, and **BCa** (600 resamples per sample; the BCa acceleration uses the shared, scipy-validated `jackknife1`/`bcaCI` in `js/ci-method.js`).
 **Concepts:** Confidence interval interpretation, coverage rate, "95% of intervals capture the true parameter," effect of confidence level on interval width, effect of sample size on interval width, **how coverage differs by construction method**, under-coverage of bootstrap intervals at small n from skewed populations, what BCa's bias/skew correction does and does not buy
 
 **URL Parameters:**
@@ -1189,6 +1329,37 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 **Instructor guide:** `conceptual/two-se/guide.html` — printable, with talking points, the four moves to make in ~8 minutes, three misconceptions and the link recipes.
 
 **Textbook Integration Notes:** For the confidence-interval chapter (Ch. 9), as the motivation **before** any interval is computed — it answers "why would adding and subtracting 2 SE have anything to do with 95%?" Sequence it after `conceptual/sampling-lab/` has established what a sampling distribution is. Drag slowly out past `p+2SE` and stop on the frame where both verdicts flip together; that simultaneity is the argument. Then switch to 99.7% to make the precision/confidence trade visible. Pairs with `conceptual/bootstrap-shift/` (the same argument for percentile intervals, with real data on the axis) and `conceptual/ci-coverage/` (what the coverage actually comes out to). The one thing to say out loud: this figure assumes SE is **known**, and in practice it is estimated — which is exactly why real coverage runs under the advertised rate at small *n*.
+
+---
+
+### What Estimating the Standard Error Costs
+
+**Path:** `conceptual/why-t-star/`
+**Category:** Conceptual
+**Description:** Where the multiplier in a confidence interval comes from, and what substituting an *estimate* of the standard error costs. **Two parameter families behind a toggle** (`?param=`), because the same picture carries both substitutions — σ → *s* for a mean, p → p̂ for a proportion.
+
+**Mean mode.** What substituting *s* for σ costs. The axis is marked in **true** standard errors (σ/√n), so all three candidate margins can be laid against one ruler: `z*σ/√n` (right, and uncomputable), `z*s/√n` (computable, and too short) and `t*s/√n`. A radio list shows all three lengths at once with a reaches/misses verdict for the current x̄, so the comparison does not depend on clicking back and forth and remembering. Sliders set **n** (which drives t*) and **this sample's s as a fraction of σ**, and a draggable x̄ moves the interval. **Draw a sample** takes *n* real observations, computes x̄ and *s* from them, and scores all three recipes on the same draws — the tally is the actual argument, since one sample proves nothing. A fourth column gives each recipe's exact long-run coverage; for `z*s/√n` that is 2·F_t(z*, n−1) − 1, which is below the advertised level at every *n*. Built from Todd Will's Mathematica demonstration (via Jeff, Oct 2026); `?n=13&s=0.9` reproduces his board almost exactly, because t*(12 df) really is 1.112 × z*.
+**Concepts:** Why t* rather than z*; the cost of estimating the standard error; the t distribution as the consequence of a random denominator; degrees of freedom and t* → z* as n grows; why the correction is a small-sample matter; coverage as a long-run rate rather than a property of one interval
+
+**The thing it is careful about.** t* does **not** repair the *s* you happen to have — it is one fixed number for a given n and level and cannot know which way your *s* went. In a sample where *s* came in low the t interval is still too short; where it came in high it is longer than it needed to be. What t* fixes is the **rate**. The s-slider and the tally exist so that a student cannot come away with "t* corrects for s being small", which is false and is what a demo with s pinned at 0.9σ teaches. Nor is the bias in *s* the mechanism: at n = 13, E[s]/σ ≈ 0.979 (2% low) while t*/z* = 1.112 (11% bigger). The other nine points are the **variability** of s.
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `ci` | string | Confidence level: `90`, `95` (default), `99`. Alias `level`. | `?ci=99` |
+| `n` | integer | Sample size, 3–60 (default 13). Drives t* and the df in the coverage column. | `?n=5` |
+| `s` | float | This sample's *s* as a fraction of σ, 0.3–2 (default 0.9 — Todd's). | `?s=1.25` |
+| `xbar` | float | Where the sample mean landed, in **true** SE from μ, −3.5 to 3.5 (default 1.9). Alias `z`. | `?xbar=2.1` |
+| `me` | integer | Which margin is drawn: `1` = z*σ/√n (default), `2` = z*s/√n, `3` = t*s/√n. | `?me=2` |
+| `seed` | string | PRNG seed for **Draw a sample** / **Draw 100**. | `?seed=lecture7` |
+| `mode` | string | `present` hides the student reflection prompt (global parameter). | `?mode=present` |
+
+**Compatible Datasets:** N/A — generated. σ = 1 and μ = 0 internally, so the axis is in true SE and every margin is directly comparable.
+
+**Instructor guide:** `conceptual/why-t-star/guide.html` — printable, with the five moves in ~10 minutes, a coverage table at n = 5 / 13 / 40, the misconception the demo creates if you stop early, and the link recipes.
+
+**Textbook Integration Notes:** Immediately before the first one-sample t interval, and immediately after `conceptual/two-se/` — that page establishes the capture argument with the multiplier taken for granted, and this one asks where the multiplier comes from. The link worth having is `?n=5&me=2`: a "95%" interval that captures 88% of the time, which makes the correction feel necessary rather than ceremonial. Then `?n=40&me=2` (94.3%) for why nobody worries about it in a large sample. Pairs with `distribution/t/` for looking t* up and `conceptual/ci-coverage/` for the same rate measured on real data.
 
 ---
 

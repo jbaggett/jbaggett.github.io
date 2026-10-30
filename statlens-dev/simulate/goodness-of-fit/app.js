@@ -17,7 +17,7 @@ applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
-import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
+import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
@@ -237,7 +237,7 @@ function showDataLoaded() {
 
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
-    const bigBtn = genBtns[genBtns.length - 1];
+    const bigBtn = autoRunButton(genBtns);
     requestAnimationFrame(() => bigBtn && bigBtn.click());
   }
   setTimeout(() => {
@@ -252,19 +252,59 @@ function showDataLoaded() {
  * with a dashed marker at the expected count so deviation from H₀ is visible.
  * @param {number[]} counts
  */
+/**
+ * One row per category: the observed count as a bar, the expected count as a
+ * dashed tick, and — new — what that gap COSTS, (o−e)²/e.
+ *
+ * χ² was a number that arrived from nowhere. The bars showed that a category
+ * was off its expected count, and the statistic appeared underneath, but
+ * nothing connected the two: a reader could not see that one category was
+ * carrying the whole statistic while another contributed nothing. Todd Will's
+ * sketch (via Jeff, 2026-10-30) decomposes it — on his example χ² = 4.100 is
+ * Red 2.25 + Blue 0.25 + Green 1.60 + Yellow 0.00 — and the column is the part
+ * of that sketch that needs no animation at all.
+ *
+ * The contribution is also the bar's own explanation, which is why it goes
+ * here rather than in a separate table: same row, the deviation and its price.
+ */
 function miniBarsHTML(counts) {
   const maxVal = Math.max(...counts, ...expected, 1);
-  let html = '<div class="gof-bars">';
+  // A header, so the last column is not an unexplained number. `tex()` is not
+  // used: this is inside a panel that is rebuilt on every draw, and the page's
+  // typesetting pass has long since run — the same trap the GOF conditions
+  // panel fell into (Todd, 2026-10-28).
+  let html = '<div class="gof-bars">'
+    + '<div class="gof-bar-row gof-bar-head" aria-hidden="true">'
+    + '<span></span><span></span>'
+    + '<span class="gof-bar-val">obs</span>'
+    + '<span class="gof-bar-contrib-head">(o\u2212e)\u00b2/e</span>'
+    + '</div>';
   for (let i = 0; i < categories.length; i++) {
     const w = (counts[i] / maxVal) * 100;
     const ew = (expected[i] / maxVal) * 100;
+    const e = expected[i];
+    const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
+    // Shade the contribution by its share of the total, so the category
+    // carrying the statistic is findable without reading every number.
+    const share = chiSqOf(counts) > 0 ? contrib / chiSqOf(counts) : 0;
     html += `<div class="gof-bar-row">
       <span class="gof-bar-cat" title="${esc(categories[i])}">${esc(categories[i])}</span>
       <span class="gof-bar-track"><span class="gof-bar-fill" style="width:${w.toFixed(1)}%"></span><span class="gof-bar-exp" style="left:${ew.toFixed(1)}%" title="expected ${expected[i].toFixed(1)}"></span></span>
       <span class="gof-bar-val">${counts[i]}</span>
+      <span class="gof-bar-contrib" style="--share:${share.toFixed(3)}" title="(${counts[i]} − ${e.toFixed(1)})² / ${e.toFixed(1)} = ${contrib.toFixed(2)}">${contrib.toFixed(2)}</span>
     </div>`;
   }
   return html + '</div>';
+}
+
+/** χ² for a set of counts against the page's expected counts. */
+function chiSqOf(counts) {
+  let t = 0;
+  for (let i = 0; i < counts.length; i++) {
+    const e = expected[i];
+    if (e > 0) t += ((counts[i] - e) ** 2) / e;
+  }
+  return t;
 }
 
 // ─── Generate ───

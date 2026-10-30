@@ -36,6 +36,8 @@ const varSelectorsDiv = document.getElementById('var-selectors');
 const groupVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('group-var-select'));
 const responseVarSelect = /** @type {HTMLSelectElement} */ (document.getElementById('response-var-select'));
 const groupOrderEl = document.getElementById('group-order');
+const groupOrderLabel = document.getElementById('group-order-label');
+
 const swapGroupsBtn = document.getElementById('swap-groups');
 const groupLegendEl = document.getElementById('group-legend');
 
@@ -47,7 +49,23 @@ let group2 = [];
 let group1Name = 'Group 1';
 let group2Name = 'Group 2';
 /** Whether the two groups have been swapped (persists across recomputes). */
+// `?order=swap` starts the page reading the difference the other way round
+// than its default (the order the data presents), so it means "reverse THIS
+// page" rather than naming an order — the only way to add the parameter
+// without changing what any existing link meant.
+//
+// It is a ONE-SHOT, consumed by the first load. Loading fresh data resets the
+// order to natural, which is right for a reader who just opened a new file but
+// would otherwise wipe the link's instruction before it ever applied.
+// (REQ-079, extended to the two-group pages 2026-10-18.)
+let pendingOrderSwap = new URLSearchParams(window.location.search).get('order') === 'swap';
 let groupsSwapped = false;
+
+/** Fresh data starts in natural order — unless a link asked otherwise, once. */
+function resetGroupOrder() {
+  groupsSwapped = pendingOrderSwap;
+  pendingOrderSwap = false;
+}
 let dataPrecision = 1;
 
 /** Cached parsed data for variable re-selection. @type {{ headers: string[], types: string[], data: Array<Record<string,any>> } | null} */
@@ -157,7 +175,7 @@ function applySummaryInputs(quiet) {
   );
 
   summaryResult = { xbar1, s1, n1, xbar2, s2, n2 };
-  if (groupOrderEl) groupOrderEl.hidden = false;
+  if (groupOrderEl) { groupOrderEl.hidden = false; syncOrderLabel(); }
   return true;
 }
 
@@ -168,8 +186,27 @@ for (const id of ['input-xbar1', 'input-s1', 'input-n1', 'input-xbar2', 'input-s
   });
 }
 
-// Swap Group 1 ↔ Group 2 — flips the sign of the difference; the whole display
+// ⇅ Reverse — flips the sign of the difference; the whole display
 // re-renders from the swapped state.
+/** Say which way round the difference is being taken. */
+function syncOrderLabel() {
+  const order = `${group1Name} − ${group2Name}`;
+  if (groupOrderLabel) groupOrderLabel.textContent = order;
+  // Also the button's name: the adjacent span is a separate screen-reader
+  // stop, so landing on the button alone should still say what it reverses.
+  if (swapGroupsBtn) {
+    swapGroupsBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+  }
+}
+
+/** A one-sided alternative is a claim about a SIGNED difference, so it travels
+ *  with the order: "> 0" on A − B is "< 0" on B − A. Without this, reversing
+ *  the groups moved the p-value from p to 1 − p while looking like a relabel. */
+function flipAlternative() {
+  const next = { less: 'greater', greater: 'less' }[altSelect.getValue()];
+  if (next) altSelect.setValue(next);
+}
+
 if (swapGroupsBtn) {
   swapGroupsBtn.addEventListener('click', () => {
     if (summaryActive()) {
@@ -183,7 +220,9 @@ if (swapGroupsBtn) {
       groupsSwapped = !groupsSwapped;
       extractGroups();
     }
-    announce(`Swapped groups: now ${group1Name} − ${group2Name}.`);
+    flipAlternative();
+    syncOrderLabel();
+    announce(`Difference now reads ${group1Name} − ${group2Name}.`);
   });
 }
 
@@ -264,7 +303,7 @@ function loadFromParsed(parsed, _sourceName) {
  */
 function showVarSelectors(catCols, numCols) {
   if (!varSelectorsDiv || !groupVarSelect || !responseVarSelect) return;
-  groupsSwapped = false;  // fresh data starts in natural order
+  resetGroupOrder();
 
   // Only show selectors if there are multiple options
   const needSelector = catCols.length > 1 || numCols.length > 1;
@@ -330,7 +369,7 @@ function extractGroups() {
   }
 
   dataPrecision = Math.max(detectPrecision(group1), detectPrecision(group2));
-  if (groupOrderEl) groupOrderEl.hidden = false;
+  if (groupOrderEl) { groupOrderEl.hidden = false; syncOrderLabel(); }
   showDataSummary();
   runAnalysis();
 }
@@ -356,7 +395,7 @@ function clearData() {
   summaryResult = null;
   currentContext = null;
   currentSourceName = '';
-  groupsSwapped = false;
+  resetGroupOrder();
   if (dataPreview) dataPreview.hidden = true;
   if (varSelectorsDiv) varSelectorsDiv.hidden = true;
   if (groupOrderEl) groupOrderEl.hidden = true;

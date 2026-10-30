@@ -112,6 +112,11 @@ export function drawMechDotplot(container, values, opts = {}) {
   // Anchor the bin grid to the DATA's own min (not the fixed domain), so a uniform
   // shift of the values (observed → null) preserves the exact stacking — it just
   // translates. A fixed-domain grid would re-bin and change the apparent shape.
+  //
+  // ⚠ A caller that wants the data's own step (see `commonStep`) passes it as
+  // `binWidth` with `binOrigin: 0`. Applying it HERE for every caller re-binned
+  // the two-group shuffle mechanism as well, and `layout-tiers` and
+  // `shuffle-pool-deal` both failed on the geometry. (2026-10-19.)
   const binOrigin = opts.binOrigin ?? (values.length ? Math.min(...values) : undefined);
   const frame = drawDotplot(container, values, {
     ...COMPACT,

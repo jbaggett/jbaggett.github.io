@@ -11,7 +11,7 @@ import { gridCentredOn } from './grid.js';
 import * as d3Scale from 'd3-scale';
 import * as d3Selection from 'd3-selection';
 import * as d3Axis from 'd3-axis';
-import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat } from './chart-utils.js';
+import { createChart, addAxes, drawHorizontalGridlines, formatTick, valueFormat, setLabelText, deoverlapLabels, autoReduceTicks, prefersReducedMotion, hasD3Transition, TRANSITION_MS, attachTooltip, countTickFormat, addMinorTicks} from './chart-utils.js';
 import { sturgesBins } from './histogram.js';
 
 /** Default dot fill — IMS blue. */
@@ -91,6 +91,66 @@ export function dotplotBins(values) {
  * @param {number} [options.binOrigin] - Locked bin origin for grid alignment (default: domain[0])
  * @returns {{ dots: Array<{value: number, binCenter: number, stackIndex: number}>, binWidth: number, maxStack: number, domain: [number, number] }}
  */
+/**
+ * The step the data is actually recorded in, or null if it has none.
+ *
+ * A dotplot of granular values was being binned on a grid unrelated to that
+ * granularity. On `caosexam` the paired differences are all multiples of 2.5 —
+ * 5, 7.5, 15, 17.5, 25 — and `span / numBins` gave a width of **1.54**, so the
+ * five columns snapped to bin indices 0, 2, 6, 8, 13 instead of spacing that
+ * reflects 2.5, 7.5, 2.5, 7.5. The picture misrepresented the gaps.
+ *
+ * It also made the picture depend on which way round a difference was read:
+ * negating the values re-rounded them against the same arbitrary grid, giving
+ * 0, 5, 6, 11, 13 — not the mirror of 0, 2, 6, 8, 13. Reversing "pretest −
+ * posttest" visibly re-spaced the stacks. (Jeff, 2026-10-19.)
+ *
+ * Using the data's own step fixes both at once: every distinct value gets its
+ * own column at its true position, and because the centres then sit on
+ * multiples of the step, negation maps centres onto centres — an exact mirror
+ * by construction. This is the same principle `discreteGridStep()` already
+ * applies to proportions, where the width is the gap between achievable
+ * outcomes.
+ *
+ * Returns null for genuinely continuous data, where the step is meaninglessly
+ * small and would ask for thousands of columns.
+ *
+ * ⚠ `computeDots` does NOT apply this by itself. Making it the default changed
+ * the binning of every chart in the app — three of this module's own tests
+ * caught it — and the complaint was about the mechanism panels, which is a far
+ * smaller surface. `drawMechDotplot` opts in; anything else that wants it asks.
+ *
+ * @param {number[]} values
+ * @param {number} [maxColumns] - give up beyond this many columns
+ * @returns {number|null}
+ */
+export function commonStep(values, maxColumns = 60) {
+  const uniq = [...new Set(values)].filter(Number.isFinite).sort((a, b) => a - b);
+  if (uniq.length < 2) return null;
+
+  // Work in scaled integers: a floating gcd on values like 7.5 accumulates
+  // noise and lands on a step a hair off, which snaps worse than no step.
+  let scale = 1;
+  for (let d = 0; d <= 6; d++) {
+    if (uniq.every(v => Math.abs(v * scale - Math.round(v * scale)) < 1e-6)) break;
+    scale *= 10;
+    if (d === 6) return null;   // not representable at a sane precision
+  }
+  const ints = uniq.map(v => Math.round(v * scale));
+  const gcd2 = (/** @type {number} */ a, /** @type {number} */ b) => {
+    while (b) { const t = a % b; a = b; b = t; }
+    return Math.abs(a);
+  };
+  let g = 0;
+  for (let i = 1; i < ints.length; i++) g = gcd2(g, ints[i] - ints[i - 1]);
+  if (g === 0) return null;
+
+  const step = g / scale;
+  if (!(step > 0)) return null;
+  const columns = (uniq[uniq.length - 1] - uniq[0]) / step + 1;
+  return columns <= maxColumns ? step : null;
+}
+
 export function computeDots(values, options = {}) {
   const n = values.length;
   if (n === 0) {
@@ -295,7 +355,7 @@ export function drawDotplot(container, values, options = {}) {
     && (forceColumns || (maxStack > 0 && maxStack * MIN_RADIUS * 2 > frame.height));
 
   // Y axis is implicit (stacking height) for dots; column mode gets a y-axis
-  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick);
+  const xAxis = d3Axis.axisBottom(xScale).tickFormat(formatTick).tickSizeOuter(0);
   const axes = d3Selection.select(frame.inner).select('.axes');
 
   /** @type {d3Scale.ScaleLinear<number,number>|null} */
@@ -314,6 +374,7 @@ export function drawDotplot(container, values, options = {}) {
       .attr('transform', `translate(0, ${frame.height})`)
       .call(xAxis);
     autoReduceTicks(xAxisG, xAxis);
+    addMinorTicks(xAxisG, xScale);
 
     // Faint vertical grid lines aligned to the rendered axis ticks
     const gridGroup = d3Selection.select(frame.inner).select('.data');
@@ -472,7 +533,31 @@ export function drawDotplot(container, values, options = {}) {
 const HIGHLIGHT_FILL = '#E07020';
 
 /** Pending highlight timeouts — cancelled on re-render to prevent stale animations. */
+/**
+ * Pending highlight reverts, each with the undo it was going to perform.
+ *
+ * A newly drawn dot is enlarged to `radius * 1.2` for 800ms so the eye catches
+ * it, and a timer shrinks it back. Cancelling that timer on the next render —
+ * which is what used to happen — DROPPED the shrink instead of performing it,
+ * so any re-render inside the 800ms window stranded every new dot at 1.2× its
+ * size. After a +100 batch that is every dot on the plot: measured on
+ * bootstrap-mean, dots of diameter 19.06px stacked 15.88px apart, overlapping
+ * by 3.2px in every column, and they never recovered. (Jeff, 2026-10-06: "the
+ * dots in that plot are too big and overlapping.")
+ *
+ * So a cancel now RUNS the revert it is cancelling.
+ * @type {Array<{id: ReturnType<typeof setTimeout>, undo: () => void}>}
+ */
 let pendingHighlightTimers = [];
+
+/** Cancel every pending highlight revert — and perform it, rather than lose it. */
+function flushHighlightTimers() {
+  for (const t of pendingHighlightTimers) {
+    clearTimeout(t.id);
+    try { t.undo(); } catch { /* the dots it referred to are already gone */ }
+  }
+  pendingHighlightTimers = [];
+}
 
 /**
  * Render dots into a D3 selection.
@@ -494,9 +579,9 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
   // to read (130.43333333333334) and the page has already said how it prints
   // this quantity — so honour that when it is supplied.
   const fmtValue = Number.isFinite(precision) ? valueFormat(precision) : (/** @type {number} */ v) => String(v);
-  // Cancel any pending highlight timers from previous render
-  for (const t of pendingHighlightTimers) clearTimeout(t);
-  pendingHighlightTimers = [];
+  // Cancel any pending highlight reverts from the previous render — and run
+  // them, so nothing is left at its enlarged size.
+  flushHighlightTimers();
   const shouldAnimate = animate && !prefersReducedMotion() && hasD3Transition();
   const extremeFill = optExtremeFill || fillColor || EXTREME_FILL;
   const baseFill = optBaseFill || fillColor || (isExtreme || splitRanks ? BODY_FILL : DOT_FILL);
@@ -525,6 +610,7 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
     .join('circle')
     .attr('cx', d => xScale(d.binCenter))
     .attr('cy', d => innerHeight - (d.stackIndex + 0.5) * radius * 2)
+    .attr('data-stat-index', (d, i) => i)
     .attr('r', radius)
     .attr('fill', normalFill)
     .attr('stroke', normalFill)
@@ -562,7 +648,8 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
       .attr('r', radius * 1.5);
     // Shrink back to normal size but keep orange fill — persists until next render
     // connects visually to the orange resample mean in the mechanism strip
-    pendingHighlightTimers.push(setTimeout(() => {
+    {
+      const undo = () => {
       selected.each(function() {
         if (reducedMotion) {
           // Keep a persistent dark border when requested, so the newest dot is
@@ -574,7 +661,9 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
           animateDotRevert(this, HIGHLIGHT_FILL, radius, 400, highlightStroke || undefined, highlightStroke ? 2 : 1);
         }
       });
-    }, 800));
+      };
+      pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+    }
   } else if (highlightIndices && highlightIndices.size > 0) {
     const selected = circles.filter((d, i) => highlightIndices.has(i));
     selected
@@ -582,7 +671,8 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
       .attr('stroke', '#000')
       .attr('stroke-width', 1.5)
       .attr('r', radius * 1.2);
-    pendingHighlightTimers.push(setTimeout(() => {
+    {
+      const undo = () => {
       selected.each(function(d) {
         if (reducedMotion) {
           this.setAttribute('fill', normalFill(d));
@@ -593,7 +683,9 @@ function renderDots(group, dots, xScale, innerHeight, radius, isExtreme, animate
           animateDotRevert(this, normalFill(d), radius, 400);
         }
       });
-    }, 800));
+      };
+      pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+    }
   }
 }
 
@@ -616,9 +708,9 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
   // A column's centre is a value; print it the way the page prints this
   // statistic, else the compact axis format it used before.
   const fmtValue = valueFormat(precision);
-  // Cancel any pending highlight timers from previous render
-  for (const t of pendingHighlightTimers) clearTimeout(t);
-  pendingHighlightTimers = [];
+  // Cancel any pending highlight reverts from the previous render — and run
+  // them, so nothing is left at its enlarged size.
+  flushHighlightTimers();
   // Aggregate dots by binCenter → count, and by how many of them are in the
   // region of interest.
   //
@@ -780,7 +872,8 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
     // Revert: for +1, keep last highlight persistent; for batches, fade out
     const reducedMotion = prefersReducedMotion();
     if (!isOneShot) {
-      pendingHighlightTimers.push(setTimeout(() => {
+      {
+        const undo = () => {
         if (reducedMotion) {
           hlLines.remove();
         } else {
@@ -789,12 +882,17 @@ function renderColumns(group, dots, xScale, yScale, innerHeight, isExtreme, high
             animateColumnRevert(el, 'transparent', 0, 400, () => el.remove());
           });
         }
-      }, 800));
+        };
+        pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+      }
     } else {
       // +1: shrink to normal width but keep orange — persists until next render
-      pendingHighlightTimers.push(setTimeout(() => {
+      {
+        const undo = () => {
         hlLines.attr('stroke-width', colWidth);
-      }, 800));
+        };
+        pendingHighlightTimers.push({ id: setTimeout(undo, 800), undo });
+      }
     }
   }
 

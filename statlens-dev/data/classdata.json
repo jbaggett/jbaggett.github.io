@@ -17,7 +17,7 @@
       "type": "numeric"
     }
   ],
-  "studyDescription": "An observational study of midterm exam scores from 169 students enrolled in three different lecture sections (a, b, c) of the same course. Students self-selected into lecture sections based on scheduling preferences.",
+  "studyDescription": "An observational study of midterm exam scores from 164 students enrolled in three different lecture sections (a, b, c) of the same course. Students self-selected into lecture sections based on scheduling preferences.",
   "variableDescriptions": {
     "lecture": "Lecture section the student was enrolled in: a, b, or c",
     "m1": "Student's midterm exam score (out of 100)"

@@ -10,7 +10,7 @@
   "steps": [
     {
       "instruction": "The **Population** panel shows a strongly **right-skewed** population. In Class Example 6.2 you saw that \\(\\bar{x}\\) is always centered at \\(\\mu\\) — now we watch its **shape**. The **Central Limit Theorem** claims that as the sample size \\(n\\) grows, the sampling distribution of \\(\\bar{x}\\) becomes **normal (bell-shaped)** *even when the population is skewed*. The tool is set to \\(n = 5\\).",
-      "observe": "Right now \\(n = 5\\) is tiny. Keep your eye on the **shape** of the bottom panel as we push \\(n\\) up."
+      "observe": "Right now \\(n = 5\\) is tiny. Keep your eye on the **shape** of the **Sampling distribution** panel as we push \\(n\\) up."
     },
     {
       "instruction": "**Before drawing, commit to a prediction.** You'll build the sampling distribution at \\(n=5\\), then \\(n=30\\), then \\(n=100\\), all drawn from this same skewed population.",

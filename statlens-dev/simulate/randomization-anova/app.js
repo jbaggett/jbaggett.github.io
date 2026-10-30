@@ -17,7 +17,7 @@ import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { fStat, mean, sd, formatStat, detectPrecision } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { drawBoxplot } from '../../js/boxplot.js';
-import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, initHelp, setPageTitle, gateBigBatches, capBatch, applySimulationCap} from '../../js/page-utils.js';
+import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, initHelp, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 
@@ -278,7 +278,7 @@ function showDataLoaded() {
   gateBigBatches(genBtns, totalN);
   if (plotOnly && !plotOnlyRan) {
     plotOnlyRan = true;
-    const bigBtn = genBtns[genBtns.length - 1];
+    const bigBtn = autoRunButton(genBtns);
     requestAnimationFrame(() => bigBtn && bigBtn.click());
   }
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Click a generate button to begin.</p>';
@@ -297,6 +297,16 @@ function showDataLoaded() {
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
   }
+
+  // REQ-069 (Todd): the axis, with the observed F marked, before any shuffle.
+  // F(df1, df2) centres near 1 and for a workable df2 behaves like χ²(df1)/df1,
+  // so (df1 + 4√(2·df1)) / df1 reaches past the bulk — widened when the
+  // observed F is further out. Closed-form rather than `fInv`, because this page
+  // carries no jStat and an axis range is not worth a CDN dependency.
+  const dfBetween = Math.max(1, groupNames.length - 1);
+  const nullReach = (dfBetween + 4 * Math.sqrt(2 * dfBetween)) / dfBetween;
+  renderChart([], observedF, -1, undefined, undefined,
+    [0, Math.max(nullReach, observedF * 1.15)]);
 
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
   announce(`Data loaded: ${groupNames.length} groups, n = ${totalN}`);
@@ -481,6 +491,21 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'F Statistic',
+    // What the chart shows, for a screen reader. The title alone said nothing
+    // about the content, and on the empty chart REQ-069 added it said nothing
+    // at all about the one value drawn on it. `?observed=off` is reasoning
+    // mode: the marker is withheld on purpose, so naming it here would both
+    // lie and give away the number the mode exists to withhold.
+    descText: (() => {
+      const shown = new URLSearchParams(location.search).get('observed') !== 'off';
+      const at = shown && isFinite(observed) ? `observed = ${observed.toFixed(3)}` : '';
+      if (stats.length === 0) {
+        return at
+          ? `No simulations yet. ${at} is marked on the axis; press a generate button to build the distribution.`
+          : 'No simulations yet — press a generate button to build the distribution.';
+      }
+      return [`${stats.length.toLocaleString()} shuffles`, at].filter(Boolean).join(', ');
+    })(),
     // Match the page's own readout: formatStat(observedF, 2) = 3 decimals.
     precision: 3,
     titleText: words.distribution,

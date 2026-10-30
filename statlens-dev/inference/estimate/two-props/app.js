@@ -52,6 +52,7 @@ const outcomeVarSelect = /** @type {HTMLSelectElement|null} */ (document.getElem
 const successSelector = document.getElementById('success-selector');
 const successOutcome = /** @type {HTMLSelectElement|null} */ (document.getElementById('success-outcome'));
 const groupOrderEl = document.getElementById('group-order');
+const groupOrderLabel = document.getElementById('group-order-label');
 const swapGroupsBtn = document.getElementById('swap-groups');
 
 // ── State ──────────────────────────────────────────────────────────
@@ -64,7 +65,23 @@ let outcomeVar = '';
 let successValue = '';
 let label1 = 'Group 1';
 let label2 = 'Group 2';
+// `?order=swap` starts the page reading the difference the other way round
+// than its default (the order the data presents), so it means "reverse THIS
+// page" rather than naming an order — the only way to add the parameter
+// without changing what any existing link meant.
+//
+// It is a ONE-SHOT, consumed by the first load. Loading fresh data resets the
+// order to natural, which is right for a reader who just opened a new file but
+// would otherwise wipe the link's instruction before it ever applied.
+// (REQ-079, extended to the two-group pages 2026-10-18.)
+let pendingOrderSwap = new URLSearchParams(window.location.search).get('order') === 'swap';
 let groupsSwapped = false;
+
+/** Fresh data starts in natural order — unless a link asked otherwise, once. */
+function resetGroupOrder() {
+  groupsSwapped = pendingOrderSwap;
+  pendingOrderSwap = false;
+}
 
 let currentX1 = 0, currentN1 = 0, currentX2 = 0, currentN2 = 0;
 let hasCounts = false;
@@ -126,7 +143,7 @@ const dataPanel = initDataPanel({
     hasCounts = false;
     currentContext = null;
     figure = null;
-    groupsSwapped = false;
+    resetGroupOrder();
     if (groupOrderEl) groupOrderEl.hidden = true;
     if (dataPreview) dataPreview.hidden = true;
     if (variableSelectors) variableSelectors.hidden = true;
@@ -143,7 +160,7 @@ const dataPanel = initDataPanel({
 /** @param {string} sourceName */
 function setupVariableSelectors(sourceName) {
   if (!groupVarSelect || !outcomeVarSelect || !variableSelectors) return;
-  groupsSwapped = false;
+  resetGroupOrder();
 
   groupVarSelect.innerHTML = '';
   outcomeVarSelect.innerHTML = '';
@@ -219,7 +236,7 @@ function countFromData(sourceName) {
     dataSummary.textContent =
       `${sourceName}: ${label1} ${currentX1}/${currentN1} (p̂=${p1}), ${label2} ${currentX2}/${currentN2} (p̂=${p2}). Success = "${successValue}"`;
   }
-  if (groupOrderEl) groupOrderEl.hidden = false;
+  if (groupOrderEl) { groupOrderEl.hidden = false; syncOrderLabel(); }
   return hasCounts;
 }
 
@@ -257,7 +274,7 @@ function applySummaryInputs(quiet) {
     dataSummary.textContent =
       `Summary: ${label1} ${x1}/${n1} (p̂=${formatStat(x1 / n1, 0, 'proportion')}), ${label2} ${x2}/${n2} (p̂=${formatStat(x2 / n2, 0, 'proportion')})`;
   }
-  if (groupOrderEl) groupOrderEl.hidden = false;
+  if (groupOrderEl) { groupOrderEl.hidden = false; syncOrderLabel(); }
   return true;
 }
 
@@ -265,7 +282,18 @@ for (const el of [inputX1, inputN1, inputX2, inputN2, inputLabel1, inputLabel2])
   el?.addEventListener('input', () => { if (summaryActive() && applySummaryInputs(true)) build(); });
 }
 
-// Swap Group 1 ↔ Group 2 — flips the sign of the difference; the whole display re-renders.
+// ⇅ Reverse — flips the sign of the difference; the whole display re-renders.
+/** Say which way round the difference is being taken. */
+function syncOrderLabel() {
+  const order = `${label1} − ${label2}`;
+  if (groupOrderLabel) groupOrderLabel.textContent = order;
+  // Also the button's name: the adjacent span is a separate screen-reader
+  // stop, so landing on the button alone should still say what it reverses.
+  if (swapGroupsBtn) {
+    swapGroupsBtn.setAttribute('aria-label', `Reverse the difference order — currently ${order}`);
+  }
+}
+
 if (swapGroupsBtn) {
   swapGroupsBtn.addEventListener('click', () => {
     if (summaryActive()) {
@@ -277,7 +305,8 @@ if (swapGroupsBtn) {
       groupsSwapped = !groupsSwapped;
       if (countFromData(dataPanel.currentSourceName || 'data')) build();
     }
-    announce(`Swapped groups: now ${label1} − ${label2}.`);
+    syncOrderLabel();
+    announce(`Difference now reads ${label1} − ${label2}.`);
   });
 }
 

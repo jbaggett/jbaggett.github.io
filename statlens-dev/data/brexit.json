@@ -1,7 +1,7 @@
 {
   "id": "brexit",
   "name": "Brexit Survey",
-  "description": "Survey responses on how Brexit negotiations are going (n=900, IMS Ch. 3)",
+  "description": "Survey responses on how well the UK government was handling Brexit (n = 1,643, YouGov 2019; IMS Ch. 3)",
   "source": "IMS",
   "chapter": "IMS Ch. 3",
   "type": "one_cat",
@@ -12,861 +12,4949 @@
       "name": "response",
       "label": "Response",
       "type": "categorical",
-      "levels": ["Very well", "Fairly well", "Fairly badly", "Very badly", "Don't know"]
+      "levels": [
+        "Very well",
+        "Fairly well",
+        "Fairly badly",
+        "Very badly",
+        "Don't know"
+      ]
     }
   ],
-  "studyDescription": "A survey asked 900 respondents how they think the UK government's Brexit negotiations are going. Respondents chose from five options ranging from 'Very well' to 'Very badly', with a 'Don't know' option. This dataset is used in the textbook to illustrate how the ordering of categories affects the readability of bar charts.",
+  "studyDescription": "YouGov asked 1,643 British adults in October 2019 how well or badly they thought the UK government was handling Brexit negotiations. Responses fall into five ordered categories, from \"Very well\" to \"Very badly\", plus \"Don’t know\". This is an observational survey of opinion at one point in time.",
   "variableDescriptions": {
-    "response": "The respondent's assessment of how Brexit negotiations are going, from 'Very well' to 'Very badly', or 'Don't know'."
+    "response": "How well the respondent thought the government was handling Brexit negotiations, on a four-point scale plus \"Don’t know\"."
   },
-  "sourceDetail": "OpenIntro IMS, Section 3.1 (bar chart ordering example). Original survey data.",
+  "sourceDetail": "OpenIntro IMS, Section 3.1 (the bar-chart ordering example). Original data: YouGov, \"Brexit and 2019 election\" results, retrieved 7 October 2019 — 123 / 219 / 332 / 818 / 151 across the five responses, n = 1,643. Replaced on 2026-10-16: this set previously held 121 / 236 / 175 / 280 / 35, which is a different survey, summed to 847 rather than the 900 its own description claimed, and disagreed with the figure in the textbook chapter that links to it (REQ-073 item 2).",
   "rows": [
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Very well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly well"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Fairly badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Very badly"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"},
-    {"response": "Don't know"}
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Very well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly well"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Fairly badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Very badly"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    },
+    {
+      "response": "Don't know"
+    }
   ]
 }

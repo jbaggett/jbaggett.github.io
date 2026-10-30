@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Normal Distribution Calculator | StatLens</title>
+    <meta name="description" content="Areas and critical values under a normal curve, with draggable boundaries.">
+    <meta name="keywords" content="normal distribution, z score, bell curve, standard normal, area under the curve, z table, percentile, critical value">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -42,11 +44,11 @@
             <div class="chart-header-bar">
                 <div class="tail-toggle" role="radiogroup" aria-label="Region to shade">
                     <label class="tail-btn">
-                        <input type="radio" name="tail" value="left" checked>
+                        <input type="radio" name="tail" value="left">
                         <span>Left</span>
                     </label>
                     <label class="tail-btn">
-                        <input type="radio" name="tail" value="right">
+                        <input type="radio" name="tail" value="right" checked>
                         <span>Right</span>
                     </label>
                     <label class="tail-btn">
@@ -75,7 +77,7 @@
                         <input type="number" id="input-x2" value="1.96" step="any">
                     </label>
                     <label for="input-p" id="label-p">Probability
-                        <input type="number" id="input-p" value="0.975"
+                        <input type="number" id="input-p" value="0.025"
                                step="any" min="0" max="1">
                     </label>
                 </div>
@@ -147,5 +149,6 @@
     </script>
     <script src="../../js/page-number.js"></script>
     <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
 </body>
 </html>

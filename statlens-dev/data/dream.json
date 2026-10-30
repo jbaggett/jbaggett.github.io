@@ -20,1071 +20,1359 @@
     "ideology": "The respondent's self-identified political ideology: Conservative, Moderate, or Liberal",
     "stance": "The respondent's stance on the DREAM Act: Accept or Reject"
   },
-  "sourceDetail": "OpenIntro datasets (openintro R package). IMS Ch. 4, 18. Original source: Public Religion Research Institute (PRRI) survey.",
+  "sourceDetail": "openintro::dream (IMS Ch. 4). Survey on the DREAM Act by political ideology, n = 910. Replaced 2026-10-17: this file held ideology 340 / 300 / 270, the right n with the wrong split; the source is Conservative 372 / Moderate 363 / Liberal 175 (REQ-077 sweep).",
   "context": "A survey asked respondents about their stance on the DREAM Act, which would provide a path to citizenship for undocumented immigrants brought to the US as children. Responses are broken down by political ideology.",
   "rows": [
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
-      "stance": "Not sure"
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
     },
     {
       "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
+      "stance": "No"
+    },
+    {
+      "ideology": "Conservative",
       "stance": "Not sure"
     },
     {
@@ -1225,1343 +1513,1343 @@
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Accept"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Moderate",
@@ -2582,1050 +2870,762 @@
     {
       "ideology": "Moderate",
       "stance": "Not sure"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
-    },
-    {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
-      "ideology": "Liberal",
-      "stance": "Accept"
+      "ideology": "Moderate",
+      "stance": "Not sure"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Accept"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "Yes"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Reject"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",
-      "stance": "Not sure"
+      "stance": "No"
     },
     {
       "ideology": "Liberal",

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Conceptual Demos | StatLens</title>
+    <meta name="description" content="Interactive demonstrations of the ideas behind the methods — sampling distributions, confidence intervals, power, and errors.">
+    <meta name="keywords" content="concepts, demonstrations, sampling distribution, confidence interval, power, type I error, CLT, teaching demos">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,6 +25,14 @@
 
         <ul class="tool-list">
             <li>
+                <a href="galton-board/">Galton Board</a>
+                <p class="hint">Drop balls through a field of pegs and watch the binomial distribution pile up underneath, with the exact probabilities and the normal approximation drawn over it.</p>
+            </li>
+            <li>
+                <a href="law-of-large-numbers/">Law of Large Numbers</a>
+                <p class="hint">Toss a coin or roll a die over and over. The running proportion (or average) settles toward what the model predicts &mdash; while the running total wanders further from zero.</p>
+            </li>
+            <li>
                 <a href="sampling-lab/">Sampling Distributions</a>
                 <p class="hint">Pick a population shape, set sample size, draw samples. Watch the sampling distribution of x̄ build up — CLT in action.</p>
             </li>
@@ -31,12 +41,24 @@
                 <p class="hint">The Gettysburg Address activity: pick "representative" words by eye (biased high) vs. random samples. Why random sampling matters.</p>
             </li>
             <li>
+                <a href="sampling-designs/">Sampling Designs</a>
+                <p class="hint">Simple random, stratified, cluster and convenience sampling compared on the same population &mdash; what each costs, and how much each one's estimates vary.</p>
+            </li>
+            <li>
                 <a href="ci-coverage/">CI Coverage</a>
                 <p class="hint">Draw many CIs from a known population. See what "95% confidence" really means — about 95% capture the true parameter.</p>
             </li>
             <li>
                 <a href="two-se/">Why &plusmn; 2 SE Works</a>
                 <p class="hint">The capture argument with no numbers on it: the axis is marked in standard errors either side of the parameter, you drag one sample's statistic, and the interval reaches the parameter exactly when the statistic landed inside the shaded band. Has a printable <a href="two-se/guide.html">instructor guide</a>.</p>
+            </li>
+            <li>
+                <a href="why-t-star/">What Estimating the SE Costs</a>
+                <p class="hint">The sequel: where the multiplier comes from, and what you pay for not knowing the standard error. Lay the candidate margins against one ruler of true standard errors and watch the usable one fall short &mdash; for a <strong>mean</strong> (&sigma; &rarr; s), where <em>t</em>* repairs it exactly, and for a <strong>proportion</strong> (p &rarr; p&#770;), where nothing does, which is why the course simulates. Has a printable <a href="why-t-star/guide.html">instructor guide</a>.</p>
+            </li>
+            <li>
+                <a href="population-ci/">Confidence Intervals by Repeated Sampling</a>
+                <p class="hint">Draw sample after sample from a population you choose. The middle 95% of the sample means gives the margin of error &mdash; carry it over to one sample and that is a confidence interval.</p>
             </li>
             <li>
                 <a href="bootstrap-shift/">Why the Percentile CI Works</a>
@@ -97,5 +119,6 @@
     </script>
     <script src="../js/page-number.js"></script>
     <script src="../js/feedback.js"></script>
+    <script type="module" src="../js/search-mount.js"></script>
 </body>
 </html>

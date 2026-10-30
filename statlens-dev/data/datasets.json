@@ -110,18 +110,49 @@
   },
   {
     "id": "ask",
-    "name": "iPod Question Framing",
-    "description": "219 participants: does framing an iPod purchase question differently affect the decision? Three question types (control, give up, keep) x two outcomes. IMS Ch. 18.",
-    "chapter": "",
+    "name": "iPod Disclosure Experiment",
+    "description": "219 sellers of a used iPod known to freeze, asked one of three scripted questions by the buyer: did they disclose the problem? (IMS Ch. 18)",
+    "chapter": "IMS Ch. 18",
     "n": 219,
     "variables": [
-      "question",
-      "decision"
+      {
+        "name": "question",
+        "label": "Question asked",
+        "type": "categorical"
+      },
+      {
+        "name": "decision",
+        "label": "Seller’s response",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 66
+    "minGroupN": 66,
+    "source": "IMS (Introduction to Modern Statistics)",
+    "sourceDetail": "OpenIntro IMS Ch. 18; openintro::ask. Original study: Minson JA, Ruedy NE, Schweitzer ME (2018), \"There is such a thing as a stupid question: question disclosure in strategic communication\". Replaced on 2026-10-16: this id previously held Frederick et al. (2009) opportunity-cost data (control / give_up / keep × buy / not buy), which is a different study that happens also to have n = 219, under a description naming the iPod experiment (REQ-073 item 3).",
+    "studyDescription": "Researchers recruited 219 participants to sell a used iPod that was known to have frozen twice. Sellers were incentivised to get as much money as they could. A buyer working with the researchers asked one of three scripted questions, assigned at random: a General question (\"What can you tell me about it?\"), a Positive Assumption (\"It does not have any problems, does it?\"), or a Negative Assumption (\"What problems does it have?\"). The outcome recorded was whether the seller disclosed the freezing issue. This was a randomized experiment.",
+    "variableDescriptions": {
+      "question": "Which of the three scripted questions the buyer asked, assigned at random.",
+      "decision": "Whether the seller disclosed the freezing problem or hid it."
+    },
+    "context": {
+      "population": "sellers in the experiment",
+      "parameter": "association between the question asked and whether the problem was disclosed",
+      "nullClaim": "the question asked and whether the seller disclosed are independent",
+      "successLabel": "Disclose"
+    },
+    "inferenceContexts": [
+      {
+        "test": "chisq",
+        "rowVar": "question",
+        "colVar": "decision",
+        "parameter": "there is an association between the question asked and whether the seller disclosed",
+        "claim": "the question the buyer asks changes whether the seller discloses the problem"
+      }
+    ],
+    "type": "chisq"
   },
   {
     "id": "avandia",
@@ -380,7 +411,7 @@
   {
     "id": "brexit",
     "name": "Brexit Survey",
-    "description": "Survey responses on how Brexit negotiations are going (n=900, IMS Ch. 3)",
+    "description": "Survey responses on how well the UK government was handling Brexit (n = 1,643, YouGov 2019; IMS Ch. 3)",
     "type": "one_cat",
     "chapter": "IMS Ch. 3",
     "n": 847,
@@ -390,7 +421,10 @@
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 5,
-    "minGroupN": 35
+    "minGroupN": 35,
+    "source": "IMS",
+    "sourceDetail": "OpenIntro IMS, Section 3.1 (the bar-chart ordering example). Original data: YouGov, \"Brexit and 2019 election\" results, retrieved 7 October 2019 — 123 / 219 / 332 / 818 / 151 across the five responses, n = 1,643. Replaced on 2026-10-16: this set previously held 121 / 236 / 175 / 280 / 35, which is a different survey, summed to 847 rather than the 900 its own description claimed, and disagreed with the figure in the textbook chapter that links to it (REQ-073 item 2).",
+    "studyDescription": "YouGov asked 1,643 British adults in October 2019 how well or badly they thought the UK government was handling Brexit negotiations. Responses fall into five ordered categories, from \"Very well\" to \"Very badly\", plus \"Don’t know\". This is an observational survey of opinion at one point in time."
   },
   {
     "id": "burger",
@@ -399,13 +433,29 @@
     "chapter": "",
     "n": 500,
     "variables": [
-      "best_burger_place",
-      "gender"
+      {
+        "name": "best_burger_place",
+        "label": "Best Burger Place",
+        "type": "categorical"
+      },
+      {
+        "name": "gender",
+        "label": "Gender",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 5,
-    "minGroupN": 60
+    "minGroupN": 60,
+    "studyDescription": "A survey asked 500 people to name their favorite burger chain from a list of options. Respondents also reported their gender. The data were collected via an observational survey.",
+    "sourceDetail": "openintro::burger. Survey on favourite burger restaurant by gender, n = 500. Replaced 2026-10-17: this file held five restaurant categories; the source has seven, same n (REQ-077 sweep).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "best_burger_place": "The respondent's favorite burger restaurant chain (e.g., In-N-Out Burger, Five Guys, etc.)",
+      "gender": "The respondent's self-reported gender (Male or Female)"
+    },
+    "context": "A survey asked 500 people to name their favorite burger chain from a list of options."
   },
   {
     "id": "caosexam",
@@ -834,9 +884,8 @@
   {
     "id": "dolphins_mercury",
     "name": "Dolphins Mercury",
-    "description": "Mercury levels (ppm) in muscle tissue of 19 Risso's dolphins. Classic small-sample bootstrap CI example.",
+    "description": "Mercury levels (ppm) in muscle tissue of 19 dolphins. A small-sample bootstrap CI example.",
     "type": "bootstrap",
-    "chapter": "IMS Ch. 19",
     "n": 19,
     "variables": [
       "mercury"
@@ -844,7 +893,8 @@
     "hasNumeric": true,
     "hasCategorical": false,
     "groupLevels": null,
-    "minGroupN": null
+    "minGroupN": null,
+    "source": "unverified"
   },
   {
     "id": "dream",
@@ -853,13 +903,29 @@
     "chapter": "",
     "n": 910,
     "variables": [
-      "ideology",
-      "stance"
+      {
+        "name": "ideology",
+        "label": "Political Ideology",
+        "type": "categorical"
+      },
+      {
+        "name": "stance",
+        "label": "Stance on DREAM Act",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 270
+    "minGroupN": 270,
+    "studyDescription": "A survey of 910 people asked respondents about their stance on the DREAM Act, which would provide a path to citizenship for undocumented immigrants brought to the US as children. Responses were recorded along with each respondent's self-identified political ideology. This was an observational survey.",
+    "sourceDetail": "openintro::dream (IMS Ch. 4). Survey on the DREAM Act by political ideology, n = 910. Replaced 2026-10-17: this file held ideology 340 / 300 / 270, the right n with the wrong split; the source is Conservative 372 / Moderate 363 / Liberal 175 (REQ-077 sweep).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "ideology": "The respondent's self-identified political ideology: Conservative, Moderate, or Liberal",
+      "stance": "The respondent's stance on the DREAM Act: Accept or Reject"
+    },
+    "context": "A survey asked respondents about their stance on the DREAM Act, which would provide a path to citizenship for undocumented immigrants brought to the US as children. Responses are broken down by political ideology."
   },
   {
     "id": "drug_use",
@@ -927,16 +993,27 @@
   {
     "id": "env_regulation",
     "name": "Environmental Regulation Views",
-    "description": "Survey of 705 Americans on environmental regulation: necessary vs. does more harm. IMS Ch. 2.",
+    "description": "Survey of 705 Americans: are regulations necessary, or will the private marketplace ensure businesses act responsibly? (Pew; IMS Ch. 2)",
     "chapter": "",
     "n": 705,
     "variables": [
-      "statement"
+      {
+        "name": "statement",
+        "label": "Statement",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 161
+    "minGroupN": 161,
+    "studyDescription": "A Pew Research Center survey asked 705 American adults to choose between two statements about environmental regulation: that regulations are necessary to make businesses act responsibly, or that the private marketplace will ensure it. A third group answered \"Don’t know\". This is an observational survey.",
+    "sourceDetail": "openintro::env_regulation (IMS Ch. 2). Pew Research Center survey on environmental regulation versus the private marketplace, n = 705. These are the summary counts as published in the openintro package (CC BY-SA); Pew’s own terms restrict redistributing full datasets, so only the published tabulation is carried here. Replaced 2026-10-17: this file held 363 / 181 / 161 under a different middle category (\"Regulations do more harm\"), which is not the question Pew asked (REQ-077).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "statement": "Which of the two statements the respondent chose, or \"Don’t know\"."
+    },
+    "context": "A survey asked 705 American adults: Which of the following statements do you think is the better approach for addressing environmental problems? Regulations are necessary to protect the environment, or regulations frequently do more harm than good."
   },
   {
     "id": "epa2021_mpg",
@@ -1696,7 +1773,7 @@
   {
     "id": "opportunity_cost",
     "name": "Opportunity Cost",
-    "description": "150 participants: does reminding about saving change purchase decisions? IMS Ch. 11.",
+    "description": "150 students: does reminding them that unspent money can be spent later make them decline a purchase? (IMS Ch. 11)",
     "type": "randomization_prop",
     "chapter": "IMS Ch. 11",
     "n": 150,
@@ -1707,7 +1784,32 @@
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 2,
-    "minGroupN": 75
+    "minGroupN": 75,
+    "studyDescription": "One hundred and fifty students at a university in the southwestern United States were randomly assigned to one of two versions of a scenario about buying a $14.99 video. Both versions offered the same option (A), \"Buy this entertaining video.\" The treatment group’s option (B) added a clause reminding them that the money could be kept for other purchases; the control group’s did not. The outcome recorded was which option the student chose. This was a randomized experiment.",
+    "sourceDetail": "OpenIntro IMS Ch. 11; original study Frederick S, Novemsky N, Wang J, Dhar R, Nowlis S (2009), \"Opportunity cost neglect\".\n\nDIRECTION, and why it differs from the chapter (REQ-073 item 7, checked 2026-10-16). The tool counts BUYING as the success and reports control − treatment: 56/75 − 41/75 = 0.747 − 0.547 = +0.200. The course chapter (randomization-tests, § opportunity cost) counts NOT buying and reports treatment − control: 34/75 − 19/75 = 0.453 − 0.253 = +0.200. Both are correct and both give +0.200 — complementary success with the groups swapped is the same number — but they attach it to opposite sentences.\n\nAligning the tool to the chapter was ATTEMPTED and reverted: the success label is settable from this file, but the GROUP ORDER is not — `group1`/`group2` here are read by nothing, and the page derives its order from the data. Setting success to \"not buy\" alone leaves the page showing control − treatment = −0.200 against a \"greater\" alternative, which is worse than the mismatch it was meant to fix. Making the tool match the chapter needs a code change (a settable group order, or a URL parameter), not a metadata one.",
+    "variableDescriptions": {
+      "group": "Which version of the scenario the student was randomly assigned: control, or treatment with the opportunity-cost reminder.",
+      "decision": "Which option the student chose — to buy the video, or not to buy it."
+    },
+    "context": {
+      "population": "the 150 students in the study",
+      "parameter": "the difference in the proportion who bought (control minus treatment)",
+      "nullClaim": "the reminder changes no one’s decision",
+      "successLabel": "buy video"
+    },
+    "inferenceContexts": [
+      {
+        "test": "two-props",
+        "groupVar": "group",
+        "responseVar": "decision",
+        "successLabel": "buy video",
+        "group1": "control",
+        "group2": "treatment",
+        "alternative": "greater",
+        "parameter": "the difference in purchase rates between the control and opportunity cost groups",
+        "claim": "reminding people about saving makes them less likely to buy"
+      }
+    ]
   },
   {
     "id": "oscars",
@@ -2004,13 +2106,33 @@
     "chapter": "",
     "n": 6224,
     "variables": [
-      "group",
-      "outcome"
+      {
+        "name": "group",
+        "label": "Inoculation Status",
+        "type": "categorical"
+      },
+      {
+        "name": "outcome",
+        "label": "Outcome",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 2,
-    "minGroupN": 238
+    "minGroupN": 238,
+    "studyDescription": "Historical data on smallpox inoculation outcomes. Records whether individuals who were inoculated or not inoculated contracted smallpox. This is observational data — individuals chose whether or not to be inoculated.",
+    "sourceDetail": "openintro::smallpox. Smallpox outcomes among 6,224 people in Boston, 1721, by whether they were inoculated. Replaced 2026-10-17: this file put six surviving people on the wrong side of the inoculation split — 238 inoculated rather than 244, giving 3.82% inoculated where the course chapter (probability-rules) states 3.92%, 14.11% and 2.46%. The source reproduces all three figures exactly (REQ-077 sweep).",
+    "source": "openintro",
+    "variableDescriptions": {
+      "result": "Whether the individual contracted smallpox (lived or died)",
+      "inoculated": "Whether the individual was inoculated against smallpox"
+    },
+    "context": {
+      "population": "individuals during outbreak",
+      "parameter": "difference in death rate",
+      "nullClaim": "inoculation has no effect on smallpox outcomes"
+    }
   },
   {
     "id": "smoking",
@@ -2095,16 +2217,32 @@
   {
     "id": "supreme_court",
     "name": "Supreme Court Approval",
-    "description": "Poll of 976 Americans on approval of the US Supreme Court. IMS Ch. 2.",
+    "description": "Poll of 976 Americans: do you approve of the US Supreme Court? 44% approve (NYT/CBS, June 2012). IMS Ch. 2.",
     "chapter": "",
     "n": 976,
     "variables": [
-      "answer"
+      {
+        "name": "answer",
+        "label": "Answer",
+        "type": "categorical"
+      }
     ],
     "hasNumeric": false,
     "hasCategorical": true,
     "groupLevels": 3,
-    "minGroupN": 197
+    "minGroupN": 197,
+    "studyDescription": "A New York Times / CBS News telephone poll in June 2012 asked 976 American adults whether they approved of the way the US Supreme Court was handling its job. Responses are recorded as approve or not; 429 of the 976 approved. This is an observational survey at one point in time.",
+    "sourceDetail": "openintro::supreme_court (IMS Ch. 2). New York Times / CBS News poll, June 2012, n = 976: 44% approve (429/976). Replaced 2026-10-17: this file held Approve 458 / Disapprove 321 / Don't know 197 — a three-category split that matched no source, where openintro's is BINARY (approve / not). The category structure was wrong, not just the counts (REQ-077).",
+    "source": "openintro",
+    "type": "bootstrap_prop",
+    "variableDescriptions": {
+      "answer": "Whether the respondent approved of the Supreme Court’s handling of its job."
+    },
+    "context": {
+      "population": "American adults in June 2012",
+      "parameter": "the proportion who approve of the Supreme Court",
+      "successLabel": "approve"
+    }
   },
   {
     "id": "tappers_listeners",
@@ -2304,5 +2442,54 @@
     "hasCategorical": false,
     "groupLevels": null,
     "minGroupN": null
+  },
+  {
+    "id": "ucla_textbooks_f18",
+    "name": "UCLA Textbook Prices (Fall 2018)",
+    "description": "Prices ($) of 68 textbooks at the UCLA bookstore vs. Amazon, Fall 2018. Are bookstore prices higher on average? (IMS Ch. 20)",
+    "source": "IMS (Introduction to Modern Statistics)",
+    "chapter": "IMS Ch. 20",
+    "type": "paired",
+    "sourceDetail": "OpenIntro IMS Ch. 20; openintro::ucla_textbooks_f18, restricted to the 68 courses where both a new bookstore price and a new Amazon price were recorded. Extracted from the installed R package rather than transcribed, so the values are the package's. Added 2026-10-16: the course links for ci-for-means and hypothesis-tests-means had been pointing at `textbooks`, which is the 2010 OpenIntro Statistics sample (n = 73, mean difference 12.76) and a different study (REQ-073 item 9).",
+    "studyDescription": "A sample of 68 courses at UCLA in Fall 2018. For each course, the price of a new copy of the required textbook was recorded at the UCLA bookstore and at Amazon on the same day. Because the two prices are for the same book, the observations are paired and the analysis is of the differences.",
+    "variables": [
+      {
+        "name": "course",
+        "label": "Course",
+        "type": "categorical"
+      },
+      {
+        "name": "ucla",
+        "label": "UCLA bookstore price ($)",
+        "type": "numeric"
+      },
+      {
+        "name": "amazon",
+        "label": "Amazon price ($)",
+        "type": "numeric"
+      }
+    ],
+    "variableDescriptions": {
+      "course": "The subject abbreviation and course number the textbook was required for.",
+      "ucla": "Price of a new copy at the UCLA bookstore, in dollars.",
+      "amazon": "Price of a new copy on Amazon the same day, in dollars."
+    },
+    "context": {
+      "population": "UCLA courses in Fall 2018",
+      "parameter": "the mean difference in price between the bookstore and Amazon",
+      "unit": "dollars",
+      "nullClaim": "the mean difference in price is zero"
+    },
+    "inferenceContexts": [
+      {
+        "test": "paired",
+        "var1": "ucla",
+        "var2": "amazon",
+        "nullValue": 0,
+        "alternative": "greater",
+        "parameter": "the mean difference in price (UCLA bookstore minus Amazon)",
+        "claim": "textbooks cost more at the UCLA bookstore than on Amazon"
+      }
+    ]
   }
 ]

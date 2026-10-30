@@ -19,5 +19,10 @@ import('jstat').then(jstat => {
     cdfFactory: (p) => (x) => normalCDF(x, p.mu, p.sigma),
     invFactory: (p) => (prob) => normalInv(prob, p.mu, p.sigma),
     domainParams: (p) => ({ mu: p.mu, sigma: p.sigma }),
+    // Changing μ or σ holds the probability and moves the bound(s) — Jeff's
+    // call on REQ-074: "keep the probabilities static and change the X value(s)
+    // when either mu or sigma is changed." Normal only for now; whether the
+    // other calculators should do the same when df / n / p change is still open.
+    holdProbabilityOnParamChange: true,
   });
 });

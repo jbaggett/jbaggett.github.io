@@ -62,6 +62,7 @@ link behaves exactly as before.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `report_origin` | string (URL) | _(none)_ | **Where the student's DECISIONS may be posted** (with `?qn=` and `?ask=`). The inquiry posture posts a second message, `subject: "statlens.configuration"`, carrying what the student decided — `nullValue`, `tail`, `statistic`, `bounds`, `repetitions` — once every asked-for decision is made, and again whenever one changes. It lets a grader mark the reasoning rather than only the number, since a wrong tail and a wrong statistic can still land inside a tolerance by luck. ⚠ **Unlike the plain answer, this is never posted to `*`.** A single number the student just produced on screen may be; a record of what they were thinking may not. The target is this parameter's origin, or a referrer already known to be MyOpenMath — and with neither, nothing is posted at all. Unparseable values are refused rather than widened. | `?qn=3&ask=all&report_origin=https://www.myopenmath.com` |
 | `qn` | string (digits) | _(none)_ | The MyOpenMath answer-box number. 1–6 digits; anything else is refused with a console warning and no posting. Present ⇒ the tool posts the student's produced value to the parent frame. Ignored when the page is not framed. |
 | `report` | string | _(per page)_ | Which quantity to send, when a page produces several. Bootstrap pages: `ci_lower` (default), `ci_upper`, `se`, `stat`. Randomization pages: `p_value` (default), `count`, `stat`. |
 
@@ -133,6 +134,8 @@ These parameters are parsed and available in `StatLensParams` but are currently 
 | `group2` | string | _(none)_ | Label for group 2 (two-group comparisons). | `?group2=treatment` |
 | `var1` | string | _(none)_ | First variable label (paired tests). | `?var1=before` |
 | `var2` | string | _(none)_ | Second variable label (paired tests). | `?var2=after` |
+| `order` | string | _(page default)_ | **Difference pages.** `swap` reads the difference the other way round than the page's default. The defaults are unchanged and are *not* the same on every page — `simulate/bootstrap-paired` and `simulate/randomization-paired` default to `second − first`, while `inference/paired` and `inference/estimate/paired` default to `var1 − var2` (the first two numeric columns); the two-group pages default to the group order the data presents. So `order` means "reverse *this* page", not "use a named order", and omitting it reproduces every link written before 2026-10-17. Every difference page shows which way round it is currently reading, with a **⇅ Reverse** control beside it. Any other value is ignored. **The seed is order-independent**: the same `?seed=` produces the same draws either way round, and every displayed number is the exact mirror — identical tail counts on a randomization test, an exactly mirrored interval and unchanged SE on a bootstrap. ⚠ `order` does **not** flip `direction`: the control flips a one-sided alternative with the sign (so the p-value is unchanged), but a URL that sets both params is taken literally — an author who writes `?order=swap&direction=less` gets `less`. | `?order=swap` |
+| `theory` | string | _(off)_ | **Randomization pages using `sim-app.js`** (`randomization-diff-props`, `randomization-diff-means`). `on` opens the page with the normal curve already laid over the shuffles, **without** switching on expert mode — the toggle itself still sits behind `?expert=true` along with the other chart controls. The curve is centred at the **null value** (exactly, by construction of the permutation test, not at the mean of the shuffles) with the **SD of the simulated statistics** as its spread. Because that spread is empirical, **the curve needs shuffles**: nothing is drawn until the first batch. With it on, the normal-curve tail is reported beside the simulated p-value in the same direction (“· normal curve 0.011”). Default is off, so every existing link is bit-identical. Any other value is ignored. | `?theory=on` |
 | `label` | string | _(none)_ | Display label for the primary variable. | `?label=age` |
 | `units` | string | _(none)_ | Units string for the variable. | `?units=inches` |
 
@@ -149,6 +152,7 @@ These parameters are handled by `js/settings.js` and read via `URLSearchParams` 
 | `plot` | string | _(none)_ | **Figure-only embed.** `plot=only` renders **just the interactive chart** — hides all controls, the mechanism strip, the generate bar, the results/readout, and page chrome (implies `embed`). On the **simulation** pages it also **auto-runs** the distribution on load (1000 reps at the given `seed`), so the finished, hoverable bootstrap/randomization figure is there with no click. On **explore** pages it shows the dataset's chart bare. The student reads the plot (and its bin-edge/count tooltips) to answer — the least-friction home for "estimate from the figure" problems. This is the one mode that overrides the "never hide the mechanism strip" rule. Reasoning-mode figures (`plot=only`/`readout=false`) also pick a **readable shape without the chart-type toggle**: a discrete statistic (a sample proportion `k/n`) shows as **non-touching spike bars** up to ~40 distinct values — the honest "these are the possible `k/n`" picture — then **bins to a histogram** beyond that (so large `n` can't degrade into an unhoverable spike cloud); continuous statistics (means, slopes) use a histogram. | `?dataset=…&seed=…&plot=only` |
 | `observed` | string | `on` | **Hide the observed-statistic marker** (reasoning-mode; pairs with `plot=only`/`cutlines=tail`). `observed=off` removes the observed-stat marker line + label (and its bar-split) from the simulation distribution, while keeping everything else — the distribution, hover tooltips, and the draggable cutoff line **with its x-value readout**. Use it to make the student **place** the line at the statistic quoted in the problem text ("connect the dots") instead of dragging to a pre-drawn dot — the locating step is the point. Also suppresses the auto tail-shading that would otherwise reveal the location. Honored by every simulation chart (spike / histogram / dotplot), so it works on all read-off pages (`randomization-chisq`, `bootstrap-*` CI reads, one-sample, `sim-app.js` pages). Any value other than `off` (or omitting it) keeps the marker. | `?dataset=…&plot=only&cutlines=tail&observed=off` |
 | `pills` | string | `target` | **What the three probability labels on a bootstrap chart say.** `target` (the default) prints the level the interval ASKS for — 2.5%, 95%, 2.5% — as bare numbers, and a boundary column is drawn in two pieces where that level cuts inside it, the way StatKey does it. `actual` prints the share of resamples really in each region (2.4%, 95.2%, 2.4% at B = 1,000), and puts the whole column back. The two differ by Monte-Carlo error, which is ±1.35 percentage points at B = 1,000 and ±0.43 at 10,000, so Target is the stable thing to read in a worked example and Actual is the honest thing to compare it against — **the results panel reports the realized coverage when it differs** — under *Show: Detailed* when the cause is granularity ("p̂ can only take certain values"), and in plain view when a bound is pinned to the smallest or largest resample, since that is a warning about the interval rather than a nicety. On-screen the toggle is `Plot labels: Target | Actual` in the results panel, visible only under **Show: Detailed**. Applies to the `sim-app.js` bootstrap pages, and **only to the percentile interval** (`ci_method=percentile`, and `both`, which shades the percentile pair). A target label is a claim about RANKS — "the middle 95% of the resamples" — and percentile is the only method placed by rank: `ci_method=se` is an approximation whose point is that it does not land on the level, and `ci_method=bca` shifts the two cutoffs by different amounts on purpose (0.003 / 0.953 / 0.044 on transplant_survival, not 0.025 / 0.95 / 0.025). Under those two the labels always count what the interval holds and the on-screen toggle is disabled, so `pills=target` is accepted and ignored. | `?dataset=cpr&pills=actual` |
+| `ask` | string | _(none)_ | **Hand decisions back to the student** (the "inquiry posture", randomization one-sample pages). A comma list of `null`, `tail`, `stat`, or `all` for all three. The tool runs the simulation and then **refuses to report a p-value** until the student supplies what was asked for: `null` blanks the null value and gates every generate button until it is stated (the distribution is built from it); `tail` leaves all three tail buttons unpressed, so nothing is shaded; `stat` adds a **test-statistic input** and takes the observed marker off the plot, so the student must read the statistic off the data summary and type it. Modelled on StatKey's randomization page, which loads with nothing decided. **A wrong entry is honoured, not corrected** — it shades and counts where the student aimed, because a coherent wrong picture is the thing worth seeing and the problem grades it, not the tool. Changing the null discards a distribution built under the old one. Ask for **one step per problem**: a set that makes you aim the instrument every time is worse than one that never does. Not compatible with `plot=only`, which hides the data summary the statistic has to be read from. On the **bootstrap** pages the steps are different, because a confidence interval has no tail to choose and no null to state: `bounds` gives two inputs for the ends of the interval, withholds the computed CI, and reports what the typed interval actually captures against the level that was asked for ("holds 919 of 1000 — 91.9%. You were asked for 95%"). `cutlines=ci` is the drag version of the same step. **A page ignores a step it cannot offer**, so `ask=tail` on a bootstrap page is accepted and does nothing rather than demanding a choice with no control to make it. `ask=all` means every step THAT page supports. | `?ask=stat`, `?ask=bounds`, `?ask=all` |
 | `cutlines` | string | _(none)_ | **Draggable cutoff lines** (reasoning-mode overlay; pairs with `plot=only`/`readout=false`). Instead of counting bars, the student drags vertical cutoff line(s) and reads **region counts** off distribution-calculator-style pills. `cutlines=ci` draws **two** lines with **three region pills** — left-tail, central (blue = the confidence level), right-tail — each showing `count / N = %` (count-led: simulation inference is counting outcomes, and the proportion is what's reported); each line carries its **x-value** (the CI bound the student reports) at the axis. Drag until each tail reads (100−CL)/2%. `cutlines=tail` draws **one** line with a **tail-count pill** (the p-value) plus its x-value — drag to the observed-stat marker. Lines **start at the extremes / centre**, never pre-placed at the answer. Each line's x-value pill is flanked by **−/+ fine-adjust buttons** (one smallest-displayed-unit per click, snapping to a clean grid) so the mouse can land on an exact quoted value after a rough drag. Fully keyboard-accessible (each line is a `role="slider"`: ←/→ nudge, Shift=×5, Home/End jump; the −/+ buttons are focusable `role="button"`s; `aria-valuetext` announces count + %). Rides on the spike bars or histogram (whichever the shape rule picked). Works on every sim tool (`sim-app.js` pages, `bootstrap-slope`, one-sample, and the standalone randomization tools). | `?dataset=…&plot=only&cutlines=ci` |
 | `embed` | string | `false` | Compact mode for iframe embedding. Hides the page header, data panel, skip links, footer, and page number badge. Also disables service worker update toasts and home button navigation (which would break iframe context). Supported on all pages via shared CSS and `js/page-number.js`. | `?embed=true` |
 | `guided` | string | `false` | Textbook guided mode. Only meaningful when `embed=true` is also set. Hides the controls row (statistic dropdown, CI level dropdown, seed notice) on simulation pages, since these are pre-configured via URL params in a textbook context. Keeps the generate bar, mechanism strip, chart, and results fully visible. | `?embed=true&guided=true` |
@@ -216,6 +220,25 @@ Does not currently consume `seed` or `direction` from URL parameters. The direct
 
 ### Standalone simulation pages (no additional URL parameters)
 
+`conceptual/population-ci/` — `shape` (`normal` | `right-skewed` (default) | `left-skewed` |
+`uniform` | `bimodal`), `n` (sample size 2–200, default 25), `level` (`90` | `95` | `99`),
+`samples` (draw this many on load; capped at 400 so every dot stays hoverable), `parameter=hidden`
+(open with μ hidden — the "you only get one sample" framing, with a Reveal button), `seed` (the
+population AND the draws reproduce), and `mode`. No data parameters: the population is generated.
+
+`conceptual/galton-board/` — `rows` (rows of pegs = n, 3–20, default 12), `p` (chance of
+bouncing right, or the board's tilt in physical mode; 0.05–0.95, default 0.5), `balls` (drop this
+many on load), `normal=true` (show the normal approximation), `exact=false` (hide the exact
+binomial curve), `board=physical` (the real-physics board — a field of pins, a
+hopper pouring beads, gravity, bounces off the pins and off each other; its histogram is NOT
+binomial, which is the point of having both), `seed` (reproduces the
+identical run in both modes), and the usual `mode` for the activity mode. The board parameter is
+deliberately **not** called `mode`, which is reserved site-wide for `discover`/`present`.
+
+`conceptual/law-of-large-numbers/` — `exp` (`coin` | `die`, default `coin`), `n` (pre-run this many
+trials on load, capped at 200,000), `seed` (replays the identical sequence of trials), and `mode`
+(`present` hides the student prompt). No data parameters: the trials are generated, not loaded.
+
 `randomization-chisq/` — uses `initDataPanel` for data loading (`dataset`, `data`, `csv`, `json`) plus `seed`, `readout`, and `plot=only` (see those rows), but no other simulation-specific parameters.
 
 `bootstrap-slope/` has its own engine (draws bootstrap regression lines on a scatterplot) and now honors `seed`, `readout=false`, `plot=only`, `ci`, and `ci_method` on top of data loading (`dataset`, `csv`, `json`). `?ci=` sets the confidence level (50–99.9); `?ci_method=` picks `percentile` / `se` / `both`; `plot=only` auto-runs the 1000-resample bootstrap distribution at the given `seed`.
@@ -238,11 +261,25 @@ Accepted by pages under `distribution/`. Parsed by `js/url-params.js`, consumed 
 |-----------|------|---------|-------------|---------|
 | `mu` | float | `0` | Mean of the normal distribution. | `?mu=100` |
 | `sigma` | float | `1` | Standard deviation (must be > 0). | `?sigma=15` |
-| `tail` | string | `left` | Region to shade: `left`, `right`, `between` (shade the middle band between two bounds), or `symmetric` (shade the two outer tails; bounds mirror the mean). Legacy `both` is accepted as an alias for `symmetric`. | `?tail=between` |
+| `tail` | string | **`right`** | Region to shade: `left`, `right`, `between` (shade the middle band between two bounds), or `symmetric` (shade the two outer tails; bounds mirror the mean). Legacy `both` is accepted as an alias for `symmetric`. **The page opens on the right tail** at z = 1.96 — 0.9750 to the left, 0.0250 shaded — changed 2026-10-12; it was `left` before. Any link that names `tail` is unaffected. | `?tail=between` |
 | `lo` | float | _(HTML default)_ | Primary boundary: the cut for `left`/`right`, the magnitude for `symmetric`, or the lower bound of a `between` band. | `?lo=-1` |
 | `hi` | float | _(HTML default)_ | Upper boundary — only used by `between`. | `?hi=2` |
 
-> **Region modes.** `between` and `symmetric` are the two-boundary modes. `between` reveals a second bound input (upper bound) and shades the **middle**; `symmetric` keeps a single bound and mirrors it about the mean to shade **both outer tails**. Every region shows a probability pill, and pills are click-to-edit. In `between`, editing any region sets it to the typed value and splits the remaining probability across the other two regions **in proportion to their current sizes** (so the band keeps its shape); in `symmetric`, editing a tail sets each tail's area and editing the middle sets the central probability. Deep-link a band with `?tail=between&lo=-1&hi=2`.
+> **Region modes.** `between` and `symmetric` are the two-boundary modes. `between` reveals a second bound input (upper bound) and shades the **middle**, opening on the centred 95% band, μ ± 1.96σ; `symmetric` keeps a single free bound, mirrors it about the mean to shade **both outer tails**, and shows that mirror in a read-only second box. Every region shows a probability pill, and pills are click-to-edit. In `between`, editing any region sets it to the typed value and splits the remaining probability across the other two regions **in proportion to their current sizes** (so the band keeps its shape); in `symmetric`, editing a tail sets each tail's area and editing the middle sets the central probability. Deep-link a band with `?tail=between&lo=-1&hi=2`.
+
+> **A link that sets `mu`/`sigma` but no bound opens at μ + 1.96σ** (REQ-076, 2026-10-13). The
+> page's default bound is read as the 0.975 quantile rather than as a raw 1.96, so
+> `?mu=10&sigma=0.05&tail=right` opens at 10.098 with P = 0.0250 instead of stranding the bound six
+> thousand SDs out. `between` seeds its own centred μ ± 1.96σ band; `symmetric` mirrors about the
+> new mean. An explicit `lo`/`hi` is still never transformed.
+
+> **Changing μ or σ holds the probability and moves the bound(s)** (Jeff's call, REQ-074,
+> 2026-10-12). Each bound keeps its standardized position, so x becomes μ + zσ — type μ = 100,
+> σ = 15 under a left tail of 0.9750 and the bound moves from 1.96 to 129.4 rather than being
+> stranded six SDs off the plot. **`lo` and `hi` on load are exempt** and are honoured exactly as
+> given: activities deep-link specific bounds, and the hold rule applies only to interactive edits
+> afterwards. The t, χ² and F pages do **not** do this — changing df leaves the bound where it is
+> (though their Probability box now tracks it, which it did not before).
 
 ### t (`distribution/t/`)
 
@@ -834,6 +871,30 @@ parameter below changes a symbol or a position — none of them loads anything.
 
 `mode=present` (global) hides the student reflection prompt for projection. The companion printable is
 `conceptual/two-se/guide.html`.
+
+### What Estimating the SE Costs (`conceptual/why-t-star/`)
+
+Also no data. The axis is in **true** standard errors, so every margin of error below is directly
+comparable against it. Two parameter families behind a toggle — the mean (σ → s) and the proportion
+(p → p̂). The path stays `why-t-star` though the page now covers both; the title changed on
+2026-10-13 and no URL did.
+
+| Parameter | Type | Default | Description | Example |
+|-----------|------|---------|-------------|---------|
+| `param` | string | `mean` | Which parameter: `mean` (σ → s, three recipes, t\* repairs it) or `prop` (p → p̂, two recipes, nothing repairs it). | `?param=prop` |
+| `p` | float | `0.2` | **Proportion mode only.** The true proportion, clamped 0.02–0.98. | `?p=0.1` |
+| `ci` | string | `95` | Confidence level: `90`, `95` or `99`. Alias `level`. | `?ci=99` |
+| `n` | integer | `13` / `50` | Sample size, clamped 3–60. In mean mode 13 (t\* at 12 df is 1.112 × z\*, which reproduces Todd Will's board); in proportion mode **50**, which with p = 0.2 puts np at exactly 10 — the success-failure boundary, where the condition is met and the interval still runs 93.8%. | `?n=5` |
+| `s` | float | `0.9` | **Mean mode only.** This sample's s as a fraction of σ, clamped 0.3–2. Below 1 the `z*s/√n` interval is short; above 1 it is long. Proportion mode has no such knob — p̂ is both the estimate and the thing inside the SE, which is the difference the toggle exposes. | `?s=1.25` |
+| `xbar` | float | `1.9` | Where the sample mean landed, in true SE from μ. Clamped −3.5…3.5. Alias `z`. | `?xbar=2.1` |
+| `me` | integer | `1` | Which margin of error is drawn. Mean: `1` = z*σ/√n, `2` = z*s/√n, `3` = t*s/√n. Proportion: `1` = z*√(p(1−p)/n), `2` = z*√(p̂(1−p̂)/n). | `?me=2` |
+| `seed` | string | `why-t-star` | PRNG seed for **Draw a sample** and **Draw 100**. | `?seed=lecture7` |
+
+`mode=present` (global) hides the student reflection prompt. **`expert=true`** (global) adds the two
+shaded strips that decompose the proportion mode's coverage shortfall; they are off for students.
+The companion printable is `conceptual/why-t-star/guide.html`.
+
+---
 
 ---
 
