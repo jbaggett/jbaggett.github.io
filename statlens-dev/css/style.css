@@ -6627,6 +6627,9 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 .null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
 /* Dark dot, white halo: readable on every band fill without relying on one. */
 .null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8; }
+/* Ties a dodged label back to its band. Thin and pale: it is a pointer, not
+   a mark to read, and it must not compete with the darts over the fill. */
+.null-board-leader { stroke: var(--ims-green, #114B5F); stroke-width: 0.5; opacity: 0.55; }
 
 /* ── Step 2: the tally this draw produced (GOF) ──────────────────────────
    Todd Will's four columns with the total that IS χ². Replaces a bar chart

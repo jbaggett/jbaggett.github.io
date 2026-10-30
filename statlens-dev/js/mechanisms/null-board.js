@@ -96,6 +96,11 @@ export function renderNullBoard(container, opts) {
 
   /** @type {SVGCircleElement[]} */
   const dartEls = [];
+  /**
+   * Each band's labels and its true centre, for the de-collision pass below.
+   * @type {{ centre: number, els: SVGTextElement[] }[]}
+   */
+  const labelRows = [];
   const dartTotal = counts.reduce((a, b) => a + b, 0);
   const drawDarts = dartTotal > 0 && dartTotal <= maxDarts;
 
@@ -127,6 +132,8 @@ export function renderNullBoard(container, opts) {
     name.setAttribute('class', 'null-board-cat');
     name.textContent = cat;
     svg.appendChild(name);
+    const row = { centre: y + h / 2, els: [name] };
+    labelRows.push(row);
 
     if (counts[i] != null) {
       const n = document.createElementNS(NS, 'text');
@@ -136,6 +143,7 @@ export function renderNullBoard(container, opts) {
       n.setAttribute('class', 'null-board-count');
       n.textContent = String(counts[i]);
       svg.appendChild(n);
+      row.els.push(n);
     }
 
     if (drawDarts) {
@@ -155,6 +163,57 @@ export function renderNullBoard(container, opts) {
     }
     y += h;
   });
+
+  // ── Labels that do not sit on top of each other ───────────────────────
+  //
+  // A band's height IS its p₀ (see above), so a rare category gets a band
+  // thinner than a line of text and its label lands on its neighbour's. On
+  // `stock_geometric` the last three bands are 6.1, 2.7 and 2.3 units tall
+  // against a 9.5-unit font, and the board shipped with 8 overlapping pairs —
+  // four category names and their counts stacked into an unreadable smudge at
+  // the bottom edge. Measured at 390px, which is where it is worst.
+  //
+  // Growing the board instead cannot work: `boardH` already asks for
+  // `7 / smallest` and is capped at 260, because the honest height for a 0.9%
+  // category is ~795 units of mostly-empty blue.
+  //
+  // So the labels dodge apart and a leader line says which band each belongs
+  // to. The leader is the part that matters — without it the dodge would just
+  // move the lie somewhere quieter.
+  const dodge = () => {
+    // 14, not the 11 that "one 9.5px line" suggests: a text element's box is
+    // the font's full line box, ~1.3x its size, and at 11 the labels still
+    // touched — `jury` overlapped at a 11.4-unit spacing without even
+    // triggering a dodge. Measured, not derived from the font-size.
+    const GAP = 14;
+    const ys = labelRows.map((r) => r.centre);
+    // Down the stack, then back up off the bottom edge: the standard two-pass,
+    // which lands on the arrangement closest to the true centres that fits.
+    for (let i = 1; i < ys.length; i++) ys[i] = Math.max(ys[i], ys[i - 1] + GAP);
+    const floor = boardH - GAP / 2;
+    if (ys[ys.length - 1] > floor) {
+      ys[ys.length - 1] = floor;
+      for (let i = ys.length - 2; i >= 0; i--) ys[i] = Math.min(ys[i], ys[i + 1] - GAP);
+    }
+    labelRows.forEach((r, i) => {
+      const moved = Math.abs(ys[i] - r.centre);
+      for (const el of r.els) el.setAttribute('y', String(ys[i]));
+      if (moved < 1.5) return;
+      // Leader from the label back to the band it names, on whichever side
+      // that label sits.
+      for (const el of r.els) {
+        const isCount = el.classList.contains('null-board-count');
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', String(isCount ? LABEL_W + fieldW + 2 : LABEL_W - 4));
+        line.setAttribute('y1', String(ys[i]));
+        line.setAttribute('x2', String(isCount ? LABEL_W + fieldW : LABEL_W));
+        line.setAttribute('y2', String(r.centre));
+        line.setAttribute('class', 'null-board-leader');
+        svg.insertBefore(line, svg.firstChild);
+      }
+    });
+  };
+  if (labelRows.length > 1) dodge();
 
   container.innerHTML = '';
   container.appendChild(svg);
