@@ -1811,6 +1811,13 @@ input[aria-invalid="true"] {
 .mech-tier-head .pbm-style-toggle ~ .pbm-style-toggle,
 .mechanism-title .pbm-style-toggle ~ .pbm-style-toggle { margin-left: 0; }
 .mechanism-title .mech-null-toggle { margin-left: auto; font-weight: 400; }
+/* …unless it is marked inline, where it rides directly after the heading text.
+   The default corner placement assumes the panel's content fills its width;
+   when it does not, the control ends up alone in the gap between two panels,
+   attached to neither. */
+.mechanism-title .mech-null-toggle--inline {
+  position: static; margin-left: 0.55rem;
+}
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);
@@ -6635,6 +6642,11 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   pointer-events: none;
 }
 .gof-tally--observed .con-total { color: #7B2D8E; }
+/* While a dot is being pointed at, the strip is showing a sample from the
+   history rather than the live one. A quiet tint says "this is a look back",
+   without moving anything — the panels must not shift, or the picture would
+   jump under the pointer. */
+.mechanism-strip.mech-previewing { background: #F4F7F9; }
 .null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8;
   /* So the landing scale is about the dot's own centre, not the SVG origin. */
   transform-box: fill-box; transform-origin: center; }
@@ -6677,10 +6689,10 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
      board top to bottom. */
   background: color-mix(in srgb, var(--band, transparent) 15%, transparent);
 }
-/* Share of χ², as a NEUTRAL darkening rather than more blue: it now lands on
-   top of seven different row tints, and a blue wash over a pink row read as a
-   third colour that meant nothing. Neutral reads as "more" over any hue. */
-.gof-tally .con { border-radius: 3px; background: color-mix(in srgb, #2A3C44 calc(var(--share, 0) * 26%), transparent); }
+/* No tint on the contribution. It was a second wash on top of the row's own
+   band colour and did not earn the complication — the numbers are right there,
+   in a column of four, and the big one is not hard to find. (Jeff, 2026-10-30:
+   "I dont' think the contribution tint adds much".) */
 .gof-tally tfoot th, .gof-tally tfoot td { border-top: 1px solid #ccd6dc; font-weight: 700; padding-top: 0.22rem; color: var(--ims-green, #114B5F); }
 .gof-tally .con-total { white-space: nowrap; color: var(--ims-green, #114B5F); }
 

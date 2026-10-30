@@ -24,7 +24,7 @@ import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
 import { computeBins } from '../../js/histogram.js';
 import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
+import { renderSimChart, resolveChartType, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
 const chartContainer = document.getElementById('chart-container');
@@ -76,6 +76,17 @@ let currentSourceName = '';
 let datasetContext = {};
 
 /** @type {number[]} */ let allStats = [];
+/**
+ * The SAMPLE behind each statistic, so a dot in the distribution can show what
+ * produced it. Parallel to `allStats` and kept only while the chart still draws
+ * individual dots — past DOTPLOT_AUTO_THRESHOLD it becomes a histogram, where a
+ * bar is a bin rather than a draw and there is nothing to point at. That also
+ * keeps this from growing to 100,000 × k numbers at the simulation cap.
+ * @type {number[][]}
+ */
+let allSamples = [];
+/** Which simulation the reader is hovering, if any. */
+/** @type {number|null} */ let previewIndex = null;
 /** @type {(() => number)|null} */ let rng = null;
 let mechanismInitialized = false;
 
@@ -280,8 +291,9 @@ function showDataLoaded() {
  * @returns {{ dartEls: SVGCircleElement[] }|null} the board, for the dart rain
  */
 function paintStrip(latest = false) {
-  const showObserved = stripMode === 'observed';
-  const counts = showObserved ? observed : lastSimSample;
+  const preview = previewIndex != null ? allSamples[previewIndex] : null;
+  const showObserved = stripMode === 'observed' && !preview;
+  const counts = preview || (showObserved ? observed : lastSimSample);
   if (!counts?.length) return null;
 
   /** @type {{ dartEls: SVGCircleElement[] }|null} */ let board = null;
@@ -291,7 +303,14 @@ function paintStrip(latest = false) {
     // the numbers would move. Same reason `renderEmptyChart` uses a separate
     // `presim-` generator in sim-app. The observed view gets its own stream
     // name so its scatter is stable no matter how many simulations have run.
-    const boardRng = createRng(showObserved ? `obs-${seed}` : `darts-${seed}-${allStats.length}`);
+    // A preview re-seeds from its own position in the run, which is the stream
+    // name that draw used when it was live (`allStats.length` was index + 1
+    // then). So hovering a dot brings back exactly the board that was on screen
+    // when that sample was taken, rather than a fresh scatter of the same counts.
+    const boardRng = createRng(
+      preview ? `darts-${seed}-${previewIndex + 1}`
+        : showObserved ? `obs-${seed}`
+          : `darts-${seed}-${allStats.length}`);
     board = renderNullBoard(mechNullBoard, {
       categories, props: p0, counts, rand: boardRng,
       width: 300, height: Math.max(110, 26 * categories.length),
@@ -302,13 +321,16 @@ function paintStrip(latest = false) {
     // A different NAME for a different entity, which is not the drift
     // `vocabulary.js` catalogues — that was one panel renaming itself while
     // holding the same thing. This panel really is holding your data now.
-    simTitleEl.textContent = showObserved ? 'Your Observed Sample'
-      : (latest ? words.draw : words.drawLatest);
+    simTitleEl.textContent = preview ? `Simulation ${previewIndex + 1}`
+      : showObserved ? 'Your Observed Sample'
+        : (latest ? words.draw : words.drawLatest);
   }
   if (mechanismDescEl) {
-    mechanismDescEl.textContent = showObserved
-      ? 'Your own counts, scored against the same p₀'
-      : 'Draw n observations from the hypothesized distribution p₀';
+    mechanismDescEl.textContent = preview
+      ? 'The sample behind the dot you are pointing at'
+      : showObserved
+        ? 'Your own counts, scored against the same p₀'
+        : 'Draw n observations from the hypothesized distribution p₀';
     mechanismDescEl.hidden = false;
   }
   return board;
@@ -353,6 +375,61 @@ function flyObservedToMarker() {
   };
 }
 
+/**
+ * Point at a dot; see the sample it came from.
+ *
+ * Jeff, 2026-10-30: "when we hover over a dot in the sampling distribution, it
+ * should show the associated sample." The distribution is a thousand samples
+ * compressed into a thousand positions, and this is the one move that takes a
+ * position back apart — the dot in the right tail stops being "a big value"
+ * and becomes a specific sample with a specific category over-represented.
+ *
+ * The dotplot already gives every circle a `data-stat-index`, which is its
+ * place in the values array and therefore in `allStats` — `computeDots` maps
+ * without sorting, so the two stay aligned. `attachTooltip` has also already
+ * made each circle focusable, so wiring `focusin` alongside `mouseenter`
+ * reaches the same feature from the keyboard at no extra cost.
+ *
+ * Only dots. Past DOTPLOT_AUTO_THRESHOLD the chart is a histogram, where a bar
+ * is a bin of many draws and there is no single sample to show.
+ */
+function wireSamplePreview() {
+  const svg = chartContainer?.querySelector('svg');
+  if (!svg) return;
+  for (const c of svg.querySelectorAll('circle[data-stat-index]')) {
+    const i = Number(c.getAttribute('data-stat-index'));
+    const sample = allSamples[i];
+    if (!sample) continue;
+
+    // Say it in the label too. A reader on a screen reader cannot hover, and
+    // the strip changing underneath is a visual side effect they would never
+    // learn about; the counts belong on the dot itself.
+    const parts = categories.map((cat, k) => `${cat} ${sample[k]}`).join(', ');
+    c.setAttribute('aria-label',
+      `${c.getAttribute('aria-label') || ''} — sample ${i + 1}: ${parts}`.trim());
+
+    c.addEventListener('mouseenter', () => showPreview(i));
+    c.addEventListener('focusin', () => showPreview(i));
+    c.addEventListener('mouseleave', endPreview);
+    c.addEventListener('focusout', endPreview);
+  }
+}
+
+/** @param {number} i */
+function showPreview(i) {
+  if (previewIndex === i) return;
+  previewIndex = i;
+  paintStrip();
+  mechanismStrip?.classList.add('mech-previewing');
+}
+
+function endPreview() {
+  if (previewIndex == null) return;
+  previewIndex = null;
+  paintStrip();
+  mechanismStrip?.classList.remove('mech-previewing');
+}
+
 /** Show the observed sample, or the latest simulated one, in the strip. */
 function setStripMode(mode) {
   if (mode === stripMode) return;
@@ -388,7 +465,13 @@ function initStripToggle() {
   const titleEl = document.querySelector('#mechanism-strip .mechanism-panel[data-entity="source"] .mechanism-title');
   if (!titleEl || stripToggleBtns) return;
   const wrap = document.createElement('div');
-  wrap.className = 'seg-control mech-null-toggle';
+  // `--inline`: beside the heading text, not at the panel's far right. The
+  // shared rule floats this control to the panel's top-right corner, which
+  // works where the panel's content fills it — here the board is 300px inside
+  // a 490px panel, so the toggle sat alone in the gap between Step 1 and Step 2
+  // and did not read as belonging to either. (Jeff, 2026-10-30: "I'm not
+  // seeing a step 1 heading.")
+  wrap.className = 'seg-control mech-null-toggle mech-null-toggle--inline';
   wrap.setAttribute('role', 'group');
   wrap.setAttribute('aria-label', 'Scatter a simulated sample or your own data on the null');
   wrap.innerHTML =
@@ -445,15 +528,11 @@ function tallyTableHTML(counts, opts = {}) {
   for (let i = 0; i < categories.length; i++) {
     const e = expected[i];
     const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
-    // Tinted by share of the total, so the category carrying χ² is findable
-    // without reading every number — tint, not colour, because the number is
-    // already there and colour must never be the only cue.
-    const share = chi > 0 ? contrib / chi : 0;
     html += `<tr style="--band:${BAND_FILLS[i % BAND_FILLS.length]}">
       <th scope="row">${esc(categories[i])}</th>
       <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}>${counts[i]}</td>
       <td class="num exp">${e.toFixed(1)}</td>
-      <td class="num con" style="--share:${share.toFixed(3)}">${contrib.toFixed(2)}</td>
+      <td class="num con">${contrib.toFixed(2)}</td>
     </tr>`;
   }
   html += `</tbody><tfoot><tr>
@@ -510,6 +589,7 @@ function generateSimulations(count) {
     const sample = drawMultinomial(totalN, p0, rng);
     const chi2 = gofChisqStat(sample, p0);
     allStats.push(chi2);
+    if (allSamples.length < DOTPLOT_AUTO_THRESHOLD) allSamples.push(sample);
     lastSample = sample;
     lastChisq = chi2;
   }
@@ -626,6 +706,9 @@ function renderChart(stats, observedStat, highlightIndex = -1, highlightIndices,
     pillMode: (showReadout && stats.length > 0) ? 'randomization' : undefined,
     pValue,
   });
+  // renderSimChart rebuilds the SVG, so every circle is a new element and the
+  // previous listeners went with the nodes they were on. Re-wire, don't leak.
+  wireSamplePreview();
 }
 
 /** @param {number[]} stats @param {number} observedStat */
@@ -662,6 +745,8 @@ function resetSimulation() {
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
+  allSamples = [];
+  previewIndex = null;
   rng = null;
   mechanismInitialized = false;
   seed = urlSeed || Math.random().toString(36).slice(2, 10);
