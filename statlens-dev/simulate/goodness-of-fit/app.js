@@ -59,8 +59,14 @@ initPlayPause(genBtns, resetBtn);
 /** @type {number[]} */ let p0 = [];
 /** @type {number[]} */ let expected = [];
 let observedChisq = 0;
-/** 'sim' shows a draw from H₀ in the strip; 'observed' shows the data's own counts. */
-let stripMode = 'sim';
+/**
+ * 'sim' shows a draw from H₀ in the strip; 'observed' shows the data's own
+ * counts. It opens on 'observed': before you have drawn anything there is no
+ * simulation to show, and the first thing worth seeing is your own sample
+ * landing on the null it is about to be compared with. The first +n flips it.
+ * (Jeff, 2026-10-31.)
+ */
+let stripMode = 'observed';
 /** @type {number[]} The most recent simulated sample, to come back to. */
 let lastSimSample = [];
 let lastSimChisq = 0;
@@ -267,6 +273,11 @@ function showDataLoaded() {
     initMechanismCollapse(mechanismStrip);
     initStripToggle();
   }
+  // Open on your own sample, thrown at the null. `syncStripToggle` first, so
+  // the control agrees with the panels from the very first frame.
+  stripMode = 'observed';
+  syncStripToggle();
+  runObservedAnimation();
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
 
   if (plotOnly && !plotOnlyRan) {
@@ -467,17 +478,42 @@ function endPreview() {
   mechanismStrip?.classList.remove('mech-previewing');
 }
 
-/** Show the observed sample, or the latest simulated one, in the strip. */
+/**
+ * Show the observed sample, or the latest simulated one, in the strip.
+ *
+ * Switching is INSTANT — both panels hold the new numbers before the click has
+ * finished. Running the draw animation here blanked the board and the table for
+ * about a second and a half every time the reader flipped between their data
+ * and a simulation, which is the one thing a comparison control must not do:
+ * you press it to look at something, not to watch it be built. (Jeff,
+ * 2026-10-31: "the null pop and table in steps 1 and 2 should update to the new
+ * data as soon as its swapped.") The opening view still animates — see
+ * `runObservedAnimation` — because there the sample arriving IS the news.
+ */
 function setStripMode(mode) {
   if (mode === stripMode) return;
   stripMode = mode;
   syncStripToggle();
-  const board = paintStrip(false, mode === 'observed');
+  paintStrip();
   if (mode !== 'observed') return;
   announce('Showing your observed sample, scored against the hypothesized distribution.');
-  const rain = createRng(`obsrain-${seed}`);
-  rainDarts(board?.dartEls ?? [], {
-    rand: rain,
+  // The numbers are already up; this only says where that χ² lands.
+  setTimeout(flyObservedToMarker, 120);
+}
+
+/**
+ * The opening view: your sample thrown at the null, once, with the animation.
+ *
+ * Runs when data loads, before anything has been simulated — so there is no
+ * null distribution yet and `flyObservedToMarker` will find no marker to aim
+ * at and decline, which is correct. It becomes meaningful on the toggle, after
+ * the reader has built a distribution to land in.
+ */
+function runObservedAnimation() {
+  const board = paintStrip(false, true);
+  if (!board) return;
+  rainDarts(board.dartEls ?? [], {
+    rand: createRng(`obsrain-${seed}`),
     onDone: () => flyBandsToTally({
       board: mechNullBoard?.querySelector('.null-board') ?? null,
       table: mechSimulated,
