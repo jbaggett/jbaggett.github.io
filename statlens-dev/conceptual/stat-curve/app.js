@@ -48,6 +48,7 @@ import { setJStat, tCDF } from '../../js/distributions.js';
 import { renderSimChart } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
 import { announce, initHelp, initSettings } from '../../js/page-utils.js';
+import { tex } from '../../js/tex.js';
 import { prefersReducedMotion } from '../../js/settings.js';
 
 // ─── The population ───
@@ -231,16 +232,26 @@ function renderSample() {
   const seEst = s / Math.sqrt(n);
   // The numerator is written identically in both rows, and only the
   // denominator is marked, because "only this changed" is the entire argument.
+  // Typeset, not spelled out in monospace. The claim this panel makes is about
+  // a NUMERATOR shared by two fractions whose DENOMINATORS differ, and a
+  // fraction bar says that in one stroke where "(102.8 − 100) ÷ σ/√n = 8.03"
+  // asked the reader to parse precedence first. (Jeff, 2026-10-31: "the
+  // formatting of the math on the t vs z app makes it hard to read … let's use
+  // properly formatted math".)
+  //
+  // The denominator is wrapped in \htmlClass so it can be tinted — the one
+  // thing that differs between the rows, marked alongside the fraction bar that
+  // already shows it rather than instead of it.
   const row = (/** @type {string} */ key, /** @type {string} */ name,
-    /** @type {string} */ den, /** @type {number} */ denVal, /** @type {number} */ val) => `
-    <div class="sc-row" data-row="${key}">
-      <span class="sc-name">${name}</span>
-      <span class="sc-expr">(${fmt(xbar, 1)} − ${MU}) ÷ <span class="sc-den">${den} = ${fmt(denVal, 2)}</span></span>
-      <span class="sc-val">${fmt(val)}</span>
-    </div>`;
+    /** @type {string} */ symDen, /** @type {string} */ numDen,
+    /** @type {number} */ val) => `
+    <div class="sc-row" data-row="${key}">${tex(
+      `${name} = \\frac{\\bar{x} - \\mu}{\\htmlClass{sc-den}{${symDen}}}`
+      + ` = \\frac{${fmt(xbar, 1)} - ${MU}}{\\htmlClass{sc-den}{${numDen}}}`
+      + ` = ${fmt(val)}`, { display: true })}</div>`;
   scoreWrap.innerHTML =
-    row('z', 'z', `σ/√n`, seKnown, z)
-    + row('t', 't', `s/√n`, seEst, t)
+    row('z', 'z', '\\dfrac{\\sigma}{\\sqrt{n}}', `\\dfrac{${SIGMA}}{\\sqrt{${n}}}`, z)
+    + row('t', 't', '\\dfrac{s}{\\sqrt{n}}', `\\dfrac{${fmt(s, 1)}}{\\sqrt{${n}}}`, t)
     + `<p class="sc-hint">Same gap of ${fmt(gap, 1)} on top. Only the bottom moved.</p>`;
 }
 
@@ -475,6 +486,14 @@ nSlider?.addEventListener('input', () => {
   // Each n has its own curve — df changes, and so does how much s wobbles — so
   // a tally collected at another n is not part of this one.
   reset();
+});
+
+// KaTeX is a deferred CDN script, so a reader who presses +1 before it arrives
+// gets `tex()`'s <code> fallback and keeps it until the next draw. One re-render
+// once the page has finished loading closes that window; it is a no-op when the
+// math is already typeset, which is the normal case.
+addEventListener('load', () => {
+  if (lastSample && !document.querySelector('.sc-row .katex')) render();
 });
 
 initHelp();

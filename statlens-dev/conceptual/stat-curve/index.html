@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+
     <link rel="stylesheet" href="../../css/style.css">
     <meta name="theme-color" content="#569BBD">
     <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
@@ -42,17 +45,18 @@
         /* The two scorings, side by side: same numerator, different denominator.
            That is the whole lesson, so they are set as a pair and never apart. */
         .sc-score { display: grid; gap: 0.35rem; margin: 0.5rem auto 0; max-width: 420px; }
-        .sc-row {
-            display: grid; grid-template-columns: 1.6rem 1fr auto; align-items: center;
-            gap: 0.5rem; padding: 0.25rem 0.45rem; border-radius: 4px;
-            font-size: 0.82rem;
+        .sc-row { padding: 0.3rem 0.2rem; text-align: center; overflow-x: auto; }
+        .sc-row + .sc-row { border-top: 1px solid var(--border, #d9e2e7); }
+        /* KaTeX sizes itself; this just stops a long substitution from forcing
+           the whole panel wide on a phone. */
+        .sc-row .katex { font-size: 1em; }
+        /* The denominator is the only thing that differs between the two rows,
+           so it is tinted — alongside the fraction bar that already shows it,
+           never instead of it. */
+        .sc-row .sc-den {
+            background: color-mix(in srgb, var(--ims-blue, #569BBD) 18%, transparent);
+            border-radius: 3px; padding: 0 0.12em;
         }
-        .sc-row.is-on { background: color-mix(in srgb, var(--ims-blue, #569BBD) 15%, transparent); }
-        .sc-row .sc-name { font-weight: 700; color: var(--ims-green, #114B5F); }
-        .sc-row .sc-expr { font-family: 'Source Code Pro', monospace; color: #595959; }
-        .sc-row .sc-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ims-green, #114B5F); }
-        /* The denominator is the only thing that differs; say so without colour. */
-        .sc-row .sc-den { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
 
         /* The two plots, stacked on one axis. Same width and same domain, so a
            value sits at the same x in both — that is what makes the paired
