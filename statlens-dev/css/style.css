@@ -6636,7 +6636,7 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 /* Centred in its panel: the board is the picture Step 1 is about, and it sat
    hard against the left edge of a panel half again as wide. (Jeff, 2026-10-31.) */
 .null-board-wrap { margin: 0.2rem 0 0.45rem; display: flex; justify-content: center; }
-.null-board { display: block; max-width: 420px; width: 100%; }
+.null-board { display: block; max-width: 460px; width: 100%; }
 .null-board-cat { font-size: 9.5px; fill: var(--ims-green, #114B5F); }
 .null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
 /* The hypothesised share, beside its name. Lighter than the name so the two
@@ -6683,7 +6683,10 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 /* ── Step 2: the tally this draw produced (GOF) ──────────────────────────
    Todd Will's four columns with the total that IS χ². Replaces a bar chart
    that showed the counts but never connected them to the statistic below. */
-.gof-tally { border-collapse: collapse; font-size: 0.78rem; width: 100%; max-width: 330px; }
+/* Centred, like the board above it. Left-aligned, its centre sat ~50px left of
+   the panel's while the board's field sat ~50px right — the two steps read as
+   two columns that did not line up. (Jeff, 2026-10-31.) */
+.gof-tally { border-collapse: collapse; font-size: 0.78rem; width: 100%; max-width: 330px; margin: 0 auto; }
 .gof-tally th, .gof-tally td { padding: 0.12rem 0.35rem; text-align: left; }
 .gof-tally thead th { font-size: 0.72rem; color: var(--ims-gray-text, #666); border-bottom: 1px solid #ccd6dc; white-space: nowrap; }
 .gof-tally .num { text-align: right; font-variant-numeric: tabular-nums; }

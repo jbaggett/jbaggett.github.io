@@ -36,10 +36,18 @@ export const BAND_FILLS = [
 ];
 
 const BORDER = '#333';
-// Left gutter: names live on white, not on the fill. Wide enough for a name
-// AND its hypothesised share — "Hispanic 12.5%" is the worst case we carry.
-const LABEL_W = 122;
-const COUNT_W = 30;
+// The gutters are EQUAL, which is what centres the coloured field.
+//
+// They were 122 and 30, so the field sat 46 units — about 50px — right of the
+// board's own centre while the <svg> around it was perfectly centred in the
+// panel. The thing a reader looks at was off-centre even though the box holding
+// it was not. (Jeff, 2026-10-31: "fix the alignment in steps 1 and 2.")
+//
+// 86 is what the left gutter needs: the widest label we draw, "Hispanic 12%",
+// measures ~60px against ~90px of room here. The right gutter spends the same
+// on a three-digit count that needs 20px, and buys a centred field with it.
+const LABEL_W = 86;
+const COUNT_W = 86;
 /**
  * ⚠ There is deliberately NO minimum band height.
  *
