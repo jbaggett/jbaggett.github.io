@@ -446,6 +446,12 @@
    "k": "t star, critical value, why t instead of z, 1.96, margin of error, sigma unknown, sample standard deviation, degrees of freedom, confidence interval width, t distribution, coverage, proportion confidence interval, success-failure condition, np at least 10, estimated standard error, Wald interval, why simulate"
   },
   {
+   "p": "conceptual/stat-curve/",
+   "t": "Where the Curve Comes From",
+   "d": "Score the same samples two ways — dividing by the true standard error, then by the one you estimate from the sample — and watch the t distribution's heavy tails appear.",
+   "k": "t distribution, why t has heavier tails, standard error, sample standard deviation, sampling distribution of a test statistic, z versus t, degrees of freedom, standardize, reference distribution"
+  },
+  {
    "p": "conceptual/two-se/",
    "t": "Why ± 2 SE Works",
    "d": "The argument behind every “statistic ± 2 SE” interval, drawn with no numbers on the axis at all.",

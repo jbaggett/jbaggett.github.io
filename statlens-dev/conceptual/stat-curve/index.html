@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Where the Curve Comes From | StatLens</title>
+    <meta name="description" content="Score the same samples two ways — dividing by the true standard error, then by the one you estimate from the sample — and watch the t distribution's heavy tails appear.">
+    <meta name="keywords" content="t distribution, why t has heavier tails, standard error, sample standard deviation, sampling distribution of a test statistic, z versus t, degrees of freedom, standardize, reference distribution">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm",
+            "jstat":        "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        .sc-controls { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; align-items: center; margin: 0.5rem 0 0.75rem; }
+        .sc-field { display: inline-flex; align-items: center; gap: 0.5rem; }
+        .sc-field > .sc-label { color: var(--ims-gray-text); font-size: 0.9rem; }
+        .sc-field input[type="range"] { width: 170px; }
+        .sc-n { font-variant-numeric: tabular-nums; font-weight: 700; min-width: 2.2em; }
+
+        #sc-pop svg, #sc-sample svg { display: block; width: 100%; height: auto; max-width: 420px; margin: 0 auto; }
+
+        /* The two scorings, side by side: same numerator, different denominator.
+           That is the whole lesson, so they are set as a pair and never apart. */
+        .sc-score { display: grid; gap: 0.35rem; margin: 0.5rem auto 0; max-width: 420px; }
+        .sc-row {
+            display: grid; grid-template-columns: 1.6rem 1fr auto; align-items: center;
+            gap: 0.5rem; padding: 0.25rem 0.45rem; border-radius: 4px;
+            font-size: 0.82rem;
+        }
+        .sc-row.is-on { background: color-mix(in srgb, var(--ims-blue, #569BBD) 15%, transparent); }
+        .sc-row .sc-name { font-weight: 700; color: var(--ims-green, #114B5F); }
+        .sc-row .sc-expr { font-family: 'Source Code Pro', monospace; color: #595959; }
+        .sc-row .sc-val { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ims-green, #114B5F); }
+        /* The denominator is the only thing that differs; say so without colour. */
+        .sc-row .sc-den { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
+
+        .sc-readout { margin: 0.6rem 0 0; font-size: 0.92rem; }
+        .sc-readout .sc-big { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .sc-note { color: var(--ims-gray-text); font-size: 0.86rem; margin: 0.3rem 0 0; }
+        .sc-hint { color: var(--ims-gray-text); font-style: italic; font-size: 0.85rem; text-align: center; margin: 0.4rem 0 0; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#settings">Skip to Settings</a>
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Figure</a>
+    </nav>
+
+    <main>
+        <h1>Where the Curve Comes From<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p>Every sample you draw gives one number: how far its mean sits from &mu;, counted in standard errors. Draw a lot of them and those numbers pile up into a shape &mdash; the curve your table of critical values came from. <strong>Score the same samples two ways</strong> and watch which one that shape depends on.</p>
+
+        <section id="settings" aria-label="Settings">
+            <div class="sc-controls">
+                <div class="sc-field">
+                    <label class="sc-label" for="n-slider">Sample size <span class="sc-n" id="n-value">10</span></label>
+                    <input type="range" id="n-slider" min="3" max="50" step="1" value="10"
+                           aria-describedby="n-help">
+                    <span id="n-help" class="sr-only">Changing the sample size starts the tally over, because each sample size has its own curve.</span>
+                </div>
+                <div class="sc-field">
+                    <span class="sc-label" id="score-label">Divide by:</span>
+                    <div class="seg-control" role="group" aria-labelledby="score-label" id="score-toggle">
+                        <button type="button" data-score="z" aria-pressed="true">&sigma;/&radic;n (the true SE)</button>
+                        <button type="button" data-score="t" aria-pressed="false">s/&radic;n (from the sample)</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mech-tiers mech-tiers--split" aria-label="How this simulation works, step by step">
+            <div class="mech-col-left">
+                <div class="mech-tier mech-tier--source">
+                    <h3 class="mech-tier-head"><span class="mech-tier-tag">Step 1</span>The population</h3>
+                    <div id="sc-pop"></div>
+                    <p class="sc-hint" id="pop-hint">&mu; and &sigma; are known here &mdash; that is what makes the comparison possible</p>
+                </div>
+                <div class="mech-tier mech-tier--draw">
+                    <h3 class="mech-tier-head"><span class="mech-tier-tag">Step 2</span>This sample</h3>
+                    <div id="sc-sample"></div>
+                    <div class="sc-score" id="sc-score"></div>
+                </div>
+            </div>
+            <div class="mech-col-right">
+                <div class="mech-tier mech-tier--distribution">
+                    <h3 class="mech-tier-head"><span class="mech-tier-tag">Step 3</span><span id="dist-title">Standardized Means</span></h3>
+                    <div id="chart" class="chart-container"></div>
+                    <div class="gen-bar" id="controls" role="group" aria-label="Draw samples">
+                        <button type="button" class="gen-btn" data-count="1">+1</button>
+                        <button type="button" class="gen-btn" data-count="10">+10</button>
+                        <button type="button" class="gen-btn" data-count="100">+100</button>
+                        <button type="button" class="gen-btn" data-count="1000">+1000</button>
+                        <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+                        <span class="gen-label">Samples</span>
+                    </div>
+                    <div class="sc-readout" id="readout" role="status" aria-live="off"></div>
+                </div>
+            </div>
+        </section>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+
+        <dialog id="help-dialog" class="help-dialog" aria-label="Help">
+            <h2>Where the Curve Comes From</h2>
+            <p class="help-intro">A sample mean is not interesting on its own &mdash; what matters is how far it sits from &mu; <em>relative to how much sample means bounce around</em>. That distance, counted in standard errors, is the statistic. This page builds its distribution one sample at a time.</p>
+
+            <h3>The two recipes</h3>
+            <p>Both start from the same gap, <strong>x&#772; &minus; &mu;</strong>. They differ in what they divide it by:</p>
+            <ul>
+                <li><strong>&sigma;/&radic;n</strong> &mdash; the true standard error. The same number every time, because &sigma; is a fact about the population.</li>
+                <li><strong>s/&radic;n</strong> &mdash; the standard error you can actually compute, using this sample's own s. A different number every time.</li>
+            </ul>
+
+            <h3>What to look for</h3>
+            <p>With &sigma;/&radic;n the pile matches the normal curve drawn over it. Flip to s/&radic;n &mdash; <em>the same samples, rescored</em> &mdash; and the pile grows a taller peak and heavier tails that spill past the curve. Nothing about x&#772; changed. The extra spread comes entirely from the denominator wobbling.</p>
+            <p>That is why a t table exists. If you used 1.96 on the second pile you would reject far more often than 5% of the time &mdash; the tally under the figure counts exactly how often.</p>
+            <p>Now drag the sample size up. The bigger n is, the less s wobbles, and the two piles become hard to tell apart &mdash; which is why the bottom row of a t table is the normal row.</p>
+
+            <h3>Related</h3>
+            <p><a href="../why-t-star/">Why t* and not 1.96</a> takes the next step: what the heavier tails cost you in interval coverage, and what t* pays to fix it.</p>
+        </dialog>
+    </main>
+
+    <script type="module" src="app.js"></script>
+    <script type="module" src="../../js/feedback.js"></script>
+</body>
+</html>
