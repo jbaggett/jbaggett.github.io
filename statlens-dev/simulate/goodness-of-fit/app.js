@@ -483,24 +483,30 @@ function endPreview() {
 /**
  * Show the observed sample, or the latest simulated one, in the strip.
  *
- * Switching is INSTANT — both panels hold the new numbers before the click has
- * finished. Running the draw animation here blanked the board and the table for
- * about a second and a half every time the reader flipped between their data
- * and a simulation, which is the one thing a comparison control must not do:
- * you press it to look at something, not to watch it be built. (Jeff,
- * 2026-10-31: "the null pop and table in steps 1 and 2 should update to the new
- * data as soon as its swapped.") The opening view still animates — see
- * `runObservedAnimation` — because there the sample arriving IS the news.
+ * The two directions differ, on purpose.
+ *
+ * → YOUR DATA replays the opening animation: the darts are thrown again and
+ *   the tallies cross again. Seeing your sample land on the null is the thing
+ *   this view is for, and it is worth watching more than once. (Jeff,
+ *   2026-10-31: "when toggling from simulated data back to your data, show the
+ *   animation again.")
+ *
+ * → SIMULATED is instant. You are going back to something you were already
+ *   looking at, not being shown something new, and re-animating it would blank
+ *   a panel you just left.
+ *
+ * ⚠ This reinstates, for one direction only, the animation removed earlier the
+ * same day after "the null pop and table in steps 1 and 2 should update to the
+ * new data as soon as its swapped". The complaint then was that BOTH flips sat
+ * blank for a second and a half; the half that is the news keeps its animation.
  */
 function setStripMode(mode) {
   if (mode === stripMode) return;
   stripMode = mode;
   syncStripToggle();
-  paintStrip();
-  if (mode !== 'observed') return;
+  if (mode !== 'observed') { paintStrip(); return; }
   announce('Showing your observed sample, scored against the hypothesized distribution.');
-  // The numbers are already up; this only says where that χ² lands.
-  setTimeout(flyObservedToMarker, 120);
+  runObservedAnimation();
 }
 
 /**
