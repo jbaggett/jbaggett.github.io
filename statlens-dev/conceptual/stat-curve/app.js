@@ -333,8 +333,12 @@ function renderDistributions(newest = -1) {
     }
   };
 
-  one(chartZ, zs, 'sc-chart-z', '(x̄ − μ) ÷ (σ/√n)');
-  one(chartT, ts, 'sc-chart-t', '(x̄ − μ) ÷ (s/√n)');
+  // Just the letter. Step 2 shows what each one is, typeset, directly above —
+  // repeating the recipe on the axis in flat text put the least readable
+  // rendering of it in the most prominent place, and the label over each plot
+  // already names which SE it divided by. (Jeff, 2026-10-31.)
+  one(chartZ, zs, 'sc-chart-z', 'z');
+  one(chartT, ts, 'sc-chart-t', 't');
   if (chartType === 'dotplot') wireLinkedHover();
   showLinked(linked);
 }
