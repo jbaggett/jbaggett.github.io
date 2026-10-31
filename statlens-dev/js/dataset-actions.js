@@ -87,13 +87,54 @@ export function makeActionButton(opts) {
  * @param {boolean} [contributed] - from the index entry's `contributed` flag
  * @returns {Promise<any>}
  */
+/**
+ * Give a counts-only dataset the rows those counts are a summary of.
+ *
+ * A goodness-of-fit dataset may ship as `categories` + `observed` with no
+ * `rows` — five of the six do. The simulation never minded, because it reads
+ * the counts directly, but everything that works on DATA went missing with
+ * them: the data panel renders no action group without rows, so Explore,
+ * the table preview and the CSV download all disappeared. (Jeff, 2026-10-31:
+ * "when I open Blood Types (Illustrative) in the chi square test, the other
+ * buttons for visualizing, downloading, etc. don't show up in the data panel.")
+ *
+ * Expanding is lossless and not an invention: for one categorical variable,
+ * 80 rows of blood types IS the data and the counts are its summary. The rows
+ * come back in category order, which is the order the counts were given in.
+ *
+ * ⚠ Does not touch a dataset that already has rows, and cannot move any seeded
+ * output: the GOF page reads `categories`/`observed` when they are present and
+ * only falls back to rows when they are not.
+ *
+ * @param {any} ds
+ * @returns {any} the same object when there is nothing to do
+ */
+export function withExpandedCounts(ds) {
+  if (!ds || ds.rows?.length) return ds;
+  const cats = ds.categories;
+  const obs = ds.observed;
+  if (!Array.isArray(cats) || !Array.isArray(obs) || cats.length !== obs.length) return ds;
+  const col = ds.variables?.[0]?.name;
+  if (!col) return ds;
+
+  const rows = [];
+  for (let i = 0; i < cats.length; i++) {
+    const k = Math.round(Number(obs[i]));
+    if (!Number.isFinite(k) || k < 0) return ds;   // a count that is not a count
+    for (let j = 0; j < k; j++) rows.push({ [col]: cats[i] });
+  }
+  if (!rows.length) return ds;
+  return { ...ds, rows };
+}
+
 export function fetchFullDataset(id, contributed = false) {
   const file = `${encodeURIComponent(id)}.json`;
   return fetch(`${sitePrefix()}data/${contributed ? `extra/${file}` : file}`)
     .then(r => {
       if (!r.ok) throw new Error(`Failed to load ${id}`);
       return r.json();
-    });
+    })
+    .then(withExpandedCounts);
 }
 
 /**

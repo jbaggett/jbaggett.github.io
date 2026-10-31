@@ -6,7 +6,7 @@
  */
 
 import { parseCSV, detectDelimiter, rowsToCSV, downloadCSV } from './csv-parser.js';
-import { renderDatasetActions, icon } from './dataset-actions.js';
+import { renderDatasetActions, icon, withExpandedCounts } from './dataset-actions.js';
 import { getSettings, setSettings, resetSettings, applySettings, getActivityMode, getExpertMode, prefersReducedMotion } from './settings.js';
 import { parseParams } from './url-params.js';
 import { configFromUrlParams, configFromGenerator, generateFromConfig } from './datagen.js';
@@ -1499,7 +1499,10 @@ export async function fetchDataset(id, contributed) {
   if (contributed === undefined) contributed = await isContributed(id);
   const resp = await fetch(contributed ? storePath(`${id}.json`) : dataPath(`${id}.json`));
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-  return resp.json();
+  // A counts-only dataset gets the rows its counts summarise, so the data
+  // panel's Explore / preview / download work on it like any other. See
+  // `withExpandedCounts` — a no-op for everything that already has rows.
+  return withExpandedCounts(await resp.json());
 }
 
 /** @type {Promise<any[]>|null} */
