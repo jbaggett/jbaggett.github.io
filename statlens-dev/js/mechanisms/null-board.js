@@ -141,6 +141,12 @@ export function renderNullBoard(container, opts) {
       n.setAttribute('y', String(y + h / 2));
       n.setAttribute('dominant-baseline', 'middle');
       n.setAttribute('class', 'null-board-count');
+      // Tagged so the rain can withhold it: a count that is already printed
+      // while the darts are still arriving says the tally was known in advance,
+      // which is the opposite of what the animation is for. (Jeff, 2026-10-30:
+      // "the simulated counts also shouldn't appear in step 1 until the dots
+      // land.")
+      n.setAttribute('data-count-for', String(i));
       n.textContent = String(counts[i]);
       svg.appendChild(n);
       row.els.push(n);
@@ -262,13 +268,36 @@ export function rainDarts(darts, { rand = Math.random, max = 600, onDone } = {})
     const j = Math.floor(rand() * (i + 1));
     const t = order[i]; order[i] = order[j]; order[j] = t;
   }
+  /** When each band's LAST dart will have landed. */
+  /** @type {Map<string, number>} */ const bandDone = new Map();
   order.forEach((idx, pos) => {
     const d = /** @type {SVGElement} */ (darts[idx]);
     d.style.animation = `nb-dart-land ${DUR}ms cubic-bezier(.34,1.56,.64,1) ${pos * STAGGER}ms both`;
+    const band = d.getAttribute('data-band') ?? '';
+    const landsAt = pos * STAGGER + DUR;
+    bandDone.set(band, Math.max(bandDone.get(band) ?? 0, landsAt));
   });
 
+  // Withhold each band's count until its own darts have all landed, then put it
+  // up. The number arrives BECAUSE the darts did, which is the claim.
+  const svg = /** @type {SVGElement} */ (darts[0]).ownerSVGElement;
+  const labels = svg ? [...svg.querySelectorAll('[data-count-for]')] : [];
+  const held = new Map();
+  for (const el of labels) {
+    held.set(el, el.textContent);
+    el.textContent = '';
+  }
+  for (const [band, at] of bandDone) {
+    const el = labels.find((e) => e.getAttribute('data-count-for') === band);
+    if (el) setTimeout(() => { el.textContent = held.get(el) ?? ''; }, at);
+  }
+
   const total = (n - 1) * STAGGER + DUR;
-  setTimeout(done, total);
+  setTimeout(() => {
+    // Belt and braces: whatever happened to the timers, nothing is left blank.
+    for (const [el, text] of held) if (!el.textContent) el.textContent = text ?? '';
+    done();
+  }, total);
   return total;
 }
 
@@ -311,6 +340,9 @@ export function flyBandsToTally({ board, table, duration = 520, onDone }) {
     landed += 1;
     if (landed < cells.length) return;
     layer.remove();
+    // The total is the last thing to appear, because it is the sum of things
+    // that have only just arrived — and it is what flies to the distribution next.
+    revealPending(table.querySelector('tfoot'));
     done();
   };
 
@@ -336,9 +368,37 @@ export function flyBandsToTally({ board, table, duration = 520, onDone }) {
       [{ transform: 'translate(0,0) scale(1)', opacity: 0.95 },
        { transform: `translate(${dx}px, ${dy}px) scale(0.6)`, opacity: 0.2 }],
       { duration, delay, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'forwards' });
-    anim.onfinish = () => { cell.classList.add('tally-cell-landed'); finish(); };
-    anim.oncancel = finish;
+    anim.onfinish = () => {
+      cell.classList.add('tally-cell-landed');
+      // Everything in this row that was waiting on the count: the count itself
+      // and whatever is derived from it. A number that is on screen before its
+      // flyer arrives makes the flight decoration; arriving WITH it is the
+      // point. (Jeff, 2026-10-30: "the simulated counts in Step 2 should be
+      // blank until the animation lands.")
+      revealPending(cell.closest('tr'));
+      finish();
+    };
+    anim.oncancel = () => { revealPending(cell.closest('tr')); finish(); };
   });
 
   return duration + (cells.length - 1) * 70;
+}
+
+/**
+ * Fill in every element under `root` that is holding its text back.
+ *
+ * The convention is deliberately dumb — an element carries its own final text
+ * in `data-reveal` and shows nothing until something reveals it — so this
+ * module needs to know nothing about χ², or counts, or what a row means.
+ *
+ * @param {Element|null} root
+ */
+export function revealPending(root) {
+  if (!root) return;
+  const all = root.matches?.('[data-reveal]') ? [root, ...root.querySelectorAll('[data-reveal]')]
+    : [...root.querySelectorAll('[data-reveal]')];
+  for (const el of all) {
+    el.textContent = el.getAttribute('data-reveal') ?? '';
+    el.removeAttribute('data-reveal');
+  }
 }

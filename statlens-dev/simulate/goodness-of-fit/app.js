@@ -288,9 +288,11 @@ function showDataLoaded() {
  * them when it does.
  *
  * @param {boolean} [latest] - mark this as the newest draw
+ * @param {boolean} [animate] - a rain and a tally flight are about to run, so
+ *   the numbers they deliver are rendered held back
  * @returns {{ dartEls: SVGCircleElement[] }|null} the board, for the dart rain
  */
-function paintStrip(latest = false) {
+function paintStrip(latest = false, animate = false) {
   const preview = previewIndex != null ? allSamples[previewIndex] : null;
   const showObserved = stripMode === 'observed' && !preview;
   const counts = preview || (showObserved ? observed : lastSimSample);
@@ -316,7 +318,12 @@ function paintStrip(latest = false) {
       width: 300, height: Math.max(110, 26 * categories.length),
     });
   }
-  if (mechSimulated) mechSimulated.innerHTML = tallyTableHTML(counts, { flyable: true, observed: showObserved });
+  // Held back only when something really is coming to deliver them.
+  const pending = animate && !prefersReducedMotion();
+  if (mechSimulated) {
+    mechSimulated.innerHTML = tallyTableHTML(counts, {
+      flyable: true, observed: showObserved, pending });
+  }
   if (simTitleEl) {
     // A different NAME for a different entity, which is not the drift
     // `vocabulary.js` catalogues — that was one panel renaming itself while
@@ -435,7 +442,7 @@ function setStripMode(mode) {
   if (mode === stripMode) return;
   stripMode = mode;
   syncStripToggle();
-  const board = paintStrip();
+  const board = paintStrip(false, mode === 'observed');
   if (mode !== 'observed') return;
   announce('Showing your observed sample, scored against the hypothesized distribution.');
   const rain = createRng(`obsrain-${seed}`);
@@ -516,6 +523,10 @@ function initStripToggle() {
  * @param {object} [opts]
  * @param {boolean} [opts.flyable] - tag the observed cells so darts can land on them
  * @param {boolean} [opts.observed] - this is the data's own sample, not a draw
+ * @param {boolean} [opts.pending] - a flight is about to bring these numbers, so
+ *   render them held back (see `revealPending`). Only ever true when the flight
+ *   will really run: on a batch, or under reduced motion, nothing would arrive
+ *   to reveal them and the table would simply stay blank.
  */
 function tallyTableHTML(counts, opts = {}) {
   const chi = chiSqOf(counts);
@@ -530,16 +541,21 @@ function tallyTableHTML(counts, opts = {}) {
     const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
     html += `<tr style="--band:${BAND_FILLS[i % BAND_FILLS.length]}">
       <th scope="row">${esc(categories[i])}</th>
-      <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}>${counts[i]}</td>
+      <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}${
+        opts.pending ? ` data-reveal="${counts[i]}"` : ''}>${opts.pending ? '' : counts[i]}</td>
       <td class="num exp">${e.toFixed(1)}</td>
-      <td class="num con">${contrib.toFixed(2)}</td>
+      <td class="num con"${opts.pending ? ` data-reveal="${contrib.toFixed(2)}"` : ''}>${
+        opts.pending ? '' : contrib.toFixed(2)}</td>
     </tr>`;
   }
+  const totalObs = counts.reduce((a, b) => a + b, 0);
+  const chiText = `\u03c7\u00b2 = ${chi.toFixed(3)}`;
   html += `</tbody><tfoot><tr>
     <th scope="row">Total</th>
-    <td class="num">${counts.reduce((a, b) => a + b, 0)}</td>
+    <td class="num"${opts.pending ? ` data-reveal="${totalObs}"` : ''}>${opts.pending ? '' : totalObs}</td>
     <td class="num">${expected.reduce((a, b) => a + b, 0).toFixed(0)}</td>
-    <td class="num con-total" data-chi-cell>\u03c7\u00b2 = ${chi.toFixed(3)}</td>
+    <td class="num con-total" data-chi-cell${
+      opts.pending ? ` data-reveal="${chiText}"` : ''}>${opts.pending ? '' : chiText}</td>
   </tr></tfoot></table>`;
   return html;
 }
@@ -616,7 +632,7 @@ function generateSimulations(count) {
     // is on screen.
     stripMode = 'sim';
     syncStripToggle();
-    const board = paintStrip(count === 1);
+    const board = paintStrip(count === 1, count === 1);
     if (mechSimulatedChisq) {
       mechSimulatedChisq.textContent = formatStat(lastChisq, 2);
       mechSimulatedChisq.classList.toggle('highlight-last', count === 1);
