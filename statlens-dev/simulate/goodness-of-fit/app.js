@@ -333,14 +333,12 @@ function paintStrip(latest = false, animate = false) {
     mechSimulated.innerHTML = tallyTableHTML(counts, {
       flyable: true, observed: showObserved, pending });
   }
-  if (simTitleEl) {
-    // A different NAME for a different entity, which is not the drift
-    // `vocabulary.js` catalogues — that was one panel renaming itself while
-    // holding the same thing. This panel really is holding your data now.
-    simTitleEl.textContent = preview ? `Simulation ${previewIndex + 1}`
-      : showObserved ? 'Your Observed Sample'
-        : (latest ? words.draw : words.drawLatest);
-  }
+  // A different NAME for a different entity, which is not the drift
+  // `vocabulary.js` catalogues — that was one panel renaming itself while
+  // holding the same thing. This panel really is holding your data now.
+  setDrawHeading(preview ? `Simulation ${previewIndex + 1}`
+    : showObserved ? 'Your Observed Sample'
+      : (latest ? words.draw : words.drawLatest));
   if (mechanismDescEl) {
     mechanismDescEl.textContent = preview
       ? 'The sample behind the dot you are pointing at'
@@ -350,6 +348,29 @@ function paintStrip(latest = false, animate = false) {
     mechanismDescEl.hidden = false;
   }
   return board;
+}
+
+/**
+ * Rename Step 2, in whichever heading is on screen.
+ *
+ * In a tier layout the panel's own `.mechanism-title` is hidden and the tier's
+ * STEP heading says it instead — but that heading is written ONCE, when the
+ * layout is built, so renaming the inner one left "This Simulation" standing
+ * over a table of the reader's own counts. The caption underneath HAD changed,
+ * which made the disagreement worse rather than better.
+ *
+ * @param {string} text
+ */
+function setDrawHeading(text) {
+  if (simTitleEl) simTitleEl.textContent = text;
+  const head = document.querySelector('.mech-tier--draw .mech-tier-head');
+  if (!head) return;
+  // Replace the heading's own words, keeping the STEP tag element (and any
+  // control sitting in the row) exactly where they are.
+  for (const n of head.childNodes) {
+    if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) { n.textContent = text; return; }
+  }
+  head.appendChild(document.createTextNode(text));
 }
 
 /**
