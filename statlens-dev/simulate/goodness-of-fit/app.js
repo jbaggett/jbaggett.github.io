@@ -241,7 +241,16 @@ function showDataLoaded() {
   // Hypotheses with the specific hypothesized proportions per category.
   const hypBox = document.getElementById('gof-hyp');
   const h0El = document.getElementById('gof-h0');
-  if (h0El) h0El.innerHTML = categories.map((c, i) => `p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}`).join(', ');
+  // Each proportion wears its category's colour, the same wash the table rows
+  // and the board bands use — so H₀ as WRITTEN and H₀ as DRAWN are visibly the
+  // same four things. (Jeff, 2026-10-31: "could we color the null proportions
+  // in the null hypothesis using background color for each category similar to
+  // the rows in the table".) Never the only cue: the name is in the subscript.
+  if (h0El) {
+    h0El.innerHTML = categories.map((c, i) =>
+      `<span class="gof-h0-term" style="--band:${BAND_FILLS[i % BAND_FILLS.length]}"`
+      + `>p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}</span>`).join(', ');
+  }
   if (hypBox) hypBox.hidden = false;
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Draw simulated samples to build the null distribution.</p>';
   // The observed counts are no longer in the strip (see index.html).
@@ -469,8 +478,21 @@ function syncStripToggle() {
  * page puts there, at the far end of the title rather than on a row below it.
  */
 function initStripToggle() {
-  const titleEl = document.querySelector('#mechanism-strip .mechanism-panel[data-entity="source"] .mechanism-title');
-  if (!titleEl || stripToggleBtns) return;
+  if (stripToggleBtns) return;
+  // WHERE the heading is depends on the layout, and getting this wrong makes
+  // the control invisible rather than misplaced.
+  //
+  // `?layout=tiers|split` (js/mechanisms/layout.js) lifts each panel into a
+  // tier with its own STEP heading and sets the panel's inner
+  // `.mechanism-title` to `hidden`, because the tier head now says it. This
+  // function runs later — on data load — so appending to that inner title put
+  // the toggle inside a hidden element: present in the DOM, 0×0 on screen, and
+  // invisible in every layout but the default one. (Jeff, 2026-10-31, with a
+  // screenshot of the split layout: "I can't find the toggle anywhere.")
+  const tierHead = document.querySelector('.mech-tier--source .mech-tier-head');
+  const titleEl = tierHead
+    || document.querySelector('#mechanism-strip .mechanism-panel[data-entity="source"] .mechanism-title');
+  if (!titleEl) return;
   const wrap = document.createElement('div');
   // `--inline`: beside the heading text, not at the panel's far right. The
   // shared rule floats this control to the panel's top-right corner, which

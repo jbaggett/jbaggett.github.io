@@ -1815,9 +1815,14 @@ input[aria-invalid="true"] {
    The default corner placement assumes the panel's content fills its width;
    when it does not, the control ends up alone in the gap between two panels,
    attached to neither. */
-.mechanism-title .mech-null-toggle--inline {
+.mechanism-title .mech-null-toggle--inline,
+.mech-tier-head .mech-null-toggle--inline {
   position: static; margin-left: 0.55rem;
 }
+/* In a tier the heading is an h3 that already lays its tag and title out in a
+   row, so the control only needs to stop being absolutely positioned and sit
+   at the end of it. */
+.mech-tier-head .mech-null-toggle--inline { margin-left: auto; font-weight: 400; }
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);
@@ -6642,6 +6647,14 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
   pointer-events: none;
 }
 .gof-tally--observed .con-total { color: #7B2D8E; }
+/* A hypothesised proportion, wearing its category's colour. Same 15% wash as
+   the table rows, so the written H₀ and the drawn one read as one statement.
+   Padded and rounded so the tint reads as a chip rather than a highlighter
+   smear across the commas between terms. */
+.gof-h0-term {
+  background: color-mix(in srgb, var(--band, transparent) 15%, transparent);
+  border-radius: 3px; padding: 0.05em 0.3em;
+}
 /* While a dot is being pointed at, the strip is showing a sample from the
    history rather than the live one. A quiet tint says "this is a look back",
    without moving anything — the panels must not shift, or the picture would
