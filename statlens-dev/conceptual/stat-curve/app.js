@@ -48,6 +48,7 @@ import { setJStat, tCDF } from '../../js/distributions.js';
 import { renderSimChart } from '../../js/chart-defaults.js';
 import { normalPdf, overlayTheoryCurve } from '../../js/theory-overlay.js';
 import { announce, initHelp, initSettings } from '../../js/page-utils.js';
+import { prefersReducedMotion } from '../../js/settings.js';
 
 // ─── The population ───
 //
@@ -82,21 +83,30 @@ const el = (/** @type {string} */ id) => document.getElementById(id);
 
 const nSlider = /** @type {HTMLInputElement} */ (el('n-slider'));
 const nValue = el('n-value');
-const scoreToggle = el('score-toggle');
+
 const popWrap = el('sc-pop');
 const sampleWrap = el('sc-sample');
 const scoreWrap = el('sc-score');
-const chartWrap = el('chart');
+const chartZ = el('chart-z');
+const chartT = el('chart-t');
+const tallyZ = el('tally-z');
+const tallyT = el('tally-t');
 const readout = el('readout');
-const distTitle = el('dist-title');
 const genBtns = /** @type {HTMLButtonElement[]} */ ([...document.querySelectorAll('.gen-btn')]);
 
 const params = new URLSearchParams(location.search);
 const seed = params.get('seed') || 'curve';
 
 let n = 10;
-/** 'z' divides by the true SE; 't' by the sample's own. */
-let scoring = 'z';
+/**
+ * Below this many samples the plots are drawn as individual dots, which is what
+ * makes a sample pointable — the linked highlight needs something to point at.
+ * Past it there are too many to tell apart and the shape is the subject, so
+ * they become histograms and the pairing readout steps aside.
+ */
+const DOT_MAX = 200;
+/** Which sample is being pointed at, if any. */
+/** @type {number|null} */ let linked = null;
 /** @type {{ z: number, t: number }[]} Both scorings of every sample drawn. */
 let stats = [];
 /** @type {{ values: number[], xbar: number, s: number, z: number, t: number }|null} */
@@ -104,8 +114,6 @@ let lastSample = null;
 /** @type {() => number} */
 let rng = createRng(`${seed}-${n}`);
 
-/** The statistic currently piled up. */
-const current = () => stats.map((p) => (scoring === 'z' ? p.z : p.t));
 
 const fmt = (/** @type {number} */ v, /** @type {number} */ d = 2) => v.toFixed(d);
 
@@ -114,8 +122,9 @@ const fmt = (/** @type {number} */ v, /** @type {number} */ d = 2) => v.toFixed(
 /**
  * One sample, scored both ways.
  *
- * ⚠ Both scorings come from ONE draw. The toggle must never re-sample: the
- * claim is that the numerator is identical and only the denominator moved.
+ * ⚠ Both scorings come from ONE draw. The two plots are two readings of the
+ * same list, never two simulations: the claim is that the numerator is
+ * identical and only the denominator moved.
  */
 function drawOne() {
   const values = [];
@@ -141,8 +150,11 @@ function draw(k) {
     stats.push({ z: one.z, t: one.t });
     lastSample = one;
   }
-  render();
-  announce(`${k} sample${k === 1 ? '' : 's'} drawn. ${stats.length} in the distribution.`);
+  render(stats.length - 1);
+  // One sample, two destinations — the clearest statement the page can make
+  // that these are two readings of one draw rather than two simulations.
+  if (k === 1) flyBothWays();
+  announce(`${k} sample${k === 1 ? '' : 's'} drawn. ${stats.length} in each distribution.`);
 }
 
 function reset() {
@@ -221,7 +233,7 @@ function renderSample() {
   // denominator is marked, because "only this changed" is the entire argument.
   const row = (/** @type {string} */ key, /** @type {string} */ name,
     /** @type {string} */ den, /** @type {number} */ denVal, /** @type {number} */ val) => `
-    <div class="sc-row ${scoring === key ? 'is-on' : ''}" data-row="${key}">
+    <div class="sc-row" data-row="${key}">
       <span class="sc-name">${name}</span>
       <span class="sc-expr">(${fmt(xbar, 1)} − ${MU}) ÷ <span class="sc-den">${den} = ${fmt(denVal, 2)}</span></span>
       <span class="sc-val">${fmt(val)}</span>
@@ -232,85 +244,219 @@ function renderSample() {
     + `<p class="sc-hint">Same gap of ${fmt(gap, 1)} on top. Only the bottom moved.</p>`;
 }
 
-// ─── Step 3: the distribution ───
+// ─── Step 3: both scorings, one axis ───
 
-function renderDistribution() {
-  if (!chartWrap) return;
-  const values = current();
-  if (distTitle) {
-    distTitle.textContent = scoring === 'z'
-      ? 'Standardized by the true SE' : 'Standardized by s';
-  }
-  const result = renderSimChart(chartWrap, values, {
-    chartType: 'histogram',
-    id: 'sc-chart',
-    xLabel: scoring === 'z' ? '(x̄ − μ) ÷ (σ/√n)' : '(x̄ − μ) ÷ (s/√n)',
-    titleText: '',
-    domain: DOMAIN,
-    thresholds: THRESHOLDS,
-    precision: 2,
-  });
-  if (!values.length) return;
+/**
+ * Two plots, stacked, sharing a domain and a bin grid.
+ *
+ * Jeff, 2026-10-31: "would it be more effective if the two sampling
+ * distributions, z and t, were stacked vertically in the same panel and if we
+ * hovered over a dot in one the dot in both would be highlighted."
+ *
+ * It is, and the hover is why. A toggle made the reader hold one shape in
+ * memory while looking at the other; stacked on one axis, the comparison is
+ * there to be pointed at. And pointing is what turns "the same samples, scored
+ * two ways" from a claim into something visible: one dot lights up in each
+ * plot, at two different places, and the readout says what the sample's s was.
+ *
+ * @param {number} [newest] - index to mark as the latest arrival
+ */
+function renderDistributions(newest = -1) {
+  if (!chartZ || !chartT) return;
+  const zs = stats.map((p) => p.z);
+  const ts = stats.map((p) => p.t);
+  // Dots while a sample is still an individual thing; past that the shape is
+  // the subject and dots would be a smear.
+  const chartType = stats.length <= DOT_MAX ? 'dotplot' : 'histogram';
 
-  // The SAME reference curve under both scorings. It is what the z pile should
-  // match and what the t pile should overflow; drawing t(df) here instead would
-  // make both piles fit their own curve and the comparison would vanish.
-  const xScale = result?.xScale;
-  const yScale = result?.yScale;
-  if (xScale && yScale) {
-    overlayTheoryCurve({
-      container: chartWrap,
-      pdf: (v) => normalPdf(v, 0, 1),
-      xDomain: DOMAIN,
-      totalN: values.length,
-      // Ours, not the chart's: we set the thresholds, so we know the width the
-      // curve has to be scaled by.
+  const one = (/** @type {HTMLElement} */ host, /** @type {number[]} */ values,
+    /** @type {string} */ id, /** @type {string} */ xLabel) => {
+    // ⚠ Values outside the fixed axis are removed BEFORE the chart sees them.
+    //
+    // A d3 scale does not clamp, so a statistic past the domain is mapped past
+    // the plot and drawn outside the SVG — on a dotplot it really was painted
+    // ~90px beyond the chart's own right edge, unhittable and unexplained,
+    // which is how this was found. The tally already says these exist and how
+    // many; the picture must not half-show them.
+    const shown = values.map((v, i) => /** @type {[number, number]} */ ([v, i]))
+      .filter(([v]) => Math.abs(v) <= DOMAIN[1]);
+    const result = renderSimChart(host, shown.map(([v]) => v), {
+      chartType, id, xLabel,
+      titleText: '',
+      domain: DOMAIN,
+      thresholds: THRESHOLDS,
       binWidth: BIN_WIDTH,
-      xScale,
-      yScale,
-      label: 'N(0, 1)',
+      binOrigin: DOMAIN[0],
+      // Positional within `shown`, not the sample's index — they differ once
+      // anything has been filtered out.
+      highlightIndex: newest < 0 ? -1 : shown.findIndex(([, i]) => i === newest),
+      precision: 2,
     });
+    // `computeDots` maps without sorting, so circle k is shown[k] — relabel
+    // each with the SAMPLE's index, which is what the two plots are linked by.
+    // Without this, filtering would silently renumber them and the pairing
+    // would point at the wrong sample.
+    for (const c of host.querySelectorAll('circle[data-stat-index]')) {
+      const k = Number(c.getAttribute('data-stat-index'));
+      if (shown[k]) c.setAttribute('data-stat-index', String(shown[k][1]));
+    }
+    if (!values.length || !result) return;
+    // The SAME reference curve over both. It is what the z pile should match
+    // and what the t pile should overflow; drawing t(df) over the lower one
+    // would make both piles fit their own curve and the comparison would
+    // vanish — which is the only thing this page is for.
+    const yScale = chartType === 'histogram' ? result.yScale : result.countToY;
+    if (result.xScale && yScale) {
+      overlayTheoryCurve({
+        container: host,
+        pdf: (v) => normalPdf(v, 0, 1),
+        xDomain: DOMAIN,
+        totalN: values.length,
+        // Ours, not the chart's: we set the thresholds, so we know the width
+        // the curve has to be scaled by.
+        binWidth: result.binWidth ?? BIN_WIDTH,
+        xScale: result.xScale,
+        yScale,
+        label: 'N(0, 1)',
+      });
+    }
+  };
+
+  one(chartZ, zs, 'sc-chart-z', '(x̄ − μ) ÷ (σ/√n)');
+  one(chartT, ts, 'sc-chart-t', '(x̄ − μ) ÷ (s/√n)');
+  if (chartType === 'dotplot') wireLinkedHover();
+  showLinked(linked);
+}
+
+/**
+ * The sample leaves Step 2 twice, for two different places.
+ *
+ * Jeff, 2026-10-31: "maybe an animation for the sampling?" This is the one
+ * worth animating. Each flyer starts on its own row in Step 2 — the z row, the
+ * t row — and lands on that sample's dot in the matching plot. They set off
+ * together from the same sample and arrive at different x, which is the whole
+ * argument in one gesture.
+ *
+ * Skipped under reduced motion, where the dots are simply there already.
+ */
+function flyBothWays() {
+  if (prefersReducedMotion()) return;
+  const i = stats.length - 1;
+  const pairs = [
+    [document.querySelector('[data-row="z"]'), chartZ],
+    [document.querySelector('[data-row="t"]'), chartT],
+  ];
+  for (const [from, host] of pairs) {
+    const target = host?.querySelector(`circle[data-stat-index="${i}"]`);
+    if (!from || !target) continue;
+    const a = from.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    if (!a.width || !b.width) continue;
+
+    const dot = document.createElement('span');
+    dot.className = 'sc-flyer';
+    dot.style.left = `${a.right - 18}px`;
+    dot.style.top = `${a.top + a.height / 2}px`;
+    document.body.appendChild(dot);
+
+    const dx = (b.left + b.width / 2) - (a.right - 18);
+    const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+    dot.animate([
+      { transform: 'translate(0,0) scale(0.5)', opacity: 0 },
+      { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 22}px) scale(1)`, opacity: 1, offset: 0.55 },
+      { transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 1 },
+    ], { duration: 560, easing: 'cubic-bezier(.4,0,.3,1)' }).onfinish = () => {
+      dot.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200 }).onfinish = () => dot.remove();
+    };
   }
 }
 
-// ─── The tally ───
+// ─── The same sample, in both plots ───
 
-function renderReadout() {
-  if (!readout) return;
-  const values = current();
-  if (!values.length) {
-    readout.innerHTML = '<p class="sc-note">Draw some samples to build the distribution.</p>';
+/** Every circle that stands for sample `i`, in either plot. */
+const dotsFor = (/** @type {number} */ i) =>
+  /** @type {SVGCircleElement[]} */ ([...document.querySelectorAll(
+    `#chart-z circle[data-stat-index="${i}"], #chart-t circle[data-stat-index="${i}"]`)]);
+
+function wireLinkedHover() {
+  for (const host of [chartZ, chartT]) {
+    for (const c of host?.querySelectorAll('circle[data-stat-index]') ?? []) {
+      const i = Number(c.getAttribute('data-stat-index'));
+      if (!stats[i]) continue;
+      // `focusin` as well as `mouseenter`: the dotplot already gives every
+      // circle a tabindex for its own tooltip, so the keyboard costs nothing.
+      c.addEventListener('mouseenter', () => showLinked(i));
+      c.addEventListener('focusin', () => showLinked(i));
+      // Both scorings in the label, so the pairing survives without a pointer.
+      c.setAttribute('aria-label',
+        `sample ${i + 1}: z = ${fmt(stats[i].z)}, t = ${fmt(stats[i].t)}`);
+    }
+  }
+  chartZ?.addEventListener('mouseleave', () => showLinked(null));
+  chartT?.addEventListener('mouseleave', () => showLinked(null));
+}
+
+/** @param {number|null} i */
+function showLinked(i) {
+  for (const c of document.querySelectorAll('.sc-linked')) c.classList.remove('sc-linked');
+  linked = i;
+  const box = el('paired');
+  if (!box) return;
+  if (i == null || !stats[i]) {
+    box.className = 'sc-paired is-empty';
+    box.textContent = stats.length && stats.length <= DOT_MAX
+      ? 'Point at a dot to see the same sample in both plots'
+      : '';
     return;
   }
-  const beyond = values.filter((v) => Math.abs(v) >= Z_CUT).length;
-  const pct = (100 * beyond) / values.length;
-  // Values past the end of a fixed axis are DROPPED by the histogram, and
-  // silently dropping the most extreme draws from a figure about tails is the
-  // wrong kind of tidy. At n = 10 it is a handful in 5,000; at n = 3 the t
-  // statistic puts about 4% outside ±5. Counting them keeps the picture honest
-  // and makes its own point — the z pile never has any.
-  const offAxis = values.filter((v) => Math.abs(v) > DOMAIN[1]).length;
-  // What the right curve says it SHOULD be, so the reader is comparing their
-  // tally with a target rather than staring at a bare percentage.
-  const expected = scoring === 'z' ? 5 : 100 * 2 * (1 - tCDF(Z_CUT, n - 1));
-  readout.innerHTML = `
-    <p>Beyond ±${Z_CUT}: <span class="sc-big">${beyond}</span> of ${values.length}
-       = <span class="sc-big">${fmt(pct, 1)}%</span>
-       <span class="sc-note">(this curve says ${fmt(expected, 1)}%)</span></p>
-    ${offAxis ? `<p class="sc-note">${offAxis} of them landed past the edge of the
-       axis and are not drawn — they are counted above.</p>` : ''}
-    <p class="sc-note">${scoring === 'z'
-      ? 'Dividing by the true SE, ±1.96 really does cut off 5%.'
-      : `With s in the denominator and ${n - 1} degrees of freedom, ±1.96 cuts off more than 5% — which is why t* for n = ${n} is bigger than 1.96.`}</p>`;
+  const dots = dotsFor(i);
+  for (const c of dots) c.classList.add('sc-linked');
+  const { z, t } = stats[i];
+  // s back out of the two scorings: t/z = σ/s, so s = σ·z/t. Derived rather
+  // than stored because the pair IS the statement — a reader can check it.
+  const sEst = t !== 0 ? Math.abs(SIGMA * z / t) : NaN;
+  box.className = 'sc-paired';
+  box.innerHTML = `Sample ${i + 1}: <strong>z = ${fmt(z)}</strong>, <strong>t = ${fmt(t)}</strong>`
+    + ` — its s was ${fmt(sEst, 1)} against σ = ${SIGMA},`
+    + ` so dividing by it moved the value ${Math.abs(t) > Math.abs(z) ? 'further out' : 'closer in'}.`;
 }
 
-function render() {
+// ─── The tallies ───
+
+/**
+ * @param {HTMLElement|null} host
+ * @param {number[]} values
+ * @param {number} expected - what the right curve says the tail should be
+ */
+function renderTally(host, values, expected) {
+  if (!host) return;
+  if (!values.length) { host.textContent = ''; return; }
+  const beyond = values.filter((v) => Math.abs(v) >= Z_CUT).length;
+  // Values past the end of a fixed axis are DROPPED by the plot, and silently
+  // dropping the most extreme draws from a figure about tails is the wrong kind
+  // of tidy. At n = 3 the t statistic puts about 4% outside ±5.
+  const offAxis = values.filter((v) => Math.abs(v) > DOMAIN[1]).length;
+  host.innerHTML = `beyond ±${Z_CUT}: <span class="sc-big">${beyond}</span> of ${values.length}`
+    + ` = <span class="sc-big">${fmt((100 * beyond) / values.length, 1)}%</span>`
+    + ` (this curve says ${fmt(expected, 1)}%)`
+    + (offAxis ? ` — ${offAxis} past the edge, counted but not drawn` : '');
+}
+
+function renderReadout() {
+  renderTally(tallyZ, stats.map((p) => p.z), 5);
+  renderTally(tallyT, stats.map((p) => p.t), 100 * 2 * (1 - tCDF(Z_CUT, n - 1)));
+  if (!readout) return;
+  readout.innerHTML = stats.length
+    ? `<p class="sc-note">With s in the denominator and ${n - 1} degrees of freedom,
+       ±${Z_CUT} cuts off more than 5% — which is why t* for n = ${n} is bigger than 1.96.</p>`
+    : '<p class="sc-note">Draw some samples to build the distributions.</p>';
+}
+
+/** @param {number} [newest] */
+function render(newest = -1) {
   renderSample();
-  renderDistribution();
+  renderDistributions(newest);
   renderReadout();
-  for (const b of document.querySelectorAll('#score-toggle button')) {
-    b.setAttribute('aria-pressed', String(/** @type {HTMLElement} */ (b).dataset.score === scoring));
-  }
 }
 
 // ─── Wiring ───
@@ -331,18 +477,6 @@ nSlider?.addEventListener('input', () => {
   reset();
 });
 
-scoreToggle?.addEventListener('click', (e) => {
-  const btn = /** @type {HTMLElement} */ (e.target).closest('button');
-  const next = btn?.dataset.score;
-  if (!next || next === scoring) return;
-  scoring = next;
-  // No re-sampling. The samples are the samples; only the scoring changed.
-  render();
-  announce(scoring === 'z'
-    ? 'Scoring by the true standard error.'
-    : 'Scoring by the standard error estimated from each sample.');
-});
-
 initHelp();
 initSettings();
 renderPopulation();
@@ -355,7 +489,5 @@ import('jstat').then((jstat) => {
     if (nSlider) nSlider.value = String(n);
     if (nValue) nValue.textContent = String(n);
   }
-  const urlScore = params.get('score');
-  if (urlScore === 'z' || urlScore === 't') scoring = urlScore;
   reset();
 });

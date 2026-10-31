@@ -54,6 +54,28 @@
         /* The denominator is the only thing that differs; say so without colour. */
         .sc-row .sc-den { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 2px; }
 
+        /* The two plots, stacked on one axis. Same width and same domain, so a
+           value sits at the same x in both — that is what makes the paired
+           highlight legible rather than a coincidence of two charts. */
+        .sc-plot { margin: 0 0 0.35rem; }
+        .sc-plot-label { margin: 0 0 0.1rem; font-size: 0.82rem; color: var(--ims-gray-text, #595959); }
+        .sc-plot-label strong { color: var(--ims-green, #114B5F); font-family: 'Source Code Pro', monospace; }
+        .sc-tally { margin: 0.1rem 0 0; font-size: 0.82rem; color: var(--ims-gray-text, #595959); }
+        .sc-tally .sc-big { color: var(--ims-green, #114B5F); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        /* The same sample, marked in both plots at once. */
+        .sc-linked { stroke: #111 !important; stroke-width: 2 !important; }
+        .sc-paired {
+            margin: 0.45rem 0 0; padding: 0.35rem 0.5rem; border-radius: 4px; min-height: 1.4em;
+            background: color-mix(in srgb, var(--ims-blue, #569BBD) 12%, transparent);
+            font-size: 0.85rem; font-variant-numeric: tabular-nums;
+        }
+        .sc-paired.is-empty { background: transparent; color: var(--ims-gray-text, #595959); font-style: italic; }
+        .sc-flyer {
+            position: fixed; z-index: 60; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+            border-radius: 50%; background: #C2410C; border: 1.5px solid #fff; pointer-events: none;
+        }
+
         .sc-readout { margin: 0.6rem 0 0; font-size: 0.92rem; }
         .sc-readout .sc-big { font-weight: 700; font-variant-numeric: tabular-nums; }
         .sc-note { color: var(--ims-gray-text); font-size: 0.86rem; margin: 0.3rem 0 0; }
@@ -80,13 +102,22 @@
                            aria-describedby="n-help">
                     <span id="n-help" class="sr-only">Changing the sample size starts the tally over, because each sample size has its own curve.</span>
                 </div>
-                <div class="sc-field">
-                    <span class="sc-label" id="score-label">Divide by:</span>
-                    <div class="seg-control" role="group" aria-labelledby="score-label" id="score-toggle">
-                        <button type="button" data-score="z" aria-pressed="true">&sigma;/&radic;n (the true SE)</button>
-                        <button type="button" data-score="t" aria-pressed="false">s/&radic;n (from the sample)</button>
-                    </div>
-                </div>
+            </div>
+        </section>
+
+        <!-- The generate bar in the house position: its own `#controls` section
+             above the steps, the way every simulate/ page has it. It used to sit
+             inside Step 3, which put the thing you press below the thing it
+             changes. (Jeff, 2026-10-31: "the controls should go in the usual
+             places.") -->
+        <section id="controls" aria-label="Simulation controls">
+            <div class="generate-bar" role="group" aria-label="Draw samples">
+                <button type="button" class="gen-btn" data-count="1">+1</button>
+                <button type="button" class="gen-btn" data-count="10">+10</button>
+                <button type="button" class="gen-btn" data-count="100">+100</button>
+                <button type="button" class="gen-btn" data-count="1000">+1k</button>
+                <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
+                <span class="gen-label">Samples</span>
             </div>
         </section>
 
@@ -105,16 +136,20 @@
             </div>
             <div class="mech-col-right">
                 <div class="mech-tier mech-tier--distribution">
-                    <h3 class="mech-tier-head"><span class="mech-tier-tag">Step 3</span><span id="dist-title">Standardized Means</span></h3>
-                    <div id="chart" class="chart-container"></div>
-                    <div class="gen-bar" id="controls" role="group" aria-label="Draw samples">
-                        <button type="button" class="gen-btn" data-count="1">+1</button>
-                        <button type="button" class="gen-btn" data-count="10">+10</button>
-                        <button type="button" class="gen-btn" data-count="100">+100</button>
-                        <button type="button" class="gen-btn" data-count="1000">+1000</button>
-                        <button type="button" id="reset-btn" class="reset-btn" aria-label="Start over" title="Start over">&#x21BA;</button>
-                        <span class="gen-label">Samples</span>
+                    <h3 class="mech-tier-head"><span class="mech-tier-tag">Step 3</span>Both scorings, one axis</h3>
+
+                    <div class="sc-plot">
+                        <p class="sc-plot-label">&divide; <strong>&sigma;/&radic;n</strong> &mdash; the true SE</p>
+                        <div id="chart-z" class="chart-container"></div>
+                        <p class="sc-tally" id="tally-z"></p>
                     </div>
+                    <div class="sc-plot">
+                        <p class="sc-plot-label">&divide; <strong>s/&radic;n</strong> &mdash; estimated from each sample</p>
+                        <div id="chart-t" class="chart-container"></div>
+                        <p class="sc-tally" id="tally-t"></p>
+                    </div>
+
+                    <p class="sc-paired is-empty" id="paired" role="status" aria-live="off"></p>
                     <div class="sc-readout" id="readout" role="status" aria-live="off"></div>
                 </div>
             </div>
