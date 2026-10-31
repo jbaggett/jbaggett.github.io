@@ -274,9 +274,11 @@ function showDataLoaded() {
     initStripToggle();
   }
   // Open on your own sample, thrown at the null. `syncStripToggle` first, so
-  // the control agrees with the panels from the very first frame.
+  // the control agrees with the panels from the very first frame, and the empty
+  // chart before the animation, so the χ² has its marker to fly to.
   stripMode = 'observed';
   syncStripToggle();
+  renderEmptyChart();
   runObservedAnimation();
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
 
@@ -499,6 +501,33 @@ function setStripMode(mode) {
   announce('Showing your observed sample, scored against the hypothesized distribution.');
   // The numbers are already up; this only says where that χ² lands.
   setTimeout(flyObservedToMarker, 120);
+}
+
+/**
+ * Step 3, before there is a distribution: an axis and your observed χ² on it.
+ *
+ * Jeff, 2026-10-31: "when we open the initial purple dot should fly into the
+ * step 3 sampling distribution area and show the observed statistic." It also
+ * gives the opening flight somewhere to land — until now `flyObservedToMarker`
+ * found no marker on load and declined, correctly, because the panel was empty.
+ *
+ * The axis comes from a silent pilot of 2,000 draws, the same device sim-app's
+ * `renderEmptyChart` uses: without it the scale would be set by the observed
+ * value alone, and the first real simulations would arrive off the end of an
+ * axis built for one number.
+ *
+ * ⚠ The pilot takes its own `presim-` stream. Drawing from the page's rng here
+ * would shift every subsequent simulation, and a `?seed=` link is a grading
+ * contract. (See js/mechanisms/draws.js on PRNG consumption.)
+ */
+function renderEmptyChart() {
+  if (!chartContainer || !categories.length || !totalN) return;
+  const preRng = createRng(`presim-${seed}`);
+  let hi = observedChisq;
+  for (let i = 0; i < 2000; i++) {
+    hi = Math.max(hi, gofChisqStat(drawMultinomial(totalN, p0, preRng), p0));
+  }
+  renderChart([], observedChisq, -1, undefined, undefined, [0, hi * 1.05 || 1], undefined);
 }
 
 /**
