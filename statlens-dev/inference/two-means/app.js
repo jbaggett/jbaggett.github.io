@@ -550,6 +550,7 @@ function renderChart(r) {
     pdfFn,
     tail: /** @type {'left'|'right'|'both'} */ (tail),
     statValueNeg: tail === 'both' ? -Math.abs(r.tStat) : undefined,
+    observedValue: r.tStat,
   });
 
 }

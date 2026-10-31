@@ -508,6 +508,7 @@ function drawChart(result) {
     pdfFn,
     tail: /** @type {'left'|'right'|'both'} */ (tail),
     statValueNeg: tail === 'both' ? -Math.abs(tStat) : undefined,
+    observedValue: tStat,
   });
 
 }
