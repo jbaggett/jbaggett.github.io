@@ -69,6 +69,8 @@
 
         /* The same sample, marked in both plots at once. */
         .sc-linked { stroke: #111 !important; stroke-width: 2 !important; }
+        /* …and in histogram mode, the one slice of the bar it occupies. */
+        .sc-seg { stroke: #111; stroke-width: 2; pointer-events: none; }
         .sc-paired {
             margin: 0.45rem 0 0; padding: 0.35rem 0.5rem; border-radius: 4px; min-height: 1.4em;
             background: color-mix(in srgb, var(--ims-blue, #569BBD) 12%, transparent);

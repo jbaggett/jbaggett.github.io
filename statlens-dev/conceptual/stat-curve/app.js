@@ -106,9 +106,38 @@ let n = 10;
  * they become histograms and the pairing readout steps aside.
  */
 const DOT_MAX = 200;
+/** How many draws keep their individual values; see `stats`. */
+const SAMPLE_STORE_MAX = 4000;
 /** Which sample is being pointed at, if any. */
 /** @type {number|null} */ let linked = null;
-/** @type {{ z: number, t: number }[]} Both scorings of every sample drawn. */
+/**
+ * Each plot's bars, read as ordered stacks.
+ *
+ * Jeff, 2026-10-31: "I'd like the ability to roll over bars and see samples by
+ * thinking of each bar as an ordered stack of horizontal line segments. When
+ * the frequencies get too large we might just have to [show] a subset of each
+ * sample for each bar."
+ *
+ * A histogram bar is a dotplot column with the gaps closed, so the pointer's
+ * HEIGHT inside a bar can address one draw the same way its position in a
+ * column does. For each bin this keeps the sample indices that fell in it, in
+ * draw order, plus the bar's pixel box — enough to turn a (x, y) into a sample
+ * and a sample back into a segment to draw.
+ * @type {Map<HTMLElement, { bins: Map<number, number[]>, rects: Map<number, DOMRect> }>}
+ */
+const stacks = new Map();
+/** A segment thinner than this cannot be pointed at, so the bar offers fewer. */
+const MIN_SEGMENT_PX = 3;
+/**
+ * Every draw, not just its two scorings — Step 2 has to be able to show the
+ * sample a reader is pointing at, which means its values, its x̄ and its s.
+ *
+ * `values` is the only part with real bulk (n numbers per draw), so it is kept
+ * for the first SAMPLE_STORE_MAX draws and dropped after that: the formulas
+ * still work from x̄ and s, which cost four numbers and are always kept, and
+ * past a few thousand samples nobody is picking individual draws out anyway.
+ * @type {{ z: number, t: number, xbar: number, s: number, values?: number[] }[]}
+ */
 let stats = [];
 /** @type {{ values: number[], xbar: number, s: number, z: number, t: number }|null} */
 let lastSample = null;
@@ -148,7 +177,9 @@ function drawOne() {
 function draw(k) {
   for (let i = 0; i < k; i++) {
     const one = drawOne();
-    stats.push({ z: one.z, t: one.t });
+    stats.push(stats.length < SAMPLE_STORE_MAX
+      ? one
+      : { z: one.z, t: one.t, xbar: one.xbar, s: one.s });
     lastSample = one;
   }
   render(stats.length - 1);
@@ -202,18 +233,29 @@ function renderPopulation() {
 
 function renderSample() {
   if (!sampleWrap || !scoreWrap) return;
-  if (!lastSample) {
+  // The sample under the pointer wins over the latest draw: hovering a dot in
+  // Step 3 should bring its own sample back into Step 2, picture and formulas
+  // together, or the two panels are describing different things. (Jeff,
+  // 2026-10-31: "when hovering over dots the picture and formulas in step 2
+  // should change with the dot.")
+  const shown = (linked != null && stats[linked]) ? stats[linked] : lastSample;
+  if (!shown) {
     sampleWrap.innerHTML = '';
     scoreWrap.innerHTML = '<p class="sc-hint">Draw a sample to see it scored</p>';
     return;
   }
-  const { values, xbar, s, z, t } = lastSample;
+  const { values, xbar, s, z, t } = shown;
   const W = 420, H = 62, PAD = 10;
   const lo = MU - 3.6 * SIGMA, hi = MU + 3.6 * SIGMA;
   const x = (/** @type {number} */ v) => PAD + ((v - lo) / (hi - lo)) * (W - 2 * PAD);
 
   // Same x-scale as Step 1 on purpose: the sample has to be visibly a handful
   // of draws from that population, not its own picture on its own axis.
+  if (!values) {
+    // Past SAMPLE_STORE_MAX the individual values are not kept — x̄ and s are,
+    // so the arithmetic below is exact; only the picture of the draw is gone.
+    sampleWrap.innerHTML = '<p class="sc-hint">(this draw\u2019s individual values were not kept)</p>';
+  } else {
   const dots = values.map((v) => `<circle cx="${x(v).toFixed(1)}" cy="30" r="2.6"
       fill="#111" stroke="#fff" stroke-width="0.8"/>`).join('');
 
@@ -226,6 +268,7 @@ function renderSample() {
       <line x1="${x(xbar)}" y1="10" x2="${x(xbar)}" y2="46" stroke="#C2410C" stroke-width="2"/>
       <text x="${x(xbar)}" y="8" text-anchor="middle" style="font-size:9.5px;fill:#C2410C;font-weight:700">x̄ = ${fmt(xbar, 1)}</text>
     </svg>`;
+  }
 
   const gap = xbar - MU;
   const seKnown = SIGMA / Math.sqrt(n);
@@ -311,6 +354,31 @@ function renderDistributions(newest = -1) {
       const k = Number(c.getAttribute('data-stat-index'));
       if (shown[k]) c.setAttribute('data-stat-index', String(shown[k][1]));
     }
+    // Index the bars as stacks: which draws are in each bin, in draw order,
+    // and where that bin's bar sits. Everything in SVG user space — the bars
+    // carry their own x/y/width/height there, and the x-scale inverts, so a
+    // bar can say which bin it is rather than being matched by eye.
+    const bins = new Map();
+    for (const [v, i] of shown) {
+      const k = Math.max(0, Math.min(THRESHOLDS.length - 2,
+        Math.floor((v - DOMAIN[0]) / BIN_WIDTH)));
+      if (!bins.has(k)) bins.set(k, []);
+      bins.get(k).push(i);
+    }
+    const rects = new Map();
+    for (const r of host.querySelectorAll('.data rect')) {
+      const x = Number(r.getAttribute('x'));
+      const w = Number(r.getAttribute('width'));
+      if (!(w > 0)) continue;
+      const v = result.xScale.invert(x + w / 2);
+      const k = Math.floor((v - DOMAIN[0]) / BIN_WIDTH + 1e-9);
+      if (bins.has(k)) {
+        rects.set(k, { x, w, y: Number(r.getAttribute('y')), h: Number(r.getAttribute('height')) });
+      }
+    }
+    stacks.set(host, { bins, rects });
+    wireStackHover(host);
+
     if (!values.length || !result) return;
     // The SAME reference curve over both. It is what the z pile should match
     // and what the t pile should overflow; drawing t(df) over the lower one
@@ -386,6 +454,107 @@ function flyBothWays() {
   }
 }
 
+/**
+ * How many segments a bar can usefully offer, and which draw each one stands for.
+ *
+ * A bin holding 300 draws cannot give each of them a pointable slice of a 40px
+ * bar, so the bar offers as many segments as fit at MIN_SEGMENT_PX and each
+ * stands for one draw taken evenly through the bin's list. The ORDER is kept:
+ * segment 0 at the bottom is the earliest draw in that bin, which is what makes
+ * the stack a stack rather than a lookup table.
+ *
+ * @param {number} count - draws in the bin
+ * @param {number} barH - the bar's height in SVG units
+ * @param {number} unit - SVG units per screen pixel
+ */
+function segmentsFor(count, barH, unit) {
+  const fit = Math.max(1, Math.floor(barH / (MIN_SEGMENT_PX * unit)));
+  return Math.min(count, fit);
+}
+
+/** SVG units per screen pixel for a plot, so a 3px floor means 3 real pixels. */
+function unitPerPx(/** @type {HTMLElement} */ host) {
+  const svg = host.querySelector('svg');
+  const box = svg?.getBoundingClientRect();
+  const vb = svg?.viewBox?.baseVal;
+  return (box?.width && vb?.width) ? vb.width / box.width : 1;
+}
+
+/** Point at a bar; the height under the pointer picks the draw. */
+function wireStackHover(/** @type {HTMLElement} */ host) {
+  const svg = host.querySelector('svg');
+  if (!svg || svg.dataset.stackWired) return;
+  svg.dataset.stackWired = '1';
+
+  svg.addEventListener('mousemove', (ev) => {
+    const st = stacks.get(host);
+    if (!st || !st.rects.size) return;
+    // Screen → the coordinate system the BARS are in.
+    //
+    // ⚠ Not the root svg's. The bars live inside `.chart-inner`, a <g> that is
+    // translated by the chart's margins, and their x/y attributes are in that
+    // group's space. Inverting the root matrix put the pointer tens of units
+    // away from where the rectangles think they are, so no bar was ever under
+    // it and nothing happened at all.
+    const inner = svg.querySelector('.chart-inner') || svg;
+    const ctm = inner.getScreenCTM();
+    if (!ctm) return;
+    const pt = svg.createSVGPoint();
+    pt.x = ev.clientX; pt.y = ev.clientY;
+    const { x: px, y: py } = pt.matrixTransform(ctm.inverse());
+
+    for (const [k, r] of st.rects) {
+      if (px < r.x || px > r.x + r.w) continue;
+      if (py < r.y || py > r.y + r.h) break;          // above the bar: nothing
+      const list = st.bins.get(k) || [];
+      const nSeg = segmentsFor(list.length, r.h, unitPerPx(host));
+      const fromBottom = (r.y + r.h) - py;
+      const seg = Math.max(0, Math.min(nSeg - 1, Math.floor((fromBottom / r.h) * nSeg)));
+      const idx = nSeg >= list.length ? seg : Math.floor((seg * list.length) / nSeg);
+      showLinked(list[idx]);
+      return;
+    }
+  });
+  svg.addEventListener('mouseleave', () => showLinked(null));
+}
+
+/**
+ * Draw sample `i` as the segment it occupies in each bar.
+ *
+ * The mirror of the hit test: find the draw's place in its bin's stack and mark
+ * that slice. Since the two plots bin the same draw differently, the two marks
+ * land at different heights as well as different x — which is the pairing, said
+ * in the one place a histogram can say it.
+ */
+function markSegments(/** @type {number} */ i) {
+  for (const host of [chartZ, chartT]) {
+    const st = host && stacks.get(host);
+    const svg = host?.querySelector('svg');
+    if (!st || !svg) continue;
+    const value = host === chartZ ? stats[i]?.z : stats[i]?.t;
+    if (value == null) continue;
+    const k = Math.floor((value - DOMAIN[0]) / BIN_WIDTH);
+    const list = st.bins.get(k);
+    const r = st.rects.get(k);
+    if (!list || !r) continue;
+    const pos = list.indexOf(i);
+    if (pos < 0) continue;
+
+    const nSeg = segmentsFor(list.length, r.h, unitPerPx(host));
+    const seg = nSeg >= list.length ? pos : Math.round((pos * nSeg) / list.length);
+    const segH = r.h / nSeg;
+    const y = r.y + r.h - (Math.min(seg, nSeg - 1) + 0.5) * segH;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('class', 'sc-seg');
+    line.setAttribute('x1', String(r.x));
+    line.setAttribute('x2', String(r.x + r.w));
+    line.setAttribute('y1', String(y));
+    line.setAttribute('y2', String(y));
+    (svg.querySelector('.data') || svg).appendChild(line);
+  }
+}
+
 // ─── The same sample, in both plots ───
 
 /** Every circle that stands for sample `i`, in either plot. */
@@ -413,23 +582,28 @@ function wireLinkedHover() {
 
 /** @param {number|null} i */
 function showLinked(i) {
+  // mousemove fires constantly, so the same sample is not redrawn twice — but
+  // null must always fall through, because clearing is also what writes the
+  // "point anywhere in a bar" hint in the first place.
+  if (i === linked && i !== null) return;
   for (const c of document.querySelectorAll('.sc-linked')) c.classList.remove('sc-linked');
+  for (const l of document.querySelectorAll('.sc-seg')) l.remove();
   linked = i;
   const box = el('paired');
   if (!box) return;
   if (i == null || !stats[i]) {
+    renderSample();                 // back to the latest draw
     box.className = 'sc-paired is-empty';
     box.textContent = stats.length && stats.length <= DOT_MAX
       ? 'Point at a dot to see the same sample in both plots'
-      : '';
+      : 'Point anywhere in a bar — its height picks one of the draws stacked in it';
     return;
   }
   const dots = dotsFor(i);
   for (const c of dots) c.classList.add('sc-linked');
-  const { z, t } = stats[i];
-  // s back out of the two scorings: t/z = σ/s, so s = σ·z/t. Derived rather
-  // than stored because the pair IS the statement — a reader can check it.
-  const sEst = t !== 0 ? Math.abs(SIGMA * z / t) : NaN;
+  if (!dots.length) markSegments(i);    // histogram mode: mark the slice instead
+  renderSample();
+  const { z, t, s: sEst } = stats[i];
   box.className = 'sc-paired';
   box.innerHTML = `Sample ${i + 1}: <strong>z = ${fmt(z)}</strong>, <strong>t = ${fmt(t)}</strong>`
     + ` — its s was ${fmt(sEst, 1)} against σ = ${SIGMA},`
