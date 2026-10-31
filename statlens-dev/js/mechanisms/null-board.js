@@ -36,7 +36,9 @@ export const BAND_FILLS = [
 ];
 
 const BORDER = '#333';
-const LABEL_W = 86;      // left gutter: names live on white, not on the fill
+// Left gutter: names live on white, not on the fill. Wide enough for a name
+// AND its hypothesised share — "Hispanic 12.5%" is the worst case we carry.
+const LABEL_W = 122;
 const COUNT_W = 30;
 /**
  * ⚠ There is deliberately NO minimum band height.
@@ -51,7 +53,7 @@ const COUNT_W = 30;
  * worth seeing. Their name and count sit in the left gutter either way, so
  * nothing is lost but height.
  */
-const MIN_BOARD_H = 120;
+const MIN_BOARD_H = 150;
 
 /**
  * @param {HTMLElement|null} container
@@ -69,6 +71,18 @@ const MIN_BOARD_H = 120;
  *   canonical goodness-of-fit example) and drops `stock_geometric` (n = 1,362).
  * @returns {{ dartEls: SVGCircleElement[] }|null}
  */
+/**
+ * A proportion as a percentage, without lying in either direction: 72% stays
+ * 72%, and `stock_geometric`'s 12.5% keeps the half it would lose to rounding.
+ *
+ * @param {number} v - 0..1
+ * @returns {string}
+ */
+function pctLabel(v) {
+  const x = v * 100;
+  return (Math.abs(x - Math.round(x)) < 0.05 ? String(Math.round(x)) : x.toFixed(1)) + '%';
+}
+
 export function renderNullBoard(container, opts) {
   if (!container) return null;
   const { categories, props, counts = [], rand = Math.random,
@@ -130,7 +144,15 @@ export function renderNullBoard(container, opts) {
     name.setAttribute('text-anchor', 'end');
     name.setAttribute('dominant-baseline', 'middle');
     name.setAttribute('class', 'null-board-cat');
-    name.textContent = cat;
+    // Name, then the share H₀ gives it. The share is the band's HEIGHT, so
+    // printing it beside the band says what the picture is already saying and
+    // lets a reader check one against the other. (Jeff, 2026-10-31: "maybe
+    // display the null proportions there as well".)
+    name.textContent = `${cat} `;
+    const pct = document.createElementNS(NS, 'tspan');
+    pct.setAttribute('class', 'null-board-pct');
+    pct.textContent = pctLabel(props[i] / total);
+    name.appendChild(pct);
     svg.appendChild(name);
     const row = { centre: y + h / 2, els: [name] };
     labelRows.push(row);

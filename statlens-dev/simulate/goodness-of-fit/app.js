@@ -337,7 +337,7 @@ function paintStrip(latest = false, animate = false) {
           : `darts-${seed}-${allStats.length}`);
     board = renderNullBoard(mechNullBoard, {
       categories, props: p0, counts, rand: boardRng,
-      width: 300, height: Math.max(110, 26 * categories.length),
+      width: 400, height: Math.max(150, 30 * categories.length),
     });
   }
   // Held back only when something really is coming to deliver them.

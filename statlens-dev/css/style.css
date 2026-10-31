@@ -6633,10 +6633,15 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
    model, not an illustration of it. Names sit in a left gutter on white rather
    than on the fill, so label contrast never depends on which colour a category
    happened to get. */
-.null-board-wrap { margin: 0.2rem 0 0.45rem; }
-.null-board { display: block; max-width: 320px; }
+/* Centred in its panel: the board is the picture Step 1 is about, and it sat
+   hard against the left edge of a panel half again as wide. (Jeff, 2026-10-31.) */
+.null-board-wrap { margin: 0.2rem 0 0.45rem; display: flex; justify-content: center; }
+.null-board { display: block; max-width: 420px; width: 100%; }
 .null-board-cat { font-size: 9.5px; fill: var(--ims-green, #114B5F); }
 .null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
+/* The hypothesised share, beside its name. Lighter than the name so the two
+   read as two things, and #595959 keeps it at 5.1:1 on white — it is text. */
+.null-board-pct { fill: #595959; }
 /* Dark dot, white halo: readable on every band fill without relying on one. */
 /* The observed χ², on its way to its own purple marker. Matches
    chart-utils' STAT_OBSERVED exactly — a flyer that lands on a line of a
