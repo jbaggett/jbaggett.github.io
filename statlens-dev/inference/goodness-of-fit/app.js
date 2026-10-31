@@ -218,7 +218,7 @@ function showResults() {
       ? ' <strong>Note: one or more expected counts are below 5</strong>, so the chi-square approximation may be unreliable — prefer the simulation.'
       : '';
     renderConditionsCheckpoint(conditionsCheckpoint, {
-      altLabel: 'Goodness-of-Fit Simulation', altHref: simLink,
+      altLabel: 'GOF Randomization Test', altHref: simLink,
       // Through `tex()`, like every other formula on this page. Raw \\( … \\)
       // delimiters were shipped here and the panel is filled AFTER the page's
       // typesetting pass, so the reader saw the TeX source:

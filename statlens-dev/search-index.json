@@ -69,7 +69,7 @@
   },
   {
    "p": "simulate/goodness-of-fit/",
-   "t": "Chi-Square Goodness-of-Fit Simulation",
+   "t": "Chi-Square GOF Randomization Test",
    "d": "Test whether counts across several categories match a claimed set of probabilities, by simulation.",
    "k": "goodness of fit, chi-square, categories, expected counts, is the die fair, simulation, one categorical variable, p-value"
   },

@@ -691,7 +691,7 @@ button changes that). A colour key under the strip names both outcomes.
 
 ---
 
-### Chi-Square Goodness-of-Fit Simulation
+### Chi-Square GOF Randomization Test
 
 **Path:** `simulate/goodness-of-fit/`
 **Category:** Simulate
