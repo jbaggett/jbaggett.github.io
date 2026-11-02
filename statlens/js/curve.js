@@ -343,11 +343,17 @@ function updateShading(overlays, curveData, xScale, yScale, opts) {
  * @param {(x: number) => number} opts.pdfFn - PDF function for computing curve height
  * @param {'left'|'right'|'both'} opts.tail - Tail direction
  * @param {number} [opts.statValueNeg] - Negative stat value for two-tailed (plotted on left)
+ * @param {number} [opts.observedValue] - The reader's actual, SIGNED statistic.
+ *   Two-tailed callers pass ±|stat| as the two tail boundaries, so neither of
+ *   those is the observed value and labelling both "observed" printed the word
+ *   twice and the figure with the wrong sign on one of them. This says which
+ *   mark is theirs. Defaults to `statValue`, so a caller that does not pass it
+ *   still gets one label instead of two.
  * @param {number} [opts.decimals=3] - Decimal places for stat label
  */
 export function addInferenceAnnotations(chart, opts) {
   const { frame, xScale, yScale } = chart;
-  const { statValue, statLabel, pValue, pdfFn, tail, statValueNeg, decimals = 3 } = opts;
+  const { statValue, statLabel, pValue, pdfFn, tail, statValueNeg, observedValue, decimals = 3 } = opts;
   const w = frame.width;
   const h = frame.height;
 
@@ -365,10 +371,21 @@ export function addInferenceAnnotations(chart, opts) {
     ? [statValueNeg, statValue]
     : [statValue];
 
+  // Only ONE of the marks is the reader's statistic.
+  //
+  // A two-tailed caller passes +|stat| and −|stat| — the two boundaries of the
+  // shaded region — and both used to get the full "observed" + value label. On
+  // a statistic near zero the two labels landed on top of each other and read
+  // as a smudge ("obosbesrevredd", "t = -0.040" over "t = 0.040"); further out
+  // they read as two different observed values, one of them with the wrong
+  // sign. The mirror keeps its line, because it bounds the other tail, and
+  // loses the label, because it is not what was observed. (Jeff, 2026-10-31.)
+  const observed = observedValue != null ? observedValue : statValue;
   for (const sv of statPoints) {
     // Clamp to domain edge so extreme stats still show a line at chart boundary
     const svClamped = Math.max(domain[0], Math.min(domain[1], sv));
     const sx = xScale(svClamped);
+    const isObserved = statPoints.length === 1 || Math.abs(sv - observed) <= Math.abs(sv + observed);
 
     // Solid vertical line — full chart height (matches simulation pages)
     annotations.append('line')
@@ -388,6 +405,8 @@ export function addInferenceAnnotations(chart, opts) {
     if (sx > w - near) { labelAnchor = 'end'; labelX = Math.min(sx, w - 2); }
     else if (sx < near) { labelAnchor = 'start'; labelX = Math.max(sx, 2); }
 
+    if (!isObserved) continue;
+
     // "observed" label above the line (matches simulation pages)
     annotations.append('text')
       .attr('class', 'inf-annotation')
@@ -398,7 +417,9 @@ export function addInferenceAnnotations(chart, opts) {
       .text('observed');
 
     // Stat value below "observed" (e.g., "F = 3.48")
-    const valueText = `${statLabel} = ${sv.toFixed(decimals)}`;
+    // The SIGNED statistic, not this mark's own coordinate: on the negative
+    // side those differ, and the reader's t is the one with the sign.
+    const valueText = `${statLabel} = ${observed.toFixed(decimals)}`;
     annotations.append('text')
       .attr('class', 'inf-annotation inf-stat-label overlay-label')
       .attr('x', labelX).attr('y', -4)

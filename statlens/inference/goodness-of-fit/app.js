@@ -8,7 +8,7 @@
 
 import { setJStat, pdfChisq, chisqCDF, chisqInv } from '../../js/distributions.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
-import { drawCurve, computeDomain } from '../../js/curve.js';
+import { drawCurve, computeDomain, addInferenceAnnotations } from '../../js/curve.js';
 import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initHelp, buildSimLink, setPageTitle, renderConditionsCheckpoint } from '../../js/page-utils.js';
 import { tex } from '../../js/tex.js';
 
@@ -218,7 +218,7 @@ function showResults() {
       ? ' <strong>Note: one or more expected counts are below 5</strong>, so the chi-square approximation may be unreliable — prefer the simulation.'
       : '';
     renderConditionsCheckpoint(conditionsCheckpoint, {
-      altLabel: 'Goodness-of-Fit Simulation', altHref: simLink,
+      altLabel: 'GOF Randomization Test', altHref: simLink,
       // Through `tex()`, like every other formula on this page. Raw \\( … \\)
       // delimiters were shipped here and the panel is filled AFTER the page's
       // typesetting pass, so the reader saw the TeX source:
@@ -241,13 +241,13 @@ function showResults() {
     formulaContainer.hidden = false;
   }
 
-  drawChart(chiSq, df);
+  drawChart(chiSq, df, pValue);
   writeInterpretation(chiSq, df, pValue, low);
   announce(`χ² = ${formatStat(chiSq, 3)}, df = ${df}, p-value = ${formatStat(pValue, 0, 'pvalue')}.`);
 }
 
-/** @param {number} chiSq @param {number} df */
-function drawChart(chiSq, df) {
+/** @param {number} chiSq @param {number} df @param {number} pValue */
+function drawChart(chiSq, df, pValue) {
   if (!chartContainer || !chartSection) return;
   chartSection.hidden = false;
   chartContainer.innerHTML = '';
@@ -255,7 +255,7 @@ function drawChart(chiSq, df) {
   const invCdf = (/** @type {number} */ p) => chisqInv(p, df);
   let domain = computeDomain('chisq', { df, invCdf });
   if (chiSq > domain[1]) domain = [0, chiSq * 1.15];
-  drawCurve(chartContainer, pdfFn, domain, {
+  const chart = drawCurve(chartContainer, pdfFn, domain, {
     xLabel: 'χ²',
     yLabel: 'Density',
     titleText: `Chi-square distribution (df = ${df})`,
@@ -263,6 +263,18 @@ function drawChart(chiSq, df) {
     id: 'gof-chart',
     tail: 'right',
     critValue: chiSq,
+  });
+  // The shaded tail without the statistic that cut it, or the p-value it
+  // measures, is half a picture: the reader could see WHERE the tail is but not
+  // what put it there or how much of the curve it holds. Every sibling on this
+  // page's own shelf annotates — inference/chisq/ does it four lines below the
+  // same drawCurve call — and this one simply never did. (Jeff, 2026-10-31.)
+  addInferenceAnnotations(chart, {
+    statValue: chiSq,
+    statLabel: 'χ²',
+    pValue,
+    pdfFn,
+    tail: 'right',
   });
 }
 

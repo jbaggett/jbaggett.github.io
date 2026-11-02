@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi-Square Goodness-of-Fit Simulation | StatLens</title>
+    <title>Chi-Square GOF Randomization Test | StatLens</title>
     <meta name="description" content="Test whether counts across several categories match a claimed set of probabilities, by simulation.">
     <meta name="keywords" content="goodness of fit, chi-square, categories, expected counts, is the die fair, simulation, one categorical variable, p-value">
 
@@ -38,7 +38,7 @@
     </nav>
 
     <main>
-        <h1>Chi-Square Goodness-of-Fit Simulation<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <h1>Chi-Square GOF Randomization Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
         <section id="data-panel" aria-label="Data input">
             <div role="tablist" aria-label="Data source">
@@ -103,19 +103,25 @@
             </div>
         </section>
 
-        <!-- Mechanism strip: observed counts → one simulated sample drawn under H0 -->
+        <!-- Mechanism strip, following randomization-one-prop: the null population,
+             then one draw from it. The observed counts are not a third panel — they
+             are not part of the repeating mechanism — but Step 1's toggle will run
+             this same apparatus on them, so the reader can watch their own sample be
+             scattered on H₀ and scored by the same arithmetic. (Jeff, 2026-10-30.) -->
         <section id="mechanism-strip" class="mechanism-strip" aria-label="Simulation mechanism" hidden>
             <div class="mechanism-panels">
                 <div class="mechanism-panel" data-entity="source">
-                    <h2 class="mechanism-title">Observed Counts</h2>
-                    <div id="mech-observed"></div>
-                    <p class="mechanism-stat">&chi;&sup2; = <span id="mech-observed-chisq">&mdash;</span></p>
+                    <h2 class="mechanism-title"><span>Population under H<sub>0</sub></span></h2>
+                    <div id="mech-null-board" class="null-board-wrap"></div>
                 </div>
                 <div class="mechanism-arrow" aria-hidden="true">&rarr;</div>
                 <div class="mechanism-panel" data-entity="draw">
-                    <h2 class="mechanism-title" id="sim-title">One Sample under H<sub>0</sub></h2>
+                    <h2 class="mechanism-title" id="sim-title">This Simulation</h2>
                     <div id="mech-simulated"></div>
-                    <p class="mechanism-stat">&chi;&sup2; = <span id="mech-simulated-chisq">&mdash;</span></p>
+                    <!-- The table's total row carries χ² now; this is kept, hidden,
+                         because other code and tests read it as the current value. -->
+                    <p class="mechanism-stat" hidden>&chi;&sup2; = <span id="mech-simulated-chisq">&mdash;</span></p>
+                    <span id="mech-observed-chisq" hidden></span>
                 </div>
             </div>
             <p id="mechanism-description" class="mechanism-desc" hidden></p>
@@ -140,7 +146,7 @@
     </main>
 
     <dialog id="page-help" aria-label="Help">
-        <h2>Chi-Square Goodness-of-Fit Simulation</h2>
+        <h2>Chi-Square GOF Randomization Test</h2>
         <p class="help-intro">Compare one categorical variable's observed counts to a hypothesized distribution (H<sub>0</sub>). The tool repeatedly draws a fresh sample of the same size <em>from</em> H<sub>0</sub>, computes the &chi;<sup>2</sup> statistic each time, and builds the null distribution. Your observed &chi;<sup>2</sup> is marked on it — the p-value is the fraction of simulated samples at least that large.</p>
         <dl>
             <dt><kbd>1</kbd></dt><dd>+1 sample</dd>

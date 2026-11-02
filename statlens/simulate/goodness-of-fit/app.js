@@ -1,24 +1,30 @@
 // @ts-check
 /**
- * Chi-Square Goodness-of-Fit Simulation page.
+ * Chi-Square GOF Randomization Test page.
  * Draws repeated multinomial samples of size n from a hypothesized distribution
  * p₀, computes the χ² goodness-of-fit statistic for each, and builds the null
  * distribution. The observed χ² is marked; the p-value is the right-tail fraction.
  */
 
 import { createRng } from '../../js/prng.js';
+import { prefersReducedMotion } from '../../js/settings.js';
+import { renderNullBoard, BAND_FILLS, flyBandsToTally, rainDarts } from '../../js/mechanisms/null-board.js';
 import { wordsFor } from '../../js/mechanisms/vocabulary.js';
 import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 
 /** These pages break an association by permuting one side of it. */
-const words = wordsFor('permuteAssociation');
+// `statedPopulation`, not `permuteAssociation`: nothing is permuted here. H₀
+// names the proportions outright and the darts are drawn from them, which is
+// the one-proportion test's mechanism with k categories instead of 2. Both
+// spell `distribution` 'Null Distribution', so no displayed string moves.
+const words = wordsFor('statedPopulation');
 // Opt-in mechanism layouts (?mech=tiers|split). No-op without the parameter.
 applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
-import { computeBins } from '../../js/histogram.js';
-import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, flyDataStream, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
+import { computeBins, riceBins } from '../../js/histogram.js';
+import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
+import { renderSimChart, resolveChartType, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
 const chartContainer = document.getElementById('chart-container');
@@ -29,8 +35,8 @@ const dataPreview = document.getElementById('data-preview');
 const datasetSelect = /** @type {HTMLSelectElement} */ (document.getElementById('dataset-select'));
 const datasetDesc = document.getElementById('dataset-desc');
 const mechanismStrip = document.getElementById('mechanism-strip');
-const mechObserved = document.getElementById('mech-observed');
 const mechSimulated = document.getElementById('mech-simulated');
+const mechNullBoard = document.getElementById('mech-null-board');
 const mechObservedChisq = document.getElementById('mech-observed-chisq');
 const mechSimulatedChisq = document.getElementById('mech-simulated-chisq');
 const mechanismDescEl = document.getElementById('mechanism-description');
@@ -53,6 +59,19 @@ initPlayPause(genBtns, resetBtn);
 /** @type {number[]} */ let p0 = [];
 /** @type {number[]} */ let expected = [];
 let observedChisq = 0;
+/**
+ * 'sim' shows a draw from H₀ in the strip; 'observed' shows the data's own
+ * counts. It opens on 'observed': before you have drawn anything there is no
+ * simulation to show, and the first thing worth seeing is your own sample
+ * landing on the null it is about to be compared with. The first +n flips it.
+ * (Jeff, 2026-10-31.)
+ */
+let stripMode = 'observed';
+/** @type {number[]} The most recent simulated sample, to come back to. */
+let lastSimSample = [];
+let lastSimChisq = 0;
+/** @type {NodeListOf<HTMLButtonElement>|null} */
+let stripToggleBtns = null;
 let totalN = 0;
 let currentSourceName = '';
 // The dataset behind the loaded counts, kept so the panel can collapse onto it
@@ -63,6 +82,33 @@ let currentSourceName = '';
 let datasetContext = {};
 
 /** @type {number[]} */ let allStats = [];
+/**
+ * The SAMPLE behind each statistic, so a dot in the distribution can show what
+ * produced it. Parallel to `allStats` and kept only while the chart still draws
+ * individual dots — past DOTPLOT_AUTO_THRESHOLD it becomes a histogram, where a
+ * bar is a bin rather than a draw and there is nothing to point at. That also
+ * keeps this from growing to 100,000 × k numbers at the simulation cap.
+ * @type {number[][]}
+ */
+let allSamples = [];
+/**
+ * The x-axis, decided once and then left alone.
+ *
+ * It used to be `max(all stats, observed) * 1.05`, recomputed on every render,
+ * so the picture rescaled each time a new extreme arrived — every bar shifting
+ * and narrowing while the reader was trying to watch one of them. (Jeff,
+ * 2026-10-31: "can we [fix] axis limits in advance so that the picture doesn't
+ * jump around so much as we add more samples".)
+ *
+ * Two bounds, whichever is larger, so it is generous enough that growth is
+ * rare: the largest χ² in the 2,000-draw pilot the opening chart already runs,
+ * and the 0.9995 quantile of χ²(k−1), which the simulated statistic is close to
+ * whenever the expected counts are not tiny. It must also cover the observed.
+ * @type {[number, number]|null}
+ */
+let fixedDomain = null;
+/** Which simulation the reader is hovering, if any. */
+/** @type {number|null} */ let previewIndex = null;
 /** @type {(() => number)|null} */ let rng = null;
 let mechanismInitialized = false;
 
@@ -217,10 +263,19 @@ function showDataLoaded() {
   // Hypotheses with the specific hypothesized proportions per category.
   const hypBox = document.getElementById('gof-hyp');
   const h0El = document.getElementById('gof-h0');
-  if (h0El) h0El.innerHTML = categories.map((c, i) => `p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}`).join(', ');
+  // Each proportion wears its category's colour, the same wash the table rows
+  // and the board bands use — so H₀ as WRITTEN and H₀ as DRAWN are visibly the
+  // same four things. (Jeff, 2026-10-31: "could we color the null proportions
+  // in the null hypothesis using background color for each category similar to
+  // the rows in the table".) Never the only cue: the name is in the subscript.
+  if (h0El) {
+    h0El.innerHTML = categories.map((c, i) =>
+      `<span class="gof-h0-term" style="--band:${BAND_FILLS[i % BAND_FILLS.length]}"`
+      + `>p<sub>${esc(c)}</sub> = ${formatStat(p0[i], 4)}</span>`).join(', ');
+  }
   if (hypBox) hypBox.hidden = false;
   if (resultDiv) resultDiv.innerHTML = '<p class="hint">Data loaded. Draw simulated samples to build the null distribution.</p>';
-  if (mechObserved) mechObserved.innerHTML = miniBarsHTML(observed);
+  // The observed counts are no longer in the strip (see index.html).
   if (mechObservedChisq) mechObservedChisq.textContent = formatStat(observedChisq, 2);
 
   // The strip opens as soon as there is data, with the observed panel already
@@ -232,7 +287,15 @@ function showDataLoaded() {
     mechanismInitialized = true;
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
+    initStripToggle();
   }
+  // Open on your own sample, thrown at the null. `syncStripToggle` first, so
+  // the control agrees with the panels from the very first frame, and the empty
+  // chart before the animation, so the χ² has its marker to fly to.
+  stripMode = 'observed';
+  syncStripToggle();
+  renderEmptyChart();
+  runObservedAnimation();
   setPageTitle(baseTitle, currentSourceName, { n: totalN });
 
   if (plotOnly && !plotOnlyRan) {
@@ -248,23 +311,423 @@ function showDataLoaded() {
 }
 
 /**
+ * Step 1 and Step 2, painted for whichever sample is being shown.
+ *
+ * Both views use the SAME board and the SAME table — only the counts differ.
+ * That is the point of the toggle Jeff asked for (2026-10-30: "a toggle in
+ * Step 1 that can show the orginal observed sample and the connected table and
+ * a purple dot that flies to the observed value"): the reader watches one
+ * apparatus run twice, once on a sample from H₀ and once on their own data,
+ * and the comparison the p-value makes becomes a thing they have seen rather
+ * than a number they are told.
+ *
+ * The bands never change. They are H₀, and H₀ is the same whichever sample is
+ * scattered on it — which is exactly why the observed sample looks wrong on
+ * them when it does.
+ *
+ * @param {boolean} [latest] - mark this as the newest draw
+ * @param {boolean} [animate] - a rain and a tally flight are about to run, so
+ *   the numbers they deliver are rendered held back
+ * @returns {{ dartEls: SVGCircleElement[] }|null} the board, for the dart rain
+ */
+function paintStrip(latest = false, animate = false) {
+  const preview = previewIndex != null ? allSamples[previewIndex] : null;
+  const showObserved = stripMode === 'observed' && !preview;
+  const counts = preview || (showObserved ? observed : lastSimSample);
+  if (!counts?.length) return null;
+
+  /** @type {{ dartEls: SVGCircleElement[] }|null} */ let board = null;
+  if (mechNullBoard) {
+    // Its own RNG, seeded from the page seed — the dart positions are
+    // decoration and must not consume the stream the STATISTICS come from, or
+    // the numbers would move. Same reason `renderEmptyChart` uses a separate
+    // `presim-` generator in sim-app. The observed view gets its own stream
+    // name so its scatter is stable no matter how many simulations have run.
+    // A preview re-seeds from its own position in the run, which is the stream
+    // name that draw used when it was live (`allStats.length` was index + 1
+    // then). So hovering a dot brings back exactly the board that was on screen
+    // when that sample was taken, rather than a fresh scatter of the same counts.
+    const boardRng = createRng(
+      preview ? `darts-${seed}-${previewIndex + 1}`
+        : showObserved ? `obs-${seed}`
+          : `darts-${seed}-${allStats.length}`);
+    board = renderNullBoard(mechNullBoard, {
+      categories, props: p0, counts, rand: boardRng,
+      width: 440, height: Math.max(150, 30 * categories.length),
+    });
+  }
+  // Held back only when something really is coming to deliver them.
+  const pending = animate && !prefersReducedMotion();
+  if (mechSimulated) {
+    mechSimulated.innerHTML = tallyTableHTML(counts, {
+      flyable: true, observed: showObserved, pending });
+  }
+  // A different NAME for a different entity, which is not the drift
+  // `vocabulary.js` catalogues — that was one panel renaming itself while
+  // holding the same thing. This panel really is holding your data now.
+  setDrawHeading(preview ? `Simulation ${previewIndex + 1}`
+    : showObserved ? 'Your Observed Sample'
+      : (latest ? words.draw : words.drawLatest));
+  if (mechanismDescEl) {
+    mechanismDescEl.textContent = preview
+      ? 'The sample behind the dot you are pointing at'
+      : showObserved
+        ? 'Your own counts, scored against the same p₀'
+        : 'Draw n observations from the hypothesized distribution p₀';
+    mechanismDescEl.hidden = false;
+  }
+  return board;
+}
+
+/**
+ * Rename Step 2, in whichever heading is on screen.
+ *
+ * In a tier layout the panel's own `.mechanism-title` is hidden and the tier's
+ * STEP heading says it instead — but that heading is written ONCE, when the
+ * layout is built, so renaming the inner one left "This Simulation" standing
+ * over a table of the reader's own counts. The caption underneath HAD changed,
+ * which made the disagreement worse rather than better.
+ *
+ * @param {string} text
+ */
+function setDrawHeading(text) {
+  if (simTitleEl) simTitleEl.textContent = text;
+  const head = document.querySelector('.mech-tier--draw .mech-tier-head');
+  if (!head) return;
+  // Replace the heading's own words, keeping the STEP tag element (and any
+  // control sitting in the row) exactly where they are.
+  for (const n of head.childNodes) {
+    if (n.nodeType === Node.TEXT_NODE && n.textContent.trim()) { n.textContent = text; return; }
+  }
+  head.appendChild(document.createTextNode(text));
+}
+
+/**
+ * The observed χ², flying to its marker on the null distribution.
+ *
+ * `animateDropToChart` cannot do this one: it aims at the newest SIMULATED
+ * value, which it finds by looking for the chart's orange highlight. The
+ * observed statistic is a fixed purple line, and the whole point of the flight
+ * is that your data lands somewhere specific in a distribution that was built
+ * without it.
+ */
+function flyObservedToMarker() {
+  if (prefersReducedMotion() || !chartContainer) return;
+  const svg = chartContainer.querySelector('svg');
+  const source = document.querySelector('[data-chi-cell]');
+  // The purple overlay line IS the observed marker; see js/histogram.js, which
+  // draws it with chart-utils' STAT_OBSERVED.
+  const marker = svg?.querySelector('.overlays line[stroke="#7B2D8E"]');
+  if (!svg || !source || !marker) return;
+
+  const from = source.getBoundingClientRect();
+  const to = marker.getBoundingClientRect();
+  if (!from.width || !to.height) return;
+
+  const dot = document.createElement('span');
+  dot.className = 'gof-observed-flyer';
+  dot.style.left = `${from.left + from.width / 2}px`;
+  dot.style.top = `${from.top + from.height / 2}px`;
+  document.body.appendChild(dot);
+
+  const dx = (to.left + to.width / 2) - (from.left + from.width / 2);
+  const dy = (to.top + to.height * 0.75) - (from.top + from.height / 2);
+  dot.animate([
+    { transform: 'translate(0,0) scale(0.6)', opacity: 0 },
+    { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 26}px) scale(1)`, opacity: 1, offset: 0.5 },
+    { transform: `translate(${dx}px, ${dy}px) scale(1)`, opacity: 1 },
+  ], { duration: 620, easing: 'cubic-bezier(.4,0,.3,1)' }).onfinish = () => {
+    dot.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220 }).onfinish = () => dot.remove();
+  };
+}
+
+/**
+ * Point at a dot; see the sample it came from.
+ *
+ * Jeff, 2026-10-30: "when we hover over a dot in the sampling distribution, it
+ * should show the associated sample." The distribution is a thousand samples
+ * compressed into a thousand positions, and this is the one move that takes a
+ * position back apart — the dot in the right tail stops being "a big value"
+ * and becomes a specific sample with a specific category over-represented.
+ *
+ * The dotplot already gives every circle a `data-stat-index`, which is its
+ * place in the values array and therefore in `allStats` — `computeDots` maps
+ * without sorting, so the two stay aligned. `attachTooltip` has also already
+ * made each circle focusable, so wiring `focusin` alongside `mouseenter`
+ * reaches the same feature from the keyboard at no extra cost.
+ *
+ * Only dots. Past DOTPLOT_AUTO_THRESHOLD the chart is a histogram, where a bar
+ * is a bin of many draws and there is no single sample to show.
+ */
+function wireSamplePreview() {
+  const svg = chartContainer?.querySelector('svg');
+  if (!svg) return;
+  for (const c of svg.querySelectorAll('circle[data-stat-index]')) {
+    const i = Number(c.getAttribute('data-stat-index'));
+    const sample = allSamples[i];
+    if (!sample) continue;
+
+    // Say it in the label too. A reader on a screen reader cannot hover, and
+    // the strip changing underneath is a visual side effect they would never
+    // learn about; the counts belong on the dot itself.
+    const parts = categories.map((cat, k) => `${cat} ${sample[k]}`).join(', ');
+    c.setAttribute('aria-label',
+      `${c.getAttribute('aria-label') || ''} — sample ${i + 1}: ${parts}`.trim());
+
+    c.addEventListener('mouseenter', () => showPreview(i));
+    c.addEventListener('focusin', () => showPreview(i));
+    c.addEventListener('mouseleave', endPreview);
+    c.addEventListener('focusout', endPreview);
+  }
+}
+
+/** @param {number} i */
+function showPreview(i) {
+  if (previewIndex === i) return;
+  previewIndex = i;
+  paintStrip();
+  mechanismStrip?.classList.add('mech-previewing');
+}
+
+function endPreview() {
+  if (previewIndex == null) return;
+  previewIndex = null;
+  paintStrip();
+  mechanismStrip?.classList.remove('mech-previewing');
+}
+
+/**
+ * Show the observed sample, or the latest simulated one, in the strip.
+ *
+ * The two directions differ, on purpose.
+ *
+ * → YOUR DATA replays the opening animation: the darts are thrown again and
+ *   the tallies cross again. Seeing your sample land on the null is the thing
+ *   this view is for, and it is worth watching more than once. (Jeff,
+ *   2026-10-31: "when toggling from simulated data back to your data, show the
+ *   animation again.")
+ *
+ * → SIMULATED is instant. You are going back to something you were already
+ *   looking at, not being shown something new, and re-animating it would blank
+ *   a panel you just left.
+ *
+ * ⚠ This reinstates, for one direction only, the animation removed earlier the
+ * same day after "the null pop and table in steps 1 and 2 should update to the
+ * new data as soon as its swapped". The complaint then was that BOTH flips sat
+ * blank for a second and a half; the half that is the news keeps its animation.
+ */
+function setStripMode(mode) {
+  if (mode === stripMode) return;
+  stripMode = mode;
+  syncStripToggle();
+  if (mode !== 'observed') { paintStrip(); return; }
+  announce('Showing your observed sample, scored against the hypothesized distribution.');
+  runObservedAnimation();
+}
+
+/**
+ * Step 3, before there is a distribution: an axis and your observed χ² on it.
+ *
+ * Jeff, 2026-10-31: "when we open the initial purple dot should fly into the
+ * step 3 sampling distribution area and show the observed statistic." It also
+ * gives the opening flight somewhere to land — until now `flyObservedToMarker`
+ * found no marker on load and declined, correctly, because the panel was empty.
+ *
+ * The axis comes from a silent pilot of 2,000 draws, the same device sim-app's
+ * `renderEmptyChart` uses: without it the scale would be set by the observed
+ * value alone, and the first real simulations would arrive off the end of an
+ * axis built for one number.
+ *
+ * ⚠ The pilot takes its own `presim-` stream. Drawing from the page's rng here
+ * would shift every subsequent simulation, and a `?seed=` link is a grading
+ * contract. (See js/mechanisms/draws.js on PRNG consumption.)
+ */
+function renderEmptyChart() {
+  if (!chartContainer || !categories.length || !totalN) return;
+  renderChart([], observedChisq, -1, undefined, undefined, axisDomain(), undefined);
+}
+
+/**
+ * The axis, decided before the first draw and then left alone.
+ *
+ * It used to be `max(all stats, observed) * 1.05`, recomputed every render, so
+ * the picture rescaled whenever a new extreme arrived — every bar shifting and
+ * narrowing while the reader was trying to watch one of them.
+ *
+ * Fixed from the pilot's largest χ², which covers all but about one draw in
+ * 2,000. It still GROWS when something exceeds it, and that is deliberate: a χ²
+ * has no upper bound, so the alternative is either an axis wide enough for the
+ * rarest draw — squashing the body where all the mass is, measured at 37 wide
+ * for `jury` where 99.9% of the mass sits below 12 — or dropping the most
+ * extreme values from the right tail of a RIGHT-TAILED test, which would make
+ * the shaded tail disagree with the p-value beside it.
+ *
+ * Growth is a record-breaking event, so it happens on the order of four times
+ * across 100,000 draws rather than on every batch. Measured: a 100k run exceeds
+ * the 2,000-draw pilot by 1.2× to 1.8% depending on the dataset.
+ *
+ * @returns {[number, number]}
+ */
+function axisDomain() {
+  if (!fixedDomain) {
+    const preRng = createRng(`presim-${seed}`);
+    let hi = observedChisq;
+    for (let i = 0; i < 2000; i++) {
+      hi = Math.max(hi, gofChisqStat(drawMultinomial(totalN, p0, preRng), p0));
+    }
+    fixedDomain = [0, hi * 1.05 || 1];
+  }
+  const seen = Math.max(observedChisq, ...allStats);
+  if (seen > fixedDomain[1]) fixedDomain = [0, seen * 1.05];
+  return fixedDomain;
+}
+
+/**
+ * The opening view: your sample thrown at the null, once, with the animation.
+ *
+ * Runs when data loads, before anything has been simulated — so there is no
+ * null distribution yet and `flyObservedToMarker` will find no marker to aim
+ * at and decline, which is correct. It becomes meaningful on the toggle, after
+ * the reader has built a distribution to land in.
+ */
+function runObservedAnimation() {
+  const board = paintStrip(false, true);
+  if (!board) return;
+  rainDarts(board.dartEls ?? [], {
+    rand: createRng(`obsrain-${seed}`),
+    onDone: () => flyBandsToTally({
+      board: mechNullBoard?.querySelector('.null-board') ?? null,
+      table: mechSimulated,
+      onDone: flyObservedToMarker,
+    }),
+  });
+}
+
+/** Reflect `stripMode` on the two toggle buttons. */
+function syncStripToggle() {
+  if (!stripToggleBtns) return;
+  for (const b of stripToggleBtns) {
+    b.setAttribute('aria-pressed', String(b.dataset.view === stripMode));
+  }
+}
+
+/**
+ * The toggle itself, in the Step 1 heading — the same seg-control the one-mean
+ * page puts there, at the far end of the title rather than on a row below it.
+ */
+function initStripToggle() {
+  if (stripToggleBtns) return;
+  // WHERE the heading is depends on the layout, and getting this wrong makes
+  // the control invisible rather than misplaced.
+  //
+  // `?layout=tiers|split` (js/mechanisms/layout.js) lifts each panel into a
+  // tier with its own STEP heading and sets the panel's inner
+  // `.mechanism-title` to `hidden`, because the tier head now says it. This
+  // function runs later — on data load — so appending to that inner title put
+  // the toggle inside a hidden element: present in the DOM, 0×0 on screen, and
+  // invisible in every layout but the default one. (Jeff, 2026-10-31, with a
+  // screenshot of the split layout: "I can't find the toggle anywhere.")
+  const tierHead = document.querySelector('.mech-tier--source .mech-tier-head');
+  const titleEl = tierHead
+    || document.querySelector('#mechanism-strip .mechanism-panel[data-entity="source"] .mechanism-title');
+  if (!titleEl) return;
+  const wrap = document.createElement('div');
+  // `--inline`: beside the heading text, not at the panel's far right. The
+  // shared rule floats this control to the panel's top-right corner, which
+  // works where the panel's content fills it — here the board is 300px inside
+  // a 490px panel, so the toggle sat alone in the gap between Step 1 and Step 2
+  // and did not read as belonging to either. (Jeff, 2026-10-30: "I'm not
+  // seeing a step 1 heading.")
+  wrap.className = 'seg-control mech-null-toggle mech-null-toggle--inline';
+  wrap.setAttribute('role', 'group');
+  wrap.setAttribute('aria-label', 'Scatter a simulated sample or your own data on the null');
+  wrap.innerHTML =
+    '<button type="button" data-view="sim" aria-pressed="true">Simulated</button>'
+    + '<button type="button" data-view="observed" aria-pressed="false">Your data</button>';
+  titleEl.appendChild(wrap);
+  stripToggleBtns = wrap.querySelectorAll('button');
+  for (const b of stripToggleBtns) {
+    b.addEventListener('click', () => setStripMode(b.dataset.view === 'observed' ? 'observed' : 'sim'));
+  }
+}
+
+/**
  * Mini horizontal bars per category (shared scale across observed + expected),
  * with a dashed marker at the expected count so deviation from H₀ is visible.
  * @param {number[]} counts
  */
-function miniBarsHTML(counts) {
-  const maxVal = Math.max(...counts, ...expected, 1);
-  let html = '<div class="gof-bars">';
+/**
+ * Step 2: the tally this draw produced, and what it costs.
+ *
+ * Todd Will's four columns — category, observed, expected, (o−e)²/e — with the
+ * total that IS χ². Replacing the bar chart was the point: χ² used to arrive as
+ * a number with nothing connecting it to the counts above it, so a reader could
+ * not see that one category was carrying the whole statistic while another
+ * contributed nothing. On `jury`, 5.89 is White 0.25 against Black 2.37,
+ * Hispanic 1.94 and Other 1.34 — the dataset's actual story.
+ *
+ * The count column is headed "Simulated (o)" in the simulation view, not
+ * "Observed": the data-entry table at the top of this same page has an
+ * "Observed" column holding the REAL counts, and two columns on one screen
+ * under one word, holding different numbers, is the collision
+ * `js/mechanisms/vocabulary.js` exists to catch. The letters also make the
+ * third column self-explaining.
+ *
+ * In the OBSERVED view the same table is run on the data's own counts, where
+ * "Observed (o)" is then the honest heading because it is the only count on
+ * screen. The two views share this function deliberately: the reader is being
+ * shown that one arithmetic is applied to both, and a separate renderer would
+ * eventually drift into looking like a different calculation.
+ *
+ * @param {number[]} counts
+ * @param {object} [opts]
+ * @param {boolean} [opts.flyable] - tag the observed cells so darts can land on them
+ * @param {boolean} [opts.observed] - this is the data's own sample, not a draw
+ * @param {boolean} [opts.pending] - a flight is about to bring these numbers, so
+ *   render them held back (see `revealPending`). Only ever true when the flight
+ *   will really run: on a batch, or under reduced motion, nothing would arrive
+ *   to reveal them and the table would simply stay blank.
+ */
+function tallyTableHTML(counts, opts = {}) {
+  const chi = chiSqOf(counts);
+  let html = `<table class="gof-tally${opts.observed ? ' gof-tally--observed' : ''}"><thead><tr>`
+    + '<th scope="col">Category</th>'
+    + `<th scope="col" class="num">${opts.observed ? 'Observed' : 'Simulated'} (o)</th>`
+    + '<th scope="col" class="num">Expected (e)</th>'
+    + '<th scope="col" class="num">(o\u2212e)\u00b2/e</th>'
+    + '</tr></thead><tbody>';
   for (let i = 0; i < categories.length; i++) {
-    const w = (counts[i] / maxVal) * 100;
-    const ew = (expected[i] / maxVal) * 100;
-    html += `<div class="gof-bar-row">
-      <span class="gof-bar-cat" title="${esc(categories[i])}">${esc(categories[i])}</span>
-      <span class="gof-bar-track"><span class="gof-bar-fill" style="width:${w.toFixed(1)}%"></span><span class="gof-bar-exp" style="left:${ew.toFixed(1)}%" title="expected ${expected[i].toFixed(1)}"></span></span>
-      <span class="gof-bar-val">${counts[i]}</span>
-    </div>`;
+    const e = expected[i];
+    const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
+    html += `<tr style="--band:${BAND_FILLS[i % BAND_FILLS.length]}">
+      <th scope="row">${esc(categories[i])}</th>
+      <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}${
+        opts.pending ? ` data-reveal="${counts[i]}"` : ''}>${opts.pending ? '' : counts[i]}</td>
+      <td class="num exp">${e.toFixed(1)}</td>
+      <td class="num con"${opts.pending ? ` data-reveal="${contrib.toFixed(2)}"` : ''}>${
+        opts.pending ? '' : contrib.toFixed(2)}</td>
+    </tr>`;
   }
-  return html + '</div>';
+  const totalObs = counts.reduce((a, b) => a + b, 0);
+  const chiText = `\u03c7\u00b2 = ${chi.toFixed(3)}`;
+  html += `</tbody><tfoot><tr>
+    <th scope="row">Total</th>
+    <td class="num"${opts.pending ? ` data-reveal="${totalObs}"` : ''}>${opts.pending ? '' : totalObs}</td>
+    <td class="num">${expected.reduce((a, b) => a + b, 0).toFixed(0)}</td>
+    <td class="num con-total" data-chi-cell${
+      opts.pending ? ` data-reveal="${chiText}"` : ''}>${opts.pending ? '' : chiText}</td>
+  </tr></tfoot></table>`;
+  return html;
+}
+
+/** χ² for a set of counts against the page's expected counts. */
+function chiSqOf(counts) {
+  let t = 0;
+  for (let i = 0; i < counts.length; i++) {
+    const e = expected[i];
+    if (e > 0) t += ((counts[i] - e) ** 2) / e;
+  }
+  return t;
 }
 
 // ─── Generate ───
@@ -292,9 +755,9 @@ function generateSimulations(count) {
     mechanismInitialized = true;
     mechanismStrip.hidden = false;
     initMechanismCollapse(mechanismStrip);
+    initStripToggle();
   }
   const prevLength = allStats.length;
-  if (simTitleEl) simTitleEl.innerHTML = (count === 1 ? 'This' : 'Last') + ' Sample under H<sub>0</sub>';
 
   /** @type {number[]} */ let lastSample = [];
   let lastChisq = 0;
@@ -302,41 +765,104 @@ function generateSimulations(count) {
     const sample = drawMultinomial(totalN, p0, rng);
     const chi2 = gofChisqStat(sample, p0);
     allStats.push(chi2);
+    if (allSamples.length < DOTPLOT_AUTO_THRESHOLD) allSamples.push(sample);
     lastSample = sample;
     lastChisq = chi2;
   }
 
-  if (count === 1 && mechObserved && mechSimulated) flyDataStream(mechObserved, mechSimulated);
+  /**
+   * Draws the chart. Assigned below, once its arguments exist; the single-draw
+   * animation chain finishes by calling it, so the statistic arrives in the
+   * distribution at the end of the sentence rather than before it was counted.
+   */
+  let runChart = () => {};
+
   const updateMech = () => {
-    if (mechSimulated) mechSimulated.innerHTML = miniBarsHTML(lastSample);
+    // Where that sample came from: the null as a field of areas, with the
+    // sample scattered across it. Its own RNG, seeded from the page seed — the
+    // dart positions are decoration and must not consume the stream the
+    // STATISTICS come from, or the numbers would move. Same reason
+    // `renderEmptyChart` uses a separate `presim-` generator in sim-app.
+    lastSimSample = lastSample;
+    lastSimChisq = lastChisq;
+    // Pressing +1 while looking at your own data means you want the simulation
+    // back; it would be strange to draw a sample and not be shown it. The
+    // BUTTONS have to follow: setting the mode without syncing them left "Your
+    // data" lit above a table of simulated counts — a control lying about what
+    // is on screen.
+    stripMode = 'sim';
+    syncStripToggle();
+    const board = paintStrip(count === 1, count === 1);
     if (mechSimulatedChisq) {
       mechSimulatedChisq.textContent = formatStat(lastChisq, 2);
       mechSimulatedChisq.classList.toggle('highlight-last', count === 1);
     }
+
+    // On a batch there is nothing to watch, and 1,000 flights would be noise.
+    if (count !== 1) { runChart(); return; }
+
+    // One draw, told in order: the darts rain onto the null, each band's tally
+    // crosses to its row, and only then does the χ² leave for the distribution.
+    //
+    // It used to run the other way round — the chart rendered on a 150ms timer
+    // while the table was still being replaced on a 200ms one, so the statistic
+    // set off from the previous draw's total before this draw's had been
+    // counted. Nothing asserted the order, because every test reads the settled
+    // state. Chaining the phases is what makes the strip a sentence rather than
+    // three things that happen to start at once.
+    const dartRng = createRng(`rain-${seed}-${allStats.length}`);
+    rainDarts(board?.dartEls ?? [], {
+      rand: dartRng,
+      onDone: () => flyBandsToTally({
+        board: mechNullBoard?.querySelector('.null-board') ?? null,
+        table: mechSimulated,
+        onDone: () => {
+          runChart();
+          // The χ² flies from the TABLE's total, where it was just computed,
+          // rather than from a separate line repeating it — the statistic
+          // leaves the place the reader watched it add up. (Jeff, 2026-10-30.)
+          const dropSource = document.querySelector('[data-chi-cell]')
+            || document.getElementById('mech-simulated-chisq');
+          if (dropSource && chartContainer) animateDropToChart(dropSource, chartContainer);
+        },
+      }),
+    });
   };
-  if (count === 1) setTimeout(updateMech, 200); else updateMech();
   if (mechanismDescEl) {
     mechanismDescEl.textContent = 'Draw n observations from the hypothesized distribution p₀';
     mechanismDescEl.hidden = false;
   }
 
-  const csHi = Math.max(...allStats, observedChisq) * 1.05 || 1;
-  /** @type {[number,number]} */ const hlDomain = [0, csHi];
-  const { bins: fullBins } = computeBins(allStats, { domain: hlDomain });
+  /** @type {[number,number]} */ const hlDomain = axisDomain();
+  // Rice, not Sturges. These statistics are right-skewed with a hump near the
+  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
+  // the realised range made the first bin swallow the entire rise, so the
+  // picture decreased monotonically and said the distribution had no hump at
+  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
+  // bins makes the distribution look like it decreases monotonically."
+  //
+  // `riceBins` was added in September for the same complaint from him about
+  // `conceptual/sampling-lab`, with the reasoning already written at its
+  // definition: Sturges flattens out and is wrong for a sampling distribution,
+  // where the point is to run thousands of draws and look at the shape. It was
+  // only ever applied to that one page.
+  //
+  // Changes no answer — the p-value is computed from `allStats`, never from the
+  // bins — only the picture, which was the thing that was wrong.
+  const { bins: fullBins } = computeBins(allStats,
+    { domain: hlDomain, numBins: riceBins(allStats.length) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
     allStats, prevLength, count, computeBins, { domain: hlDomain, thresholds: lockedThresholds });
   const { pValue, extremeCount } = computePValue(allStats, observedChisq);
   displayResults(allStats, observedChisq, pValue, extremeCount);
 
+  runChart = () => renderChart(
+    allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
   if (count === 1) {
-    setTimeout(() => {
-      renderChart(allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
-      const dropSource = document.getElementById('mech-simulated-chisq');
-      if (dropSource && chartContainer) animateDropToChart(dropSource, chartContainer);
-    }, 150);
+    setTimeout(updateMech, 200);
   } else {
-    renderChart(allStats, observedChisq, hlIndex, hlIndices, prevBinCounts, hlDomain, lockedThresholds);
+    updateMech();
   }
   if (resetBtn) resetBtn.hidden = false;
   announce(`Generated ${count} sample${count > 1 ? 's' : ''}. Total: ${allStats.length}`);
@@ -371,6 +897,9 @@ function renderChart(stats, observedStat, highlightIndex = -1, highlightIndices,
     pillMode: (showReadout && stats.length > 0) ? 'randomization' : undefined,
     pValue,
   });
+  // renderSimChart rebuilds the SVG, so every circle is a new element and the
+  // previous listeners went with the nodes they were on. Re-wire, don't leak.
+  wireSamplePreview();
 }
 
 /** @param {number[]} stats @param {number} observedStat */
@@ -407,6 +936,9 @@ function resetSimulation() {
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
+  fixedDomain = null;
+  allSamples = [];
+  previewIndex = null;
   rng = null;
   mechanismInitialized = false;
   seed = urlSeed || Math.random().toString(36).slice(2, 10);

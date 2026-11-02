@@ -79,8 +79,40 @@ export const DOMAIN_PADDING = 0.05;
  */
 export function resolveChartType(n, userChoice, opts = {}) {
   if (userChoice && userChoice !== 'auto') return /** @type {any} */ (userChoice);
-  // Too many outcomes to draw as separate columns — bin them (DISCRETE_COLUMN_MAX).
-  if (opts.discreteColumns && opts.discreteColumns > DISCRETE_COLUMN_MAX) return 'histogram';
+
+  // ── A statistic on a lattice is drawn on its lattice, at any number of draws.
+  //
+  // `discreteColumns` is non-zero only when the statistic has a step — the set
+  // of values it can actually take. Binning such a statistic is honest only if
+  // the bin width is an exact integer multiple of that step, and nothing
+  // chooses bins that way, so the bars alternate for reasons that have nothing
+  // to do with the distribution. Computed for p̂ with n = 34 (35 achievable
+  // values), expected counts across the middle of the null distribution:
+  //
+  //   12 bins → 3,3,2,3,3 points per bin →  55, 334, 473, 744, 334
+  //   25 bins → 1,2,1,1,2,1,2,…          →  15,  97, 108, 162, 473, 272, 473, …
+  //   44 bins → 0,1,1,1,0,1,1,1,0        →   0,  33,  64, 108,   0, 162, 216, …
+  //
+  // The 473s are bins that caught two lattice points beside bins that caught
+  // one; at 44 bins there are empty bins *between* occupied ones — gaps the
+  // distribution does not have. The column form has none of this, because it is
+  // the distribution: one bar per achievable value.
+  //
+  // This used to fall through to the count rule below, so a statistic with 35
+  // achievable values — well inside DISCRETE_COLUMN_MAX — flipped to a
+  // histogram at 1,001 draws, which is exactly when enough has been drawn for
+  // the shape to be worth looking at. (Jeff, 2026-11-02: "for discrete
+  // distributions with a moderately small number of viable values, is there any
+  // reason to ever switch to a histogram?" There is not.)
+  //
+  // Past DISCRETE_COLUMN_MAX the columns no longer resolve and binning is the
+  // lesser evil — see the note on that constant.
+  if (opts.discreteColumns) {
+    return opts.discreteColumns > DISCRETE_COLUMN_MAX ? 'histogram' : 'dotplot';
+  }
+
+  // Everything else — means, slopes, correlations, t, F, χ² — is not on a
+  // lattice, and bins are the right picture once there are too many dots.
   return n <= DOTPLOT_AUTO_THRESHOLD ? 'dotplot' : 'histogram';
 }
 

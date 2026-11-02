@@ -1811,6 +1811,18 @@ input[aria-invalid="true"] {
 .mech-tier-head .pbm-style-toggle ~ .pbm-style-toggle,
 .mechanism-title .pbm-style-toggle ~ .pbm-style-toggle { margin-left: 0; }
 .mechanism-title .mech-null-toggle { margin-left: auto; font-weight: 400; }
+/* …unless it is marked inline, where it rides directly after the heading text.
+   The default corner placement assumes the panel's content fills its width;
+   when it does not, the control ends up alone in the gap between two panels,
+   attached to neither. */
+.mechanism-title .mech-null-toggle--inline,
+.mech-tier-head .mech-null-toggle--inline {
+  position: static; margin-left: 0.55rem;
+}
+/* In a tier the heading is an h3 that already lays its tag and title out in a
+   row, so the control only needs to stop being absolutely positioned and sit
+   at the end of it. */
+.mech-tier-head .mech-null-toggle--inline { margin-left: auto; font-weight: 400; }
 .pbm-style-toggle .seg-label {
   font-size: 0.78rem; font-weight: 600;
   color: var(--ims-gray-text, #555);
@@ -5985,13 +5997,26 @@ body[data-coach="true"][data-sim-state="loaded"] .gen-btn[data-count="1"] {
 
 /* Mechanism-strip mini bars: observed vs one simulated sample under H0. */
 .gof-bars { display: flex; flex-direction: column; gap: 0.3rem; margin: 0.3rem 0; }
-.gof-bar-row { display: grid; grid-template-columns: 6.5rem 1fr 2.2rem; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
+.gof-bar-row { display: grid; grid-template-columns: 6.5rem 1fr 2.2rem 3.1rem; align-items: center; gap: 0.4rem; font-size: 0.8rem; }
 .gof-bar-cat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gof-bar-track { position: relative; height: 14px; background: #eef3f6; border-radius: 3px; }
 .gof-bar-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--ims-blue, #569BBD); border-radius: 3px; }
 /* Dashed marker at the expected count (n·p0) so deviation from H0 is visible. */
 .gof-bar-exp { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 2px dashed #114B5F; }
 .gof-bar-val { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+/* What this category's deviation costs: (o−e)²/e. Tinted by its SHARE of χ²,
+   so the category carrying the statistic is findable without reading every
+   number — and tinted, not coloured, because the number is already there and
+   colour must never be the only cue. (Todd's decomposition, 2026-10-30.) */
+.gof-bar-head { font-size: 0.72em; color: var(--ims-gray-text, #666); font-weight: 600; }
+.gof-bar-head .gof-bar-val { font-weight: 600; }
+.gof-bar-contrib-head { text-align: right; white-space: nowrap; }
+.gof-bar-contrib {
+  text-align: right; font-variant-numeric: tabular-nums; font-size: 0.78em;
+  padding: 0.05rem 0.25rem; border-radius: 3px;
+  color: var(--ims-green, #114B5F);
+  background: color-mix(in srgb, var(--ims-blue, #569BBD) calc(var(--share, 0) * 55%), transparent);
+}
 
 /* Goodness-of-fit hypotheses block (per-category hypothesized proportions). */
 .gof-hypotheses { font-size: 0.95rem; line-height: 1.5; }
@@ -6600,4 +6625,111 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
      push the button off the edge; 44px keeps the touch target. */
   .group-order { flex-wrap: wrap; }
   .order-swap { min-height: 44px; }
+}
+
+/* ── The null model as a dart field (GOF mechanism) ──────────────────────
+   Band heights ARE the hypothesised proportions, so a uniformly-thrown dart
+   lands in a band with exactly that probability — the picture is the sampling
+   model, not an illustration of it. Names sit in a left gutter on white rather
+   than on the fill, so label contrast never depends on which colour a category
+   happened to get. */
+/* Centred in its panel: the board is the picture Step 1 is about, and it sat
+   hard against the left edge of a panel half again as wide. (Jeff, 2026-10-31.) */
+.null-board-wrap { margin: 0.2rem 0 0.45rem; display: flex; justify-content: center; }
+.null-board { display: block; max-width: 460px; width: 100%; }
+.null-board-cat { font-size: 9.5px; fill: var(--ims-green, #114B5F); }
+.null-board-count { font-size: 9.5px; font-weight: 700; fill: var(--ims-green, #114B5F); }
+/* The hypothesised share, beside its name. Lighter than the name so the two
+   read as two things, and #595959 keeps it at 5.1:1 on white — it is text. */
+.null-board-pct { fill: #595959; }
+/* Dark dot, white halo: readable on every band fill without relying on one. */
+/* The observed χ², on its way to its own purple marker. Matches
+   chart-utils' STAT_OBSERVED exactly — a flyer that lands on a line of a
+   different colour reads as two different quantities. */
+.gof-observed-flyer {
+  position: fixed; z-index: 60; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px;
+  border-radius: 50%; background: #7B2D8E; border: 1.5px solid #fff;
+  pointer-events: none;
+}
+.gof-tally--observed .con-total { color: #7B2D8E; }
+/* A hypothesised proportion, wearing its category's colour. Same 15% wash as
+   the table rows, so the written H₀ and the drawn one read as one statement.
+   Padded and rounded so the tint reads as a chip rather than a highlighter
+   smear across the commas between terms. */
+.gof-h0-term {
+  background: color-mix(in srgb, var(--band, transparent) 15%, transparent);
+  border-radius: 3px; padding: 0.05em 0.3em;
+}
+/* While a dot is being pointed at, the strip is showing a sample from the
+   history rather than the live one. A quiet tint says "this is a look back",
+   without moving anything — the panels must not shift, or the picture would
+   jump under the pointer. */
+.mechanism-strip.mech-previewing { background: #F4F7F9; }
+.null-board-dart { fill: #111; stroke: #fff; stroke-width: 0.8;
+  /* So the landing scale is about the dot's own centre, not the SVG origin. */
+  transform-box: fill-box; transform-origin: center; }
+/* Each dart drops in and sticks, with a small overshoot — the same "stick" the
+   one-proportion scoop uses. `both` keeps it invisible until its turn, so the
+   board fills rather than appearing. Skipped entirely under reduced motion:
+   rainDarts returns before setting any of this. */
+@keyframes nb-dart-land {
+  from { opacity: 0; transform: translateY(-9px) scale(0.2); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* Ties a dodged label back to its band. Thin and pale: it is a pointer, not
+   a mark to read, and it must not compete with the darts over the fill. */
+.null-board-leader { stroke: var(--ims-green, #114B5F); stroke-width: 0.5; opacity: 0.55; }
+
+/* ── Step 2: the tally this draw produced (GOF) ──────────────────────────
+   Todd Will's four columns with the total that IS χ². Replaces a bar chart
+   that showed the counts but never connected them to the statistic below. */
+/* Centred, like the board above it. Left-aligned, its centre sat ~50px left of
+   the panel's while the board's field sat ~50px right — the two steps read as
+   two columns that did not line up. (Jeff, 2026-10-31.) */
+.gof-tally { border-collapse: collapse; font-size: 0.78rem; width: 100%; max-width: 330px; margin: 0 auto; }
+.gof-tally th, .gof-tally td { padding: 0.12rem 0.35rem; text-align: left; }
+.gof-tally thead th { font-size: 0.72rem; color: var(--ims-gray-text, #666); border-bottom: 1px solid #ccd6dc; white-space: nowrap; }
+.gof-tally .num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Dark, not the inherited IMS blue: #569BBD on white is 2.90:1, below the 4.5
+   a WCAG AA body text needs, and the row tint underneath it does not help. The
+   row's colour identity is the TINT; the name on top of it has to be readable.
+   (Measured 2026-10-30, on a table this session introduced.) */
+.gof-tally tbody th { font-weight: 500; white-space: nowrap; color: var(--ims-green, #114B5F); }
+.gof-tally .obs { font-weight: 700; }
+/* #595959, not the shared --ims-gray-text (#6B6B6B): that grey is 5.13:1 on
+   white but only 4.31:1 once the row tint is under it, and expected counts are
+   text. Still clearly lighter than the bold observed beside it. */
+.gof-tally .exp { color: #595959; }
+.gof-tally tbody tr {
+  /* The row carries its own band colour, pale, instead of a swatch beside the
+     name: the table and the board then read as one picture without a second
+     little object to decode. Jeff, 2026-10-30: "maybe we could have a pale
+     background color in each of the rows corresponding to the population
+     colors, it might be better than the colored squares."
+     Never the only cue — the name is in the row, and the ORDER matches the
+     board top to bottom. */
+  background: color-mix(in srgb, var(--band, transparent) 15%, transparent);
+}
+/* No tint on the contribution. It was a second wash on top of the row's own
+   band colour and did not earn the complication — the numbers are right there,
+   in a column of four, and the big one is not hard to find. (Jeff, 2026-10-30:
+   "I dont' think the contribution tint adds much".) */
+.gof-tally tfoot th, .gof-tally tfoot td { border-top: 1px solid #ccd6dc; font-weight: 700; padding-top: 0.22rem; color: var(--ims-green, #114B5F); }
+.gof-tally .con-total { white-space: nowrap; color: var(--ims-green, #114B5F); }
+
+/* ── Band → tally flight (GOF) ───────────────────────────────────────────
+   One flyer per CATEGORY, not per observation: the claim being made is about
+   the tally, and 556 flyers would be a smear. */
+.tally-fly-layer { position: fixed; inset: 0; pointer-events: none; z-index: 60; }
+.tally-flyer {
+  position: fixed; width: 10px; height: 10px; margin: -5px 0 0 -5px;
+  border-radius: 50%; border: 1.5px solid #333;
+}
+.tally-cell-landed { animation: tally-land 420ms ease-out; }
+@keyframes tally-land {
+  0% { background: color-mix(in srgb, var(--ims-blue, #569BBD) 45%, transparent); }
+  100% { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tally-flyer, .tally-cell-landed { animation: none !important; transition: none !important; }
 }

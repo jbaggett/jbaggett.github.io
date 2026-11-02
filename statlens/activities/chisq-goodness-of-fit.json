@@ -27,7 +27,7 @@
     },
     {
       "instruction": "Use the tool in GOF-style entry mode. Enter (or load) a categorical dataset with 4-6 categories and a claimed reference distribution (e.g., a candy company's claimed color proportions).",
-      "observe": "What are the null and alternative hypotheses? Why is the GOF test always 'two-sided in spirit'?",
+      "observe": "What are the null and alternative hypotheses? Why does the test use only the right tail of the χ² distribution, even though a category can miss its expected count in either direction?",
       "reveal": "H₀: the true distribution matches the claim. Hₐ: at least one proportion differs from the claim. GOF is always right-tail on the chi-square statistic because ANY departure - in any category, in any direction - inflates the sum of squared deviations."
     },
     {

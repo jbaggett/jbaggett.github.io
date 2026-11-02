@@ -629,6 +629,7 @@ function drawChart(result) {
     pdfFn,
     tail,
     statValueNeg: tail === 'both' ? -Math.abs(tStat) : undefined,
+    observedValue: tStat,
   });
 
 }

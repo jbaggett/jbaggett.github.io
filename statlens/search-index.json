@@ -69,7 +69,7 @@
   },
   {
    "p": "simulate/goodness-of-fit/",
-   "t": "Chi-Square Goodness-of-Fit Simulation",
+   "t": "Chi-Square GOF Randomization Test",
    "d": "Test whether counts across several categories match a claimed set of probabilities, by simulation.",
    "k": "goodness of fit, chi-square, categories, expected counts, is the die fair, simulation, one categorical variable, p-value"
   },
@@ -444,6 +444,12 @@
    "t": "What Estimating the Standard Error Costs",
    "d": "You never have the true standard error. See what substituting s for sigma, or p-hat for p, costs the interval — and why t* repairs one and nothing repairs the other.",
    "k": "t star, critical value, why t instead of z, 1.96, margin of error, sigma unknown, sample standard deviation, degrees of freedom, confidence interval width, t distribution, coverage, proportion confidence interval, success-failure condition, np at least 10, estimated standard error, Wald interval, why simulate"
+  },
+  {
+   "p": "conceptual/stat-curve/",
+   "t": "Where the Curve Comes From",
+   "d": "Score the same samples two ways — dividing by the true standard error, then by the one you estimate from the sample — and watch the t distribution's heavy tails appear.",
+   "k": "t distribution, why t has heavier tails, standard error, sample standard deviation, sampling distribution of a test statistic, z versus t, degrees of freedom, standardize, reference distribution"
   },
   {
    "p": "conceptual/two-se/",

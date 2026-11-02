@@ -175,7 +175,17 @@ export function applyTierLayout(mechanismKind, doc = document, mode = 'tiers') {
  */
 function panelTitle(el) {
   const t = el.querySelector('.mechanism-title');
-  return t?.textContent?.trim() || null;
+  if (!t) return null;
+  // The heading's own words only. A page may put a CONTROL in its title (the
+  // observed/null toggles do), and `textContent` would fold that control's
+  // button labels into the tier heading — "Population under H₀SimulatedYour
+  // data". Today this runs before those controls are added; it should not
+  // depend on that.
+  const text = [...t.childNodes]
+    .filter(n => !(n instanceof Element && n.classList.contains('seg-control')))
+    .map(n => n.textContent ?? '')
+    .join('');
+  return text.trim() || null;
 }
 
 /**
