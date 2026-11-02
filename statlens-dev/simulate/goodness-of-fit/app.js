@@ -22,7 +22,7 @@ const words = wordsFor('statedPopulation');
 applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
-import { computeBins } from '../../js/histogram.js';
+import { computeBins, riceBins } from '../../js/histogram.js';
 import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
 import { renderSimChart, resolveChartType, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
 
@@ -834,7 +834,23 @@ function generateSimulations(count) {
   }
 
   /** @type {[number,number]} */ const hlDomain = axisDomain();
-  const { bins: fullBins } = computeBins(allStats, { domain: hlDomain });
+  // Rice, not Sturges. These statistics are right-skewed with a hump near the
+  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
+  // the realised range made the first bin swallow the entire rise, so the
+  // picture decreased monotonically and said the distribution had no hump at
+  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
+  // bins makes the distribution look like it decreases monotonically."
+  //
+  // `riceBins` was added in September for the same complaint from him about
+  // `conceptual/sampling-lab`, with the reasoning already written at its
+  // definition: Sturges flattens out and is wrong for a sampling distribution,
+  // where the point is to run thousands of draws and look at the shape. It was
+  // only ever applied to that one page.
+  //
+  // Changes no answer — the p-value is computed from `allStats`, never from the
+  // bins — only the picture, which was the thing that was wrong.
+  const { bins: fullBins } = computeBins(allStats,
+    { domain: hlDomain, numBins: riceBins(allStats.length) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
     allStats, prevLength, count, computeBins, { domain: hlDomain, thresholds: lockedThresholds });
