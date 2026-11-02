@@ -22,9 +22,9 @@ const words = wordsFor('statedPopulation');
 applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
-import { computeBins, riceBins } from '../../js/histogram.js';
+import { computeBins, fdBins } from '../../js/histogram.js';
 import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
+import { renderSimChart, resolveChartType, clippedAxisHi, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
 
 // ─── DOM ───
 const chartContainer = document.getElementById('chart-container');
@@ -554,31 +554,28 @@ function renderEmptyChart() {
  * the picture rescaled whenever a new extreme arrived — every bar shifting and
  * narrowing while the reader was trying to watch one of them.
  *
- * Fixed from the pilot's largest χ², which covers all but about one draw in
- * 2,000. It still GROWS when something exceeds it, and that is deliberate: a χ²
- * has no upper bound, so the alternative is either an axis wide enough for the
- * rarest draw — squashing the body where all the mass is, measured at 37 wide
- * for `jury` where 99.9% of the mass sits below 12 — or dropping the most
- * extreme values from the right tail of a RIGHT-TAILED test, which would make
- * the shaded tail disagree with the p-value beside it.
+ * It used to end at the pilot's LARGEST χ² and to grow on each new record. That
+ * stopped the rescaling but spent the axis on the rarest draw: measured at 2,000
+ * draws on `blood_types`, half the mass sat in the left 9.6% and the right 22%
+ * held no draw at all. So it now ends at `clippedAxisHi` — a high quantile of
+ * the same pilot — and everything past it is COUNTED by `renderSimChart` and
+ * stated at the axis end rather than drawn or dropped.
  *
- * Growth is a record-breaking event, so it happens on the order of four times
- * across 100,000 draws rather than on every batch. Measured: a 100k run exceeds
- * the 2,000-draw pilot by 1.2× to 1.8% depending on the dataset.
+ * That also retires the growth: a record-breaker no longer rescales the picture,
+ * it joins the stated count. Nothing about this touches a seeded answer — the
+ * pilot has its own `presim-` stream and the p-value comes from `allStats`.
  *
  * @returns {[number, number]}
  */
 function axisDomain() {
   if (!fixedDomain) {
     const preRng = createRng(`presim-${seed}`);
-    let hi = observedChisq;
+    /** @type {number[]} */ const pilot = [];
     for (let i = 0; i < 2000; i++) {
-      hi = Math.max(hi, gofChisqStat(drawMultinomial(totalN, p0, preRng), p0));
+      pilot.push(gofChisqStat(drawMultinomial(totalN, p0, preRng), p0));
     }
-    fixedDomain = [0, hi * 1.05 || 1];
+    fixedDomain = [0, clippedAxisHi(pilot, observedChisq)];
   }
-  const seen = Math.max(observedChisq, ...allStats);
-  if (seen > fixedDomain[1]) fixedDomain = [0, seen * 1.05];
   return fixedDomain;
 }
 
@@ -834,23 +831,17 @@ function generateSimulations(count) {
   }
 
   /** @type {[number,number]} */ const hlDomain = axisDomain();
-  // Rice, not Sturges. These statistics are right-skewed with a hump near the
-  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
-  // the realised range made the first bin swallow the entire rise, so the
-  // picture decreased monotonically and said the distribution had no hump at
-  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
-  // bins makes the distribution look like it decreases monotonically."
+  // Freedman-Diaconis, capped — the same rule the dotplot uses, so crossing the
+  // dotplot/histogram boundary does not change the picture's resolution. These
+  // statistics are right-skewed with a hump near the low end (χ²(df) peaks at
+  // df−2, F near 1), and an n-only rule put the whole rise in the first bar:
+  // Sturges read 278, 230, 122 on jury — monotone, no hump — and Rice still
+  // halved the resolution at the switch (35 columns → 17 bars for one extra
+  // draw on blood_types). Todd Will reported the first, Jeff the second.
   //
-  // `riceBins` was added in September for the same complaint from him about
-  // `conceptual/sampling-lab`, with the reasoning already written at its
-  // definition: Sturges flattens out and is wrong for a sampling distribution,
-  // where the point is to run thousands of draws and look at the shape. It was
-  // only ever applied to that one page.
-  //
-  // Changes no answer — the p-value is computed from `allStats`, never from the
-  // bins — only the picture, which was the thing that was wrong.
+  // Changes no answer — the p-value comes from `allStats`, never the bins.
   const { bins: fullBins } = computeBins(allStats,
-    { domain: hlDomain, numBins: riceBins(allStats.length) });
+    { domain: hlDomain, numBins: fdBins(allStats, { domain: hlDomain }) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
     allStats, prevLength, count, computeBins, { domain: hlDomain, thresholds: lockedThresholds });

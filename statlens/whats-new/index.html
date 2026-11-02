@@ -39,6 +39,29 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-11-02</div>
+            <h2>Skewed null distributions get their shape back<span class="cl-tag tool">Tool</span></h2>
+            <p>&chi;<sup>2</sup> and <em>F</em> distributions have a hump near the low end and a
+               very long right tail, and on three pages the picture was hiding both. Two fixes.</p>
+            <p><strong>Bins.</strong> The dotplot and the histogram were using different binning
+               rules on either side of the 1,000-draw boundary, so crossing it cost half the
+               resolution &mdash; 35 columns at 1,000 draws became 17 bars at 1,001, and the rise
+               to the hump disappeared into the first bar. Both now use the same rule.</p>
+            <p><strong>Axis.</strong> The axis used to run all the way out to the rarest draw in a
+               2,000-draw pilot, which left half the mass crammed into the left tenth of the chart
+               and the right fifth empty. It now ends just past the bulk, and anything beyond is
+               stated at the top right as <em>&ldquo;+5 beyond 13.04&rdquo;</em> &mdash; counted,
+               never dropped, so reading the p&#8209;value off the picture still works. The
+               randomization &chi;<sup>2</sup> and ANOVA axes are also pinned now, so the bars stop
+               shifting and narrowing every time a new extreme arrives.</p>
+            <p>No p&#8209;value changes: every answer comes from the accumulated statistics, not
+               from what the chart chose to draw.
+               <a href="../simulate/goodness-of-fit/?dataset=blood_types">Chi-square GOF</a> &middot;
+               <a href="../simulate/randomization-chisq/">Randomization &chi;<sup>2</sup></a> &middot;
+               <a href="../simulate/randomization-anova/">Randomization ANOVA</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-10-30</div>
             <h2>Goodness-of-fit: throw darts at H<sub>0</sub><span class="cl-tag tool">Tool</span></h2>
             <p>The simulation now shows the mechanism instead of summarising it. H<sub>0</sub>

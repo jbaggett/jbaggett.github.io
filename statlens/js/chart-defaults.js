@@ -19,6 +19,49 @@ import { wrapWithStepper } from './page-utils.js';
 
 // ─── Constants (single source of truth) ─────────────────────────────
 
+/**
+ * Where to end the axis on an unbounded right-skewed statistic.
+ *
+ * `TAIL_CLIP_QUANTILE` of a seeded PILOT run, never of the live draws: a
+ * quantile of the accumulating data would move as draws arrive, and a picture
+ * that rescales while you are watching one bar was the original complaint
+ * (Jeff, 2026-10-31: "can we [fix the] axis limits in advance so that the
+ * picture doesn't jump around so much as we add more samples"). The pilot takes
+ * its own `presim-` rng stream, so none of this touches a seeded answer.
+ *
+ * `TAIL_CLIP_OBSERVED_MARGIN` only guarantees the observed mark lands on the
+ * axis with a little room. ⚠ It must stay SMALL. The first draft set it to 1.3,
+ * reserving space so the shaded tail would stay drawable, and that reasoning was
+ * wrong: the quantile already provides that space whenever the observed sits
+ * inside the bulk, and when the observed sits outside it there is nothing much
+ * out there to draw. Measured on `randomization-chisq/?dataset=ask`, whose
+ * observed is past 99.9% of the null draws, 1.3 made the axis 1.24× WIDER than
+ * the one it replaced — the clip actively hurt the page it could not help.
+ *
+ * So when the observed statistic is far out in the tail there is no clip to be
+ * had, and the right behaviour is to return the old axis rather than a worse
+ * one: the chart has to span both the hump and the observed mark.
+ *
+ * @param {number[]} pilotStats - a seeded pilot run of the page's own statistic
+ * @param {number} [observed]
+ * @returns {number}
+ */
+export function clippedAxisHi(pilotStats, observed = 0) {
+  const obsFloor = Number.isFinite(observed) ? observed * TAIL_CLIP_OBSERVED_MARGIN : 0;
+  const n = pilotStats.length;
+  if (!n) return Math.max(obsFloor, 1);
+  const sorted = [...pilotStats].sort((a, b) => a - b);
+  const q = sorted[Math.min(n - 1, Math.floor(n * TAIL_CLIP_QUANTILE))];
+  const hi = Math.max(q * 1.05, obsFloor);
+  return hi > 0 ? hi : 1;
+}
+
+/** Quantile of the pilot run the axis ends at; the rest is counted, not drawn. */
+export const TAIL_CLIP_QUANTILE = 0.995;
+
+/** The axis must reach at least this multiple of the observed statistic. */
+export const TAIL_CLIP_OBSERVED_MARGIN = 1.05;
+
 /** Max simulations before auto-switching from dotplot to histogram. */
 export const DOTPLOT_AUTO_THRESHOLD = 1000;
 
@@ -406,6 +449,130 @@ export function createBinAdjuster(parent, opts) {
  */
 const PARAMETER_COLOR = '#444';
 
+/**
+ * Everything past the drawn axis, counted and stated rather than drawn.
+ *
+ * The right-skewed statistics (χ², F) have no upper bound, so an axis wide
+ * enough for the rarest draw squashes the body where all the mass is. Measured
+ * at 2,000 draws, as a fraction of the drawn axis:
+ *
+ *   GOF blood_types   median 0.096   95% 0.344   rightmost draw 0.784
+ *   GOF jury          median 0.132   95% 0.423   rightmost draw 0.846
+ *   ANOVA baumann     median 0.099   95% 0.395   rightmost draw 0.964
+ *
+ * Half the mass in the left tenth, and the far right holding no draw at all.
+ * Jeff, 2026-11-02: "I wonder if we could clip those very long tails in the
+ * interest of clear pedagogy?"
+ *
+ * ⚠ The clipped draws must stay COUNTABLE, not merely disappear. `?readout=false`
+ * asks the student to read the p-value off the picture by counting the tail, so
+ * a draw that vanishes makes the picture disagree with the p-value beside it —
+ * the objection already written at `simulate/goodness-of-fit/app.js`. Hence a
+ * stated count, which is also easier to read than counting twenty dots.
+ *
+ * ⚠ Nothing is DRAWN past the break. An overflow bar was the first design and
+ * was rejected (Jeff, 2026-11-02): it compresses a wide stretch of tail into one
+ * bin, so at a 99% clip it stands about ten times its neighbours and reads as a
+ * second hump. A number cannot misstate a shape.
+ *
+ * Both chart paths needed this, for opposite reasons — measured, not assumed:
+ *
+ *   computeBins([1,2,3,4,5,50,99], domain [0,10]) → bins 5 of 7, the rest
+ *     silently DROPPED, so bar heights quietly stopped summing to n
+ *   computeDots(same) → all 7 kept, centres at 50 and 99, which a d3 scale
+ *     does NOT clamp and so paints outside the plot
+ *
+ * So the filter here is what makes the two agree, and it is a safety net for
+ * every page that passes a domain: a mark can no longer land off-plot, and a
+ * dropped mark can no longer go unmentioned.
+ *
+ * @param {number[]} stats
+ * @param {[number,number]|undefined} domain
+ * @returns {{ drawn: number[], beyond: number, below: number, remap: (i: number) => number }}
+ */
+function clipToDomain(stats, domain) {
+  const identity = { drawn: stats, beyond: 0, below: 0, remap: (/** @type {number} */ i) => i };
+  if (!domain) return identity;
+  const [lo, hi] = domain;
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return identity;
+  let beyond = 0;
+  let below = 0;
+  for (const v of stats) {
+    if (v > hi) beyond++;
+    else if (v < lo) below++;
+  }
+  if (beyond === 0 && below === 0) return identity;
+  /** @type {number[]} */ const drawn = [];
+  /** @type {Map<number,number>} */ const index = new Map();
+  for (let i = 0; i < stats.length; i++) {
+    const v = stats[i];
+    if (v >= lo && v <= hi) {
+      index.set(i, drawn.length);
+      drawn.push(v);
+    }
+  }
+  return { drawn, beyond, below, remap: (i) => (i == null ? -1 : index.get(i) ?? -1) };
+}
+
+/**
+ * The axis break and the count, at the right end of the plot.
+ *
+ * The label is #595959 on white — 7.0:1, above the 4.5:1 floor for text — and
+ * the break is #666666, 5.7:1, above the 3:1 floor for a graphical mark. The
+ * glyph is a shape (a double slash), not a colour, so neither carries meaning on
+ * its own. The same sentence goes into the chart's `aria-label`, because a
+ * screen-reader user counting a tail needs the number as much as a sighted one.
+ *
+ * @param {import('./types.js').ChartFrame} frame
+ * @param {number} count
+ * @param {number} at - the clip point, in data units
+ */
+function renderClipNote(frame, count, at) {
+  const g = d3Selection.select(frame.inner).append('g')
+    .attr('class', 'clip-note')
+    .attr('aria-hidden', 'true');
+  const x = frame.width;
+  const y = frame.height;
+  // ⚠ The label goes at the TOP right, not beside the break. The x-axis label is
+  // centred at `height + margin.bottom - 8` — the same baseline the first draft
+  // used — so on a narrow viewport the two collide. The top right of a
+  // right-skewed distribution is empty by construction, and the pills sit at 60%
+  // of the height, so nothing else is up there.
+  const labelY = 12;
+  // The break: two slashes across the axis end, saying the line stops short of
+  // the data rather than the data stopping short of the line.
+  for (const dx of [-4, 1]) {
+    g.append('line')
+      .attr('x1', x + dx - 3).attr('y1', y + 5)
+      .attr('x2', x + dx + 3).attr('y2', y - 5)
+      .attr('stroke', '#FFFFFF').attr('stroke-width', 3);
+    g.append('line')
+      .attr('x1', x + dx - 3).attr('y1', y + 5)
+      .attr('x2', x + dx + 3).attr('y2', y - 5)
+      .attr('stroke', '#666666').attr('stroke-width', 1);
+  }
+  // ⚠ `formatStat`'s default branch is `toFixed(d + 1)`, so `1` means two
+  // decimals. Passing the chart's own precision gave "+5 beyond 13.0412".
+  const label = `+${count} beyond ${formatStat(at, 1)}`;
+  g.append('text')
+    .attr('class', 'clip-note-label')
+    .attr('x', x)
+    .attr('y', labelY)
+    .attr('text-anchor', 'end')
+    .attr('font-size', '11px')
+    .attr('fill', '#595959')
+    .text(label);
+  // Same sentence, spelled out, for anyone reading the chart by its label.
+  // ⚠ These charts carry no `<desc>` element — `createChartFrame` puts the
+  // description in the SVG's `aria-label`, so appending to a `<desc>` was a
+  // silent no-op that left screen-reader users with a tail they could not count.
+  const draws = count === 1 ? 'draw is' : 'draws are';
+  const prev = frame.svg.getAttribute('aria-label') ?? '';
+  frame.svg.setAttribute('aria-label', `${prev} ${count} ${draws} beyond `
+    + `${formatStat(at, 1)}, past the right end of the axis; they are `
+    + `counted in the p-value but not drawn.`);
+}
+
 export function renderSimChart(container, stats, opts) {
   container.innerHTML = '';
 
@@ -425,6 +592,20 @@ export function renderSimChart(container, stats, opts) {
   // otherwise reveal the observed location the student is meant to place.
   const observedOff = typeof location !== 'undefined'
     && new URLSearchParams(location.search).get('observed') === 'off';
+
+  // Clip the long right tail: count what lies past the axis, do not draw it.
+  // `stats` stays whole below — every probability, pill and p-value is computed
+  // from all of it — and only the GEOMETRY uses `drawnStats`.
+  const clip = clipToDomain(stats, opts.domain);
+  const drawnStats = clip.drawn;
+  const highlightIndex = clip.beyond + clip.below > 0
+    ? clip.remap(opts.highlightIndex ?? -1)
+    : (opts.highlightIndex ?? -1);
+  // ⚠ A Set, not an array — `computeHighlights` returns `Set<number>`, and the
+  // first draft called `.map` on it and took every chart on three pages down.
+  const highlightIndices = clip.beyond + clip.below > 0 && opts.highlightIndices
+    ? new Set([...opts.highlightIndices].map(clip.remap).filter((i) => i >= 0))
+    : opts.highlightIndices;
 
   // Build region predicate from direction if not provided
   let regionPred = opts.regionPredicate;
@@ -453,7 +634,7 @@ export function renderSimChart(container, stats, opts) {
   let dotCountToY;
 
   if (effectiveChartType === 'dotplot') {
-    const r = drawDotplot(container, stats, {
+    const r = drawDotplot(container, drawnStats, {
       id: opts.id,
       xLabel: opts.xLabel,
       titleText: opts.titleText ?? 'Null Distribution',
@@ -466,8 +647,8 @@ export function renderSimChart(container, stats, opts) {
       numBins: opts.numBins,
       binWidth: opts.binWidth,
       binOrigin: opts.binOrigin,
-      highlightIndex: opts.highlightIndex ?? -1,
-      highlightIndices: opts.highlightIndices,
+      highlightIndex: highlightIndex,
+      highlightIndices: highlightIndices,
       precision: opts.precision,
       baseFill: opts.baseFill,
       extremeFill: opts.extremeFill,
@@ -489,7 +670,7 @@ export function renderSimChart(container, stats, opts) {
   } else if (effectiveChartType === 'spike') {
     // Discrete non-touching bars — one per distinct value — for a discrete
     // statistic (a sample proportion) at small/moderate n.
-    const r = drawSpike(container, stats, {
+    const r = drawSpike(container, drawnStats, {
       id: opts.id,
       xLabel: opts.xLabel,
       titleText: opts.titleText ?? 'Null Distribution',
@@ -506,7 +687,7 @@ export function renderSimChart(container, stats, opts) {
     yScale = r.yScale;
     chartDomain = opts.domain;
   } else {
-    const r = drawHistogram(container, stats, {
+    const r = drawHistogram(container, drawnStats, {
       id: opts.id,
       xLabel: opts.xLabel,
       titleText: opts.titleText ?? 'Null Distribution',
@@ -588,6 +769,12 @@ export function renderSimChart(container, stats, opts) {
       // because the two are close, which is exactly when you want to read both.
       deoverlapLabels([...frame.inner.querySelectorAll('.overlays text')]);
     }
+  }
+
+  // The stated count for everything past the axis. Drawn last so it sits over
+  // the plot, and only when there is something to state.
+  if (frame && clip.beyond > 0 && opts.domain) {
+    renderClipNote(frame, clip.beyond, opts.domain[1]);
   }
 
   return { frame, xScale, yScale, bins, domain: chartDomain, maxStack: dotMaxStack, binWidth: dotBinWidth, countToY: dotCountToY };

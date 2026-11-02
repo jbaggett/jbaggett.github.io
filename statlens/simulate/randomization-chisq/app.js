@@ -15,9 +15,9 @@ const words = wordsFor('permuteAssociation');
 applyRequestedLayout('permuteAssociation');
 import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { chisqStat, formatStat } from '../../js/stats.js';
-import { computeBins, riceBins } from '../../js/histogram.js';
+import { computeBins, fdBins } from '../../js/histogram.js';
 import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
+import { renderSimChart, resolveChartType, clippedAxisHi } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
 
@@ -352,6 +352,45 @@ for (const btn of genBtns) {
 }
 
 /** @param {number} count */
+/** @type {[number, number]|null} */
+let fixedDomain = null;
+
+/**
+ * The axis, decided before the first draw and then left alone.
+ *
+ * This page used to recompute `max(...allStats, observed) * 1.05` on every
+ * render, so the picture rescaled whenever a new extreme arrived — every bar
+ * shifting and narrowing while the reader was trying to watch one of them. The
+ * goodness-of-fit page was pinned for that reason on 2026-10-31 and this one was
+ * missed; Jeff's clipping question is what surfaced it.
+ *
+ * Ends at a high quantile of a seeded pilot, with everything past it counted and
+ * stated by `renderSimChart` rather than drawn. ⚠ The pilot draws from its own
+ * `presim-` stream, never the page's `rng` — drawing it from the statistical
+ * stream would silently move every seeded χ² on this page, and seeded links are
+ * a grading contract.
+ *
+ * @param {number[]} groupIdx
+ * @param {number[]} outcomeIdx
+ * @param {number} R
+ * @param {number} C
+ * @returns {[number, number]}
+ */
+function axisDomain(groupIdx, outcomeIdx, R, C) {
+  if (!fixedDomain) {
+    const preRng = createRng(`presim-${seed}`);
+    /** @type {number[]} */ const pilot = [];
+    for (let i = 0; i < 2000; i++) {
+      const shuffled = shufflePairing(groupIdx, preRng).values;
+      const table = Array.from({ length: R }, () => new Array(C).fill(0));
+      for (let k = 0; k < shuffled.length; k++) table[shuffled[k]][outcomeIdx[k]]++;
+      pilot.push(chisqStat(table));
+    }
+    fixedDomain = [0, clippedAxisHi(pilot, observedChisq)];
+  }
+  return fixedDomain;
+}
+
 function generateSimulations(count) {
   // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
   // smaller than any digit a conclusion turns on, and a held Play button would
@@ -438,28 +477,21 @@ function generateSimulations(count) {
     mechanismDescEl.hidden = false;
   }
 
-  const csHi = Math.max(...allStats, observedChisq) * 1.05 || 1;
   /** @type {[number,number]} */
-  const hlDomain = [0, csHi];
+  const hlDomain = axisDomain(groupIdx, outcomeIdx, R, C);
 
   // Pre-compute bins to lock in bin edges for both computeHighlights and drawHistogram
-  // Rice, not Sturges. These statistics are right-skewed with a hump near the
-  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
-  // the realised range made the first bin swallow the entire rise, so the
-  // picture decreased monotonically and said the distribution had no hump at
-  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
-  // bins makes the distribution look like it decreases monotonically."
+  // Freedman-Diaconis, capped — the same rule the dotplot uses, so crossing the
+  // dotplot/histogram boundary does not change the picture's resolution. These
+  // statistics are right-skewed with a hump near the low end (χ²(df) peaks at
+  // df−2, F near 1), and an n-only rule put the whole rise in the first bar:
+  // Sturges read 278, 230, 122 on jury — monotone, no hump — and Rice still
+  // halved the resolution at the switch (35 columns → 17 bars for one extra
+  // draw on blood_types). Todd Will reported the first, Jeff the second.
   //
-  // `riceBins` was added in September for the same complaint from him about
-  // `conceptual/sampling-lab`, with the reasoning already written at its
-  // definition: Sturges flattens out and is wrong for a sampling distribution,
-  // where the point is to run thousands of draws and look at the shape. It was
-  // only ever applied to that one page.
-  //
-  // Changes no answer — the p-value is computed from `allStats`, never from the
-  // bins — only the picture, which was the thing that was wrong.
+  // Changes no answer — the p-value comes from `allStats`, never the bins.
   const { bins: fullBins } = computeBins(allStats,
-    { domain: hlDomain, numBins: riceBins(allStats.length) });
+    { domain: hlDomain, numBins: fdBins(allStats, { domain: hlDomain }) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
 
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
@@ -590,6 +622,9 @@ function resetSimulation() {
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
+  // The reset also fires on data load, which is exactly when the axis must be
+  // recomputed — a new dataset has its own pilot and its own clip point.
+  fixedDomain = null;
   rng = null;
   mechanismInitialized = false;
   // Preserve the URL seed across resets (incl. the reset fired on data load) so
