@@ -9,7 +9,7 @@
   },
   "steps": [
     {
-      "instruction": "Imagine a large bag of marbles: **10% orange** (complication) and **90% blue** (no complication). This bag models the world under **H₀**: the consultant's true complication rate matches the national **10%**. We can't see the whole bag in real life, but here we can — that's the **Population** panel, with the true proportion marked at **p = 0.10**. Each surgery is one draw from the bag; a \"study\" of **n = 62** surgeries is one scoop of 62 marbles, and the proportion of orange marbles in the scoop is one simulated **\\(\\hat{p}^*\\)* from the null distribution.",
+      "instruction": "Imagine a large bag of marbles: **10% orange** (complication) and **90% blue** (no complication). This bag models the world under **H₀**: the consultant's true complication rate matches the national **10%**. We can't see the whole bag in real life, but here we can — that's the **Population** panel, with the true proportion marked at **p = 0.10**. Each surgery is one draw from the bag; a \"study\" of **n = 62** surgeries is one scoop of 62 marbles, and the proportion of orange marbles in the scoop is one simulated \\(\\hat{p}^*\\) from the null distribution.",
       "observe": "Find **p = 0.10** marked on the Population panel. Each scoop of 62 marbles will rarely be exactly 10% orange — that sample-to-sample wobble is what we're about to study."
     },
     {
@@ -34,7 +34,7 @@
       "phase": "predict"
     },
     {
-      "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 62 marbles, collapse to a single proportion **\\(\\hat{p}^*\\)*, and drop that one dot into the **Sampling distribution** panel at the bottom — one simulated study under H₀.",
+      "instruction": "Click **+1** once. Watch the **One sample** panel show your scoop of 62 marbles, collapse to a single proportion \\(\\hat{p}^*\\), and drop that one dot into the **Sampling distribution** panel at the bottom — one simulated study under H₀.",
       "observe": "That **Sampling distribution** panel is a **distribution of statistics** — one dot per study, not per marble. Click **+1** a few more times to add more studies."
     },
     {

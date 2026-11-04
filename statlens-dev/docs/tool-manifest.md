@@ -1265,6 +1265,7 @@ Common URL parameters (all six): `dataset` (pre-load), plus the same data-panel 
 | `n` | integer | Sample size, 1–500 | `n=40` |
 | `seed` | string | PRNG seed (required for graded/activity use) | `seed=beads60` |
 | `parameter` | string | `hidden` withholds the true parameter **with** a Reveal button (instructor demo); `locked` withholds it with **no** button (student reading / graded work) (REQ-056) | `?parameter=locked` |
+| `theory` | string | `off` hides the formula (σ/√n, √(p(1−p)/n), the CLT paragraph, the theory stat row) and keeps the simulated SD readout — for the pilot edition, which holds formulas until its bridge chapter. Default shown. Works from an activity's `params`. | `?theory=off` |
 
 **Compatible Datasets:** N/A (built-in population shapes / proportion slider)
 

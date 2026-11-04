@@ -5,7 +5,8 @@
     "type": "quant",
     "shape": "right-skewed",
     "n": "10",
-    "seed": "ch6mean120"
+    "seed": "ch6mean120",
+    "theory": "off"
   },
   "steps": [
     {

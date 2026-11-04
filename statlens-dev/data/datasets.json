@@ -2447,50 +2447,18 @@
     "id": "ucla_textbooks_f18",
     "name": "UCLA Textbook Prices (Fall 2018)",
     "description": "Prices ($) of 68 textbooks at the UCLA bookstore vs. Amazon, Fall 2018. Are bookstore prices higher on average? (IMS Ch. 20)",
-    "source": "IMS (Introduction to Modern Statistics)",
-    "chapter": "IMS Ch. 20",
     "type": "paired",
-    "sourceDetail": "OpenIntro IMS Ch. 20; openintro::ucla_textbooks_f18, restricted to the 68 courses where both a new bookstore price and a new Amazon price were recorded. Extracted from the installed R package rather than transcribed, so the values are the package's. Added 2026-10-16: the course links for ci-for-means and hypothesis-tests-means had been pointing at `textbooks`, which is the 2010 OpenIntro Statistics sample (n = 73, mean difference 12.76) and a different study (REQ-073 item 9).",
-    "studyDescription": "A sample of 68 courses at UCLA in Fall 2018. For each course, the price of a new copy of the required textbook was recorded at the UCLA bookstore and at Amazon on the same day. Because the two prices are for the same book, the observations are paired and the analysis is of the differences.",
+    "chapter": "IMS Ch. 20",
+    "n": 68,
     "variables": [
-      {
-        "name": "course",
-        "label": "Course",
-        "type": "categorical"
-      },
-      {
-        "name": "ucla",
-        "label": "UCLA bookstore price ($)",
-        "type": "numeric"
-      },
-      {
-        "name": "amazon",
-        "label": "Amazon price ($)",
-        "type": "numeric"
-      }
+      "course",
+      "ucla",
+      "amazon"
     ],
-    "variableDescriptions": {
-      "course": "The subject abbreviation and course number the textbook was required for.",
-      "ucla": "Price of a new copy at the UCLA bookstore, in dollars.",
-      "amazon": "Price of a new copy on Amazon the same day, in dollars."
-    },
-    "context": {
-      "population": "UCLA courses in Fall 2018",
-      "parameter": "the mean difference in price between the bookstore and Amazon",
-      "unit": "dollars",
-      "nullClaim": "the mean difference in price is zero"
-    },
-    "inferenceContexts": [
-      {
-        "test": "paired",
-        "var1": "ucla",
-        "var2": "amazon",
-        "nullValue": 0,
-        "alternative": "greater",
-        "parameter": "the mean difference in price (UCLA bookstore minus Amazon)",
-        "claim": "textbooks cost more at the UCLA bookstore than on Amazon"
-      }
-    ]
+    "hasNumeric": true,
+    "hasCategorical": true,
+    "groupLevels": null,
+    "minGroupN": null
   },
   {
     "id": "color",

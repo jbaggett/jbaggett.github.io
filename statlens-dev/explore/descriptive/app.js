@@ -436,7 +436,16 @@ function showCrosslink(meta) {
   if (!meta) return;
 
   const dsParam = meta.file ? `?dataset=${encodeURIComponent(meta.file.replace('.json', ''))}` : '';
-  if (meta.hasCategorical) {
+  // ⚠ Paired is checked FIRST. A paired set with a row label (`course` on
+  // `ucla_textbooks_f18`) is flagged categorical, but that column is a label
+  // with 68 distinct values, not a grouping variable — the old order sent the
+  // reader to Grouped Statistics, which cannot use it. The other thirteen
+  // paired sets are flagged `hasCategorical: false` and already took this
+  // branch, so nothing about them changes.
+  if (meta.type === 'paired') {
+    crosslinkEl.innerHTML = `This dataset has paired measurements. To compare pairs, try <a href="../../explore/grouped/${dsParam}">Grouped Statistics</a>.`;
+    crosslinkEl.hidden = false;
+  } else if (meta.hasCategorical) {
     crosslinkEl.innerHTML = `This dataset has a categorical grouping variable. To compare groups, try <a href="../../explore/grouped/${dsParam}">Grouped Statistics</a>.`;
     crosslinkEl.hidden = false;
   } else if (meta.type === 'paired') {
@@ -464,7 +473,19 @@ function setupGroupFilter(ds) {
   // usstates (`state`) and urban_owner (`state`).
   const groupable = catVars.filter(v => {
     const levels = new Set(ds.rows.map(r => String(r[v.name])));
-    return levels.size < ds.rows.length;
+    // ⚠ At least two rows per level ON AVERAGE, not merely "fewer levels than
+    // rows". The old test let `course` through on `ucla_textbooks_f18` — 66
+    // levels across 68 rows — which is an identifier by every practical
+    // measure and produced a 67-entry dropdown of one-row courses: exactly the
+    // broken-looking control the test was added to prevent, just short of the
+    // literal threshold.
+    //
+    // Measured across every bundled dataset, three columns change status and
+    // all three are corrections: `county.name` (1,877 levels / 3,142 rows),
+    // `hollywoodmovies2023.genre` (5 / 6) and `ucla_textbooks_f18.course`
+    // (66 / 68). No column that groups meaningfully is affected, and no
+    // statistic anywhere changes — only whether a filter is offered.
+    return levels.size * 2 <= ds.rows.length;
   });
   // Every categorical is an identifier (urban_owner) → no meaningful grouping.
   if (groupable.length === 0) {
@@ -549,8 +570,14 @@ const dataPanel = initDataPanel({
   autoCollapse: true,
   showPreview: true,
   datasetFilter: (/** @type {any} */ ds) =>
-    ds.hasNumeric === true && !ds.hasCategorical &&
-    ds.type !== 'regression',
+    ds.hasNumeric === true && ds.type !== 'regression' &&
+    // ⚠ A paired set is admitted even when it carries a categorical column.
+    // `ucla_textbooks_f18` has a `course` LABEL beside its two prices, and the
+    // blanket `!hasCategorical` kept the only paired set with a row label out
+    // of a menu that lists the other thirteen. The exception is narrow by
+    // measurement: it is the only paired set flagged categorical, so no other
+    // set's placement moves. (Textbook agent's BUG 2, Jeff 2026-11-04.)
+    (!ds.hasCategorical || ds.type === 'paired'),
   // Paired sets used to be excluded here. They belong: this tool describes one
   // numeric variable, and a paired set has three worth describing — the two
   // measurements and the DIFFERENCE between them, which is what every paired

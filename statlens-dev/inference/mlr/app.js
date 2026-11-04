@@ -128,8 +128,24 @@ function fitAndRender() {
   }
 
   // Align rows: keep only rows where response + all predictors are finite.
+  //
+  // ⚠ Reject the blank BEFORE converting. `Number(null)` is 0 and `Number('')`
+  // is 0, so `Number.isFinite(Number(r[c]))` passes a MISSING value through as
+  // a real zero — and a regression then fits a point at zero that was never
+  // observed. On `?dataset=possum&response=age`, two unrecorded ages counted as
+  // age 0: df 101 where 99 is right, intercept −11.565 where −9.639 is right,
+  // R² 12.7% where 9.95% is right. (Reported by the coursepack agent,
+  // 2026-11-04, who checked it against least squares in Python.)
+  //
+  // Same bug as the one fixed across the data paths in 70a09e5; this file was
+  // missed. `county`, `loan50` and `usstates` are also in this page's menu and
+  // also carry nulls.
   const cols = [resp, ...predictors];
-  const rows = currentRows.filter(r => cols.every(c => Number.isFinite(Number(r[c]))));
+  const finite = (/** @type {any} */ v) => {
+    if (v === null || v === undefined || v === '') return false;
+    return Number.isFinite(Number(v));
+  };
+  const rows = currentRows.filter(r => cols.every(c => finite(r[c])));
   const y = rows.map(r => Number(r[resp]));
   const X = predictors.map(p => rows.map(r => Number(r[p])));
 

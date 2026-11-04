@@ -221,6 +221,30 @@ const plotOnly = new URLSearchParams(location.search).get('plot') === 'only';
 // ?truth=effect|none for "is Ha true", and one name meaning two things across the
 // URL contract is exactly the drift docs/url-api.md exists to prevent.
 const truthParam = (new URLSearchParams(location.search).get('parameter') || '').toLowerCase();
+
+/**
+ * `?theory=off` — hide the formula, keep the simulation (REQ-083).
+ *
+ * The pilot edition holds σ/√n, √(p(1−p)/n) and the Central Limit Theorem until
+ * its bridge chapter at the end of Unit 2. Chapter 6 defines the standard error
+ * as *the SD of the simulated statistics* and has students read it off this
+ * lab — but the lab printed the formula on every load, which hands over the
+ * answer the chapter is building toward.
+ *
+ * What goes: the `σ/√n (theory)` stat row, the "(theory: …)" half of the
+ * results line, and the CLT/formula sentences. What stays: the **SD of x̄'s**,
+ * which is the number the chapter teaches, and a theory-free reading of what
+ * changing n does.
+ *
+ * ⚠ Distinct from `?parameter=locked`, which hides the theory SE only in
+ * proportion mode and only because it would give p away. Different purpose,
+ * different default, and they compose.
+ *
+ * ⚠ Assigned in `initFromUrl`, not here. Activity `params` are injected into
+ * the URL asynchronously (REQ-020), so anything read at module scope misses
+ * them — and REQ-083 asks for this to work from an activity's params.
+ */
+let theoryHidden = false;
 /** Was the feature requested at all? Controls whether the button exists. */
 const truthFeature = truthParam !== '';
 /**
@@ -305,8 +329,16 @@ function applyTruth() {
   if (popMeanItem) popMeanItem.hidden = truthHidden;
   // σ and σ/√n only leak the parameter in proportion mode.
   if (popSdItem) popSdItem.hidden = truthHidden && cat;
-  const theoryItem = seTheoryEl?.closest('.stat-item');
-  if (theoryItem) /** @type {HTMLElement} */ (theoryItem).hidden = truthHidden && cat;
+  const theoryItem = /** @type {HTMLElement|null} */ (seTheoryEl?.closest('.stat-item') ?? null);
+  // `theory=off` hides it outright; `parameter=locked` hides it in proportion
+  // mode only, where it would give p away.
+  if (theoryItem) theoryItem.hidden = theoryHidden || (truthHidden && cat);
+  // ⚠ EMPTIED, not merely hidden, under `theory=off`. `hidden` keeps the text
+  // in the DOM, where a find-in-page, a copy of the results, or anyone reading
+  // the markup still meets "σ/√n". REQ-083 asks for no σ or √n "anywhere on the
+  // page", and the pilot's whole point is that these students have not been
+  // shown the formula yet — so it should not be there to find.
+  if (theoryItem && theoryHidden) theoryItem.textContent = '';
   // The p slider's position is itself a readout.
   if (pControl) pControl.hidden = cat ? truthHidden : true;
   if (truthNote) {
@@ -1457,25 +1489,52 @@ function displayInterpretation() {
     const p = popMu;
     html = `<p><strong>Sampling Distribution of \\(\\hat{p}\\)</strong> — ${k} samples of size \\(n = ${n}\\)</p>`;
     html += `<p>Population proportion: \\(p = ${p.toFixed(3)}\\)</p>`;
-    html += `<p>SD of \\(\\hat{p}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sqrt{p(1-p)/n} = ${theorySE.toFixed(4)}\\))</p>`;
+    html += theoryHidden
+      ? `<p>SD of \\(\\hat{p}\\)'s \\(= ${statSd.toFixed(4)}\\)</p>`
+      : `<p>SD of \\(\\hat{p}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sqrt{p(1-p)/n} = ${theorySE.toFixed(4)}\\))</p>`;
     html += centreLine();
     if (k >= 100) {
       const np = n * p, nq = n * (1 - p);
       const ok = np >= 10 && nq >= 10;
+      if (theoryHidden) {
+        // No formula, no normality rule, no name. What is left is what the
+        // reader can SEE on the two charts in front of them.
+        html += `<p class="interpretation">Every one of these ${k} samples gave its own \\(\\hat{p}\\), and together they make this distribution. `;
+        html += `<strong>Try changing \\(n\\):</strong> a <em>larger n</em> makes this distribution narrower. Drawing <em>more samples</em> only fills in the same distribution — it does not change its spread.</p>`;
+      } else {
       html += `<p class="interpretation">The sampling distribution of \\(\\hat{p}\\) is centered at \\(p\\) with standard deviation \\(\\sqrt{p(1-p)/n}\\), and is approximately normal when both \\(np\\) and \\(n(1-p)\\) are at least about 10. Here \\(np = ${np.toFixed(1)}\\) and \\(n(1-p) = ${nq.toFixed(1)}\\) — ${ok ? 'both large enough, so the shape is roughly normal' : 'one is small, so the shape is skewed; increase \\(n\\) or move \\(p\\) toward 0.5'}. `;
       html += `<strong>Try changing \\(n\\):</strong> the center stays at \\(p\\), but the spread shrinks toward \\(\\sqrt{p(1-p)/n}\\). Drawing <em>more samples</em> only fills in the same distribution.</p>`;
+      }
     } else {
       html += `<p class="hint">Draw more samples (at least 100) to see the pattern clearly. Then change \\(n\\) to see a <em>different</em> distribution.</p>`;
     }
   } else {
     html = `<p><strong>Sampling Distribution</strong> — ${k} samples of size \\(n = ${n}\\)</p>`;
     if (!truthHidden) {
-      html += `<p>Population: \\(\\mu = ${popMu.toFixed(2)}\\), &ensp;\\(\\sigma = ${popSigma.toFixed(2)}\\)</p>`;
+      // Same rule as the stat row: the spread keeps its number and loses its
+      // symbol under `theory=off`. μ stays — REQ-083 withholds σ/√n and the
+      // CLT, not the population mean, which `?parameter=` handles separately.
+      html += theoryHidden
+        ? `<p>Population: \\(\\mu = ${popMu.toFixed(2)}\\), &ensp;SD \\(= ${popSigma.toFixed(2)}\\)</p>`
+        : `<p>Population: \\(\\mu = ${popMu.toFixed(2)}\\), &ensp;\\(\\sigma = ${popSigma.toFixed(2)}\\)</p>`;
     }
     // Honest framing (REQ-030): lead with spread vs theory, not the mean-of-means.
-    html += `<p>SD of \\(\\bar{x}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sigma/\\sqrt{n} = ${theorySE.toFixed(4)}\\))</p>`;
+    html += theoryHidden
+      ? `<p>SD of \\(\\bar{x}\\)'s \\(= ${statSd.toFixed(4)}\\)</p>`
+      : `<p>SD of \\(\\bar{x}\\)'s \\(= ${statSd.toFixed(4)}\\) &ensp;(theory: \\(\\sigma/\\sqrt{n} = ${theorySE.toFixed(4)}\\))</p>`;
     html += centreLine();
     if (k >= 100) {
+      if (theoryHidden) {
+        // ⚠ No formula, no "Central Limit Theorem", and no σ. The chapter that
+        // uses this link has not met any of them yet; it defines the standard
+        // error as the SD of these statistics and asks the reader to read it
+        // off the chart. Everything below is something they can see happening.
+        html += `<p class="interpretation">Each of these ${k} samples gave its own \\(\\bar{x}\\), and together they make this distribution. `;
+        html += n >= 30
+          ? `With \\(n = ${n}\\), notice how the sample means pile up in a symmetric mound, even if the population does not have that shape. `
+          : `With \\(n = ${n}\\), the shape still follows the population's. Try a larger \\(n\\). `;
+        html += `<strong>Try changing \\(n\\):</strong> a <em>larger n</em> makes this distribution narrower. Drawing <em>more samples</em> only fills in this same distribution more smoothly — it does not change its spread.</p>`;
+      } else {
       html += `<p class="interpretation">The Central Limit Theorem says the sampling distribution of \\(\\bar{x}\\) is approximately normal with mean \\(\\mu\\) and standard deviation \\(\\sigma/\\sqrt{n}\\), regardless of the population shape — as long as \\(n\\) is large enough. `;
       if (n >= 30) {
         html += `With \\(n = ${n}\\), notice how the distribution of sample means is roughly bell-shaped, even though the population may not be. `;
@@ -1483,6 +1542,7 @@ function displayInterpretation() {
         html += `With \\(n = ${n}\\), the shape depends more on the population. Try increasing \\(n\\) to see the distribution become more normal. `;
       }
       html += `<strong>Try changing \\(n\\):</strong> the center stays at \\(\\mu\\), but the spread shrinks toward \\(\\sigma/\\sqrt{n}\\). Drawing <em>more samples</em> only fills in this same distribution more smoothly — it does not change its spread.</p>`;
+      }
     } else {
       html += `<p class="hint">Draw more samples (at least 100) to see the pattern clearly. Then change \\(n\\) to see a <em>different</em> distribution.</p>`;
     }
@@ -1554,9 +1614,22 @@ function setMathLabel(el, html) {
 function applyModeLabels() {
   const cat = isCat();
   setMathLabel(popMeanLabel, cat ? 'Population \\(p\\):' : 'Population \\(\\mu\\):');
-  setMathLabel(popSdLabel, cat ? 'Population \\(\\sigma = \\sqrt{p(1-p)}\\):' : 'Population \\(\\sigma\\):');
+  // ⚠ Under `theory=off` the population spread keeps its ROW and loses its
+  // SYMBOL. REQ-083's list asks only for the formula rows and sentences to go,
+  // but its verify line asks for "no σ, √n or Central Limit text anywhere" —
+  // and σ was still sitting in the population panel. Hiding the row would have
+  // withheld a real feature of the population; renaming it withholds only the
+  // notation the pilot has not introduced yet, which is what was actually
+  // being asked. In proportion mode the √(p(1−p)) definition goes with it.
+  setMathLabel(popSdLabel, theoryHidden
+    ? 'Population SD:'
+    : (cat ? 'Population \\(\\sigma = \\sqrt{p(1-p)}\\):' : 'Population \\(\\sigma\\):'));
   setMathLabel(sdLabel, cat ? "SD of \\(\\hat{p}\\)'s:" : "SD of \\(\\bar{x}\\)'s:");
-  setMathLabel(theoryLabel, cat ? '\\(\\sqrt{p(1-p)/n}\\) (theory):' : '\\(\\sigma/\\sqrt{n}\\) (theory):');
+  // Switching mode re-labels this row; under `theory=off` there is no row to
+  // label, and writing to it would put σ/√n back into the DOM.
+  if (!theoryHidden) {
+    setMathLabel(theoryLabel, cat ? '\\(\\sqrt{p(1-p)/n}\\) (theory):' : '\\(\\sigma/\\sqrt{n}\\) (theory):');
+  }
   if (centerNote) {
     centerNote.textContent = cat
       ? 'The center of the sampling distribution sits at p for every n — increasing n does not move the center, it only shrinks the spread.'
@@ -1716,6 +1789,7 @@ function initFromUrl() {
   }
   const n = parseInt(params.get('n') || '', 10);
   if (isFinite(n) && n >= 1 && n <= 500) sampleSizeInput.value = String(n);
+  theoryHidden = /^(off|false|0|no)$/i.test(params.get('theory') || '');
 }
 
 // Wait for ?activity= JSON to inject its params before reading the URL, so

@@ -9,7 +9,7 @@
   },
   "steps": [
     {
-      "instruction": "The **Population** panel shows a strongly **right-skewed** population — most values sit low, with a few large values stretching a long tail to the right. Its true mean **μ** is marked. We can't see a whole population in real life, but here we can. We'll draw samples of **n = 10** and track the **mean \\(\\bar{x}^*\\)* of each sample.",
+      "instruction": "The **Population** panel shows a strongly **right-skewed** population — most values sit low, with a few large values stretching a long tail to the right. Its true mean **μ** is marked. We can't see a whole population in real life, but here we can. We'll draw samples of **n = 10** and track the **mean** \\(\\bar{x}^*\\) of each sample.",
       "observe": "Find **μ** marked on the Population panel. A single sample of 10 values will rarely have a mean exactly equal to μ — that sample-to-sample wobble is what we're about to study."
     },
     {
@@ -34,7 +34,7 @@
       "phase": "predict"
     },
     {
-      "instruction": "Click **+1** once. The **One sample** panel shows your 10 drawn values; they collapse to a single mean **\\(\\bar{x}^*\\)*, which drops as one dot into the **Sampling distribution** panel at the bottom. Click **+1** a few more times.",
+      "instruction": "Click **+1** once. The **One sample** panel shows your 10 drawn values; they collapse to a single mean \\(\\bar{x}^*\\), which drops as one dot into the **Sampling distribution** panel at the bottom. Click **+1** a few more times.",
       "requires": {
         "metric": "samples",
         "atLeast": 5,
