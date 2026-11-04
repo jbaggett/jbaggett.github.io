@@ -80,7 +80,6 @@
            words. The Speed control had the same latent bug and was one longer
            word away from showing it. */
         .demo-field { flex: none; white-space: nowrap; }
-        .demo-field input[type="checkbox"] { width: 20px; height: 20px; vertical-align: middle; }
         /* ⚠ The real cause, after three wrong guesses: a global rule makes a
            <label> `display: flex; flex-direction: column`, so the label takes
            its own line and pushes its control onto the next one. Nothing on the
@@ -137,10 +136,6 @@
                     <button type="button" id="btn-reset">&#8635; Reset</button>
                     <span class="demo-count"><strong id="trial-count">0</strong> samples</span>
                     <span class="demo-field">
-                        <input type="checkbox" id="show-observed">
-                        <label for="show-observed" class="demo-count">Show the real sample (X&sup2; = 4.60)</label>
-                    </span>
-                    <span class="demo-field">
                         <label for="speed" class="demo-count">Speed</label>
                         <select id="speed">
                             <option value="900">Slow</option>
@@ -181,7 +176,7 @@
             <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
         </dl>
         <p><strong>X&sup2; is the statistic</strong> you compute from one sample. <strong>&chi;&sup2;</strong> is the distribution those statistics tend towards &mdash; the dashed curve that appears once there are 500 samples.</p>
-        <p>Add <code>?observed=on</code> to mark a real sample (14 blue, 14 amber, 16 green, 6 mauve &mdash; X&sup2; = 4.60) on the pile and shade everything at least that far out.</p>
+        <p>Add <code>?observed=on</code> to mark a real sample (14 blue, 14 amber, 16 green, 6 mauve &mdash; X&sup2; = 4.60) on the pile and shade everything at least that far out. It appears once there are 500 samples &mdash; &ldquo;how unusual is this?&rdquo; is not a question you can ask of a dozen dots.</p>
         <p class="help-foot">Part of the StatLens teaching demos. After a demo by Todd Will.</p>
     </dialog>
 

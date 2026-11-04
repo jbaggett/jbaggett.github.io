@@ -2,7 +2,8 @@
   "title": "Where does X² come from?",
   "tool": "demos/chi-square",
   "params": {
-    "seed": "demo1"
+    "seed": "demo1",
+    "observed": "on"
   },
   "steps": [
     {
@@ -81,7 +82,7 @@
     },
     {
       "phase": "explain",
-      "instruction": "Someone actually drew 50 balls and got **14 blue, 14 amber, 16 green, 6 mauve** — that is \\(X^2 = 4.60\\). Tick **Show the real sample** under the pile.",
+      "instruction": "Someone actually drew 50 balls and got **14 blue, 14 amber, 16 green, 6 mauve** — that is \\(X^2 = 4.60\\). Look at the pile: it is marked with a line, and everything at least that far out is shaded.",
       "gate": {
         "question": "Your {{trials}} simulated samples came from a bag that really is 32/32/20/16. How unusual is \\(X^2 = 4.60\\) among them?",
         "choices": [

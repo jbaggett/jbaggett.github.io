@@ -54,7 +54,7 @@ const OBSERVED_COUNTS = [14, 14, 16, 6];
 
 const params = new URLSearchParams(location.search);
 const seed = params.get('seed') || 'demo1';
-let showObserved = params.get('observed') === 'on';
+const showObserved = params.get('observed') === 'on';
 
 const boardEl = /** @type {HTMLElement} */ (document.getElementById('board'));
 const tableEl = /** @type {HTMLElement} */ (document.getElementById('trial-table'));
@@ -177,6 +177,10 @@ function seededScatter(index) {
   };
 }
 
+// ⚠ `observedMark` closes over `stage`, which is being defined here. That is
+// fine because the callback is only ever invoked from a redraw, which cannot
+// happen before this assignment completes — but it is the kind of thing that
+// looks like a mistake, so: deliberate.
 const stage = createDemoStage({
   seed,
   tool: 'demo-chi-square',
@@ -190,9 +194,23 @@ const stage = createDemoStage({
   binWidth: 0.5,
   xLabel: 'X² from one sample of 50',
   titleText: 'A thousand samples of 50',
-  precision: 1,
+  precision: 2,
   curvePdf: (x) => pdfChisq(x, DF),
   curveLabel: `χ²(${DF})`,
+  // ⚠ The real sample is marked on the PICTURE — a line at 4.60 with the tail
+  // beyond it shaded — not described in a sentence beside it. That was the
+  // first version, and a paragraph about a value you cannot see on the chart is
+  // why the whole feature read as bolted on. (Jeff, 2026-11-04: "the 'show the
+  // real sample' is out of place in the demo.")
+  //
+  // Withheld until the pile is built. "How unusual is 4.60?" is not a question
+  // you can ask of twelve dots, and a marker sitting on an empty axis from the
+  // first press answers the demo's second question before its first has been
+  // asked. 500 is the same threshold the curve arrives at, so the distribution
+  // and the thing you measure against it turn up together.
+  observedMark: () => (showObserved && stage && stage.trials >= PILE_CURVE_MIN
+    ? { value: OBSERVED_STAT, direction: /** @type {'right'} */ ('right') }
+    : null),
   maxTrials: 1000,
   onUpdate: ({ trials, showing }) => {
     if (countEl) countEl.textContent = String(trials);
@@ -269,9 +287,8 @@ window.addEventListener('keydown', (e) => {
  */
 function markObserved() {
   if (!observedNoteEl) return;
-  if (!showObserved) { observedNoteEl.hidden = true; return; }
   const n = stage.trials;
-  if (n === 0) { observedNoteEl.hidden = true; return; }
+  if (!showObserved || n < PILE_CURVE_MIN) { observedNoteEl.hidden = true; return; }
   const atLeast = stage.stats.filter(s => s >= OBSERVED_STAT).length;
   const share = atLeast / n;
   observedNoteEl.hidden = false;
@@ -288,19 +305,6 @@ initKeyboardShortcuts(
   }))),
   document.getElementById('btn-reset'));
 initPlayPause(/** @type {any} */ ([]), document.getElementById('btn-reset'));
-
-// The control the activity's last step asks the student to tick, and the one a
-// lecturer reaches for at "now where does the real sample fall?". `?observed=on`
-// sets it from a link; the checkbox is the same switch, visible.
-const observedToggle = /** @type {HTMLInputElement|null} */ (document.getElementById('show-observed'));
-if (observedToggle) {
-  observedToggle.checked = showObserved;
-  observedToggle.addEventListener('change', () => {
-    showObserved = observedToggle.checked;
-    markObserved();
-    announce(showObserved ? 'Showing the real sample.' : 'Real sample hidden.');
-  });
-}
 
 // ⚠ Hide the "Guided version" link when the guided version is what you are
 // looking at — an activity panel beside a link offering the activity reads as a

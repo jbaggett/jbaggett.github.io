@@ -79,6 +79,12 @@ export const PILE_CURVE_MIN = 500;
  * @property {number} [precision]
  * @property {((x: number) => number)|null} [curvePdf] - drawn from PILE_CURVE_MIN
  * @property {string} [curveLabel]
+ * @property {(() => {value: number, direction: 'left'|'right'}|null)} [observedMark]
+ *   Consulted on every redraw. Return a value to mark it on the pile and shade
+ *   the tail at or beyond it; return null to leave the picture alone. It is a
+ *   callback rather than a number because whether the mark BELONGS on screen is
+ *   the demo's judgement — demo 1 withholds it until the pile is built, because
+ *   "how unusual is this?" is not a question you can ask of twelve dots.
  * @property {number} [maxTrials]
  * @property {string} [tool] - name reported on `statlens:state`
  * @property {(s: {trials: number, stat: number|null, showing: number}) => void} [onUpdate]
@@ -131,6 +137,7 @@ export function createDemoStage(cfg) {
       cfg.pileContainer.innerHTML = '';
       return;
     }
+    const mark = cfg.observedMark?.() ?? null;
     const span = cfg.domain[1] - cfg.domain[0];
     const numBins = Math.max(1, Math.round(span / cfg.binWidth));
     const chart = renderSimChart(cfg.pileContainer, stats, {
@@ -145,6 +152,7 @@ export function createDemoStage(cfg) {
       precision: cfg.precision ?? 2,
       // The newest trial, highlighted, so "that one" is findable while talking.
       highlightIndex: stats.length - 1,
+      ...(mark ? { observedStat: mark.value, direction: mark.direction } : {}),
     });
     removeTheoryOverlay(cfg.pileContainer);
     if (cfg.curvePdf && stats.length >= PILE_CURVE_MIN) {
