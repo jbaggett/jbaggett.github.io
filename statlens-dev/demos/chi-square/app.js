@@ -315,7 +315,7 @@ function markObserved() {
   observedNoteEl.hidden = false;
   observedNoteEl.innerHTML = `A real sample of 50 gave 14 blue, 14 amber, 16 green and 6 mauve —`
     + ` <strong>X² = ${OBSERVED_STAT.toFixed(2)}</strong>.`
-    + ` ${atLeast} of these ${n} samples are at least that far out`
+    + ` ${atLeast.toLocaleString()} of these ${n.toLocaleString()} samples are at least that far out`
     + ` (${formatStat(share, 0, 'proportion')}).`
     + ` The χ²(${DF}) curve puts ${formatStat(1 - chisqCDF(OBSERVED_STAT, DF), 0, 'proportion')} out there.`;
 }

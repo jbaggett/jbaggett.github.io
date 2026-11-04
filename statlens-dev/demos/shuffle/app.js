@@ -196,7 +196,7 @@ function markObserved() {
   const atLeast = stage.stats.filter(s => s >= OBSERVED_STAT).length;
   observedNoteEl.hidden = false;
   observedNoteEl.innerHTML = `The observed gap was <strong>${formatStat(OBSERVED_STAT, 1)}</strong>.`
-    + ` ${atLeast} of these ${n} shuffles are at least that big`
+    + ` ${atLeast.toLocaleString()} of these ${n.toLocaleString()} shuffles are at least that big`
     + ` (${formatStat(atLeast / n, 0, 'proportion')}).`
     + ` Dealing all 924 possible ways gives 112 of them — ${formatStat(112 / 924, 0, 'proportion')}.`;
 }
