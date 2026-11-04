@@ -30,71 +30,20 @@
     }
     </script>
 
+    <link rel="stylesheet" href="../../css/demos.css">
+
     <style>
-        /* A demo is read from the back of a room, so everything here is bigger
-           than the equivalent on a tool page and there is much less of it. */
-        /* ⚠ The whole demo has to fit a 1280×720 projector, pile included.
-           Measured before this was tuned: the pile began at y = 663, so 57px of
-           the thing the demo is about was on screen. Every size below is part of
-           that budget — see `the pile is on screen at projector size` in
-           tests/integration/demo-chi-square.spec.js, which fails if it slips. */
-        /* ⚠ Wider than the site's reading width. A demo is a projected FIGURE,
-           not prose: at the default 752px the pile was 465px tall and began at
-           y = 551, so on a 1280×720 projector 57px of it was on screen. The
-           source goes on the left and the pile on the right, where the spare
-           width turns into a bigger picture rather than a longer page. */
-        main { max-width: 1180px; }
-        .demo-stage { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-                      gap: 1rem; align-items: start; margin: 0.35rem 0 0.5rem; }
-        .demo-col { display: flex; flex-direction: column; gap: 0.7rem; }
-        @media (max-width: 900px) { main { max-width: none; } .demo-stage { grid-template-columns: 1fr; } }
-
-        .demo-panel { border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.85rem; background: #fff; }
-        .demo-panel h2 { font-size: 0.95rem; margin: 0 0 0.4rem; color: var(--ims-gray-text); font-weight: 700; }
-
-        .demo-intro { margin: 0.2rem 0 0.4rem; }
         #board { width: 100%; }
         #board svg { display: block; width: 100%; height: auto; }
-
         /* ⚠ Only the projector-sized type lives here. The columns, the row
            tints and the flight hooks all come from `.gof-tally` in
            css/style.css, shared with the goodness-of-fit tally table — one
            table, one convention. */
         #trial-table .gof-tally { width: 100%; font-size: 1.05rem; }
         #trial-table .gof-tally th, #trial-table .gof-tally td { padding: 0.2rem 0.5rem; }
-
         /* X² is the one number the room is looking at. */
-        .demo-stat { font-size: 1.75rem; font-weight: 700; color: var(--ims-dark, #114B5F);
-                     font-variant-numeric: tabular-nums; margin: 0.3rem 0 0; }
-        .demo-stat .demo-stat-label { font-size: 1rem; font-weight: 400; color: var(--ims-gray-text); }
-
         #pile { width: 100%; min-height: 220px; }
         #pile svg { display: block; width: 100%; height: auto; }
-
-        .demo-controls { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: center; margin: 0.4rem 0 0.3rem; }
-        .demo-controls button { min-height: 44px; min-width: 44px; font-size: 1rem; }
-        .demo-count { font-variant-numeric: tabular-nums; color: var(--ims-gray-text); font-size: 0.95rem; }
-        /* ⚠ `flex: none` and `nowrap`. These spans are flex ITEMS of
-           .demo-controls, so they shrink by default — and a shrunk span wraps
-           its own contents, which is why the checkbox sat on the line above its
-           words. The Speed control had the same latent bug and was one longer
-           word away from showing it. */
-        .demo-field { flex: none; white-space: nowrap; }
-        /* ⚠ The real cause, after three wrong guesses: a global rule makes a
-           <label> `display: flex; flex-direction: column`, so the label takes
-           its own line and pushes its control onto the next one. Nothing on the
-           PARENT could fix that — not inline-flex, not flex:none, not inline
-           styles on the label's own box — because the label was never the
-           inline thing it looked like. It is why "Speed" sat above its menu
-           too, which had been shipping that way unnoticed. */
-        .demo-field label { display: inline; cursor: pointer; }
-
-        .demo-scrub { display: flex; align-items: center; gap: 0.6rem; margin: 0.2rem 0; }
-        .demo-scrub input[type="range"] { flex: 1; min-width: 140px; min-height: 44px; }
-        .demo-scrub label { font-size: 0.9rem; color: var(--ims-gray-text); white-space: nowrap; }
-
-        .demo-note { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0.3rem 0 0; }
-        .demo-credit { font-size: 0.85rem; color: var(--ims-gray-text); margin-top: 1.2rem; }
     </style>
 </head>
 <body>
@@ -128,13 +77,19 @@
             <p class="demo-note" id="honesty" hidden>The curve is an approximation to the pile, not the truth behind it.</p>
             <p class="demo-note" id="observed-note" hidden></p>
             <section id="controls" aria-label="Controls">
-                <div class="demo-controls">
-                    <button type="button" id="btn-play" class="primary">&#9654; Play</button>
-                    <button type="button" id="btn-1" data-add="1">+1</button>
-                    <button type="button" id="btn-10" data-add="10">+10</button>
-                    <button type="button" id="btn-100" data-add="100">+100</button>
-                    <button type="button" id="btn-reset">&#8635; Reset</button>
-                    <span class="demo-count"><strong id="trial-count">0</strong> samples</span>
+                <!-- ⚠ The site's standard generate bar, not a bespoke one.
+                     `.generate-bar` + `.gen-btn[data-count]` + `#reset-btn` is
+                     what every simulation page uses, which means this demo gets
+                     the same look, the same play button (created by
+                     initPlayPause), the same disabled handling and the same
+                     1/2/3/0/Space shortcuts — instead of a second set that
+                     looks and behaves almost like them. -->
+                <div class="generate-bar" role="group" aria-label="Draw samples">
+                    <button type="button" class="gen-btn" data-count="1">+1</button>
+                    <button type="button" class="gen-btn" data-count="10">+10</button>
+                    <button type="button" class="gen-btn" data-count="100">+100</button>
+                    <button type="button" id="reset-btn" class="reset-btn" aria-label="Reset" title="Reset">&#x21BA;</button>
+                    <span class="gen-label"><strong id="trial-count">0</strong> samples</span>
                     <span class="demo-field">
                         <label for="speed" class="demo-count">Speed</label>
                         <select id="speed">

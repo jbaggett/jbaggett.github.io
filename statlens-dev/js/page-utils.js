@@ -1571,7 +1571,7 @@ export function setupFileInput(fileInput, onLoad) {
  * @returns {{ stop: () => void } | null}
  */
 export function initPlayPause(genBtns, resetBtn, options) {
-  const delay = options?.delay ?? 600;
+  let delay = options?.delay ?? 600;
   const oneBtn = /** @type {HTMLButtonElement|undefined} */ (
     Array.from(genBtns).find(b => b.dataset.count === '1'));
   if (!oneBtn) return null;
@@ -1653,7 +1653,25 @@ export function initPlayPause(genBtns, resetBtn, options) {
     }
   });
 
-  return { stop };
+  return {
+    stop,
+    /**
+     * Change the auto-play pace while it runs.
+     *
+     * Added for the teaching demos, which want a Slow/Medium/Fast control for
+     * lecture pacing — but added HERE rather than there. The first version of
+     * demo 1 hand-rolled its own play button, its own timer and its own speed
+     * select, and that is how a site ends up with two play buttons that behave
+     * differently. A page that needs a knob this component does not have should
+     * grow the component. (Jeff, 2026-11-04.)
+     *
+     * @param {number} ms
+     */
+    setDelay(ms) {
+      if (Number.isFinite(ms) && ms > 0) delay = ms;
+    },
+    isPlaying: () => playing,
+  };
 }
 
 /**

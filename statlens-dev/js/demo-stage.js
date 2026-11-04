@@ -85,6 +85,8 @@ export const PILE_CURVE_MIN = 500;
  *   callback rather than a number because whether the mark BELONGS on screen is
  *   the demo's judgement — demo 1 withholds it until the pile is built, because
  *   "how unusual is this?" is not a question you can ask of twelve dots.
+ * @property {HTMLInputElement|null} [scrubEl] - range input; the stage wires it
+ * @property {HTMLElement|null} [scrubValueEl] - "11 of 240" readout beside it
  * @property {number} [maxTrials]
  * @property {string} [tool] - name reported on `statlens:state`
  * @property {(s: {trials: number, stat: number|null, showing: number}) => void} [onUpdate]
@@ -127,6 +129,14 @@ export function createDemoStage(cfg) {
       window.dispatchEvent(new CustomEvent('statlens:state',
         { detail: { tool: cfg.tool ?? 'demo', event, state } }));
     } catch { /* CustomEvent unsupported — activities fall back to seed gates */ }
+    if (cfg.scrubEl) {
+      cfg.scrubEl.disabled = stats.length === 0;
+      cfg.scrubEl.max = String(Math.max(1, stats.length));
+      cfg.scrubEl.value = String(Math.max(1, showing));
+    }
+    if (cfg.scrubValueEl) {
+      cfg.scrubValueEl.textContent = stats.length ? `${showing} of ${stats.length}` : '—';
+    }
     cfg.onUpdate?.({ trials: stats.length, stat: state.stat, showing });
   }
 
@@ -243,6 +253,18 @@ export function createDemoStage(cfg) {
   function setSpeed(ms) {
     speedMs = ms;
     if (playTimer !== null) { clearInterval(playTimer); playTimer = window.setInterval(step, speedMs); }
+  }
+
+  // The scrubber, wired once here rather than in every demo. Demos 1–6 all have
+  // one (the plan: "a scrubber. Go back to any earlier trial"), and a stage that
+  // leaves each of them to bind the input, clamp the value and keep the readout
+  // in step is a stage that will be reimplemented six times, slightly
+  // differently. Same argument as `initPlayPause` building its own button.
+  if (cfg.scrubEl) {
+    cfg.scrubEl.addEventListener('input', () => {
+      scrubTo(Number(cfg.scrubEl?.value));
+      if (cfg.scrubValueEl) cfg.scrubValueEl.textContent = `${showing} of ${stats.length}`;
+    });
   }
 
   // ⚠ The activity panel asks for state when it loads, and a step that reads a

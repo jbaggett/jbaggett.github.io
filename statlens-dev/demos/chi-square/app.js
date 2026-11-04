@@ -211,44 +211,41 @@ const stage = createDemoStage({
   observedMark: () => (showObserved && stage && stage.trials >= PILE_CURVE_MIN
     ? { value: OBSERVED_STAT, direction: /** @type {'right'} */ ('right') }
     : null),
+  scrubEl,
+  scrubValueEl,
   maxTrials: 1000,
   onUpdate: ({ trials, showing }) => {
     if (countEl) countEl.textContent = String(trials);
-    if (scrubEl) {
-      scrubEl.disabled = trials === 0;
-      scrubEl.max = String(Math.max(1, trials));
-      scrubEl.value = String(Math.max(1, showing));
-    }
-    if (scrubValueEl) scrubValueEl.textContent = trials ? `${showing} of ${trials}` : '—';
     if (honestyEl) honestyEl.hidden = trials < PILE_CURVE_MIN;
   },
 });
 
 // ── Controls ─────────────────────────────────────────────────────────
-const playBtn = document.getElementById('btn-play');
-playBtn?.addEventListener('click', () => {
-  if (stage.isPlaying()) {
-    stage.stop();
-    playBtn.innerHTML = '&#9654; Play';
-  } else {
-    stage.play();
-    playBtn.innerHTML = '&#10073;&#10073; Pause';
-    announce('Playing.');
-  }
-});
-for (const btn of document.querySelectorAll('[data-add]')) {
+//
+// ⚠ The site's shared controls, not this page's own. `initPlayPause` builds the
+// play button, places it, keeps it in step with the +1 button's disabled state,
+// stops on reset and binds Space; `initKeyboardShortcuts` binds 1/2/3 and 0.
+// The first version of this file hand-rolled all of it and passed
+// `initKeyboardShortcuts` a made-up shape — it expects ELEMENTS and calls
+// `.click()`, so the number keys silently did nothing on this page. That is the
+// cost of a parallel set of controls, and it was invisible until someone asked
+// why the demo looked different. (Jeff, 2026-11-04.)
+const genBtns = /** @type {NodeListOf<HTMLButtonElement>} */ (
+  document.querySelectorAll('.generate-bar .gen-btn'));
+const resetBtn = document.getElementById('reset-btn');
+
+for (const btn of genBtns) {
   btn.addEventListener('click', () => {
-    const n = Number(/** @type {HTMLElement} */ (btn).dataset.add);
-    const added = stage.add(n);
+    const added = stage.add(Number(btn.dataset.count));
     announce(added === 1
       ? `Sample ${stage.trials}: X² = ${stage.stats[stage.trials - 1].toFixed(2)}.`
       : `${added} more samples. ${stage.trials} in all.`);
     markObserved();
   });
 }
-document.getElementById('btn-reset')?.addEventListener('click', () => {
+
+resetBtn?.addEventListener('click', () => {
   stage.reset();
-  if (playBtn) playBtn.innerHTML = '&#9654; Play';
   tableEl.innerHTML = '';
   if (statEl) statEl.textContent = '—';
   if (whichEl) whichEl.textContent = '';
@@ -256,12 +253,13 @@ document.getElementById('btn-reset')?.addEventListener('click', () => {
   if (observedNoteEl) observedNoteEl.hidden = true;
   announce('Reset.');
 });
+
+const play = initPlayPause(genBtns, resetBtn, { delay: 450 });
+initKeyboardShortcuts(genBtns, resetBtn);
+
 document.getElementById('speed')?.addEventListener('change', (e) => {
-  stage.setSpeed(Number(/** @type {HTMLSelectElement} */ (e.target).value));
-});
-scrubEl?.addEventListener('input', () => {
-  stage.scrubTo(Number(scrubEl.value));
-  if (scrubValueEl) scrubValueEl.textContent = `${stage.showing} of ${stage.trials}`;
+  // Through the shared component, so Play behaves the same here as anywhere.
+  play?.setDelay(Number(/** @type {HTMLSelectElement} */ (e.target).value));
 });
 
 // Presenter remotes send arrow and Page keys; both step one sample.
@@ -299,12 +297,6 @@ function markObserved() {
     + ` The χ²(${DF}) curve puts ${formatStat(1 - chisqCDF(OBSERVED_STAT, DF), 0, 'proportion')} out there.`;
 }
 
-initKeyboardShortcuts(
-  /** @type {any} */ ([...document.querySelectorAll('[data-add]')].map(b => ({
-    el: b, count: Number(/** @type {HTMLElement} */ (b).dataset.add),
-  }))),
-  document.getElementById('btn-reset'));
-initPlayPause(/** @type {any} */ ([]), document.getElementById('btn-reset'));
 
 // ⚠ Hide the "Guided version" link when the guided version is what you are
 // looking at — an activity panel beside a link offering the activity reads as a
