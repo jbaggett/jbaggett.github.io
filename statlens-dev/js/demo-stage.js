@@ -147,6 +147,9 @@ export function createDemoStage(cfg) {
     cfg.onUpdate?.({ trials: stats.length, stat: state.stat, showing });
   }
 
+  /** @type {{markIndex: (i: number) => void}|null} */
+  let peekHandle = null;
+
   /** The readout the hover writes into; announced, not displayed. */
   const peekEl = cfg.describeTrial ? createPeekElement(cfg.pileContainer) : null;
 
@@ -192,7 +195,10 @@ export function createDemoStage(cfg) {
       numBins,
       precision: cfg.precision ?? 2,
       // The newest trial, highlighted, so "that one" is findable while talking.
-      highlightIndex: stats.length - 1,
+      // The SELECTED trial, not always the newest — scrubbing back moves it.
+      // The dotplot honours this; a histogram does not, which is why the band
+      // below does the same job once the pile is bars.
+      highlightIndex: (showing > 0 ? showing : stats.length) - 1,
       ...(mark ? { observedStat: mark.value, direction: mark.direction } : {}),
     });
     removeTheoryOverlay(cfg.pileContainer);
@@ -200,14 +206,17 @@ export function createDemoStage(cfg) {
       // ⚠ Re-attached on every render. `renderSimChart` builds a new SVG, so
       // the elements the last attachment listened on no longer exist — the same
       // trap the goodness-of-fit page documents at its own `wireSamplePreview`.
-      attachResamplePeek({
+      peekHandle = attachResamplePeek({
         container: cfg.pileContainer,
         peek: peekEl,
         stats: () => stats,
         geom: chart ? { xScale: chart.xScale, yScale: chart.yScale, frame: chart.frame, bins: chart.bins } : null,
         describe: describeAt,
         onLeave: restoreShowing,
-      });
+      }) ?? null;
+      // Light the sample the scrubber is pointing at. `attachResamplePeek` is
+      // re-run on every render, so this has to be re-applied with it.
+      if (showing > 0) peekHandle?.markIndex(showing - 1);
     }
     if (cfg.curvePdf && stats.length >= PILE_CURVE_MIN) {
       overlayTheoryOnSimChart(cfg.pileContainer, chart, {
@@ -263,6 +272,11 @@ export function createDemoStage(cfg) {
     showing = n;
     // Looking back, not drawing: the sample already happened.
     cfg.renderSource?.(runTrial(n), n, false);
+    // ⚠ Move the mark, do not redraw the pile. A full re-render on every input
+    // event would rebuild the SVG while the thumb is being dragged — and it
+    // would also throw away the peek attachment mid-drag. The band is a single
+    // rect; moving it is the whole job.
+    peekHandle?.markIndex(n - 1);
     emit('scrub');
   }
 

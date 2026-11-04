@@ -43,6 +43,9 @@ function clearActive(root) {
  * @param {(index: number, approximate: boolean) => {title: string, detail: string}|null} opts.describe
  * @param {() => void} [opts.onLeave] - the pointer has left; put back whatever
  *   the page was showing before
+ * @returns {{markIndex: (i: number) => void}|undefined} a handle for lighting
+ *   the SELECTED statistic — the one a scrubber is pointing at — which the
+ *   hover borrows and gives back on leave.
  */
 export function attachResamplePeek({ container, peek, stats, geom, describe, onLeave }) {
   if (!container) return;
@@ -53,8 +56,25 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
     peek.hidden = false;
   };
 
+  /**
+   * The SELECTED statistic, which stays lit when the pointer is elsewhere.
+   *
+   * Jeff, 2026-11-04: "when we use the slider to look across samples… let's
+   * highlight the selected sample in the sampling distribution with the orange
+   * highlight." Orange already means *the sample you are looking at*; a
+   * scrubbed selection is one, so it wears the same mark as a hovered one and
+   * the hover simply borrows it until the pointer leaves.
+   */
+  let pinned = -1;
+
   // ── exact: one mark per statistic ──
   const marks = container.querySelectorAll('[data-stat-index]');
+  const markExact = (/** @type {number} */ i) => {
+    pinned = i;
+    clearActive(container);
+    if (i < 0) return;
+    container.querySelector(`[data-stat-index="${i}"]`)?.classList.add('peek-active');
+  };
   if (marks.length) {
     for (const m of marks) {
       const i = Number(m.getAttribute('data-stat-index'));
@@ -66,12 +86,25 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
       m.addEventListener('focus', lift);
       m.addEventListener('blur', () => m.classList.remove('peek-active'));
     }
-    container.addEventListener('mouseleave', () => {
+    // ⚠ On the SVG, not the container, and so without `{ once: true }`.
+    //
+    // The container outlives every render, so a listener on it accumulated one
+    // copy per redraw — which is what `once` was there to prevent. The cost was
+    // that leaving only ever did its work the FIRST time: hover a dot, leave,
+    // hover another, leave, and the second leave did nothing at all. That was
+    // survivable while leaving merely hid a readout. It is not survivable now
+    // that leaving has to put the selected sample's highlight back.
+    //
+    // The <svg> is rebuilt by every render, so a listener on it cannot
+    // accumulate and needs no `once`.
+    const svgEl = container.querySelector('svg');
+    svgEl?.addEventListener('mouseleave', () => {
       clearActive(container);
       peek.hidden = true;
       onLeave?.();
-    }, { once: true });
-    return;
+      markExact(pinned);
+    });
+    return { markIndex: markExact };
   }
 
   // ── approximate: columns ──
@@ -167,6 +200,38 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
   };
 
   const baseline = yScale(0);
+
+  /** Draw the band for one column and rank. */
+  const place = (/** @type {any} */ col, /** @type {number} */ rank) => {
+    const n = col.idx.length;
+    const top = yScale(n);
+    const m = ensureMarker();
+    const cx = xScale(col.center);
+    const bar = barAt(cx);
+    const unit = (baseline - top) / n;           // one count, in pixels
+    const yTop = baseline - rank * unit;
+    // ⚠ A floor on the height: past a few hundred in one bar a segment is a
+    // fraction of a pixel and the band vanishes. 3px still points at a place in
+    // the stack, which is what the reader is being shown.
+    const h = Math.max(3, unit);
+    m.setAttribute('x', String(bar ? bar.x : cx - 6));
+    m.setAttribute('width', String(bar ? bar.w : 12));
+    m.setAttribute('y', String(Math.min(yTop, baseline - h)));
+    m.setAttribute('height', String(h));
+    m.style.display = '';
+  };
+
+  /** Light the band for a given statistic, with no pointer involved. */
+  const markColumn = (/** @type {number} */ i) => {
+    pinned = i;
+    if (i < 0) { if (marker) marker.style.display = 'none'; return; }
+    for (const c of columns) {
+      const rank = c.idx.indexOf(i);
+      if (rank >= 0) { place(c, rank + 1); return; }
+    }
+    if (marker) marker.style.display = 'none';
+  };
+
   svgRoot.addEventListener('mousemove', (/** @type {MouseEvent} */ e) => {
     // The group's bounding box is not its origin — the y-axis labels sit left
     // of it — so this has to go through the screen CTM or the marker lands to
@@ -182,27 +247,18 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
     const frac = (baseline - my) / Math.max(1, baseline - top);
     const rank = Math.min(n, Math.max(1, Math.ceil(frac * n)));
     const i = best.idx[rank - 1];
-    const m = ensureMarker();
-    const cx = xScale(best.center);
-    const bar = barAt(cx);
-    const unit = (baseline - top) / n;           // one count, in pixels
-    const yTop = baseline - rank * unit;
-    // ⚠ A floor on the height: past a few hundred in one bar a segment is a
-    // fraction of a pixel and the band vanishes. 3px still points at a place in
-    // the stack, which is what the reader is being shown.
-    const h = Math.max(3, unit);
-    m.setAttribute('x', String(bar ? bar.x : cx - 6));
-    m.setAttribute('width', String(bar ? bar.w : 12));
-    m.setAttribute('y', String(Math.min(yTop, baseline - h)));
-    m.setAttribute('height', String(h));
-    m.style.display = '';
+    place(best, rank);
     show(i, !!(bins && bins.length));
   });
   svgRoot.addEventListener('mouseleave', () => {
-    if (marker) marker.style.display = 'none';
     peek.hidden = true;
     onLeave?.();
+    // Back to the selection, rather than to nothing: the scrubber is still
+    // pointing at a sample and the chart should still say which.
+    markColumn(pinned);
   });
+
+  return { markIndex: markColumn };
 }
 
 /**
