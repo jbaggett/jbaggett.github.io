@@ -102,6 +102,22 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
       if (bins[i]) c.center = (bins[i].x0 + bins[i].x1) / 2;
     }
   }
+  // ⚠ Each column is stacked LOWEST TO HIGHEST by its statistic, not by the
+  // order the draws happened to arrive in. Jeff, 2026-11-04: "can we arrange it
+  // so the observations are stacked lowest to highest within each bar."
+  //
+  // It is what makes height mean something on a histogram. A bin spanning
+  // 4.00–4.50 holds a dozen different values; stacked by arrival they sit in an
+  // arbitrary order, so sweeping up the bar gives a random walk through the bin
+  // and the reader learns nothing from WHERE they are in it. Sorted, the foot of
+  // the bar is the smallest statistic in that bin and the top is the largest, so
+  // moving up moves right along the axis — the stack becomes a finer-grained
+  // continuation of the chart it sits in.
+  //
+  // On a spike plot or a dotplot column every value in the column is identical,
+  // so this is a stable no-op and the order stays the order drawn.
+  for (const c of cols.values()) c.idx.sort((a, b) => all[a] - all[b]);
+
   const columns = [...cols.values()];
   if (!columns.length) return;
 
