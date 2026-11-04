@@ -350,6 +350,71 @@ export function rainDarts(darts, { rand = Math.random, max = 600, onDone } = {})
  * @param {() => void} [opts.onDone]
  * @returns {number} ms the flight will take (0 if it was skipped)
  */
+/**
+ * The tally table the darts land in.
+ *
+ * ⚠ This lives beside `flyBandsToTally` on purpose: that function REQUIRES
+ * `[data-tally-cell]` on the observed cells and `[data-reveal]` on anything
+ * withheld until the flight lands. A table built anywhere else has to re-derive
+ * both conventions from reading the animation's source, and the two drift. The
+ * module that flies tallies into a table owns the table.
+ *
+ * Extracted from `simulate/goodness-of-fit/app.js` on 2026-11-03, when the first
+ * teaching demo needed the same four columns and the same row tints. Jeff: "we
+ * should try to minimize the amount of code we have to maintain." Markup only —
+ * no statistics — so both callers keep their own X².
+ *
+ * Each row wears its band's colour as a 15% wash (`--band`, see css/style.css),
+ * so the table and the board read as one statement. ⚠ Never colour alone: the
+ * first cell always names the category.
+ *
+ * @param {object} opts
+ * @param {string[]} opts.categories
+ * @param {number[]} opts.counts
+ * @param {number[]} opts.expected
+ * @param {string} opts.chiText - the total cell's text, already formatted
+ * @param {boolean} [opts.observed] - these are the real counts, not a simulation
+ * @param {boolean} [opts.flyable] - mark the observed cells as flight targets
+ * @param {boolean} [opts.pending] - withhold every value until `revealPending`
+ * @param {number} [opts.expectedDecimals] - 1 by default; 0 where the expected
+ *   counts are whole by construction and a trailing ".0" is noise
+ * @param {string} [opts.className]
+ * @param {(s: string) => string} [opts.esc]
+ * @returns {string}
+ */
+export function tallyTableHTML(opts) {
+  const { categories, counts, expected, chiText, observed = false, flyable = false,
+    pending = false, expectedDecimals = 1, className = 'gof-tally',
+    esc = (/** @type {string} */ v) => v } = opts;
+  const hold = (/** @type {string|number} */ v) => (pending ? ` data-reveal="${v}"` : '');
+  const show = (/** @type {string|number} */ v) => (pending ? '' : v);
+
+  let html = `<table class="${className}${observed ? ' gof-tally--observed' : ''}"><thead><tr>`
+    + '<th scope="col">Category</th>'
+    + `<th scope="col" class="num">${observed ? 'Observed' : 'Simulated'} (o)</th>`
+    + '<th scope="col" class="num">Expected (e)</th>'
+    + '<th scope="col" class="num">(o\u2212e)\u00b2/e</th>'
+    + '</tr></thead><tbody>';
+  for (let i = 0; i < categories.length; i++) {
+    const e = expected[i];
+    const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
+    html += `<tr style="--band:${BAND_FILLS[i % BAND_FILLS.length]}">
+      <th scope="row">${esc(categories[i])}</th>
+      <td class="num obs"${flyable ? ` data-tally-cell="${i}"` : ''}${hold(counts[i])}>${show(counts[i])}</td>
+      <td class="num exp">${e.toFixed(expectedDecimals)}</td>
+      <td class="num con"${hold(contrib.toFixed(2))}>${show(contrib.toFixed(2))}</td>
+    </tr>`;
+  }
+  const totalObs = counts.reduce((a, b) => a + b, 0);
+  html += `</tbody><tfoot><tr>
+    <th scope="row">Total</th>
+    <td class="num"${hold(totalObs)}>${show(totalObs)}</td>
+    <td class="num">${expected.reduce((a, b) => a + b, 0).toFixed(0)}</td>
+    <td class="num con-total" data-chi-cell${hold(chiText)}>${show(chiText)}</td>
+  </tr></tfoot></table>`;
+  return html;
+}
+
 export function flyBandsToTally({ board, table, duration = 520, onDone }) {
   const done = () => { if (onDone) onDone(); };
   // The project's own check, not a bare matchMedia: it is settings-aware, so a

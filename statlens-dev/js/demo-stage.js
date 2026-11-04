@@ -66,8 +66,11 @@ export const PILE_CURVE_MIN = 500;
  * @property {string} seed
  * @property {(rng: () => number, index: number) => DemoTrial} drawTrial
  *   ⚠ Must be pure in `rng`. See the note on exact replay above.
- * @property {(trial: DemoTrial, index: number) => void} [renderSource]
- *   Redraw the source panel for the trial now showing.
+ * @property {(trial: DemoTrial, index: number, animate?: boolean) => void} [renderSource]
+ *   Redraw the source panel for the trial now showing. `animate` is true only
+ *   for a SINGLE manual step — never in a batch, never during Play, never when
+ *   scrubbing back. A demo that animates may take as long as it likes on +1 and
+ *   must be instant otherwise.
  * @property {HTMLElement} pileContainer
  * @property {[number, number]} domain - the FIXED axis; nothing rescales
  * @property {number} binWidth
@@ -160,7 +163,7 @@ export function createDemoStage(cfg) {
     const trial = runTrial(i);
     stats.push(trial.stat);
     showing = i;
-    cfg.renderSource?.(trial, i);
+    cfg.renderSource?.(trial, i, false);
     return true;
   }
 
@@ -181,7 +184,10 @@ export function createDemoStage(cfg) {
     }
     if (added) {
       showing = stats.length;
-      cfg.renderSource?.(runTrial(showing), showing);
+      // The one case worth watching: a single step, taken by hand. A batch has
+      // nothing to show frame by frame, and during Play the next interval would
+      // arrive before the animation finished.
+      cfg.renderSource?.(runTrial(showing), showing, added === 1 && playTimer === null);
       renderPile();
       emit('add');
     }
@@ -193,7 +199,8 @@ export function createDemoStage(cfg) {
     const n = Math.max(1, Math.min(stats.length, Math.round(i)));
     if (!stats.length) return;
     showing = n;
-    cfg.renderSource?.(runTrial(n), n);
+    // Looking back, not drawing: the sample already happened.
+    cfg.renderSource?.(runTrial(n), n, false);
     emit('scrub');
   }
 
@@ -229,6 +236,14 @@ export function createDemoStage(cfg) {
     speedMs = ms;
     if (playTimer !== null) { clearInterval(playTimer); playTimer = window.setInterval(step, speedMs); }
   }
+
+  // ⚠ The activity panel asks for state when it loads, and a step that reads a
+  // metric is wrong until the tool answers. Required by the authoring guide's
+  // tool-author contract, and easy to leave out — nothing fails loudly without
+  // it, the numbers are just stale on the first step.
+  try {
+    window.addEventListener('statlens:request-state', () => emit('sync'));
+  } catch { /* no window (unit context) */ }
 
   return {
     step,

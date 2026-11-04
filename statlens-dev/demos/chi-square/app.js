@@ -31,11 +31,11 @@
 import * as jstat from 'jstat';
 import { setJStat, pdfChisq, chisqCDF } from '../../js/distributions.js';
 import { createDemoStage, PILE_CURVE_MIN } from '../../js/demo-stage.js';
-import { renderNullBoard } from '../../js/mechanisms/null-board.js';
+import { renderNullBoard, rainDarts, flyBandsToTally, revealPending, tallyTableHTML } from '../../js/mechanisms/null-board.js';
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { announce, initHelp, initKeyboardShortcuts, initPlayPause } from '../../js/page-utils.js';
 import { applySettings } from '../../js/settings.js';
-import { formatStat } from '../../js/stats.js';
+import { formatStat, gofChisqStat } from '../../js/stats.js';
 
 setJStat(jstat.default || jstat);
 applySettings();
@@ -54,12 +54,10 @@ const OBSERVED_COUNTS = [14, 14, 16, 6];
 
 const params = new URLSearchParams(location.search);
 const seed = params.get('seed') || 'demo1';
-const showObserved = params.get('observed') === 'on';
+let showObserved = params.get('observed') === 'on';
 
 const boardEl = /** @type {HTMLElement} */ (document.getElementById('board'));
-const rowsEl = /** @type {HTMLElement} */ (document.getElementById('trial-rows'));
-const totalObsEl = document.getElementById('total-obs');
-const totalContribEl = document.getElementById('total-contrib');
+const tableEl = /** @type {HTMLElement} */ (document.getElementById('trial-table'));
 const statEl = document.getElementById('trial-stat');
 const whichEl = document.getElementById('trial-which');
 const countEl = document.getElementById('trial-count');
@@ -69,15 +67,17 @@ const honestyEl = document.getElementById('honesty');
 const observedNoteEl = document.getElementById('observed-note');
 const pileEl = /** @type {HTMLElement} */ (document.getElementById('pile'));
 
-/** X² for a set of counts against this demo's fixed expected counts. */
-function chiSq(counts) {
-  let total = 0;
-  for (let i = 0; i < counts.length; i++) {
-    const e = EXPECTED[i];
-    total += (counts[i] - e) ** 2 / e;
-  }
-  return total;
-}
+/**
+ * X² for a set of counts.
+ *
+ * ⚠ `gofChisqStat` from js/stats.js, not a local copy. The first draft of this
+ * file reimplemented it in six lines, which is the one kind of duplication worth
+ * being strict about: two copies of a STATISTIC can drift, and nothing would
+ * fail when they did — the demo would simply teach a different number from the
+ * tool it is meant to introduce. (Jeff, 2026-11-03: "we should try to minimize
+ * the amount of code we have to maintain.")
+ */
+const chiSq = (/** @type {number[]} */ counts) => gofChisqStat(counts, PROPS);
 
 const OBSERVED_STAT = chiSq(OBSERVED_COUNTS);
 
@@ -93,8 +93,27 @@ function drawTrial(rng) {
   return { stat: chiSq(counts), source: counts };
 }
 
-/** Repaint the board and the table for the trial now showing. */
-function renderSource(trial, index) {
+/**
+ * Repaint the board and the table for the trial now showing.
+ *
+ * With `animate`, the sample is DRAWN rather than announced: 50 darts rain onto
+ * the blocks, each block's tally then flies into its row, and only when a count
+ * lands does it appear. The table is rendered with its numbers withheld
+ * (`data-reveal`) until the flight finishes, so the animation carries the
+ * information instead of decorating a result that was already on screen.
+ *
+ * ⚠ Only on a single manual step. A batch repaints once for the last trial (see
+ * the stage), and during Play the interval is 120–900ms while the rain plus the
+ * flight runs about a second — so animating every step would queue up behind
+ * itself and read as a stutter. Press +1 to watch the mechanism; press Play to
+ * build the pile. Both `rainDarts` and `flyBandsToTally` check the project's own
+ * reduced-motion setting and hand back control immediately when it is on.
+ *
+ * @param {{stat: number, source: number[]}} trial
+ * @param {number} index
+ * @param {boolean} [animate]
+ */
+function renderSource(trial, index, animate = false) {
   const counts = trial.source;
   renderNullBoard(boardEl, {
     categories: CATEGORIES,
@@ -108,21 +127,36 @@ function renderSource(trial, index) {
     height: 180,
   });
 
-  let rows = '';
-  for (let i = 0; i < CATEGORIES.length; i++) {
-    const contrib = (counts[i] - EXPECTED[i]) ** 2 / EXPECTED[i];
-    rows += `<tr>`
-      + `<td>${CATEGORIES[i]}</td>`
-      + `<td class="num">${counts[i]}</td>`
-      + `<td class="num">${EXPECTED[i]}</td>`
-      + `<td class="num">${contrib.toFixed(2)}</td>`
-      + `</tr>`;
+  tableEl.innerHTML = tallyTableHTML({
+    categories: CATEGORIES,
+    counts,
+    expected: EXPECTED,
+    chiText: `X\u00b2 = ${trial.stat.toFixed(2)}`,
+    flyable: animate,
+    pending: animate,
+    // Whole by construction here — 16, 16, 10, 8 — so a trailing ".0" is noise.
+    expectedDecimals: 0,
+  });
+  if (statEl) {
+    if (animate) { statEl.setAttribute('data-reveal', trial.stat.toFixed(2)); statEl.textContent = ''; }
+    else { statEl.removeAttribute('data-reveal'); statEl.textContent = trial.stat.toFixed(2); }
   }
-  rowsEl.innerHTML = rows;
-  if (totalObsEl) totalObsEl.textContent = String(counts.reduce((a, b) => a + b, 0));
-  if (totalContribEl) totalContribEl.textContent = trial.stat.toFixed(2);
-  if (statEl) statEl.textContent = trial.stat.toFixed(2);
   if (whichEl) whichEl.textContent = `(sample ${index})`;
+
+  if (!animate) return;
+  const board = boardEl.querySelector('.null-board');
+  const darts = [...boardEl.querySelectorAll('.null-board-dart')];
+  rainDarts(darts, {
+    rand: seededScatter(index + 9973),
+    onDone: () => flyBandsToTally({
+      board,
+      table: tableEl,
+      onDone: () => {
+        revealPending(tableEl);
+        revealPending(statEl);
+      },
+    }),
+  });
 }
 
 /**
@@ -197,11 +231,9 @@ for (const btn of document.querySelectorAll('[data-add]')) {
 document.getElementById('btn-reset')?.addEventListener('click', () => {
   stage.reset();
   if (playBtn) playBtn.innerHTML = '&#9654; Play';
-  rowsEl.innerHTML = '';
+  tableEl.innerHTML = '';
   if (statEl) statEl.textContent = '—';
   if (whichEl) whichEl.textContent = '';
-  if (totalObsEl) totalObsEl.textContent = '—';
-  if (totalContribEl) totalContribEl.textContent = '—';
   boardEl.innerHTML = '';
   if (observedNoteEl) observedNoteEl.hidden = true;
   announce('Reset.');
@@ -236,7 +268,8 @@ window.addEventListener('keydown', (e) => {
  * asked. An activity step or `?observed=on` turns it on.
  */
 function markObserved() {
-  if (!showObserved || !observedNoteEl) return;
+  if (!observedNoteEl) return;
+  if (!showObserved) { observedNoteEl.hidden = true; return; }
   const n = stage.trials;
   if (n === 0) { observedNoteEl.hidden = true; return; }
   const atLeast = stage.stats.filter(s => s >= OBSERVED_STAT).length;
@@ -255,6 +288,31 @@ initKeyboardShortcuts(
   }))),
   document.getElementById('btn-reset'));
 initPlayPause(/** @type {any} */ ([]), document.getElementById('btn-reset'));
+
+// The control the activity's last step asks the student to tick, and the one a
+// lecturer reaches for at "now where does the real sample fall?". `?observed=on`
+// sets it from a link; the checkbox is the same switch, visible.
+const observedToggle = /** @type {HTMLInputElement|null} */ (document.getElementById('show-observed'));
+if (observedToggle) {
+  observedToggle.checked = showObserved;
+  observedToggle.addEventListener('change', () => {
+    showObserved = observedToggle.checked;
+    markObserved();
+    announce(showObserved ? 'Showing the real sample.' : 'Real sample hidden.');
+  });
+}
+
+// ⚠ Hide the "Guided version" link when the guided version is what you are
+// looking at — an activity panel beside a link offering the activity reads as a
+// broken page, and in a lecture it is one more thing to explain away.
+if (params.get('activity')) {
+  const credit = document.getElementById('guided-link')?.parentElement;
+  const link = document.getElementById('guided-link');
+  if (link && credit) {
+    link.remove();
+    credit.firstChild?.remove?.();
+  }
+}
 
 // Open on one sample, so the page is never a blank stage.
 stage.add(1);

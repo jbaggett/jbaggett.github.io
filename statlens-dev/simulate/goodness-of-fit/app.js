@@ -8,7 +8,7 @@
 
 import { createRng } from '../../js/prng.js';
 import { prefersReducedMotion } from '../../js/settings.js';
-import { renderNullBoard, BAND_FILLS, flyBandsToTally, rainDarts } from '../../js/mechanisms/null-board.js';
+import { renderNullBoard, BAND_FILLS, flyBandsToTally, rainDarts, tallyTableHTML as sharedTallyTableHTML } from '../../js/mechanisms/null-board.js';
 import { wordsFor } from '../../js/mechanisms/vocabulary.js';
 import { applyRequestedLayout } from '../../js/mechanisms/layout.js';
 
@@ -699,35 +699,18 @@ function initStripToggle() {
  *   to reveal them and the table would simply stay blank.
  */
 function tallyTableHTML(counts, opts = {}) {
-  const chi = chiSqOf(counts);
-  let html = `<table class="gof-tally${opts.observed ? ' gof-tally--observed' : ''}"><thead><tr>`
-    + '<th scope="col">Category</th>'
-    + `<th scope="col" class="num">${opts.observed ? 'Observed' : 'Simulated'} (o)</th>`
-    + '<th scope="col" class="num">Expected (e)</th>'
-    + '<th scope="col" class="num">(o\u2212e)\u00b2/e</th>'
-    + '</tr></thead><tbody>';
-  for (let i = 0; i < categories.length; i++) {
-    const e = expected[i];
-    const contrib = e > 0 ? ((counts[i] - e) ** 2) / e : 0;
-    html += `<tr style="--band:${BAND_FILLS[i % BAND_FILLS.length]}">
-      <th scope="row">${esc(categories[i])}</th>
-      <td class="num obs"${opts.flyable ? ` data-tally-cell="${i}"` : ''}${
-        opts.pending ? ` data-reveal="${counts[i]}"` : ''}>${opts.pending ? '' : counts[i]}</td>
-      <td class="num exp">${e.toFixed(1)}</td>
-      <td class="num con"${opts.pending ? ` data-reveal="${contrib.toFixed(2)}"` : ''}>${
-        opts.pending ? '' : contrib.toFixed(2)}</td>
-    </tr>`;
-  }
-  const totalObs = counts.reduce((a, b) => a + b, 0);
-  const chiText = `X\u00b2 = ${chi.toFixed(3)}`;
-  html += `</tbody><tfoot><tr>
-    <th scope="row">Total</th>
-    <td class="num"${opts.pending ? ` data-reveal="${totalObs}"` : ''}>${opts.pending ? '' : totalObs}</td>
-    <td class="num">${expected.reduce((a, b) => a + b, 0).toFixed(0)}</td>
-    <td class="num con-total" data-chi-cell${
-      opts.pending ? ` data-reveal="${chiText}"` : ''}>${opts.pending ? '' : chiText}</td>
-  </tr></tfoot></table>`;
-  return html;
+  // ⚠ The markup now lives in js/mechanisms/null-board.js, beside the animation
+  // that requires its `data-tally-cell` and `data-reveal` hooks. This wrapper
+  // keeps the page's own call sites and supplies what only the page knows: its
+  // categories, its expected counts and its X².
+  return sharedTallyTableHTML({
+    categories, counts, expected,
+    chiText: `X\u00b2 = ${chiSqOf(counts).toFixed(3)}`,
+    observed: !!opts.observed,
+    flyable: !!opts.flyable,
+    pending: !!opts.pending,
+    esc,
+  });
 }
 
 /**

@@ -1,0 +1,115 @@
+{
+  "title": "Where does X² come from?",
+  "tool": "demos/chi-square",
+  "params": {
+    "seed": "demo1"
+  },
+  "steps": [
+    {
+      "phase": "predict",
+      "instruction": "A bag of balls is **claimed** to be 32% blue, 32% amber, 20% green and 16% mauve. The four blocks on the left have exactly those **areas**, and each sample throws 50 marks at them. In a sample of 50 you would *expect* 16 blue, 16 amber, 10 green and 8 mauve.",
+      "gate": {
+        "question": "If the claim is exactly right, what will a sample of 50 look like?",
+        "choices": [
+          {
+            "text": "Close to 16, 16, 10, 8 — but wobbling from sample to sample",
+            "correct": true
+          },
+          {
+            "text": "Exactly 16, 16, 10, 8 every time"
+          },
+          {
+            "text": "Nothing like 16, 16, 10, 8 — the counts are random"
+          }
+        ],
+        "feedback": "Even when the claim is perfectly true, the counts wobble. That wobble is the whole subject: \\(X^2\\) measures how big it is."
+      }
+    },
+    {
+      "instruction": "Press **+1** a few times and watch one sample arrive: 50 marks rain onto the blocks, each block's count flies into the table, and the last column fills in with \\((O-E)^2/E\\).",
+      "observe": "Which colour contributed most to \\(X^2\\) this time? Does the same colour win every time?",
+      "reveal": "Usually the colour that happens to miss its expected count by the most — but which colour that is changes from sample to sample. A contribution is big when a count is far from what was expected *relative to how many were expected there*, which is why the \\(E\\) sits underneath."
+    },
+    {
+      "instruction": "Keep pressing **+1** until you have about ten samples, so there are several \\(X^2\\) values in the pile on the right.",
+      "requires": {
+        "metric": "trials",
+        "atLeast": 8,
+        "hint": "Press **+1** a few more times — you have {{trials}} samples so far."
+      },
+      "observe": "You have {{trials}} samples, and the most recent gave \\(X^2 =\\) {{stat}}. Are the values all similar, or spread out?"
+    },
+    {
+      "phase": "predict",
+      "instruction": "Now predict what the whole pile will look like once there are hundreds of samples.",
+      "gate": {
+        "question": "Where will most of the \\(X^2\\) values land?",
+        "choices": [
+          {
+            "text": "Mostly small, with a long tail of occasional large values",
+            "correct": true
+          },
+          {
+            "text": "Spread evenly between 0 and 16"
+          },
+          {
+            "text": "Mostly large, bunched near 10"
+          }
+        ],
+        "feedback": "You have the evidence already: the handful of samples on screen are mostly small. Press on and see whether that holds."
+      }
+    },
+    {
+      "instruction": "Press **+100** a few times to build the pile properly.",
+      "requires": {
+        "metric": "trials",
+        "atLeast": 200,
+        "hint": "Press **+100** until you have at least 200 samples — you have {{trials}}."
+      },
+      "observe": "The dots have become bars. Why can \\(X^2\\) never be negative? And why is the pile lopsided rather than symmetric?",
+      "reveal": "Every term \\((O-E)^2/E\\) is a square divided by a positive number, so nothing can ever subtract — \\(X^2\\) starts at 0 and only goes up. That is also why the pile is lopsided: it is squashed against 0 on the left, and has nothing stopping it on the right, where one badly-off category can push it a long way."
+    },
+    {
+      "instruction": "Keep going past **500 samples**. A dashed curve appears over the pile.",
+      "requires": {
+        "metric": "trials",
+        "atLeast": 500,
+        "hint": "You need at least 500 samples for the curve — you have {{trials}}."
+      },
+      "observe": "How well does the χ²(3) curve match the pile you built?",
+      "reveal": "Closely, and that is the point of the demo. **Nothing about the simulation used that curve** — the marks were thrown, the counts were tallied, and the pile built itself. The curve is a mathematical description of the shape those tallies happen to make. ⚠ It is an approximation **to** the pile, not the truth behind it; it fits well here because the expected counts (16, 16, 10, 8) are comfortably large."
+    },
+    {
+      "phase": "explain",
+      "instruction": "Someone actually drew 50 balls and got **14 blue, 14 amber, 16 green, 6 mauve** — that is \\(X^2 = 4.60\\). Tick **Show the real sample** under the pile.",
+      "gate": {
+        "question": "Your {{trials}} simulated samples came from a bag that really is 32/32/20/16. How unusual is \\(X^2 = 4.60\\) among them?",
+        "choices": [
+          {
+            "text": "Not unusual — a fair bag produces a value that big fairly often",
+            "correct": true
+          },
+          {
+            "text": "Very unusual — almost no simulated sample reached 4.60"
+          },
+          {
+            "text": "Impossible — 4.60 is outside the range of the pile"
+          }
+        ],
+        "feedback": "About a fifth of the samples drawn from a *true* claim are at least that far out. So 4.60 is an ordinary amount of wobble, and this sample gives no reason to doubt the bag."
+      },
+      "respond": {
+        "prompts": [
+          {
+            "id": "pvalue",
+            "label": "What the shaded share counts",
+            "placeholder": "Of all the samples drawn from a bag that really is 32/32/20/16, the share that…",
+            "rows": 3
+          }
+        ],
+        "gateOnNonEmpty": true
+      },
+      "reveal": "The p-value is the fraction of samples — drawn from a bag that really matches the claim — that are at least as far out as the one you actually got. Here that is about 0.20, so a fifth of honest samples look at least this odd. A result that common is no evidence against the claim."
+    }
+  ]
+}
