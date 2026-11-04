@@ -2491,5 +2491,21 @@
         "claim": "textbooks cost more at the UCLA bookstore than on Amazon"
       }
     ]
+  },
+  {
+    "id": "color",
+    "name": "Colored Balls (Teaching Set)",
+    "description": "50 balls from a bag claimed to be 32/32/20/16% — goodness-of-fit with whole-number expected counts. Teaching set.",
+    "chapter": "Teaching set",
+    "n": 50,
+    "variables": [
+      "color"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 4,
+    "minGroupN": 6,
+    "type": "gof",
+    "source": "teaching"
   }
 ]

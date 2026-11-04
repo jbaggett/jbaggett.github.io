@@ -351,7 +351,12 @@ function getVar(name) {
  * @returns {number[]}
  */
 function getNumericColumn(name) {
-  return rows.map(r => Number(r[name])).filter(v => isFinite(v));
+  // ⚠ `Number(null)` is 0, not NaN, so mapping first turned every missing value
+  // into a real zero that no filter could spot. Reject the blank BEFORE
+  // converting, and use `Number.isFinite` (the global one coerces too).
+  return rows
+    .map(/** @param {any} r */ r => (r[name] == null || r[name] === '' ? NaN : Number(r[name])))
+    .filter(/** @param {number} v */ v => Number.isFinite(v));
 }
 
 /**

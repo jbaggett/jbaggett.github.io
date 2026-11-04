@@ -625,7 +625,13 @@ varSelect.addEventListener('change', () => {
 function loadVariable(varInfo, ds) {
   const varLabel = varInfo.label || varInfo.name;
   const sourceName = ds.name ?? 'Dataset';
-  const values = ds.rows.map(r => r[varInfo.name]).filter(v => isFinite(v));
+  // ⚠ `Number.isFinite`, not the global `isFinite`. This line always MEANT to
+  // drop missing values; the global one coerces, so `isFinite(null)` is `true`
+  // and every null walked through. `loan50.emp_length` has 2, and because
+  // `mean` sums with `+=`, each null counted as a ZERO in the mean and the SD —
+  // the crash on `min` was the only visible symptom of numbers that were
+  // already wrong. (Textbook agent's link audit, 2026-11-03.)
+  const values = ds.rows.map(r => r[varInfo.name]).filter(v => Number.isFinite(v));
   setData(values, varLabel, sourceName);
 }
 

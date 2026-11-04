@@ -1,0 +1,192 @@
+{
+  "id": "color",
+  "name": "Colored Balls (Teaching Set)",
+  "description": "50 balls drawn from a large bag claimed to be 32% blue, 32% amber, 20% green and 16% mauve. Small, easy numbers for showing how goodness of fit works.",
+  "source": "teaching",
+  "variables": [
+    {
+      "name": "color",
+      "label": "Color",
+      "type": "categorical"
+    }
+  ],
+  "studyDescription": "A large bag of balls is claimed to be 32% blue, 32% amber, 20% green and 16% mauve. We draw 50 balls and record each one's color. This is a constructed teaching set, not real data.",
+  "variableDescriptions": {
+    "color": "The ball's color: Blue, Amber, Green or Mauve"
+  },
+  "sourceDetail": "Constructed teaching set (not real data), after a demo by Todd Will. Expected counts 16 / 16 / 10 / 8; observed 14 / 14 / 16 / 6. X² = 0.25 + 0.25 + 3.60 + 0.50 = 4.60, df = 3, p ≈ 0.20. Row order is a fixed shuffle (seed 145); the statistic does not depend on it.",
+  "context": "Is the bag what it claims to be? The claim is 32% blue, 32% amber, 20% green and 16% mauve.",
+  "nullClaim": "the bag is 32% blue, 32% amber, 20% green and 16% mauve",
+  "rows": [
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Mauve"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Mauve"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Mauve"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Mauve"
+    },
+    {
+      "color": "Mauve"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Blue"
+    },
+    {
+      "color": "Green"
+    },
+    {
+      "color": "Amber"
+    },
+    {
+      "color": "Mauve"
+    }
+  ],
+  "type": "gof",
+  "categories": [
+    "Blue",
+    "Amber",
+    "Green",
+    "Mauve"
+  ],
+  "observed": [
+    14,
+    14,
+    16,
+    6
+  ],
+  "gofNull": {
+    "Blue": 0.32,
+    "Amber": 0.32,
+    "Green": 0.2,
+    "Mauve": 0.16
+  },
+  "chapter": "Teaching set"
+}

@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Chi-Square GOF Randomization Test | StatLens</title>
+    <title>Goodness-of-Fit Randomization Test | StatLens</title>
     <meta name="description" content="Test whether counts across several categories match a claimed set of probabilities, by simulation.">
-    <meta name="keywords" content="goodness of fit, chi-square, categories, expected counts, is the die fair, simulation, one categorical variable, p-value">
+    <meta name="keywords" content="goodness of fit, chi-square, X-squared, randomization test, categories, expected counts, is the die fair, simulation, one categorical variable, p-value">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +24,8 @@
             "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
             "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
             "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
-            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm",
+            "jstat":        "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
         }
     }
     </script>
@@ -38,7 +39,7 @@
     </nav>
 
     <main>
-        <h1>Chi-Square GOF Randomization Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
+        <h1>Goodness-of-Fit Randomization Test<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">⚙</button></span></h1>
 
         <section id="data-panel" aria-label="Data input">
             <div role="tablist" aria-label="Data source">
@@ -118,9 +119,9 @@
                 <div class="mechanism-panel" data-entity="draw">
                     <h2 class="mechanism-title" id="sim-title">This Simulation</h2>
                     <div id="mech-simulated"></div>
-                    <!-- The table's total row carries χ² now; this is kept, hidden,
+                    <!-- The table's total row carries X² now; this is kept, hidden,
                          because other code and tests read it as the current value. -->
-                    <p class="mechanism-stat" hidden>&chi;&sup2; = <span id="mech-simulated-chisq">&mdash;</span></p>
+                    <p class="mechanism-stat" hidden>X&sup2; = <span id="mech-simulated-chisq">&mdash;</span></p>
                     <span id="mech-observed-chisq" hidden></span>
                 </div>
             </div>
@@ -129,8 +130,9 @@
 
         <section id="chart-and-results" aria-label="Chart and results">
             <div class="app-body">
-                <div class="app-main" id="chart" aria-label="Null distribution of the chi-square statistic">
+                <div class="app-main" id="chart" aria-label="Null distribution of the X-squared statistic">
                     <div id="chart-container" data-entity="distribution"></div>
+                    <div class="chart-controls-bar expert-only" id="chart-controls"></div>
                 </div>
                 <div class="app-sidebar" id="results">
                     <div id="result-summary" tabindex="-1">
@@ -146,8 +148,8 @@
     </main>
 
     <dialog id="page-help" aria-label="Help">
-        <h2>Chi-Square GOF Randomization Test</h2>
-        <p class="help-intro">Compare one categorical variable's observed counts to a hypothesized distribution (H<sub>0</sub>). The tool repeatedly draws a fresh sample of the same size <em>from</em> H<sub>0</sub>, computes the &chi;<sup>2</sup> statistic each time, and builds the null distribution. Your observed &chi;<sup>2</sup> is marked on it — the p-value is the fraction of simulated samples at least that large.</p>
+        <h2>Goodness-of-Fit Randomization Test</h2>
+        <p class="help-intro">Compare one categorical variable's observed counts to a hypothesized distribution (H<sub>0</sub>). The tool repeatedly draws a fresh sample of the same size <em>from</em> H<sub>0</sub>, computes the X<sup>2</sup> statistic each time, and builds the null distribution. Your observed X<sup>2</sup> is marked on it — the p-value is the fraction of simulated samples at least that large. (X<sup>2</sup> = &Sigma;(O&minus;E)<sup>2</sup>/E is the <em>statistic</em>; &chi;<sup>2</sup> is the <em>distribution</em> the theory-based test compares it to, which this page never needs.)</p>
         <dl>
             <dt><kbd>1</kbd></dt><dd>+1 sample</dd>
             <dt><kbd>2</kbd></dt><dd>+10 samples</dd>

@@ -228,7 +228,7 @@ export function initSettings() {
     <div class="setting-row">
       <div>
         <label for="set-dp-stat" class="setting-label">Statistic decimals</label>
-        <p class="setting-hint">Decimal places for t, z, χ², F</p>
+        <p class="setting-hint">Decimal places for t, z, X², F</p>
       </div>
       <input type="number" id="set-dp-stat" min="1" max="6" step="1" value="${s.decimalsStat}">
     </div>
@@ -1007,7 +1007,7 @@ export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } 
    *   1) sim-app bootstrap one-sample: #resample-stat-label + #resample-mean
    *   2) sim-app two-group: .mech-diff (already contains "diff = ...")
    *   3) one-sample-sim: #mech-sim-stat (already contains label + value)
-   *   4) chisq: #mech-shuffled-chisq with parent <p> "χ² = <span>..."
+   *   4) chisq: #mech-shuffled-chisq with parent <p> "X² = <span>..."
    */
   /**
    * The summary is ONE LINE, so it takes the panel's words and leaves its
@@ -1066,11 +1066,11 @@ export function initMechanismCollapse(mechanismStrip, { forceExpanded = false } 
       return;
     }
 
-    // Try chisq: #mech-shuffled-chisq — copy parent <p> which has "χ² = <span>..."
+    // Try chisq: #mech-shuffled-chisq — copy parent <p> which has "X² = <span>..."
     const chisqStat = strip.querySelector('#mech-shuffled-chisq');
     if (chisqStat && chisqStat.textContent.trim() && chisqStat.textContent !== '\u2014') {
       const parent = chisqStat.closest('.mechanism-stat');
-      summary.innerHTML = parent ? parent.innerHTML : `χ² = ${chisqStat.innerHTML}`;
+      summary.innerHTML = parent ? parent.innerHTML : `X² = ${chisqStat.innerHTML}`;
       return;
     }
 
@@ -2113,8 +2113,10 @@ export function initDataPanel(config) {
    */
   function loadDatasetById(id, meta) {
     if (meta && datasetDesc) datasetDesc.textContent = meta.description;
+    let fetched = false;
     return fetchDataset(id, !!meta?.contributed)
       .then(ds => {
+        fetched = true;
         currentDatasetId = id;
         currentSourceName = meta?.name || ds.name || id;
 
@@ -2150,7 +2152,25 @@ export function initDataPanel(config) {
         postLoadUI();
         resolveReady();
       })
-      .catch(() => announce('Failed to load dataset.'));
+      .catch((err) => {
+        // ⚠ Two different failures used to print the same sentence, and the
+        // wrong one of the two. This `catch` covers the whole chain, so a throw
+        // anywhere AFTER a successful fetch — rendering, the editor, any page's
+        // `onDataset` — was announced as "Failed to load dataset." on a page
+        // that had loaded its data and drawn it. That is what the textbook
+        // agent's audit found on `explore/descriptive/?dataset=loan50`
+        // (2026-11-03): a `detectPrecision` crash on a null, reported as a
+        // network-shaped problem that did not exist.
+        //
+        // It also swallowed the cause entirely: no console output, no rethrow,
+        // nothing in the network panel. The error that took ten minutes to find
+        // had been thrown on every load of that page for as long as the dataset
+        // has had nulls in it.
+        console.error('[StatLens] dataset pipeline failed', err);
+        announce(fetched
+          ? 'Dataset loaded, but the page could not finish setting it up.'
+          : 'Failed to load dataset.');
+      });
   }
 
   /** Full unfiltered dataset index (loaded once). @type {Array<{id:string,name:string,description:string,type:string,n:number}>} */

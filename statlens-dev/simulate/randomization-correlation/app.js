@@ -127,8 +127,15 @@ initDataPanel({
     }
     xLabel = numVars[0].label || numVars[0].name;
     yLabel = numVars[1].label || numVars[1].name;
-    xValues = ds.rows.map(/** @param {any} r */ r => parseFloat(r[numVars[0].name])).filter(isFinite);
-    yValues = ds.rows.map(/** @param {any} r */ r => parseFloat(r[numVars[1].name])).filter(isFinite);
+    // ⚠ Drop whole ROWS, not each column separately — see bootstrap-slope. A
+    // row missing one of the two values would otherwise shorten one array and
+    // not the other, pairing every later x with the wrong y and reporting a
+    // correlation for data that was never observed together.
+    const pairs = ds.rows
+      .map(/** @param {any} r */ r => [parseFloat(r[numVars[0].name]), parseFloat(r[numVars[1].name])])
+      .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+    xValues = pairs.map(([x]) => x);
+    yValues = pairs.map(([, y]) => y);
     // Trim to matching length
     const n = Math.min(xValues.length, yValues.length);
     xValues = xValues.slice(0, n);

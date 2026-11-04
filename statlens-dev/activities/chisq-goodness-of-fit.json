@@ -21,7 +21,7 @@
             "text": "Completely unrelated to the expected counts"
           }
         ],
-        "feedback": "Right. Even when \\(H_0\\) holds, sampling makes observed counts wobble around the expected ones; \\(\\chi^2\\) sums the standardized gaps to ask whether the total wobble is more than chance.",
+        "feedback": "Right. Even when \\(H_0\\) holds, sampling makes observed counts wobble around the expected ones; \\(X^2\\) sums the standardized gaps to ask whether the total wobble is more than chance.",
         "retryFeedback": "Under \\(H_0\\) the counts still vary sample to sample — they should be near, not exactly at, the expected values."
       }
     },
@@ -68,7 +68,7 @@
             "rows": 2
           }
         ],
-        "answer": "A strong answer: expected counts are what \\(H_0\\) predicts for this sample size (\\(n\\times\\) the hypothesized proportion), so they encode the null model, not a blanket 'all equal.' \\(\\chi^2\\) sums the standardized squared gaps \\((O-E)^2/E\\); a large total means the pattern is unlikely under \\(H_0\\). The individual contributions localize the misfit — the categories with the biggest \\((O-E)^2/E\\) are where the data depart most from \\(H_0\\)."
+        "answer": "A strong answer: expected counts are what \\(H_0\\) predicts for this sample size (\\(n\\times\\) the hypothesized proportion), so they encode the null model, not a blanket 'all equal.' \\(X^2\\) sums the standardized squared gaps \\((O-E)^2/E\\); a large total means the pattern is unlikely under \\(H_0\\). The individual contributions localize the misfit — the categories with the biggest \\((O-E)^2/E\\) are where the data depart most from \\(H_0\\)."
       }
     }
   ]

@@ -4,6 +4,12 @@
  * Supports dataset loading, paste/file input, and manual contingency table entry.
  * Computes the chi-square test, displays observed/expected tables, and draws
  * a chi-square distribution curve with right-tail shading.
+ *
+ * ⚠ Notation: the STATISTIC is X² = Σ(O−E)²/E; the DISTRIBUTION it is compared
+ * to is χ²(df). Both appear on this page and each means exactly one thing — the
+ * convention the Stat 145 text uses throughout (`X^2` ×30, `\chi^2` for the
+ * statistic never). On the randomization pages only X² appears, because they
+ * never touch the distribution.
  */
 
 import { setJStat, pdfChisq, chisqInv } from '../../js/distributions.js';
@@ -345,14 +351,14 @@ function showResults(observed, rowLabels, colLabels) {
     const S = '\\textcolor{#7B2D8E}';
     const P = '\\textcolor{#2e7d32}';
 
-    const chiFormula = tex(`\\chi^2 = \\sum \\frac{(O - E)^2}{E}`, true);
+    const chiFormula = tex(`X^2 = \\sum \\frac{(O - E)^2}{E}`, true);
 
     formulaEl.innerHTML = `
       <div class="formula-display">
         <h3>Test Statistic</h3>
         ${chiFormula}
         <p class="formula-detail">${tex(`\\text{df} = (${nR} - 1)(${nC} - 1) = ${P}{${result.df}}`)}</p>
-        <p class="formula-detail">${tex(`\\chi^2 = ${S}{${result.chiSq.toFixed(4)}}`)}</p>
+        <p class="formula-detail">${tex(`X^2 = ${S}{${result.chiSq.toFixed(4)}}`)}</p>
         <p class="formula-detail">${tex(`\\text{p-value} = ${P}{${formatStat(result.pValue, 0, 'pvalue')}}`)}</p>
       </div>
     `;
@@ -464,7 +470,7 @@ function drawChart(result) {
 
   addInferenceAnnotations(chart, {
     statValue: chiSq,
-    statLabel: '\u03C7\u00B2',
+    statLabel: 'X\u00B2',
     pValue: result.pValue,
     pdfFn,
     tail: 'right',
@@ -499,7 +505,7 @@ function writeInterpretation(result) {
     <p><strong>Hypotheses:</strong>
       ${tex('H_0')}: The row variable and column variable are independent.
       ${tex('H_a')}: There is an association between the row and column variables.</p>
-    <p>The chi-square test statistic is ${tex(`\\chi^2 = ${chiSq.toFixed(4)}`)} with
+    <p>The chi-square test statistic is ${tex(`X^2 = ${chiSq.toFixed(4)}`)} with
       df = ${df} (${rowLabels.length} rows \u2212 1) \u00D7 (${colLabels.length} columns \u2212 1).</p>
     <p>If the variables were truly independent, we would see a test statistic this large
       or larger about ${pPct} of the time (p = ${formatStat(pValue, 0, 'pvalue')}).</p>

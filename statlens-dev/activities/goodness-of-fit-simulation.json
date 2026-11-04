@@ -20,13 +20,13 @@
     },
     {
       "instruction": "Look at the **mechanism strip**. On the left are Mendel's *observed* counts with dashed markers at the *expected* counts \\((n\\cdot p_0)\\). Click **+1** a few times and watch the **One Sample under H₀** panel: each is one fresh sample of 556 drawn from the 9:3:3:1 model.",
-      "observe": "How does each simulated sample's \\(\\chi^2\\) compare to Mendel's observed \\(\\chi^2 = 0.47\\)? Are most bigger or smaller?",
-      "reveal": "Most simulated samples — pure chance under \\(H_0\\) — land *further* from the expected counts than Mendel's data did, so their \\(\\chi^2\\) is usually **larger** than 0.47. Mendel's fit is unusually tight."
+      "observe": "How does each simulated sample's \\(X^2\\) compare to Mendel's observed \\(X^2 = 0.47\\)? Are most bigger or smaller?",
+      "reveal": "Most simulated samples — pure chance under \\(H_0\\) — land *further* from the expected counts than Mendel's data did, so their \\(X^2\\) is usually **larger** than 0.47. Mendel's fit is unusually tight."
     },
     {
-      "instruction": "Now click **+1000** to build the whole null distribution of \\(\\chi^2\\) under \\(H_0\\).",
-      "observe": "Where does the observed \\(\\chi^2 = 0.47\\) fall on the distribution — in the bulk, in the right tail, or far left?",
-      "reveal": "It sits at the **far left**. A small \\(\\chi^2\\) means the observed counts are *closer* to 9:3:3:1 than a typical random sample would be. The p-value (the fraction of simulations with \\(\\chi^2 \\ge 0.47\\)) is large — around 0.93."
+      "instruction": "Now click **+1000** to build the whole null distribution of \\(X^2\\) under \\(H_0\\).",
+      "observe": "Where does the observed \\(X^2 = 0.47\\) fall on the distribution — in the bulk, in the right tail, or far left?",
+      "reveal": "It sits at the **far left**. A small \\(X^2\\) means the observed counts are *closer* to 9:3:3:1 than a typical random sample would be. The p-value (the fraction of simulations with \\(X^2 \\ge 0.47\\)) is large — around 0.93."
     },
     {
       "phase": "predict",
@@ -43,9 +43,9 @@
       }
     },
     {
-      "instruction": "Now try a genuinely *ambiguous* case. Switch datasets: click **Change data** in the data bar above the chart, then pick **Jury Racial Composition** from the Datasets tab. Now click **+1000**. These are the races of 275 jurors compared to the community distribution (72% / 7% / 12% / 9%). The observed \\(\\chi^2 = 5.89\\).",
-      "observe": "Where does \\(\\chi^2 = 5.89\\) fall — is the tail beyond it clearly tiny, or is a meaningful fraction of the null distribution out there too?",
-      "reveal": "Unlike Mendel, the observed \\(\\chi^2 = 5.89\\) sits inside the body of the null distribution — a meaningful fraction (p ≈ 0.12) of simulated samples reach or exceed it. So at α = 0.05 we **fail to reject**: the jury data differ from the community, but not by more than sampling chance could plausibly produce. This is the honest 'is this convincing?' moment — the differences are suggestive but not statistically discernible."
+      "instruction": "Now try a genuinely *ambiguous* case. Switch datasets: click **Change data** in the data bar above the chart, then pick **Jury Racial Composition** from the Datasets tab. Now click **+1000**. These are the races of 275 jurors compared to the community distribution (72% / 7% / 12% / 9%). The observed \\(X^2 = 5.89\\).",
+      "observe": "Where does \\(X^2 = 5.89\\) fall — is the tail beyond it clearly tiny, or is a meaningful fraction of the null distribution out there too?",
+      "reveal": "Unlike Mendel, the observed \\(X^2 = 5.89\\) sits inside the body of the null distribution — a meaningful fraction (p ≈ 0.12) of simulated samples reach or exceed it. So at α = 0.05 we **fail to reject**: the jury data differ from the community, but not by more than sampling chance could plausibly produce. This is the honest 'is this convincing?' moment — the differences are suggestive but not statistically discernible."
     },
     {
       "phase": "explain",
@@ -54,18 +54,18 @@
         "prompts": [
           {
             "id": "what_is_simulated",
-            "label": "What exactly is one dot (one simulated \\(\\chi^2\\)) in the null distribution, and what assumption is it drawn under?",
+            "label": "What exactly is one dot (one simulated \\(X^2\\)) in the null distribution, and what assumption is it drawn under?",
             "placeholder": "Your reasoning",
             "rows": 2
           },
           {
             "id": "pvalue_meaning",
-            "label": "Why does a goodness-of-fit p-value use only the *right* tail of the \\(\\chi^2\\) distribution?",
+            "label": "Why does a goodness-of-fit p-value use only the *right* tail of the null distribution?",
             "placeholder": "Your reasoning",
             "rows": 2
           }
         ],
-        "answer": "A strong answer: each simulated \\(\\chi^2\\) comes from drawing a fresh sample of the same size **from the hypothesized distribution \\(p_0\\)** (assuming \\(H_0\\) is true) and computing \\(\\sum (O-E)^2/E\\). The null distribution is what \\(\\chi^2\\) looks like when only chance is at work. The p-value is right-tailed because *any* departure from \\(p_0\\) — in any category, any direction — makes the squared gaps bigger, so evidence against \\(H_0\\) always pushes \\(\\chi^2\\) **up**. A small \\(\\chi^2\\) (left tail) means an unusually good fit, which is not evidence against \\(H_0\\)."
+        "answer": "A strong answer: each simulated \\(X^2\\) comes from drawing a fresh sample of the same size **from the hypothesized distribution \\(p_0\\)** (assuming \\(H_0\\) is true) and computing \\(\\sum (O-E)^2/E\\). The null distribution is what \\(X^2\\) looks like when only chance is at work. The p-value is right-tailed because *any* departure from \\(p_0\\) — in any category, any direction — makes the squared gaps bigger, so evidence against \\(H_0\\) always pushes \\(X^2\\) **up**. A small \\(X^2\\) (left tail) means an unusually good fit, which is not evidence against \\(H_0\\)."
       }
     }
   ]

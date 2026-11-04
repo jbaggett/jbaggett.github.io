@@ -15,10 +15,16 @@ const words = wordsFor('permuteAssociation');
 applyRequestedLayout('permuteAssociation');
 import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { fStat, mean, sd, formatStat, detectPrecision } from '../../js/stats.js';
-import { computeBins, riceBins } from '../../js/histogram.js';
+import * as jstat from 'jstat';
+import { setJStat, pdfF, fCDF } from '../../js/distributions.js';
+import { overlayTheoryOnSimChart, removeTheoryOverlay, createTheoryToggle } from '../../js/theory-overlay.js';
+// jStat's ESM build exposes the object as the default export; the bare namespace
+// is missing the distributions, and `distributions.js` throws rather than guess.
+setJStat(jstat.default || jstat);
+import { computeBins, fdBins } from '../../js/histogram.js';
 import { drawBoxplot } from '../../js/boxplot.js';
 import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, initHelp, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
+import { renderSimChart, resolveChartType, clippedAxisHi } from '../../js/chart-defaults.js';
 import { generateConclusions, findContext } from '../../js/conclusions.js';
 
 initHelp();
@@ -355,6 +361,45 @@ for (const btn of genBtns) {
 }
 
 /** @param {number} count */
+/** @type {[number, number]|null} */
+let fixedDomain = null;
+
+/**
+ * The axis, decided before the first draw and then left alone.
+ *
+ * This page used to recompute `max(...allStats, observed) * 1.05` on every
+ * render, so the picture rescaled whenever a new extreme arrived. The
+ * goodness-of-fit page was pinned for that reason on 2026-10-31 and this one was
+ * missed; Jeff's clipping question is what surfaced it.
+ *
+ * Ends at a high quantile of a seeded pilot, with everything past it counted and
+ * stated by `renderSimChart` rather than drawn. ⚠ The pilot draws from its own
+ * `presim-` stream, never the page's `rng` — drawing it from the statistical
+ * stream would silently move every seeded F on this page, and seeded links are a
+ * grading contract.
+ *
+ * @param {string[]} groupLabels
+ * @param {number[]} valuesCopy
+ * @param {string[]} groupNames
+ * @returns {[number, number]}
+ */
+function axisDomain(groupLabels, valuesCopy, groupNames) {
+  if (!fixedDomain) {
+    const preRng = createRng(`presim-${seed}`);
+    /** @type {number[]} */ const pilot = [];
+    for (let i = 0; i < 2000; i++) {
+      const shuffledLabels = shufflePairing(groupLabels, preRng).values;
+      /** @type {number[][]} */ const groups = groupNames.map(() => []);
+      for (let k = 0; k < shuffledLabels.length; k++) {
+        groups[groupNames.indexOf(shuffledLabels[k])].push(valuesCopy[k]);
+      }
+      pilot.push(fStat(groups));
+    }
+    fixedDomain = [0, clippedAxisHi(pilot, observedF)];
+  }
+  return fixedDomain;
+}
+
 function generateSimulations(count) {
   // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
   // smaller than any digit a conclusion turns on, and a held Play button would
@@ -438,28 +483,21 @@ function generateSimulations(count) {
     mechanismDescEl.hidden = false;
   }
 
-  const fHi = Math.max(...allStats, observedF) * 1.05 || 1;
   /** @type {[number,number]} */
-  const hlDomain = [0, fHi];
+  const hlDomain = axisDomain(groupLabels, valuesCopy, groupNames);
 
   // Pre-compute bins to lock in bin edges
-  // Rice, not Sturges. These statistics are right-skewed with a hump near the
-  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
-  // the realised range made the first bin swallow the entire rise, so the
-  // picture decreased monotonically and said the distribution had no hump at
-  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
-  // bins makes the distribution look like it decreases monotonically."
+  // Freedman-Diaconis, capped — the same rule the dotplot uses, so crossing the
+  // dotplot/histogram boundary does not change the picture's resolution. These
+  // statistics are right-skewed with a hump near the low end (χ²(df) peaks at
+  // df−2, F near 1), and an n-only rule put the whole rise in the first bar:
+  // Sturges read 278, 230, 122 on jury — monotone, no hump — and Rice still
+  // halved the resolution at the switch (35 columns → 17 bars for one extra
+  // draw on blood_types). Todd Will reported the first, Jeff the second.
   //
-  // `riceBins` was added in September for the same complaint from him about
-  // `conceptual/sampling-lab`, with the reasoning already written at its
-  // definition: Sturges flattens out and is wrong for a sampling distribution,
-  // where the point is to run thousands of draws and look at the shape. It was
-  // only ever applied to that one page.
-  //
-  // Changes no answer — the p-value is computed from `allStats`, never from the
-  // bins — only the picture, which was the thing that was wrong.
+  // Changes no answer — the p-value comes from `allStats`, never the bins.
   const { bins: fullBins } = computeBins(allStats,
-    { domain: hlDomain, numBins: riceBins(allStats.length) });
+    { domain: hlDomain, numBins: fdBins(allStats, { domain: hlDomain }) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
 
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
@@ -493,6 +531,59 @@ function generateSimulations(count) {
  * @param {[number,number]} [hlDomain]
  * @param {number[]} [hlThresholds]
  */
+/**
+ * The F curve this permutation distribution is approaching.
+ *
+ * Jeff, 2026-11-02, asking for the χ² toggle: "(and perhaps the F-test
+ * version)". Same contract as the two χ² pages.
+ *
+ * ⚠ An APPROXIMATION to the pile, not the truth behind it. The shuffling is
+ * exact; F(k−1, N−k) is what it tends to when the group populations are normal
+ * with equal spread. Where those conditions are poor the curve and the pile
+ * separate, and that is worth seeing rather than asserting in prose.
+ */
+let theoryOn = new URLSearchParams(location.search).get('theory') === 'on';
+/** @type {HTMLInputElement|null} */ let theoryCheckbox = null;
+
+/** Degrees of freedom of the fitted curve: k − 1 and N − k. */
+function theoryDf() {
+  const k = groupNames.length;
+  const N = groupNames.reduce((t, g) => t + (groupedValues[g]?.length ?? 0), 0);
+  return { df1: Math.max(1, k - 1), df2: Math.max(1, N - k) };
+}
+
+/**
+ * The curve's own right-tail area, printed beside the simulated p-value.
+ * Only when the curve is on screen — see the χ² pages for the reasoning.
+ *
+ * @param {number} observed
+ * @returns {string}
+ */
+function theoryTail(observed) {
+  if (!theoryOn) return '';
+  const { df1, df2 } = theoryDf();
+  const p = 1 - fCDF(observed, df1, df2);
+  if (!Number.isFinite(p)) return '';
+  return ` <span class="theory-tail">· F curve ${formatStat(p, 0, 'pvalue')}</span>`;
+}
+
+function initTheoryToggle() {
+  const host = document.getElementById('chart-controls');
+  if (!host || theoryCheckbox) return;
+  theoryCheckbox = createTheoryToggle(host, (checked) => {
+    theoryOn = checked;
+    if (!checked && chartContainer) removeTheoryOverlay(chartContainer);
+    if (allStats.length === 0) return;
+    const { pValue, extremeCount } = computePValue(allStats, observedF);
+    renderChart(allStats, observedF, -1, undefined, undefined, fixedDomain ?? undefined, undefined);
+    displayResults(allStats, observedF, pValue, extremeCount);
+  });
+  theoryCheckbox.checked = theoryOn;
+}
+// ⚠ Called here, not from the top of the file: `theoryOn` and `theoryCheckbox`
+// are `let`s just above, so an earlier call dies in the temporal dead zone.
+initTheoryToggle();
+
 function renderChart(stats, observed, highlightIndex = -1, highlightIndices, prevBinCounts, hlDomain, hlThresholds) {
   if (!chartContainer) return;
 
@@ -503,7 +594,7 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
 
   const { pValue } = stats.length > 0 ? computePValue(stats, observed) : { pValue: 0 };
 
-  renderSimChart(chartContainer, stats, {
+  const chart = renderSimChart(chartContainer, stats, {
     chartType: activeChart,
     id: 'sim-chart',
     xLabel: 'F Statistic',
@@ -537,6 +628,14 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     pValue,
   });
 
+  if (theoryOn && stats.length > 0) {
+    const df = theoryDf();
+    overlayTheoryOnSimChart(chartContainer, chart, {
+      pdf: (x) => pdfF(x, df.df1, df.df2),
+      totalN: stats.length,
+      label: `F(${df.df1}, ${df.df2})`,
+    });
+  }
 }
 
 /**
@@ -605,7 +704,7 @@ function displayResults(stats, observed, pValue, extremeCount) {
       <p>Observed F = ${formatStat(observed, 2)}</p>
       ${showReadout ? `
       <p>Extreme count: ${extremeCount} of ${stats.length} (right-tail)</p>
-      <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}</p>
+      <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}${theoryTail(observed)}</p>
       <p class="interpretation">${extremeCount} of ${stats.length} shuffled datasets had F ≥ ${formatStat(observed, 2)}. This provides ${strength} evidence against H₀: ${nullClaim}.</p>
       ${conclusionHTML}` : `
       <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed F is marked on the distribution — hover the bars to count how many of the ${stats.length} shuffles have F at least as large.</p>`}
@@ -626,6 +725,9 @@ function resetSimulation() {
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
+  // The reset also fires on data load, which is exactly when the axis must be
+  // recomputed — a new dataset has its own pilot and its own clip point.
+  fixedDomain = null;
   rng = null;
   mechanismInitialized = false;
   // Preserve the URL seed across resets (incl. the reset fired on data load) so

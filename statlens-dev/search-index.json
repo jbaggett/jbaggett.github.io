@@ -68,22 +68,10 @@
    "k": "chi-square distribution, chi square table, degrees of freedom, critical value, right skewed, goodness of fit"
   },
   {
-   "p": "simulate/goodness-of-fit/",
-   "t": "Chi-Square GOF Randomization Test",
-   "d": "Test whether counts across several categories match a claimed set of probabilities, by simulation.",
-   "k": "goodness of fit, chi-square, categories, expected counts, is the die fair, simulation, one categorical variable, p-value"
-  },
-  {
    "p": "inference/goodness-of-fit/",
    "t": "Chi-Square Goodness-of-Fit Test",
    "d": "Chi-square goodness-of-fit test: do observed counts match the claimed probabilities?",
    "k": "goodness of fit, chi-square, expected counts, categories, is the die fair, one categorical variable, p-value"
-  },
-  {
-   "p": "simulate/randomization-chisq/",
-   "t": "Chi-Square Randomization Test",
-   "d": "Test independence in a contingency table by shuffling the group assignment and recomputing chi-square.",
-   "k": "randomization test, chi-square, contingency table, two-way table, independence, association, categorical variables, p-value"
   },
   {
    "p": "inference/chisq/",
@@ -228,6 +216,12 @@
    "t": "Galton Board",
    "d": "Drop balls through a field of pegs and watch the binomial distribution pile up underneath, with the exact probabilities and the normal approximation drawn over it.",
    "k": "galton board, quincunx, bean machine, plinko, binomial distribution, normal approximation, coin flips, number of successes, central limit theorem, probability, bell curve, simulation"
+  },
+  {
+   "p": "simulate/goodness-of-fit/",
+   "t": "Goodness-of-Fit Randomization Test",
+   "d": "Test whether counts across several categories match a claimed set of probabilities, by simulation.",
+   "k": "goodness of fit, chi-square, X-squared, randomization test, categories, expected counts, is the die fair, simulation, one categorical variable, p-value"
   },
   {
    "p": "practice/correlation/",
@@ -410,6 +404,18 @@
    "k": "t distribution, t score, degrees of freedom, t table, critical value, t star, heavier tails"
   },
   {
+   "p": "demos/",
+   "t": "Teaching Demos",
+   "d": "One-idea demos built for the lecture room: a source you can see, one result at a time, and a pile that grows into a distribution.",
+   "k": "teaching demos, lecture demos, classroom, projector, chi-square, sampling distribution, one idea, present mode, instructor"
+  },
+  {
+   "p": "simulate/randomization-chisq/",
+   "t": "Test for Independence: Randomization",
+   "d": "Test independence in a contingency table by shuffling the group assignment and recomputing the X² statistic.",
+   "k": "randomization test, chi-square, X-squared, independence test, contingency table, two-way table, independence, association, categorical variables, p-value"
+  },
+  {
    "p": "inference/",
    "t": "Traditional Inference",
    "d": "Theory-based confidence intervals and hypothesis tests using the t, z, F, and chi-square distributions, with conditions checked.",
@@ -444,6 +450,12 @@
    "t": "What Estimating the Standard Error Costs",
    "d": "You never have the true standard error. See what substituting s for sigma, or p-hat for p, costs the interval — and why t* repairs one and nothing repairs the other.",
    "k": "t star, critical value, why t instead of z, 1.96, margin of error, sigma unknown, sample standard deviation, degrees of freedom, confidence interval width, t distribution, coverage, proportion confidence interval, success-failure condition, np at least 10, estimated standard error, Wald interval, why simulate"
+  },
+  {
+   "p": "demos/chi-square/",
+   "t": "Where does X² come from?",
+   "d": "Throw 50 marks at four blocks of colour whose areas are the claimed shares, work out X², and watch a thousand repeats pile up into the chi-square distribution.",
+   "k": "chi-square, goodness of fit, sampling distribution, teaching demo, lecture demo, X squared, where does chi-square come from, null distribution, darts, simulation"
   },
   {
    "p": "conceptual/stat-curve/",

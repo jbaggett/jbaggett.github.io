@@ -2,7 +2,11 @@
 /**
  * Chi-Square Goodness-of-Fit Test (analytic).
  * Compares one categorical variable's observed counts to a hypothesized
- * distribution p₀ using the chi-square distribution: χ² = Σ(O−E)²/E,
+ * distribution p₀ using the chi-square distribution: X² = Σ(O−E)²/E,
+ *
+ * ⚠ Notation: X² is the STATISTIC, χ² is the DISTRIBUTION it is compared to.
+ * Both belong on this page — `P(χ²_df ≥ X²)` is the p-value — and each means
+ * exactly one thing. The Stat 145 text uses this split throughout.
  * df = k−1, p = right tail. Conditions checkpoint links to the simulation.
  */
 
@@ -56,7 +60,13 @@ function esc(s) {
 
 // ─── Dataset loading ───
 (async () => {
-  const index = await loadDatasetIndex(datasetSelect, ds => ds.type === 'gof', datasetDesc);
+  const index = await loadDatasetIndex(datasetSelect, ds => ds.type === 'gof', datasetDesc,
+    // Teaching sets first, under their own heading, so a constructed set is
+    // never mistaken for real data. The numeric prefix is the sort key and is
+    // stripped before display (see populateDatasetSelect). Asked for with
+    // REQ-084: the real goodness-of-fit datasets run n = 80 to 1,362, which
+    // Todd reported is too big to see what is going on.
+    ds => ds.source === 'teaching' ? '1:Teaching sets' : '2:Real data');
   const wanted = new URLSearchParams(location.search).get('dataset');
   if (wanted && index.some(d => d.id === wanted)) {
     datasetSelect.value = wanted;
@@ -234,7 +244,7 @@ function showResults() {
   if (formulaContainer) {
     formulaContainer.innerHTML = `<div class="formula-display">
       <h3>Test Statistic</h3>
-      ${tex(`\\chi^2 = \\sum \\frac{(O_i - E_i)^2}{E_i} = ${chiSq.toFixed(3)}`)}
+      ${tex(`X^2 = \\sum \\frac{(O_i - E_i)^2}{E_i} = ${chiSq.toFixed(3)}`)}
       <p class="formula-detail">${tex(`\\text{df} = k - 1 = ${categories.length} - 1 = ${df}`)}</p>
       <p class="formula-detail">${tex(`\\text{p-value} = P(\\chi^2_{${df}} \\ge ${chiSq.toFixed(3)}) = ${formatStat(pValue, 0, 'pvalue')}`)}</p>
     </div>`;
@@ -243,7 +253,7 @@ function showResults() {
 
   drawChart(chiSq, df, pValue);
   writeInterpretation(chiSq, df, pValue, low);
-  announce(`χ² = ${formatStat(chiSq, 3)}, df = ${df}, p-value = ${formatStat(pValue, 0, 'pvalue')}.`);
+  announce(`X² = ${formatStat(chiSq, 3)}, df = ${df}, p-value = ${formatStat(pValue, 0, 'pvalue')}.`);
 }
 
 /** @param {number} chiSq @param {number} df @param {number} pValue */
@@ -259,7 +269,7 @@ function drawChart(chiSq, df, pValue) {
     xLabel: 'χ²',
     yLabel: 'Density',
     titleText: `Chi-square distribution (df = ${df})`,
-    descText: `Chi-square curve with df = ${df}, right tail shaded at the test statistic ${chiSq.toFixed(3)}`,
+    descText: `Chi-square curve with df = ${df}, right tail shaded at the test statistic X² = ${chiSq.toFixed(3)}`,
     id: 'gof-chart',
     tail: 'right',
     critValue: chiSq,
@@ -271,7 +281,7 @@ function drawChart(chiSq, df, pValue) {
   // same drawCurve call — and this one simply never did. (Jeff, 2026-10-31.)
   addInferenceAnnotations(chart, {
     statValue: chiSq,
-    statLabel: 'χ²',
+    statLabel: 'X²',
     pValue,
     pdfFn,
     tail: 'right',
@@ -287,7 +297,7 @@ function writeInterpretation(chiSq, df, pValue, low) {
   const pStr = formatStat(pValue, 0, 'pvalue');
   interpretationDiv.innerHTML = `
     <p><strong>Hypotheses:</strong> ${tex('H_0')}: the proportions match the hypothesized distribution. ${tex('H_a')}: at least one proportion differs.</p>
-    <p>${tex(`\\chi^2 = ${chiSq.toFixed(3)}`)} on ${df} degrees of freedom gives a p-value of <strong>${pStr}</strong>.</p>
+    <p>${tex(`X^2 = ${chiSq.toFixed(3)}`)} on ${df} degrees of freedom gives a p-value of <strong>${pStr}</strong>.</p>
     <p><strong>Conclusion:</strong> ${reject
       ? `At α = 0.05 we <strong>reject H₀</strong> — there is evidence that ${esc(claim)} does <em>not</em> hold. The categories with the largest (O−E)²/E contributions drive the departure.`
       : `At α = 0.05 we <strong>fail to reject H₀</strong> — the data are consistent with ${esc(claim)}.`}</p>

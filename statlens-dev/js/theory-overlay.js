@@ -11,6 +11,7 @@
 import * as d3Selection from 'd3-selection';
 import * as d3Shape from 'd3-shape';
 import { renderStatLabel } from './chart-utils.js';
+import { typicalBinWidth } from './histogram.js';
 
 /** Color for the theoretical curve (IMS red). */
 const THEORY_COLOR = '#F05133';
@@ -98,13 +99,24 @@ export function overlayTheoryCurve(options) {
   // Scale factor: histogram shows frequency, so y = totalN * binWidth * pdf(x)
   const scaleFactor = totalN * binWidth;
 
-  // Generate curve points
+  // Generate curve points.
+  //
+  // ⚠ A point can be off the top of the plot, or not a number at all. χ²(1) and
+  // χ²(2) and F(1, ·) have an UNBOUNDED density at 0 — `pdf(0)` is Infinity —
+  // and a d3 scale does not clamp, so the first draft of the χ² overlay drew a
+  // path to y = −Infinity and lost the whole curve. A normal density never does
+  // this, which is why it took until the χ² pages to surface.
+  //
+  // Dropping those points rather than clamping them is deliberate: clamping
+  // draws a flat cap along the top of the plot, which looks like a real feature
+  // of the distribution. Dropping lets the curve enter from above the frame,
+  // which is what is actually happening.
   /** @type {[number, number][]} */
   const points = [];
   for (let i = 0; i <= N_POINTS; i++) {
     const x = xDomain[0] + (xDomain[1] - xDomain[0]) * i / N_POINTS;
     const freqY = scaleFactor * pdf(x);
-    points.push([xScale(x), yScale(freqY)]);
+    points.push([xScale(x), Number.isFinite(freqY) ? yScale(freqY) : NaN]);
   }
 
   // Draw
@@ -113,6 +125,7 @@ export function overlayTheoryCurve(options) {
     .attr('class', 'theory-overlay');
 
   const line = d3Shape.line()
+    .defined(d => Number.isFinite(d[1]) && d[1] >= -4)
     .x(d => d[0])
     .y(d => d[1]);
 
@@ -132,7 +145,11 @@ export function overlayTheoryCurve(options) {
     for (let i = 0; i <= 50; i++) {
       const x = xDomain[0] + (xDomain[1] - xDomain[0]) * i / 50;
       const y = pdf(x);
-      if (y > peakY) { peakY = y; peakX = x; }
+      // ⚠ Finite only. On χ²(1) the density at 0 is Infinity, and `y > peakY`
+      // is never true against it, so the peak stayed at the midpoint with
+      // peakY = 0 — which then made the shoulder walk run to the right edge and
+      // park the label off the end of a curve it was supposed to name.
+      if (Number.isFinite(y) && y > peakY) { peakY = y; peakX = x; }
     }
     // Walk right from the apex to where the curve has dropped to ~35% of its peak.
     // The apex is where the observed-statistic line and its label live, so anchoring
@@ -158,6 +175,40 @@ export function overlayTheoryCurve(options) {
       .attr('font-weight', '700')
       .attr('font-family', 'var(--font-body, sans-serif)');
     renderStatLabel(textEl, label);
+  }
+}
+
+/**
+ * Lay a theory curve over whatever `renderSimChart` just drew.
+ *
+ * The frequency scaling is the same for both chart types — the expected count
+ * in a bin is `n · binWidth · pdf(x)` — but the y mapping is not: a histogram
+ * has a linear count scale, while a dotplot is stacked dots at small n and a
+ * scale only once the stacks would overflow into columns. `renderSimChart`
+ * returns the dotplot's own `countToY` for exactly this reason; deriving it from
+ * the dot radius instead leaves the curve wildly out of scale in column mode.
+ *
+ * ⚠ The bin width comes from `typicalBinWidth`, not `bins[0]`: with explicit
+ * thresholds the first bin is clipped to the domain, so it is the one bin whose
+ * width means nothing.
+ *
+ * @param {HTMLElement} container
+ * @param {{xScale?: any, yScale?: any, bins?: any[], domain?: [number,number],
+ *          countToY?: (c: number) => number, binWidth?: number, maxStack?: number}} result
+ * @param {{pdf: (x: number) => number, totalN: number, label?: string}} opts
+ */
+export function overlayTheoryOnSimChart(container, result, opts) {
+  if (!container || !result || !result.domain || !result.xScale) return;
+  const { pdf, totalN, label } = opts;
+  if (!(totalN > 0)) return;
+  const { xScale, yScale, bins, domain, countToY, binWidth, maxStack } = result;
+
+  if (bins && bins.length > 0 && yScale) {
+    const bw = typicalBinWidth(bins);
+    if (!bw) return;
+    overlayTheoryCurve({ container, pdf, xDomain: domain, totalN, binWidth: bw, xScale, yScale, label });
+  } else if (countToY && binWidth && (maxStack ?? 0) > 0) {
+    overlayTheoryCurve({ container, pdf, xDomain: domain, totalN, binWidth, xScale, yScale: countToY, label });
   }
 }
 

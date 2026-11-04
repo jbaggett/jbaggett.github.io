@@ -1,8 +1,14 @@
 // @ts-check
 /**
- * Chi-Square Randomization Test page.
- * Shuffles group labels to build a null distribution of χ².
- * Always right-tailed (χ² ≥ 0).
+ * Test for Independence: Randomization page.
+ * Shuffles group labels to build a null distribution of X².
+ * Always right-tailed (X² ≥ 0).
+ *
+ * ⚠ X², not χ². The STATISTIC is X² = Σ(O−E)²/E; χ² is the DISTRIBUTION it is
+ * compared to in the theory-based test, and this page does not use that
+ * distribution at all — the shuffles ARE the null. The Stat 145 text writes
+ * `X^2` throughout and `\chi^2` for the statistic never. χ² survives here only
+ * on the optional theory curve, which is the distribution and is labelled so.
  */
 
 import { createRng } from '../../js/prng.js';
@@ -15,9 +21,15 @@ const words = wordsFor('permuteAssociation');
 applyRequestedLayout('permuteAssociation');
 import { shufflePairing } from '../../js/mechanisms/draws.js';
 import { chisqStat, formatStat } from '../../js/stats.js';
-import { computeBins, riceBins } from '../../js/histogram.js';
+import * as jstat from 'jstat';
+import { setJStat, pdfChisq, chisqCDF } from '../../js/distributions.js';
+import { overlayTheoryOnSimChart, removeTheoryOverlay, createTheoryToggle } from '../../js/theory-overlay.js';
+// jStat's ESM build exposes the object as the default export; the bare namespace
+// is missing the distributions, and `distributions.js` throws rather than guess.
+setJStat(jstat.default || jstat);
+import { computeBins, fdBins } from '../../js/histogram.js';
 import { announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, initDataPanel, computeHighlights, animateDropToChart, flyDataStream, updateTabHint, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType } from '../../js/chart-defaults.js';
+import { renderSimChart, resolveChartType, clippedAxisHi } from '../../js/chart-defaults.js';
 
 // ─── DOM elements ───
 
@@ -234,7 +246,7 @@ const dataApi = initDataPanel({
   // columns by POSITION and by raw string, whatever their type, so a file
   // starting with `id` cross-tabulated the ROW NUMBER against one variable.
   // Measured on an 8-row file: an 8 × 2 table, one observation per row,
-  // reported as "observed χ² = 8.000". It now reads treatment × outcome and
+  // reported as "observed X² = 8.000". It now reads treatment × outcome and
   // gets 2.000. (REQ-068 D, measured 2026-10-04.)
   needs: [
     { key: 'rows', label: 'Rows:', kind: 'categorical' },
@@ -265,7 +277,7 @@ function showDataLoaded() {
   if (dataSummary) {
     const dims = `${rowLabels.length} × ${colLabels.length}`;
     const namePrefix = currentSourceName ? `${currentSourceName}: ` : '';
-    dataSummary.textContent = `${namePrefix}${dims} table, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}`;
+    dataSummary.textContent = `${namePrefix}${dims} table, n = ${totalN}, observed X² = ${formatStat(observedChisq, 2)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
   gateBigBatches(genBtns, totalN);
@@ -352,6 +364,45 @@ for (const btn of genBtns) {
 }
 
 /** @param {number} count */
+/** @type {[number, number]|null} */
+let fixedDomain = null;
+
+/**
+ * The axis, decided before the first draw and then left alone.
+ *
+ * This page used to recompute `max(...allStats, observed) * 1.05` on every
+ * render, so the picture rescaled whenever a new extreme arrived — every bar
+ * shifting and narrowing while the reader was trying to watch one of them. The
+ * goodness-of-fit page was pinned for that reason on 2026-10-31 and this one was
+ * missed; Jeff's clipping question is what surfaced it.
+ *
+ * Ends at a high quantile of a seeded pilot, with everything past it counted and
+ * stated by `renderSimChart` rather than drawn. ⚠ The pilot draws from its own
+ * `presim-` stream, never the page's `rng` — drawing it from the statistical
+ * stream would silently move every seeded X² on this page, and seeded links are
+ * a grading contract.
+ *
+ * @param {number[]} groupIdx
+ * @param {number[]} outcomeIdx
+ * @param {number} R
+ * @param {number} C
+ * @returns {[number, number]}
+ */
+function axisDomain(groupIdx, outcomeIdx, R, C) {
+  if (!fixedDomain) {
+    const preRng = createRng(`presim-${seed}`);
+    /** @type {number[]} */ const pilot = [];
+    for (let i = 0; i < 2000; i++) {
+      const shuffled = shufflePairing(groupIdx, preRng).values;
+      const table = Array.from({ length: R }, () => new Array(C).fill(0));
+      for (let k = 0; k < shuffled.length; k++) table[shuffled[k]][outcomeIdx[k]]++;
+      pilot.push(chisqStat(table));
+    }
+    fixedDomain = [0, clippedAxisHi(pilot, observedChisq)];
+  }
+  return fixedDomain;
+}
+
 function generateSimulations(count) {
   // No more than MAX_SIMULATIONS in total: past it the Monte-Carlo margin is
   // smaller than any digit a conclusion turns on, and a held Play button would
@@ -392,7 +443,7 @@ function generateSimulations(count) {
   //
   // The shuffle itself is untouched — the same Fisher-Yates over the same
   // length, so it draws from the PRNG in the same order and every seeded run
-  // produces bit-identical χ² values. That is the point of fixing it this way
+  // produces bit-identical X² values. That is the point of fixing it this way
   // rather than swapping in a direct table sampler: no published MOM or Canvas
   // link moves. (D-23(a); the direct sampler belongs on the analytic page,
   // where there is a typed table and no animation to feed.)
@@ -438,28 +489,21 @@ function generateSimulations(count) {
     mechanismDescEl.hidden = false;
   }
 
-  const csHi = Math.max(...allStats, observedChisq) * 1.05 || 1;
   /** @type {[number,number]} */
-  const hlDomain = [0, csHi];
+  const hlDomain = axisDomain(groupIdx, outcomeIdx, R, C);
 
   // Pre-compute bins to lock in bin edges for both computeHighlights and drawHistogram
-  // Rice, not Sturges. These statistics are right-skewed with a hump near the
-  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
-  // the realised range made the first bin swallow the entire rise, so the
-  // picture decreased monotonically and said the distribution had no hump at
-  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
-  // bins makes the distribution look like it decreases monotonically."
+  // Freedman-Diaconis, capped — the same rule the dotplot uses, so crossing the
+  // dotplot/histogram boundary does not change the picture's resolution. These
+  // statistics are right-skewed with a hump near the low end (χ²(df) peaks at
+  // df−2, F near 1), and an n-only rule put the whole rise in the first bar:
+  // Sturges read 278, 230, 122 on jury — monotone, no hump — and Rice still
+  // halved the resolution at the switch (35 columns → 17 bars for one extra
+  // draw on blood_types). Todd Will reported the first, Jeff the second.
   //
-  // `riceBins` was added in September for the same complaint from him about
-  // `conceptual/sampling-lab`, with the reasoning already written at its
-  // definition: Sturges flattens out and is wrong for a sampling distribution,
-  // where the point is to run thousands of draws and look at the shape. It was
-  // only ever applied to that one page.
-  //
-  // Changes no answer — the p-value is computed from `allStats`, never from the
-  // bins — only the picture, which was the thing that was wrong.
+  // Changes no answer — the p-value comes from `allStats`, never the bins.
   const { bins: fullBins } = computeBins(allStats,
-    { domain: hlDomain, numBins: riceBins(allStats.length) });
+    { domain: hlDomain, numBins: fdBins(allStats, { domain: hlDomain }) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
 
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
@@ -493,6 +537,59 @@ function generateSimulations(count) {
  * @param {[number,number]} [hlDomain]
  * @param {number[]} [hlThresholds]
  */
+/**
+ * The χ² curve this permutation distribution is approaching.
+ *
+ * Jeff, 2026-11-02: "for the chi-square randomization test (and perhaps the
+ * F-test version) let's have a toggle or checkbox to show the theoretical
+ * distribution."
+ *
+ * ⚠ The curve is an APPROXIMATION to the pile, not the truth behind it. The
+ * shuffling is exact; χ²((r−1)(c−1)) is the large-sample limit of what it
+ * produces, and the two part company when the expected cell counts are small.
+ * Seeing them disagree is the point of drawing both on one axis.
+ */
+let theoryOn = new URLSearchParams(location.search).get('theory') === 'on';
+/** @type {HTMLInputElement|null} */ let theoryCheckbox = null;
+
+/** Degrees of freedom of the fitted curve: (r − 1)(c − 1). */
+function theoryDf() {
+  return Math.max(1, (rowLabels.length - 1) * (colLabels.length - 1));
+}
+
+/**
+ * The curve's own right-tail area, printed beside the simulated p-value.
+ *
+ * Only when the curve is on screen: a theoretical p-value with no curve to read
+ * it off is a second number to trust rather than a comparison to make.
+ *
+ * @param {number} observed
+ * @returns {string}
+ */
+function theoryTail(observed) {
+  if (!theoryOn) return '';
+  const p = 1 - chisqCDF(observed, theoryDf());
+  if (!Number.isFinite(p)) return '';
+  return ` <span class="theory-tail">· χ² curve ${formatStat(p, 0, 'pvalue')}</span>`;
+}
+
+function initTheoryToggle() {
+  const host = document.getElementById('chart-controls');
+  if (!host || theoryCheckbox) return;
+  theoryCheckbox = createTheoryToggle(host, (checked) => {
+    theoryOn = checked;
+    if (!checked && chartContainer) removeTheoryOverlay(chartContainer);
+    if (allStats.length === 0) return;
+    const { pValue, extremeCount } = computePValue(allStats, observedChisq);
+    renderChart(allStats, observedChisq, -1, undefined, undefined, fixedDomain ?? undefined, undefined);
+    displayResults(allStats, observedChisq, pValue, extremeCount);
+  });
+  theoryCheckbox.checked = theoryOn;
+}
+// ⚠ Called here, not from the top of the file: `theoryOn` and `theoryCheckbox`
+// are `let`s just above, so an earlier call dies in the temporal dead zone.
+initTheoryToggle();
+
 function renderChart(stats, observed, highlightIndex = -1, highlightIndices, prevBinCounts, hlDomain, hlThresholds) {
   if (!chartContainer) return;
 
@@ -503,10 +600,10 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
 
   const { pValue } = stats.length > 0 ? computePValue(stats, observed) : { pValue: 0 };
 
-  renderSimChart(chartContainer, stats, {
+  const chart = renderSimChart(chartContainer, stats, {
     chartType: activeChart,
     id: 'sim-chart',
-    xLabel: 'Chi-Square Statistic (χ²)',
+    xLabel: 'Simulated X² Statistic',
     // What the chart shows, for a screen reader. The title alone said nothing
     // about the content, and on the empty chart REQ-069 added it said nothing
     // at all about the one value drawn on it. `?observed=off` is reasoning
@@ -537,6 +634,14 @@ function renderChart(stats, observed, highlightIndex = -1, highlightIndices, pre
     pValue,
   });
 
+  if (theoryOn && stats.length > 0) {
+    const df = theoryDf();
+    overlayTheoryOnSimChart(chartContainer, chart, {
+      pdf: (x) => pdfChisq(x, df),
+      totalN: stats.length,
+      label: `χ²(${df})`,
+    });
+  }
 }
 
 /**
@@ -567,12 +672,12 @@ function displayResults(stats, observed, pValue, extremeCount) {
   if (resultDiv) {
     resultDiv.innerHTML = `
       <p><strong>Null Distribution</strong> (${stats.length} simulations)</p>
-      <p>Observed χ² = ${formatStat(observed, 2)}</p>
+      <p>Observed X² = ${formatStat(observed, 2)}</p>
       ${showReadout ? `
       <p>Extreme count: ${extremeCount} of ${stats.length} (right-tail)</p>
-      <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}</p>
-      <p class="interpretation">${extremeCount} of ${stats.length} shuffled tables had χ² ≥ ${formatStat(observed, 2)}. This provides ${strength} evidence against H₀: ${datasetContext.nullClaim || 'the row and column variables are independent'}.</p>` : `
-      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed χ² is marked on the distribution — hover the bars to count how many of the ${stats.length} shuffles have χ² at least as large.</p>`}
+      <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}${theoryTail(observed)}</p>
+      <p class="interpretation">${extremeCount} of ${stats.length} shuffled tables had X² ≥ ${formatStat(observed, 2)}. This provides ${strength} evidence against H₀: ${datasetContext.nullClaim || 'the row and column variables are independent'}.</p>` : `
+      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed X² is marked on the distribution — hover the bars to count how many of the ${stats.length} shuffles have X² at least as large.</p>`}
     `;
   }
 }
@@ -590,6 +695,9 @@ function resetSimulation() {
   // Starting again lifts the cap.
   applySimulationCap(genBtns, 0, 'simulations');
   allStats = [];
+  // The reset also fires on data load, which is exactly when the axis must be
+  // recomputed — a new dataset has its own pilot and its own clip point.
+  fixedDomain = null;
   rng = null;
   mechanismInitialized = false;
   // Preserve the URL seed across resets (incl. the reset fired on data load) so

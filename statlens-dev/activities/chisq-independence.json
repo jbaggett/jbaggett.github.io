@@ -63,7 +63,7 @@
           },
           {
             "id": "assoc_not_cause",
-            "label": "A discernible \\(\\chi^2\\) shows the variables are associated. Why does that NOT establish that one causes the other?",
+            "label": "A discernible \\(X^2\\) shows the variables are associated. Why does that NOT establish that one causes the other?",
             "placeholder": "Your reasoning",
             "rows": 2
           }

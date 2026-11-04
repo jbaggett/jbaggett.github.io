@@ -541,7 +541,15 @@ export function extent(values, ...extra) {
 export function detectPrecision(values) {
     let maxDec = 0;
     for (const v of values) {
-        if (!isFinite(v)) continue;
+        // ⚠ `Number.isFinite`, not the global `isFinite`. The global one COERCES
+        // its argument, and `Number(null)` is 0 — so `isFinite(null)` is `true`,
+        // null walked straight through this guard, and `null.toPrecision(12)`
+        // threw one line later. Real columns do carry nulls: `loan50.emp_length`
+        // has 2 (employment length not reported), and `county`, `possum` and
+        // `usstates` have 9 such columns between them. The throw surfaced as
+        // "Failed to load dataset." on a page whose data had loaded perfectly —
+        // reported by the textbook agent's link audit, 2026-11-03.
+        if (!Number.isFinite(v)) continue;
         // Measured on the number the data MEANS, not on its binary expansion.
         //
         // This is called on computed values as well as on source columns — the

@@ -158,8 +158,18 @@ initDataPanel({
     if (numVars.length < 2) return;
     xLabel = numVars[0].name;
     yLabel = numVars[1].name;
-    xData = ds.rows.map(r => r[xLabel]).filter(v => isFinite(v));
-    yData = ds.rows.map(r => r[yLabel]).filter(v => isFinite(v));
+    // ⚠ Drop whole ROWS, not each column separately. Filtering x and y
+    // independently desynchronises the pairing: `loan50` has 2 rows where one
+    // numeric column is missing and the others are present, so x would come
+    // back with 48 values and y with 50, and every pair after the gap would be
+    // a different observation's x against another's y — a silently wrong slope
+    // on data that looks complete. `county`, `possum` and `usstates` can do the
+    // same. (Found while fixing the null guard, 2026-11-03.)
+    const pairs = ds.rows
+      .map(/** @param {any} r */ r => [r[xLabel], r[yLabel]])
+      .filter(([x, y]) => Number.isFinite(x) && Number.isFinite(y));
+    xData = pairs.map(([x]) => x);
+    yData = pairs.map(([, y]) => y);
     const minLen = Math.min(xData.length, yData.length);
     xData = xData.slice(0, minLen);
     yData = yData.slice(0, minLen);

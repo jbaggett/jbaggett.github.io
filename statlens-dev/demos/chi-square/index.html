@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Where does X² come from? | StatLens</title>
+    <meta name="description" content="Throw 50 marks at four blocks of colour whose areas are the claimed shares, work out X², and watch a thousand repeats pile up into the chi-square distribution.">
+    <meta name="keywords" content="chi-square, goodness of fit, sampling distribution, teaching demo, lecture demo, X squared, where does chi-square come from, null distribution, darts, simulation">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm",
+            "jstat":        "https://cdn.jsdelivr.net/npm/jstat@1/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        /* A demo is read from the back of a room, so everything here is bigger
+           than the equivalent on a tool page and there is much less of it. */
+        /* ⚠ The whole demo has to fit a 1280×720 projector, pile included.
+           Measured before this was tuned: the pile began at y = 663, so 57px of
+           the thing the demo is about was on screen. Every size below is part of
+           that budget — see `the pile is on screen at projector size` in
+           tests/integration/demo-chi-square.spec.js, which fails if it slips. */
+        /* ⚠ Wider than the site's reading width. A demo is a projected FIGURE,
+           not prose: at the default 752px the pile was 465px tall and began at
+           y = 551, so on a 1280×720 projector 57px of it was on screen. The
+           source goes on the left and the pile on the right, where the spare
+           width turns into a bigger picture rather than a longer page. */
+        main { max-width: 1180px; }
+        .demo-stage { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+                      gap: 1rem; align-items: start; margin: 0.35rem 0 0.5rem; }
+        .demo-col { display: flex; flex-direction: column; gap: 0.7rem; }
+        @media (max-width: 900px) { main { max-width: none; } .demo-stage { grid-template-columns: 1fr; } }
+
+        .demo-panel { border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.85rem; background: #fff; }
+        .demo-panel h2 { font-size: 0.95rem; margin: 0 0 0.4rem; color: var(--ims-gray-text); font-weight: 700; }
+
+        .demo-intro { margin: 0.2rem 0 0.4rem; }
+        #board { width: 100%; }
+        #board svg { display: block; width: 100%; height: auto; }
+
+        .demo-table { width: 100%; border-collapse: collapse; font-size: 1.05rem; }
+        .demo-table th, .demo-table td { padding: 0.2rem 0.5rem; text-align: right; }
+        .demo-table th:first-child, .demo-table td:first-child { text-align: left; }
+        .demo-table thead th { font-size: 0.85rem; color: var(--ims-gray-text); border-bottom: 1px solid var(--border); }
+        .demo-table tbody tr td { border-bottom: 1px solid #eee; }
+        .demo-table tfoot td { font-weight: 700; border-top: 2px solid var(--border); }
+        .demo-table .num { font-variant-numeric: tabular-nums; }
+
+        /* X² is the one number the room is looking at. */
+        .demo-stat { font-size: 1.75rem; font-weight: 700; color: var(--ims-dark, #114B5F);
+                     font-variant-numeric: tabular-nums; margin: 0.3rem 0 0; }
+        .demo-stat .demo-stat-label { font-size: 1rem; font-weight: 400; color: var(--ims-gray-text); }
+
+        #pile { width: 100%; min-height: 220px; }
+        #pile svg { display: block; width: 100%; height: auto; }
+
+        .demo-controls { display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: center; margin: 0.4rem 0 0.3rem; }
+        .demo-controls button { min-height: 44px; min-width: 44px; font-size: 1rem; }
+        .demo-count { font-variant-numeric: tabular-nums; color: var(--ims-gray-text); font-size: 0.95rem; }
+
+        .demo-scrub { display: flex; align-items: center; gap: 0.6rem; margin: 0.2rem 0; }
+        .demo-scrub input[type="range"] { flex: 1; min-width: 140px; min-height: 44px; }
+        .demo-scrub label { font-size: 0.9rem; color: var(--ims-gray-text); white-space: nowrap; }
+
+        .demo-note { font-size: 0.85rem; color: var(--ims-gray-text); margin: 0.3rem 0 0; }
+        .demo-credit { font-size: 0.85rem; color: var(--ims-gray-text); margin-top: 1.2rem; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Figure</a>
+    </nav>
+
+    <main>
+        <h1>Where does X&sup2; come from?<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p class="demo-intro">A bag is <em>claimed</em> to be 32% blue, 32% amber, 20% green, 16% mauve. Draw 50: the counts miss 16, 16, 10, 8. <strong>X&sup2;</strong> says by how much &mdash; and the X&sup2; values pile up into a shape.</p>
+
+        <div class="demo-stage">
+          <div class="demo-col">
+            <section class="demo-panel" aria-labelledby="source-h">
+                <h2 id="source-h">One sample of 50</h2>
+                <div id="board" role="img" aria-label="Four blocks of colour with areas 32%, 32%, 20% and 16%, with 50 marks scattered on them."></div>
+            </section>
+
+            <section class="demo-panel" aria-labelledby="table-h">
+                <h2 id="table-h">This sample&rsquo;s X&sup2;</h2>
+                <table class="demo-table" id="trial-table">
+                    <thead>
+                        <tr><th scope="col">Colour</th><th scope="col">Observed</th><th scope="col">Expected</th><th scope="col">(O&minus;E)&sup2;/E</th></tr>
+                    </thead>
+                    <tbody id="trial-rows"></tbody>
+                    <tfoot><tr><td>Total</td><td class="num" id="total-obs">&mdash;</td><td class="num" id="total-exp">50</td><td class="num" id="total-contrib">&mdash;</td></tr></tfoot>
+                </table>
+                <p class="demo-stat">X&sup2; = <span id="trial-stat">&mdash;</span> <span class="demo-stat-label" id="trial-which"></span></p>
+            </section>
+          </div>
+
+          <section class="demo-panel" id="chart" aria-labelledby="pile-h">
+            <h2 id="pile-h">Every sample&rsquo;s X&sup2;, piled up</h2>
+            <div id="pile"></div>
+            <p class="demo-note" id="honesty" hidden>The curve is an approximation to the pile, not the truth behind it.</p>
+            <p class="demo-note" id="observed-note" hidden></p>
+            <section id="controls" aria-label="Controls">
+                <div class="demo-controls">
+                    <button type="button" id="btn-play" class="primary">&#9654; Play</button>
+                    <button type="button" id="btn-1" data-add="1">+1</button>
+                    <button type="button" id="btn-10" data-add="10">+10</button>
+                    <button type="button" id="btn-100" data-add="100">+100</button>
+                    <button type="button" id="btn-reset">&#8635; Reset</button>
+                    <span class="demo-count"><strong id="trial-count">0</strong> samples</span>
+                    <span class="demo-field">
+                        <label for="speed" class="demo-count">Speed</label>
+                        <select id="speed">
+                            <option value="900">Slow</option>
+                            <option value="450" selected>Medium</option>
+                            <option value="120">Fast</option>
+                        </select>
+                    </span>
+                </div>
+                <div class="demo-scrub">
+                    <label for="scrub">Look back at sample</label>
+                    <input type="range" id="scrub" min="1" max="1" value="1" step="1" disabled
+                           aria-describedby="scrub-hint">
+                    <span class="demo-count" id="scrub-value">&mdash;</span>
+                </div>
+                <p class="sr-only" id="scrub-hint">Arrow keys and a presenter remote step one sample at a time.</p>
+                </section>
+          </section>
+        </div>
+
+        <p class="demo-credit">After a demo by <strong>Todd Will</strong>. Built fresh for StatLens.</p>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>Where does X&sup2; come from?</h2>
+        <p class="help-intro">Each sample throws 50 independent marks at four blocks of colour whose <em>areas</em> are the claimed shares &mdash; 32%, 32%, 20%, 16%. Count how many land on each colour, compare with the 16, 16, 10, 8 you expected, and add up (O&minus;E)&sup2;/E. That total is <strong>X&sup2;</strong>. Repeat, and the X&sup2; values build a distribution.</p>
+        <dl>
+            <dt><kbd>1</kbd></dt><dd>+1 sample</dd>
+            <dt><kbd>2</kbd></dt><dd>+10 samples</dd>
+            <dt><kbd>3</kbd></dt><dd>+100 samples</dd>
+            <dt><kbd>0</kbd></dt><dd>Reset</dd>
+            <dt><kbd>Space</kbd></dt><dd>Play / Pause</dd>
+            <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Step back and forward through samples</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
+        </dl>
+        <p><strong>X&sup2; is the statistic</strong> you compute from one sample. <strong>&chi;&sup2;</strong> is the distribution those statistics tend towards &mdash; the dashed curve that appears once there are 500 samples.</p>
+        <p>Add <code>?observed=on</code> to mark a real sample (14 blue, 14 amber, 16 green, 6 mauve &mdash; X&sup2; = 4.60) on the pile and shade everything at least that far out.</p>
+        <p class="help-foot">Part of the StatLens teaching demos. After a demo by Todd Will.</p>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
+</body>
+</html>

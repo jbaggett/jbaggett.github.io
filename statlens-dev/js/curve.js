@@ -337,8 +337,10 @@ function updateShading(overlays, curveData, xScale, yScale, opts) {
  * @param {import('d3-scale').ScaleLinear<number,number>} chart.xScale
  * @param {import('d3-scale').ScaleLinear<number,number>} chart.yScale
  * @param {object} opts
- * @param {number} opts.statValue - Test statistic value (t, z, F, χ²)
- * @param {string} opts.statLabel - Label prefix (e.g., "t", "F", "χ²", "z")
+ * @param {number} opts.statValue - Test statistic value (t, z, F, X²)
+ * @param {string} opts.statLabel - Label prefix (e.g., "t", "F", "X²", "z").
+ *   ⚠ X², not χ²: this labels the STATISTIC on the curve, and χ² names the
+ *   distribution the curve itself is.
  * @param {number} opts.pValue - P-value
  * @param {(x: number) => number} opts.pdfFn - PDF function for computing curve height
  * @param {'left'|'right'|'both'} opts.tail - Tail direction

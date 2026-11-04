@@ -1,5 +1,10 @@
 # StatLens Tool Manifest
 
+> **Notation.** **X²** is the *statistic*, Σ(O−E)²/E. **χ²** is the *distribution* it is compared
+> to in the theory-based test. The randomization pages show only X², because they never use the
+> distribution; the theory pages show both. This follows the Stat 145 text, which writes `X^2`
+> throughout and never writes `\chi^2` for the statistic. (Changed 2026-11-02.)
+
 > **For textbook authors and agents**: This document catalogs every StatLens tool page, its URL parameters, compatible datasets, and suggested embed configurations for linking from the Stat 145 textbook.
 >
 > **Base URL**: `https://learnlens.org/statlens/`
@@ -277,7 +282,7 @@ The long-run column in proportion mode is an **exact binomial sum** over the n+1
 
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
-| `dataset` | string | Pre-load a two-variable categorical dataset | `dataset=ask` (the 3×2 iPod disclosure experiment, χ² = 40.13, df 2) |
+| `dataset` | string | Pre-load a two-variable categorical dataset | `dataset=ask` (the 3×2 iPod disclosure experiment, X² = 40.13, df 2) |
 
 **Compatible Datasets:** Datasets where `hasNumeric === false`, `hasCategorical === true`, and there are 2+ categorical variables. Includes: `sex_discrimination`, `opportunity_cost`, `cpr`, `yawn`, `ask`, `diabetes2`, `lizard_habitat`, `immigration`, `heart_transplant`, `malaria`, `migraine`, `fish_oil_18`, `mammogram`, `resume`, `ucb_admit`, `cards`, `burger`, `dream`, `biontech_adolescents`, `sinusitis`, `smallpox`, `smoking`, `drug_use`
 
@@ -669,7 +674,29 @@ button changes that). A colour key under the strip names both outcomes.
 
 ---
 
-### Randomization: Chi-Square
+### Where does X² come from? (teaching demo)
+
+**Path:** `demos/chi-square/`
+
+**Description:** The first StatLens **teaching demo** (REQ-085) — a lecture page rather than a tool. One question, one obvious action, no dataset menu and no settings. Each trial throws 50 independent marks at four blocks of colour whose *areas* are the claimed shares (32/32/20/16, from the `color` teaching set); a four-row table shows Observed, Expected and (O−E)²/E, and X² large. Repeats pile up on a fixed 0–16 axis: stacked dots to 20 trials, 0.5-wide bars from 21, and the χ²(3) curve laid over the pile from 500, with the approximation said out loud. A scrubber returns to any earlier trial and reproduces it exactly. Arrow and Page keys step one trial, for presenter remotes. After a demo by Todd Will; built fresh.
+
+**Concepts:** where a sampling distribution comes from; X² as a measure of total departure; why X² cannot be negative; why the pile is right-skewed; the step from a pile to a p-value.
+
+**Compatible datasets:** none — the claim is fixed. The numbers match the `color` teaching set, which is what the goodness-of-fit tools load.
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `seed` | string | The trial sequence. Trial *i* draws from `${seed}-trial-${i}`, so a link reproduces every sample and the scrubber reproduces each one again. | `?seed=lecture3` |
+| `observed` | string | `on` marks the real sample (X² = 4.60) on the pile and reports its share. Off by default. | `?observed=on` |
+| `activity` | string | Loads a guided step panel over the bare page. | `?activity=ch16-where-x2-comes-from.json` |
+
+**Live state (for activities):** dispatches `statlens:state` as `demo-chi-square` with `{ trials, stat, showing, statShowing, mean }`, so a step can wait for 500 samples or quote the current X².
+
+**Textbook Integration Notes:** Ch. 15–16. Two links per demo: the bare page for lecture, and `?activity=` for a student working alone. Questions live in the activity file, never in the page, so the projected view stays clean.
+
+### Test for Independence: Randomization
 
 **Path:** `simulate/randomization-chisq/`
 **Category:** Simulate
@@ -682,6 +709,7 @@ button changes that). A colour key under the strip names both outcomes.
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a categorical dataset | `dataset=ask` (iPod disclosure, 3×2) |
 | `seed` | string | Deterministic seed | `seed=demo` |
+| `theory` | string | `on` lays the **χ²((r−1)(c−1))** curve over the shuffles, and prints that curve's right-tail area beside the simulated p-value. An *approximation* to the permutation distribution, not the truth behind it — they part company when expected cell counts are small, which is why both are drawn. The checkbox itself is expert-only; this parameter works without expert mode. | `?theory=on` |
 
 **Imported data:** the two columns are chosen by the shared variable picker (`js/variable-picker.js`), which skips row-label columns like `id` and shows a selector whenever there is a choice. Bundled datasets use their own metadata.
 
@@ -691,11 +719,11 @@ button changes that). A colour key under the strip names both outcomes.
 
 ---
 
-### Chi-Square GOF Randomization Test
+### Goodness-of-Fit Randomization Test
 
 **Path:** `simulate/goodness-of-fit/`
 **Category:** Simulate
-**Description:** Simulation-based goodness-of-fit test for a single categorical variable against a specified distribution p₀. Repeatedly draws a fresh multinomial sample of size n *from* p₀ (seeded), computes the χ² goodness-of-fit statistic Σ(O−E)²/E each time, and builds the null distribution; the observed χ² is marked and the p-value is the right-tail fraction. The mechanism strip shows the null as a field of bands whose heights are p₀, with the sample as darts thrown at it, then carries each band's tally into a category / observed / expected / (o−e)²/e table that totals to χ². A **Simulated | Your data** toggle in Step 1 runs the same board and table on the observed counts and flies that χ² to its marker on the distribution. Load a `type: gof` dataset or enter categories + observed counts + hypothesized proportions manually.
+**Description:** Simulation-based goodness-of-fit test for a single categorical variable against a specified distribution p₀. Repeatedly draws a fresh multinomial sample of size n *from* p₀ (seeded), computes the X² goodness-of-fit statistic Σ(O−E)²/E each time, and builds the null distribution; the observed X² is marked and the p-value is the right-tail fraction. The mechanism strip shows the null as a field of bands whose heights are p₀, with the sample as darts thrown at it, then carries each band's tally into a category / observed / expected / (o−e)²/e table that totals to X². A **Simulated | Your data** toggle in Step 1 runs the same board and table on the observed counts and flies that X² to its marker on the distribution. Load a `type: gof` dataset or enter categories + observed counts + hypothesized proportions manually.
 **Concepts:** Goodness-of-fit test, multinomial sampling, chi-square statistic, expected counts (n·p₀), simulation-based inference, null distribution, p-value
 
 **URL Parameters:**
@@ -708,8 +736,9 @@ button changes that). A colour key under the strip names both outcomes.
 | `readout` | string | `false` — hide the p-value (read it off the distribution) | `readout=false` |
 | `cutlines` | string | `tail` — draggable cutoff line + count pill | `cutlines=tail` |
 | `observed` | string | `off` — hide the observed-stat marker (connect-the-dots) | `observed=off` |
+| `theory` | string | `on` lays the **χ²(k−1)** curve over the simulated null, and prints that curve's right-tail area beside the simulated p-value. An *approximation* to the simulated pile, not the truth behind it — they part company when expected counts are small, which is why both are drawn. The checkbox itself is expert-only; this parameter works without expert mode. | `?theory=on` |
 
-**Compatible Datasets:** `type === 'gof'` datasets (a single categorical variable with observed counts + `gofNull` proportions). Includes (a full range): `mendel_peas` (great fit, χ²=0.47, p≈0.93), `textbooks_format` (χ²=2.32, p≈0.31), `stock_geometric` (geometric model, χ²=4.61, p≈0.60), `jury` (borderline, χ²=5.89, p≈0.12), `barking_deer` (strong reject, χ²=284, p≈0), `blood_types` (illustrative — AB expected 3.2 < 5, so the conditions checkpoint recommends the simulation).
+**Compatible Datasets:** `type === 'gof'` datasets (a single categorical variable with observed counts + `gofNull` proportions). Includes (a full range): `mendel_peas` (great fit, X²=0.47, p≈0.93), `textbooks_format` (X²=2.32, p≈0.31), `stock_geometric` (geometric model, X²=4.61, p≈0.60), `jury` (borderline, X²=5.89, p≈0.12), `barking_deer` (strong reject, X²=284, p≈0), `blood_types` (illustrative — AB expected 3.2 < 5, so the conditions checkpoint recommends the simulation).
 
 **Textbook Integration Notes:** Fills the Ch. 16 goodness-of-fit gap — the simulation-first half that the `distribution/chisq/` calculator (theory route) could not provide. Pairs with the calculator: simulate the null, then meet the χ² formula. Supports the full reasoning-mode embed stack (`plot=only` / `readout=false` / `cutlines` / `observed=off`). Its analytic counterpart is `inference/goodness-of-fit/`.
 
@@ -728,7 +757,7 @@ button changes that). A colour key under the strip names both outcomes.
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a `type: gof` dataset | `dataset=mendel_peas` |
 
-**Compatible Datasets:** `type === 'gof'` datasets — `mendel_peas` (χ²=0.47, p≈0.93), `textbooks_format` (χ²=2.32, p≈0.31), `stock_geometric` (χ²=4.61, p≈0.60), `jury` (χ²=5.89, p≈0.12), `barking_deer` (χ²=284, p≈0), `blood_types` (small-expected illustrative case).
+**Compatible Datasets:** `type === 'gof'` datasets — `mendel_peas` (X²=0.47, p≈0.93), `textbooks_format` (X²=2.32, p≈0.31), `stock_geometric` (X²=4.61, p≈0.60), `jury` (X²=5.89, p≈0.12), `barking_deer` (X²=284, p≈0), `blood_types` (small-expected illustrative case).
 
 **Textbook Integration Notes:** The analytic node of the Ch. 16 goodness-of-fit trio (`explore/one-cat/` → `simulate/goodness-of-fit/` → `inference/goodness-of-fit/`). Its conditions checkpoint cross-links to the simulation, mirroring `inference/chisq/` → `simulate/randomization-chisq/`.
 
@@ -767,6 +796,7 @@ button changes that). A colour key under the strip names both outcomes.
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `dataset` | string | Pre-load a grouped dataset | `dataset=plant_growth` |
+| `theory` | string | `on` lays the **F(k−1, N−k)** curve over the shuffles, and prints that curve's right-tail area beside the simulated p-value. An *approximation* that assumes normal groups with equal spread; where those conditions are poor the curve and the pile separate, which is why both are drawn. The checkbox itself is expert-only; this parameter works without expert mode. | `?theory=on` |
 
 **Compatible Datasets:** Datasets where `hasNumeric === true` AND `hasCategorical === true`, typically with 3+ groups. Includes: `classdata`, `mlb_players_18`, `plant_growth`, `hsb2_math`, `evals_rank`, `fastfood_anova`
 

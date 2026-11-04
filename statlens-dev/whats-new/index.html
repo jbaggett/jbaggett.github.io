@@ -39,6 +39,83 @@
              ════════════════════════════════════════════════════════════════ -->
 
         <article class="cl-entry tool">
+            <div class="cl-date">2026-11-03</div>
+            <h2>Teaching demos: <em>Where does X&sup2; come from?</em><span class="cl-tag tool">Tool</span></h2>
+            <p>A new kind of page, built for the front of a room rather than for a student working
+               alone: <strong>one question, one obvious action</strong>, no dataset menu and no
+               settings. Throw 50 marks at four blocks of colour whose areas are the claimed shares,
+               read X&sup2; off a four-row table, and press again. Dots become bars, the bars grow a
+               hump, and at 500 samples the &chi;&sup2;(3) curve settles over the pile.</p>
+            <p>A scrubber goes back to any earlier sample and reproduces it exactly &mdash; its
+               marks, its table, its X&sup2;. Arrow keys and presenter remotes step one sample at a
+               time, and the whole thing fits a 1280&times;720 projector. Questions stay out of the
+               page: ask them yourself, or send students the guided link.
+               <a href="../demos/chi-square/">Open the demo</a> &middot;
+               <a href="../demos/">All teaching demos</a></p>
+            <p class="hint">After a demo by Todd Will, built fresh. More are planned &mdash; what a
+               shuffle shows, whether another sample would agree, where the bell curve and <em>F</em>
+               come from &mdash; sharing one stage, so each is a configuration rather than a new tool.</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-11-02</div>
+            <h2>X&sup2; is the statistic, &chi;&sup2; is the distribution<span class="cl-tag tool">Tool</span></h2>
+            <p>The randomization tests never use the chi-square <em>distribution</em> &mdash; the
+               shuffles <em>are</em> the null &mdash; so showing their statistic as
+               &ldquo;&chi;&sup2;&rdquo; implied a method they don't use. Site-wide,
+               <strong>X&sup2;</strong> now means the statistic
+               &Sigma;(O&minus;E)&sup2;/E and <strong>&chi;&sup2;</strong> means the distribution
+               it is compared to in the theory-based test. This is the textbook's own convention.</p>
+            <p>Two pages renamed to match (their URLs are unchanged):
+               <em>Chi-Square GOF Randomization Test</em> &rarr;
+               <a href="../simulate/goodness-of-fit/">Goodness-of-Fit Randomization Test</a>, and
+               <em>Chi-Square Randomization Test</em> &rarr;
+               <a href="../simulate/randomization-chisq/">Test for Independence: Randomization</a>.
+               With the theory curve switched on you can now see both symbols at once, each doing
+               one job: the axis reads X&sup2;, the dashed curve reads &chi;&sup2;(3).</p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-11-02</div>
+            <h2>Lay the &chi;<sup>2</sup> or <em>F</em> curve over the simulation<span class="cl-tag tool">Tool</span></h2>
+            <p>A <strong>Show theoretical curve</strong> checkbox under the chart on the
+               goodness-of-fit, randomization &chi;<sup>2</sup> and randomization ANOVA pages
+               (Detailed mode, or add <code>?theory=on</code> to any link). It draws
+               &chi;<sup>2</sup>(k&minus;1), &chi;<sup>2</sup>((r&minus;1)(c&minus;1)) or
+               <em>F</em>(k&minus;1,&nbsp;N&minus;k) over the pile you just built, and prints that
+               curve's own tail area beside the simulated p&#8209;value &mdash;
+               <em>p&#8209;value: 0.1140 &middot; &chi;&sup2; curve 0.1171</em>.</p>
+            <p>The curve is an <em>approximation to</em> the simulation, not the truth behind it.
+               The simulation assumes nothing; the curve is what it tends to when the expected
+               counts are comfortable. Drawing both on one axis is the point: on a sparse table
+               they visibly part company.
+               <a href="../simulate/goodness-of-fit/?dataset=jury&amp;theory=on">Try it on jury</a></p>
+        </article>
+
+        <article class="cl-entry tool">
+            <div class="cl-date">2026-11-02</div>
+            <h2>Skewed null distributions get their shape back<span class="cl-tag tool">Tool</span></h2>
+            <p>&chi;<sup>2</sup> and <em>F</em> distributions have a hump near the low end and a
+               very long right tail, and on three pages the picture was hiding both. Two fixes.</p>
+            <p><strong>Bins.</strong> The dotplot and the histogram were using different binning
+               rules on either side of the 1,000-draw boundary, so crossing it cost half the
+               resolution &mdash; 35 columns at 1,000 draws became 17 bars at 1,001, and the rise
+               to the hump disappeared into the first bar. Both now use the same rule.</p>
+            <p><strong>Axis.</strong> The axis used to run all the way out to the rarest draw in a
+               2,000-draw pilot, which left half the mass crammed into the left tenth of the chart
+               and the right fifth empty. It now ends just past the bulk, and anything beyond is
+               stated at the top right as <em>&ldquo;+5 beyond 13.04&rdquo;</em> &mdash; counted,
+               never dropped, so reading the p&#8209;value off the picture still works. The
+               randomization &chi;<sup>2</sup> and ANOVA axes are also pinned now, so the bars stop
+               shifting and narrowing every time a new extreme arrives.</p>
+            <p>No p&#8209;value changes: every answer comes from the accumulated statistics, not
+               from what the chart chose to draw.
+               <a href="../simulate/goodness-of-fit/?dataset=blood_types">Goodness-of-Fit Randomization</a> &middot;
+               <a href="../simulate/randomization-chisq/">Randomization &chi;<sup>2</sup></a> &middot;
+               <a href="../simulate/randomization-anova/">Randomization ANOVA</a></p>
+        </article>
+
+        <article class="cl-entry tool">
             <div class="cl-date">2026-10-30</div>
             <h2>Goodness-of-fit: throw darts at H<sub>0</sub><span class="cl-tag tool">Tool</span></h2>
             <p>The simulation now shows the mechanism instead of summarising it. H<sub>0</sub>

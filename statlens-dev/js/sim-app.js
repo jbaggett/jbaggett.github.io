@@ -1752,8 +1752,13 @@ export function initSimPage(config) {
         if (numVars.length < 2) return;
         group1Name = numVars[0].name;
         group2Name = numVars[1].name;
-        data1 = ds.rows.map(/** @param {any} r */ r => r[numVars[0].name]).filter(/** @param {any} v */ v => isFinite(v));
-        data2 = ds.rows.map(/** @param {any} r */ r => r[numVars[1].name]).filter(/** @param {any} v */ v => isFinite(v));
+        // ⚠ `Number.isFinite`: the global `isFinite` coerces, so `isFinite(null)`
+        // is `true` and a missing value survived the filter to be summed as a
+        // zero. These two are INDEPENDENT samples, so dropping per column is
+        // right here — unlike the x/y pairs on the regression pages, which have
+        // to drop whole rows.
+        data1 = ds.rows.map(/** @param {any} r */ r => r[numVars[0].name]).filter(/** @param {any} v */ v => Number.isFinite(v));
+        data2 = ds.rows.map(/** @param {any} r */ r => r[numVars[1].name]).filter(/** @param {any} v */ v => Number.isFinite(v));
         const minLen = Math.min(data1.length, data2.length);
         data1 = data1.slice(0, minLen);
         data2 = data2.slice(0, minLen);
@@ -1767,7 +1772,7 @@ export function initSimPage(config) {
       } else if (config.mode === 'bootstrap' && !config.twoGroup) {
         const numVar = ds.variables.find(/** @param {any} v */ v => v.type === 'numeric');
         if (!numVar) return;
-        data1 = ds.rows.map(/** @param {any} r */ r => r[numVar.name]).filter(/** @param {any} v */ v => isFinite(v));
+        data1 = ds.rows.map(/** @param {any} r */ r => r[numVar.name]).filter(/** @param {any} v */ v => Number.isFinite(v));
         data2 = [];
       } else if (config.proportion) {
         const catVars = ds.variables.filter(/** @param {any} v */ v => v.type === 'categorical');

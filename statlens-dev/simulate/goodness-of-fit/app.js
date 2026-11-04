@@ -1,9 +1,9 @@
 // @ts-check
 /**
- * Chi-Square GOF Randomization Test page.
+ * Goodness-of-Fit Randomization Test page.
  * Draws repeated multinomial samples of size n from a hypothesized distribution
- * p₀, computes the χ² goodness-of-fit statistic for each, and builds the null
- * distribution. The observed χ² is marked; the p-value is the right-tail fraction.
+ * p₀, computes the X² goodness-of-fit statistic for each, and builds the null
+ * distribution. The observed X² is marked; the p-value is the right-tail fraction.
  */
 
 import { createRng } from '../../js/prng.js';
@@ -22,9 +22,16 @@ const words = wordsFor('statedPopulation');
 applyRequestedLayout('permuteAssociation');
 import { drawMultinomial } from '../../js/mechanisms/draws.js';
 import { gofChisqStat, formatStat } from '../../js/stats.js';
-import { computeBins, riceBins } from '../../js/histogram.js';
+import { computeBins, fdBins } from '../../js/histogram.js';
 import { fetchDataset, loadDatasetIndex, collapseDataPanel, announce, initTabs, initKeyboardShortcuts, initPlayPause, initMechanismCollapse, computeHighlights, animateDropToChart, getActiveTabId, getTabHintText, setPageTitle, gateBigBatches, capBatch, applySimulationCap, autoRunButton} from '../../js/page-utils.js';
-import { renderSimChart, resolveChartType, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
+import { renderSimChart, resolveChartType, clippedAxisHi, DOTPLOT_AUTO_THRESHOLD } from '../../js/chart-defaults.js';
+import * as jstat from 'jstat';
+import { setJStat, pdfChisq, chisqCDF } from '../../js/distributions.js';
+// jStat's ESM build exposes the object as the default export; the bare namespace
+// has no `.chisquare`, and `distributions.js` throws "call initDistributions()
+// first" rather than guessing. Use the interop form.
+setJStat(jstat.default || jstat);
+import { overlayTheoryOnSimChart, removeTheoryOverlay, createTheoryToggle } from '../../js/theory-overlay.js';
 
 // ─── DOM ───
 const chartContainer = document.getElementById('chart-container');
@@ -101,7 +108,7 @@ let allSamples = [];
  * jump around so much as we add more samples".)
  *
  * Two bounds, whichever is larger, so it is generous enough that growth is
- * rare: the largest χ² in the 2,000-draw pilot the opening chart already runs,
+ * rare: the largest X² in the 2,000-draw pilot the opening chart already runs,
  * and the 0.9995 quantile of χ²(k−1), which the simulated statistic is close to
  * whenever the expected counts are not tiny. It must also cover the observed.
  * @type {[number, number]|null}
@@ -131,7 +138,13 @@ function esc(s) {
 
 // ─── Dataset loading (dropdown + ?dataset=) ───
 (async () => {
-  const index = await loadDatasetIndex(datasetSelect, ds => ds.type === 'gof', datasetDesc);
+  const index = await loadDatasetIndex(datasetSelect, ds => ds.type === 'gof', datasetDesc,
+    // Teaching sets first, under their own heading, so a constructed set is
+    // never mistaken for real data. The numeric prefix is the sort key and is
+    // stripped before display (see populateDatasetSelect). Asked for with
+    // REQ-084: the real goodness-of-fit datasets run n = 80 to 1,362, which
+    // Todd reported is too big to see what is going on.
+    ds => ds.source === 'teaching' ? '1:Teaching sets' : '2:Real data');
   const wanted = new URLSearchParams(location.search).get('dataset');
   if (wanted && index.some(d => d.id === wanted)) {
     datasetSelect.value = wanted;
@@ -256,7 +269,7 @@ function showDataLoaded() {
   if (ctrl) ctrl.classList.add('sticky');
   if (dataSummary) {
     const namePrefix = currentSourceName ? `${currentSourceName}: ` : '';
-    dataSummary.textContent = `${namePrefix}${categories.length} categories, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}`;
+    dataSummary.textContent = `${namePrefix}${categories.length} categories, n = ${totalN}, observed X² = ${formatStat(observedChisq, 2)}`;
   }
   for (const btn of genBtns) btn.disabled = false;
   gateBigBatches(genBtns, totalN);
@@ -291,7 +304,7 @@ function showDataLoaded() {
   }
   // Open on your own sample, thrown at the null. `syncStripToggle` first, so
   // the control agrees with the panels from the very first frame, and the empty
-  // chart before the animation, so the χ² has its marker to fly to.
+  // chart before the animation, so the X² has its marker to fly to.
   stripMode = 'observed';
   syncStripToggle();
   renderEmptyChart();
@@ -307,7 +320,7 @@ function showDataLoaded() {
     const target = document.getElementById('controls');
     if (target && !plotOnly) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
-  announce(`Data loaded: ${categories.length} categories, n = ${totalN}, observed χ² = ${formatStat(observedChisq, 2)}.`);
+  announce(`Data loaded: ${categories.length} categories, n = ${totalN}, observed X² = ${formatStat(observedChisq, 2)}.`);
 }
 
 /**
@@ -403,7 +416,7 @@ function setDrawHeading(text) {
 }
 
 /**
- * The observed χ², flying to its marker on the null distribution.
+ * The observed X², flying to its marker on the null distribution.
  *
  * `animateDropToChart` cannot do this one: it aims at the newest SIMULATED
  * value, which it finds by looking for the chart's orange highlight. The
@@ -526,7 +539,7 @@ function setStripMode(mode) {
 }
 
 /**
- * Step 3, before there is a distribution: an axis and your observed χ² on it.
+ * Step 3, before there is a distribution: an axis and your observed X² on it.
  *
  * Jeff, 2026-10-31: "when we open the initial purple dot should fly into the
  * step 3 sampling distribution area and show the observed statistic." It also
@@ -554,31 +567,28 @@ function renderEmptyChart() {
  * the picture rescaled whenever a new extreme arrived — every bar shifting and
  * narrowing while the reader was trying to watch one of them.
  *
- * Fixed from the pilot's largest χ², which covers all but about one draw in
- * 2,000. It still GROWS when something exceeds it, and that is deliberate: a χ²
- * has no upper bound, so the alternative is either an axis wide enough for the
- * rarest draw — squashing the body where all the mass is, measured at 37 wide
- * for `jury` where 99.9% of the mass sits below 12 — or dropping the most
- * extreme values from the right tail of a RIGHT-TAILED test, which would make
- * the shaded tail disagree with the p-value beside it.
+ * It used to end at the pilot's LARGEST X² and to grow on each new record. That
+ * stopped the rescaling but spent the axis on the rarest draw: measured at 2,000
+ * draws on `blood_types`, half the mass sat in the left 9.6% and the right 22%
+ * held no draw at all. So it now ends at `clippedAxisHi` — a high quantile of
+ * the same pilot — and everything past it is COUNTED by `renderSimChart` and
+ * stated at the axis end rather than drawn or dropped.
  *
- * Growth is a record-breaking event, so it happens on the order of four times
- * across 100,000 draws rather than on every batch. Measured: a 100k run exceeds
- * the 2,000-draw pilot by 1.2× to 1.8% depending on the dataset.
+ * That also retires the growth: a record-breaker no longer rescales the picture,
+ * it joins the stated count. Nothing about this touches a seeded answer — the
+ * pilot has its own `presim-` stream and the p-value comes from `allStats`.
  *
  * @returns {[number, number]}
  */
 function axisDomain() {
   if (!fixedDomain) {
     const preRng = createRng(`presim-${seed}`);
-    let hi = observedChisq;
+    /** @type {number[]} */ const pilot = [];
     for (let i = 0; i < 2000; i++) {
-      hi = Math.max(hi, gofChisqStat(drawMultinomial(totalN, p0, preRng), p0));
+      pilot.push(gofChisqStat(drawMultinomial(totalN, p0, preRng), p0));
     }
-    fixedDomain = [0, hi * 1.05 || 1];
+    fixedDomain = [0, clippedAxisHi(pilot, observedChisq)];
   }
-  const seen = Math.max(observedChisq, ...allStats);
-  if (seen > fixedDomain[1]) fixedDomain = [0, seen * 1.05];
   return fixedDomain;
 }
 
@@ -660,7 +670,7 @@ function initStripToggle() {
  * Step 2: the tally this draw produced, and what it costs.
  *
  * Todd Will's four columns — category, observed, expected, (o−e)²/e — with the
- * total that IS χ². Replacing the bar chart was the point: χ² used to arrive as
+ * total that IS X². Replacing the bar chart was the point: X² used to arrive as
  * a number with nothing connecting it to the counts above it, so a reader could
  * not see that one category was carrying the whole statistic while another
  * contributed nothing. On `jury`, 5.89 is White 0.25 against Black 2.37,
@@ -709,7 +719,7 @@ function tallyTableHTML(counts, opts = {}) {
     </tr>`;
   }
   const totalObs = counts.reduce((a, b) => a + b, 0);
-  const chiText = `\u03c7\u00b2 = ${chi.toFixed(3)}`;
+  const chiText = `X\u00b2 = ${chi.toFixed(3)}`;
   html += `</tbody><tfoot><tr>
     <th scope="row">Total</th>
     <td class="num"${opts.pending ? ` data-reveal="${totalObs}"` : ''}>${opts.pending ? '' : totalObs}</td>
@@ -720,7 +730,22 @@ function tallyTableHTML(counts, opts = {}) {
   return html;
 }
 
-/** χ² for a set of counts against the page's expected counts. */
+/**
+ * X² for a set of counts against the page's expected counts.
+ *
+ * ⚠ X², not χ². The STATISTIC is X² = Σ(O−E)²/E; χ² is the DISTRIBUTION it is
+ * compared to in the theory-based test — and this page never uses that
+ * distribution, which is the whole point of it. Jeff, 2026-11-02: "it's a little
+ * strange to call this the chi-square GOF test for randomization since both the
+ * name and the notation imply that we're using chi-square while that's not
+ * really true at all."
+ *
+ * This is the textbook's own convention, not an invention here: the Stat 145
+ * text writes `X^2` 30 times and `\chi^2` for the statistic exactly never, and
+ * labels its own simulation plot "Simulated X² Statistic". The one place χ²
+ * survives on this page is the optional theory curve — which IS the
+ * distribution, and is labelled χ²(k−1) on purpose.
+ */
 function chiSqOf(counts) {
   let t = 0;
   for (let i = 0; i < counts.length; i++) {
@@ -802,7 +827,7 @@ function generateSimulations(count) {
     if (count !== 1) { runChart(); return; }
 
     // One draw, told in order: the darts rain onto the null, each band's tally
-    // crosses to its row, and only then does the χ² leave for the distribution.
+    // crosses to its row, and only then does the X² leave for the distribution.
     //
     // It used to run the other way round — the chart rendered on a 150ms timer
     // while the table was still being replaced on a 200ms one, so the statistic
@@ -818,7 +843,7 @@ function generateSimulations(count) {
         table: mechSimulated,
         onDone: () => {
           runChart();
-          // The χ² flies from the TABLE's total, where it was just computed,
+          // The X² flies from the TABLE's total, where it was just computed,
           // rather than from a separate line repeating it — the statistic
           // leaves the place the reader watched it add up. (Jeff, 2026-10-30.)
           const dropSource = document.querySelector('[data-chi-cell]')
@@ -834,23 +859,17 @@ function generateSimulations(count) {
   }
 
   /** @type {[number,number]} */ const hlDomain = axisDomain();
-  // Rice, not Sturges. These statistics are right-skewed with a hump near the
-  // low end — χ²(df) peaks at df−2, F peaks near 1 — and Sturges' ~11 bins over
-  // the realised range made the first bin swallow the entire rise, so the
-  // picture decreased monotonically and said the distribution had no hump at
-  // all. Todd Will, 2026-10-31, on `?dataset=jury`: "The width of the histogram
-  // bins makes the distribution look like it decreases monotonically."
+  // Freedman-Diaconis, capped — the same rule the dotplot uses, so crossing the
+  // dotplot/histogram boundary does not change the picture's resolution. These
+  // statistics are right-skewed with a hump near the low end (χ²(df) peaks at
+  // df−2, F near 1), and an n-only rule put the whole rise in the first bar:
+  // Sturges read 278, 230, 122 on jury — monotone, no hump — and Rice still
+  // halved the resolution at the switch (35 columns → 17 bars for one extra
+  // draw on blood_types). Todd Will reported the first, Jeff the second.
   //
-  // `riceBins` was added in September for the same complaint from him about
-  // `conceptual/sampling-lab`, with the reasoning already written at its
-  // definition: Sturges flattens out and is wrong for a sampling distribution,
-  // where the point is to run thousands of draws and look at the shape. It was
-  // only ever applied to that one page.
-  //
-  // Changes no answer — the p-value is computed from `allStats`, never from the
-  // bins — only the picture, which was the thing that was wrong.
+  // Changes no answer — the p-value comes from `allStats`, never the bins.
   const { bins: fullBins } = computeBins(allStats,
-    { domain: hlDomain, numBins: riceBins(allStats.length) });
+    { domain: hlDomain, numBins: fdBins(allStats, { domain: hlDomain }) });
   const lockedThresholds = fullBins.slice(1).map(b => b.x0);
   const { hlIndex, hlIndices, prevBinCounts } = computeHighlights(
     allStats, prevLength, count, computeBins, { domain: hlDomain, thresholds: lockedThresholds });
@@ -879,10 +898,10 @@ function renderChart(stats, observedStat, highlightIndex = -1, highlightIndices,
   const hi = Math.max(...stats, observedStat) * 1.05 || 1;
   /** @type {[number,number]} */ const domain = hlDomain || [0, hi];
   const { pValue } = stats.length > 0 ? computePValue(stats, observedStat) : { pValue: 0 };
-  renderSimChart(chartContainer, stats, {
+  const chart = renderSimChart(chartContainer, stats, {
     chartType: resolveChartType(stats.length, 'auto'),
     id: 'sim-chart',
-    xLabel: 'Chi-Square Statistic (χ²)',
+    xLabel: 'Simulated X² Statistic',
     // Match the page's own readout: formatStat(observedChisq, 2) = 3 decimals.
     precision: 3,
     titleText: words.distribution,
@@ -900,13 +919,79 @@ function renderChart(stats, observedStat, highlightIndex = -1, highlightIndices,
   // renderSimChart rebuilds the SVG, so every circle is a new element and the
   // previous listeners went with the nodes they were on. Re-wire, don't leak.
   wireSamplePreview();
+  if (theoryOn && stats.length > 0) {
+    const df = theoryDf();
+    overlayTheoryOnSimChart(chartContainer, chart, {
+      pdf: (x) => pdfChisq(x, df),
+      totalN: stats.length,
+      label: `χ²(${df})`,
+    });
+  }
 }
+
+/**
+ * The χ² curve this simulation is sneaking up on.
+ *
+ * Jeff, 2026-11-02: "for the chi-square randomization test (and perhaps the
+ * F-test version) let's have a toggle or checkbox to show the theoretical
+ * distribution."
+ *
+ * ⚠ The curve is an APPROXIMATION to the pile, not the truth behind it. The
+ * simulation samples from H₀ exactly; χ²(k−1) is the large-sample limit of what
+ * it produces, and the two part company when the expected counts are small.
+ * That disagreement is worth seeing rather than hiding, which is the argument
+ * for drawing both on one axis instead of asserting the approximation in prose.
+ *
+ * Expert-only, and `?theory=on` draws it without expert mode — the same contract
+ * the two sim-app randomization pages have had since REQ-082, documented in
+ * `docs/url-api.md`. One word for one thing.
+ */
+let theoryOn = new URLSearchParams(location.search).get('theory') === 'on';
+/** @type {HTMLInputElement|null} */ let theoryCheckbox = null;
+/** The degrees of freedom of the fitted curve: k − 1 categories. */
+function theoryDf() { return Math.max(1, p0.length - 1); }
+
+function initTheoryToggle() {
+  const host = document.getElementById('chart-controls');
+  if (!host || theoryCheckbox) return;
+  theoryCheckbox = createTheoryToggle(host, (checked) => {
+    theoryOn = checked;
+    if (!checked && chartContainer) removeTheoryOverlay(chartContainer);
+    if (allStats.length === 0) return;
+    renderChart(allStats, observedChisq, -1, undefined, undefined, axisDomain(), undefined);
+    const { pValue, extremeCount } = computePValue(allStats, observedChisq);
+    displayResults(allStats, observedChisq, pValue, extremeCount);
+  });
+  theoryCheckbox.checked = theoryOn;
+}
+// ⚠ Called HERE, not up with initTabs/initKeyboardShortcuts: `theoryOn` and
+// `theoryCheckbox` are `let`s declared just above, so a call from the top of the
+// file would run before their initialisers and die in the temporal dead zone.
+initTheoryToggle();
 
 /** @param {number[]} stats @param {number} observedStat */
 function computePValue(stats, observedStat) {
   let extremeCount = 0;
   for (const s of stats) if (s >= observedStat) extremeCount++;
   return { pValue: stats.length ? extremeCount / stats.length : 0, extremeCount };
+}
+
+/**
+ * The curve's own right-tail area, printed beside the simulated p-value.
+ *
+ * Only when the curve is on screen: a theoretical p-value with no curve to read
+ * it off is a second number to trust rather than a comparison to make. With both
+ * showing, the gap between them IS the lesson — they agree when the expected
+ * counts are comfortable and drift apart when they are not.
+ *
+ * @param {number} observedStat
+ * @returns {string}
+ */
+function theoryTail(observedStat) {
+  if (!theoryOn) return '';
+  const p = 1 - chisqCDF(observedStat, theoryDf());
+  if (!Number.isFinite(p)) return '';
+  return ` <span class="theory-tail">· χ² curve ${formatStat(p, 0, 'pvalue')}</span>`;
 }
 
 /** @param {number[]} stats @param {number} observedStat @param {number} pValue @param {number} extremeCount */
@@ -920,12 +1005,12 @@ function displayResults(stats, observedStat, pValue, extremeCount) {
   if (resultDiv) {
     resultDiv.innerHTML = `
       <p><strong>Null Distribution</strong> (${stats.length} simulations)</p>
-      <p>Observed χ² = ${formatStat(observedStat, 2)}</p>
+      <p>Observed X² = ${formatStat(observedStat, 2)}</p>
       ${showReadout ? `
       <p>Extreme count: ${extremeCount} of ${stats.length} (right-tail)</p>
-      <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}</p>
-      <p class="interpretation">${extremeCount} of ${stats.length} samples drawn under H₀ had χ² ≥ ${formatStat(observedStat, 2)}. This provides ${strength} evidence against H₀: ${esc(claim)}.</p>` : `
-      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed χ² is marked on the distribution — hover the bars to count how many of the ${stats.length} simulated samples have χ² at least as large.</p>`}
+      <p><strong>p-value:</strong> ${formatStat(pValue, 0, 'pvalue')}${theoryTail(observedStat)}</p>
+      <p class="interpretation">${extremeCount} of ${stats.length} samples drawn under H₀ had X² ≥ ${formatStat(observedStat, 2)}. This provides ${strength} evidence against H₀: ${esc(claim)}.</p>` : `
+      <p class="reasoning-prompt"><strong>Estimate the p-value yourself.</strong> The observed X² is marked on the distribution — hover the bars to count how many of the ${stats.length} simulated samples have X² at least as large.</p>`}
     `;
   }
 }
