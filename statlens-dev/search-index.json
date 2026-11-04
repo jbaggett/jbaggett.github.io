@@ -446,6 +446,12 @@
    "k": "two sample t-test, difference in means, compare two groups, Welch, pooled variance, p-value, independent samples"
   },
   {
+   "p": "demos/shuffle/",
+   "t": "What does a shuffle show?",
+   "d": "Deal twelve cards into two groups at random, over and over, and watch how big a gap chance alone produces.",
+   "k": "randomization test, shuffle, permutation, difference in proportions, teaching demo, lecture demo, null distribution, cards, no population"
+  },
+  {
    "p": "conceptual/why-t-star/",
    "t": "What Estimating the Standard Error Costs",
    "d": "You never have the true standard error. See what substituting s for sigma, or p-hat for p, costs the interval — and why t* repairs one and nothing repairs the other.",

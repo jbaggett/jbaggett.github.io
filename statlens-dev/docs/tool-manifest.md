@@ -674,6 +674,28 @@ button changes that). A colour key under the strip names both outcomes.
 
 ---
 
+### What does a shuffle show? (teaching demo)
+
+**Path:** `demos/shuffle/`
+
+**Description:** The second **teaching demo** (REQ-085, slate row 2) and the contrast that makes the first one land. Twelve people — six treatment, six placebo, 5 and 2 improved — drawn as twelve cards. Each trial deals the *same twelve outcomes* into two new groups of six and measures the gap in proportion improved. ⚠ **No population is sampled**: the outcomes are fixed and only the labels move, which is what distinguishes a randomization test from demo 1's draw from a stated null. The pile is **six spikes**, because with six per group and seven improvements the gap can only be ±5/6, ±1/2 or ±1/6. No theoretical curve — the plan holds theory until the bridge chapter, and the exact distribution *is* six spikes.
+
+**Concepts:** what a null distribution is when there is nothing to sample from; why re-dealing labels tests "no association"; why chance alone produces visible gaps; reading a p-value off a pile; why the middle of the pile is tall (350/924 against 7/924 — a counting fact, not an effect).
+
+**Compatible datasets:** none — the twelve are fixed. The numbers match the `twelve_patients` teaching set.
+
+**URL Parameters:**
+
+| Parameter | Type | Description | Example |
+|-----------|------|-------------|---------|
+| `seed` | string | The shuffle sequence. Trial *i* draws from `${seed}-trial-${i}`, so a link reproduces every deal and the scrubber reproduces each one again. | `?seed=lecture7` |
+| `observed` | string | `on` marks the observed gap (+0.50) on the pile and shades the tail, once there are 50 shuffles. Off by default. | `?observed=on` |
+| `activity` | string | Loads the guided step panel. | `?activity=what-a-shuffle-shows.json` |
+
+**Live state (for activities):** dispatches `statlens:state` as `demo-shuffle` with `{ trials, stat, showing, statShowing, mean }`.
+
+**Textbook Integration Notes:** Ch. 7. The exact answer is enumerable and worth quoting: 112 of the 924 possible deals reach a gap of +0.50, so p = 0.1212 — a *visible* gap that chance produces about one time in eight, which is the misconception this demo targets. Pairs with `demos/chi-square/` as "sampled from a claim" against "re-dealt from the data".
+
 ### Where does X² come from? (teaching demo)
 
 **Path:** `demos/chi-square/`

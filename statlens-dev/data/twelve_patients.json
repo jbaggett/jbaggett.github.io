@@ -1,0 +1,78 @@
+{
+  "id": "twelve_patients",
+  "name": "Twelve Patients (Teaching Set)",
+  "description": "A constructed 12-person trial: 6 treatment, 6 placebo, with 5 and 2 improving. Small enough to deal out as cards and count by hand.",
+  "source": "teaching",
+  "variables": [
+    {
+      "name": "group",
+      "label": "Group",
+      "type": "categorical"
+    },
+    {
+      "name": "outcome",
+      "label": "Outcome",
+      "type": "categorical"
+    }
+  ],
+  "studyDescription": "Twelve people were randomly assigned, six to a new treatment and six to a placebo, and each was recorded as improved or not. Five of the six on the treatment improved; two of the six on the placebo did. This is a constructed teaching set, not real data.",
+  "variableDescriptions": {
+    "group": "Which arm the person was randomly assigned to: Treatment or Placebo.",
+    "outcome": "Whether the person improved."
+  },
+  "sourceDetail": "Constructed teaching set (not real data), sized for the “What does a shuffle show?” demo. Twelve observations is small enough to deal as cards and count by eye, and with both margins fixed the difference in proportions takes exactly SIX achievable values (±5/6, ±1/2, ±1/6), with exact probabilities 7/924, 105/924 and 350/924 either side of zero. Observed difference 5/6 − 2/6 = 0.5; one-sided permutation p = 112/924 = 0.1212 (enumerated, not simulated). Row order is a fixed shuffle (seed 7); the statistic does not depend on it.",
+  "context": "Did the treatment really help, or could a shuffle of these same twelve people produce a gap this big?",
+  "nullClaim": "the treatment and the placebo make no difference",
+  "rows": [
+    {
+      "group": "Placebo",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Placebo",
+      "outcome": "No change"
+    },
+    {
+      "group": "Treatment",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Placebo",
+      "outcome": "No change"
+    },
+    {
+      "group": "Placebo",
+      "outcome": "No change"
+    },
+    {
+      "group": "Treatment",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Placebo",
+      "outcome": "No change"
+    },
+    {
+      "group": "Treatment",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Treatment",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Placebo",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Treatment",
+      "outcome": "Improved"
+    },
+    {
+      "group": "Treatment",
+      "outcome": "No change"
+    }
+  ],
+  "type": "randomization_prop",
+  "chapter": "Teaching set"
+}

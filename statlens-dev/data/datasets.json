@@ -2475,5 +2475,22 @@
     "minGroupN": 6,
     "type": "gof",
     "source": "teaching"
+  },
+  {
+    "id": "twelve_patients",
+    "name": "Twelve Patients (Teaching Set)",
+    "description": "A constructed 12-person trial: 6 treatment, 6 placebo, 5 and 2 improving — small enough to deal as cards. Teaching set.",
+    "chapter": "Teaching set",
+    "n": 12,
+    "variables": [
+      "group",
+      "outcome"
+    ],
+    "hasNumeric": false,
+    "hasCategorical": true,
+    "groupLevels": 2,
+    "minGroupN": 6,
+    "type": "randomization_prop",
+    "source": "teaching"
   }
 ]

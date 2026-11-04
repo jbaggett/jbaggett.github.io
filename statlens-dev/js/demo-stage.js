@@ -80,6 +80,12 @@ export const PILE_CURVE_MIN = 500;
  * @property {number} [precision]
  * @property {((x: number) => number)|null} [curvePdf] - drawn from PILE_CURVE_MIN
  * @property {string} [curveLabel]
+ * @property {(trials: number) => 'dotplot'|'histogram'|'spike'} [chartTypeFor]
+ *   Which pile to draw at a given count. The default grows dots → bars, which
+ *   suits a statistic that can land anywhere. ⚠ A statistic on a LATTICE needs
+ *   spikes instead: demo 2's difference in proportions takes exactly six values
+ *   (12 cards, two groups of six), and a histogram over them either combs or
+ *   merges values that are genuinely distinct.
  * @property {(() => {value: number, direction: 'left'|'right'}|null)} [observedMark]
  *   Consulted on every redraw. Return a value to mark it on the pile and shade
  *   the tail at or beyond it; return null to leave the picture alone. It is a
@@ -185,7 +191,9 @@ export function createDemoStage(cfg) {
     const span = cfg.domain[1] - cfg.domain[0];
     const numBins = Math.max(1, Math.round(span / cfg.binWidth));
     const chart = renderSimChart(cfg.pileContainer, stats, {
-      chartType: stats.length <= PILE_DOTS_MAX ? 'dotplot' : 'histogram',
+      chartType: cfg.chartTypeFor
+        ? cfg.chartTypeFor(stats.length)
+        : (stats.length <= PILE_DOTS_MAX ? 'dotplot' : 'histogram'),
       id: 'demo-pile',
       xLabel: cfg.xLabel,
       titleText: cfg.titleText ?? 'The pile',

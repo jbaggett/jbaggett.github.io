@@ -1,0 +1,57 @@
+{
+  "title": "What does a shuffle show?",
+  "tool": "demos/shuffle",
+  "params": { "seed": "demo2", "observed": "on" },
+  "steps": [
+    {
+      "phase": "predict",
+      "instruction": "Twelve people were split at random: six on a treatment, six on a placebo. **5 of 6** improved on the treatment, **2 of 6** on the placebo — a gap of \\(5/6 - 2/6 = 0.50\\).",
+      "gate": {
+        "question": "Suppose the treatment does nothing at all. Could a split of these same twelve people still produce a gap of 0.50?",
+        "choices": [
+          { "text": "Yes — which six landed in each group is the only thing that changed", "correct": true },
+          { "text": "No — a gap that big can only come from a real effect" },
+          { "text": "No — if the treatment does nothing the gap must be exactly 0" }
+        ],
+        "feedback": "If the treatment does nothing, each person's outcome would have been the same whichever group they were put in. So the same twelve cards could have been dealt differently — and some deals produce a gap."
+      }
+    },
+    {
+      "instruction": "Press **+1** a few times. Each press deals the *same twelve outcomes* into two new groups of six.",
+      "observe": "Watch the cards move. Does any card ever change from improved to not improved?",
+      "reveal": "Never. The outcomes are fixed; only the grouping changes. That is the whole idea of a randomization test — it asks what the gap would look like if the labels meant nothing, and the only honest way to answer is to re-deal the labels."
+    },
+    {
+      "instruction": "Keep going to about 50 shuffles.",
+      "requires": { "metric": "trials", "atLeast": 50, "hint": "Press **+10** until you have at least 50 — you have {{trials}}." },
+      "observe": "The pile is made of **spikes**, not bars. Why only six of them?",
+      "reveal": "With six in each group and seven improvements in all, the treatment group can contain 1, 2, 3, 4, 5 or 6 of them — six possibilities, and no others. The gap can only be \\(\\pm 5/6\\), \\(\\pm 1/2\\) or \\(\\pm 1/6\\). There is nothing in between to draw."
+    },
+    {
+      "instruction": "Run on to 300 or more.",
+      "requires": { "metric": "trials", "atLeast": 300, "hint": "Press **+100** — you have {{trials}} shuffles." },
+      "observe": "The two middle spikes are much taller than the rest. Why would chance favour a small gap?",
+      "reveal": "There are far more ways to deal the seven improvements evenly than to pile them into one group. Three-and-four can happen 350 ways out of 924; six-and-one only 7. The shape of the pile is a counting fact, not a property of the treatment."
+    },
+    {
+      "phase": "explain",
+      "instruction": "The observed gap, 0.50, is marked on the pile, with everything at least that big shaded.",
+      "gate": {
+        "question": "Among your {{trials}} shuffles — all of them produced by chance alone — how unusual is a gap of 0.50?",
+        "choices": [
+          { "text": "Not very — chance produces a gap that big fairly often", "correct": true },
+          { "text": "Very — almost no shuffle reached it" },
+          { "text": "Impossible — no shuffle can reach 0.50" }
+        ],
+        "feedback": "About one shuffle in eight. Dealing all 924 possible ways gives 112 of them, or 0.121 — so a gap this size is an ordinary result of shuffling, and these data give little reason to credit the treatment."
+      },
+      "respond": {
+        "prompts": [
+          { "id": "why", "label": "In your own words", "placeholder": "The shaded share counts the shuffles that…", "rows": 3 }
+        ],
+        "gateOnNonEmpty": true
+      },
+      "reveal": "The shaded share is the p-value: the fraction of re-deals — made under the assumption that the treatment does nothing — that produce a gap at least as large as the one actually seen. Here that is about 0.12, which is common enough that chance is a comfortable explanation. ⚠ That is not proof the treatment does nothing. Twelve people is very little evidence either way."
+    }
+  ]
+}

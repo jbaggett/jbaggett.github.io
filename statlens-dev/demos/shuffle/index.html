@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>What does a shuffle show? | StatLens</title>
+    <meta name="description" content="Deal twelve cards into two groups at random, over and over, and watch how big a gap chance alone produces.">
+    <meta name="keywords" content="randomization test, shuffle, permutation, difference in proportions, teaching demo, lecture demo, null distribution, cards, no population">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/style.css">
+    <link rel="stylesheet" href="../../css/demos.css">
+    <meta name="theme-color" content="#569BBD">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="apple-touch-icon" href="../../icon-192.png">
+
+    <script type="importmap">
+    {
+        "imports": {
+            "d3-array":     "https://cdn.jsdelivr.net/npm/d3-array@3/+esm",
+            "d3-scale":     "https://cdn.jsdelivr.net/npm/d3-scale@4/+esm",
+            "d3-selection": "https://cdn.jsdelivr.net/npm/d3-selection@3/+esm",
+            "d3-axis":      "https://cdn.jsdelivr.net/npm/d3-axis@3/+esm",
+            "d3-shape":     "https://cdn.jsdelivr.net/npm/d3-shape@3/+esm"
+        }
+    }
+    </script>
+
+    <style>
+        /* Only what is peculiar to this demo's source: the cards. Everything
+           else — the stage grid, the panels, the controls, the scrubber —
+           comes from css/demos.css. */
+        .deal { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+        .deal-group { min-width: 0; }
+        .deal-group h3 { font-size: 0.85rem; margin: 0 0 0.3rem; color: var(--ims-gray-text);
+                         font-weight: 700; letter-spacing: 0.02em; }
+        .deal-cards { display: flex; flex-wrap: wrap; gap: 0.3rem; min-height: 3.4rem; }
+
+        /* A card is a card: same size, same shape, and the OUTCOME is what
+           differs — by fill and by letter, never by colour alone. */
+        .pcard { width: 34px; height: 46px; border-radius: 5px; border: 2px solid #114B5F;
+                 display: flex; align-items: center; justify-content: center;
+                 font-weight: 700; font-size: 1.05rem; background: #fff; color: #114B5F;
+                 transition: transform 240ms ease, background-color 240ms ease; }
+        .pcard[data-outcome="Improved"] { background: #569BBD; color: #fff; border-color: #114B5F; }
+        .pcard.is-moving { transform: translateY(-6px) rotate(-3deg); }
+
+        .deal-tally { font-variant-numeric: tabular-nums; font-size: 0.95rem;
+                      color: var(--ims-gray-text); margin: 0.35rem 0 0; }
+        .deal-tally strong { color: var(--ims-dark, #114B5F); font-size: 1.05rem; }
+
+        .demo-stat .pill-obs { color: #7B2D8E; }
+    </style>
+</head>
+<body>
+    <nav class="skip-links" aria-label="Skip links">
+        <a href="#controls">Skip to Controls</a>
+        <a href="#chart">Skip to Figure</a>
+    </nav>
+
+    <main>
+        <h1>What does a shuffle show?<span class="header-actions"><a class="home-btn" href="../../" aria-label="StatLens home"><svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg><span class="home-text">StatLens</span></a> <button class="help-btn" aria-label="Help" title="Help">?</button> <button class="settings-btn" aria-label="Settings" title="Settings">&#9881;</button></span></h1>
+
+        <p class="demo-intro">Twelve people, six on a treatment and six on a placebo. <strong>5 of 6</strong> improved against <strong>2 of 6</strong>. Deal the same twelve cards into two new groups at random &mdash; nothing about the people changes &mdash; and see how often chance alone makes a gap that big.</p>
+
+        <div class="demo-stage">
+          <div class="demo-col">
+            <section class="demo-panel" aria-labelledby="deal-h">
+                <h2 id="deal-h">One shuffle of the same twelve</h2>
+                <div class="deal" id="deal"></div>
+                <p class="deal-tally" id="deal-tally">&mdash;</p>
+            </section>
+
+            <section class="demo-panel" aria-labelledby="stat-h">
+                <h2 id="stat-h">This shuffle&rsquo;s gap</h2>
+                <p class="demo-stat">difference = <span id="trial-stat">&mdash;</span> <span class="demo-stat-label" id="trial-which"></span></p>
+                <p class="demo-note" id="stat-note">The gap actually observed was <strong class="pill-obs">+0.50</strong>.</p>
+            </section>
+          </div>
+
+          <section class="demo-panel" id="chart" aria-labelledby="pile-h">
+            <h2 id="pile-h">Every shuffle&rsquo;s gap, piled up</h2>
+            <div id="pile"></div>
+            <p class="demo-note" id="observed-note" hidden></p>
+
+            <section id="controls" aria-label="Controls">
+                <div class="generate-bar" role="group" aria-label="Shuffle">
+                    <button type="button" class="gen-btn" data-count="1">+1</button>
+                    <button type="button" class="gen-btn" data-count="10">+10</button>
+                    <button type="button" class="gen-btn" data-count="100">+100</button>
+                    <button type="button" id="reset-btn" class="reset-btn" aria-label="Reset" title="Reset">&#x21BA;</button>
+                    <span class="gen-label"><strong id="trial-count">0</strong> shuffles</span>
+                    <span class="demo-field">
+                        <label for="speed" class="demo-count">Speed</label>
+                        <select id="speed">
+                            <option value="900">Slow</option>
+                            <option value="450" selected>Medium</option>
+                            <option value="120">Fast</option>
+                        </select>
+                    </span>
+                </div>
+                <div class="demo-scrub">
+                    <label for="scrub">Look back at shuffle</label>
+                    <input type="range" id="scrub" min="1" max="1" value="1" step="1" disabled
+                           aria-describedby="scrub-hint">
+                    <span class="demo-count" id="scrub-value">&mdash;</span>
+                </div>
+                <p class="sr-only" id="scrub-hint">Arrow keys and a presenter remote step one shuffle at a time.</p>
+            </section>
+        </section>
+        </div>
+
+        <p class="demo-credit" id="demo-credit">
+            <a href="?activity=what-a-shuffle-shows.json" id="guided-link">Guided version &rarr;</a>
+            &mdash; the same demo with the questions, for a student working alone.</p>
+
+        <div id="sr-announce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    </main>
+
+    <dialog id="page-help" aria-label="Help">
+        <h2>What does a shuffle show?</h2>
+        <p class="help-intro">If the treatment does nothing, then each person&rsquo;s outcome would have been the same whichever group they landed in &mdash; so the twelve cards could just as well have been dealt the other way. Each shuffle deals the <em>same twelve outcomes</em> into two new groups of six and measures the gap between them. The pile of those gaps is what chance alone produces.</p>
+        <dl>
+            <dt><kbd>1</kbd></dt><dd>+1 shuffle</dd>
+            <dt><kbd>2</kbd></dt><dd>+10 shuffles</dd>
+            <dt><kbd>3</kbd></dt><dd>+100 shuffles</dd>
+            <dt><kbd>0</kbd></dt><dd>Reset</dd>
+            <dt><kbd>Space</kbd></dt><dd>Play / Pause</dd>
+            <dt><kbd>&larr;</kbd> <kbd>&rarr;</kbd></dt><dd>Step back and forward through shuffles</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Close this dialog</dd>
+        </dl>
+        <p><strong>There is no population here.</strong> Nothing is being sampled from anywhere &mdash; the only thing that changes between shuffles is which six people are called &ldquo;treatment&rdquo;. That is what makes this a <em>randomization</em> test.</p>
+        <p>With six in each group and seven improvements in all, the gap can only take <strong>six values</strong>: &plusmn;5/6, &plusmn;1/2 and &plusmn;1/6. The spikes are those six values, not bins.</p>
+        <p>Add <code>?observed=on</code> to mark the observed gap of +0.50 and shade everything at least that far out.</p>
+        <p class="help-foot">Part of the StatLens teaching demos.</p>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('../../sw.js').catch(() => {});
+        navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data && e.data.type === 'SW_UPDATED') {
+                const t = document.createElement('div');
+                t.className = 'update-toast';
+                t.setAttribute('role', 'alert');
+                t.innerHTML = 'A new version is available <button onclick="location.reload()">Refresh</button>';
+                document.body.appendChild(t);
+            }
+        });
+    }
+    </script>
+    <script src="../../js/page-number.js"></script>
+    <script src="../../js/feedback.js"></script>
+    <script type="module" src="../../js/search-mount.js"></script>
+</body>
+</html>
