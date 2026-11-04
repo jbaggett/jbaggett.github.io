@@ -6436,7 +6436,26 @@ body[data-mech-layout="split"] .app-sidebar { width: 100%; max-width: none; }
 #sampling-container [data-stat-index]:focus-visible {
   outline: 2px solid #7B2D8E; outline-offset: 1px;
 }
-.peek-marker { stroke: #7B2D8E; stroke-width: 2.5; }
+/* Hovering a statistic picks it out in the HIGHLIGHT ORANGE.
+ *
+ * ⚠ The token, not a second orange that merely looks like it. Jeff,
+ * 2026-11-04: "I've used orange to represent the last sample, but we could use
+ * it to represent last or selected sample." So orange has one meaning across
+ * the site — *the sample you are looking at* — whether that is the newest one
+ * or the one under your pointer. `js/dotplot.js` paints the newest with the
+ * same #E07020.
+ *
+ * It used to be #7B2D8E, which is what "the statistic you observed" wears on
+ * every randomization page: the mark saying "this is the one under your
+ * pointer" was the colour of the mark saying "this is the one that matters",
+ * on the same axis.
+ *
+ * ⚠ The white ring is what separates *selected* from merely *last* when both
+ * are on screen, so the distinction never rests on colour alone. 3.2:1 on
+ * white, above the 3:1 floor for a graphical mark, and the sample itself
+ * appears in the panel at the same moment. */
+.peek-marker,
+.peek-active { fill: var(--highlight-orange); stroke: #FFFFFF; stroke-width: 1.5; }
 
 /* A ruler placed by clicking the axis.
    The focus ring is drawn on the LINE, not on the group: the group's box is the

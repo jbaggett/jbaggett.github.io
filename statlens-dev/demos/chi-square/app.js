@@ -213,6 +213,19 @@ const stage = createDemoStage({
     : null),
   scrubEl,
   scrubValueEl,
+  /**
+   * What hovering a dot or a bar segment says — and shows.
+   *
+   * The stage repaints the board and the table for that trial as the pointer
+   * moves, which is the real answer: you see the 50 marks and the four counts
+   * that produced the X² you are pointing at. This string is what a screen
+   * reader gets, since it cannot see the panel change.
+   */
+  describeTrial: (trial, index, approximate) => ({
+    title: approximate ? `A sample near X² = ${trial.stat.toFixed(2)}` : `Sample ${index}`,
+    detail: CATEGORIES.map((c, i) => `${c} ${trial.source[i]}`).join(', ')
+      + ` — X² = ${trial.stat.toFixed(2)}`,
+  }),
   maxTrials: 1000,
   onUpdate: ({ trials, showing }) => {
     if (countEl) countEl.textContent = String(trials);

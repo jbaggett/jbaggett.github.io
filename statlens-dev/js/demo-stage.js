@@ -39,6 +39,7 @@ import { createRng } from './prng.js';
 import { renderSimChart } from './chart-defaults.js';
 import { overlayTheoryOnSimChart, removeTheoryOverlay } from './theory-overlay.js';
 import { prefersReducedMotion } from './settings.js';
+import { attachResamplePeek, createPeekElement } from './resample-peek.js';
 
 /**
  * How the pile is drawn, by trial count.
@@ -87,6 +88,12 @@ export const PILE_CURVE_MIN = 500;
  *   "how unusual is this?" is not a question you can ask of twelve dots.
  * @property {HTMLInputElement|null} [scrubEl] - range input; the stage wires it
  * @property {HTMLElement|null} [scrubValueEl] - "11 of 240" readout beside it
+ * @property {(trial: DemoTrial, index: number, approximate: boolean) => {title: string, detail: string}} [describeTrial]
+ *   Hovering the pile re-runs that trial and shows its source. Supply this and
+ *   the stage wires `attachResamplePeek` — the same hover every simulation tool
+ *   has, including the column mode where the pointer's HEIGHT picks the rank
+ *   within a bar. `approximate` is true when the column is a bin rather than
+ *   one value, so the caller can say so.
  * @property {number} [maxTrials]
  * @property {string} [tool] - name reported on `statlens:state`
  * @property {(s: {trials: number, stat: number|null, showing: number}) => void} [onUpdate]
@@ -140,6 +147,30 @@ export function createDemoStage(cfg) {
     cfg.onUpdate?.({ trials: stats.length, stat: state.stat, showing });
   }
 
+  /** The readout the hover writes into; announced, not displayed. */
+  const peekEl = cfg.describeTrial ? createPeekElement(cfg.pileContainer) : null;
+
+  /**
+   * Re-run the trial under the pointer and show its source.
+   *
+   * ⚠ Repaints WITHOUT animating: a hover that set fifty darts raining every
+   * time the pointer crossed a bar would be unusable. The stage already
+   * distinguishes a manual step from everything else, and a peek is firmly
+   * everything else.
+   */
+  function describeAt(i, approximate) {
+    if (!cfg.describeTrial || i == null || i < 0 || i >= stats.length) return null;
+    const trial = runTrial(i + 1);
+    cfg.renderSource?.(trial, i + 1, false);
+    return cfg.describeTrial(trial, i + 1, approximate);
+  }
+
+  /** Put back the trial the page was showing before the pointer arrived. */
+  function restoreShowing() {
+    if (!cfg.describeTrial || !showing) return;
+    cfg.renderSource?.(runTrial(showing), showing, false);
+  }
+
   /** Dots, bars, or bars with a curve — by count. See PILE_DOTS_MAX. */
   function renderPile() {
     if (!cfg.pileContainer) return;
@@ -165,6 +196,19 @@ export function createDemoStage(cfg) {
       ...(mark ? { observedStat: mark.value, direction: mark.direction } : {}),
     });
     removeTheoryOverlay(cfg.pileContainer);
+    if (peekEl && cfg.describeTrial) {
+      // ⚠ Re-attached on every render. `renderSimChart` builds a new SVG, so
+      // the elements the last attachment listened on no longer exist — the same
+      // trap the goodness-of-fit page documents at its own `wireSamplePreview`.
+      attachResamplePeek({
+        container: cfg.pileContainer,
+        peek: peekEl,
+        stats: () => stats,
+        geom: chart ? { xScale: chart.xScale, yScale: chart.yScale, frame: chart.frame, bins: chart.bins } : null,
+        describe: describeAt,
+        onLeave: restoreShowing,
+      });
+    }
     if (cfg.curvePdf && stats.length >= PILE_CURVE_MIN) {
       overlayTheoryOnSimChart(cfg.pileContainer, chart, {
         pdf: cfg.curvePdf,

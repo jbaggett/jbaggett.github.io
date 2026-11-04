@@ -29,6 +29,11 @@ import { localPoint } from './chart-utils.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 
+/** Drop the highlight from whatever was last under the pointer. */
+function clearActive(root) {
+  for (const el of root.querySelectorAll('.peek-active')) el.classList.remove('peek-active');
+}
+
 /**
  * @param {object} opts
  * @param {HTMLElement|null} opts.container - the chart container
@@ -56,10 +61,16 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
       m.setAttribute('tabindex', '0');
       m.setAttribute('role', 'button');
       m.setAttribute('aria-label', `Repetition ${i + 1} — press to see the resample behind it`);
-      m.addEventListener('mouseenter', () => show(i, false));
-      m.addEventListener('focus', () => show(i, false));
+      const lift = () => { clearActive(container); m.classList.add('peek-active'); show(i, false); };
+      m.addEventListener('mouseenter', lift);
+      m.addEventListener('focus', lift);
+      m.addEventListener('blur', () => m.classList.remove('peek-active'));
     }
-    container.addEventListener('mouseleave', () => { peek.hidden = true; onLeave?.(); }, { once: true });
+    container.addEventListener('mouseleave', () => {
+      clearActive(container);
+      peek.hidden = true;
+      onLeave?.();
+    }, { once: true });
     return;
   }
 
@@ -98,18 +109,45 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
   // chart is how a chart-type detector decides it is looking at a dotplot, and
   // a transparent hit rect gets read as a histogram bar. Listening on the SVG
   // root needs no rect, and adding nothing until it is wanted avoids the rest.
-  /** @type {SVGCircleElement|null} */
+  /**
+   * The band, not a dot.
+   *
+   * A bar IS an ordered stack of the samples in it — hovering near its foot
+   * gives an early repetition and near its top a late one — and a floating
+   * circle only hinted at that. A slice the full width of the bar, one count
+   * tall, says it: the bar reads as segments, and the one under the pointer is
+   * lit. Jeff, 2026-11-04: "I want histograms to be ordered stacks of
+   * horizontal segments we can hover over. Hovering should turn the current
+   * segment / dot orange."
+   *
+   * @type {SVGRectElement|null}
+   */
   let marker = null;
   const ensureMarker = () => {
     if (!marker) {
-      marker = /** @type {SVGCircleElement} */ (document.createElementNS(NS, 'circle'));
+      marker = /** @type {SVGRectElement} */ (document.createElementNS(NS, 'rect'));
       marker.setAttribute('class', 'peek-marker');
-      marker.setAttribute('r', '5');
-      marker.setAttribute('fill', 'none');
       marker.setAttribute('pointer-events', 'none');
       inner.appendChild(marker);
     }
     return marker;
+  };
+
+  /**
+   * The drawn bar under a given x, so the band matches the bar it is in.
+   *
+   * ⚠ Measured from what was actually rendered rather than recomputed from the
+   * scale: a spike plot, a histogram and a filled dotplot column all arrive
+   * here, and they do not agree on how wide a column is.
+   */
+  const barAt = (/** @type {number} */ px) => {
+    let hit = null;
+    for (const r of inner.querySelectorAll('.data rect')) {
+      const x = Number(r.getAttribute('x'));
+      const w = Number(r.getAttribute('width'));
+      if (px >= x - 0.5 && px <= x + w + 0.5) { hit = { x, w }; break; }
+    }
+    return hit;
   };
 
   const baseline = yScale(0);
@@ -129,8 +167,18 @@ export function attachResamplePeek({ container, peek, stats, geom, describe, onL
     const rank = Math.min(n, Math.max(1, Math.ceil(frac * n)));
     const i = best.idx[rank - 1];
     const m = ensureMarker();
-    m.setAttribute('cx', String(xScale(best.center)));
-    m.setAttribute('cy', String(baseline - ((rank - 0.5) / n) * (baseline - top)));
+    const cx = xScale(best.center);
+    const bar = barAt(cx);
+    const unit = (baseline - top) / n;           // one count, in pixels
+    const yTop = baseline - rank * unit;
+    // ⚠ A floor on the height: past a few hundred in one bar a segment is a
+    // fraction of a pixel and the band vanishes. 3px still points at a place in
+    // the stack, which is what the reader is being shown.
+    const h = Math.max(3, unit);
+    m.setAttribute('x', String(bar ? bar.x : cx - 6));
+    m.setAttribute('width', String(bar ? bar.w : 12));
+    m.setAttribute('y', String(Math.min(yTop, baseline - h)));
+    m.setAttribute('height', String(h));
     m.style.display = '';
     show(i, !!(bins && bins.length));
   });
