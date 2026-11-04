@@ -226,9 +226,19 @@ const stage = createDemoStage({
     detail: CATEGORIES.map((c, i) => `${c} ${trial.source[i]}`).join(', ')
       + ` — X² = ${trial.stat.toFixed(2)}`,
   }),
-  maxTrials: 1000,
-  onUpdate: ({ trials, showing }) => {
-    if (countEl) countEl.textContent = String(trials);
+  // Jeff, 2026-11-04: "can you make the maximum number of samples, say
+  // 10,000… the scrubbing might have to be limited to the first 1000 or so."
+  // Ten thousand is cheap — 15ms of drawing, measured — and the chart keeps
+  // its fixed axis, so the shape just gets smoother.
+  maxTrials: 10000,
+  scrubMax: 1000,
+  onUpdate: ({ trials, atMax }) => {
+    if (countEl) countEl.textContent = trials.toLocaleString();
+    // ⚠ Disable at the cap rather than letting a press do nothing. A dead
+    // button in a lecture reads as a broken page, and `add()` simply returns 0.
+    for (const b of document.querySelectorAll('.generate-bar .gen-btn')) {
+      /** @type {HTMLButtonElement} */ (b).disabled = atMax;
+    }
     if (honestyEl) honestyEl.hidden = trials < PILE_CURVE_MIN;
   },
 });

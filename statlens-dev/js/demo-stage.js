@@ -101,8 +101,16 @@ export const PILE_CURVE_MIN = 500;
  *   within a bar. `approximate` is true when the column is a bin rather than
  *   one value, so the caller can say so.
  * @property {number} [maxTrials]
+ * @property {number} [scrubMax] - how many trials the scrubber can address.
+ *   ⚠ Not a performance limit: 10,000 trials cost 15ms to draw and 3ms to
+ *   sort, measured. It is an ADDRESSABILITY limit. A range input is about
+ *   400px wide, so ten thousand positions is twenty-five trials per pixel and
+ *   "go back to sample 11" stops being possible by dragging. The scrubber
+ *   therefore covers the first `scrubMax` trials, which is where looking back
+ *   belongs, and says so once more have been drawn. Arrow keys still step one
+ *   at a time within that range.
  * @property {string} [tool] - name reported on `statlens:state`
- * @property {(s: {trials: number, stat: number|null, showing: number}) => void} [onUpdate]
+ * @property {(s: {trials: number, stat: number|null, showing: number, atMax: boolean}) => void} [onUpdate]
  */
 
 /**
@@ -142,15 +150,23 @@ export function createDemoStage(cfg) {
       window.dispatchEvent(new CustomEvent('statlens:state',
         { detail: { tool: cfg.tool ?? 'demo', event, state } }));
     } catch { /* CustomEvent unsupported — activities fall back to seed gates */ }
+    const scrubCap = Math.min(stats.length, cfg.scrubMax ?? cfg.maxTrials ?? maxTrials);
     if (cfg.scrubEl) {
       cfg.scrubEl.disabled = stats.length === 0;
-      cfg.scrubEl.max = String(Math.max(1, stats.length));
-      cfg.scrubEl.value = String(Math.max(1, showing));
+      cfg.scrubEl.max = String(Math.max(1, scrubCap));
+      // Parked at the end while the trial on screen is past the scrubber's
+      // reach — the panel still shows that trial, the slider just cannot
+      // point at it.
+      cfg.scrubEl.value = String(Math.max(1, Math.min(showing, scrubCap)));
     }
     if (cfg.scrubValueEl) {
-      cfg.scrubValueEl.textContent = stats.length ? `${showing} of ${stats.length}` : '—';
+      const fmt = (/** @type {number} */ v) => v.toLocaleString();
+      cfg.scrubValueEl.textContent = !stats.length ? '—'
+        : scrubCap < stats.length
+          ? `${fmt(showing)} of ${fmt(stats.length)} · scrub covers the first ${fmt(scrubCap)}`
+          : `${fmt(showing)} of ${fmt(stats.length)}`;
     }
-    cfg.onUpdate?.({ trials: stats.length, stat: state.stat, showing });
+    cfg.onUpdate?.({ trials: stats.length, stat: state.stat, showing, atMax: stats.length >= maxTrials });
   }
 
   /** @type {{markIndex: (i: number) => void}|null} */
@@ -327,10 +343,12 @@ export function createDemoStage(cfg) {
   // in step is a stage that will be reimplemented six times, slightly
   // differently. Same argument as `initPlayPause` building its own button.
   if (cfg.scrubEl) {
-    cfg.scrubEl.addEventListener('input', () => {
-      scrubTo(Number(cfg.scrubEl?.value));
-      if (cfg.scrubValueEl) cfg.scrubValueEl.textContent = `${showing} of ${stats.length}`;
-    });
+    // ⚠ The label is written in ONE place, by `emit`. This listener used to
+    // write it too, with a plainer string — so dragging the thumb silently
+    // replaced "10,000 of 10,000 · scrub covers the first 1,000" with
+    // "11 of 10000", dropping both the thousands separators and the one piece
+    // of information the reader needed.
+    cfg.scrubEl.addEventListener('input', () => scrubTo(Number(cfg.scrubEl?.value)));
   }
 
   // ⚠ The activity panel asks for state when it loads, and a step that reads a

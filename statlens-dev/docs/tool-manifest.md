@@ -711,6 +711,7 @@ button changes that). A colour key under the strip names both outcomes.
 | Parameter | Type | Description | Example |
 |-----------|------|-------------|---------|
 | `seed` | string | The trial sequence. Trial *i* draws from `${seed}-trial-${i}`, so a link reproduces every sample and the scrubber reproduces each one again. | `?seed=lecture3` |
+| — | — | **Up to 10,000 samples** (`+1` `+10` `+100` `+1k`). ⚠ The scrubber addresses the **first 1,000** and says so once more are drawn: a 400px range input cannot resolve ten thousand positions. Hovering still names a specific sample at any size, but cannot reach every one of them. Not a performance limit — 10,000 trials cost 15ms to draw. | — |
 | `observed` | string | `on` marks the real sample (X² = 4.60) on the pile and reports its share. Off by default. | `?observed=on` |
 | `activity` | string | Loads a guided step panel over the bare page. | `?activity=ch16-where-x2-comes-from.json` |
 
