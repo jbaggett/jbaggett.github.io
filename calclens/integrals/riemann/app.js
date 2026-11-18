@@ -24,6 +24,7 @@ import { initExpressionInput, initSlider } from 'kit/input.js';
 import { fmt } from 'kit/format.js';
 import { initShare } from 'kit/share.js';
 import { initReveal, revealHidden } from 'kit/reveal.js';
+import { initWorking } from 'kit/working.js';
 import { MARK } from '../../js/mark.js';
 
 import { tryParse, compile, toLatex } from '../../js/expr.js';
@@ -67,6 +68,7 @@ const state = {
 
 let chart = createChart('#chart', { height: 360, label: 'The curve with rectangles under it' });
 let reveal = null;
+let work = null;
 
 // Hatching for rectangles below the axis. A negative contribution must not be
 // carried by colour alone, and a hatch also reads as "this is being taken
@@ -101,6 +103,12 @@ function render() {
   if (!(b > a)) return;
 
   const r = riemann(f, a, b, n, rule);
+  // Each piece carries its own index. Looking one up with `indexOf` against a
+  // captured array is what broke clicking: the handler held the array from the
+  // render that created the path, the datum came from the CURRENT render, and
+  // a fresh object is never found in a stale array — so every click resolved
+  // to −1 and was dropped without a sound.
+  r.pieces.forEach((p, i) => { p.i = i; });
   state.last = r;
   state.sel = Math.min(state.sel, n - 1);
 
@@ -115,20 +123,25 @@ function render() {
   const bars = chart.plot.selectAll('path.rs-bar').data(r.pieces);
   bars.exit().remove();
   bars.enter().append('path')
-    .on('click', (/** @type {any} */ _e, /** @type {any} */ d) => select_(r.pieces.indexOf(d)))
     .merge(bars)
     .attr('class', (d, i) => 'rs-bar'
       + (d.area < 0 ? ' rs-bar-neg' : '')
       + (i === state.sel ? ' rs-bar-sel' : ''))
-    .attr('d', d => shapeOf(d, xs, ys, rule, f))
-    .style('cursor', 'pointer');
+    .attr('d', d => shapeOf(d, xs, ys, rule, f));
 
   // The curve goes ON TOP of the rectangles, so where a top overshoots the
   // curve and where it falls short is visible without anything being added to
   // say so. That sliver IS the error.
   drawCurve(chart.plot, f, { xs, ys });
+  // The curve is drawn over the rectangles on purpose, and the decorations sit
+  // over everything — so near the top of a rectangle, where the curve, the
+  // sample dot and the height label all are, a click landed on one of those
+  // instead of on the rectangle. None of them is a thing to click.
+  chart.plot.selectAll('path.ll-curve').attr('pointer-events', 'none');
 
+  chart.gOver.attr('pointer-events', 'none');
   chart.gOver.selectAll('*').remove();
+  drawHitStrips(r.pieces, xs, ys);
   drawSamplePoints(r.pieces, xs, ys, rule, n);
   drawWidthRule(r.pieces, xs, ys, n);
   if (n <= 8) drawHeightLabels(r.pieces, xs, ys, rule);
@@ -138,6 +151,40 @@ function render() {
     + `each ${tidy((b - a) / n)} wide. The estimate is ${fmt(r.sum)}.`);
 
   updateText();
+}
+
+/**
+ * A full-height invisible strip over each rectangle's column, which is what
+ * actually takes the clicks.
+ *
+ * Clicking the rectangle itself is no good near a zero of f, where it is three
+ * pixels tall and on a phone cannot be hit at all — and those flat end
+ * rectangles are exactly the ones worth inspecting, since their product is
+ * nearly nothing. The strip spans the plot, so every column is as easy to
+ * reach as every other however short its rectangle.
+ *
+ * The strips are JOINED, never cleared and rebuilt. A click only fires when
+ * mousedown and mouseup land on the same element, and clicking the chart blurs
+ * the function box — which fires its `change`, which re-renders. Rebuilding
+ * the strips in between meant the mouseup landed on a different element and no
+ * click was ever dispatched: the first click after typing did nothing, every
+ * time.
+ */
+function drawHitStrips(pieces, xs, ys) {
+  const [top, bottom] = ys.range();
+  let g = chart.plot.select('g.rs-hits');
+  if (g.empty()) g = chart.plot.append('g').attr('class', 'rs-hits');
+  const strips = g.selectAll('rect').data(pieces);
+  strips.exit().remove();
+  strips.enter().append('rect')
+    .merge(strips)
+    .attr('x', d => xs(d.x0))
+    .attr('width', d => Math.max(1, xs(d.x1) - xs(d.x0)))
+    .attr('y', Math.min(top, bottom))
+    .attr('height', Math.abs(bottom - top))
+    .attr('fill', 'transparent')
+    .style('cursor', 'pointer')
+    .on('click', (/** @type {any} */ _e, /** @type {any} */ d) => select_(d.i));
 }
 
 /** The dot where each rectangle's height was read off the curve. */
@@ -216,12 +263,88 @@ function productLine() {
     + ` = ${tidy(p.height)} \\cdot ${tidy(dx)} = ${tidy(p.area)}`;
 }
 
+/**
+ * The sum, organised the way it is taught: Δx factored out, the heights added.
+ *
+ * Jeff, 2026-11-17: *"when organizing the computations to show students, factor
+ * the delta x term and just sum the function values. that approach doesn't show
+ * in the app."* It does now, and it is the point of the organisation — you
+ * multiply ONCE at the end rather than n times, so what is actually being added
+ * is a list of heights.
+ *
+ * Long sums are elided to the first two terms and the last. Writing out two
+ * hundred of them would be a wall rather than a demonstration, and the shape
+ * is what is being shown.
+ * @returns {{tex:string, notes:{text:string,kind:'transition'|'diagnosis'}[]}[]}
+ */
+function sumSteps() {
+  const { pieces } = state.last;
+  const n = state.n;
+  if (!pieces.length) return [];
+  const dx = (state.b - state.a) / n;
+  const trap = state.rule === 'trapezoid';
+  const T = (/** @type {string} */ t) => ({ text: t, kind: /** @type {const} */ ('transition') });
+  const long = n > 6;
+
+  /** The terms to actually print, with an ellipsis standing for the rest. */
+  const shown = long ? [0, 1, -1, n - 1] : pieces.map((_, i) => i);
+  const join = (/** @type {(i:number)=>string} */ term) => shown
+    .map(i => (i === -1 ? '\\cdots' : term(i)))
+    .join(' + ');
+  /** Values join with their own sign, or a negative height reads as "+ −0.4". */
+  const joinSigned = (/** @type {(i:number)=>number} */ val) => shown.map((i, k) => {
+    if (i === -1) return '+ \\cdots';
+    const v = val(i);
+    const body = tidy(Math.abs(v));
+    if (k === 0) return v < 0 ? `-${body}` : body;
+    return `${v < 0 ? '-' : '+'} ${body}`;
+  }).join(' ');
+
+  const paren = (/** @type {string} */ inner) => `\\left(${inner}\\right)`;
+  // A trapezoid's height is the average of its two ends, so f(x_i) would be the
+  // wrong name for it. It gets a neutral one rather than a wrong one.
+  const sym = trap ? ((/** @type {number} */ i) => `h_{${i + 1}}`)
+    : ((/** @type {number} */ i) => `f(x_{${i + 1}})`);
+  const subbed = trap ? ((/** @type {number} */ i) => `h_{${i + 1}}`)
+    : ((/** @type {number} */ i) => `f(${tidy(pieces[i].sampleX)})`);
+
+  const total = pieces.reduce((acc, p) => acc + (Number.isFinite(p.height) ? p.height : 0), 0);
+  const steps = [];
+
+  steps.push({
+    tex: `${paren(join(sym))}\\Delta x`,
+    notes: [T(trap
+      ? `each \\(h_i\\) is the average of the two ends of its strip`
+      : `all \\(${n}\\) rectangles share the same width, so \\(\\Delta x\\) `
+        + `comes out as a common factor`)],
+  });
+  steps.push({
+    tex: `${paren(join(subbed))}${paren(tidy(dx))}`,
+    notes: [T(`${trap ? '' : 'the sample points, and '}\\(\\Delta x = \\frac{b-a}{n} `
+      + `= \\frac{${tidy(state.b - state.a)}}{${n}} = ${tidy(dx)}\\)`)],
+  });
+  steps.push({
+    tex: `${paren(joinSigned(i => pieces[i].height))}${paren(tidy(dx))}`,
+    notes: [T('each height, read off the curve'
+      + (long ? ` — \\(${n}\\) of them, two shown` : ''))],
+  });
+  steps.push({
+    tex: `${paren(tidy(total))}${paren(tidy(dx))}`,
+    notes: [T('add the heights — this is the whole of the work')],
+  });
+  steps.push({
+    tex: tidy(state.last.sum),
+    notes: [T('one multiplication, at the end — not \\(n\\) of them')],
+  });
+  return steps;
+}
+
 function updateText() {
   const { n, sum } = { n: state.n, sum: state.last.sum };
   $('#rect-which').textContent = `rectangle ${state.sel + 1} of ${n}`;
   setTex($('#product-line'), productLine(), { display: true });
 
-  $('#sum-line').innerHTML = `Adding all ${n} of them: <b>${fmt(sum)}</b>`;
+  if (work) work.set(sumSteps(), { openAll: true });
 
   const shown = reveal ? reveal.shown : false;
   const v = $('#verdict-line');
@@ -318,6 +441,16 @@ initPage({
     setTex($('#help-tex1'),
       '\\underbrace{f(x_i)}_{\\text{height}}\\cdot\\underbrace{\\Delta x}_{\\text{width}}'
       + ' = \\text{the area of one rectangle}', { display: true });
+
+    work = initWorking({
+      mount: $('#work-mount'),
+      // Not a step-by-step exercise: the lines are a live readout that changes
+      // whenever the slider does, so gating them behind a button that resets on
+      // every drag would be the wrong kind of friction. The component is reused
+      // for the look and the margin column, with its controls stood down.
+      chain: true,
+    });
+    work.setSuppressed(true);
 
     reveal = initReveal({
       mount: $('#exact-slot'),

@@ -34,7 +34,15 @@
   /* One rectangle, and the product it stands for. The height comes off the
      curve at the sample point, the width is shared by every rectangle, and the
      area is the two multiplied — which is the step students actually lose. */
-  .rs-bar { fill: var(--ims-blue); fill-opacity: 0.22; stroke: var(--ims-blue-text); stroke-width: 1; }
+  /* The rectangles are drawn, not clicked: a transparent full-height strip per
+     column takes the clicks instead, so a rectangle three pixels tall near a
+     zero of f is as easy to hit as a tall one. Making the drawing inert means
+     the stacking order cannot decide whether a click is heard. */
+  .rs-bar {
+    fill: var(--ims-blue); fill-opacity: 0.22;
+    stroke: var(--ims-blue-text); stroke-width: 1;
+    pointer-events: none;
+  }
   .rs-bar-neg { fill: url(#rs-neg); fill-opacity: 1; stroke: #C05E10; }
   .rs-bar-sel { fill-opacity: 0.5; stroke-width: 2.5; }
   .rs-dot { fill: var(--ims-blue-text); stroke: #fff; stroke-width: 1.5; }
@@ -58,8 +66,6 @@
   .rs-product .katex { font-size: 1.15em; }
   .rs-inspect { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
   .rs-inspect button { min-width: 2.6rem; }
-  .rs-sum { font-size: 1.15rem; margin: 0.6rem 0 0; }
-  .rs-sum b { font-size: 1.25rem; }
   .rs-verdict { margin: 0.35rem 0 0; }
 
   .rs-table { border-collapse: collapse; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
@@ -147,7 +153,14 @@
     </div>
     <p class="rs-product ll-math" id="product-line"></p>
 
-    <p class="rs-sum" id="sum-line"></p>
+  </section>
+
+  <section id="adding" aria-label="Adding the rectangles up">
+    <h2>Adding them up</h2>
+    <p class="ll-hint">Every rectangle has the same width, so the <b>Δ<i>x</i>
+      comes out as a common factor</b> and what is left to add is just the
+      heights.</p>
+    <div id="work-mount"></div>
     <div id="exact-slot"></div>
     <p class="rs-verdict" id="verdict-line" hidden></p>
   </section>

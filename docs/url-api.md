@@ -514,6 +514,13 @@ calclens/derivatives/steps/?f=sin(3x^2)&embed=true&steps=all&controls=none
 | `preset` | key | — | `parabola`, `linear`, `sine`, `signed`, `nasty`. |
 | `controls` | list | all | Which control groups to show: `f`, `rule`, `n`, `inspect`, `table`. |
 
+The sum is shown **organised the way it is taught**: Δ*x* factored out of every
+term, then the sample points substituted, then the heights evaluated, then added,
+then one multiplication at the end. Past six rectangles the terms elide to the
+first two and the last, since the shape is what is being shown and two hundred
+terms is a wall. These lines are a live readout and are never gated behind a
+step button — the slider changes them continuously.
+
 The exact area is computed **numerically** (adaptive Simpson), so an integrand
 with no elementary antiderivative behaves exactly like one that has it.
 
