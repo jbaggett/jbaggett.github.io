@@ -499,6 +499,28 @@ apply here — `steps=all` is the spelling for "show me the answer".
 calclens/derivatives/steps/?f=sin(3x^2)&embed=true&steps=all&controls=none
 ```
 
+## CalcLens — Riemann Sums
+
+`calclens/integrals/riemann/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `4 - x^2` | The integrand. |
+| `a` | number | `0` | Left end of the interval. |
+| `b` | number | `2` | Right end. Must be greater than `a`; the page says so rather than drawing nothing. |
+| `rule` | `left` \| `right` \| `midpoint` \| `trapezoid` | `left` | Where each rectangle takes its height. `trapezoid` has no button — the three Calculus 1 rules do — but the parameter works and draws real trapezoids, for when the trapezoid rule turns up later. |
+| `n` | integer 1–200 | `4` | How many rectangles. |
+| `readout` | `true` \| `false` | `false` | Whether the **exact area** starts shown. Hidden by default: the page gives the estimate and nothing else, so "make them thinner and see where the number is heading" is a question and not a caption. `readout=true` opens it for a worked example on a slide. |
+| `preset` | key | — | `parabola`, `linear`, `sine`, `signed`, `nasty`. |
+| `controls` | list | all | Which control groups to show: `f`, `rule`, `n`, `inspect`, `table`. |
+
+The exact area is computed **numerically** (adaptive Simpson), so an integrand
+with no elementary antiderivative behaves exactly like one that has it.
+
+```
+calclens/integrals/riemann/?f=4-x^2&a=0&b=2&rule=left&n=8&embed=true
+```
+
 ## CalcLens — Worked Integral
 
 `calclens/integrals/steps/`

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Riemann Sums | CalcLens</title>
+<meta name="description" content="Estimate area with left, right or midpoint rectangles — each one read as a product of a height and a width — and watch the estimate settle as the rectangles get thinner.">
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  /* One rectangle, and the product it stands for. The height comes off the
+     curve at the sample point, the width is shared by every rectangle, and the
+     area is the two multiplied — which is the step students actually lose. */
+  .rs-bar { fill: var(--ims-blue); fill-opacity: 0.22; stroke: var(--ims-blue-text); stroke-width: 1; }
+  .rs-bar-neg { fill: url(#rs-neg); fill-opacity: 1; stroke: #C05E10; }
+  .rs-bar-sel { fill-opacity: 0.5; stroke-width: 2.5; }
+  .rs-dot { fill: var(--ims-blue-text); stroke: #fff; stroke-width: 1.5; }
+  .rs-dot-neg { fill: #C05E10; }
+  /* The curve runs straight through these labels — it is drawn on top of the
+     rectangles on purpose — so each one carries a white halo rather than being
+     moved somewhere the curve is not. */
+  .rs-hlabel {
+    font-size: 11px; fill: var(--ims-blue-text); text-anchor: middle;
+    paint-order: stroke fill; stroke: #fff; stroke-width: 3px; stroke-linejoin: round;
+  }
+  .rs-width-rule { stroke: var(--ims-gray-text); stroke-width: 1; }
+  .rs-width-label {
+    font-size: 11px; fill: var(--ims-gray-text); text-anchor: middle;
+    paint-order: stroke fill; stroke: #fff; stroke-width: 3px; stroke-linejoin: round;
+  }
+
+  /* The product, spelled out. This is the readout the tool exists for, so it
+     is the largest thing under the figure. */
+  .rs-product { margin: 0.5rem 0 0; font-size: 1.05rem; }
+  .rs-product .katex { font-size: 1.15em; }
+  .rs-inspect { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
+  .rs-inspect button { min-width: 2.6rem; }
+  .rs-sum { font-size: 1.15rem; margin: 0.6rem 0 0; }
+  .rs-sum b { font-size: 1.25rem; }
+  .rs-verdict { margin: 0.35rem 0 0; }
+
+  .rs-table { border-collapse: collapse; margin-top: 0.5rem; font-variant-numeric: tabular-nums; }
+  .rs-table th, .rs-table td { padding: 0.2rem 0.75rem 0.2rem 0; text-align: right; font-size: 0.92rem; }
+  .rs-table th { font-weight: 600; border-bottom: 1px solid var(--border); }
+  .rs-table tr.rs-now td { font-weight: 700; color: var(--ims-blue-text); }
+  @media (max-width: 599px) { .rs-table th, .rs-table td { padding-right: 0.5rem; font-size: 0.86rem; } }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the function</a>
+  <a href="#figure">Skip to the figure</a>
+</nav>
+
+<main>
+  <h1>Riemann Sums
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    Estimate the area under a curve with rectangles. Every rectangle is a
+    <b>height times a width</b> — a number with the same units as the area — and
+    the estimate is those products added up.
+    <span class="ll-hint">Step through the rectangles one at a time before you
+    touch the slider. The product is the part worth getting straight.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The function and the interval">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 260px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="4 - x^2" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error">
+      </label>
+      <label for="a-input"><span>from <i>a</i> =</span>
+        <input type="number" id="a-input" value="0" step="0.5" style="width:5.5rem"></label>
+      <label for="b-input"><span>to <i>b</i> =</span>
+        <input type="number" id="b-input" value="2" step="0.5" style="width:5.5rem"></label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+
+    <div class="ll-row" style="margin-top:0.6rem; gap:1.2rem;" data-control="rule">
+      <div class="ll-segmented" role="group" aria-label="Where each rectangle takes its height">
+        <button type="button" class="rule-btn" data-rule="left">Left</button>
+        <button type="button" class="rule-btn" data-rule="right">Right</button>
+        <button type="button" class="rule-btn" data-rule="midpoint">Midpoint</button>
+      </div>
+    </div>
+
+    <label for="n-slider" style="display:block; margin-top:0.7rem;" data-control="n">
+      <span>Rectangles <i>n</i> = <output id="n-out" for="n-slider">4</output></span>
+      <input type="range" id="n-slider" min="1" max="200" step="1" value="4">
+    </label>
+    <div class="ll-segmented" role="group" aria-label="Jump to a number of rectangles" data-control="n"
+         style="margin-top:0.4rem;">
+      <button type="button" class="n-btn" data-n="1">1</button>
+      <button type="button" class="n-btn" data-n="2">2</button>
+      <button type="button" class="n-btn" data-n="4">4</button>
+      <button type="button" class="n-btn" data-n="8">8</button>
+      <button type="button" class="n-btn" data-n="16">16</button>
+      <button type="button" class="n-btn" data-n="50">50</button>
+      <button type="button" class="n-btn" data-n="200">200</button>
+    </div>
+  </section>
+
+  <section id="figure" aria-label="The rectangles">
+    <div id="chart" class="ll-chart"></div>
+
+    <div class="rs-inspect" data-control="inspect">
+      <button type="button" id="prev-rect" aria-label="Previous rectangle">◀</button>
+      <span id="rect-which" aria-live="off">rectangle 1 of 4</span>
+      <button type="button" id="next-rect" aria-label="Next rectangle">▶</button>
+      <span class="ll-hint">or click one</span>
+    </div>
+    <p class="rs-product ll-math" id="product-line"></p>
+
+    <p class="rs-sum" id="sum-line"></p>
+    <div id="exact-slot"></div>
+    <p class="rs-verdict" id="verdict-line" hidden></p>
+  </section>
+
+  <section aria-label="How the estimate settles" data-control="table">
+    <h2>As the rectangles get thinner</h2>
+    <table class="rs-table" id="conv-table">
+      <thead><tr><th scope="col"><i>n</i></th><th scope="col">Δ<i>x</i></th>
+        <th scope="col">estimate</th><th scope="col" id="err-head" hidden>error</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Riemann Sums</h2>
+  <p>Type a function, give it an interval, and choose where each rectangle takes
+     its height — at the <b>left</b> edge of its strip, the <b>right</b> edge, or
+     the <b>midpoint</b>. The slider sets how many rectangles there are.</p>
+
+  <h3>One rectangle is a product</h3>
+  <p>This is the part worth slowing down for. Each rectangle is</p>
+  <p class="ll-math" id="help-tex1"></p>
+  <p>a height read off the curve, times a width that every rectangle shares. If
+     <i>f</i> is a speed in metres per second and <i>x</i> is a time in seconds,
+     one rectangle is a <em>distance</em> in metres — and so is the total. The
+     sum is the easy half; knowing what one product means is not.</p>
+  <p>Step through them with <kbd>◀</kbd> and <kbd>▶</kbd>, or click a rectangle,
+     and the line underneath spells out that one product with its numbers in.</p>
+
+  <h3>Over or under</h3>
+  <p>Where the rectangle's top sits above the curve, that strip is being
+     over-counted; where it sits below, under-counted. For a function that only
+     decreases, <b>left</b> rectangles overshoot and <b>right</b> rectangles fall
+     short — so the two together trap the answer between them without your
+     needing to know it. Midpoint rectangles overshoot on one side of their strip
+     and fall short on the other, which is why they do so much better.</p>
+
+  <h3>The exact area is hidden until you ask</h3>
+  <p>Press <kbd>R</kbd>, or the button under the figure, to show it
+     (<code>?readout=true</code> starts it open). Until then
+     the page tells you the estimate and nothing else, which is the point: make
+     the rectangles thinner and watch where the number is heading, then check.</p>
+  <p>The exact value is computed numerically, so it works for functions with no
+     elementary antiderivative too.</p>
+
+  <h3>Signed area</h3>
+  <p>Below the axis, a rectangle's height is negative and so is its product. The
+     page draws those hatched rather than relying on colour, and they
+     <em>subtract</em> from the total. A Riemann sum computes signed area, not
+     the area of the paint.</p>
+
+  <h3>Putting this in a slide or a page</h3>
+  <pre class="ll-code">?f=4-x^2&amp;a=0&amp;b=2&amp;rule=left&amp;n=8&amp;readout=true&amp;embed=true</pre>
+  <p><code>rule=trapezoid</code> also works, for when the trapezoid rule turns
+     up later. See <code>docs/url-api.md</code> for every parameter.</p>
+
+  <h3>Keyboard</h3>
+  <dl>
+    <dt><kbd>◀</kbd> <kbd>▶</kbd></dt><dd>Step between rectangles</dd>
+    <dt><kbd>R</kbd></dt><dd>Show or hide the exact area</dd>
+    <dt><kbd>?</kbd></dt><dd>This dialog</dd>
+    <dt><kbd>Esc</kbd></dt><dd>Close</dd>
+  </dl>
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
