@@ -6,11 +6,22 @@ added to. Slides and coursepacks outlive refactors.
 
 Add a parameter's entry here **in the same commit** that adds the parameter.
 
-Values are URL-encoded as usual. Note that `+` means a space in a query string,
-so a plus sign inside a function must be written `%2B`:
+Values are URL-encoded as usual, with one deliberate exception: **a `+` is read
+as a plus sign, not as a space.**
+
+Form encoding says `+` means a space and `URLSearchParams` agrees, so `?f=x+1/x`
+used to arrive as `x 1/x` — which this parser reads as implied multiplication
+and quietly turns into `1`. An instructor hand-writing a link got a different
+function from the one they typed, with nothing on screen to say so. Every
+parameter here is an expression, a number, a letter or a boolean; none of them
+wants a space badly enough for that. A space that is genuinely wanted still
+arrives as `%20`.
+
+Both of these now work, and mean the same thing:
 
 ```
-?f=-16t%5E2%2B32t%2B48        →  f = -16t^2+32t+48
+?f=-16t%5E2%2B32t%2B48        →  f = -16t^2+32t+48   (fully encoded)
+?f=-16t^2+32t+48              →  f = -16t^2+32t+48   (written as you would say it)
 ```
 
 ## Names are shared with StatLens
@@ -480,6 +491,27 @@ The increment is `h`, or `k` if the function itself is written in *h*.
 calclens/limits/difference-quotient/?f=sqrt(x)&embed=true&steps=all&controls=none
 ```
 
+## CalcLens — Critical Numbers
+
+`calclens/derivatives/critical/`
+
+| Parameter | Type | Default | Meaning |
+|---|---|---|---|
+| `f` | expression | `x^(2/3)(x-4)` | The function. Its derivative is factored, and both kinds of critical number are read off it. |
+| `algebra` | `true` \| `false` | `false` | Whether the factoring steps start shown. |
+| `preset` | key | — | `cusp`, `fractional`, `classic`, `noturn`, `undefined_`, `none`. |
+| `controls` | list | all | Which control groups to show: `f`, `algebra`. |
+
+A point where *f* ′ blows up counts only when *f* itself is defined there, so
+some functions come back with fewer critical numbers than their denominator
+suggests. Roots come factor by factor: linear and quadratic factors give exact
+values (6/7, not 0.857), anything else is found numerically between −12 and 12
+and the page says so rather than letting a shortened list look complete.
+
+```
+calclens/derivatives/critical/?f=x^(2/3)(x-4)&algebra=true&embed=true
+```
+
 ## CalcLens — Worked Derivative
 
 `calclens/derivatives/steps/`
@@ -490,6 +522,7 @@ calclens/limits/difference-quotient/?f=sqrt(x)&embed=true&steps=all&controls=non
 | `var` | letter | inferred | Only used when the expression has more than one letter, or none to infer from. The expression always wins. |
 | `steps` | `all` | first line only | Reveal the whole derivation at load. For a worked example on a slide; leave it off and the class advances a line at a time. |
 | `controls` | list | all | Which control groups to show: `f`, `steps`. Taking `steps` away also opens the working, since there would otherwise be no way to advance it. |
+| `simplify` | `true` \| `false` | `false` | Whether the **algebra after the calculus** is already added to the working: take out the lowest power of every common factor, multiply out, land on one fraction. Off by default, because differentiating and simplifying are two skills and early in the course you want only the first — there is a button for it, and it appears only when there is something to do. |
 | `preset` | key | — | `product`, `quotient`, `chain`, `logdiff`. |
 
 The working itself is content, not a readout, so `readout=`/`reveal=` do not
@@ -557,7 +590,7 @@ calclens/integrals/steps/?f=2x cos(x^2)&embed=true&steps=all&controls=none
 | Parameter | Type | Default | Meaning |
 |---|---|---|---|
 | `f` | expression | `x^2` | The problem. |
-| `mode` | `anti` \| `deriv` | `anti` | Which kind of answer is being checked. |
+| `mode` | `anti` \| `deriv` \| `simplify` | `anti` | Which kind of answer is being checked. `simplify` shows the **unsimplified derivative** and asks for a simplified form — and gives a third verdict, *equal but not finished*, which equality alone can never give: the unsimplified derivative IS equal to the simplified one. |
 
 ## Not yet frozen
 

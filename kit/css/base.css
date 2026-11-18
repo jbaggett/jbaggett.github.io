@@ -185,6 +185,11 @@ button.ll-primary:hover { background: #2F6A8F; }
 .ll-verdict { font-weight: bold; }
 .ll-verdict.ok { color: var(--ok); }
 .ll-verdict.bad { color: var(--bad); }
+/* Right, but not finished — a third verdict, because "equal" and "done" are
+   different questions and a tool that only answers the first cannot tell a
+   student they have more algebra to do. Warm orange, never the green of a
+   finished answer nor the red of a wrong one. */
+.ll-verdict.part { color: #C05E10; }
 
 .ll-tex-fallback { font-family: var(--font-mono); font-size: 0.92em; background: var(--surface); padding: 0 0.2em; }
 .katex { font-size: 1.05em; }

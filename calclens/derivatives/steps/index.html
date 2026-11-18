@@ -30,6 +30,8 @@
 </script>
 
 <style>
+  #simplify-row { margin-top: 0.9rem; display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
+  #simplify-row .ll-hint { flex: 1 1 18rem; }
   #rules-used { margin-top: 1.2rem; }
   #rule-list { list-style: none; margin: 0.4rem 0 0; padding: 0; display: grid; gap: 0.45rem; }
   #rule-list li { display: flex; flex-wrap: wrap; gap: 0.2rem 0.7rem; align-items: baseline; }
@@ -93,6 +95,12 @@
     <h2>The working</h2>
     <div id="work-mount"></div>
     <p class="ll-hint" id="note" hidden></p>
+    <div id="simplify-row" data-control="simplify" hidden>
+      <button type="button" id="simplify-btn" class="ll-primary">Simplify further</button>
+      <span class="ll-hint" id="simplify-hint">The derivative is done. The algebra
+        that turns it into a form you can find critical numbers with is a separate
+        job — and the one that takes the practice.</span>
+    </div>
   </section>
 
   <section id="rules-used" aria-label="Rules used" hidden>
@@ -136,6 +144,23 @@
      power rule — not by the product rule. The page separates those two steps
      because running a numeric coefficient through the product rule is a common
      and expensive habit.</p>
+
+  <h3>Simplifying is a separate button</h3>
+  <p>Differentiating and simplifying are two different skills, and early on you
+     want only the first. So the derivative stops where the rules stop, and
+     <b>Simplify further</b> asks for the algebra: take out the lowest power of
+     every common factor, multiply out what is left, and land on one fraction.</p>
+  <p>That move is where fractional exponents bite. The lowest power of
+     (<i>x</i>−1) in a derivative like</p>
+  <p class="ll-math" id="help-tex3"></p>
+  <p>is the <em>negative</em> one, so taking it out <em>raises</em> the exponent
+     in the other term instead of lowering it, and puts everything over one
+     denominator at the same time. The margin says so on the line where it
+     happens.</p>
+  <p>The button appears only when there is something to do, and only once the
+     derivation is fully open — it would be a strange thing to offer over a
+     half-revealed derivative. <code>?simplify=true</code> opens it with the
+     algebra already done, for a worked example on a slide.</p>
 
   <h3>What it will not do</h3>
   <p>The tidy-up is algebraic. It knows sin²<i>u</i> + cos²<i>u</i> = 1 and

@@ -322,6 +322,30 @@ export function tryParse(/** @type {string} */ src) {
  *   letter, read at call time so a slider moves without recompiling
  * @returns {(x:number)=>number}
  */
+/**
+ * A power that knows an odd root of a negative number is real.
+ *
+ * `Math.pow(-8, 2/3)` is NaN, so x^(2/3) had no left-hand half: the graph of
+ * it simply stopped at the origin, and a critical number at a negative x was
+ * thrown away for being outside a domain the function actually has. An
+ * exponent p/q in lowest terms with q ODD is real for a negative base — that
+ * is the cube root every Calculus 1 course draws — and only an even q is
+ * genuinely undefined there.
+ */
+function realPow(/** @type {number} */ b, /** @type {number} */ e) {
+  if (b >= 0 || Number.isInteger(e) || !Number.isFinite(b) || !Number.isFinite(e)) {
+    return Math.pow(b, e);
+  }
+  for (let q = 1; q <= 64; q += 1) {
+    const p = e * q;
+    if (Math.abs(p - Math.round(p)) > 1e-10) continue;
+    if (q % 2 === 0) return NaN;                    // an even root of a negative
+    const mag = Math.pow(-b, e);
+    return Math.round(p) % 2 === 0 ? mag : -mag;
+  }
+  return NaN;
+}
+
 export function compile(node, v = 'x', params = null) {
   switch (node.type) {
     case 'num': { const c = node.value; return () => c; }
@@ -344,7 +368,7 @@ export function compile(node, v = 'x', params = null) {
     }
     case 'pow': {
       const b = compile(node.base, v, params), e = compile(node.exp, v, params);
-      return x => Math.pow(b(x), e(x));
+      return x => realPow(b(x), e(x));
     }
     case 'fn': {
       const g = FUNCTIONS[node.name].f, a = compile(node.arg, v, params);
@@ -1115,6 +1139,181 @@ function uSub(/** @type {Node} */ F, /** @type {Node} */ innerArg, /** @type {st
   const lin = linearCoeffs(innerArg, v);
   if (!lin || lin.a === 0) return null;
   return lin.a === 1 ? F : div(F, num(lin.a));
+}
+
+/* ──────────────────────── factoring a sum of powers ────────────────────── */
+
+/**
+ * Read one term as a rational coefficient and a set of base^exponent factors.
+ * A factor the reader would not call a power — sin(3x) — is its own base to
+ * the first power, which is all this needs it to be.
+ */
+function termParts(/** @type {Node} */ t) {
+  const factors = t.type === 'mul' ? t.args : [t];
+  let coef = 1;
+  /** @type {Map<string, {base:Node, exp:number}>} */ const powers = new Map();
+  for (const f of factors) {
+    if (isNum(f)) { coef *= numV(f); continue; }
+    const { base, exp } = flattenPow(f);
+    if (!Number.isFinite(exp)) continue;
+    // A numeric base raised to a numeric power is a coefficient, not a factor
+    // to collect: 2^-1 is a half.
+    if (isNum(base)) { coef *= numV(base) ** exp; continue; }
+    const key = toText(base);
+    const prev = powers.get(key);
+    powers.set(key, { base, exp: (prev ? prev.exp : 0) + exp });
+  }
+  return { coef, powers };
+}
+
+/**
+ * A tower of numeric powers as one base and one exponent.
+ *
+ * Dividing by a power with a fractional exponent builds `(x^(-1/3))^(-1)`
+ * rather than `x^(1/3)` — simplify leaves a nested power alone, since
+ * ((-1)^2)^(1/2) and (-1)^(2·1/2) genuinely differ. Here the tower is only
+ * ever read, never rebuilt, so collapsing it to compare bases is safe and is
+ * what stops x^(2/3) and x^(-1/3) looking like two unrelated things.
+ */
+function flattenPow(/** @type {Node} */ n) {
+  let base = n, exp = 1;
+  for (;;) {
+    if (base.type !== 'pow') break;
+    // EVALUATED, not type-checked. A rational exponent is kept unevaluated on
+    // purpose — 2/3 is stored as 2·3⁻¹ so that it prints as a fraction rather
+    // than as 0.6667 — so `isNum` is false for exactly the exponents this
+    // exists to handle, and x^(2/3) looked like an opaque thing to the one
+    // routine that needed to see the ⅔.
+    const e = evaluate(base.exp, {});
+    if (!Number.isFinite(e)) break;
+    exp *= e;
+    base = base.base;
+  }
+  return { base, exp };
+}
+
+const gcd2 = (/** @type {number} */ a, /** @type {number} */ b) =>
+  (b < 1e-9 ? a : gcd2(b, a % b));
+
+/** The largest rational dividing all of them: gcd of the tops over lcm of the bottoms. */
+function commonRational(/** @type {number[]} */ xs) {
+  let topGcd = 0, botLcm = 1;
+  for (const x of xs) {
+    const fr = asFraction(Math.abs(x));
+    const top = fr ? Math.abs(fr.n) : Math.abs(x);
+    const bot = fr ? fr.d : 1;
+    if (!Number.isInteger(top) || top === 0) return 1;   // not a nice rational
+    topGcd = topGcd === 0 ? top : gcd2(Math.max(topGcd, top), Math.min(topGcd, top));
+    botLcm = (botLcm * bot) / gcd2(Math.max(botLcm, bot), Math.min(botLcm, bot));
+  }
+  return topGcd / botLcm;
+}
+
+/**
+ * Factor the lowest power of every shared base out of a sum.
+ *
+ * This is the one move that turns a Calculus 1 derivative into a form you can
+ * find critical numbers with, and it is the move students lose — above all
+ * when the exponents are fractional, because the lowest power is then the
+ * NEGATIVE one and factoring it out *raises* the exponent in every term.
+ *
+ *   2x(x−1)^(1/3) + ⅓x²(x−1)^(−2/3)
+ *     = ⅓x(x−1)^(−2/3) · [6(x−1) + x]
+ *     = x(7x−6) / (3(x−1)^(2/3))
+ *
+ * A base absent from a term counts as exponent 0, so a term with a negative
+ * power pulls the others over a common denominator — which is the same move
+ * wearing different clothes, and is what clears the compound fraction a
+ * quotient rule leaves behind.
+ *
+ * Deliberately NOT part of `simplify`: it is the right shape for finding
+ * critical numbers and the wrong one for plenty else, and every page that
+ * already prints a derivative should go on printing what it printed.
+ *
+ * @param {Node} n
+ * @param {string} v
+ * @returns {{factor:Node, rest:Node, common:{base:Node, exp:number}[], coef:number}|null}
+ *   null when there is nothing to take out. `common` is the breakdown, which is
+ *   what a margin note needs in order to say WHICH powers were taken and why.
+ */
+export function factorCommon(n, v = 'x') {
+  if (!n || n.type !== 'add' || n.args.length < 2) return null;
+  const terms = n.args.map(termParts);
+
+  /** @type {{base:Node, exp:number}[]} */ const common = [];
+  for (const [key, { base }] of terms[0].powers) {
+    if (isConstant(base, v)) continue;        // a numeric factor is handled below
+    let lo = Infinity;
+    for (const t of terms) lo = Math.min(lo, t.powers.get(key) ? t.powers.get(key).exp : 0);
+    if (lo !== 0 && Number.isFinite(lo)) common.push({ base, exp: lo });
+  }
+
+  let coef = commonRational(terms.map(t => t.coef));
+  // All negative: take the sign out too, so the bracket opens on a plus.
+  if (terms.every(t => t.coef < 0)) coef = -coef;
+  if (!common.length && Math.abs(coef - 1) < 1e-12) return null;
+
+  const factor = simplify(mul(
+    num(coef),
+    ...common.map(c => simplifyPow(c.base, num(c.exp))),
+  ));
+
+  // Each leftover is BUILT by subtracting the common exponents, not obtained by
+  // dividing. Dividing is what creates the nested powers in the first place,
+  // and then x^(2/3) ÷ x^(-1/3) sits there as a quotient instead of becoming x.
+  const rest = simplify(add(...terms.map((t) => {
+    const parts = [num(t.coef / coef)];
+    const seen = new Set();
+    // The COMMON factors first, including the ones this term does not have.
+    // Taking out x⁻² from 1 − x⁻² leaves x² in the first term, and walking
+    // only the powers a term already carries misses that entirely: the 1 came
+    // back as 1 and the whole bracket collapsed to zero.
+    for (const c of common) {
+      const key = toText(c.base);
+      seen.add(key);
+      const have = t.powers.get(key);
+      const left = (have ? have.exp : 0) - c.exp;
+      if (Math.abs(left) > 1e-12) parts.push(simplifyPow(c.base, num(left)));
+    }
+    for (const [key, { base, exp }] of t.powers) {
+      if (seen.has(key)) continue;
+      if (Math.abs(exp) > 1e-12) parts.push(simplifyPow(base, num(exp)));
+    }
+    return simplify(mul(...parts));
+  })));
+  return { factor, rest, common, coef };
+}
+
+/**
+ * A derivative in the shape you need to read critical numbers off it.
+ *
+ * Factor out what is common, multiply out what is left — the leftover is
+ * nearly always a polynomial, and expanded-and-collected is what shows its
+ * degree and lets its zeros be found. Then the negative powers become one
+ * denominator, which the printer already does.
+ *
+ * @param {Node} n @param {string} [v]
+ * @returns {Node}
+ */
+export function factorForCriticalNumbers(n, v = 'x') {
+  const simp = simplify(n);
+  // A quotient rule leaves (stuff)·(denominator)^−1, so the sum to factor is
+  // inside a product. Going in after it is what clears the compound fraction
+  // those derivatives are famous for.
+  if (simp.type === 'mul' && simp.args.some(a => a.type === 'add')) {
+    const done = simp.args.map(a => (a.type === 'add' ? factorForCriticalNumbers(a, v) : a));
+    return simplify(mul(...done));
+  }
+  const f = factorCommon(simp, v);
+  if (!f) return simp;
+  let rest = simplify(expand(f.rest));
+  let factor = f.factor;
+  // Multiplying out can expose a numeric factor that was not visible before:
+  // √x(x−3) comes out as (3x−3)/(2√x), and 3(x−1) is the form whose root you
+  // can read off.
+  const g = integerContent(rest);
+  if (g > 1) { rest = divideContent(rest, g); factor = simplify(mul(factor, num(g))); }
+  return simplify(mul(factor, rest));
 }
 
 /* ───────────────────────── general u-substitution ──────────────────────── */

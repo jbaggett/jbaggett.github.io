@@ -30,8 +30,25 @@ import { MARK } from '../../js/mark.js';
 import {
   tryParse, compile, derivative, antiderivative, toLatex, numericallyEqual,
 } from '../../js/expr.js';
+import { simplifySteps } from '../../js/factor-steps.js';
 
 const $ = (/** @type {string} */ s) => /** @type {any} */ (document.querySelector(s));
+
+/**
+ * A note from the step modules, with its \(…\) spans set as maths.
+ *
+ * Those notes are written for `kit/working.js`, which renders the delimiters.
+ * Dropped into innerHTML instead they show their own LaTeX source. The prose
+ * between the delimiters is escaped rather than trusted — it is assembled from
+ * an expression the reader typed.
+ */
+function withMath(/** @type {string} */ text) {
+  const esc = (/** @type {string} */ t) =>
+    t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(text).split(/\\\((.+?)\\\)/s)
+    .map((part, i) => (i % 2 === 0 ? esc(part) : tex(part)))
+    .join('');
+}
 
 const PHI = 0.6180339887498949;
 /** Deterministic, well-spread probe points — the same answer always scores the same. */
@@ -40,7 +57,9 @@ function lowDiscrepancy() {
   return () => { i += 1; return (0.5 + i * PHI) % 1; };
 }
 
-let mode = 'anti';   // 'anti' | 'deriv'
+let mode = 'anti';   // 'anti' | 'deriv' | 'simplify'
+/** Both of these differentiate the PROBLEM and compare the student's answer to it. */
+const comparesToDerivative = () => mode === 'deriv' || mode === 'simplify';
 let chart = null;
 
 /* ─────────────────────────────── checking ──────────────────────────────── */
@@ -53,8 +72,8 @@ let chart = null;
 function check(problem, answer) {
   // In both modes the test is the same shape: differentiate whichever side
   // needs differentiating, then compare two plain functions.
-  const target = mode === 'anti' ? problem : derivative(problem);
-  const fromAnswer = mode === 'anti' ? derivative(answer) : answer;
+  const target = comparesToDerivative() ? derivative(problem) : problem;
+  const fromAnswer = comparesToDerivative() ? answer : derivative(answer);
 
   const a = compile(target);
   const b = compile(fromAnswer);
@@ -101,18 +120,37 @@ function run() {
   }
 
   updateUrl({ f: $('#f-input').value, mode });
+  paintProblem();
 
   const { ok, reason, compare, worstX } = check(pRes.node, aRes.node);
   // "an antiderivative" (there are many) but "the derivative" (there is one).
   const phrase = mode === 'anti' ? 'an antiderivative' : 'the derivative';
 
-  $('#result-line').innerHTML = ok
-    ? `<span class="ll-verdict ok">✓ Correct.</span> Your answer is ${phrase} of the problem.`
-    : `<span class="ll-verdict bad">✗ Not quite.</span> That is not ${phrase} of the problem.`;
-  announce(ok ? 'Correct.' : 'Not correct.', 120);
+  // The question simplifying asks that equality cannot: the unsimplified
+  // derivative is EQUAL to the simplified one, so a numeric check alone can
+  // never tell a student they have finished. This asks whether the simplifier
+  // would still have something to do.
+  const left = (ok && mode === 'simplify') ? simplifySteps(aRes.node) : [];
+
+  if (ok && left.length) {
+    $('#result-line').innerHTML = '<span class="ll-verdict part">≡ Equal, but not finished.</span> '
+      + 'That is the derivative — it is just not simplified yet.';
+    announce('Equal, but not simplified yet.', 120);
+  } else {
+    $('#result-line').innerHTML = ok
+      ? `<span class="ll-verdict ok">✓ Correct.</span> Your answer is ${phrase} of the problem`
+        + `${mode === 'simplify' ? ', and there is nothing left to take out' : ''}.`
+      : `<span class="ll-verdict bad">✗ Not quite.</span> That is not ${phrase} of the problem.`;
+    announce(ok ? 'Correct.' : 'Not correct.', 120);
+  }
 
   const detail = [];
-  if (ok) {
+  if (ok && left.length) {
+    // Name what is still shareable without doing it for them.
+    detail.push(`<p>${withMath(left[0].notes.map(nt => nt.text).join(' — '))}.</p>`
+      + `<p class="ll-hint">Equal is not the same as finished. Nothing is wrong with `
+      + `what you wrote; there is just algebra left in it.</p>`);
+  } else if (ok) {
     detail.push(`<p>${reason}</p>`);
     if (mode === 'anti') {
       detail.push(`<p>Here is the check written out — differentiate your answer and `
@@ -187,21 +225,49 @@ function drawComparison({ a, b }) {
 
 function setMode(next) {
   mode = next;
-  $('#mode-anti').setAttribute('aria-pressed', String(mode === 'anti'));
-  $('#mode-deriv').setAttribute('aria-pressed', String(mode === 'deriv'));
+  for (const m of ['anti', 'deriv', 'simplify']) {
+    $(`#mode-${m}`).setAttribute('aria-pressed', String(mode === m));
+  }
   setTex($('#f-prompt'), mode === 'anti' ? '\\int f(x)\\,dx \\quad\\text{where}\\quad f(x) =' : "f(x) =");
   $('#ans-label').innerHTML = mode === 'anti'
     ? 'Your answer: <span class="ll-math"></span>F(x) ='
-    : "Your answer: f ′(x) =";
+    : mode === 'simplify' ? 'Your simplified form: f ′(x) ='
+      : "Your answer: f ′(x) =";
   $('#c-note').hidden = mode !== 'anti';
   $('#result-line').innerHTML = '';
   $('#detail').innerHTML = '';
   $('#chart-wrap').hidden = true;
+  paintProblem();
+}
+
+/**
+ * In simplify mode the problem is not f, it is f′ — so f′ has to be on screen.
+ * Asking someone to simplify something they cannot see is a memory test.
+ */
+function paintProblem() {
+  const row = $('#to-simplify');
+  row.hidden = mode !== 'simplify';
+  if (row.hidden) return;
+  const pRes = tryParse($('#f-input').value);
+  if (!pRes.node) { setTex($('#raw-deriv'), ''); return; }
+  setTex($('#raw-deriv'), toLatex(derivative(pRes.node)), { display: true });
 }
 
 function showOne() {
   const pRes = tryParse($('#f-input').value);
   if (!pRes.node) { showError('#f-error', '#f-input', pRes); return; }
+  if (mode === 'simplify') {
+    const d = derivative(pRes.node);
+    const steps = simplifySteps(d);
+    $('#detail').innerHTML = steps.length
+      ? `<p>One line at a time:</p>`
+        + steps.map(st => `<p>${tex(st.tex, { display: true })}`
+          + `<br><span class="ll-hint">`
+          + `${withMath(st.notes.map(nt => nt.text).join(' — '))}</span></p>`).join('')
+      : `<p>This one is already in its simplest form — there is nothing common to `
+        + `take out of it.</p>`;
+    return;
+  }
   if (mode === 'deriv') {
     $('#detail').innerHTML = `<p>One correct answer: `
       + `${tex(toLatex(derivative(pRes.node)), { display: true })}</p>`;
@@ -224,7 +290,7 @@ initPage({
     initShare({ mark: MARK });
     const params = getParams();
     if (params.f) $('#f-input').value = params.f;
-    if (params.mode === 'deriv' || params.mode === 'anti') mode = params.mode;
+    if (['deriv', 'anti', 'simplify'].includes(String(params.mode))) mode = String(params.mode);
 
     setTex($('#plusc'), '+\\,C');
     setTex($('#help-tex1'), '\\tfrac{1}{2}\\sin^2 x');
@@ -234,6 +300,7 @@ initPage({
 
     $('#mode-anti').addEventListener('click', () => setMode('anti'));
     $('#mode-deriv').addEventListener('click', () => setMode('deriv'));
+    $('#mode-simplify').addEventListener('click', () => setMode('simplify'));
     $('#check-btn').addEventListener('click', run);
     $('#show-btn').addEventListener('click', showOne);
 

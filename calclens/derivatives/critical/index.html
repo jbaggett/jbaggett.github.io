@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Critical Numbers | CalcLens</title>
+<meta name="description" content="Factor the derivative, read both kinds of critical number off it — where f′ is zero and where f′ does not exist — and see the sign of f′ on every interval.">
+
+<link rel="stylesheet" href="../../../kit/vendor/fonts/fonts.css">
+<link rel="stylesheet" href="../../../kit/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../../../kit/css/tokens.css">
+<link rel="stylesheet" href="../../../kit/css/base.css">
+<meta name="theme-color" content="#569BBD">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../../icon-192.png">
+<link rel="manifest" href="../../manifest.json">
+
+<script defer src="../../../kit/vendor/katex/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "d3-array":     "../../../kit/vendor/d3/d3-array.js",
+    "d3-scale":     "../../../kit/vendor/d3/d3-scale.js",
+    "d3-selection": "../../../kit/vendor/d3/d3-selection.js",
+    "d3-axis":      "../../../kit/vendor/d3/d3-axis.js",
+    "d3-shape":     "../../../kit/vendor/d3/d3-shape.js",
+    "kit/":         "../../../kit/js/"
+  }
+}
+</script>
+
+<style>
+  .cn-answer { margin: 0.4rem 0 0; }
+  .cn-answer .katex { font-size: 1.3em; }
+
+  .cn-list { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.55rem; }
+  .cn-list li { display: flex; flex-wrap: wrap; gap: 0.3rem 0.8rem; align-items: baseline;
+                border-left: 4px solid var(--border); padding-left: 0.8rem; }
+  .cn-list li.cn-undef { border-left-color: #C05E10; }
+  .cn-list li.cn-zero { border-left-color: var(--ims-blue); }
+  .cn-at { font-weight: 700; min-width: 5rem; }
+  .cn-why { color: var(--ims-gray-text); }
+  .cn-turn { font-weight: 600; }
+
+  /* The sign chart: one column per interval, with the critical numbers as the
+     boundaries between them. */
+  .cn-chart { border-collapse: collapse; margin-top: 0.6rem; width: 100%; max-width: 46rem; }
+  .cn-chart th, .cn-chart td { padding: 0.3rem 0.4rem; text-align: center; font-size: 0.95rem;
+                               border: 1px solid var(--border); }
+  .cn-chart th { font-weight: 600; background: var(--surface); }
+  .cn-chart td.cn-pos { color: var(--ok); font-weight: 700; }
+  .cn-chart td.cn-neg { color: var(--bad); font-weight: 700; }
+  .cn-chart .cn-rowname { text-align: right; font-weight: 600; background: var(--surface); }
+  @media (max-width: 599px) { .cn-chart th, .cn-chart td { padding: 0.25rem; font-size: 0.82rem; } }
+
+  #algebra { margin-top: 0.8rem; }
+  #algebra[hidden] { display: none; }
+</style>
+</head>
+<body>
+
+<nav class="skip-links" aria-label="Skip links">
+  <a href="#controls">Skip to the function</a>
+  <a href="#answer">Skip to the critical numbers</a>
+</nav>
+
+<main>
+  <h1>Critical Numbers
+    <span class="header-actions">
+      <a class="home-btn" href="../../" aria-label="CalcLens home">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M10 2L2 9h3v7h4v-5h2v5h4V9h3L10 2z"/></svg>
+        <span>CalcLens</span>
+      </a>
+      <button class="share-btn" aria-label="Share this page, with a QR code" title="Share / QR code"><svg aria-hidden="true" viewBox="0 0 20 20" width="15" height="15"><path fill="currentColor" d="M2 2h6v6H2V2zm2 2v2h2V4H4zM12 2h6v6h-6V2zm2 2v2h2V4h-2zM2 12h6v6H2v-6zm2 2v2h2v-2H4zM12 12h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z"/></svg></button>
+      <button class="help-btn" aria-label="Help" title="Help">?</button>
+    </span>
+  </h1>
+
+  <p class="ll-lede">
+    This is what the algebra was for. A derivative left in the shape the rules
+    produce hides its critical numbers; <b>factored</b>, it shows both kinds at
+    once — where the numerator is zero, and where the denominator is.
+    <span class="ll-hint">The second kind is the one that gets forgotten.</span>
+  </p>
+
+  <section id="controls" class="ll-panel" aria-label="The function">
+    <div class="ll-controls" data-control="f">
+      <label for="fn-input" style="flex:1 1 320px;">
+        <span><i>f</i>(<i>x</i>) =</span>
+        <input type="text" id="fn-input" value="x^(2/3)(x-4)" autocomplete="off"
+               autocapitalize="off" spellcheck="false" aria-describedby="fn-error">
+      </label>
+    </div>
+    <p class="ll-error" id="fn-error" role="alert" hidden></p>
+    <div class="ll-preview" id="fn-preview"></div>
+    <div class="ll-palette" id="fn-palette"></div>
+    <div class="ll-segmented" role="group" aria-label="Example functions" data-control="f">
+      <button type="button" class="preset" data-f="x^(2/3)(x-4)">cusp</button>
+      <button type="button" class="preset" data-f="x^2(x-1)^(1/3)">fractional</button>
+      <button type="button" class="preset" data-f="x^3-3x">classic</button>
+      <button type="button" class="preset" data-f="x^3">no turn</button>
+      <button type="button" class="preset" data-f="x+1/x">undefined</button>
+      <button type="button" class="preset" data-f="x/sqrt(x+1)">none at all</button>
+    </div>
+  </section>
+
+  <section id="answer" aria-label="The derivative and its critical numbers">
+    <h2>The derivative, factored</h2>
+    <p class="cn-answer ll-math" id="deriv-line"></p>
+    <div class="ll-row" data-control="algebra">
+      <button type="button" id="algebra-btn">Show the algebra</button>
+      <span class="ll-hint" id="algebra-hint">how the factored form was reached</span>
+    </div>
+    <div id="algebra" hidden><div id="work-mount"></div></div>
+
+    <h2>Critical numbers</h2>
+    <p id="cn-none" hidden></p>
+    <ul class="cn-list" id="cn-list"></ul>
+    <p class="ll-hint" id="cn-warn" hidden></p>
+
+    <h2>The sign of <i>f</i> ′</h2>
+    <table class="cn-chart" id="sign-chart">
+      <tbody></tbody>
+    </table>
+
+    <h2>The picture</h2>
+    <div id="chart" class="ll-chart"></div>
+  </section>
+
+  <div id="sr-announce" class="sr-only" aria-live="polite" role="status"></div>
+</main>
+
+<dialog class="ll-help-dialog" aria-label="Help">
+  <h2>Critical Numbers</h2>
+  <p>A critical number of <i>f</i> is an <i>x</i> in the domain of <i>f</i> where
+     <i>f</i> ′(<i>x</i>) = 0 <b>or</b> <i>f</i> ′(<i>x</i>) does not exist. Both
+     halves matter, and the second half is the one that gets left out.</p>
+
+  <h3>Why the factoring is the point</h3>
+  <p>Differentiate <i>x</i>²(<i>x</i>−1)<sup>1/3</sup> and the rules hand you</p>
+  <p class="ll-math" id="help-tex1"></p>
+  <p>which tells you nothing. The same derivative, factored, is</p>
+  <p class="ll-math" id="help-tex2"></p>
+  <p>and now you can read both kinds straight off: the numerator is zero at
+     <i>x</i> = 0 and <i>x</i> = 6/7, and the denominator is zero at
+     <i>x</i> = 1. Three critical numbers, and the third would have been
+     invisible in the first form. <b>Show the algebra</b> walks through getting
+     from one to the other.</p>
+
+  <h3>In the domain of f</h3>
+  <p>A point where <i>f</i> ′ blows up is only a critical number if <i>f</i>
+     itself is defined there. For <i>f</i>(<i>x</i>) = <i>x</i> + 1/<i>x</i> the
+     derivative does not exist at 0 — but neither does <i>f</i>, so 0 is not a
+     critical number, it is simply not in the domain. The page applies that
+     test, which is why some functions come back with fewer critical numbers
+     than the denominator suggests.</p>
+
+  <h3>Critical does not mean extreme</h3>
+  <p><i>f</i>(<i>x</i>) = <i>x</i>³ has a critical number at 0 and no turning
+     point there: <i>f</i> ′ = 3<i>x</i>² is zero without changing sign. The sign
+     chart is what settles it, and the verdict beside each critical number comes
+     from the sign on either side — the first derivative test, done for you so
+     you can check your own.</p>
+
+  <h3>How the numbers are found</h3>
+  <p>Factor by factor, not by scanning the whole derivative. A linear or
+     quadratic factor gives its roots exactly — 6/7, not 0.857 — and a factor
+     like <i>x</i>² gives 0 even though <i>f</i> ′ never changes sign there,
+     which a hunt for sign changes would walk straight past.</p>
+  <p>Anything else is found numerically between −12 and 12, and the page says so
+     rather than letting a shortened list look complete.</p>
+
+  <h3>Putting this in a slide or a page</h3>
+  <pre class="ll-code">?f=x^(2/3)(x-4)&amp;algebra=true&amp;embed=true</pre>
+  <p>See <code>docs/url-api.md</code> for every parameter.</p>
+
+  <button type="button" data-close autofocus>Close</button>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

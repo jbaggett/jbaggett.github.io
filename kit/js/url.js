@@ -23,8 +23,25 @@
  */
 let activePreset = null;
 
+/**
+ * A `+` in the query is a PLUS SIGN, not a space.
+ *
+ * Form encoding says otherwise, and `URLSearchParams` obeys form encoding —
+ * so `?f=x+1/x` arrives as `x 1/x`, which this parser reads as implied
+ * multiplication and quietly turns x + 1/x into 1. An instructor hand-writing
+ * a link gets a different function from the one they typed, with nothing on
+ * screen to say so.
+ *
+ * Every parameter on this site is an expression, a number, a letter or a
+ * boolean. None of them wants a space badly enough to justify that, and a
+ * space that IS wanted still arrives as %20 or as a literal space.
+ */
+function plusMeansPlus(/** @type {string} */ search) {
+  return String(search).replace(/\+/g, '%2B');
+}
+
 export function getParams(presets) {
-  const q = new URLSearchParams(location.search);
+  const q = new URLSearchParams(plusMeansPlus(location.search));
   // `?preset=<key>` expands a named preset into the parameters it stands for.
   //
   // This exists for QR codes. A fully spelled-out lecture link runs to ~126

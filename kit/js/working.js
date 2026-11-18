@@ -67,7 +67,7 @@ function noteSpan(note) {
 /**
  * @param {{
  *   mount: Element,
- *   ghost?: string,            // the question the withheld line asks
+ *   ghost?: string | ((shown:number)=>string),  // the question the withheld line asks
  *   controlsName?: string,     // data-control value, for ?controls=
  *   labels?: {next?:string, all?:string, reset?:string, hint?:(n:number,total:number)=>string},
  *   chain?: boolean,          // see `lead` below; default true
@@ -75,7 +75,19 @@ function noteSpan(note) {
  * }} opts
  */
 export function initWorking(opts) {
-  const { mount, ghost = 'what would you do next?', controlsName, onChange, chain = true } = opts;
+  const { mount, controlsName, onChange, chain = true } = opts;
+  /**
+   * The question the withheld line asks — a string, or a function of how many
+   * lines are already open.
+   *
+   * A function because working can change KIND partway through: asking "which
+   * rule applies here?" above a line of algebra is asking about the wrong
+   * subject. It is READ during render rather than pushed in from outside,
+   * because a setter called from `onChange` renders, and render calls
+   * `onChange`.
+   */
+  const ghostOf = (/** @type {number} */ i) =>
+    (typeof opts.ghost === 'function' ? opts.ghost(i) : (opts.ghost || 'what would you do next?'));
 
   /**
    * The `=` that opens every line after the first — in a CHAIN of equalities.
@@ -148,11 +160,11 @@ export function initWorking(opts) {
       const li = el('li', 'll-wstep ll-wstep-ghost', '');
       const tap = el('button', 'll-wstep-tap', '');
       tap.type = 'button';
-      tap.setAttribute('aria-label', `${L.next.replace(/[^\w\s]/g, '').trim()} — ${ghost}`);
+      tap.setAttribute('aria-label', `${L.next.replace(/[^\w\s]/g, '').trim()} — ${ghostOf(shown)}`);
       const eq = el('div', 'll-wstep-eq', '');
       eq.setAttribute('aria-hidden', 'true');
       eq.innerHTML = tex(chain ? '{}={}\\;\\cdots' : '\\cdots', { displayStyle: true });
-      tap.append(eq, el('div', 'll-wstep-notes', ghost));
+      tap.append(eq, el('div', 'll-wstep-notes', ghostOf(shown)));
       tap.addEventListener('click', () => advance(shown + 1));
       li.append(tap);
       list.append(li);
@@ -195,7 +207,7 @@ export function initWorking(opts) {
 
   return {
     controlsEl: bar,
-    /** @param {WorkStep[]} next @param {{openAll?:boolean}} [o] */
+    /** @param {WorkStep[]} next @param {{openAll?:boolean, keep?:boolean}} [o] */
     set(next, o = {}) {
       steps = next || [];
       // With the step buttons taken away by `?controls=`, there is no way to
@@ -205,7 +217,13 @@ export function initWorking(opts) {
       // collapsed it to the definition plus "what would you do next?" with no
       // control on screen. The rule belongs here, where `suppressed` is known,
       // rather than in a boot-time line each page has to remember.
-      shown = (o.openAll || suppressed) ? steps.length : 1;
+      // `keep` is for APPENDING to a derivation that is already open — asking
+      // for the algebra after the calculus, say. Collapsing back to line 1
+      // would throw away everything the reader had revealed, and the new lines
+      // then arrive withheld, which is the point of asking for them.
+      shown = (o.openAll || suppressed) ? steps.length
+        : o.keep ? Math.min(Math.max(shown, 1), steps.length)
+          : 1;
       render();
     },
     openAll() { advance(steps.length); },

@@ -58,6 +58,7 @@
     <div class="ll-segmented" role="group" aria-label="What kind of problem">
       <button type="button" id="mode-anti" class="mode-btn" aria-pressed="true">Antiderivative</button>
       <button type="button" id="mode-deriv" class="mode-btn" aria-pressed="false">Derivative</button>
+      <button type="button" id="mode-simplify" class="mode-btn" aria-pressed="false">Simplify a derivative</button>
     </div>
 
     <div class="ll-controls" style="margin-top:0.8rem;">
@@ -68,6 +69,12 @@
       </label>
       <p class="ll-error" id="f-error" role="alert" hidden style="flex:1 1 100%"></p>
       <div class="ll-preview" id="f-preview" style="flex:1 1 100%"></div>
+
+      <div id="to-simplify" style="flex:1 1 100%" hidden>
+        <p style="margin:0.2rem 0 0;">Differentiating gives this. Put it in a form you
+          could find critical numbers with:</p>
+        <p class="ll-math" id="raw-deriv" style="margin:0.3rem 0 0;"></p>
+      </div>
 
       <label for="ans-input" style="flex:1 1 100%;">
         <span id="ans-label">Your answer:</span>
